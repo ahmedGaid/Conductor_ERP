@@ -1,0 +1,34 @@
+{
+  "app": {
+    "title": "نظام تخطيط الموارد",
+    "shortName": "ERP"
+  },
+  "nav": {
+    "dashboard": "لوحة المعلومات",
+    "workflows": "مسارات العمل",
+    "forms": "النماذج",
+    "settings": "الإعدادات"
+  },
+  "shell": {
+    "search": "بحث",
+    "commandPlaceholder": "ابحث أو نفّذ أمرًا…",
+    "openMenu": "فتح القائمة",
+    "skipToContent": "تخطٍّ إلى المحتوى"
+  },
+  "language": {
+    "label": "اللغة",
+    "arabic": "العربية",
+    "english": "English",
+    "switchTo": "التبديل إلى {{name}}"
+  },
+  "dashboard": {
+    "heading": "لوحة المعلومات",
+    "welcome": "مرحبًا بك في نظام تخطيط الموارد",
+    "intro": "هذه هي الواجهة الأساسية. الوحدات ستظهر هنا تباعًا.",
+    "directionNote": "اتجاه الواجهة الحالي: {{dir}} — اللغة: {{lang}}."
+  },
+  "common": {
+    "loading": "جارٍ التحميل…",
+    "comingSoon": "قريبًا"
+  }
+}

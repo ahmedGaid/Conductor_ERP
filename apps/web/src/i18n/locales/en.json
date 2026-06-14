@@ -1,0 +1,34 @@
+{
+  "app": {
+    "title": "Enterprise Resource Planning",
+    "shortName": "ERP"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "workflows": "Workflows",
+    "forms": "Forms",
+    "settings": "Settings"
+  },
+  "shell": {
+    "search": "Search",
+    "commandPlaceholder": "Search or run a command…",
+    "openMenu": "Open menu",
+    "skipToContent": "Skip to content"
+  },
+  "language": {
+    "label": "Language",
+    "arabic": "العربية",
+    "english": "English",
+    "switchTo": "Switch to {{name}}"
+  },
+  "dashboard": {
+    "heading": "Dashboard",
+    "welcome": "Welcome to the ERP system",
+    "intro": "This is the foundation shell. Modules will appear here over time.",
+    "directionNote": "Current UI direction: {{dir}} — language: {{lang}}."
+  },
+  "common": {
+    "loading": "Loading…",
+    "comingSoon": "Coming soon"
+  }
+}

@@ -59,6 +59,27 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
 - **`erp_external` schema** (the simulated external ERP target) lives in the same Postgres instance
   via a `RunSQL` migration — no second server, matching the PHASE intent.
 
+## Frontend foundation (Stage 3)
+
+- **Build tooling = Vite + React 18 + TypeScript** (not Next.js): the app is a customer-hosted,
+  single-tenant SPA served as a static bundle behind Django — no SSR requirement, so Vite keeps the
+  build simple and dependency-light. Lives in `apps/web/`.
+- **Arabic/RTL is the product default, not an afterthought.** `index.html` ships `lang="ar"
+  dir="rtl"`; i18next `fallbackLng` is `ar`. The active language is reflected onto `<html dir/lang>`
+  on every `languageChanged`, so a live AR↔EN switch flips direction with no reload.
+- **Logical CSS only** (`inline-start/end`, `margin-inline-*`, `border-inline-end`, `inset-inline-*`)
+  — never physical `left/right`. This is what makes one stylesheet mirror correctly in both
+  directions. gate03 statically bans physical left/right properties.
+- **Design tokens are the single source of truth for colour.** `src/styles/tokens.css` is the only
+  file allowed to contain raw hex; everything else uses `var(--token)`. gate03 bans stray hex
+  elsewhere. Enables future theming without hunting hardcoded values.
+- **i18n key-parity is build-blocking, both directions.** `scripts/check-i18n-parity.mjs` runs as
+  npm `prebuild`; a build cannot ship with a key present in one locale but missing in another.
+  gate03 additionally proves the check *catches* drift by running it against a mutated fixture.
+- **Fonts are self-hosted** via `@fontsource` (IBM Plex Sans Arabic + Inter) — no Google Fonts CDN,
+  honouring the "no cloud-only deps" customer-hosting constraint. `<bdi>` isolates LTR tokens
+  (codes/numbers/English) inside RTL text.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

@@ -1,0 +1,23 @@
+.lang-switch {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-full);
+}
+
+.lang-switch__btn {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  padding-inline: var(--space-3);
+  padding-block: var(--space-1);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+}
+
+.lang-switch__btn[aria-pressed="true"] {
+  background-color: var(--color-surface);
+  color: var(--color-brand-strong);
+  box-shadow: var(--shadow-sm);
+}

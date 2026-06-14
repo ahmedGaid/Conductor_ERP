@@ -1,0 +1,19 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.dashboard__card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  max-inline-size: 48rem;
+}
+
+.dashboard__meta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

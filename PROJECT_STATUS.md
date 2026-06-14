@@ -1,12 +1,23 @@
 # PROJECT STATUS — General ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-14 (Stages 0, 1, 2 complete; starting Stage 3)**.
+> meaningful step. Last updated: **2026-06-14 (Stages 0–3 complete; starting Stage 4)**.
 
 ## CURRENT POSITION
-**Stages 0, 1, 2 COMPLETE — `gate:all` (00, 01, 02) is GREEN.** No active blocker.
-Next: **Stage 3 — Frontend foundation** (React + TS + Vite, i18next, Arabic/RTL default, design
-tokens, app shell, i18n key-parity build gate). See plan + PHASE_06 design input.
+**Stages 0, 1, 2, 3 COMPLETE — `gate:all` (00, 01, 02, 03) is GREEN.** No active blocker.
+Next: **Stage 4 — Platform screens** (dashboard with real metrics, workflow list, React Flow canvas
+build/save round-trip, node config panel, execution viewer) **+ the workflow/instance DRF API** the
+screens call (not yet built). See plan.
+
+Stage 3 delivered (`apps/web/`, gate03): React 18 + TS + Vite frontend, **Arabic/RTL by default**
+(`index.html` lang=ar dir=rtl; i18next fallback `ar`), live AR↔EN switch that re-applies
+`<html dir/lang>` on `languageChanged`. Design tokens (`src/styles/tokens.css`) are the single
+hex source; all other styles use `var(--token)` + **logical CSS only** (inline-start/end, no
+physical left/right). App shell = sidebar (inline-start) + command bar + language switcher; `<bdi>`
+wrapper for LTR tokens. Self-hosted fonts via `@fontsource` (IBM Plex Sans Arabic + Inter, no cloud
+dep). i18n **key-parity** enforced both directions: `scripts/check-i18n-parity.mjs` runs as
+`prebuild` (build fails on missing key) and gate03 also proves it catches drift via a fixture.
+Run frontend: `cd apps/web; npm install; npm run dev` (Vite proxies `/api` → :8000).
 
 Stage 1 delivered: custom `User` (branch FK + TOTP), RBAC via Django Groups + `HasAnyRole` DRF
 permission, JWT login with 2FA challenge flow (`/api/identity/*`), audit service (immutable, blocks
@@ -101,13 +112,12 @@ REMAINING for Stage 0:
 - Then: `git add -A && git commit` the Stage 0 baseline (only when user asks / after gate green).
 
 ## Next stages
-- **Stage 3 — Frontend foundation (NEXT):** React + TS + Vite under `apps/web/`, i18next with
-  Arabic/RTL default + live AR↔EN switch, design tokens (no hardcoded hex), logical CSS only, app
-  shell (sidebar inline-start, command bar, language switcher), gate03 = i18n key-parity in both
-  directions + boots `lang=ar dir=rtl`.
-- Stage 4 — platform screens (dashboard, workflow list, React Flow canvas, node config, execution
-  viewer) + workflow/instance DRF API. Stage 5 — ERP modules. Stage 6 — integrations/reporting.
-  Stage 7 — hardening/deploy. (See plan.)
+- **Stage 4 — Platform screens (NEXT):** workflow/instance **DRF API** (CRUD workflows, start/list
+  instances, approve/reject, node-level execution logs) + React screens: dashboard (real metrics),
+  workflow list, **React Flow** canvas (build/save/round-trip), node config panel, execution viewer
+  (node timeline, status pills, approve/reject). gate04 = canvas save→reload round-trips; viewer
+  shows node-level logs; screens mirror in RTL.
+- Stage 5 — ERP modules. Stage 6 — integrations/reporting. Stage 7 — hardening/deploy. (See plan.)
 
 ## How to resume
 Read this file + the plan + `DECISIONS.md`, clear the active blocker, run `gate:00`, then continue

@@ -1,0 +1,75 @@
+/*
+ * Design tokens — the SINGLE source of truth for colour, spacing, type, radii, etc.
+ * This is the ONLY stylesheet permitted to contain raw hex values. Every other style
+ * must reference these custom properties via var(--token). The gate enforces this.
+ *
+ * Tokens are direction-agnostic: layout uses CSS logical properties (inline/block),
+ * so the same tokens drive both RTL (Arabic, default) and LTR (English).
+ */
+:root {
+  /* ---- Palette (raw, private) ---- */
+  --palette-white: #ffffff;
+  --palette-ink-900: #0f172a;
+  --palette-ink-700: #334155;
+  --palette-ink-500: #64748b;
+  --palette-ink-300: #cbd5e1;
+  --palette-ink-100: #f1f5f9;
+  --palette-ink-050: #f8fafc;
+  --palette-brand-700: #1d4ed8;
+  --palette-brand-600: #2563eb;
+  --palette-brand-100: #dbeafe;
+  --palette-success-600: #16a34a;
+  --palette-warning-600: #d97706;
+  --palette-danger-600: #dc2626;
+
+  /* ---- Semantic colour (public) ---- */
+  --color-bg: var(--palette-ink-050);
+  --color-surface: var(--palette-white);
+  --color-surface-alt: var(--palette-ink-100);
+  --color-border: var(--palette-ink-300);
+  --color-text: var(--palette-ink-900);
+  --color-text-muted: var(--palette-ink-500);
+  --color-text-on-brand: var(--palette-white);
+  --color-brand: var(--palette-brand-600);
+  --color-brand-strong: var(--palette-brand-700);
+  --color-brand-subtle: var(--palette-brand-100);
+  --color-success: var(--palette-success-600);
+  --color-warning: var(--palette-warning-600);
+  --color-danger: var(--palette-danger-600);
+
+  /* ---- Spacing scale ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  /* ---- Radii ---- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-arabic: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-latin: "Inter", system-ui, sans-serif;
+  --font-ui: var(--font-arabic), var(--font-latin);
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.75rem;
+  --line-height-ui: 1.5;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* ---- Elevation ---- */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.12);
+
+  /* ---- Layout ---- */
+  --sidebar-size: 16rem;
+  --topbar-size: 3.5rem;
+}
