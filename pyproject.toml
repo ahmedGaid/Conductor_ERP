@@ -1,0 +1,23 @@
+[project]
+name = "erp-platform"
+version = "0.0.0"
+description = "Customer-hosted modular-monolith ERP (Django) — foundation-first build"
+requires-python = ">=3.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["erp", "config", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["tests.py", "test_*.py", "*_test.py"]
+testpaths = ["erp"]
+
+[tool.mypy]
+python_version = "3.13"
+plugins = []
+ignore_missing_imports = true
