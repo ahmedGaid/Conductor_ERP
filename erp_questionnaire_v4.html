@@ -392,6 +392,28 @@
 
   <div class="section-card">
     <div class="section-header">
+      <div class="section-num">٠</div>
+      <div class="section-title">نوع المشروع</div>
+    </div>
+    <div class="section-body">
+      <p style="margin:0 0 1rem;color:var(--text-muted,#555);font-size:.92rem;">
+        اختر طريقة تنفيذ النظام: بناء تطبيق جديد من الصفر، أو تخصيص النظام العام الموجود ليطابق احتياجاتك.
+      </p>
+      <div class="grid-2">
+        <label class="check-item checked">
+          <input type="radio" name="build_mode" value="scratch" checked>
+          <span><strong>بناء من الصفر</strong><br>إنشاء نظام ERP جديد بالكامل بناءً على هذه المتطلبات.</span>
+        </label>
+        <label class="check-item">
+          <input type="radio" name="build_mode" value="custom">
+          <span><strong>تخصيص نظام موجود</strong><br>الانطلاق من النظام العام الجاهز وتعديله ليطابق المتطلبات المحددة في هذا الملف.</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-header">
       <div class="section-num">١</div>
       <div class="section-title">معلومات عامة عن الشركة</div>
     </div>
@@ -2290,31 +2312,57 @@ function generateBuildSpec(data) {
   const arr = h.arr, yn = h.yn, has = h.has;
   const now = new Date().toISOString().slice(0, 19) + 'Z';
   const multiBranch = d.branches_count && d.branches_count !== '1';
+  const isCustom = d.build_mode === 'custom';
   let s = '';
 
-  s += `# ERP System — End-to-End Build Specification\n\n`;
+  s += isCustom
+    ? `# ERP System — Customization Specification (adapt the existing general ERP)\n\n`
+    : `# ERP System — End-to-End Build Specification\n\n`;
   s += `**Company:** ${d.company_name || '—'}  \n`;
   s += `**Business type:** ${ev(d.business_type)}  \n`;
   s += `**Company size:** ${ev(d.company_size)} · **Branches:** ${ev(d.branches_count)} · **Geographic scope:** ${ev(d.geographic_scope)}  \n`;
-  s += `**Prepared for:** Autonomous AI engineering agent  \n`;
+  s += isCustom
+    ? `**Prepared for:** Autonomous AI customization agent  \n`
+    : `**Prepared for:** Autonomous AI engineering agent  \n`;
   s += `**Generated:** ${now}\n\n---\n\n`;
 
-  s += `## 0. Instructions to the AI Build Agent\n\n`;
-  s += `Implement this ERP **end-to-end without asking for clarification**. This document is the single source of truth.\n\n`;
-  s += `- Where a detail is unspecified, apply the **industry-standard default**, implement it, and record it under "Assumptions" (Appendix B).\n`;
-  s += `- Deliver **production-ready, working** code: backend, frontend, database migrations, seed data, automated tests, and deployment files.\n`;
-  s += `- All monetary values are in **${CURRENCY_EN}** unless stated. Dates ISO-8601. Timezone Africa/Cairo.\n`;
-  s += `- UI must support **Arabic (RTL) + English (LTR)** with full i18n and a language switch.\n`;
-  s += `- Every list view: search, filter, sort, pagination, and CSV/Excel/PDF export. Every record: a full **audit trail** (user, timestamp, before/after).\n`;
-  s += `- Enforce **role-based access control (RBAC)** on every API endpoint and UI action.\n\n`;
-  s += `### Definition of Done\n`;
-  s += `1. Every module below implemented with full CRUD + listed workflows + business rules.\n`;
-  s += `2. Seed data and a demo user per role.\n`;
-  s += `3. Automated tests (unit + integration) covering all business rules; CI passes.\n`;
-  s += `4. One-command bootstrap ("docker compose up") runs migrations + seeds and brings the whole system online.\n`;
-  s += `5. API documented via OpenAPI/Swagger; README covering setup + architecture.\n\n`;
+  if (isCustom) {
+    s += `## 0. Instructions to the AI Customization Agent\n\n`;
+    s += `You are given an **existing general-purpose ERP codebase** (the "general/base ERP"). Your task is to **customize and adapt it to match this specification — do NOT rebuild from scratch.** This document is the single source of truth for the target system.\n\n`;
+    s += `- Treat the existing general ERP as the starting point. **Reuse** its architecture, modules, data models, auth/RBAC, i18n, and infrastructure.\n`;
+    s += `- For every requirement below: if the base ERP **already provides** it → configure/enable it; if it **partially** provides it → extend it; **only build new code** where the base ERP has no equivalent.\n`;
+    s += `- **Disable or remove** modules and features the client does not need (see selected modules in Section 2), where it is safe to do so.\n`;
+    s += `- **Preserve the base ERP's conventions** (project structure, naming, migration style, coding patterns) so your changes merge cleanly and the existing tests keep passing.\n`;
+    s += `- Where a detail is unspecified, keep the base ERP's existing behavior or apply the **industry-standard default**, and record it under "Assumptions" (Appendix B).\n`;
+    s += `- All monetary values are in **${CURRENCY_EN}** unless stated. Dates ISO-8601. Timezone Africa/Cairo.\n`;
+    s += `- UI must support **Arabic (RTL) + English (LTR)** with full i18n and a language switch.\n`;
+    s += `- Every list view: search, filter, sort, pagination, and CSV/Excel/PDF export. Every record: a full **audit trail** (user, timestamp, before/after).\n`;
+    s += `- Enforce **role-based access control (RBAC)** on every API endpoint and UI action.\n\n`;
+    s += `### Definition of Done\n`;
+    s += `1. The customized system **matches every requirement** in this document (modules, workflows, business rules below).\n`;
+    s += `2. A **Customization Change Log** (Appendix C) lists exactly what you **added, modified, configured, or removed** relative to the general ERP, file by file / module by module.\n`;
+    s += `3. The base ERP's existing automated tests still pass; **new tests** cover every customization and new business rule; CI passes.\n`;
+    s += `4. Seed/demo data reflects this client's setup (branches, roles, master data).\n`;
+    s += `5. One-command bootstrap still works end-to-end; README/CHANGELOG updated to describe the customization.\n\n`;
+  } else {
+    s += `## 0. Instructions to the AI Build Agent\n\n`;
+    s += `Implement this ERP **end-to-end without asking for clarification**. This document is the single source of truth.\n\n`;
+    s += `- Where a detail is unspecified, apply the **industry-standard default**, implement it, and record it under "Assumptions" (Appendix B).\n`;
+    s += `- Deliver **production-ready, working** code: backend, frontend, database migrations, seed data, automated tests, and deployment files.\n`;
+    s += `- All monetary values are in **${CURRENCY_EN}** unless stated. Dates ISO-8601. Timezone Africa/Cairo.\n`;
+    s += `- UI must support **Arabic (RTL) + English (LTR)** with full i18n and a language switch.\n`;
+    s += `- Every list view: search, filter, sort, pagination, and CSV/Excel/PDF export. Every record: a full **audit trail** (user, timestamp, before/after).\n`;
+    s += `- Enforce **role-based access control (RBAC)** on every API endpoint and UI action.\n\n`;
+    s += `### Definition of Done\n`;
+    s += `1. Every module below implemented with full CRUD + listed workflows + business rules.\n`;
+    s += `2. Seed data and a demo user per role.\n`;
+    s += `3. Automated tests (unit + integration) covering all business rules; CI passes.\n`;
+    s += `4. One-command bootstrap ("docker compose up") runs migrations + seeds and brings the whole system online.\n`;
+    s += `5. API documented via OpenAPI/Swagger; README covering setup + architecture.\n\n`;
+  }
 
-  s += `## 1. Architecture & Tech Stack (recommended defaults)\n\n`;
+  s += isCustom ? `## 1. Architecture & Tech Stack (use the base ERP as-is)\n\n` : `## 1. Architecture & Tech Stack (recommended defaults)\n\n`;
+  if (isCustom) s += `> **Keep the existing general ERP's stack and architecture.** Do not introduce a new stack. The table below is the baseline reference for that system.\n\n`;
   s += `| Layer | Technology |\n|---|---|\n`;
   s += `| Frontend | React 18 + TypeScript + Vite + TailwindCSS; i18next (ar/en, RTL-aware) |\n`;
   s += `| Backend | NestJS (Node 20, TypeScript), REST + OpenAPI |\n`;
@@ -2343,6 +2391,7 @@ function generateBuildSpec(data) {
   s += `- All documents have a status state-machine and a sequential, branch-scoped number series.\n\n`;
 
   s += `## 2. Functional Modules\n\n`;
+  if (isCustom) s += `> For each module: **reuse** the matching module in the base ERP and adapt it to the spec below. If the base ERP has modules **not** listed here, disable/hide them for this client (unless they are core dependencies).\n\n`;
   let n = 0;
   mods.forEach(m => {
     if (MODULE_BLUEPRINT[m]) { n++; s += `### 2.${n} ${ENG[m] || m}\n\n` + MODULE_BLUEPRINT[m](d, h) + `\n\n`; }
@@ -2375,12 +2424,21 @@ function generateBuildSpec(data) {
   s += `- Automated DB backups per the stated policy; disaster-recovery runbook.\n`;
   s += `- Observability: structured logs, health checks, error tracking, basic metrics.\n\n`;
 
-  s += `## 7. Delivery Plan (suggested phases)\n`;
-  s += `1. Foundation: auth, RBAC, org/branch setup, master data (items, customers, suppliers, COA).\n`;
-  s += `2. Core transactional modules selected above (in dependency order: Inventory/Finance first).\n`;
-  s += `3. Reporting, dashboards, exports.\n`;
-  s += `4. Integrations + e-invoicing.\n`;
-  s += `5. Hardening, tests, deployment, seed/demo data.\n\n`;
+  if (isCustom) {
+    s += `## 7. Customization Plan (suggested phases)\n`;
+    s += `1. **Gap analysis:** map each requirement above to the base ERP — mark as _already supported_ / _needs extension_ / _new_.\n`;
+    s += `2. Configure org/branches, roles (RBAC), and master data to match this client.\n`;
+    s += `3. Extend/adapt the selected modules to the gaps found; disable unneeded modules.\n`;
+    s += `4. Adapt reporting, dashboards, exports, and integrations/e-invoicing to the spec.\n`;
+    s += `5. Update seed/demo data, run + extend tests, update the Change Log (Appendix C), redeploy.\n\n`;
+  } else {
+    s += `## 7. Delivery Plan (suggested phases)\n`;
+    s += `1. Foundation: auth, RBAC, org/branch setup, master data (items, customers, suppliers, COA).\n`;
+    s += `2. Core transactional modules selected above (in dependency order: Inventory/Finance first).\n`;
+    s += `3. Reporting, dashboards, exports.\n`;
+    s += `4. Integrations + e-invoicing.\n`;
+    s += `5. Hardening, tests, deployment, seed/demo data.\n\n`;
+  }
 
   if (d.additional_notes && d.additional_notes.trim()) {
     s += `## 8. Client's Additional Notes (must be honored)\n\n> ${d.additional_notes.trim().replace(/\n/g, '\n> ')}\n\n`;
@@ -2388,6 +2446,10 @@ function generateBuildSpec(data) {
 
   s += `## Appendix B — Assumptions register\n\n`;
   s += `The agent must populate this section with every default decision it made where the spec was silent.\n\n`;
+  if (isCustom) {
+    s += `## Appendix C — Customization Change Log\n\n`;
+    s += `The agent must populate this section with every change made to the general/base ERP to reach this specification: **Added / Modified / Configured / Removed**, with the affected module, file(s), and a one-line reason for each.\n\n`;
+  }
   return s;
 }
 
@@ -2476,7 +2538,8 @@ async function buildSpecFile() {
   if (!data.company_name) { alert('Please fill in the company name first.'); return null; }
   const md = generateFullSpec(data);
   const safe = (data.company_name).replace(/[^a-zA-Z0-9_-]/g, '_');
-  const baseName = `ERP_BuildSpec_${safe}_${new Date().toISOString().slice(0,10)}`;
+  const kind = data.build_mode === 'custom' ? 'CustomSpec' : 'BuildSpec';
+  const baseName = `ERP_${kind}_${safe}_${new Date().toISOString().slice(0,10)}`;
   if (FILE_PASSWORD) {
     if (!(window.crypto && crypto.subtle)) {
       alert('تعذّر تشفير الملف في هذا المتصفح. افتح الصفحة في متصفح حديث (Chrome/Edge/Firefox) ثم أعد المحاولة.');
@@ -2598,7 +2661,8 @@ async function saveForm() {
 
   const fullSpec = generateFullSpec(data);
   const safe = (data.company_name || 'company').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const fileName = `ERP_BuildSpec_${safe}_${new Date().toISOString().slice(0,10)}.md`;
+  const kind = data.build_mode === 'custom' ? 'CustomSpec' : 'BuildSpec';
+  const fileName = `ERP_${kind}_${safe}_${new Date().toISOString().slice(0,10)}.md`;
 
   const btn = document.getElementById('btnSend');
   const orig = btn.innerHTML;
