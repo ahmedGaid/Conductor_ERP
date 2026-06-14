@@ -7,6 +7,12 @@ import { LoginPage } from "./pages/LoginPage";
 import { WorkflowListPage } from "./pages/WorkflowListPage";
 import { WorkflowCanvasPage } from "./pages/WorkflowCanvasPage";
 import { ExecutionViewerPage } from "./pages/ExecutionViewerPage";
+import { ChartOfAccountsPage } from "./pages/accounting/ChartOfAccountsPage";
+import { JournalListPage } from "./pages/accounting/JournalListPage";
+import { JournalEntryPage } from "./pages/accounting/JournalEntryPage";
+import { JournalDetailPage } from "./pages/accounting/JournalDetailPage";
+import { TrialBalancePage } from "./pages/accounting/TrialBalancePage";
+import { GeneralLedgerPage } from "./pages/accounting/GeneralLedgerPage";
 import type { ReactNode } from "react";
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -25,6 +31,12 @@ function Protected() {
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />
           <Route path="/instances/:id" element={<ExecutionViewerPage />} />
+          <Route path="/accounting" element={<ChartOfAccountsPage />} />
+          <Route path="/accounting/journals" element={<JournalListPage />} />
+          <Route path="/accounting/journals/new" element={<JournalEntryPage />} />
+          <Route path="/accounting/journals/:id" element={<JournalDetailPage />} />
+          <Route path="/accounting/trial-balance" element={<TrialBalancePage />} />
+          <Route path="/accounting/general-ledger" element={<GeneralLedgerPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>

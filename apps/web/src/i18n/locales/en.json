@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "workflows": "Workflows",
+    "accounting": "Accounting",
     "forms": "Forms",
     "settings": "Settings"
   },
@@ -100,9 +101,64 @@
     "input": "Input",
     "output": "Output"
   },
+  "accounting": {
+    "tabs": {
+      "chart": "Chart of Accounts",
+      "journals": "Journals",
+      "newEntry": "New entry",
+      "trialBalance": "Trial Balance",
+      "generalLedger": "General Ledger"
+    },
+    "types": {
+      "asset": "Asset",
+      "liability": "Liability",
+      "equity": "Equity",
+      "income": "Income",
+      "expense": "Expense"
+    },
+    "account": {
+      "code": "Code",
+      "name": "Name",
+      "type": "Type",
+      "postable": "Postable",
+      "add": "Add account"
+    },
+    "entry": {
+      "date": "Date",
+      "memo": "Memo",
+      "account": "Account",
+      "debit": "Debit",
+      "credit": "Credit",
+      "lineMemo": "Line memo",
+      "totals": "Totals",
+      "balanced": "Balanced",
+      "unbalanced": "Unbalanced",
+      "addLine": "Add line",
+      "post": "Post entry",
+      "invalidAmount": "Invalid amount",
+      "needLines": "At least two lines with amounts are required"
+    },
+    "journals": {
+      "empty": "No journal entries yet.",
+      "number": "Entry no.",
+      "period": "Period",
+      "total": "Total"
+    },
+    "report": {
+      "period": "Period",
+      "allPeriods": "All periods",
+      "pickAccount": "Pick an account",
+      "closing": "Closing balance",
+      "running": "Running balance",
+      "noActivity": "No activity.",
+      "all": "All"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "comingSoon": "Coming soon",
-    "delete": "Delete"
+    "delete": "Delete",
+    "yes": "Yes",
+    "no": "No"
   }
 }

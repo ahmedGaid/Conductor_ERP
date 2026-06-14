@@ -1,0 +1,75 @@
+.acct-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.acct-page__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.acct-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.acct-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.acct-table th,
+.acct-table td {
+  text-align: start;
+  padding-inline: var(--space-4);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.acct-table th {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.acct-table__num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.acct-table tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.acct-table tfoot td {
+  font-weight: var(--font-weight-bold);
+  border-block-start: 2px solid var(--color-border);
+}
+
+.acct-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.acct-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.acct-balanced {
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
+}
+
+.acct-unbalanced {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-medium);
+}

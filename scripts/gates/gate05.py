@@ -17,6 +17,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 ACCT = REPO_ROOT / "erp" / "accounting"
+WEB_SRC = REPO_ROOT / "apps" / "web" / "src"
 
 ACCOUNTING_TESTS = ["erp/accounting/tests"]
 
@@ -66,3 +67,25 @@ def check() -> None:
 
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
+
+    # 7. The React accounting screens exist and are wired (build/parity/CSS scans are gate03's job).
+    for rel in (
+        "api/accounting.ts",
+        "lib/money.ts",
+        "pages/accounting/ChartOfAccountsPage.tsx",
+        "pages/accounting/JournalEntryPage.tsx",
+        "pages/accounting/JournalListPage.tsx",
+        "pages/accounting/JournalDetailPage.tsx",
+        "pages/accounting/TrialBalancePage.tsx",
+        "pages/accounting/GeneralLedgerPage.tsx",
+    ):
+        _assert((WEB_SRC / rel).is_file(), f"missing accounting screen: src/{rel}")
+
+    app = (WEB_SRC / "App.tsx").read_text(encoding="utf-8")
+    for route in ("/accounting", "/accounting/journals/new", "/accounting/trial-balance"):
+        _assert(route in app, f"App.tsx missing accounting route: {route}")
+
+    # The journal entry form must post via the typed client and guard balance client-side.
+    entry = (WEB_SRC / "pages" / "accounting" / "JournalEntryPage.tsx").read_text(encoding="utf-8")
+    _assert("postJournal" in entry, "journal entry form does not post via the API client")
+    _assert("balanced" in entry, "journal entry form does not surface a balance check")

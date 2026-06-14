@@ -1,0 +1,66 @@
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+
+import { listJournals } from "../../api/accounting";
+import { useAsync } from "../../hooks/useAsync";
+import { formatMinor } from "../../lib/money";
+import { Bdi } from "../../components/Bdi";
+import { AccountingNav } from "./AccountingNav";
+import "./accounting.css";
+
+export function JournalListPage() {
+  const { t } = useTranslation();
+  const { data, loading, error } = useAsync(() => listJournals(), []);
+
+  return (
+    <section className="acct-page">
+      <div className="acct-page__head">
+        <h1>{t("nav.accounting")}</h1>
+        <Link className="btn btn--primary" to="/accounting/journals/new">
+          {t("accounting.tabs.newEntry")}
+        </Link>
+      </div>
+      <AccountingNav />
+
+      {loading && <p className="muted">{t("common.loading")}</p>}
+      {error && <p className="error-text">{error}</p>}
+      {data && data.length === 0 && <p className="muted">{t("accounting.journals.empty")}</p>}
+
+      {data && data.length > 0 && (
+        <div className="card acct-table-wrap">
+          <table className="acct-table">
+            <thead>
+              <tr>
+                <th>{t("accounting.journals.number")}</th>
+                <th>{t("accounting.entry.date")}</th>
+                <th>{t("accounting.journals.period")}</th>
+                <th>{t("accounting.entry.memo")}</th>
+                <th className="acct-table__num">{t("accounting.journals.total")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((e) => {
+                const total = e.lines.reduce((s, l) => s + l.debit, 0);
+                return (
+                  <tr key={e.id}>
+                    <td>
+                      <Link to={`/accounting/journals/${e.id}`} className="latin">
+                        {e.number}
+                      </Link>
+                    </td>
+                    <td className="latin">{e.date}</td>
+                    <td className="latin">{e.period_code}</td>
+                    <td>{e.memo}</td>
+                    <td className="acct-table__num">
+                      <Bdi>{formatMinor(total, e.currency)}</Bdi>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}

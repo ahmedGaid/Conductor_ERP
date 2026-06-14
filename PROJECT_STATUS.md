@@ -26,6 +26,14 @@ reports/trial-balance, reports/general-ledger) behind RBAC (Accountant/Branch Ma
 COA + current FY + 12 open monthly periods). Note: `models.py` re-exports from `domain/models.py`
 so Django discovers them while keeping the strict layout.
 
+Stage 5b (frontend, gate05 extended) added the **React accounting screens** under `/accounting`
+(sidebar "Accounting" + in-page sub-nav): Chart of Accounts (list + add), Journal Entry form
+(dynamic lines, live debit/credit totals + balance guard, post), Journal list + detail, Trial
+Balance (period filter, balanced indicator), General Ledger (account picker, running balance).
+`lib/money.ts` formats/parses at the edge; integer minor units stay on the wire. i18n keys added
+with ar/en parity. gate05 also asserts the screens exist and the entry form posts via the API +
+guards balance client-side.
+
 Stage 4 delivered (gate04): the **workflow/instance DRF API** + the **React platform screens**.
 Backend (`erp/workflow/{serializers,services,views,urls}.py`, mounted at `/api/workflow/`):
 list/create/retrieve/update workflows as a full graph (header + nodes + edges, edges referenced by
@@ -143,11 +151,10 @@ REMAINING for Stage 0:
 - Then: `git add -A && git commit` the Stage 0 baseline (only when user asks / after gate green).
 
 ## Next stages
-- **Stage 5b — extend Accounting (NEXT):** cost centers, tax codes + ETA e-invoice records, bank
-  accounts + reconciliation, budgets, fixed assets + depreciation, and the statement suite (Income
-  Statement, Balance Sheet, Cash Flow, AR/AP aging, VAT return). Reuse the GL core's `post_journal`.
-  Also: build the React accounting screens (COA, journal entry, trial balance, GL) reusing the
-  Stage 3/4 frontend foundation.
+- **Stage 5b — DONE (frontend accounting screens).** Remaining Accounting depth (**Stage 5b-2, NEXT
+  option**): cost centers, tax codes + ETA e-invoice records, bank accounts + reconciliation,
+  budgets, fixed assets + depreciation, and the statement suite (Income Statement, Balance Sheet,
+  Cash Flow, AR/AP aging, VAT return). Reuse the GL core's `post_journal`.
 - **Stage 5c+ — remaining modules:** Inventory → Sales → Purchasing → CRM, each isolated under
   `erp/` in the strict `{api,domain,services,repositories,contracts,events,tests,docs}` layout,
   reusing engine + audit + events + i18n + RBAC + the accounting `contracts` (post to GL via events).

@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "لوحة المعلومات",
     "workflows": "مسارات العمل",
+    "accounting": "المحاسبة",
     "forms": "النماذج",
     "settings": "الإعدادات"
   },
@@ -100,9 +101,64 @@
     "input": "المدخلات",
     "output": "المخرجات"
   },
+  "accounting": {
+    "tabs": {
+      "chart": "دليل الحسابات",
+      "journals": "القيود",
+      "newEntry": "قيد جديد",
+      "trialBalance": "ميزان المراجعة",
+      "generalLedger": "دفتر الأستاذ"
+    },
+    "types": {
+      "asset": "أصول",
+      "liability": "خصوم",
+      "equity": "حقوق ملكية",
+      "income": "إيرادات",
+      "expense": "مصروفات"
+    },
+    "account": {
+      "code": "الرمز",
+      "name": "الاسم",
+      "type": "النوع",
+      "postable": "قابل للترحيل",
+      "add": "إضافة حساب"
+    },
+    "entry": {
+      "date": "التاريخ",
+      "memo": "البيان",
+      "account": "الحساب",
+      "debit": "مدين",
+      "credit": "دائن",
+      "lineMemo": "بيان السطر",
+      "totals": "الإجماليات",
+      "balanced": "متوازن",
+      "unbalanced": "غير متوازن",
+      "addLine": "إضافة سطر",
+      "post": "ترحيل القيد",
+      "invalidAmount": "قيمة غير صالحة",
+      "needLines": "يلزم سطران على الأقل بمبالغ"
+    },
+    "journals": {
+      "empty": "لا توجد قيود بعد.",
+      "number": "رقم القيد",
+      "period": "الفترة",
+      "total": "الإجمالي"
+    },
+    "report": {
+      "period": "الفترة",
+      "allPeriods": "كل الفترات",
+      "pickAccount": "اختر حسابًا",
+      "closing": "الرصيد الختامي",
+      "running": "الرصيد الجاري",
+      "noActivity": "لا توجد حركة.",
+      "all": "الكل"
+    }
+  },
   "common": {
     "loading": "جارٍ التحميل…",
     "comingSoon": "قريبًا",
-    "delete": "حذف"
+    "delete": "حذف",
+    "yes": "نعم",
+    "no": "لا"
   }
 }

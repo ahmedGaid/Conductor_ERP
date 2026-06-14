@@ -3,11 +3,12 @@ import { NavLink } from "react-router-dom";
 
 import "./Sidebar.css";
 
-type NavKey = "dashboard" | "workflows" | "forms" | "settings";
+type NavKey = "dashboard" | "workflows" | "accounting" | "forms" | "settings";
 
 const NAV_ITEMS: { key: NavKey; icon: string; to: string }[] = [
   { key: "dashboard", icon: "▣", to: "/" },
   { key: "workflows", icon: "⇄", to: "/workflows" },
+  { key: "accounting", icon: "Σ", to: "/accounting" },
   { key: "forms", icon: "▤", to: "/forms" },
   { key: "settings", icon: "⚙", to: "/settings" },
 ];
