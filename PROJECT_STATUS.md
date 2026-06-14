@@ -1,13 +1,26 @@
 # PROJECT STATUS — General ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-14 (Stages 0–3 complete; starting Stage 4)**.
+> meaningful step. Last updated: **2026-06-14 (Stages 0–4 complete; Stage 5 next)**.
 
 ## CURRENT POSITION
-**Stages 0, 1, 2, 3 COMPLETE — `gate:all` (00, 01, 02, 03) is GREEN.** No active blocker.
-Next: **Stage 4 — Platform screens** (dashboard with real metrics, workflow list, React Flow canvas
-build/save round-trip, node config panel, execution viewer) **+ the workflow/instance DRF API** the
-screens call (not yet built). See plan.
+**Stages 0, 1, 2, 3, 4 COMPLETE — `gate:all` (00, 01, 02, 03, 04) is GREEN.** No active blocker.
+Next: **Stage 5 — ERP modules** in questionnaire priority order (Accounting → Inventory → Sales →
+Purchasing → CRM), each isolated and reusing engine + audit + events + i18n + RBAC. See plan.
+
+Stage 4 delivered (gate04): the **workflow/instance DRF API** + the **React platform screens**.
+Backend (`erp/workflow/{serializers,services,views,urls}.py`, mounted at `/api/workflow/`):
+list/create/retrieve/update workflows as a full graph (header + nodes + edges, edges referenced by
+node **key** so a definition round-trips), `save_graph` upserts nodes by key (running instances
+survive an edit) + bumps version, start instance, list/filter instances, instance detail (node-run
+timeline + logs), approve/reject (re-enters the engine), dashboard metrics from real data. 9 API
+tests (`erp/workflow/tests/test_api.py`) prove round-trip, lifecycle, node-level logs, metrics.
+Frontend (`apps/web/src/`): JWT auth (`auth/AuthContext`) + login screen, typed API client
+(`api/`), HashRouter, dashboard (real metrics), workflow list, **React Flow canvas** (`@xyflow/react`)
+with palette + connect + node/edge inspector (`pages/canvas/NodeConfigPanel`) + save/run, and an
+execution viewer (status pills, node timeline, input/output, node logs, approve/reject). The graph
+keeps an LTR coordinate space inside an otherwise RTL-mirrored shell. gate03's full `npm run build`
++ i18n-parity + token/logical-CSS scans cover the new screens too.
 
 Stage 3 delivered (`apps/web/`, gate03): React 18 + TS + Vite frontend, **Arabic/RTL by default**
 (`index.html` lang=ar dir=rtl; i18next fallback `ar`), live AR↔EN switch that re-applies
@@ -37,7 +50,7 @@ bans unsafe SQL building, eval/exec, and `random.*` in the engine.
 
 Run gates: `cd C:\AhmedGaid\ERP; .\.venv\Scripts\python.exe scripts\gates\_run.py all`
 Note: `erp` Postgres role granted CREATEDB (for pytest test DB).
-Note: workflow/instance HTTP API (DRF endpoints) not yet built — add alongside Stage 3/4.
+Note: workflow/instance HTTP API (DRF endpoints) is built (Stage 4) under `/api/workflow/`.
 
 ## What this project is
 Customer-hosted, single-tenant **Django modular-monolith ERP** (Python 3.13 + DRF), React+TS
@@ -112,12 +125,13 @@ REMAINING for Stage 0:
 - Then: `git add -A && git commit` the Stage 0 baseline (only when user asks / after gate green).
 
 ## Next stages
-- **Stage 4 — Platform screens (NEXT):** workflow/instance **DRF API** (CRUD workflows, start/list
-  instances, approve/reject, node-level execution logs) + React screens: dashboard (real metrics),
-  workflow list, **React Flow** canvas (build/save/round-trip), node config panel, execution viewer
-  (node timeline, status pills, approve/reject). gate04 = canvas save→reload round-trips; viewer
-  shows node-level logs; screens mirror in RTL.
-- Stage 5 — ERP modules. Stage 6 — integrations/reporting. Stage 7 — hardening/deploy. (See plan.)
+- **Stage 5 — ERP modules (NEXT):** build in questionnaire priority order, each as an isolated
+  module under `erp/` with the strict `{api,domain,services,repositories,contracts,events,tests,docs}`
+  layout, reusing the engine + audit + events + i18n + RBAC. Order: **Accounting** (double-entry GL,
+  COA, journals, periods, tax/ETA e-invoice, budgets, fixed assets) → Inventory → Sales → Purchasing
+  → CRM. Per-module gate = its acceptance criterion (e.g. posting an invoice atomically updates
+  stock + AR + GL; trial balance always balances). Money as integer minor units + currency.
+- Stage 6 — integrations/reporting/exports. Stage 7 — hardening/deploy. (See plan.)
 
 ## How to resume
 Read this file + the plan + `DECISIONS.md`, clear the active blocker, run `gate:00`, then continue

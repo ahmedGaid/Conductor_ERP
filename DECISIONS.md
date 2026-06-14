@@ -80,6 +80,31 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
   honouring the "no cloud-only deps" customer-hosting constraint. `<bdi>` isolates LTR tokens
   (codes/numbers/English) inside RTL text.
 
+## Platform screens + workflow API (Stage 4)
+
+- **Edges are exchanged by node `key`, not DB id.** The graph API (`GET/POST/PUT
+  /api/workflow/workflows`) serializes edges as `{source: key, target: key, condition, ordering}`.
+  This makes a definition round-trip cleanly (save → reload → identical structure) and keeps saved
+  payloads stable across re-saves — proven by `test_save_graph_round_trips`.
+- **`save_graph` upserts nodes by key; edges are replaced wholesale.** Nodes that persist across an
+  edit keep their DB id, so a *running* instance pointing at a node survives a workflow edit. Edges
+  aren't referenced by instances, so they're deleted+recreated. Every save bumps `Workflow.version`.
+- **Validation lives in the service, before any write:** exactly one start node, unique node keys,
+  edges reference existing nodes, and edge `ordering` is unique per source (the engine's deterministic
+  selection depends on it). Invalid graphs return 400 and write nothing.
+- **Frontend is a JWT SPA.** A login screen obtains the access token (stored in `localStorage`), the
+  fetch client attaches it as a Bearer and unwraps the `{data}` / `{error}` envelope; a 401 clears
+  the token. Routing is **HashRouter** so the static bundle works behind Django with no server-side
+  route config.
+- **Canvas = React Flow (`@xyflow/react`).** Chosen over a hand-rolled SVG editor: mature, handles
+  pan/zoom/minimap/connection UX. The graph pane is wrapped `dir="ltr"` (a graph coordinate space
+  isn't a reading direction) while the surrounding shell stays RTL — the rest of Stage 4's CSS is
+  still logical-only and token-driven, enforced by gate03's scans over all of `apps/web/src`.
+- **gate04 proves the contract at the API level** (round-trip, start→waiting→approve/reject,
+  node-level logs in the viewer payload, real metrics) and statically asserts the screens are wired;
+  it does **not** re-run the frontend build — gate03 already does a full `npm run build` that covers
+  the new screens (typecheck + i18n parity + token/logical-CSS discipline).
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

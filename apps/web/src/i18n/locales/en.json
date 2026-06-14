@@ -13,7 +13,8 @@
     "search": "Search",
     "commandPlaceholder": "Search or run a command…",
     "openMenu": "Open menu",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "logout": "Sign out"
   },
   "language": {
     "label": "Language",
@@ -21,14 +22,87 @@
     "english": "English",
     "switchTo": "Switch to {{name}}"
   },
+  "login": {
+    "subtitle": "Sign in to continue",
+    "username": "Username",
+    "password": "Password",
+    "otp": "Verification code",
+    "otpRequired": "Enter your two-factor code",
+    "submit": "Sign in"
+  },
   "dashboard": {
     "heading": "Dashboard",
     "welcome": "Welcome to the ERP system",
     "intro": "This is the foundation shell. Modules will appear here over time.",
-    "directionNote": "Current UI direction: {{dir}} — language: {{lang}}."
+    "directionNote": "Current UI direction: {{dir}} — language: {{lang}}.",
+    "workflowsTotal": "Total workflows",
+    "workflowsActive": "Active workflows",
+    "instancesTotal": "Total instances",
+    "instancesWaiting": "Awaiting decision",
+    "instancesFailed": "Failed",
+    "byStatus": "Instances by status"
+  },
+  "workflow": {
+    "create": "New workflow",
+    "untitled": "Untitled workflow",
+    "name": "Name",
+    "version": "Version",
+    "status": "Status",
+    "nodes": "Nodes",
+    "instances": "Instances",
+    "empty": "No workflows yet. Create your first one.",
+    "statusValue": {
+      "active": "Active",
+      "archived": "Archived"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "running": "Running",
+    "waiting": "Waiting",
+    "failed": "Failed",
+    "completed": "Completed"
+  },
+  "nodeType": {
+    "start": "Start",
+    "api_call": "API call",
+    "approval": "Approval",
+    "condition": "Condition",
+    "script": "Script",
+    "end": "End"
+  },
+  "canvas": {
+    "save": "Save",
+    "saved": "Saved",
+    "saveFirst": "Save the workflow first",
+    "run": "Run",
+    "applyChanges": "Apply",
+    "applied": "Applied",
+    "selectHint": "Select a node or edge to edit its settings.",
+    "invalidJson": "Invalid JSON",
+    "nodeInspector": "Node settings",
+    "edgeInspector": "Edge settings",
+    "nodeKey": "Key",
+    "nodeType": "Type",
+    "config": "Config (JSON)",
+    "condition": "Condition (JSON)",
+    "conditionPlaceholder": "Leave empty for the default edge",
+    "ordering": "Ordering"
+  },
+  "instance": {
+    "openWorkflow": "Open workflow",
+    "awaitingDecision": "Awaiting a decision at node: {{node}}",
+    "approve": "Approve",
+    "reject": "Reject",
+    "timeline": "Execution timeline",
+    "noRuns": "No execution steps yet.",
+    "attempt": "Attempt",
+    "input": "Input",
+    "output": "Output"
   },
   "common": {
     "loading": "Loading…",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "delete": "Delete"
   }
 }

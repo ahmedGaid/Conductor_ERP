@@ -11,4 +11,6 @@ urlpatterns = [
     path("", include("erp.monitoring.urls")),
     # Identity / auth API — Stage 1 (skeleton mounted now).
     path("api/identity/", include("erp.identity.urls")),
+    # Workflow / instance API — Stage 4 (platform screens backend).
+    path("api/workflow/", include("erp.workflow.urls")),
 ]

@@ -1,0 +1,33 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-block: 0.125rem;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-ui);
+  white-space: nowrap;
+}
+
+.pill--pending {
+  color: var(--color-status-pending);
+  background: var(--color-status-pending-bg);
+}
+.pill--running {
+  color: var(--color-status-running);
+  background: var(--color-status-running-bg);
+}
+.pill--waiting {
+  color: var(--color-status-waiting);
+  background: var(--color-status-waiting-bg);
+}
+.pill--failed {
+  color: var(--color-status-failed);
+  background: var(--color-status-failed-bg);
+}
+.pill--completed {
+  color: var(--color-status-completed);
+  background: var(--color-status-completed-bg);
+}

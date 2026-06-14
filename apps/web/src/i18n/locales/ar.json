@@ -13,7 +13,8 @@
     "search": "بحث",
     "commandPlaceholder": "ابحث أو نفّذ أمرًا…",
     "openMenu": "فتح القائمة",
-    "skipToContent": "تخطٍّ إلى المحتوى"
+    "skipToContent": "تخطٍّ إلى المحتوى",
+    "logout": "تسجيل الخروج"
   },
   "language": {
     "label": "اللغة",
@@ -21,14 +22,87 @@
     "english": "English",
     "switchTo": "التبديل إلى {{name}}"
   },
+  "login": {
+    "subtitle": "سجّل الدخول للمتابعة",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "otp": "رمز التحقق",
+    "otpRequired": "أدخل رمز التحقق بخطوتين",
+    "submit": "تسجيل الدخول"
+  },
   "dashboard": {
     "heading": "لوحة المعلومات",
     "welcome": "مرحبًا بك في نظام تخطيط الموارد",
     "intro": "هذه هي الواجهة الأساسية. الوحدات ستظهر هنا تباعًا.",
-    "directionNote": "اتجاه الواجهة الحالي: {{dir}} — اللغة: {{lang}}."
+    "directionNote": "اتجاه الواجهة الحالي: {{dir}} — اللغة: {{lang}}.",
+    "workflowsTotal": "إجمالي المسارات",
+    "workflowsActive": "المسارات النشطة",
+    "instancesTotal": "إجمالي التنفيذات",
+    "instancesWaiting": "بانتظار قرار",
+    "instancesFailed": "فشلت",
+    "byStatus": "التنفيذات حسب الحالة"
+  },
+  "workflow": {
+    "create": "مسار جديد",
+    "untitled": "مسار بدون عنوان",
+    "name": "الاسم",
+    "version": "الإصدار",
+    "status": "الحالة",
+    "nodes": "العُقد",
+    "instances": "التنفيذات",
+    "empty": "لا توجد مسارات بعد. أنشئ أول مسار.",
+    "statusValue": {
+      "active": "نشط",
+      "archived": "مؤرشف"
+    }
+  },
+  "status": {
+    "pending": "قيد الانتظار",
+    "running": "قيد التنفيذ",
+    "waiting": "بانتظار قرار",
+    "failed": "فشل",
+    "completed": "مكتمل"
+  },
+  "nodeType": {
+    "start": "بداية",
+    "api_call": "استدعاء API",
+    "approval": "موافقة",
+    "condition": "شرط",
+    "script": "سكربت",
+    "end": "نهاية"
+  },
+  "canvas": {
+    "save": "حفظ",
+    "saved": "تم الحفظ",
+    "saveFirst": "احفظ المسار أولًا",
+    "run": "تشغيل",
+    "applyChanges": "تطبيق",
+    "applied": "تم التطبيق",
+    "selectHint": "اختر عقدة أو وصلة لتحرير إعداداتها.",
+    "invalidJson": "صيغة JSON غير صالحة",
+    "nodeInspector": "إعدادات العقدة",
+    "edgeInspector": "إعدادات الوصلة",
+    "nodeKey": "المُعرّف",
+    "nodeType": "النوع",
+    "config": "الإعدادات (JSON)",
+    "condition": "الشرط (JSON)",
+    "conditionPlaceholder": "اتركه فارغًا للوصلة الافتراضية",
+    "ordering": "الترتيب"
+  },
+  "instance": {
+    "openWorkflow": "فتح المسار",
+    "awaitingDecision": "بانتظار قرار عند العقدة: {{node}}",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "timeline": "مسار التنفيذ",
+    "noRuns": "لا توجد خطوات تنفيذ بعد.",
+    "attempt": "محاولة",
+    "input": "المدخلات",
+    "output": "المخرجات"
   },
   "common": {
     "loading": "جارٍ التحميل…",
-    "comingSoon": "قريبًا"
+    "comingSoon": "قريبًا",
+    "delete": "حذف"
   }
 }

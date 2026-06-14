@@ -19,8 +19,11 @@
   --palette-brand-600: #2563eb;
   --palette-brand-100: #dbeafe;
   --palette-success-600: #16a34a;
+  --palette-success-100: #dcfce7;
   --palette-warning-600: #d97706;
+  --palette-warning-100: #fef3c7;
   --palette-danger-600: #dc2626;
+  --palette-danger-100: #fee2e2;
 
   /* ---- Semantic colour (public) ---- */
   --color-bg: var(--palette-ink-050);
@@ -34,8 +37,23 @@
   --color-brand-strong: var(--palette-brand-700);
   --color-brand-subtle: var(--palette-brand-100);
   --color-success: var(--palette-success-600);
+  --color-success-subtle: var(--palette-success-100);
   --color-warning: var(--palette-warning-600);
+  --color-warning-subtle: var(--palette-warning-100);
   --color-danger: var(--palette-danger-600);
+  --color-danger-subtle: var(--palette-danger-100);
+
+  /* ---- Status colour mapping (instance / node run states) ---- */
+  --color-status-pending: var(--palette-ink-500);
+  --color-status-pending-bg: var(--palette-ink-100);
+  --color-status-running: var(--palette-brand-600);
+  --color-status-running-bg: var(--palette-brand-100);
+  --color-status-waiting: var(--palette-warning-600);
+  --color-status-waiting-bg: var(--palette-warning-100);
+  --color-status-failed: var(--palette-danger-600);
+  --color-status-failed-bg: var(--palette-danger-100);
+  --color-status-completed: var(--palette-success-600);
+  --color-status-completed-bg: var(--palette-success-100);
 
   /* ---- Spacing scale ---- */
   --space-1: 0.25rem;

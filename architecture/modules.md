@@ -10,9 +10,9 @@
 | identity | Auth (JWT), users, RBAC roles, TOTP 2FA, branch scoping | 0–1 | done (gate01) |
 | audit | Immutable append-only audit trail + service | 0–1 | done (gate01) |
 | monitoring | Health + system-check (db/redis/storage/workers) | 0–1 | done (gate01) |
-| workflow | Graph workflow engine (deterministic, crash-resumable, idempotent) + REST/SQL/Webhook adapters | 2 | done (gate02) |
+| workflow | Graph workflow engine (deterministic, crash-resumable, idempotent) + REST/SQL/Webhook adapters + DRF API (`/api/workflow/`: graph CRUD, instances, approve/reject, metrics) | 2, 4 | done (gate02, gate04) |
 | forms | Dynamic forms builder feeding workflows | 2 | done (gate02) |
-| web (apps/web) | React+TS+Vite frontend: Arabic/RTL-first i18n, design tokens, logical CSS, app shell | 3 | done (gate03) |
+| web (apps/web) | React+TS+Vite frontend: Arabic/RTL-first i18n, design tokens, logical CSS, app shell, platform screens (dashboard, workflow list, React Flow canvas, execution viewer) | 3, 4 | done (gate03, gate04) |
 | accounting | GL, COA, journals, periods, tax/e-invoice, budgets, fixed assets | 5 | planned |
 | inventory | Items, warehouses, stock movements/balances, batch/serial/expiry, counts | 5 | planned |
 | sales | Quotation→SO→delivery→invoice→receipt→returns | 5 | planned |
