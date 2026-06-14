@@ -105,6 +105,32 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
   it does **not** re-run the frontend build — gate03 already does a full `npm run build` that covers
   the new screens (typecheck + i18n parity + token/logical-CSS discipline).
 
+## Accounting — General Ledger core (Stage 5a)
+
+- **Money is integer minor units, never a float.** `domain/money.py` `Money(minor:int, currency)`
+  (e.g. `1050` == `10.50 EGP`); binary floats can't represent decimals exactly and accounting must be
+  exact. Ledger amount columns are `BigIntegerField`; `Money` forbids cross-currency arithmetic and
+  rejects float construction. gate05 bans `FloatField`/`DecimalField` in the accounting models.
+- **Default currency EGP** (Egypt deployment: ETA e-invoicing, Africa/Cairo), 2 minor digits.
+- **Normal-balance rule is the single sign convention.** `domain/accounts.py`: assets/expenses are
+  debit-normal, liabilities/equity/income credit-normal; `signed_balance()` drives every report so
+  balances read positive in the account's natural direction.
+- **`post_journal` is the one double-entry invariant point.** It enforces balanced (Σdebit==Σcredit,
+  total>0), ≥2 lines, each line exactly one side >0 and non-negative, postable+active accounts, and
+  an OPEN period — atomically. Invalid → raises an `ACC-NNN` AppError and writes nothing.
+- **Posted entries are immutable; undo = reversal.** `reverse_journal` posts the mirror entry and
+  links `reverses`; we never edit/delete a posted entry (audit integrity).
+- **Period lock = posting gate.** Posting is allowed only to an OPEN `Period`; closing a period
+  blocks further posting to it (`ACC-003`). Entry date must fall in a period (`ACC-006`) unless an
+  explicit `period_code` is given.
+- **Strict module layout, models re-exported.** The module follows
+  `{domain,repositories,services,contracts,events,api,tests,docs}`. ORM models live in
+  `domain/models.py`; `accounting/models.py` re-exports them so Django's app/migrations discovery
+  works without breaking the layout. **Gotcha recorded:** a sibling `events/` *package* would shadow
+  `events.py` — keep cross-module event-name constants in the `events.py` *module* only.
+- **Other modules touch accounting only via `contracts/`** (`post_journal`, `Money`, event names) —
+  never the ORM. Stage 5c modules will post to the GL through this surface / the `JournalPosted` bus.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

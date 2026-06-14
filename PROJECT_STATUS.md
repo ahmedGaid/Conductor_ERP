@@ -1,12 +1,30 @@
 # PROJECT STATUS — General ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-14 (Stages 0–4 complete; Stage 5 next)**.
+> meaningful step. Last updated: **2026-06-14 (Stages 0–4 + Accounting GL core done; Stage 5b next)**.
 
 ## CURRENT POSITION
-**Stages 0, 1, 2, 3, 4 COMPLETE — `gate:all` (00, 01, 02, 03, 04) is GREEN.** No active blocker.
-Next: **Stage 5 — ERP modules** in questionnaire priority order (Accounting → Inventory → Sales →
-Purchasing → CRM), each isolated and reusing engine + audit + events + i18n + RBAC. See plan.
+**Stages 0–4 COMPLETE + Stage 5a (Accounting GL core) COMPLETE — `gate:all` (00–05) is GREEN.**
+No active blocker. Next: **Stage 5b — extend Accounting** (cost centers, tax codes + ETA e-invoice
+records, bank accounts + reconciliation, budgets, fixed assets + depreciation, and the statement
+suite: IS, BS, Cash Flow, AR/AP aging, VAT), then the remaining modules (Inventory → Sales →
+Purchasing → CRM). See plan.
+
+Stage 5a delivered (`erp/accounting`, gate05): the **General Ledger core** in the strict module
+layout `{domain,repositories,services,contracts,events,api,tests,docs}`. `domain/money.py` =
+integer-minor-unit `Money` value object (no floats anywhere in the ledger; default EGP).
+`domain/accounts.py` = 5 account types + normal-balance/signed-balance rules. Models: Account (COA
+hierarchy, postable flag), FiscalYear, Period (open/closed lock), JournalEntry, JournalLine (DB
+check constraints: non-negative, not-both-sides). `services/posting.post_journal` is the single
+double-entry invariant point — atomic, balanced (debits==credits, total>0), ≥2 valid lines,
+postable accounts only, open period only; stamps posted, writes an immutable audit row, publishes
+`accounting.JournalPosted`; `reverse_journal` mirrors (never edit a posted entry).
+`services/reports` = trial balance (always balances) + general ledger (running signed balance).
+DRF API at `/api/accounting/` (accounts, fiscal-years, periods + close, journals post/list/detail,
+reports/trial-balance, reports/general-ledger) behind RBAC (Accountant/Branch Manager). 24 tests
+(money, posting invariants, reports, API, RBAC). Dev seed: `manage.py seed_accounting` (baseline
+COA + current FY + 12 open monthly periods). Note: `models.py` re-exports from `domain/models.py`
+so Django discovers them while keeping the strict layout.
 
 Stage 4 delivered (gate04): the **workflow/instance DRF API** + the **React platform screens**.
 Backend (`erp/workflow/{serializers,services,views,urls}.py`, mounted at `/api/workflow/`):
@@ -125,12 +143,16 @@ REMAINING for Stage 0:
 - Then: `git add -A && git commit` the Stage 0 baseline (only when user asks / after gate green).
 
 ## Next stages
-- **Stage 5 — ERP modules (NEXT):** build in questionnaire priority order, each as an isolated
-  module under `erp/` with the strict `{api,domain,services,repositories,contracts,events,tests,docs}`
-  layout, reusing the engine + audit + events + i18n + RBAC. Order: **Accounting** (double-entry GL,
-  COA, journals, periods, tax/ETA e-invoice, budgets, fixed assets) → Inventory → Sales → Purchasing
-  → CRM. Per-module gate = its acceptance criterion (e.g. posting an invoice atomically updates
-  stock + AR + GL; trial balance always balances). Money as integer minor units + currency.
+- **Stage 5b — extend Accounting (NEXT):** cost centers, tax codes + ETA e-invoice records, bank
+  accounts + reconciliation, budgets, fixed assets + depreciation, and the statement suite (Income
+  Statement, Balance Sheet, Cash Flow, AR/AP aging, VAT return). Reuse the GL core's `post_journal`.
+  Also: build the React accounting screens (COA, journal entry, trial balance, GL) reusing the
+  Stage 3/4 frontend foundation.
+- **Stage 5c+ — remaining modules:** Inventory → Sales → Purchasing → CRM, each isolated under
+  `erp/` in the strict `{api,domain,services,repositories,contracts,events,tests,docs}` layout,
+  reusing engine + audit + events + i18n + RBAC + the accounting `contracts` (post to GL via events).
+  Per-module gate = its acceptance criterion (e.g. posting an invoice atomically updates stock + AR
+  + GL). Money always integer minor units + currency.
 - Stage 6 — integrations/reporting/exports. Stage 7 — hardening/deploy. (See plan.)
 
 ## How to resume

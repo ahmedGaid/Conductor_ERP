@@ -13,7 +13,7 @@
 | workflow | Graph workflow engine (deterministic, crash-resumable, idempotent) + REST/SQL/Webhook adapters + DRF API (`/api/workflow/`: graph CRUD, instances, approve/reject, metrics) | 2, 4 | done (gate02, gate04) |
 | forms | Dynamic forms builder feeding workflows | 2 | done (gate02) |
 | web (apps/web) | React+TS+Vite frontend: Arabic/RTL-first i18n, design tokens, logical CSS, app shell, platform screens (dashboard, workflow list, React Flow canvas, execution viewer) | 3, 4 | done (gate03, gate04) |
-| accounting | GL, COA, journals, periods, tax/e-invoice, budgets, fixed assets | 5 | planned |
+| accounting | GL core done: COA, fiscal periods + lock, double-entry journals (atomic/balanced), trial balance, general ledger, integer-minor-unit Money, DRF API. Planned: tax/e-invoice, banks, budgets, fixed assets, statements | 5 | GL core done (gate05); rest planned |
 | inventory | Items, warehouses, stock movements/balances, batch/serial/expiry, counts | 5 | planned |
 | sales | Quotation→SO→delivery→invoice→receipt→returns | 5 | planned |
 | purchasing | PR→RFQ→PO→GRN→bill→payment, 3-way match | 5 | planned |

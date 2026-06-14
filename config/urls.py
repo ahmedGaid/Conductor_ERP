@@ -13,4 +13,6 @@ urlpatterns = [
     path("api/identity/", include("erp.identity.urls")),
     # Workflow / instance API — Stage 4 (platform screens backend).
     path("api/workflow/", include("erp.workflow.urls")),
+    # Accounting / GL API — Stage 5.
+    path("api/accounting/", include("erp.accounting.api.urls")),
 ]
