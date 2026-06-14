@@ -26,6 +26,8 @@ class Account(AuditedModel):
     # Group/header accounts aggregate children and cannot be posted to directly.
     is_postable = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
+    # Cash/bank accounts — drive the cash-flow statement.
+    is_cash = models.BooleanField(default=False)
     currency = models.CharField(max_length=3, default="EGP")
 
     class Meta:

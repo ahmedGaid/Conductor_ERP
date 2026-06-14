@@ -19,15 +19,15 @@ def _admin_client() -> APIClient:
 
 
 def _bootstrap(client) -> None:
-    for code, name, type_, postable in [
-        ("1000", "Cash", "asset", True),
-        ("3000", "Capital", "equity", True),
-        ("4000", "Sales", "income", True),
-        ("1100", "AR", "asset", True),
+    for code, name, type_, postable, is_cash in [
+        ("1000", "Cash", "asset", True, True),
+        ("3000", "Capital", "equity", True, False),
+        ("4000", "Sales", "income", True, False),
+        ("1100", "AR", "asset", True, False),
     ]:
         res = client.post(
             "/api/accounting/accounts",
-            {"code": code, "name": name, "type": type_, "is_postable": postable},
+            {"code": code, "name": name, "type": type_, "is_postable": postable, "is_cash": is_cash},
             format="json",
         )
         assert res.status_code == 201, res.data
@@ -119,6 +119,31 @@ def test_closed_period_blocks_posting_via_api():
     )
     assert res.status_code == 422
     assert res.data["error"]["code"] == "ACC-003"
+
+
+def test_financial_statements_via_api():
+    client = _admin_client()
+    _bootstrap(client)
+    # Cash sale: Dr Cash 400 / Cr Sales 400
+    assert _post_journal(
+        client,
+        [
+            {"account_code": "1000", "debit": 400_00, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 400_00},
+        ],
+    ).status_code == 201
+
+    inc = client.get("/api/accounting/reports/income-statement").data["data"]
+    assert inc["total_revenue"] == 400_00
+    assert inc["net_income"] == 400_00
+
+    bs = client.get("/api/accounting/reports/balance-sheet").data["data"]
+    assert bs["is_balanced"] is True
+    assert bs["total_assets"] == bs["total_liabilities_and_equity"] == 400_00
+
+    cf = client.get("/api/accounting/reports/cash-flow").data["data"]
+    assert cf["reconciles"] is True
+    assert cf["closing_balance"] == 400_00
 
 
 def test_accounting_requires_role():

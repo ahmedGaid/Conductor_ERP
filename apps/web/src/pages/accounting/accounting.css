@@ -73,3 +73,50 @@
   color: var(--color-danger);
   font-weight: var(--font-weight-medium);
 }
+
+/* ---- Financial statements ---- */
+.stmt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.stmt__section-title {
+  font-size: var(--font-size-md);
+  margin-block-end: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.stmt__net {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-block-start: 2px solid var(--color-border-strong);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+}
+
+.stmt__strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.stmt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.stmt-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (max-width: 60rem) {
+  .stmt-grid {
+    grid-template-columns: 1fr;
+  }
+}

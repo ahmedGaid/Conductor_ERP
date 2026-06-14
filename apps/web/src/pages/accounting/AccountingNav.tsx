@@ -9,6 +9,9 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "newEntry", to: "/accounting/journals/new" },
   { key: "trialBalance", to: "/accounting/trial-balance" },
   { key: "generalLedger", to: "/accounting/general-ledger" },
+  { key: "incomeStatement", to: "/accounting/income-statement" },
+  { key: "balanceSheet", to: "/accounting/balance-sheet" },
+  { key: "cashFlow", to: "/accounting/cash-flow" },
 ];
 
 export function AccountingNav() {

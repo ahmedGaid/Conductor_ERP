@@ -15,6 +15,7 @@ class AccountSerializer(serializers.Serializer):
     parent_code = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     is_postable = serializers.BooleanField(required=False, default=True)
     is_active = serializers.BooleanField(required=False, default=True)
+    is_cash = serializers.BooleanField(required=False, default=False)
     currency = serializers.CharField(max_length=3, required=False, default="EGP")
 
     def to_representation(self, obj) -> dict:
@@ -26,6 +27,7 @@ class AccountSerializer(serializers.Serializer):
             "parent_code": obj.parent.code if obj.parent_id else None,
             "is_postable": obj.is_postable,
             "is_active": obj.is_active,
+            "is_cash": obj.is_cash,
             "currency": obj.currency,
         }
 

@@ -13,6 +13,9 @@ import { JournalEntryPage } from "./pages/accounting/JournalEntryPage";
 import { JournalDetailPage } from "./pages/accounting/JournalDetailPage";
 import { TrialBalancePage } from "./pages/accounting/TrialBalancePage";
 import { GeneralLedgerPage } from "./pages/accounting/GeneralLedgerPage";
+import { IncomeStatementPage } from "./pages/accounting/IncomeStatementPage";
+import { BalanceSheetPage } from "./pages/accounting/BalanceSheetPage";
+import { CashFlowStatementPage } from "./pages/accounting/CashFlowStatementPage";
 import type { ReactNode } from "react";
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -37,6 +40,9 @@ function Protected() {
           <Route path="/accounting/journals/:id" element={<JournalDetailPage />} />
           <Route path="/accounting/trial-balance" element={<TrialBalancePage />} />
           <Route path="/accounting/general-ledger" element={<GeneralLedgerPage />} />
+          <Route path="/accounting/income-statement" element={<IncomeStatementPage />} />
+          <Route path="/accounting/balance-sheet" element={<BalanceSheetPage />} />
+          <Route path="/accounting/cash-flow" element={<CashFlowStatementPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>

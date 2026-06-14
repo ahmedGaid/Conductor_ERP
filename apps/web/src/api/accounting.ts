@@ -143,3 +143,73 @@ export function generalLedger(account: string, period?: string): Promise<General
   if (period) q.set("period", period);
   return apiFetch<GeneralLedgerReport>(`/accounting/reports/general-ledger?${q.toString()}`);
 }
+
+// ---- Financial statements ----
+
+export interface StatementLine {
+  account_code: string;
+  account_name: string;
+  amount: number;
+}
+
+export interface IncomeStatementReport {
+  date_from: string | null;
+  date_to: string | null;
+  revenue: StatementLine[];
+  expenses: StatementLine[];
+  total_revenue: number;
+  total_expenses: number;
+  net_income: number;
+}
+
+export interface BalanceSheetReport {
+  as_of: string | null;
+  assets: StatementLine[];
+  liabilities: StatementLine[];
+  equity: StatementLine[];
+  total_assets: number;
+  total_liabilities: number;
+  total_equity: number;
+  net_income: number;
+  total_liabilities_and_equity: number;
+  is_balanced: boolean;
+}
+
+export interface CashFlowReport {
+  date_from: string | null;
+  date_to: string | null;
+  opening_balance: number;
+  cash_in: number;
+  cash_out: number;
+  net_change: number;
+  closing_balance: number;
+  reconciles: boolean;
+}
+
+interface RangeParams {
+  from?: string;
+  to?: string;
+  period?: string;
+}
+
+function rangeQuery(params: RangeParams): string {
+  const q = new URLSearchParams();
+  if (params.from) q.set("from", params.from);
+  if (params.to) q.set("to", params.to);
+  if (params.period) q.set("period", params.period);
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
+export function incomeStatement(params: RangeParams = {}): Promise<IncomeStatementReport> {
+  return apiFetch<IncomeStatementReport>(`/accounting/reports/income-statement${rangeQuery(params)}`);
+}
+
+export function balanceSheet(asOf?: string): Promise<BalanceSheetReport> {
+  const qs = asOf ? `?as_of=${encodeURIComponent(asOf)}` : "";
+  return apiFetch<BalanceSheetReport>(`/accounting/reports/balance-sheet${qs}`);
+}
+
+export function cashFlow(params: RangeParams = {}): Promise<CashFlowReport> {
+  return apiFetch<CashFlowReport>(`/accounting/reports/cash-flow${rangeQuery(params)}`);
+}

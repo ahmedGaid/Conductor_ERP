@@ -41,7 +41,10 @@ export function LoginPage() {
     <main className="login">
       <form className="login__card" onSubmit={onSubmit}>
         <div className="login__head">
-          <h1 className="login__title">{t("app.title")}</h1>
+          <div className="login__brand">
+            <span className="login__logo" aria-hidden="true">C</span>
+            <span className="login__wordmark">{t("app.title")}</span>
+          </div>
           <LanguageSwitcher />
         </div>
         <p className="login__subtitle">{t("login.subtitle")}</p>

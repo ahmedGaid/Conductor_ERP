@@ -65,6 +65,16 @@ def check() -> None:
     posting_src = _read("erp/accounting/services/posting.py")
     _assert("transaction.atomic" in posting_src, "post_journal is not wrapped in an atomic transaction")
 
+    # 5b. Financial statements exist, the balance sheet enforces the accounting equation, and the
+    #     statement endpoints are mounted.
+    stmt_src = _read("erp/accounting/services/statements.py")
+    for fn in ("def income_statement", "def balance_sheet", "def cash_flow"):
+        _assert(fn in stmt_src, f"statements service missing {fn}")
+    _assert("is_balanced" in stmt_src, "balance sheet does not assert the accounting equation")
+    wf_urls = _read("erp/accounting/api/urls.py")
+    for route in ("income-statement", "balance-sheet", "cash-flow"):
+        _assert(route in wf_urls, f"statement endpoint not mounted: {route}")
+
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
 
@@ -78,11 +88,21 @@ def check() -> None:
         "pages/accounting/JournalDetailPage.tsx",
         "pages/accounting/TrialBalancePage.tsx",
         "pages/accounting/GeneralLedgerPage.tsx",
+        "pages/accounting/IncomeStatementPage.tsx",
+        "pages/accounting/BalanceSheetPage.tsx",
+        "pages/accounting/CashFlowStatementPage.tsx",
     ):
         _assert((WEB_SRC / rel).is_file(), f"missing accounting screen: src/{rel}")
 
     app = (WEB_SRC / "App.tsx").read_text(encoding="utf-8")
-    for route in ("/accounting", "/accounting/journals/new", "/accounting/trial-balance"):
+    for route in (
+        "/accounting",
+        "/accounting/journals/new",
+        "/accounting/trial-balance",
+        "/accounting/income-statement",
+        "/accounting/balance-sheet",
+        "/accounting/cash-flow",
+    ):
         _assert(route in app, f"App.tsx missing accounting route: {route}")
 
     # The journal entry form must post via the typed client and guard balance client-side.

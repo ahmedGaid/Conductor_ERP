@@ -131,6 +131,35 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
 - **Other modules touch accounting only via `contracts/`** (`post_journal`, `Money`, event names) —
   never the ORM. Stage 5c modules will post to the GL through this surface / the `JournalPosted` bus.
 
+## Product name + UI design (2026-06-14)
+
+- **Product name = "Conductor."** Client offered "Prism" and "Conductor"; chose Conductor — it
+  reflects the workflow/orchestration engine at the system's core (coordinating modules into one
+  performance) and is more distinctive than the heavily-used "Prism". Applied to the wordmark/logo
+  tile ("C"), browser title, and i18n `app.title` in both locales; the localized "ERP" phrase became
+  `app.tagline`.
+- **UI reference adopted from `files/preview.jpg`.** Modern dashboard language: icon sidebar with
+  logo + grouped nav + user footer, command-bar topbar (search + quick actions), KPI stat cards with
+  month-over-month % deltas, content panels, coloured status pills. Implemented with a refreshed
+  token set (slate neutrals, **near-black brand** for primary actions/logo, subtle layered shadows,
+  larger radii). Discipline unchanged: tokens-only hex, logical CSS only, i18n key-parity.
+
+## Accounting — financial statements (Stage 5b-2)
+
+- **Statements are pure functions of the posted GL** (`services/statements.py`); no separate
+  reporting store. Income Statement = income−expense over a date range/period; Balance Sheet =
+  assets vs liabilities+equity+current net income.
+- **The balance sheet always balances** by construction: the trial balance balances (Σdebit==Σcredit)
+  ⇒ Assets+Expenses = Liabilities+Equity+Income ⇒ Assets = Liabilities+Equity+(Income−Expense). The
+  report computes and asserts `is_balanced`; current-period net income is folded into equity.
+- **Cash accounts via an `Account.is_cash` flag** (migration 0002; seed marks Cash + Bank). Cash flow
+  = movement of those accounts; `closing == opening + in − out` and is independently **reconciled** to
+  the cash accounts' GL balance as of the end date.
+- **AR/AP aging + VAT return are deferred, on purpose.** True aging needs per-customer/vendor
+  open-item sub-ledgers (invoices with due dates) that only exist once Sales/Purchasing land; the GL
+  alone has account balances, not open items. Building a fake aging from balances would be wrong, so
+  it waits for those modules.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

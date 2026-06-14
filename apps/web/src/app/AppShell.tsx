@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
       <CommandBar />
       <main id="main" className="appshell__main">
-        {children}
+        <div className="appshell__content">{children}</div>
       </main>
     </div>
   );

@@ -1,21 +1,30 @@
 {
   "app": {
-    "title": "Enterprise Resource Planning",
-    "shortName": "ERP"
+    "title": "Conductor",
+    "shortName": "Conductor",
+    "tagline": "Enterprise Resource Planning"
   },
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Home",
     "workflows": "Workflows",
     "accounting": "Accounting",
     "forms": "Forms",
-    "settings": "Settings"
+    "settings": "Settings",
+    "modulesSoon": "Coming modules",
+    "sales": "Sales",
+    "purchasing": "Purchasing",
+    "inventory": "Inventory",
+    "crm": "CRM",
+    "reports": "Reports"
   },
   "shell": {
     "search": "Search",
-    "commandPlaceholder": "Search or run a command…",
+    "commandPlaceholder": "Search or type a command…",
     "openMenu": "Open menu",
     "skipToContent": "Skip to content",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "notifications": "Notifications",
+    "help": "Help"
   },
   "language": {
     "label": "Language",
@@ -32,10 +41,34 @@
     "submit": "Sign in"
   },
   "dashboard": {
-    "heading": "Dashboard",
-    "welcome": "Welcome to the ERP system",
-    "intro": "This is the foundation shell. Modules will appear here over time.",
-    "directionNote": "Current UI direction: {{dir}} — language: {{lang}}.",
+    "heading": "Home",
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}"
+    },
+    "subtitle": "Here's what's happening with your business today.",
+    "vsLastMonth": "vs last month",
+    "asOfNow": "as of now",
+    "totalRevenue": "Total Revenue",
+    "totalExpenses": "Total Expenses",
+    "netProfit": "Net Profit",
+    "cashBalance": "Cash Balance",
+    "topExpenses": "Top Expenses",
+    "noData": "No data yet.",
+    "netCashFlow": "Net Cash Flow",
+    "cashIn": "Cash In",
+    "cashOut": "Cash Out",
+    "recentJournals": "Recent Journal Entries",
+    "viewAll": "View all",
+    "shortcuts": "Shortcuts",
+    "action": {
+      "newJournal": "New Journal Entry",
+      "newWorkflow": "New Workflow",
+      "chart": "Chart of Accounts",
+      "trialBalance": "Trial Balance",
+      "incomeStatement": "Income Statement"
+    },
     "workflowsTotal": "Total workflows",
     "workflowsActive": "Active workflows",
     "instancesTotal": "Total instances",
@@ -107,7 +140,26 @@
       "journals": "Journals",
       "newEntry": "New entry",
       "trialBalance": "Trial Balance",
-      "generalLedger": "General Ledger"
+      "generalLedger": "General Ledger",
+      "incomeStatement": "Income Statement",
+      "balanceSheet": "Balance Sheet",
+      "cashFlow": "Cash Flow"
+    },
+    "stmt": {
+      "totalRevenue": "Total revenue",
+      "totalExpenses": "Total expenses",
+      "netIncome": "Net income",
+      "assets": "Assets",
+      "liabilities": "Liabilities",
+      "equity": "Equity",
+      "totalAssets": "Total assets",
+      "totalLiabilities": "Total liabilities",
+      "totalEquity": "Total equity",
+      "totalLiabEquity": "Total liabilities & equity",
+      "opening": "Opening balance",
+      "netChange": "Net change",
+      "reconciled": "Reconciled",
+      "notReconciled": "Not reconciled"
     },
     "types": {
       "asset": "Asset",
@@ -151,6 +203,7 @@
       "closing": "Closing balance",
       "running": "Running balance",
       "noActivity": "No activity.",
+      "asOf": "As of",
       "all": "All"
     }
   },
@@ -159,6 +212,7 @@
     "comingSoon": "Coming soon",
     "delete": "Delete",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "soon": "Soon"
   }
 }

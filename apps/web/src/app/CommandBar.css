@@ -1,5 +1,8 @@
 .commandbar {
   grid-area: topbar;
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 5;
   block-size: var(--topbar-size);
   background-color: var(--color-surface);
   border-block-end: 1px solid var(--color-border);
@@ -14,10 +17,17 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  max-inline-size: 32rem;
+  max-inline-size: 34rem;
   background-color: var(--color-surface-alt);
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   padding-inline: var(--space-3);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.commandbar__search:focus-within {
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
 }
 
 .commandbar__search-icon {
@@ -29,19 +39,35 @@
   border: none;
   background: transparent;
   color: var(--color-text);
-  padding-block: var(--space-2);
+  padding-block: 0.5rem;
+  padding-inline: 0;
   font-family: inherit;
   font-size: var(--font-size-sm);
 }
 
 .commandbar__input:focus {
   outline: none;
+  box-shadow: none;
+}
+
+.commandbar__kbd {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding-inline: var(--space-2);
+  padding-block: 0.0625rem;
 }
 
 .commandbar__actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  /* Pushes actions to the inline-end in both directions. */
+  gap: var(--space-2);
   margin-inline-start: auto;
+}
+
+.commandbar__new {
+  font-size: var(--font-size-lg);
+  line-height: 1;
 }

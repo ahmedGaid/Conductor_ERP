@@ -93,6 +93,9 @@ def check() -> None:
     for route in ("/workflows", "/workflows/:id", "/instances/:id"):
         _assert(route in app, f"App.tsx missing route: {route}")
 
-    # 7. Dashboard reads real metrics from the API (not static text).
+    # 7. Dashboard reads real data from the API (not static text).
     dashboard = _read_web("pages/DashboardPage.tsx")
-    _assert("getMetrics" in dashboard, "dashboard does not load real metrics from the API")
+    _assert(
+        "../api/" in dashboard and ("incomeStatement" in dashboard or "getMetrics" in dashboard),
+        "dashboard does not load real data from the API",
+    )

@@ -5,54 +5,82 @@
  *
  * Tokens are direction-agnostic: layout uses CSS logical properties (inline/block),
  * so the same tokens drive both RTL (Arabic, default) and LTR (English).
+ *
+ * Visual language ("Conductor"): clean, modern, near-monochrome with a near-black
+ * brand for primary actions/logo and green/red accents for deltas + status.
  */
 :root {
-  /* ---- Palette (raw, private) ---- */
+  /* ---- Palette (raw, private) — slate neutrals ---- */
   --palette-white: #ffffff;
-  --palette-ink-900: #0f172a;
-  --palette-ink-700: #334155;
-  --palette-ink-500: #64748b;
-  --palette-ink-300: #cbd5e1;
-  --palette-ink-100: #f1f5f9;
-  --palette-ink-050: #f8fafc;
+  --palette-ink-950: #0a0f1a;
+  --palette-ink-900: #111827;
+  --palette-ink-800: #1f2937;
+  --palette-ink-700: #374151;
+  --palette-ink-600: #4b5563;
+  --palette-ink-500: #6b7280;
+  --palette-ink-400: #9ca3af;
+  --palette-ink-300: #d1d5db;
+  --palette-ink-200: #e5e7eb;
+  --palette-ink-100: #f3f4f6;
+  --palette-ink-050: #f9fafb;
+
   --palette-brand-700: #1d4ed8;
   --palette-brand-600: #2563eb;
   --palette-brand-100: #dbeafe;
+
+  --palette-success-700: #15803d;
   --palette-success-600: #16a34a;
   --palette-success-100: #dcfce7;
+  --palette-warning-700: #b45309;
   --palette-warning-600: #d97706;
   --palette-warning-100: #fef3c7;
+  --palette-danger-700: #b91c1c;
   --palette-danger-600: #dc2626;
   --palette-danger-100: #fee2e2;
+  --palette-info-600: #0891b2;
+  --palette-info-100: #cffafe;
 
   /* ---- Semantic colour (public) ---- */
   --color-bg: var(--palette-ink-050);
   --color-surface: var(--palette-white);
   --color-surface-alt: var(--palette-ink-100);
-  --color-border: var(--palette-ink-300);
+  --color-surface-hover: var(--palette-ink-050);
+  --color-border: var(--palette-ink-200);
+  --color-border-strong: var(--palette-ink-300);
   --color-text: var(--palette-ink-900);
   --color-text-muted: var(--palette-ink-500);
+  --color-text-subtle: var(--palette-ink-400);
   --color-text-on-brand: var(--palette-white);
-  --color-brand: var(--palette-brand-600);
-  --color-brand-strong: var(--palette-brand-700);
-  --color-brand-subtle: var(--palette-brand-100);
+
+  /* Brand = near-black (primary buttons, logo, focus accents). */
+  --color-brand: var(--palette-ink-900);
+  --color-brand-strong: var(--palette-ink-950);
+  --color-brand-subtle: var(--palette-ink-100);
+  --color-accent: var(--palette-brand-600);
+  --color-accent-subtle: var(--palette-brand-100);
+
   --color-success: var(--palette-success-600);
+  --color-success-strong: var(--palette-success-700);
   --color-success-subtle: var(--palette-success-100);
   --color-warning: var(--palette-warning-600);
+  --color-warning-strong: var(--palette-warning-700);
   --color-warning-subtle: var(--palette-warning-100);
   --color-danger: var(--palette-danger-600);
+  --color-danger-strong: var(--palette-danger-700);
   --color-danger-subtle: var(--palette-danger-100);
+  --color-info: var(--palette-info-600);
+  --color-info-subtle: var(--palette-info-100);
 
-  /* ---- Status colour mapping (instance / node run states) ---- */
-  --color-status-pending: var(--palette-ink-500);
+  /* ---- Status colour mapping (instance / node run / order states) ---- */
+  --color-status-pending: var(--palette-ink-600);
   --color-status-pending-bg: var(--palette-ink-100);
-  --color-status-running: var(--palette-brand-600);
-  --color-status-running-bg: var(--palette-brand-100);
-  --color-status-waiting: var(--palette-warning-600);
+  --color-status-running: var(--palette-info-600);
+  --color-status-running-bg: var(--palette-info-100);
+  --color-status-waiting: var(--palette-warning-700);
   --color-status-waiting-bg: var(--palette-warning-100);
-  --color-status-failed: var(--palette-danger-600);
+  --color-status-failed: var(--palette-danger-700);
   --color-status-failed-bg: var(--palette-danger-100);
-  --color-status-completed: var(--palette-success-600);
+  --color-status-completed: var(--palette-success-700);
   --color-status-completed-bg: var(--palette-success-100);
 
   /* ---- Spacing scale ---- */
@@ -65,29 +93,36 @@
   --space-8: 3rem;
 
   /* ---- Radii ---- */
-  --radius-sm: 0.25rem;
+  --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
   --radius-full: 9999px;
 
   /* ---- Typography ---- */
   --font-arabic: "IBM Plex Sans Arabic", system-ui, sans-serif;
   --font-latin: "Inter", system-ui, sans-serif;
   --font-ui: var(--font-arabic), var(--font-latin);
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.75rem;
+  --font-size-2xl: 2.25rem;
   --line-height-ui: 1.5;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
+  --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* ---- Elevation ---- */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.12);
+  /* ---- Elevation (subtle, modern) ---- */
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 12px 28px rgba(16, 24, 40, 0.12);
 
   /* ---- Layout ---- */
   --sidebar-size: 16rem;
-  --topbar-size: 3.5rem;
+  --topbar-size: 4rem;
+  --content-max: 90rem;
 }

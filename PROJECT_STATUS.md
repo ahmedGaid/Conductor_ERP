@@ -1,14 +1,39 @@
-# PROJECT STATUS — General ERP (Django)
+# PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-14 (Stages 0–4 + Accounting GL core done; Stage 5b next)**.
+> meaningful step. Last updated: **2026-06-14 (Stages 0–5b incl. financial statements + UI rebrand to "Conductor")**.
+
+## PRODUCT NAME
+The ERP is branded **"Conductor"** (wordmark + logo tile "C", browser title, i18n `app.title` in both
+locales; the localized "ERP" phrase is the tagline). Design reference adopted from
+`C:\AhmedGaid\ERP\files\preview.jpg` (modern dashboard: icon sidebar, command-bar topbar, KPI cards
+with deltas, panels, status pills). Keep the UI at that bar — modern, clean, RTL-first — as we go.
 
 ## CURRENT POSITION
-**Stages 0–4 COMPLETE + Stage 5a (Accounting GL core) COMPLETE — `gate:all` (00–05) is GREEN.**
-No active blocker. Next: **Stage 5b — extend Accounting** (cost centers, tax codes + ETA e-invoice
-records, bank accounts + reconciliation, budgets, fixed assets + depreciation, and the statement
-suite: IS, BS, Cash Flow, AR/AP aging, VAT), then the remaining modules (Inventory → Sales →
-Purchasing → CRM). See plan.
+**Stages 0–4 COMPLETE + Accounting (GL core + financial statements + screens) COMPLETE + UI rebrand
+to "Conductor" — `gate:all` (00–05) is GREEN.** No active blocker.
+Next options: **finish Accounting depth** (cost centers, tax codes + ETA e-invoice records, bank
+accounts + reconciliation, budgets, fixed assets + depreciation; **AR/AP aging + VAT return need the
+Sales/Purchasing sub-ledgers**, so deferred), OR **start the Inventory module**. Then Sales →
+Purchasing → CRM. See plan.
+
+Stage 5b-2 delivered (gate05): **financial statements** from the posted GL —
+`services/statements.py` `income_statement` (revenue−expense over a date range/period),
+`balance_sheet` (assets vs liabilities+equity+net income; **always balances** because the ledger
+does), `cash_flow` (movement of `is_cash` accounts; opening+in−out=closing and **reconciles** to the
+cash GL balance). New `Account.is_cash` flag (migration 0002, seed marks Cash/Bank). Endpoints
+`/api/accounting/reports/{income-statement,balance-sheet,cash-flow}`. React screens (Income
+Statement, Balance Sheet, Cash Flow) added to the accounting sub-nav. 7 statement tests
+(net income, BS balances incl. with a liability, cash-flow reconciles) — accounting suite now 31.
+Note: AR/AP aging deliberately NOT built — needs per-customer/vendor open-item sub-ledgers from
+Sales/Purchasing; faking it from GL balances would be wrong.
+
+UI overhaul (gate03 build still green): modern token set (slate neutrals, near-black brand, subtle
+shadows), redesigned app shell (logo + grouped module nav incl. roadmap "coming" items + user
+footer; command-bar topbar with search + actions), redesigned dashboard (time-based greeting, 4 KPI
+cards with month-over-month deltas, Top Expenses + Cash Flow panels, recent journals, shortcuts
+rail), restyled buttons/cards/tables/status pills, new `StatCard` component, branded login. All
+logical-CSS + tokens-only + i18n-parity disciplines still enforced.
 
 Stage 5a delivered (`erp/accounting`, gate05): the **General Ledger core** in the strict module
 layout `{domain,repositories,services,contracts,events,api,tests,docs}`. `domain/money.py` =

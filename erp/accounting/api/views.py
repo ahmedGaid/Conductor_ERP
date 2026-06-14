@@ -55,6 +55,7 @@ class AccountListCreateView(APIView):
             parent=parent,
             is_postable=v.get("is_postable", True),
             is_active=v.get("is_active", True),
+            is_cash=v.get("is_cash", False),
             currency=v.get("currency", "EGP"),
             created_by=request.user if request.user.is_authenticated else None,
         )
@@ -184,5 +185,71 @@ class GeneralLedgerView(APIView):
                 "opening_balance": gl.opening_balance,
                 "closing_balance": gl.closing_balance,
                 "lines": [asdict(ln) for ln in gl.lines],
+            }
+        )
+
+
+class IncomeStatementView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        st = services.income_statement(
+            date_from=request.query_params.get("from") or None,
+            date_to=request.query_params.get("to") or None,
+            period_code=request.query_params.get("period") or None,
+        )
+        return _envelope(
+            {
+                "date_from": st.date_from,
+                "date_to": st.date_to,
+                "revenue": [asdict(line) for line in st.revenue],
+                "expenses": [asdict(line) for line in st.expenses],
+                "total_revenue": st.total_revenue,
+                "total_expenses": st.total_expenses,
+                "net_income": st.net_income,
+            }
+        )
+
+
+class BalanceSheetView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        bs = services.balance_sheet(as_of=request.query_params.get("as_of") or None)
+        return _envelope(
+            {
+                "as_of": bs.as_of,
+                "assets": [asdict(line) for line in bs.assets],
+                "liabilities": [asdict(line) for line in bs.liabilities],
+                "equity": [asdict(line) for line in bs.equity],
+                "total_assets": bs.total_assets,
+                "total_liabilities": bs.total_liabilities,
+                "total_equity": bs.total_equity,
+                "net_income": bs.net_income,
+                "total_liabilities_and_equity": bs.total_liabilities_and_equity,
+                "is_balanced": bs.is_balanced,
+            }
+        )
+
+
+class CashFlowView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        cf = services.cash_flow(
+            date_from=request.query_params.get("from") or None,
+            date_to=request.query_params.get("to") or None,
+            period_code=request.query_params.get("period") or None,
+        )
+        return _envelope(
+            {
+                "date_from": cf.date_from,
+                "date_to": cf.date_to,
+                "opening_balance": cf.opening_balance,
+                "cash_in": cf.cash_in,
+                "cash_out": cf.cash_out,
+                "net_change": cf.net_change,
+                "closing_balance": cf.closing_balance,
+                "reconciles": cf.reconciles,
             }
         )

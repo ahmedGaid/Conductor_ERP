@@ -41,6 +41,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options) -> None:
+        cash_codes = {"1000", "1010"}  # Cash, Bank
         for code, name, type_, postable, parent_code in COA:
             parent = Account.objects.filter(code=parent_code).first() if parent_code else None
             Account.objects.update_or_create(
@@ -49,6 +50,7 @@ class Command(BaseCommand):
                     "name": name,
                     "type": type_,
                     "is_postable": postable,
+                    "is_cash": code in cash_codes,
                     "parent": parent,
                 },
             )

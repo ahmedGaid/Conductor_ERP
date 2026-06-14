@@ -1,21 +1,30 @@
 {
   "app": {
-    "title": "نظام تخطيط الموارد",
-    "shortName": "ERP"
+    "title": "Conductor",
+    "shortName": "Conductor",
+    "tagline": "نظام تخطيط الموارد"
   },
   "nav": {
-    "dashboard": "لوحة المعلومات",
+    "dashboard": "الرئيسية",
     "workflows": "مسارات العمل",
     "accounting": "المحاسبة",
     "forms": "النماذج",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "modulesSoon": "وحدات قادمة",
+    "sales": "المبيعات",
+    "purchasing": "المشتريات",
+    "inventory": "المخزون",
+    "crm": "إدارة العملاء",
+    "reports": "التقارير"
   },
   "shell": {
     "search": "بحث",
     "commandPlaceholder": "ابحث أو نفّذ أمرًا…",
     "openMenu": "فتح القائمة",
     "skipToContent": "تخطٍّ إلى المحتوى",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "notifications": "الإشعارات",
+    "help": "المساعدة"
   },
   "language": {
     "label": "اللغة",
@@ -32,10 +41,34 @@
     "submit": "تسجيل الدخول"
   },
   "dashboard": {
-    "heading": "لوحة المعلومات",
-    "welcome": "مرحبًا بك في نظام تخطيط الموارد",
-    "intro": "هذه هي الواجهة الأساسية. الوحدات ستظهر هنا تباعًا.",
-    "directionNote": "اتجاه الواجهة الحالي: {{dir}} — اللغة: {{lang}}.",
+    "heading": "الرئيسية",
+    "greeting": {
+      "morning": "صباح الخير، {{name}}",
+      "afternoon": "مساء الخير، {{name}}",
+      "evening": "مساء الخير، {{name}}"
+    },
+    "subtitle": "إليك ما يجري في أعمالك اليوم.",
+    "vsLastMonth": "مقارنة بالشهر الماضي",
+    "asOfNow": "حتى الآن",
+    "totalRevenue": "إجمالي الإيرادات",
+    "totalExpenses": "إجمالي المصروفات",
+    "netProfit": "صافي الربح",
+    "cashBalance": "رصيد النقدية",
+    "topExpenses": "أعلى المصروفات",
+    "noData": "لا توجد بيانات بعد.",
+    "netCashFlow": "صافي التدفق النقدي",
+    "cashIn": "نقد داخل",
+    "cashOut": "نقد خارج",
+    "recentJournals": "أحدث القيود",
+    "viewAll": "عرض الكل",
+    "shortcuts": "اختصارات",
+    "action": {
+      "newJournal": "قيد جديد",
+      "newWorkflow": "مسار عمل جديد",
+      "chart": "دليل الحسابات",
+      "trialBalance": "ميزان المراجعة",
+      "incomeStatement": "قائمة الدخل"
+    },
     "workflowsTotal": "إجمالي المسارات",
     "workflowsActive": "المسارات النشطة",
     "instancesTotal": "إجمالي التنفيذات",
@@ -107,7 +140,26 @@
       "journals": "القيود",
       "newEntry": "قيد جديد",
       "trialBalance": "ميزان المراجعة",
-      "generalLedger": "دفتر الأستاذ"
+      "generalLedger": "دفتر الأستاذ",
+      "incomeStatement": "قائمة الدخل",
+      "balanceSheet": "الميزانية العمومية",
+      "cashFlow": "التدفقات النقدية"
+    },
+    "stmt": {
+      "totalRevenue": "إجمالي الإيرادات",
+      "totalExpenses": "إجمالي المصروفات",
+      "netIncome": "صافي الدخل",
+      "assets": "الأصول",
+      "liabilities": "الخصوم",
+      "equity": "حقوق الملكية",
+      "totalAssets": "إجمالي الأصول",
+      "totalLiabilities": "إجمالي الخصوم",
+      "totalEquity": "إجمالي حقوق الملكية",
+      "totalLiabEquity": "إجمالي الخصوم وحقوق الملكية",
+      "opening": "رصيد افتتاحي",
+      "netChange": "صافي التغير",
+      "reconciled": "مطابق",
+      "notReconciled": "غير مطابق"
     },
     "types": {
       "asset": "أصول",
@@ -151,6 +203,7 @@
       "closing": "الرصيد الختامي",
       "running": "الرصيد الجاري",
       "noActivity": "لا توجد حركة.",
+      "asOf": "حتى تاريخ",
       "all": "الكل"
     }
   },
@@ -159,6 +212,7 @@
     "comingSoon": "قريبًا",
     "delete": "حذف",
     "yes": "نعم",
-    "no": "لا"
+    "no": "لا",
+    "soon": "قريبًا"
   }
 }
