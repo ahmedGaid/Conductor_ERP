@@ -13,5 +13,10 @@ Roles are Django Groups (auth_group). Abstract bases `TimeStampedModel`/`Audited
 `erp/core/models.py`) provide uuid pk + timestamps + actor stamps + branch + soft-delete to business
 modules (no own table).
 
+Workflow tables (owner: workflow): `workflow`, `workflow_node`, `workflow_edge`,
+`workflow_instance`, `workflow_node_execution` (unique instance+node+attempt), `workflow_execution_log`,
+`workflow_idempotency_record`. Simulated external target: schema `erp_external` → `purchase_orders`
+(UNIQUE `idempotency_key`). Forms (owner: forms): `forms_definition`, `forms_submission`.
+
 Conventions (business modules, from Stage 5): uuid pk, created_at/updated_at/created_by/updated_by,
 branch_id scope, soft-delete (deleted_at). Money stored as integer minor units + currency.

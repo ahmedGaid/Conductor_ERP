@@ -1,12 +1,12 @@
 # PROJECT STATUS — General ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-14 (Stage 0 complete; starting Stage 1)**.
+> meaningful step. Last updated: **2026-06-14 (Stages 0, 1, 2 complete; starting Stage 3)**.
 
 ## CURRENT POSITION
-**Stage 0 + Stage 1 COMPLETE — `gate:all` (00, 01) is GREEN.** No active blocker.
-Next: **Stage 2 — Workflow engine + Forms builder** (deterministic, crash-resumable, idempotent
-engine + REST/SQL/Webhook adapters; tests-first per the engine contract in `architecture/workflows.md`).
+**Stages 0, 1, 2 COMPLETE — `gate:all` (00, 01, 02) is GREEN.** No active blocker.
+Next: **Stage 3 — Frontend foundation** (React + TS + Vite, i18next, Arabic/RTL default, design
+tokens, app shell, i18n key-parity build gate). See plan + PHASE_06 design input.
 
 Stage 1 delivered: custom `User` (branch FK + TOTP), RBAC via Django Groups + `HasAnyRole` DRF
 permission, JWT login with 2FA challenge flow (`/api/identity/*`), audit service (immutable, blocks
@@ -14,8 +14,19 @@ update/delete, correlation-stamped) wired into login, event-bus isolation, `/sys
 db/redis/storage/workers, `seed_identity` (roles, HQ branch, demo users `admin/manager/accountant/
 auditor`, password `Dev12345!`). Tests in `erp/*/tests`, run via `gate01`.
 
+Stage 2 delivered (`erp/workflow` + `erp/forms`, gate02): graph workflow engine — deterministic
+edge selection (guards vs else-fallback), crash-resumable state machine (one DB txn per transition,
+`select_for_update` on the instance row), external-write idempotency (`sha256(instance|node|attempt)`
+ledger + DB UNIQUE `ON CONFLICT DO NOTHING`), node executors (Start/Condition/Approval/Script/
+ApiCall/End), self-built JSON-logic (no eval/exec), `{{ctx.path}}` template resolver, REST/SQL/
+Webhook adapters behind one interface, simulated `erp_external.purchase_orders` target via RunSQL.
+`erp/forms` dynamic Forms Builder (definitions + submissions) triggering workflows. 23 Stage-2 tests
+(crash-resume, idempotency, determinism, approval, edges, adapters, forms). gate02 also statically
+bans unsafe SQL building, eval/exec, and `random.*` in the engine.
+
 Run gates: `cd C:\AhmedGaid\ERP; .\.venv\Scripts\python.exe scripts\gates\_run.py all`
 Note: `erp` Postgres role granted CREATEDB (for pytest test DB).
+Note: workflow/instance HTTP API (DRF endpoints) not yet built — add alongside Stage 3/4.
 
 ## What this project is
 Customer-hosted, single-tenant **Django modular-monolith ERP** (Python 3.13 + DRF), React+TS
@@ -89,12 +100,14 @@ REMAINING for Stage 0:
 - Get Redis up (blocker above) and make `gate:00` pass green.
 - Then: `git add -A && git commit` the Stage 0 baseline (only when user asks / after gate green).
 
-## Next stages (do NOT start until gate:00 is green)
-- **Stage 1 — Core platform:** flesh out auth (JWT, RBAC, TOTP 2FA, branch scoping in `identity`),
-  wire audit writes + correlation into services, event-bus isolation test, `/system-check` full,
-  gate01.
-- Stage 2 — Workflow engine + Forms. Stage 3 — Frontend foundation (i18n/RTL). Stage 4 — screens.
-  Stage 5 — ERP modules. Stage 6 — integrations/reporting. Stage 7 — hardening/deploy. (See plan.)
+## Next stages
+- **Stage 3 — Frontend foundation (NEXT):** React + TS + Vite under `apps/web/`, i18next with
+  Arabic/RTL default + live AR↔EN switch, design tokens (no hardcoded hex), logical CSS only, app
+  shell (sidebar inline-start, command bar, language switcher), gate03 = i18n key-parity in both
+  directions + boots `lang=ar dir=rtl`.
+- Stage 4 — platform screens (dashboard, workflow list, React Flow canvas, node config, execution
+  viewer) + workflow/instance DRF API. Stage 5 — ERP modules. Stage 6 — integrations/reporting.
+  Stage 7 — hardening/deploy. (See plan.)
 
 ## How to resume
 Read this file + the plan + `DECISIONS.md`, clear the active blocker, run `gate:00`, then continue

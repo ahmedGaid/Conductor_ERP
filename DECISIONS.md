@@ -44,6 +44,21 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
   install, no cloud dep. Note: this port is Redis 3.0.x (older) but sufficient as a Celery broker/result
   backend for dev; revisit for production if newer Redis features are needed.
 
+## Workflow engine (Stage 2)
+
+- **Condition edge semantics.** The PHASE specs both say "exactly one winner" *and* ship a `true`
+  fallback edge — contradictory under a strict reading. Resolved deterministically: edges with an
+  explicit JSON-logic condition are **guards**; a single null/`true` edge is the **else-fallback**.
+  Exactly one guard must be truthy → it wins; ≥2 truthy guards → fail (ambiguous); 0 truthy guards →
+  take the lone fallback, else fail. Deterministic and supports an else branch. See `engine/edges.py`.
+- **JSON-logic is self-implemented** (`workflow/lib/jsonlogic.py`) — no external dependency, no
+  eval/exec; auditable and deterministic. Covers var/compare/and/or/if/arithmetic/in.
+- **External-write idempotency** uses both layers: a durable `IdempotencyRecord` ledger keyed by
+  `sha256(instance|node|attempt)` (engine short-circuits a same-attempt re-run) **and** DB-level
+  proof (UNIQUE `idempotency_key` + `ON CONFLICT DO NOTHING` in the target). Proven by tests.
+- **`erp_external` schema** (the simulated external ERP target) lives in the same Postgres instance
+  via a `RunSQL` migration — no second server, matching the PHASE intent.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

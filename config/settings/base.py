@@ -48,6 +48,8 @@ LOCAL_APPS = [
     "erp.identity",
     "erp.audit",
     "erp.monitoring",
+    "erp.workflow",
+    "erp.forms",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
