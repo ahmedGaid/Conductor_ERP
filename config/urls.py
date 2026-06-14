@@ -15,4 +15,6 @@ urlpatterns = [
     path("api/workflow/", include("erp.workflow.urls")),
     # Accounting / GL API — Stage 5.
     path("api/accounting/", include("erp.accounting.api.urls")),
+    # Inventory API — Stage 5c.
+    path("api/inventory/", include("erp.inventory.api.urls")),
 ]

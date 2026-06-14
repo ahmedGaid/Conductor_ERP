@@ -16,6 +16,10 @@ import { GeneralLedgerPage } from "./pages/accounting/GeneralLedgerPage";
 import { IncomeStatementPage } from "./pages/accounting/IncomeStatementPage";
 import { BalanceSheetPage } from "./pages/accounting/BalanceSheetPage";
 import { CashFlowStatementPage } from "./pages/accounting/CashFlowStatementPage";
+import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
+import { ItemsPage } from "./pages/inventory/ItemsPage";
+import { WarehousesPage } from "./pages/inventory/WarehousesPage";
+import { StockMovementPage } from "./pages/inventory/StockMovementPage";
 import type { ReactNode } from "react";
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -43,6 +47,11 @@ function Protected() {
           <Route path="/accounting/income-statement" element={<IncomeStatementPage />} />
           <Route path="/accounting/balance-sheet" element={<BalanceSheetPage />} />
           <Route path="/accounting/cash-flow" element={<CashFlowStatementPage />} />
+          <Route path="/inventory" element={<StockOnHandPage />} />
+          <Route path="/inventory/items" element={<ItemsPage />} />
+          <Route path="/inventory/warehouses" element={<WarehousesPage />} />
+          <Route path="/inventory/movements" element={<StockMovementPage />} />
+          <Route path="/inventory/stock-on-hand" element={<StockOnHandPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>

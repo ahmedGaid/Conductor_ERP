@@ -160,6 +160,26 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
   alone has account balances, not open items. Building a fake aging from balances would be wrong, so
   it waits for those modules.
 
+## Inventory module (Stage 5c)
+
+- **Inventory posts to the GL only through `erp.accounting.contracts`** (`post_journal`) — never the
+  accounting ORM/services. This is the modular-monolith boundary in action; gate06 statically forbids
+  `erp.accounting.{domain,models,services}` imports in inventory.
+- **Weighted-average costing, exact.** Quantity is `Decimal` (items can be fractional); value is
+  integer **minor units**. The average is always value/quantity (never stored rounded). On issue, cost
+  is taken **proportionally** from the remaining value (`round(value*issue_qty/qty)`), so the running
+  value never drifts and issuing the whole quantity removes the whole value. (FIFO/standard cost can
+  come later per item; weighted-average is the questionnaire default.)
+- **GL mapping:** receipt → Dr Inventory (1200) / Cr Goods-Received-Not-Invoiced (2150, a liability
+  cleared later by a Purchasing vendor bill); issue → Dr COGS (5000) / Cr Inventory; transfer posts
+  **no** GL (value stays within the Inventory account). Seed adds account 2150.
+- **Core invariant:** the Inventory GL account balance always equals total stock value — asserted by a
+  test that posts receipts/issues then compares `general_ledger("1200")` to `Σ StockBalance.value`.
+- **No negative stock** in this first slice: issuing/transferring more than on-hand is rejected
+  (`INV-001`) and writes nothing (atomic). Adjustments + back-dated corrections come later.
+- **Quantities use `DecimalField`** (exactness without float) — distinct from the money rule (money is
+  integer minor units). gate06 bans `FloatField` for value but allows Decimal quantities.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

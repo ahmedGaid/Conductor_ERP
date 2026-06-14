@@ -1,7 +1,7 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-14 (Stages 0–5b incl. financial statements + UI rebrand to "Conductor")**.
+> meaningful step. Last updated: **2026-06-14 (Stages 0–5b + Inventory module (5c); gate:all 00–06)**.
 
 ## PRODUCT NAME
 The ERP is branded **"Conductor"** (wordmark + logo tile "C", browser title, i18n `app.title` in both
@@ -10,12 +10,25 @@ locales; the localized "ERP" phrase is the tagline). Design reference adopted fr
 with deltas, panels, status pills). Keep the UI at that bar — modern, clean, RTL-first — as we go.
 
 ## CURRENT POSITION
-**Stages 0–4 COMPLETE + Accounting (GL core + financial statements + screens) COMPLETE + UI rebrand
-to "Conductor" — `gate:all` (00–05) is GREEN.** No active blocker.
-Next options: **finish Accounting depth** (cost centers, tax codes + ETA e-invoice records, bank
-accounts + reconciliation, budgets, fixed assets + depreciation; **AR/AP aging + VAT return need the
-Sales/Purchasing sub-ledgers**, so deferred), OR **start the Inventory module**. Then Sales →
+**Stages 0–4 + Accounting (GL core + statements + screens) + UI rebrand to "Conductor" + Inventory
+module (Stage 5c) COMPLETE — `gate:all` (00–06) is GREEN.** No active blocker.
+Next options: **deepen Inventory** (UoM conversions, batch/serial/expiry FEFO, stock counts +
+variance, reorder alerts), **finish Accounting depth** (cost centers, tax + ETA e-invoice, banks +
+reconciliation, budgets, fixed assets), or **start the Sales module** (next priority). Then
 Purchasing → CRM. See plan.
+
+Stage 5c delivered (`erp/inventory`, gate06): the **Inventory & Warehouses** module in the strict
+layout, posting to the GL **only via `erp.accounting.contracts`** (module boundary enforced by
+gate06). `domain/costing.py` = exact **weighted-average** (Decimal qty + integer-minor value; issue
+cost taken proportionally so running value never drifts). Models: Category, Item, Warehouse,
+StockBalance, StockMovement. `services/stock.py` receive/issue/transfer — atomic balance + movement
++ GL: receipt Dr Inventory(1200)/Cr GRNI(2150), issue Dr COGS(5000)/Cr Inventory, transfer no GL;
+publishes `inventory.Stock*` events. Oversell rejected (`INV-001`). **Core invariant proven: the
+Inventory GL account balance always equals total stock value.** DRF API `/api/inventory/` (items,
+categories, warehouses, movements receive/issue/transfer, reports/stock-on-hand) behind RBAC (Branch
+Manager). 16 tests. React screens (Stock on hand, Items, Warehouses, Stock movement w/ receive/
+issue/transfer segmented form) added; "Inventory" now an active sidebar module. Seed: `seed_accounting`
+now also creates GRNI (2150).
 
 Stage 5b-2 delivered (gate05): **financial statements** from the posted GL —
 `services/statements.py` `income_statement` (revenue−expense over a date range/period),

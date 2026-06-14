@@ -207,6 +207,51 @@
       "all": "All"
     }
   },
+  "inventory": {
+    "tabs": {
+      "stockOnHand": "Stock on hand",
+      "items": "Items",
+      "warehouses": "Warehouses",
+      "movements": "Movements"
+    },
+    "types": {
+      "stock": "Stock item",
+      "service": "Service"
+    },
+    "item": {
+      "sku": "SKU",
+      "name": "Name",
+      "uom": "Unit",
+      "type": "Type",
+      "add": "Add item"
+    },
+    "warehouse": {
+      "code": "Warehouse code",
+      "name": "Warehouse name",
+      "add": "Add warehouse"
+    },
+    "onHand": {
+      "quantity": "Quantity",
+      "avgCost": "Avg. cost",
+      "value": "Value",
+      "reorder": "below reorder",
+      "empty": "No stock balances yet.",
+      "totalValue": "Total inventory value"
+    },
+    "movement": {
+      "type": "Movement type",
+      "receipt": "Receive",
+      "issue": "Issue",
+      "transfer": "Transfer",
+      "from": "From warehouse",
+      "to": "To warehouse",
+      "unitCost": "Unit cost",
+      "post": "Post movement",
+      "fillRequired": "Fill the required fields",
+      "badCost": "Invalid cost",
+      "posted": "Posted ({{ref}})"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "comingSoon": "Coming soon",

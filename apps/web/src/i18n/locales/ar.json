@@ -207,6 +207,51 @@
       "all": "الكل"
     }
   },
+  "inventory": {
+    "tabs": {
+      "stockOnHand": "الأرصدة",
+      "items": "الأصناف",
+      "warehouses": "المخازن",
+      "movements": "الحركات"
+    },
+    "types": {
+      "stock": "صنف مخزني",
+      "service": "خدمة"
+    },
+    "item": {
+      "sku": "الرمز",
+      "name": "الاسم",
+      "uom": "الوحدة",
+      "type": "النوع",
+      "add": "إضافة صنف"
+    },
+    "warehouse": {
+      "code": "رمز المخزن",
+      "name": "اسم المخزن",
+      "add": "إضافة مخزن"
+    },
+    "onHand": {
+      "quantity": "الكمية",
+      "avgCost": "متوسط التكلفة",
+      "value": "القيمة",
+      "reorder": "تحت حد الطلب",
+      "empty": "لا توجد أرصدة بعد.",
+      "totalValue": "إجمالي قيمة المخزون"
+    },
+    "movement": {
+      "type": "نوع الحركة",
+      "receipt": "استلام",
+      "issue": "صرف",
+      "transfer": "تحويل",
+      "from": "من مخزن",
+      "to": "إلى مخزن",
+      "unitCost": "تكلفة الوحدة",
+      "post": "ترحيل الحركة",
+      "fillRequired": "أكمل الحقول المطلوبة",
+      "badCost": "تكلفة غير صالحة",
+      "posted": "تم الترحيل ({{ref}})"
+    }
+  },
   "common": {
     "loading": "جارٍ التحميل…",
     "comingSoon": "قريبًا",

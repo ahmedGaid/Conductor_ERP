@@ -14,6 +14,7 @@ interface NavItem {
 const PRIMARY: NavItem[] = [
   { key: "dashboard", icon: "⌂", to: "/" },
   { key: "accounting", icon: "▤", to: "/accounting" },
+  { key: "inventory", icon: "▦", to: "/inventory" },
   { key: "workflows", icon: "⇄", to: "/workflows" },
 ];
 
@@ -21,7 +22,6 @@ const PRIMARY: NavItem[] = [
 const SOON: { key: string; icon: string }[] = [
   { key: "sales", icon: "▸" },
   { key: "purchasing", icon: "▾" },
-  { key: "inventory", icon: "▦" },
   { key: "crm", icon: "◇" },
   { key: "reports", icon: "▥" },
 ];

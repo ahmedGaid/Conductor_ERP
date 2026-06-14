@@ -24,6 +24,7 @@ COA = [
     ("2", "Liabilities", AccountType.LIABILITY, False, None),
     ("2000", "Accounts Payable", AccountType.LIABILITY, True, "2"),
     ("2100", "VAT Payable", AccountType.LIABILITY, True, "2"),
+    ("2150", "Goods Received Not Invoiced", AccountType.LIABILITY, True, "2"),
     ("3", "Equity", AccountType.EQUITY, False, None),
     ("3000", "Share Capital", AccountType.EQUITY, True, "3"),
     ("3100", "Retained Earnings", AccountType.EQUITY, True, "3"),
