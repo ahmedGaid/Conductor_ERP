@@ -1,7 +1,7 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-14 (Stages 0–5b + Inventory module (5c); gate:all 00–06)**.
+> meaningful step. Last updated: **2026-06-15 (Stages 0–5b + Inventory (5c) + Sales (5d); gate:all 00–07)**.
 
 ## PRODUCT NAME
 The ERP is branded **"Conductor"** (wordmark + logo tile "C", browser title, i18n `app.title` in both
@@ -11,11 +11,21 @@ with deltas, panels, status pills). Keep the UI at that bar — modern, clean, R
 
 ## CURRENT POSITION
 **Stages 0–4 + Accounting (GL core + statements + screens) + UI rebrand to "Conductor" + Inventory
-module (Stage 5c) COMPLETE — `gate:all` (00–06) is GREEN.** No active blocker.
-Next options: **deepen Inventory** (UoM conversions, batch/serial/expiry FEFO, stock counts +
-variance, reorder alerts), **finish Accounting depth** (cost centers, tax + ETA e-invoice, banks +
-reconciliation, budgets, fixed assets), or **start the Sales module** (next priority). Then
-Purchasing → CRM. See plan.
+(5c) + Sales (5d) COMPLETE — `gate:all` (00–07) is GREEN.** No active blocker.
+Next options: **start Purchasing** (next priority: PR→PO→GRN→bill→payment, 3-way match; mirrors
+Sales and clears GRNI), **deepen Inventory/Accounting/Sales**, or **CRM**. See plan.
+
+Stage 5d delivered (`erp/sales`, gate07): the **Sales & Customers** order-to-cash module — the
+clearest cross-module flow. It drives Inventory + Accounting **only via their public contracts**
+(boundary enforced by gate07). Models: Customer (credit limit), SalesOrder, SalesOrderLine (items
+referenced by SKU string, warehouse by code — no cross-module FKs). `services/orders.py` lifecycle
+`draft→confirm→deliver→invoice→payment`: confirm enforces credit limit; deliver calls
+`inventory.contracts.issue` per line (reduces stock + posts Dr COGS/Cr Inventory at weighted-avg);
+invoice posts Dr AR(1100)/Cr Revenue(4000) via `accounting.contracts.post_journal`; payment posts
+Dr Cash(1000)/Cr AR. Proven: full flow keeps the **trial balance balanced**, Inventory GL still ==
+stock value, credit/oversell/overpayment guards. DRF API `/api/sales/` behind RBAC (Branch Manager);
+11 tests. React screens (Orders, New order w/ cross-module item+warehouse pickers, Order detail with
+confirm/deliver/invoice/payment actions, Customers); "Sales" now an active sidebar module.
 
 Stage 5c delivered (`erp/inventory`, gate06): the **Inventory & Warehouses** module in the strict
 layout, posting to the GL **only via `erp.accounting.contracts`** (module boundary enforced by

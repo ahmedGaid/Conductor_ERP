@@ -252,6 +252,52 @@
       "posted": "تم الترحيل ({{ref}})"
     }
   },
+  "sales": {
+    "tabs": {
+      "orders": "الطلبات",
+      "newOrder": "طلب جديد",
+      "customers": "العملاء"
+    },
+    "status": {
+      "draft": "مسودة",
+      "confirmed": "مؤكد",
+      "delivered": "تم التسليم",
+      "invoiced": "تمت الفوترة",
+      "paid": "مدفوع",
+      "cancelled": "ملغي"
+    },
+    "customer": {
+      "code": "رمز العميل",
+      "name": "الاسم",
+      "creditLimit": "حد الائتمان",
+      "add": "إضافة عميل",
+      "unlimited": "غير محدود"
+    },
+    "orders": {
+      "empty": "لا توجد طلبات بعد.",
+      "number": "رقم الطلب",
+      "customer": "العميل",
+      "total": "الإجمالي"
+    },
+    "newOrder": {
+      "pickCustomerWarehouse": "اختر العميل والمخزن",
+      "badPrice": "سعر غير صالح",
+      "needLine": "أضف سطرًا واحدًا على الأقل",
+      "item": "الصنف",
+      "unitPrice": "سعر الوحدة",
+      "addLine": "إضافة سطر",
+      "create": "إنشاء الطلب"
+    },
+    "detail": {
+      "invoiced": "المفوتر",
+      "outstanding": "المتبقي",
+      "invoiceNo": "رقم الفاتورة",
+      "confirm": "تأكيد الطلب",
+      "deliver": "تسليم",
+      "invoice": "إصدار فاتورة",
+      "recordPayment": "تسجيل دفعة"
+    }
+  },
   "common": {
     "loading": "جارٍ التحميل…",
     "comingSoon": "قريبًا",

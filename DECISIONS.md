@@ -180,6 +180,24 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
 - **Quantities use `DecimalField`** (exactness without float) — distinct from the money rule (money is
   integer minor units). gate06 bans `FloatField` for value but allows Decimal quantities.
 
+## Sales module (Stage 5d)
+
+- **Cross-module only via contracts.** Sales calls `inventory.contracts.issue(sku, warehouse, qty)`
+  and `accounting.contracts.post_journal(...)` — never their ORM/services. gate07 forbids
+  `erp.{accounting,inventory}.{domain,models,services}` imports in `sales/services/orders.py`.
+- **References by business key, not FK.** Order lines store `item_sku` (string) and the order stores
+  `warehouse_code` (string); no DB FK crosses a module boundary. Inventory exposes code-based
+  `issue`/`receive`/`find_item` helpers (added to its contract) so callers stay decoupled.
+- **Order-to-cash GL mapping:** deliver → (inventory) Dr COGS/Cr Inventory at weighted-average;
+  invoice → Dr AR (1100)/Cr Sales Revenue (4000); payment → Dr Cash (1000)/Cr AR. Revenue is
+  recognized at **invoice**, COGS at **delivery** (standard). VAT on invoices waits for the
+  accounting tax slice.
+- **Credit limit** enforced at confirm: customer outstanding (Σ invoiced − Σ paid) + this order ≤
+  limit; `credit_limit_minor = 0` means unlimited. **No negative stock**: delivery beyond on-hand is
+  rejected by the inventory contract and the order stays confirmed (atomic).
+- **Each transition is atomic + guarded** by an explicit status check (`SAL-001`); over-payment is
+  rejected (`SAL-005`). Proven: a full draft→paid flow leaves the trial balance balanced and AR at 0.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

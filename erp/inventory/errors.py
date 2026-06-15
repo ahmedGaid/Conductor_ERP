@@ -26,3 +26,15 @@ class SameWarehouseTransferError(AppError):
     code = "INV-004"
     status_code = 422
     message = "Transfer source and destination must differ"
+
+
+class UnknownItemError(AppError):
+    code = "INV-005"
+    status_code = 404
+    message = "Unknown item SKU"
+
+
+class UnknownWarehouseError(AppError):
+    code = "INV-006"
+    status_code = 404
+    message = "Unknown warehouse code"

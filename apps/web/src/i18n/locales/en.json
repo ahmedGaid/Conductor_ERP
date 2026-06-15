@@ -252,6 +252,52 @@
       "posted": "Posted ({{ref}})"
     }
   },
+  "sales": {
+    "tabs": {
+      "orders": "Orders",
+      "newOrder": "New order",
+      "customers": "Customers"
+    },
+    "status": {
+      "draft": "Draft",
+      "confirmed": "Confirmed",
+      "delivered": "Delivered",
+      "invoiced": "Invoiced",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "customer": {
+      "code": "Customer code",
+      "name": "Name",
+      "creditLimit": "Credit limit",
+      "add": "Add customer",
+      "unlimited": "Unlimited"
+    },
+    "orders": {
+      "empty": "No sales orders yet.",
+      "number": "Order no.",
+      "customer": "Customer",
+      "total": "Total"
+    },
+    "newOrder": {
+      "pickCustomerWarehouse": "Pick a customer and warehouse",
+      "badPrice": "Invalid price",
+      "needLine": "Add at least one line",
+      "item": "Item",
+      "unitPrice": "Unit price",
+      "addLine": "Add line",
+      "create": "Create order"
+    },
+    "detail": {
+      "invoiced": "Invoiced",
+      "outstanding": "Outstanding",
+      "invoiceNo": "Invoice no.",
+      "confirm": "Confirm order",
+      "deliver": "Deliver",
+      "invoice": "Issue invoice",
+      "recordPayment": "Record payment"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "comingSoon": "Coming soon",
