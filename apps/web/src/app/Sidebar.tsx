@@ -17,12 +17,12 @@ const PRIMARY: NavItem[] = [
   { key: "purchasing", icon: "▾", to: "/purchasing" },
   { key: "inventory", icon: "▦", to: "/inventory" },
   { key: "accounting", icon: "▤", to: "/accounting" },
+  { key: "crm", icon: "◇", to: "/crm" },
   { key: "workflows", icon: "⇄", to: "/workflows" },
 ];
 
 // Roadmap modules — shown to convey scope, enabled as each stage lands.
 const SOON: { key: string; icon: string }[] = [
-  { key: "crm", icon: "◇" },
   { key: "reports", icon: "▥" },
 ];
 

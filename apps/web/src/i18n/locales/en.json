@@ -341,6 +341,96 @@
       "recordPayment": "Record payment"
     }
   },
+  "crm": {
+    "tabs": {
+      "pipeline": "Pipeline",
+      "leads": "Leads",
+      "tickets": "Tickets",
+      "newOpp": "New opportunity"
+    },
+    "stage": {
+      "qualifying": "Qualifying",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "won": "Won",
+      "lost": "Lost"
+    },
+    "leadStatus": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "unqualified": "Unqualified",
+      "converted": "Converted"
+    },
+    "ticketStatus": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "source": {
+      "web": "Web",
+      "referral": "Referral",
+      "call": "Cold call",
+      "campaign": "Campaign",
+      "other": "Other"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "lead": {
+      "add": "Add lead",
+      "name": "Name",
+      "company": "Company",
+      "email": "Email",
+      "source": "Source",
+      "code": "Lead no.",
+      "convert": "Convert",
+      "empty": "No leads yet.",
+      "needName": "A lead needs a name"
+    },
+    "opp": {
+      "name": "Opportunity",
+      "customer": "Customer",
+      "number": "Opp. no.",
+      "stage": "Stage",
+      "amount": "Amount",
+      "weighted": "Weighted",
+      "probability": "Probability",
+      "salesOrder": "Sales order"
+    },
+    "newOpp": {
+      "create": "Create opportunity",
+      "needName": "An opportunity needs a name",
+      "badPrice": "Invalid price"
+    },
+    "pipeline": {
+      "empty": "No opportunities yet."
+    },
+    "detail": {
+      "advanceTo": "Move to {{stage}}",
+      "win": "Mark won",
+      "lose": "Mark lost"
+    },
+    "ticket": {
+      "add": "Open ticket",
+      "subject": "Subject",
+      "customer": "Customer",
+      "priority": "Priority",
+      "number": "Ticket no.",
+      "sla": "SLA",
+      "breached": "Breached",
+      "onTime": "On time",
+      "start": "Start",
+      "resolve": "Resolve",
+      "close": "Close",
+      "empty": "No tickets yet.",
+      "needSubject": "A ticket needs a subject"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "comingSoon": "Coming soon",

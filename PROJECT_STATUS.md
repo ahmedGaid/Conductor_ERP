@@ -1,7 +1,7 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-15 (Stages 0–5b + Inventory (5c) + Sales (5d) + Purchasing (5e); gate:all 00–08)**.
+> meaningful step. Last updated: **2026-06-15 (Stages 0–5b + Inventory (5c) + Sales (5d) + Purchasing (5e) + CRM (5f); gate:all 00–09)**.
 
 ## PRODUCT NAME
 The ERP is branded **"Conductor"** (wordmark + logo tile "C", browser title, i18n `app.title` in both
@@ -11,11 +11,27 @@ with deltas, panels, status pills). Keep the UI at that bar — modern, clean, R
 
 ## CURRENT POSITION
 **Stages 0–4 + Accounting (GL + statements + screens) + UI rebrand + Inventory (5c) + Sales (5d) +
-Purchasing (5e) COMPLETE — `gate:all` (00–08) is GREEN.** No active blocker.
-Next options: **CRM** (last priority module: leads → pipeline → activities → tickets/SLA), or
-**deepen** any module (accounting tax/ETA e-invoice + fixed assets; sales/purchasing PR/quotation +
-approvals + partial flows; inventory batch/serial/counts), then Stage 6 (integrations/reporting) and
-Stage 7 (hardening/deploy). See plan.
+Purchasing (5e) + CRM (5f) COMPLETE — `gate:all` (00–09) is GREEN.** No active blocker.
+**All five priority-order ERP modules are now built** (Accounting, Inventory, Sales, Purchasing, CRM).
+Next options: **deepen** any module (accounting tax/ETA e-invoice + fixed assets; sales/purchasing
+PR/quotation + approvals + partial flows; inventory batch/serial/counts; CRM campaigns + ticket
+escalation), then **Stage 6** (integrations/reporting/exports) and **Stage 7** (hardening/deploy).
+See plan.
+
+Stage 5f delivered (`erp/crm`, gate09): the **CRM** module — the relationship side of the ERP and the
+last priority module. Models: Lead, Opportunity (+ OpportunityLine), Activity, Ticket. Services:
+`leads.py` (capture → qualify → **convert** once into an opportunity, `CRM-002` on re-convert),
+`pipeline.py` (`qualifying→proposal→negotiation→won|lost`; **win hands the deal to Sales via
+`erp.sales.contracts.place_order`** — customer *code* + line inputs only, no sales ORM crosses the
+boundary; records the SO number; `CRM-003` unknown customer, `CRM-004` no lines), `support.py`
+(priority-driven **SLA** tickets — due time at open: urgent 4h/high 8h/medium 24h/low 72h, `is_breached`
+when still open past due; `open→in_progress→resolved→closed`; plus activities log/complete). Sales
+contract gained code-based `find_customer` + `place_order` for this. **Proven: a won opportunity
+creates a draft sales order whose subtotal equals the opportunity amount, purely through the contract;
+unknown-customer/empty wins rejected; ticket SLA breach computed from priority.** DRF API `/api/crm/`
+(leads, opportunities, activities, tickets + lifecycle actions) behind RBAC (Branch Manager); 17
+tests. React screens (Pipeline w/ inline new-opportunity, Opportunity detail w/ stage/win/lose, Leads,
+Tickets w/ SLA breach indicator); "CRM" now an active sidebar module.
 
 Stage 5e delivered (`erp/purchasing`, gate08): **Purchasing & Suppliers** procure-to-pay — mirrors
 Sales and **closes the GRNI loop**. Models: Supplier, PurchaseOrder, PurchaseOrderLine (ordered vs

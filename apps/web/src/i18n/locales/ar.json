@@ -341,6 +341,96 @@
       "recordPayment": "تسجيل دفعة"
     }
   },
+  "crm": {
+    "tabs": {
+      "pipeline": "خط الفرص",
+      "leads": "العملاء المحتملون",
+      "tickets": "التذاكر",
+      "newOpp": "فرصة جديدة"
+    },
+    "stage": {
+      "qualifying": "تأهيل",
+      "proposal": "عرض",
+      "negotiation": "تفاوض",
+      "won": "ناجحة",
+      "lost": "خاسرة"
+    },
+    "leadStatus": {
+      "new": "جديد",
+      "contacted": "تم التواصل",
+      "qualified": "مؤهل",
+      "unqualified": "غير مؤهل",
+      "converted": "محوَّل"
+    },
+    "ticketStatus": {
+      "open": "مفتوحة",
+      "in_progress": "قيد المعالجة",
+      "resolved": "تم الحل",
+      "closed": "مغلقة"
+    },
+    "source": {
+      "web": "الويب",
+      "referral": "إحالة",
+      "call": "اتصال بارد",
+      "campaign": "حملة",
+      "other": "أخرى"
+    },
+    "priority": {
+      "low": "منخفضة",
+      "medium": "متوسطة",
+      "high": "عالية",
+      "urgent": "عاجلة"
+    },
+    "lead": {
+      "add": "إضافة عميل محتمل",
+      "name": "الاسم",
+      "company": "الشركة",
+      "email": "البريد الإلكتروني",
+      "source": "المصدر",
+      "code": "رقم العميل المحتمل",
+      "convert": "تحويل",
+      "empty": "لا يوجد عملاء محتملون بعد.",
+      "needName": "يحتاج العميل المحتمل إلى اسم"
+    },
+    "opp": {
+      "name": "الفرصة",
+      "customer": "العميل",
+      "number": "رقم الفرصة",
+      "stage": "المرحلة",
+      "amount": "المبلغ",
+      "weighted": "المرجَّح",
+      "probability": "الاحتمالية",
+      "salesOrder": "أمر البيع"
+    },
+    "newOpp": {
+      "create": "إنشاء فرصة",
+      "needName": "تحتاج الفرصة إلى اسم",
+      "badPrice": "سعر غير صالح"
+    },
+    "pipeline": {
+      "empty": "لا توجد فرص بعد."
+    },
+    "detail": {
+      "advanceTo": "الانتقال إلى {{stage}}",
+      "win": "تحديد كناجحة",
+      "lose": "تحديد كخاسرة"
+    },
+    "ticket": {
+      "add": "فتح تذكرة",
+      "subject": "الموضوع",
+      "customer": "العميل",
+      "priority": "الأولوية",
+      "number": "رقم التذكرة",
+      "sla": "اتفاقية الخدمة",
+      "breached": "متجاوزة",
+      "onTime": "ضمن الوقت",
+      "start": "بدء",
+      "resolve": "حل",
+      "close": "إغلاق",
+      "empty": "لا توجد تذاكر بعد.",
+      "needSubject": "تحتاج التذكرة إلى موضوع"
+    }
+  },
   "common": {
     "loading": "جارٍ التحميل…",
     "comingSoon": "قريبًا",
