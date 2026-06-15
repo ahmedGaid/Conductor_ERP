@@ -1,7 +1,7 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-15 (Stages 0–5b + Inventory (5c) + Sales (5d); gate:all 00–07)**.
+> meaningful step. Last updated: **2026-06-15 (Stages 0–5b + Inventory (5c) + Sales (5d) + Purchasing (5e); gate:all 00–08)**.
 
 ## PRODUCT NAME
 The ERP is branded **"Conductor"** (wordmark + logo tile "C", browser title, i18n `app.title` in both
@@ -10,10 +10,23 @@ locales; the localized "ERP" phrase is the tagline). Design reference adopted fr
 with deltas, panels, status pills). Keep the UI at that bar — modern, clean, RTL-first — as we go.
 
 ## CURRENT POSITION
-**Stages 0–4 + Accounting (GL core + statements + screens) + UI rebrand to "Conductor" + Inventory
-(5c) + Sales (5d) COMPLETE — `gate:all` (00–07) is GREEN.** No active blocker.
-Next options: **start Purchasing** (next priority: PR→PO→GRN→bill→payment, 3-way match; mirrors
-Sales and clears GRNI), **deepen Inventory/Accounting/Sales**, or **CRM**. See plan.
+**Stages 0–4 + Accounting (GL + statements + screens) + UI rebrand + Inventory (5c) + Sales (5d) +
+Purchasing (5e) COMPLETE — `gate:all` (00–08) is GREEN.** No active blocker.
+Next options: **CRM** (last priority module: leads → pipeline → activities → tickets/SLA), or
+**deepen** any module (accounting tax/ETA e-invoice + fixed assets; sales/purchasing PR/quotation +
+approvals + partial flows; inventory batch/serial/counts), then Stage 6 (integrations/reporting) and
+Stage 7 (hardening/deploy). See plan.
+
+Stage 5e delivered (`erp/purchasing`, gate08): **Purchasing & Suppliers** procure-to-pay — mirrors
+Sales and **closes the GRNI loop**. Models: Supplier, PurchaseOrder, PurchaseOrderLine (ordered vs
+`received_qty`). `services/orders.py` lifecycle `draft→confirm→receive→bill→payment`: receive calls
+`inventory.contracts.receive` per line (raises stock + Dr Inventory/Cr GRNI, supports partial GRN);
+bill runs the **3-way match** (received==ordered per line, else `PUR-002`) then posts Dr GRNI/Cr AP
+via `accounting.contracts` (clearing GRNI); payment posts Dr AP/Cr Cash. Proven: full flow leaves
+trial balance balanced and **GRNI back at zero**, Inventory GL == stock value, 3-way match blocks a
+partial bill, over-payment rejected. DRF API `/api/purchasing/` behind RBAC (Branch Manager); 8
+tests. React screens (Purchase orders, New PO, PO detail w/ confirm/receive/bill/payment, Suppliers);
+"Purchasing" now an active sidebar module.
 
 Stage 5d delivered (`erp/sales`, gate07): the **Sales & Customers** order-to-cash module — the
 clearest cross-module flow. It drives Inventory + Accounting **only via their public contracts**

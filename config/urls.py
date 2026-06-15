@@ -19,4 +19,6 @@ urlpatterns = [
     path("api/inventory/", include("erp.inventory.api.urls")),
     # Sales API — Stage 5d.
     path("api/sales/", include("erp.sales.api.urls")),
+    # Purchasing API — Stage 5e.
+    path("api/purchasing/", include("erp.purchasing.api.urls")),
 ]

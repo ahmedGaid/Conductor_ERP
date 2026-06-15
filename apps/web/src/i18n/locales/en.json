@@ -298,6 +298,49 @@
       "recordPayment": "Record payment"
     }
   },
+  "purchasing": {
+    "tabs": {
+      "orders": "Purchase orders",
+      "newOrder": "New PO",
+      "suppliers": "Suppliers"
+    },
+    "status": {
+      "draft": "Draft",
+      "confirmed": "Confirmed",
+      "received": "Received",
+      "billed": "Billed",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "supplier": {
+      "code": "Supplier code",
+      "name": "Name",
+      "add": "Add supplier"
+    },
+    "orders": {
+      "empty": "No purchase orders yet.",
+      "number": "PO no.",
+      "supplier": "Supplier"
+    },
+    "newOrder": {
+      "pickSupplierWarehouse": "Pick a supplier and warehouse",
+      "badCost": "Invalid cost",
+      "needLine": "Add at least one line",
+      "unitCost": "Unit cost",
+      "addLine": "Add line",
+      "create": "Create PO"
+    },
+    "detail": {
+      "billed": "Billed",
+      "outstanding": "Outstanding",
+      "billNo": "Bill no.",
+      "received": "Received",
+      "confirm": "Confirm order",
+      "receive": "Receive goods",
+      "bill": "Vendor bill",
+      "recordPayment": "Record payment"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "comingSoon": "Coming soon",

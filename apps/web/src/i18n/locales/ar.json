@@ -298,6 +298,49 @@
       "recordPayment": "تسجيل دفعة"
     }
   },
+  "purchasing": {
+    "tabs": {
+      "orders": "أوامر الشراء",
+      "newOrder": "أمر شراء جديد",
+      "suppliers": "الموردون"
+    },
+    "status": {
+      "draft": "مسودة",
+      "confirmed": "مؤكد",
+      "received": "تم الاستلام",
+      "billed": "تمت الفوترة",
+      "paid": "مدفوع",
+      "cancelled": "ملغي"
+    },
+    "supplier": {
+      "code": "رمز المورد",
+      "name": "الاسم",
+      "add": "إضافة مورد"
+    },
+    "orders": {
+      "empty": "لا توجد أوامر شراء بعد.",
+      "number": "رقم الأمر",
+      "supplier": "المورد"
+    },
+    "newOrder": {
+      "pickSupplierWarehouse": "اختر المورد والمخزن",
+      "badCost": "تكلفة غير صالحة",
+      "needLine": "أضف سطرًا واحدًا على الأقل",
+      "unitCost": "تكلفة الوحدة",
+      "addLine": "إضافة سطر",
+      "create": "إنشاء أمر الشراء"
+    },
+    "detail": {
+      "billed": "المفوتر",
+      "outstanding": "المتبقي",
+      "billNo": "رقم الفاتورة",
+      "received": "المستلم",
+      "confirm": "تأكيد الأمر",
+      "receive": "استلام البضاعة",
+      "bill": "فاتورة المورد",
+      "recordPayment": "تسجيل دفعة"
+    }
+  },
   "common": {
     "loading": "جارٍ التحميل…",
     "comingSoon": "قريبًا",

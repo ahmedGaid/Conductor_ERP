@@ -198,6 +198,22 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
 - **Each transition is atomic + guarded** by an explicit status check (`SAL-001`); over-payment is
   rejected (`SAL-005`). Proven: a full draft→paid flow leaves the trial balance balanced and AR at 0.
 
+## Purchasing module (Stage 5e)
+
+- **Mirror of Sales; closes the GRNI loop.** Receipts (from inventory) credit GRNI; the vendor
+  **bill** debits GRNI and credits AP, so GRNI nets to zero and the payable is booked. Net of
+  receive+bill is exactly Dr Inventory / Cr AP — the correct purchase entry.
+- **3-way match before billing:** every line's `received_qty` must equal the ordered `quantity`
+  (`PUR-002` otherwise); GRN supports **partial receipts**, which then (correctly) block the bill
+  until matched. This is the architecture for partial/over receipts even though the happy path
+  receives in full.
+- **GL mapping:** receive → Dr Inventory (1200)/Cr GRNI (2150) [posted by the inventory contract];
+  bill → Dr GRNI (2150)/Cr AP (2000); payment → Dr AP (2000)/Cr Cash (1000).
+- **Cross-module only via contracts** (gate08 forbids `erp.{accounting,inventory}.{domain,models,
+  services}` imports in `purchasing/services/orders.py`); items by SKU string, warehouse by code.
+- Each transition atomic + guarded (`PUR-001`); over-payment rejected (`PUR-005`). Proven: full
+  draft→paid flow leaves the trial balance balanced with GRNI at zero.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

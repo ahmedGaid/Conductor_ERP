@@ -24,6 +24,10 @@ import { OrdersPage } from "./pages/sales/OrdersPage";
 import { NewOrderPage } from "./pages/sales/NewOrderPage";
 import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
 import { CustomersPage } from "./pages/sales/CustomersPage";
+import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
+import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
+import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
+import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
 import type { ReactNode } from "react";
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -60,6 +64,10 @@ function Protected() {
           <Route path="/sales/orders/new" element={<NewOrderPage />} />
           <Route path="/sales/orders/:id" element={<OrderDetailPage />} />
           <Route path="/sales/customers" element={<CustomersPage />} />
+          <Route path="/purchasing" element={<PurchaseOrdersPage />} />
+          <Route path="/purchasing/orders/new" element={<NewPurchaseOrderPage />} />
+          <Route path="/purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
+          <Route path="/purchasing/suppliers" element={<SuppliersPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
