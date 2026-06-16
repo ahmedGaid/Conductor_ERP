@@ -11,7 +11,7 @@ import "./accounting.css";
 
 export function GeneralLedgerPage() {
   const { t } = useTranslation();
-  const { data: accounts } = useAsync(listAccounts, []);
+  const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const postable = (accounts ?? []).filter((a) => a.is_postable);
   const [account, setAccount] = useState("");
 
@@ -44,7 +44,16 @@ export function GeneralLedgerPage() {
         )}
       </div>
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
       {!account && <p className="muted">{t("accounting.report.pickAccount")}</p>}
 

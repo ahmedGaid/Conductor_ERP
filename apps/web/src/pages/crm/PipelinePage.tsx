@@ -26,10 +26,10 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: ""
 
 export function PipelinePage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listOpportunities(), []);
-  const { data: customers } = useAsync(listCustomers, []);
-  const { data: warehouses } = useAsync(listWarehouses, []);
-  const { data: items } = useAsync(listItems, []);
+  const { data, loading, error, reload } = useAsync(() => listOpportunities(), [], "crm:opportunities");
+  const { data: customers } = useAsync(listCustomers, [], "sales:customers");
+  const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
+  const { data: items } = useAsync(listItems, [], "inventory:items");
 
   const [name, setName] = useState("");
   const [customer, setCustomer] = useState("");
@@ -180,7 +180,16 @@ export function PipelinePage() {
         {formError && <p className="error-text">{formError}</p>}
       </form>
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
       {data && data.length === 0 && <p className="muted">{t("crm.pipeline.empty")}</p>}
 

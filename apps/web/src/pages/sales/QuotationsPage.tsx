@@ -10,7 +10,7 @@ import "./sales.css";
 
 export function QuotationsPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listQuotations(), []);
+  const { data, loading, error } = useAsync(() => listQuotations(), [], "sales:quotations");
 
   return (
     <section className="sales-page">
@@ -22,7 +22,16 @@ export function QuotationsPage() {
       </div>
       <SalesNav />
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
       {data && data.length === 0 && <p className="muted">{t("sales.quotations.empty")}</p>}
 

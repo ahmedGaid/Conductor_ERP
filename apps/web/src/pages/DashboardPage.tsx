@@ -53,7 +53,7 @@ const SHORTCUTS = [
 
 export function DashboardPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(loadDashboard, []);
+  const { data, loading, error } = useAsync(loadDashboard, [], "dashboard");
 
   return (
     <section className="dash">
@@ -70,7 +70,16 @@ export function DashboardPage() {
         <span className="dash__period">{currentPeriod()}</span>
       </div>
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
 
       {data && (

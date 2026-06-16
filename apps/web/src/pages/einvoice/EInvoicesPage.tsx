@@ -16,7 +16,7 @@ import "./einvoice.css";
 
 export function EInvoicesPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listETAInvoices(), []);
+  const { data, loading, error, reload } = useAsync(() => listETAInvoices(), [], "einvoice:invoices");
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -38,7 +38,16 @@ export function EInvoicesPage() {
       <h1>{t("nav.einvoice")}</h1>
       <EInvoiceNav />
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
       {actionError && <p className="error-text">{actionError}</p>}
       {data && data.length === 0 && <p className="muted">{t("einvoice.empty")}</p>}

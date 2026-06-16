@@ -259,6 +259,15 @@ Run gates: `cd C:\AhmedGaid\ERP; .\.venv\Scripts\python.exe scripts\gates\_run.p
 Note: `erp` Postgres role granted CREATEDB (for pytest test DB).
 Note: workflow/instance HTTP API (DRF endpoints) is built (Stage 4) under `/api/workflow/`.
 
+Design charter adopted (2026-06-16): the `Docs/Conductor_ERP_Product_Design_Engineering_Directive.md`
+"Telegram of ERP" vision is now an **operational, enforceable design charter** (concrete per-screen
+rules + the gate03-enforced engineering rules). The "Telegram feel" is delivered via **motion + focus +
+restraint, not a colour reskin** — new **motion tokens** (`--ease-out`, `--dur-fast|--dur|--dur-slow`),
+one app-wide `:focus-visible` ring (`--focus-ring`), `prefers-reduced-motion`, on-brand `::selection`,
+standardized transitions, and a calm KPI-card hover; near-black Conductor brand kept. gate03 GREEN.
+Backlog (per-screen, tracked in the directive's implementation log): designed empty states, loading
+skeletons, responsive/narrow-width pass, density reduction. See DECISIONS.md.
+
 ## What this project is
 Customer-hosted, single-tenant **Django modular-monolith ERP** (Python 3.13 + DRF), React+TS
 frontend, Arabic/RTL-first. Built **foundation-first**, then ERP modules (Accounting → Inventory →

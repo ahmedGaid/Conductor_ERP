@@ -24,9 +24,9 @@ function today(): string {
 
 export function StockMovementPage() {
   const { t } = useTranslation();
-  const { data: items } = useAsync(listItems, []);
-  const { data: warehouses } = useAsync(listWarehouses, []);
-  const { data: movements, reload } = useAsync(() => listMovements(), []);
+  const { data: items } = useAsync(listItems, [], "inventory:items");
+  const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
+  const { data: movements, reload } = useAsync(() => listMovements(), [], "inventory:movements");
 
   const [mode, setMode] = useState<MovementType>("receipt");
   const [itemSku, setItemSku] = useState("");

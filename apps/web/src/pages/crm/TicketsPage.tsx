@@ -18,7 +18,7 @@ const PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
 
 export function TicketsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listTickets(), []);
+  const { data, loading, error, reload } = useAsync(() => listTickets(), [], "crm:tickets");
 
   const [subject, setSubject] = useState("");
   const [customer, setCustomer] = useState("");
@@ -90,7 +90,16 @@ export function TicketsPage() {
         {formError && <p className="error-text">{formError}</p>}
       </form>
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
       {data && data.length === 0 && <p className="muted">{t("crm.ticket.empty")}</p>}
 

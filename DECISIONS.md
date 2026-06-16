@@ -420,6 +420,25 @@ financial statements, VAT return, e-invoices) is downloadable.
   renderer tests; 8 new tests (CSV BOM + minor→major, XLSX round-trips real numbers + RTL, auth, JSON
   fallback on unknown format).
 
+## Design charter — "Telegram of ERP" (the standing UI/UX contract)
+
+- The `Docs/Conductor_ERP_Product_Design_Engineering_Directive.md` vision (clarity, speed, simplicity,
+  readability, confidence; modern/lightweight/focused; never overwhelming) was **operationalized into a
+  concrete, enforceable charter** in that same file — turning a one-paragraph vision into per-screen
+  rules + the non-negotiable engineering rules gate03 already checks (tokens-only colour, logical-CSS,
+  i18n parity, clean build).
+- **The "Telegram feel" is delivered through motion, focus, and restraint — NOT a colour reskin.** The
+  near-black **Conductor** brand identity is deliberately kept (an earlier recorded decision); chasing
+  literal "Telegram blue" was rejected as off-brand. Instead a **motion token scale**
+  (`--ease-out`, `--dur-fast|--dur|--dur-slow`) + a single app-wide `:focus-visible` ring
+  (`--focus-ring`) + `prefers-reduced-motion` + on-brand `::selection` make the existing clean UI feel
+  fast, tactile, and confident, and these cascade to every screen via `tokens.css`/`global.css`.
+- Standardized button/input/link/nav transitions onto the motion scale and gave the dashboard KPI cards
+  a calm hover lift. Proven: gate03 green (build + token/logical-CSS scans + i18n parity).
+- **Backlog tracked in the directive's implementation log** (designed empty states, layout-matched
+  loading skeletons, a responsive/narrow-width pass, density reduction via progressive disclosure) —
+  applied per screen as we touch them, so the charter is met incrementally rather than in one big reskin.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

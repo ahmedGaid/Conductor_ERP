@@ -1,6 +1,10 @@
 // Minimal fetch wrapper for the Django API.
 // - Prefixes /api, attaches the JWT bearer, and unwraps the {data} / {error} envelope.
+// - On a successful write (non-GET), evicts the cached lists that write affects, so created/
+//   changed records show up immediately the next time their list is viewed.
 // - Vite proxies /api -> http://localhost:8000 in dev (see vite.config.ts).
+
+import { invalidateForPath } from "../lib/cache";
 
 const TOKEN_KEY = "erp.token";
 
@@ -40,7 +44,13 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   const res = await fetch(`/api${path}`, { ...init, headers });
 
-  if (res.status === 204) return undefined as T;
+  const method = (init.method ?? "GET").toUpperCase();
+  const mutating = method !== "GET";
+
+  if (res.status === 204) {
+    if (mutating) invalidateForPath(path);
+    return undefined as T;
+  }
 
   let body: unknown = null;
   const text = await res.text();
@@ -62,6 +72,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     throw new ApiError(msg, res.status, env?.error?.code);
   }
 
+  if (mutating) invalidateForPath(path);
   return (body as DataEnvelope<T>).data;
 }
 

@@ -9,7 +9,7 @@ import "./inventory.css";
 
 export function ItemsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listItems, []);
+  const { data, loading, error, reload } = useAsync(listItems, [], "inventory:items");
 
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
@@ -65,7 +65,16 @@ export function ItemsPage() {
       </form>
       {formError && <p className="error-text">{formError}</p>}
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
 
       {data && (

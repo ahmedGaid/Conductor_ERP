@@ -21,9 +21,9 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_cost: "" 
 export function NewPurchaseRequestPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: suppliers } = useAsync(listSuppliers, []);
-  const { data: warehouses } = useAsync(listWarehouses, []);
-  const { data: items } = useAsync(listItems, []);
+  const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
+  const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
+  const { data: items } = useAsync(listItems, [], "inventory:items");
 
   const [supplier, setSupplier] = useState("");
   const [warehouse, setWarehouse] = useState("");

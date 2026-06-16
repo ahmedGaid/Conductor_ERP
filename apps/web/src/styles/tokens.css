@@ -121,6 +121,19 @@
   --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
   --shadow-lg: 0 12px 28px rgba(16, 24, 40, 0.12);
 
+  /* ---- Motion ----
+     "Telegram of ERP": every interaction is fast and confident. One short, snappy
+     duration scale + one easing curve, applied consistently everywhere. Honour
+     prefers-reduced-motion (see global.css) — motion is polish, never a barrier. */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;   /* hovers, focus rings, small state flips */
+  --dur: 180ms;        /* default — buttons, links, inputs */
+  --dur-slow: 260ms;   /* larger surfaces sliding/fading in */
+
+  /* ---- Focus ring (keyboard) — visible, calm, brand-tinted ---- */
+  --focus-ring: 0 0 0 3px var(--color-brand-subtle);
+
   /* ---- Layout ---- */
   --sidebar-size: 16rem;
   --topbar-size: 4rem;

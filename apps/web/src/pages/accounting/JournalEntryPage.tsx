@@ -25,7 +25,7 @@ function today(): string {
 export function JournalEntryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: accounts } = useAsync(listAccounts, []);
+  const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const postable = (accounts ?? []).filter((a) => a.is_postable && a.is_active);
 
   const [date, setDate] = useState(today());

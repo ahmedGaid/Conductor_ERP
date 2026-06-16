@@ -76,6 +76,7 @@
   color: var(--color-text-muted);
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-sm);
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .sidebar__link:hover {
@@ -99,9 +100,30 @@
 }
 
 .sidebar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  flex: none;
+  /* Icons sit a touch quieter than the label, then come up to full strength
+     on hover/active (the link colour drives them via currentColor). */
+  color: var(--color-text-subtle);
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.sidebar__icon .navicon {
   inline-size: 1.25rem;
-  text-align: center;
-  font-size: var(--font-size-md);
+  block-size: 1.25rem;
+}
+
+.sidebar__link:hover .sidebar__icon,
+.sidebar__link--active .sidebar__icon {
+  color: currentColor;
+}
+
+.sidebar__link:active .sidebar__icon {
+  transform: scale(0.92);
 }
 
 .sidebar__badge {

@@ -10,7 +10,7 @@ import "./accounting.css";
 
 export function JournalListPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listJournals(), []);
+  const { data, loading, error } = useAsync(() => listJournals(), [], "accounting:journals");
 
   return (
     <section className="acct-page">
@@ -22,7 +22,16 @@ export function JournalListPage() {
       </div>
       <AccountingNav />
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
       {data && data.length === 0 && <p className="muted">{t("accounting.journals.empty")}</p>}
 

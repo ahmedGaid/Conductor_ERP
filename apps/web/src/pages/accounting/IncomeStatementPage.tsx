@@ -12,7 +12,7 @@ import "./accounting.css";
 export function IncomeStatementPage() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState("");
-  const { data: periods } = useAsync(listPeriods, []);
+  const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
   const { data, loading, error } = useAsync(
     () => incomeStatement(period ? { period } : {}),
     [period],
@@ -35,7 +35,16 @@ export function IncomeStatementPage() {
         </label>
       </div>
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
 
       {data && <ExportButtons path={`/accounting/reports/income-statement${period ? `?period=${period}` : ""}`} />}

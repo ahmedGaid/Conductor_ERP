@@ -10,7 +10,7 @@ import "./purchasing.css";
 
 export function PurchaseOrdersPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listPurchaseOrders(), []);
+  const { data, loading, error } = useAsync(() => listPurchaseOrders(), [], "purchasing:orders");
 
   return (
     <section className="pur-page">
@@ -22,7 +22,16 @@ export function PurchaseOrdersPage() {
       </div>
       <PurchasingNav />
 
-      {loading && <p className="muted">{t("common.loading")}</p>}
+      {loading && (
+        <div className="page-skeleton" aria-busy="true">
+          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+          <span className="skeleton skeleton--row" />
+        </div>
+      )}
       {error && <p className="error-text">{error}</p>}
       {data && data.length === 0 && <p className="muted">{t("purchasing.orders.empty")}</p>}
 

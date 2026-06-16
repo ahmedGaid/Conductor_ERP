@@ -3,29 +3,27 @@ import { NavLink } from "react-router-dom";
 
 import { getMe } from "../api/identity";
 import { useAsync } from "../hooks/useAsync";
+import { NavIcon } from "./icons";
 import "./Sidebar.css";
 
 interface NavItem {
   key: string;
-  icon: string;
   to: string;
 }
 
 const PRIMARY: NavItem[] = [
-  { key: "dashboard", icon: "⌂", to: "/" },
-  { key: "sales", icon: "▸", to: "/sales" },
-  { key: "purchasing", icon: "▾", to: "/purchasing" },
-  { key: "inventory", icon: "▦", to: "/inventory" },
-  { key: "accounting", icon: "▤", to: "/accounting" },
-  { key: "einvoice", icon: "▣", to: "/einvoice" },
-  { key: "crm", icon: "◇", to: "/crm" },
-  { key: "workflows", icon: "⇄", to: "/workflows" },
+  { key: "dashboard", to: "/" },
+  { key: "sales", to: "/sales" },
+  { key: "purchasing", to: "/purchasing" },
+  { key: "inventory", to: "/inventory" },
+  { key: "accounting", to: "/accounting" },
+  { key: "einvoice", to: "/einvoice" },
+  { key: "crm", to: "/crm" },
+  { key: "workflows", to: "/workflows" },
 ];
 
 // Roadmap modules — shown to convey scope, enabled as each stage lands.
-const SOON: { key: string; icon: string }[] = [
-  { key: "reports", icon: "▥" },
-];
+const SOON: { key: string }[] = [{ key: "reports" }];
 
 function initials(name: string): string {
   return name.slice(0, 2).toUpperCase();
@@ -46,7 +44,7 @@ export function Sidebar() {
 
       <nav className="sidebar__nav" aria-label={t("nav.dashboard")}>
         <ul className="sidebar__list">
-          {PRIMARY.map(({ key, icon, to }) => (
+          {PRIMARY.map(({ key, to }) => (
             <li key={key}>
               <NavLink
                 to={to}
@@ -55,8 +53,8 @@ export function Sidebar() {
                   isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
                 }
               >
-                <span className="sidebar__icon" aria-hidden="true">
-                  {icon}
+                <span className="sidebar__icon">
+                  <NavIcon name={key} />
                 </span>
                 <span>{t(`nav.${key}`)}</span>
               </NavLink>
@@ -66,11 +64,11 @@ export function Sidebar() {
 
         <div className="sidebar__group-label">{t("nav.modulesSoon")}</div>
         <ul className="sidebar__list">
-          {SOON.map(({ key, icon }) => (
+          {SOON.map(({ key }) => (
             <li key={key}>
               <span className="sidebar__link sidebar__link--soon" aria-disabled="true">
-                <span className="sidebar__icon" aria-hidden="true">
-                  {icon}
+                <span className="sidebar__icon">
+                  <NavIcon name={key} />
                 </span>
                 <span>{t(`nav.${key}`)}</span>
                 <span className="sidebar__badge">{t("common.soon")}</span>

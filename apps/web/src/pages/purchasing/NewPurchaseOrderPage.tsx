@@ -22,10 +22,10 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_cost: "" 
 export function NewPurchaseOrderPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: suppliers } = useAsync(listSuppliers, []);
-  const { data: warehouses } = useAsync(listWarehouses, []);
-  const { data: items } = useAsync(listItems, []);
-  const { data: taxCodes } = useAsync(listTaxCodes, []);
+  const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
+  const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
+  const { data: items } = useAsync(listItems, [], "inventory:items");
+  const { data: taxCodes } = useAsync(listTaxCodes, [], "accounting:tax-codes");
 
   const [supplier, setSupplier] = useState("");
   const [warehouse, setWarehouse] = useState("");

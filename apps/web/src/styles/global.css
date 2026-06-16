@@ -27,6 +27,32 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Calm, on-brand text selection. */
+::selection {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-text);
+}
+
+/* One focus discipline for the whole app: no ring on pointer interaction,
+   a clear brand-tinted ring for keyboard users (clarity + confidence). */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+/* Motion is polish, never a barrier — respect the OS reduced-motion setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Latin runs (numbers, codes, English tokens) keep their own face even in Arabic. */
 :lang(en),
 .latin {
@@ -36,6 +62,7 @@ body {
 a {
   color: var(--color-text);
   text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 a:hover {
   color: var(--color-accent);
@@ -74,6 +101,64 @@ h3 {
   white-space: nowrap;
 }
 
+/* ---- Page transition ----
+   A quick, cheap fade on each route change — short and GPU-only (opacity + a 2px
+   rise) so it reads as smooth, never as a delay before the page settles.
+   Neutralized under prefers-reduced-motion by the global guard above. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 2px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-enter {
+  animation: page-enter var(--dur) var(--ease-out) both;
+}
+
+/* ---- Loading skeletons ----
+   Layout-shaped placeholders shown on a cold load, so a page paints structure
+   immediately instead of a blank "Loading…" beat. The shimmer is decorative and
+   flattens to a static block under prefers-reduced-motion (global guard above). */
+.page-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.skeleton {
+  display: block;
+  inline-size: 100%;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 25%,
+    var(--color-border) 37%,
+    var(--color-surface-alt) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s var(--ease-in-out) infinite;
+}
+.skeleton--title {
+  inline-size: 38%;
+  block-size: 1.5rem;
+  margin-block-end: var(--space-2);
+}
+.skeleton--row {
+  block-size: 2.75rem;
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
 /* ---- Buttons ---- */
 .btn {
   display: inline-flex;
@@ -87,7 +172,8 @@ h3 {
   background-color: var(--color-surface);
   color: var(--color-text);
   font-weight: var(--font-weight-medium);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+  transition: background-color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 .btn:hover {
   background-color: var(--color-surface-alt);
@@ -146,7 +232,7 @@ textarea {
   border-radius: var(--radius-md);
   padding-inline: var(--space-3);
   padding-block: 0.5rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
 }
 input::placeholder,
 textarea::placeholder {
