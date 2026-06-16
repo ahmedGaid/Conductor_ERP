@@ -48,6 +48,7 @@ const INVALIDATION: ReadonlyArray<{ prefix: string; keys: readonly string[] }> =
   { prefix: "/inventory/items", keys: ["inventory:items"] },
   { prefix: "/inventory/warehouses", keys: ["inventory:warehouses"] },
   { prefix: "/accounting/accounts", keys: ["accounting:accounts"] },
+  { prefix: "/accounting/cost-centers", keys: ["accounting:cost-centers"] },
   { prefix: "/accounting/periods", keys: ["accounting:periods"] },
   { prefix: "/accounting/journals", keys: ["accounting:journals", "dashboard"] },
   // Asset acquire / depreciation / dispose all post to the GL.

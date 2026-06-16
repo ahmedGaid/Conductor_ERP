@@ -29,6 +29,7 @@ export interface JournalLineInput {
   debit: number;
   credit: number;
   memo?: string;
+  cost_center_code?: string;
 }
 
 export interface JournalLine {
@@ -38,6 +39,14 @@ export interface JournalLine {
   debit: number;
   credit: number;
   memo: string;
+  cost_center_code: string;
+}
+
+export interface CostCenter {
+  id: string;
+  code: string;
+  name: string;
+  is_active: boolean;
 }
 
 export interface JournalEntry {
@@ -155,6 +164,7 @@ export interface StatementLine {
 export interface IncomeStatementReport {
   date_from: string | null;
   date_to: string | null;
+  cost_center: string | null;
   revenue: StatementLine[];
   expenses: StatementLine[];
   total_revenue: number;
@@ -190,6 +200,7 @@ interface RangeParams {
   from?: string;
   to?: string;
   period?: string;
+  cost_center?: string;
 }
 
 function rangeQuery(params: RangeParams): string {
@@ -197,6 +208,7 @@ function rangeQuery(params: RangeParams): string {
   if (params.from) q.set("from", params.from);
   if (params.to) q.set("to", params.to);
   if (params.period) q.set("period", params.period);
+  if (params.cost_center) q.set("cost_center", params.cost_center);
   const s = q.toString();
   return s ? `?${s}` : "";
 }
@@ -237,6 +249,19 @@ export interface VatReturnReport {
 
 export function listTaxCodes(): Promise<TaxCode[]> {
   return apiFetch<TaxCode[]>("/accounting/tax-codes");
+}
+
+// ---- Cost centers (reporting dimension) ----
+
+export function listCostCenters(): Promise<CostCenter[]> {
+  return apiFetch<CostCenter[]>("/accounting/cost-centers");
+}
+
+export function createCostCenter(payload: { code: string; name: string }): Promise<CostCenter> {
+  return apiFetch<CostCenter>("/accounting/cost-centers", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 // ---- Fixed assets ----

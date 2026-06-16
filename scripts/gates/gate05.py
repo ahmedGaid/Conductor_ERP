@@ -110,6 +110,17 @@ def check() -> None:
         _assert((WEB_SRC / rel).is_file(), f"missing fixed-asset screen: src/{rel}")
     _assert("/accounting/assets" in _read("apps/web/src/App.tsx"), "App.tsx missing the fixed-assets route")
 
+    # 5f. Cost centers: an optional reporting dimension on journal lines, the income statement can be
+    #     filtered by it, the master endpoint is mounted, and the React screen is wired.
+    _assert("class CostCenter" in models_src, "missing CostCenter model")
+    _assert("cost_center_code" in models_src, "JournalLine missing the cost_center_code dimension")
+    _assert("cost_center" in stmt_src, "income_statement cannot filter by cost center")
+    _assert("cost-centers" in wf_urls, "cost-centers endpoint not mounted")
+    _assert((WEB_SRC / "pages" / "accounting" / "CostCentersPage.tsx").is_file(),
+            "missing cost-center screen: src/pages/accounting/CostCentersPage.tsx")
+    _assert("/accounting/cost-centers" in _read("apps/web/src/App.tsx"),
+            "App.tsx missing the cost-centers route")
+
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
 

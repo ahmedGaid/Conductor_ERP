@@ -14,6 +14,7 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "cashFlow", to: "/accounting/cash-flow" },
   { key: "vatReturn", to: "/accounting/vat-return" },
   { key: "fixedAssets", to: "/accounting/assets" },
+  { key: "costCenters", to: "/accounting/cost-centers" },
 ];
 
 export function AccountingNav() {

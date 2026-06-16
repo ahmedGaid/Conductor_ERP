@@ -29,12 +29,14 @@ def _resolve_range(date_from, date_to, period_code: str | None):
     return date_from, date_to
 
 
-def _lines(date_from=None, date_to=None):
+def _lines(date_from=None, date_to=None, cost_center: str | None = None):
     qs = JournalLine.objects.filter(entry__status=EntryStatus.POSTED)
     if date_from:
         qs = qs.filter(entry__date__gte=date_from)
     if date_to:
         qs = qs.filter(entry__date__lte=date_to)
+    if cost_center:
+        qs = qs.filter(cost_center_code=cost_center)
     return qs
 
 
@@ -62,11 +64,13 @@ class IncomeStatement:
     total_revenue: int
     total_expenses: int
     net_income: int
+    cost_center: str | None = None
 
 
-def income_statement(*, date_from=None, date_to=None, period_code: str | None = None) -> IncomeStatement:
+def income_statement(*, date_from=None, date_to=None, period_code: str | None = None,
+                     cost_center: str | None = None) -> IncomeStatement:
     date_from, date_to = _resolve_range(date_from, date_to, period_code)
-    rows = _by_account(_lines(date_from, date_to))
+    rows = _by_account(_lines(date_from, date_to, cost_center=cost_center))
     revenue: list[StatementLine] = []
     expenses: list[StatementLine] = []
     total_revenue = 0
@@ -90,6 +94,7 @@ def income_statement(*, date_from=None, date_to=None, period_code: str | None = 
         total_revenue=total_revenue,
         total_expenses=total_expenses,
         net_income=total_revenue - total_expenses,
+        cost_center=cost_center or None,
     )
 
 

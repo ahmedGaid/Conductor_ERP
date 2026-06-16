@@ -50,3 +50,9 @@ class AssetStateError(AppError):
     code = "ACC-008"
     status_code = 409
     message = "Fixed asset is not in a state that allows this action"
+
+
+class UnknownCostCenterError(AppError):
+    code = "ACC-009"
+    status_code = 422
+    message = "Journal line references an unknown or inactive cost center"

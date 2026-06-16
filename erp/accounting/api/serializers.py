@@ -127,11 +127,22 @@ class AssetDisposeSerializer(serializers.Serializer):
     proceeds_account_code = serializers.CharField(max_length=32, required=False, default="1000")
 
 
+class CostCenterSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    code = serializers.CharField(max_length=32)
+    name = serializers.CharField(max_length=200)
+    is_active = serializers.BooleanField(required=False, default=True)
+
+    def to_representation(self, obj) -> dict:
+        return {"id": str(obj.id), "code": obj.code, "name": obj.name, "is_active": obj.is_active}
+
+
 class JournalLineInputSerializer(serializers.Serializer):
     account_code = serializers.CharField(max_length=32)
     debit = serializers.IntegerField(min_value=0, default=0)
     credit = serializers.IntegerField(min_value=0, default=0)
     memo = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    cost_center_code = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
 
 
 class JournalPostSerializer(serializers.Serializer):
@@ -151,6 +162,7 @@ class JournalLineSerializer(serializers.Serializer):
     debit = serializers.IntegerField()
     credit = serializers.IntegerField()
     memo = serializers.CharField()
+    cost_center_code = serializers.CharField()
 
     def get_account_code(self, obj) -> str:
         return obj.account.code

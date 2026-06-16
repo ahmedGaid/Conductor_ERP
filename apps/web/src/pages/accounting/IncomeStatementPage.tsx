@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { incomeStatement, listPeriods, type StatementLine } from "../../api/accounting";
+import { incomeStatement, listCostCenters, listPeriods, type StatementLine } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -12,11 +12,18 @@ import "./accounting.css";
 export function IncomeStatementPage() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
+  const { data: costCenters } = useAsync(listCostCenters, [], "accounting:cost-centers");
   const { data, loading, error } = useAsync(
-    () => incomeStatement(period ? { period } : {}),
-    [period],
+    () => incomeStatement({ ...(period ? { period } : {}), ...(costCenter ? { cost_center: costCenter } : {}) }),
+    [period, costCenter],
   );
+
+  const exportQuery = new URLSearchParams();
+  if (period) exportQuery.set("period", period);
+  if (costCenter) exportQuery.set("cost_center", costCenter);
+  const exportSuffix = exportQuery.toString() ? `?${exportQuery.toString()}` : "";
 
   return (
     <section className="acct-page">
@@ -30,6 +37,15 @@ export function IncomeStatementPage() {
             <option value="">{t("accounting.report.allPeriods")}</option>
             {(periods ?? []).map((p) => (
               <option key={p.code} value={p.code}>{p.code}</option>
+            ))}
+          </select>
+        </label>
+        <label className="acct-field">
+          <span>{t("accounting.costCenters.label")}</span>
+          <select className="latin" value={costCenter} onChange={(e) => setCostCenter(e.target.value)}>
+            <option value="">{t("accounting.costCenters.all")}</option>
+            {(costCenters ?? []).filter((c) => c.is_active).map((c) => (
+              <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
             ))}
           </select>
         </label>
@@ -47,7 +63,7 @@ export function IncomeStatementPage() {
       )}
       {error && <p className="error-text">{error}</p>}
 
-      {data && <ExportButtons path={`/accounting/reports/income-statement${period ? `?period=${period}` : ""}`} />}
+      {data && <ExportButtons path={`/accounting/reports/income-statement${exportSuffix}`} />}
 
       {data && (
         <div className="card stmt">

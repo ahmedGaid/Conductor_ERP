@@ -131,6 +131,25 @@ class DepreciationEntry(TimeStampedModel):
         return f"{self.asset.code} {self.period_code}: {self.amount_minor}"
 
 
+class CostCenter(AuditedModel):
+    """A reporting dimension tagged onto journal lines (department / project / branch unit).
+
+    Optional everywhere: a line with no cost center is untagged, so the dimension is purely additive
+    and never disturbs existing posts. Referenced by string ``code`` like accounts and tax codes.
+    """
+
+    code = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=200)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "accounting_cost_center"
+        ordering = ["code"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.code} — {self.name}"
+
+
 class PeriodStatus(models.TextChoices):
     OPEN = "open", "Open"
     CLOSED = "closed", "Closed"
@@ -219,6 +238,8 @@ class JournalLine(models.Model):
     debit = models.BigIntegerField(default=0)  # minor units
     credit = models.BigIntegerField(default=0)  # minor units
     memo = models.CharField(max_length=255, blank=True, default="")
+    # Optional reporting dimension (department/project). Blank ⇒ untagged.
+    cost_center_code = models.CharField(max_length=32, blank=True, default="")
 
     class Meta:
         db_table = "accounting_journal_line"

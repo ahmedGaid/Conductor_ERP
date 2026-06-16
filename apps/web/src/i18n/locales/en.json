@@ -147,7 +147,17 @@
       "balanceSheet": "Balance Sheet",
       "cashFlow": "Cash Flow",
       "vatReturn": "VAT return",
-      "fixedAssets": "Fixed Assets"
+      "fixedAssets": "Fixed Assets",
+      "costCenters": "Cost Centers"
+    },
+    "costCenters": {
+      "code": "Code",
+      "name": "Name",
+      "active": "Active",
+      "add": "Add cost center",
+      "empty": "No cost centers yet.",
+      "label": "Cost center",
+      "all": "All cost centers"
     },
     "assets": {
       "code": "Code",
@@ -217,6 +227,7 @@
       "debit": "Debit",
       "credit": "Credit",
       "lineMemo": "Line memo",
+      "costCenter": "Cost center",
       "totals": "Totals",
       "balanced": "Balanced",
       "unbalanced": "Unbalanced",

@@ -20,6 +20,7 @@ urlpatterns = [
     path("reports/vat-return", views.VatReturnView.as_view(), name="vat-return"),
     path("reports/asset-register", views.AssetRegisterView.as_view(), name="asset-register"),
     path("tax-codes", views.TaxCodeListView.as_view(), name="tax-code-list"),
+    path("cost-centers", views.CostCenterListCreateView.as_view(), name="cost-center-list"),
     path("assets", views.FixedAssetListCreateView.as_view(), name="asset-list"),
     path("assets/depreciation-run", views.DepreciationRunView.as_view(), name="depreciation-run"),
     path("assets/<str:code>", views.FixedAssetDetailView.as_view(), name="asset-detail"),

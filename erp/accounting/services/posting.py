@@ -18,6 +18,7 @@ from erp.core.events import bus
 from .. import events
 from ..domain.models import (
     Account,
+    CostCenter,
     EntryStatus,
     JournalEntry,
     JournalLine,
@@ -30,6 +31,7 @@ from ..errors import (
     NoPeriodError,
     NonPostableAccountError,
     UnbalancedEntryError,
+    UnknownCostCenterError,
 )
 from ..repositories import accounts as account_repo
 from ..repositories import periods as period_repo
@@ -43,6 +45,7 @@ class LineInput:
     debit: int = 0
     credit: int = 0
     memo: str = ""
+    cost_center_code: str = ""  # optional reporting dimension
 
 
 @dataclass
@@ -114,7 +117,22 @@ def _validate_and_load_accounts(data: JournalInput) -> dict[str, Account]:
         )
     if total_debit == 0:
         raise UnbalancedEntryError("entry total is zero")
+
+    _validate_cost_centers(data)
     return resolved
+
+
+def _validate_cost_centers(data: JournalInput) -> None:
+    """Every cost center referenced by a line (if any) must exist and be active."""
+    codes = {ln.cost_center_code for ln in data.lines if ln.cost_center_code}
+    if not codes:
+        return
+    known = set(
+        CostCenter.objects.filter(code__in=codes, is_active=True).values_list("code", flat=True)
+    )
+    missing = codes - known
+    if missing:
+        raise UnknownCostCenterError(data={"cost_centers": sorted(missing)})
 
 
 @transaction.atomic
@@ -145,6 +163,7 @@ def post_journal(data: JournalInput, actor=None) -> JournalEntry:
                 debit=line.debit,
                 credit=line.credit,
                 memo=line.memo,
+                cost_center_code=line.cost_center_code,
             )
             for i, line in enumerate(data.lines, start=1)
         ]
@@ -183,6 +202,7 @@ def reverse_journal(entry: JournalEntry, actor=None, date=None) -> JournalEntry:
             debit=line.credit,  # swap sides
             credit=line.debit,
             memo=line.memo,
+            cost_center_code=line.cost_center_code,
         )
         for line in entry.lines.select_related("account").order_by("line_no")
     ]

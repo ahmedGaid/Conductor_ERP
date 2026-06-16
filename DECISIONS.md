@@ -470,6 +470,30 @@ the priority-1 accounting module's depreciation story.
   are wired). 9 new accounting tests. React: a Fixed Assets register (new-asset + run-depreciation
   inline) + an asset detail/dispose screen, added as an Accounting sub-nav tab; ar/en parity kept.
 
+## Accounting — Cost Centers (Phase 2 of the completion plan, 2026-06-16)
+
+Second completion-plan increment: a reporting **dimension** so the P&L can be sliced by
+department/project without a new ledger.
+
+- **Purely additive.** A nullable/blank `cost_center_code` string on `JournalLine` (plus a `CostCenter`
+  master, referenced by `code` like accounts/tax codes). Existing posts and every prior test are
+  untouched — the dimension only adds optional tagging, it changes no posting maths and the trial
+  balance is unaffected.
+- **Validated at the one posting point.** `post_journal` rejects an unknown/inactive cost center
+  (`ACC-009`) and writes nothing; a blank code is allowed (untagged). `reverse_journal` carries the
+  line's cost center onto the mirror entry so a reversal stays in the same dimension.
+- **P&L-by-cost-center == the income statement filtered by the dimension.** `income_statement` gained a
+  `cost_center` filter rather than a separate report — simpler, and proven correct by the invariant
+  that the per-center slices (plus the untagged remainder) sum to the un-dimensioned total. Balance
+  sheet/cash-flow intentionally not filtered (a dimension on P&L is the 80% need; balance-sheet
+  dimensions would need careful carry-forward semantics — deferred).
+- **Sales/Purchasing do not yet stamp a cost center** on the journals they post — out of scope for this
+  slice (it would touch each module's posting). Manual journal entries can tag lines today; wiring the
+  transactional modules to a default cost center can layer on later. Extends **gate05**; 4 new tests.
+  React: a Cost Centers master tab, a per-line cost-center picker on the journal-entry form, and a
+  cost-center filter (with matching export) on the Income Statement; ar/en parity. Seeds CC-SALES/
+  CC-OPS/CC-ADMIN.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

@@ -12,7 +12,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from erp.accounting.domain.accounts import AccountType
-from erp.accounting.domain.models import Account, FiscalYear, Period, TaxCode
+from erp.accounting.domain.models import Account, CostCenter, FiscalYear, Period, TaxCode
 
 # (code, name, type, is_postable, parent_code)
 COA = [
@@ -71,6 +71,10 @@ class Command(BaseCommand):
                 defaults={"name": name, "rate_bps": rate_bps, "output_account_code": "2100",
                           "input_account_code": "1190", "is_active": True},
             )
+
+        # Reporting dimensions (cost centers) — departments to tag journal lines with.
+        for code, name in [("CC-SALES", "Sales Dept"), ("CC-OPS", "Operations"), ("CC-ADMIN", "Administration")]:
+            CostCenter.objects.update_or_create(code=code, defaults={"name": name, "is_active": True})
 
         year = dt.date.today().year
         fy, _ = FiscalYear.objects.update_or_create(

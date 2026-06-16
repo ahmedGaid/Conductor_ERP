@@ -31,13 +31,13 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 - **Gate:** extend gate05 — straight-line schedule correct, depreciation run balances + is idempotent,
   disposal gain/loss correct, NBV never below salvage.
 
-### Phase 2 — Cost Centers (dimensional accounting)  ⬅ NEXT
+### Phase 2 — Cost Centers (dimensional accounting)  ✅ DONE (2026-06-16, committed)
 - `CostCenter` master; optional `cost_center_code` on journal lines (nullable ⇒ all existing posts
   unaffected). `post_journal` accepts a per-line dimension; P&L-by-cost-center report.
 - API + React: cost-center master + a cost-center filter on the income statement.
 - Gate: posting with a dimension still balances; the dimensional P&L sums to the un-dimensioned total.
 
-### Phase 3 — Bank Reconciliation
+### Phase 3 — Bank Reconciliation  ⬅ NEXT
 - `BankStatement` + `BankStatementLine`; match lines against `is_cash`-account GL lines (auto by
   amount+date, manual override); unreconciled report; post adjustment journals for bank-only items
   (fees/interest).

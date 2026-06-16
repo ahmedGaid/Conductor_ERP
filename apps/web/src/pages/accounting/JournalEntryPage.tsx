@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { listAccounts, postJournal, type JournalLineInput } from "../../api/accounting";
+import { listAccounts, listCostCenters, postJournal, type JournalLineInput } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -14,9 +14,10 @@ interface DraftLine {
   debit: string;
   credit: string;
   memo: string;
+  cost_center_code: string;
 }
 
-const emptyLine = (): DraftLine => ({ account_code: "", debit: "", credit: "", memo: "" });
+const emptyLine = (): DraftLine => ({ account_code: "", debit: "", credit: "", memo: "", cost_center_code: "" });
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -26,7 +27,9 @@ export function JournalEntryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
+  const { data: costCenters } = useAsync(listCostCenters, [], "accounting:cost-centers");
   const postable = (accounts ?? []).filter((a) => a.is_postable && a.is_active);
+  const activeCostCenters = (costCenters ?? []).filter((c) => c.is_active);
 
   const [date, setDate] = useState(today());
   const [memo, setMemo] = useState("");
@@ -55,7 +58,13 @@ export function JournalEntryPage() {
         return;
       }
       if (!l.account_code || (debit === 0 && credit === 0)) continue;
-      payloadLines.push({ account_code: l.account_code, debit, credit, memo: l.memo });
+      payloadLines.push({
+        account_code: l.account_code,
+        debit,
+        credit,
+        memo: l.memo,
+        cost_center_code: l.cost_center_code,
+      });
     }
     if (payloadLines.length < 2) {
       setError(t("accounting.entry.needLines"));
@@ -97,6 +106,7 @@ export function JournalEntryPage() {
                 <th>{t("accounting.entry.account")}</th>
                 <th className="acct-table__num">{t("accounting.entry.debit")}</th>
                 <th className="acct-table__num">{t("accounting.entry.credit")}</th>
+                <th>{t("accounting.entry.costCenter")}</th>
                 <th>{t("accounting.entry.lineMemo")}</th>
                 <th />
               </tr>
@@ -134,6 +144,19 @@ export function JournalEntryPage() {
                     />
                   </td>
                   <td>
+                    <select
+                      value={l.cost_center_code}
+                      onChange={(e) => setLine(i, { cost_center_code: e.target.value })}
+                    >
+                      <option value="">—</option>
+                      {activeCostCenters.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.code} · {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
                     <input value={l.memo} onChange={(e) => setLine(i, { memo: e.target.value })} />
                   </td>
                   <td>
@@ -155,7 +178,7 @@ export function JournalEntryPage() {
                 <td>{t("accounting.entry.totals")}</td>
                 <td className="acct-table__num"><Bdi>{formatMinor(totalDebit)}</Bdi></td>
                 <td className="acct-table__num"><Bdi>{formatMinor(totalCredit)}</Bdi></td>
-                <td colSpan={2}>
+                <td colSpan={3}>
                   <span className={balanced ? "acct-balanced" : "acct-unbalanced"}>
                     {balanced ? t("accounting.entry.balanced") : t("accounting.entry.unbalanced")}
                   </span>

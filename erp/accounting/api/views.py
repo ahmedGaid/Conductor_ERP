@@ -18,12 +18,13 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
 
 from .. import services
-from ..domain.models import Account, FiscalYear, FixedAsset, JournalEntry, Period
+from ..domain.models import Account, CostCenter, FiscalYear, FixedAsset, JournalEntry, Period
 from ..repositories import accounts as account_repo
 from . import exports as export_tables
 from .serializers import (
     AccountSerializer,
     AssetDisposeSerializer,
+    CostCenterSerializer,
     DepreciationRunSerializer,
     FiscalYearSerializer,
     FixedAssetCreateSerializer,
@@ -139,6 +140,7 @@ class JournalListPostView(APIView):
                     debit=ln["debit"],
                     credit=ln["credit"],
                     memo=ln.get("memo", ""),
+                    cost_center_code=ln.get("cost_center_code", ""),
                 )
                 for ln in v["lines"]
             ],
@@ -211,6 +213,7 @@ class IncomeStatementView(APIView):
             date_from=request.query_params.get("from") or None,
             date_to=request.query_params.get("to") or None,
             period_code=request.query_params.get("period") or None,
+            cost_center=request.query_params.get("cost_center") or None,
         )
         fmt = request.query_params.get("export")
         if fmt in EXPORT_FORMATS:
@@ -220,6 +223,7 @@ class IncomeStatementView(APIView):
             {
                 "date_from": st.date_from,
                 "date_to": st.date_to,
+                "cost_center": st.cost_center,
                 "revenue": [asdict(line) for line in st.revenue],
                 "expenses": [asdict(line) for line in st.expenses],
                 "total_revenue": st.total_revenue,
@@ -267,6 +271,26 @@ class TaxCodeListView(APIView):
              "input_account_code": tc.input_account_code}
             for tc in rows
         ])
+
+
+class CostCenterListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        qs = CostCenter.objects.all().order_by("code")
+        if request.query_params.get("active") == "true":
+            qs = qs.filter(is_active=True)
+        return _envelope(CostCenterSerializer(qs, many=True).data)
+
+    def post(self, request: Request) -> Response:
+        s = CostCenterSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        cc = CostCenter.objects.create(
+            code=v["code"], name=v["name"], is_active=v.get("is_active", True),
+            created_by=request.user if request.user.is_authenticated else None,
+        )
+        return _envelope(CostCenterSerializer(cc).data, status=201)
 
 
 class VatReturnView(APIView):
