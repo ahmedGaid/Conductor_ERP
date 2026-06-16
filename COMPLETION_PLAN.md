@@ -52,14 +52,14 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 
 ## Track B — Operational depth
 
-### Phase 5 — Inventory: stock counts/adjustments + batch/lot  ⬅ NEXT
+### Phase 5 — Inventory: stock counts/adjustments + batch/lot  ✅ DONE (2026-06-17, committed)
 - Physical **stock count** (snapshot → enter counted qty → post variance adjustment: Dr/Cr Inventory
   vs an adjustment account, keeping `Inventory GL == stock value`). Optional **batch/lot** field on
   movements with expiry, and a batch-balance view.
 - API + React: count session screen, adjustment posting, batch report.
 - Gate: a counted shortage posts a balanced adjustment and the GL-equals-stock-value invariant holds.
 
-### Phase 6 — CRM: campaigns + ticket escalation
+### Phase 6 — CRM: campaigns + ticket escalation  ⬅ NEXT
 - `Campaign` (target segment, linked leads/opportunities, simple ROI = won value vs cost); **ticket
   escalation** — auto-bump priority/notify when an SLA is breached (event-driven, reuses the bus).
 - API + React: campaign list/detail, escalation indicator + activity on tickets.

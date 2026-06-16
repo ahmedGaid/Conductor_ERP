@@ -38,3 +38,15 @@ class UnknownWarehouseError(AppError):
     code = "INV-006"
     status_code = 404
     message = "Unknown warehouse code"
+
+
+class CountStateError(AppError):
+    code = "INV-007"
+    status_code = 409
+    message = "Stock count is not in a state that allows this action"
+
+
+class InvalidCountError(AppError):
+    code = "INV-008"
+    status_code = 422
+    message = "Counted quantity is invalid"

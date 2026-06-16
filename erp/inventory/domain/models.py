@@ -22,6 +22,7 @@ class MovementType(models.TextChoices):
     TRANSFER = "transfer", "Transfer"
     RETURN_IN = "return_in", "Customer return (in)"
     RETURN_OUT = "return_out", "Supplier return (out)"
+    ADJUSTMENT = "adjustment", "Count adjustment"
 
 
 class Category(TimeStampedModel):
@@ -102,10 +103,57 @@ class StockMovement(AuditedModel):
     value_minor = models.BigIntegerField(default=0)  # cost moved by this event
     reference = models.CharField(max_length=128, blank=True, default="")
     memo = models.CharField(max_length=255, blank=True, default="")
+    # Optional batch/lot traceability (carried on receipts).
+    batch_no = models.CharField(max_length=64, blank=True, default="")
+    expiry_date = models.DateField(null=True, blank=True)
     # The GL journal this movement posted (entry number), if any.
     journal_number = models.CharField(max_length=32, blank=True, default="")
 
     class Meta:
         db_table = "inventory_stock_movement"
         ordering = ["-date", "-created_at"]
-        indexes = [models.Index(fields=["item"]), models.Index(fields=["type"])]
+        indexes = [models.Index(fields=["item"]), models.Index(fields=["type"]),
+                   models.Index(fields=["batch_no"])]
+
+
+class CountStatus(models.TextChoices):
+    COUNTING = "counting", "Counting"   # snapshot taken, entering counts
+    POSTED = "posted", "Posted"         # variances adjusted to stock + GL
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class StockCount(AuditedModel):
+    """A physical stock count: a snapshot of system quantities, then counted quantities entered, then
+    the variances posted as adjustment movements (keeping Inventory GL == stock value)."""
+
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT, related_name="stock_counts")
+    count_date = models.DateField()
+    reference = models.CharField(max_length=128, blank=True, default="")
+    memo = models.CharField(max_length=255, blank=True, default="")
+    status = models.CharField(max_length=16, choices=CountStatus.choices, default=CountStatus.COUNTING)
+
+    class Meta:
+        db_table = "inventory_stock_count"
+        ordering = ["-count_date", "-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Count {self.warehouse_id} @ {self.count_date}"
+
+
+class StockCountLine(TimeStampedModel):
+    """One item on a stock count: the system snapshot vs the counted quantity and the posted variance."""
+
+    count = models.ForeignKey(StockCount, on_delete=models.CASCADE, related_name="lines")
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="+")
+    system_quantity = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    counted_quantity = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    variance_quantity = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    variance_value_minor = models.BigIntegerField(default=0)  # signed: − shortage / + overage
+    movement = models.ForeignKey(
+        StockMovement, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        db_table = "inventory_stock_count_line"
+        ordering = ["count", "item__sku"]
+        unique_together = [("count", "item")]

@@ -80,6 +80,19 @@ def check() -> None:
         for banned in (".raw(", "cursor.execute(", "RunSQL"):
             _assert(banned not in src, f"{path.name} uses raw SQL ({banned})")
 
+    # 5b. Stock counts + adjustments: a count workflow drives variances through adjust_stock (which
+    #     posts to the GL via the contract), keeping Inventory GL == stock value; batch/lot traceability
+    #     on receipts. The count tests assert the invariant survives an adjustment.
+    _assert("def adjust_stock" in stock_src, "inventory missing the adjust_stock service")
+    count_src = _read("erp/inventory/services/stock_count.py")
+    for fn in ("def create_count", "def set_counted", "def post_count"):
+        _assert(fn in count_src, f"stock_count service missing {fn}")
+    inv_urls = _read("erp/inventory/api/urls.py")
+    for route in ("counts", "reports/batches"):
+        _assert(route in inv_urls, f"inventory endpoint not mounted: {route}")
+    reports_src = _read("erp/inventory/services/reports.py")
+    _assert("def batches" in reports_src, "inventory reports missing the batches view")
+
     # 6. React inventory screens exist and are wired.
     for rel in (
         "api/inventory.ts",
@@ -87,11 +100,15 @@ def check() -> None:
         "pages/inventory/WarehousesPage.tsx",
         "pages/inventory/StockMovementPage.tsx",
         "pages/inventory/StockOnHandPage.tsx",
+        "pages/inventory/StockCountsPage.tsx",
+        "pages/inventory/StockCountDetailPage.tsx",
+        "pages/inventory/BatchesPage.tsx",
     ):
         _assert((WEB_SRC / rel).is_file(), f"missing inventory screen: src/{rel}")
 
     app = (WEB_SRC / "App.tsx").read_text(encoding="utf-8")
-    for route in ("/inventory", "/inventory/movements", "/inventory/stock-on-hand"):
+    for route in ("/inventory", "/inventory/movements", "/inventory/stock-on-hand",
+                  "/inventory/counts", "/inventory/batches"):
         _assert(route in app, f"App.tsx missing inventory route: {route}")
 
     movement = (WEB_SRC / "pages" / "inventory" / "StockMovementPage.tsx").read_text(encoding="utf-8")

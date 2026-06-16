@@ -41,6 +41,7 @@ COA = [
     ("5200", "Salaries Expense", AccountType.EXPENSE, True, "5"),
     ("5300", "Depreciation Expense", AccountType.EXPENSE, True, "5"),
     ("5400", "Loss on Asset Disposal", AccountType.EXPENSE, True, "5"),
+    ("5900", "Inventory Adjustment", AccountType.EXPENSE, True, "5"),
     ("6100", "Bank Charges", AccountType.EXPENSE, True, "5"),
 ]
 

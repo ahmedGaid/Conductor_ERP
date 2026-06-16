@@ -57,11 +57,12 @@ def issue(sku: str, warehouse_code: str, quantity, *, date=None, reference: str 
 
 
 def receive(sku: str, warehouse_code: str, quantity, unit_cost_minor: int, *, date=None,
-            reference: str = "", memo: str = "", actor=None):
+            reference: str = "", memo: str = "", batch_no: str = "", expiry_date=None, actor=None):
     item, warehouse = _resolve(sku, warehouse_code)
     return receive_stock(
         item=item, warehouse=warehouse, quantity=quantity, unit_cost_minor=unit_cost_minor,
-        date=date, reference=reference, memo=memo, actor=actor,
+        date=date, reference=reference, memo=memo, batch_no=batch_no, expiry_date=expiry_date,
+        actor=actor,
     )
 
 

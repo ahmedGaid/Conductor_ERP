@@ -543,6 +543,32 @@ Fourth completion-plan increment, completing Track A (accounting depth).
   line-entry form and the variance table (period filter, colour-coded variance, CSV/XLSX export); ar/en
   parity. Demo seeds a current-year operating plan.
 
+## Inventory — Stock counts/adjustments + batch/lot (Phase 5 of the completion plan, 2026-06-17)
+
+Fifth completion-plan increment, opening Track B (operational depth).
+
+- **A count reconciles to the counted quantity through the same invariant point.** `StockCount` snapshots
+  system quantities (`StockCountLine.system_quantity`); posting calls `adjust_stock` per counted line,
+  which posts the value variance to the GL **via `erp.accounting.contracts`** (never the accounting
+  ORM — gate06's boundary still holds). Shortage: value removed at weighted average → Dr Inventory
+  Adjustment (5900) / Cr Inventory (1200); overage: valued at the current weighted-average unit cost
+  (or a supplied cost when the warehouse holds none) → Dr Inventory / Cr Adjustment. Because stock value
+  and the Inventory GL move by the same amount, **Inventory GL == stock value survives every
+  adjustment** (proven by a count test).
+- **Adjustment is a new signed movement.** `MovementType.ADJUSTMENT`; the movement stores the signed
+  variance quantity and signed value (− shortage / + overage). `adjust_stock` returns `None` when there
+  is no variance (posts nothing). Negative counted quantity rejected (`INV-008`); a count can be posted
+  once (`INV-007`).
+- **Batch/lot is traceability, not batch-level costing.** Optional `batch_no` + `expiry_date` on
+  receipts; the **batches** report sums received quantity per (item, warehouse, batch) with the earliest
+  expiry. Issues remain weighted-average and are **not** batch-allocated — so this is an honest
+  receiving/expiry view, not a consumed-by-lot ledger (full lot tracking with FIFO-by-expiry issue is a
+  later, larger change). The contract `receive()` now forwards batch/expiry, so Purchasing can pass them
+  later.
+- New account **5900 Inventory Adjustment** (expense). Extends **gate06**; 7 new tests. React: Stock
+  counts list/new/detail (inline count entry + post) + a Batches view, and batch/expiry fields on the
+  receive form; ar/en parity. Demo seeds a batched receipt + an open count.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

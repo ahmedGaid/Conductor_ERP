@@ -321,7 +321,9 @@
       "stockOnHand": "Stock on hand",
       "items": "Items",
       "warehouses": "Warehouses",
-      "movements": "Movements"
+      "movements": "Movements",
+      "counts": "Stock counts",
+      "batches": "Batches"
     },
     "types": {
       "stock": "Stock item",
@@ -355,10 +357,48 @@
       "from": "From warehouse",
       "to": "To warehouse",
       "unitCost": "Unit cost",
+      "batchNo": "Batch / lot",
+      "expiry": "Expiry",
+      "optional": "optional",
+      "adjustment": "Count adjustment",
+      "return_in": "Customer return",
+      "return_out": "Supplier return",
       "post": "Post movement",
       "fillRequired": "Fill the required fields",
       "badCost": "Invalid cost",
       "posted": "Posted ({{ref}})"
+    },
+    "counts": {
+      "warehouse": "Warehouse",
+      "date": "Count date",
+      "start": "Start count",
+      "startHint": "Starting a count snapshots the current system quantities for the warehouse.",
+      "pickWarehouse": "Pick a warehouse.",
+      "empty": "No stock counts yet.",
+      "backToList": "Back to counts",
+      "lines": "Items",
+      "status": "Status",
+      "item": "Item",
+      "system": "System qty",
+      "counted": "Counted qty",
+      "variance": "Variance",
+      "varianceValue": "Variance value",
+      "post": "Post count",
+      "enterHint": "Enter the counted quantity for each item, then post to adjust stock and the GL.",
+      "statuses": {
+        "counting": "Counting",
+        "posted": "Posted",
+        "cancelled": "Cancelled"
+      }
+    },
+    "batches": {
+      "batch": "Batch / lot",
+      "item": "Item",
+      "warehouse": "Warehouse",
+      "received": "Received qty",
+      "expiry": "Earliest expiry",
+      "empty": "No batches recorded yet.",
+      "hint": "Receive stock with a batch/lot and expiry to see it traced here."
     }
   },
   "sales": {

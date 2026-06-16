@@ -3,7 +3,8 @@
 import { apiFetch } from "./client";
 
 export type ItemType = "stock" | "service";
-export type MovementType = "receipt" | "issue" | "transfer";
+export type MovementType = "receipt" | "issue" | "transfer" | "return_in" | "return_out" | "adjustment";
+export type CountStatus = "counting" | "posted" | "cancelled";
 
 export interface Item {
   id: string;
@@ -35,6 +36,8 @@ export interface Movement {
   value_minor: number;
   reference: string;
   memo: string;
+  batch_no: string;
+  expiry_date: string | null;
   journal_number: string;
 }
 
@@ -91,6 +94,8 @@ export function receiveStock(payload: {
   date?: string;
   reference?: string;
   memo?: string;
+  batch_no?: string;
+  expiry_date?: string | null;
 }): Promise<Movement> {
   return apiFetch<Movement>("/inventory/movements/receive", {
     method: "POST",
@@ -129,4 +134,70 @@ export function transferStock(payload: {
 
 export function stockOnHand(): Promise<StockOnHand> {
   return apiFetch<StockOnHand>("/inventory/reports/stock-on-hand");
+}
+
+// ---- Stock counts ----
+
+export interface StockCountLine {
+  id: string;
+  item_sku: string;
+  item_name: string;
+  system_quantity: string;
+  counted_quantity: string | null;
+  variance_quantity: string;
+  variance_value_minor: number;
+}
+
+export interface StockCount {
+  id: string;
+  warehouse_code: string;
+  count_date: string;
+  reference: string;
+  memo: string;
+  status: CountStatus;
+  line_count: number;
+  lines?: StockCountLine[];
+}
+
+export function listStockCounts(): Promise<StockCount[]> {
+  return apiFetch<StockCount[]>("/inventory/counts");
+}
+
+export function getStockCount(id: string): Promise<StockCount> {
+  return apiFetch<StockCount>(`/inventory/counts/${id}`);
+}
+
+export function createStockCount(payload: {
+  warehouse_code: string;
+  count_date?: string;
+  reference?: string;
+  item_skus?: string[];
+}): Promise<StockCount> {
+  return apiFetch<StockCount>("/inventory/counts", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function setCountLine(lineId: string, counted_quantity: string): Promise<StockCount> {
+  return apiFetch<StockCount>(`/inventory/count-lines/${lineId}/set`, {
+    method: "POST",
+    body: JSON.stringify({ counted_quantity }),
+  });
+}
+
+export function postStockCount(id: string): Promise<StockCount> {
+  return apiFetch<StockCount>(`/inventory/counts/${id}/post`, { method: "POST", body: "{}" });
+}
+
+// ---- Batches / lots ----
+
+export interface BatchRow {
+  batch_no: string;
+  sku: string;
+  item_name: string;
+  warehouse_code: string;
+  received_quantity: string;
+  earliest_expiry: string | null;
+}
+
+export function listBatches(): Promise<BatchRow[]> {
+  return apiFetch<BatchRow[]>("/inventory/reports/batches");
 }

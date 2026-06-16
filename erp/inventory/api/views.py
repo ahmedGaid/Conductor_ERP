@@ -16,15 +16,17 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from .. import services
-from ..domain.models import Category, Item, StockMovement, Warehouse
+from ..domain.models import Category, Item, StockCount, StockCountLine, StockMovement, Warehouse
 from ..repositories import items as item_repo
 from ..repositories import warehouses as warehouse_repo
 from .serializers import (
     CategorySerializer,
+    CountLineSetSerializer,
     IssueSerializer,
     ItemSerializer,
     MovementSerializer,
     ReceiveSerializer,
+    StockCountCreateSerializer,
     TransferSerializer,
     WarehouseSerializer,
 )
@@ -100,7 +102,8 @@ class ReceiveView(APIView):
         movement = services.receive_stock(
             item=item, warehouse=warehouse, quantity=v["quantity"],
             unit_cost_minor=v["unit_cost"], date=v.get("date"),
-            reference=v.get("reference", ""), memo=v.get("memo", ""), actor=request.user,
+            reference=v.get("reference", ""), memo=v.get("memo", ""),
+            batch_no=v.get("batch_no", ""), expiry_date=v.get("expiry_date"), actor=request.user,
         )
         return _envelope(MovementSerializer(movement).data, status=201)
 
@@ -165,3 +168,85 @@ class StockOnHandView(APIView):
                 "total_value_minor": report.total_value_minor,
             }
         )
+
+
+def _count_dict(count: StockCount, with_lines: bool = False) -> dict:
+    data = {
+        "id": str(count.id),
+        "warehouse_code": count.warehouse.code,
+        "count_date": count.count_date,
+        "reference": count.reference,
+        "memo": count.memo,
+        "status": count.status,
+        "line_count": count.lines.count(),
+    }
+    if with_lines:
+        data["lines"] = [
+            {
+                "id": str(ln.id),
+                "item_sku": ln.item.sku,
+                "item_name": ln.item.name,
+                "system_quantity": str(ln.system_quantity),
+                "counted_quantity": str(ln.counted_quantity) if ln.counted_quantity is not None else None,
+                "variance_quantity": str(ln.variance_quantity),
+                "variance_value_minor": ln.variance_value_minor,
+            }
+            for ln in count.lines.select_related("item").order_by("item__sku")
+        ]
+    return data
+
+
+class StockCountListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request) -> Response:
+        qs = StockCount.objects.select_related("warehouse").order_by("-count_date", "-created_at")
+        return _envelope([_count_dict(c) for c in qs[:200]])
+
+    def post(self, request: Request) -> Response:
+        s = StockCountCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        warehouse = get_object_or_404(Warehouse, code=v["warehouse_code"])
+        count = services.create_count(
+            warehouse=warehouse, item_skus=v.get("item_skus") or None,
+            count_date=v.get("count_date"), reference=v.get("reference", ""),
+            memo=v.get("memo", ""), actor=request.user,
+        )
+        return _envelope(_count_dict(count, with_lines=True), status=201)
+
+
+class StockCountDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request, count_id) -> Response:
+        count = get_object_or_404(StockCount.objects.select_related("warehouse"), id=count_id)
+        return _envelope(_count_dict(count, with_lines=True))
+
+
+class StockCountLineSetView(APIView):
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def post(self, request: Request, line_id) -> Response:
+        line = get_object_or_404(StockCountLine.objects.select_related("count"), id=line_id)
+        s = CountLineSetSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        services.set_counted(line, s.validated_data["counted_quantity"])
+        return _envelope(_count_dict(line.count, with_lines=True))
+
+
+class StockCountPostView(APIView):
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def post(self, request: Request, count_id) -> Response:
+        count = get_object_or_404(StockCount.objects.select_related("warehouse"), id=count_id)
+        services.post_count(count, actor=request.user)
+        return _envelope(_count_dict(count, with_lines=True))
+
+
+class BatchesView(APIView):
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request) -> Response:
+        rows = services.batches(warehouse_code=request.query_params.get("warehouse") or None)
+        return _envelope([asdict(r) for r in rows])

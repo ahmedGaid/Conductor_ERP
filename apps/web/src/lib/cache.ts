@@ -47,6 +47,12 @@ const INVALIDATION: ReadonlyArray<{ prefix: string; keys: readonly string[] }> =
   },
   { prefix: "/inventory/items", keys: ["inventory:items"] },
   { prefix: "/inventory/warehouses", keys: ["inventory:warehouses"] },
+  { prefix: "/inventory/count-lines", keys: ["inventory:counts"] },
+  // Posting a count adjusts stock and posts GL.
+  {
+    prefix: "/inventory/counts",
+    keys: ["inventory:counts", "inventory:stock-on-hand", "inventory:movements", "accounting:journals", "dashboard"],
+  },
   { prefix: "/accounting/accounts", keys: ["accounting:accounts"] },
   { prefix: "/accounting/cost-centers", keys: ["accounting:cost-centers"] },
   { prefix: "/accounting/budgets", keys: ["accounting:budgets"] },

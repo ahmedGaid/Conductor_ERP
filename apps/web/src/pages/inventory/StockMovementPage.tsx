@@ -34,6 +34,8 @@ export function StockMovementPage() {
   const [dest, setDest] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [batchNo, setBatchNo] = useState("");
+  const [expiry, setExpiry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export function StockMovementPage() {
         }
         const mv = await receiveStock({
           item_sku: itemSku, warehouse_code: warehouse, quantity, unit_cost: cost, date: today(),
+          batch_no: batchNo || undefined, expiry_date: expiry || null,
         });
         setOk(t("inventory.movement.posted", { ref: mv.journal_number || mv.id.slice(0, 8) }));
       } else if (mode === "issue") {
@@ -73,6 +76,8 @@ export function StockMovementPage() {
       }
       setQuantity("");
       setUnitCost("");
+      setBatchNo("");
+      setExpiry("");
       reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -143,6 +148,20 @@ export function StockMovementPage() {
             <label className="inv-field">
               <span>{t("inventory.movement.unitCost")}</span>
               <input className="latin" inputMode="decimal" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" />
+            </label>
+          )}
+
+          {mode === "receipt" && (
+            <label className="inv-field">
+              <span>{t("inventory.movement.batchNo")}</span>
+              <input className="latin" value={batchNo} onChange={(e) => setBatchNo(e.target.value)} placeholder={t("inventory.movement.optional")} />
+            </label>
+          )}
+
+          {mode === "receipt" && (
+            <label className="inv-field">
+              <span>{t("inventory.movement.expiry")}</span>
+              <input className="latin" type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
             </label>
           )}
 

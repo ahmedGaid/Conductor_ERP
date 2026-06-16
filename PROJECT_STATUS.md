@@ -3,16 +3,27 @@
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
 > meaningful step. Last updated: **2026-06-16 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
-> exports (Stage 6b) + COMPLETION_PLAN Phases 1–4: Fixed Assets + Depreciation, Cost Centers, Bank
-> Reconciliation, Budgets; gate:all 00–10 GREEN)**.
+> exports (Stage 6b) + COMPLETION_PLAN Phases 1–5: Fixed Assets + Depreciation, Cost Centers, Bank
+> Reconciliation, Budgets, Inventory counts/adjustments + batch/lot; gate:all 00–10 GREEN)**.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
 operational depth → Stage 6 finish → frontend polish → Stage 7 hardening/deploy). **Working rhythm:**
 each phase is one gate-green committable increment; after each, the user tests, then we commit + push
-and update this file. **Phases 1–4 DONE — Track A (accounting depth) complete** (Fixed Assets +
-Depreciation; Cost Centers; Bank Reconciliation; Budgets — all committed). **NEXT: Phase 5 —
-Inventory: stock counts/adjustments + batch/lot (Track B).**
+and update this file. **Phases 1–4 (Track A, accounting depth) + Phase 5 (Track B start) DONE**
+(Fixed Assets + Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory stock
+counts/adjustments + batch/lot — all committed). **NEXT: Phase 6 — CRM: campaigns + ticket
+escalation.**
+
+Phase 5 delivered (extends gate06): **Inventory stock counts/adjustments + batch/lot.** `StockCount` +
+`StockCountLine` snapshot system quantities; posting reconciles each counted line via a new
+`adjust_stock` (shortage → Dr 5900 Inventory Adjustment / Cr 1200 Inventory at weighted-avg; overage →
+Dr 1200 / Cr 5900), posting through the accounting **contract** so **Inventory GL == stock value holds
+through adjustments**. Batch/lot: optional `batch_no` + `expiry_date` on receipts + a batches
+(received-qty + earliest-expiry) report (issues stay weighted-average — traceability only). DRF
+`/api/inventory/counts` (+ set-line/post), `/reports/batches`, batch receive fields; React Stock counts
+list/new/detail + Batches tabs, batch/expiry on the receive form; ar/en parity. 7 new tests; gate:all
+00–10 green. New account 5900. Demo seeds a batched receipt + open count.
 
 Phase 4 delivered (extends gate05): **Budgets + Budget-vs-Actual.** `Budget` (per fiscal year) +
 `BudgetLine` (planned amount per account+period; upsert, zero deletes). `budget_vs_actual` compares the

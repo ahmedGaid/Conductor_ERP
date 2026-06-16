@@ -12,6 +12,7 @@ def make_gl() -> None:
     Account.objects.create(code="1200", name="Inventory", type=AccountType.ASSET)
     Account.objects.create(code="5000", name="Cost of Goods Sold", type=AccountType.EXPENSE)
     Account.objects.create(code="2150", name="GRNI", type=AccountType.LIABILITY)
+    Account.objects.create(code="5900", name="Inventory Adjustment", type=AccountType.EXPENSE)
     fy, _ = FiscalYear.objects.get_or_create(
         code="2026",
         defaults={"start_date": dt.date(2026, 1, 1), "end_date": dt.date(2026, 12, 31)},

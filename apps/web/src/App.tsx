@@ -29,6 +29,9 @@ import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
 import { WarehousesPage } from "./pages/inventory/WarehousesPage";
 import { StockMovementPage } from "./pages/inventory/StockMovementPage";
+import { StockCountsPage } from "./pages/inventory/StockCountsPage";
+import { StockCountDetailPage } from "./pages/inventory/StockCountDetailPage";
+import { BatchesPage } from "./pages/inventory/BatchesPage";
 import { OrdersPage } from "./pages/sales/OrdersPage";
 import { NewOrderPage } from "./pages/sales/NewOrderPage";
 import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
@@ -87,6 +90,9 @@ function Protected() {
           <Route path="/inventory/warehouses" element={<WarehousesPage />} />
           <Route path="/inventory/movements" element={<StockMovementPage />} />
           <Route path="/inventory/stock-on-hand" element={<StockOnHandPage />} />
+          <Route path="/inventory/counts" element={<StockCountsPage />} />
+          <Route path="/inventory/counts/:id" element={<StockCountDetailPage />} />
+          <Route path="/inventory/batches" element={<BatchesPage />} />
           <Route path="/sales" element={<OrdersPage />} />
           <Route path="/sales/orders/new" element={<NewOrderPage />} />
           <Route path="/sales/orders/:id" element={<OrderDetailPage />} />

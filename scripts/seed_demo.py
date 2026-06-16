@@ -386,6 +386,27 @@ if _Budget.objects.exists():
 else:
     seed_budget()
 
+
+def seed_stock_count() -> None:
+    # A batched receipt (for the Batches view) and a stock count left open with one short line,
+    # so the user can enter counts and Post to see the adjustment.
+    from erp.inventory.contracts import receive
+    from erp.inventory.services import create_count
+
+    receive("WIDGET", "MAIN", Decimal("40"), 80_00, reference="LOT-IN",
+            memo="Batched receipt", batch_no="LOT-2026A",
+            expiry_date=__import__("datetime").date(__import__("datetime").date.today().year + 1, 3, 31))
+    count = create_count(warehouse=main, count_date=__import__("datetime").date.today())
+    created.append(("COUNT", str(count.id)[:8], "open stock count — enter counted qty, then Post"))
+
+
+from erp.inventory.domain.models import StockCount as _StockCount  # noqa: E402
+
+if _StockCount.objects.exists():
+    print("Demo stock count already present — skipping.")
+else:
+    seed_stock_count()
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")

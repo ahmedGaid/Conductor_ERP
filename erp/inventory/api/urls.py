@@ -14,4 +14,9 @@ urlpatterns = [
     path("movements/issue", views.IssueView.as_view(), name="movement-issue"),
     path("movements/transfer", views.TransferView.as_view(), name="movement-transfer"),
     path("reports/stock-on-hand", views.StockOnHandView.as_view(), name="stock-on-hand"),
+    path("reports/batches", views.BatchesView.as_view(), name="batches"),
+    path("counts", views.StockCountListCreateView.as_view(), name="count-list"),
+    path("counts/<uuid:count_id>", views.StockCountDetailView.as_view(), name="count-detail"),
+    path("counts/<uuid:count_id>/post", views.StockCountPostView.as_view(), name="count-post"),
+    path("count-lines/<uuid:line_id>/set", views.StockCountLineSetView.as_view(), name="count-line-set"),
 ]

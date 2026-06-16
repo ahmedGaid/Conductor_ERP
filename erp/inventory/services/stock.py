@@ -28,6 +28,7 @@ from ..domain import costing
 from ..domain.models import Item, ItemType, MovementType, StockBalance, StockMovement, Warehouse
 from ..errors import (
     InsufficientStockError,
+    InvalidCountError,
     InvalidQuantityError,
     NonStockItemError,
     SameWarehouseTransferError,
@@ -36,6 +37,7 @@ from ..errors import (
 INVENTORY_ACCOUNT = "1200"
 COGS_ACCOUNT = "5000"
 GRNI_ACCOUNT = "2150"
+ADJUSTMENT_ACCOUNT = "5900"  # Inventory Adjustment (count variances)
 
 
 @dataclass
@@ -85,7 +87,7 @@ def _post_gl(posting: GLPosting, date, actor, reference) -> str:
 @transaction.atomic
 def receive_stock(
     *, item: Item, warehouse: Warehouse, quantity, unit_cost_minor: int,
-    date=None, reference: str = "", memo: str = "", actor=None,
+    date=None, reference: str = "", memo: str = "", batch_no: str = "", expiry_date=None, actor=None,
 ) -> StockMovement:
     _require_stock_item(item)
     _require_positive(quantity)
@@ -105,7 +107,8 @@ def receive_stock(
     movement = StockMovement.objects.create(
         item=item, warehouse=warehouse, type=MovementType.RECEIPT, date=date,
         quantity=quantity, unit_cost_minor=unit_cost_minor, value_minor=value,
-        reference=reference, memo=memo, journal_number=journal_number,
+        reference=reference, memo=memo, batch_no=batch_no, expiry_date=expiry_date,
+        journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
@@ -243,6 +246,72 @@ def return_out_stock(
         after={"sku": item.sku, "warehouse": warehouse.code, "qty": str(quantity), "value": value},
     )
     bus.publish(events.STOCK_ISSUED, {"item": item.sku, "warehouse": warehouse.code, "value": value})
+    return movement
+
+
+@transaction.atomic
+def adjust_stock(
+    *, item: Item, warehouse: Warehouse, counted_quantity,
+    date=None, reference: str = "", memo: str = "", unit_cost_minor: int | None = None, actor=None,
+) -> StockMovement | None:
+    """Adjust on-hand to a counted quantity, posting the value variance to the GL.
+
+    Shortage (counted < on-hand): value removed at weighted average → Dr Inventory Adjustment /
+    Cr Inventory. Overage (counted > on-hand): valued at the current weighted-average unit cost (or a
+    supplied ``unit_cost_minor`` when the warehouse holds none) → Dr Inventory / Cr Inventory
+    Adjustment. The Inventory GL and the stock value move by the same amount, so the invariant holds.
+    Returns ``None`` when there is no variance.
+    """
+    _require_stock_item(item)
+    counted = Decimal(counted_quantity)
+    if counted < 0:
+        raise InvalidCountError(data={"sku": item.sku, "counted": str(counted)})
+    date = date or dt.date.today()
+
+    balance = _get_balance(item, warehouse)
+    on_hand = Decimal(balance.quantity)
+    variance = counted - on_hand
+    if variance == 0:
+        return None
+
+    if variance < 0:  # shortage — remove cost at weighted average
+        shortage = -variance
+        value = costing.issue_value(on_hand, balance.value_minor, shortage)
+        balance.quantity = on_hand - shortage
+        balance.value_minor -= value
+        posting = GLPosting(ADJUSTMENT_ACCOUNT, INVENTORY_ACCOUNT, value,
+                            memo or f"Count shortage {item.sku}")
+        signed_value = -value
+    else:  # overage — value at current average, else the supplied cost, else zero
+        if on_hand > 0:
+            unit = Decimal(balance.value_minor) / on_hand
+            value = int((variance * unit).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        elif unit_cost_minor is not None:
+            value = costing.receipt_value(variance, unit_cost_minor)
+        else:
+            value = 0
+        balance.quantity = on_hand + variance
+        balance.value_minor += value
+        posting = GLPosting(INVENTORY_ACCOUNT, ADJUSTMENT_ACCOUNT, value,
+                            memo or f"Count overage {item.sku}")
+        signed_value = value
+    balance.save(update_fields=["quantity", "value_minor"])
+
+    journal_number = _post_gl(posting, date, actor, reference)
+    movement = StockMovement.objects.create(
+        item=item, warehouse=warehouse, type=MovementType.ADJUSTMENT, date=date,
+        quantity=variance, value_minor=signed_value, reference=reference, memo=memo,
+        journal_number=journal_number,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    audit.record(
+        module="inventory", action="adjust_stock", entity_type="StockMovement",
+        entity_id=str(movement.id), actor=actor,
+        after={"sku": item.sku, "warehouse": warehouse.code,
+               "variance": str(variance), "value": signed_value},
+    )
+    event = events.STOCK_RECEIVED if variance > 0 else events.STOCK_ISSUED
+    bus.publish(event, {"item": item.sku, "warehouse": warehouse.code, "value": abs(signed_value)})
     return movement
 
 

@@ -1,6 +1,8 @@
 """Inventory API serializers. Quantities are decimals; costs/values are integer minor units."""
 from __future__ import annotations
 
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from ..domain.models import ItemType
@@ -58,6 +60,20 @@ class ReceiveSerializer(serializers.Serializer):
     date = serializers.DateField(required=False)
     reference = serializers.CharField(required=False, allow_blank=True, default="")
     memo = serializers.CharField(required=False, allow_blank=True, default="")
+    batch_no = serializers.CharField(max_length=64, required=False, allow_blank=True, default="")
+    expiry_date = serializers.DateField(required=False, allow_null=True)
+
+
+class StockCountCreateSerializer(serializers.Serializer):
+    warehouse_code = serializers.CharField()
+    count_date = serializers.DateField(required=False)
+    reference = serializers.CharField(required=False, allow_blank=True, default="")
+    memo = serializers.CharField(required=False, allow_blank=True, default="")
+    item_skus = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+
+
+class CountLineSetSerializer(serializers.Serializer):
+    counted_quantity = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal("0"))
 
 
 class IssueSerializer(serializers.Serializer):
@@ -91,6 +107,8 @@ class MovementSerializer(serializers.Serializer):
     value_minor = serializers.IntegerField()
     reference = serializers.CharField()
     memo = serializers.CharField()
+    batch_no = serializers.CharField()
+    expiry_date = serializers.DateField(allow_null=True)
     journal_number = serializers.CharField()
 
     def get_item_sku(self, obj) -> str:
