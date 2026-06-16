@@ -84,6 +84,20 @@ def check() -> None:
     _assert("def vat_return" in reports_src, "reports missing vat_return")
     _assert("input_vat" in reports_src, "vat_return must net output VAT against input (purchase) VAT")
 
+    # 5d. Report exports: a shared CSV/XLSX renderer + the report endpoints serve downloads via
+    #     the ?export= param (note: not ?format=, which DRF reserves), and the React export toolbar
+    #     is wired on a report screen. (PDF is the browser's print-to-PDF — see styles/print.css.)
+    exports_src = _read("erp/core/exports.py")
+    for fn in ("def to_csv", "def to_xlsx", "def export_response"):
+        _assert(fn in exports_src, f"core exports missing {fn}")
+    views_src = _read("erp/accounting/api/views.py")
+    _assert('request.query_params.get("export")' in views_src,
+            "report views must serve downloads via the ?export= param")
+    _assert((WEB_SRC / "components" / "ExportButtons.tsx").is_file(), "missing components/ExportButtons.tsx")
+    _assert((WEB_SRC / "styles" / "print.css").is_file(), "missing styles/print.css (print-to-PDF)")
+    _assert("ExportButtons" in _read("apps/web/src/pages/accounting/TrialBalancePage.tsx"),
+            "trial balance screen missing the export toolbar")
+
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
 

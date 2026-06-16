@@ -549,5 +549,10 @@
       "rejected": "Rejected",
       "cancelled": "Cancelled"
     }
+  },
+  "export": {
+    "csv": "CSV",
+    "excel": "Excel",
+    "pdf": "Print / PDF"
   }
 }

@@ -64,3 +64,31 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   return (body as DataEnvelope<T>).data;
 }
+
+// Authenticated file download (CSV/XLSX report exports). Streams the response to a blob and
+// triggers a browser download, taking the filename from the Content-Disposition header.
+export async function downloadExport(path: string, fallbackName = "export"): Promise<void> {
+  const token = getToken();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`/api${path}`, { headers });
+  if (!res.ok) {
+    if (res.status === 401) setToken(null);
+    throw new ApiError(`Export failed (${res.status})`, res.status);
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = /filename="?([^"]+)"?/.exec(disposition);
+  const name = match ? match[1] : fallbackName;
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

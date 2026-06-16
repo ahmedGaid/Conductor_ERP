@@ -393,6 +393,33 @@ output VAT, so the VAT return shows the true position owed to (or refundable fro
   4 new purchasing tests + 1 accounting test. Demo seeds a billed VAT14 purchase (input VAT 280.00),
   so the VAT-return screen shows output netted against input.
 
+## Report exports — CSV / Excel server-side, PDF via browser print (Stage 6b, 2026-06-16)
+
+First slice of Stage 6 reporting: every existing report (trial balance, general ledger, the three
+financial statements, VAT return, e-invoices) is downloadable.
+
+- **A shared, presentation-agnostic renderer** `erp/core/exports.py` (`ReportTable` + `to_csv` /
+  `to_xlsx` + `export_response`). It lives in core because exports span modules; it operates on plain
+  `ReportTable` dicts passed in — no cross-module domain coupling. Money cells carry integer **minor
+  units** and the renderer converts to major (÷100, 2dp) so Excel gets real summable numbers.
+- **Arabic is preserved end to end.** CSV is UTF-8 **with a BOM** (so Excel detects the encoding on
+  double-click); XLSX sets a **right-to-left sheet** when the request is `lang=ar`. Export column
+  headers/titles are **bilingual in the API layer** (`erp/accounting/api/exports.py`) chosen by
+  `?lang=`, so a download is self-describing without reaching into the frontend i18n bundle.
+- **PDF is the browser's native print-to-PDF**, not a server library. `fpdf2`/`reportlab` can't shape
+  Arabic without bundling an Arabic TTF + a reshaper/bidi stack — fragile for an RTL-first product —
+  whereas the browser already shapes the whole UI perfectly. A `styles/print.css` strips the chrome
+  (sidebar/topbar/navs/toolbars/`.no-print`) and a "Print / PDF" button calls `window.print()`. Zero
+  fonts, zero deps, correct RTL. (So only **openpyxl** was added to requirements — pure-python,
+  offline-safe; no system libraries.)
+- **Download param is `?export=csv|xlsx`, NOT `?format=`** — DRF reserves `format` for content
+  negotiation, so `format=csv` 404s before the view runs. An unknown `export=` value falls through to
+  the normal JSON response. Downloads are authenticated (a blob fetch carrying the JWT, `downloadExport`
+  in the api client), so no token ever lands in a URL.
+- Proven: gate05 extended (renderer + `?export=` endpoints + React toolbar wired); gate01 runs the core
+  renderer tests; 8 new tests (CSV BOM + minor→major, XLSX round-trips real numbers + RTL, auth, JSON
+  fallback on unknown format).
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

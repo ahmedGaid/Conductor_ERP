@@ -18,12 +18,23 @@ Purchasing (5e) + CRM (5f) + the FULL Sales/Purchasing depth menu (5d-2/5e-2 ret
 `gate:all` (00–09) is GREEN.** No active blocker.
 **All five priority-order ERP modules are built**, the Sales/Purchasing depth menu is fully done, the
 **Accounting VAT/tax** slice is in (**both output and input/purchase VAT — the VAT loop is closed**),
-and **ETA e-invoicing (Stage 6a)** has landed as a new module. `gate:all` now runs **00–10**. Next
-options: remaining **Stage 6** (report builder + CSV/Excel/PDF exports, scheduled reports, more
-integration adapters: WhatsApp/email/payment/bank); other accounting depth (fixed assets +
-depreciation, cost centers, bank reconciliation); inventory batch/serial/counts; CRM campaigns + ticket
-escalation; then **Stage 7** (hardening/deploy). Also worth doing soon: **first git commit** (repo
-still has zero commits). See plan.
+**ETA e-invoicing (Stage 6a)** has landed as a new module (now its own top-level UI section), and
+**report exports (Stage 6b — CSV/Excel + browser print-to-PDF)** are live on every report. `gate:all`
+now runs **00–10**. Next options: remaining **Stage 6** (a custom report **builder**, scheduled
+reports, more integration adapters: WhatsApp/email/payment/bank); other accounting depth (fixed assets
++ depreciation, cost centers, bank reconciliation); inventory batch/serial/counts; CRM campaigns +
+ticket escalation; then **Stage 7** (hardening/deploy). Repo is committed + pushed to
+`github.com/ahmedGaid/Conductor_ERP` through the e-invoicing reorg (the exports increment is the next
+to commit). See plan.
+
+Stage 6b delivered (gate05 extended): **report exports.** A shared `erp/core/exports.py`
+(`ReportTable` + `to_csv`/`to_xlsx` + `export_response`) renders any report to **CSV** (UTF-8 BOM) or
+**XLSX** (openpyxl, RTL sheet for Arabic, real numeric money cells); the six accounting reports + the
+e-invoices list serve downloads via **`?export=csv|xlsx&lang=…`** (param is `export`, since DRF
+reserves `format`). **PDF = the browser's native print-to-PDF** (a `styles/print.css` + "Print / PDF"
+button — perfect RTL, no fonts/deps). React: an authed `downloadExport` blob helper + a reusable
+`<ExportButtons>` toolbar on every report screen; en/ar parity kept. 8 new tests (CSV/XLSX/auth/JSON
+fallback). Only new dependency: **openpyxl** (pure-python, offline-safe).
 
 Stage 5b-5 delivered (gates 05/08 extended): **input (purchase) VAT — the VAT loop closed.** `TaxCode`
 gains `input_account_code` (default **1190 VAT Input/Recoverable**, asset; seeded + set on VAT14/VAT0,

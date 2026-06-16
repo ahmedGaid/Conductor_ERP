@@ -549,5 +549,10 @@
       "rejected": "مرفوضة",
       "cancelled": "ملغاة"
     }
+  },
+  "export": {
+    "csv": "CSV",
+    "excel": "Excel",
+    "pdf": "طباعة / PDF"
   }
 }

@@ -1,0 +1,37 @@
+/* Print / Save-as-PDF: strip the app chrome and print only the report content.
+   The browser shapes Arabic (RTL) natively, so this is our zero-dependency PDF export. */
+@media print {
+  .sidebar,
+  .commandbar,
+  .appshell__skip,
+  .no-print,
+  .acctnav,
+  .ein-nav,
+  .crm-nav,
+  .acct-toolbar {
+    display: none !important;
+  }
+
+  .appshell {
+    display: block;
+  }
+
+  .appshell__main {
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .appshell__content {
+    padding: 0;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid var(--color-border);
+  }
+
+  body {
+    background: var(--color-surface);
+  }
+}

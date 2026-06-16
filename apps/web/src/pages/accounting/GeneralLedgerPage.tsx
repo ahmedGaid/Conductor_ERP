@@ -5,6 +5,7 @@ import { generalLedger, listAccounts } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ExportButtons } from "../../components/ExportButtons";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
 
@@ -46,6 +47,8 @@ export function GeneralLedgerPage() {
       {loading && <p className="muted">{t("common.loading")}</p>}
       {error && <p className="error-text">{error}</p>}
       {!account && <p className="muted">{t("accounting.report.pickAccount")}</p>}
+
+      {data && account && <ExportButtons path={`/accounting/reports/general-ledger?account=${account}`} />}
 
       {data && (
         <div className="card acct-table-wrap">

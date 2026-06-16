@@ -13,12 +13,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.exports import EXPORT_FORMATS, export_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
 
 from .. import services
 from ..domain.models import Account, FiscalYear, JournalEntry, Period
 from ..repositories import accounts as account_repo
+from . import exports as export_tables
 from .serializers import (
     AccountSerializer,
     FiscalYearSerializer,
@@ -153,10 +155,15 @@ class TrialBalanceView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request) -> Response:
+        period = request.query_params.get("period") or None
         tb = services.trial_balance(
-            period_code=request.query_params.get("period") or None,
+            period_code=period,
             as_of=request.query_params.get("as_of") or None,
         )
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.trial_balance_table(tb, request.query_params.get("lang", "en"), period)
+            return export_response(table, fmt, "trial-balance")
         return _envelope(
             {
                 "rows": [asdict(r) for r in tb.rows],
@@ -174,9 +181,12 @@ class GeneralLedgerView(APIView):
         account_code = request.query_params.get("account")
         if not account_code:
             return _envelope({"detail": "account query param required"}, status=400)
-        gl = services.general_ledger(
-            account_code, period_code=request.query_params.get("period") or None
-        )
+        period = request.query_params.get("period") or None
+        gl = services.general_ledger(account_code, period_code=period)
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.general_ledger_table(gl, request.query_params.get("lang", "en"), period)
+            return export_response(table, fmt, f"general-ledger-{gl.account_code}")
         return _envelope(
             {
                 "account_code": gl.account_code,
@@ -198,6 +208,10 @@ class IncomeStatementView(APIView):
             date_to=request.query_params.get("to") or None,
             period_code=request.query_params.get("period") or None,
         )
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.income_statement_table(st, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "income-statement")
         return _envelope(
             {
                 "date_from": st.date_from,
@@ -216,6 +230,10 @@ class BalanceSheetView(APIView):
 
     def get(self, request: Request) -> Response:
         bs = services.balance_sheet(as_of=request.query_params.get("as_of") or None)
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.balance_sheet_table(bs, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "balance-sheet")
         return _envelope(
             {
                 "as_of": bs.as_of,
@@ -256,6 +274,10 @@ class VatReturnView(APIView):
         if not date_from or not date_to:
             return _envelope({"detail": "from and to query params required"}, status=400)
         vr = services.vat_return(date_from, date_to)
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.vat_return_table(vr, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "vat-return")
         return _envelope(asdict(vr))
 
 
@@ -268,6 +290,10 @@ class CashFlowView(APIView):
             date_to=request.query_params.get("to") or None,
             period_code=request.query_params.get("period") or None,
         )
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.cash_flow_table(cf, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "cash-flow")
         return _envelope(
             {
                 "date_from": cf.date_from,

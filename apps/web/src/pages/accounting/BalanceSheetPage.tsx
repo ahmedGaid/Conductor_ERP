@@ -5,6 +5,7 @@ import { balanceSheet, type StatementLine } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ExportButtons } from "../../components/ExportButtons";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
 
@@ -32,6 +33,8 @@ export function BalanceSheetPage() {
 
       {loading && <p className="muted">{t("common.loading")}</p>}
       {error && <p className="error-text">{error}</p>}
+
+      {data && <ExportButtons path={`/accounting/reports/balance-sheet${asOf ? `?as_of=${asOf}` : ""}`} />}
 
       {data && (
         <div className="stmt-grid">
