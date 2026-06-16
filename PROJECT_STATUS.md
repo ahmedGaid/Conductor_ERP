@@ -1,7 +1,9 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-15 (Stages 0–5b + Inventory (5c) + Sales (5d) + Purchasing (5e) + CRM (5f); gate:all 00–09)**.
+> meaningful step. Last updated: **2026-06-16 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
+> + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a, new
+> `erp/einvoice` module); gate:all 00–10 GREEN)**.
 
 ## PRODUCT NAME
 The ERP is branded **"Conductor"** (wordmark + logo tile "C", browser title, i18n `app.title` in both
@@ -11,12 +13,102 @@ with deltas, panels, status pills). Keep the UI at that bar — modern, clean, R
 
 ## CURRENT POSITION
 **Stages 0–4 + Accounting (GL + statements + screens) + UI rebrand + Inventory (5c) + Sales (5d) +
-Purchasing (5e) + CRM (5f) COMPLETE — `gate:all` (00–09) is GREEN.** No active blocker.
-**All five priority-order ERP modules are now built** (Accounting, Inventory, Sales, Purchasing, CRM).
-Next options: **deepen** any module (accounting tax/ETA e-invoice + fixed assets; sales/purchasing
-PR/quotation + approvals + partial flows; inventory batch/serial/counts; CRM campaigns + ticket
-escalation), then **Stage 6** (integrations/reporting/exports) and **Stage 7** (hardening/deploy).
-See plan.
+Purchasing (5e) + CRM (5f) + the FULL Sales/Purchasing depth menu (5d-2/5e-2 returns + partial flows;
+5d-3/5e-3 quotation/PR approval front-ends; 5d-4/5e-4 discounts + approval matrix) COMPLETE —
+`gate:all` (00–09) is GREEN.** No active blocker.
+**All five priority-order ERP modules are built**, the Sales/Purchasing depth menu is fully done, the
+**Accounting VAT/tax** slice is in (**both output and input/purchase VAT — the VAT loop is closed**),
+and **ETA e-invoicing (Stage 6a)** has landed as a new module. `gate:all` now runs **00–10**. Next
+options: remaining **Stage 6** (report builder + CSV/Excel/PDF exports, scheduled reports, more
+integration adapters: WhatsApp/email/payment/bank); other accounting depth (fixed assets +
+depreciation, cost centers, bank reconciliation); inventory batch/serial/counts; CRM campaigns + ticket
+escalation; then **Stage 7** (hardening/deploy). Also worth doing soon: **first git commit** (repo
+still has zero commits). See plan.
+
+Stage 5b-5 delivered (gates 05/08 extended): **input (purchase) VAT — the VAT loop closed.** `TaxCode`
+gains `input_account_code` (default **1190 VAT Input/Recoverable**, asset; seeded + set on VAT14/VAT0,
+exposed via the accounting contract). VAT is **opt-in per purchase order** (`tax_code`, blank ⇒
+unchanged, so all pre-VAT purchasing tests stay green): the PO carries `tax_minor`, the **bill** posts
+**Dr GRNI (net)/Dr VAT Input (vat)/Cr AP (gross)** (2-line when untaxed), `billed_minor` becomes gross,
+and the **debit note reverses input VAT proportionally** (GRNI/AP/VAT-Input all net to zero on a full
+return). **`vat_return` now nets output minus input** (`net_payable = net output − net input`; negative
+⇒ refund position) — backward compatible (`input_vat = 0` on sales-only ranges). React: tax-code picker
++ live VAT on New PO, VAT on PO detail, input rows on the VAT-return screen; ar/en parity kept. 5 new
+tests (bill books recoverable VAT, untaxed unchanged, debit-note reversal, vat_return nets output−input
+in both purchasing + accounting). Demo seeds a billed VAT14 purchase (input VAT 280.00).
+
+Stage 6a delivered (new module `erp/einvoice`, gate10): **ETA e-invoicing** — every posted sales
+invoice becomes an `ETAInvoice` compliance record via a `draft → submitted → valid` lifecycle.
+**Event-driven + decoupled:** `invoice_order` now publishes an **enriched `sales.OrderInvoiced`**
+event (customer/date/tax/net/tax/total) and `erp.einvoice` subscribes (in `AppConfig.ready()`) to
+record a draft — **Sales has no knowledge of e-invoicing**; gate10 forbids einvoice importing sales
+internals, and the bus isolates subscriber failures from invoicing. References by business key (no
+FK); `record_invoice` idempotent per invoice number. **Stubbed deterministic ETA adapter**
+(`eta_adapter.py`, no network/cloud): `submit` assigns a UUID = the document's sha256 (idempotent
+retries), `poll` validates; swapping a real client touches only that file. DRF `/api/einvoice/invoices`
+(+ submit/poll) behind Accountant/Branch-Manager RBAC; 7 tests (record-via-bus, submit assigns UUID,
+poll→valid, idempotent, untaxed still recorded, API lifecycle, auth). React **E-invoices** screen
+(list + Submit/Check-status) added to the accounting sub-nav; ar/en parity kept. (Input/purchase VAT
+has since landed — Stage 5b-5 above.)
+
+Stage 5b-4 delivered (gates 05/07 extended): **VAT/tax on sales** — the first accounting-depth slice.
+New `TaxCode` (rate in basis points; seed adds **VAT14** + **VAT0**, output → 2100 VAT Payable),
+referenced by other modules only via the accounting **contract** (`find_tax_code`/`compute_tax`).
+VAT is **opt-in per sales order** (`tax_code`): invoice posts **Dr AR (gross)/Cr Revenue (net)/Cr VAT
+Payable (vat)** (2-line when untaxed, so all pre-VAT tests still pass); `invoiced_minor` becomes gross
+so payments settle net+VAT; **returns reverse VAT proportionally**. New **VAT-return** report
+(`vat_return` = output − reversals over a date range) + `/api/accounting/reports/vat-return` and
+`/api/accounting/tax-codes`. React: tax-code picker + live VAT/grand-total on New order, VAT shown on
+order detail, and a **VAT return** accounting screen. 10 new tests (tax compute, VAT invoice posts the
+3-line entry + TB balanced, payment over gross, return reverses VAT, untaxed path unchanged, VAT
+return totals). (Input/purchase VAT and ETA e-invoice records have since landed — see above.)
+
+Stage 5d-4 / 5e-4 delivered (gates 07/08 extended): **line discounts (sales) + an amount-threshold
+approval matrix at confirm (both modules)** — completing the depth menu. **Discounts:** each sales
+order line has `discount_minor` off its gross; `line_total = round(qty*price) − discount`, order
+subtotal is the net sum; the **invoice posts the net** to Revenue/AR (net method, no contra account)
+and **returns now credit the net unit value prorated** (`line_total*ret_qty/qty`). Negative/over-gross
+discount rejected (`SAL-013`). **Approval matrix:** `confirm_order` rejects (`SAL-009`/`PUR-009`) when
+net value > 10,000.00 EGP and the order isn't approved; `approve_order` (Branch-Manager RBAC) stamps
+approved/by/at and unblocks confirm; at/below threshold confirm is free. **Proven (8 new tests):**
+discounted line_total/subtotal, invoice posts net + TB balanced, discounted return prorates,
+above-threshold confirm blocked then approved on both modules. DRF: line `discount` input +
+`discount_minor`/`approved`/`requires_approval` output + `/orders/{id}/approve` on both. React: New-order
+discount column, order/PO detail Approve button + pending-approval indicator + discount column; ar/en
+parity kept. `seed_demo.py` parks a discounted order + above-threshold pending-approval SO/PO.
+**Header-level (order) discount and purchasing cost discounts deliberately deferred — see DECISIONS.**
+
+Stage 5d-3 / 5e-3 delivered (gates 07/08 extended): **quotation & purchase-request front-ends with an
+amount-threshold approval gate** — the pre-order documents from the spec, layered as a thin front-end
+over the proven order lifecycle. New models `Quotation`/`QuotationLine` (sales) and `PurchaseRequest`/
+`PurchaseRequestLine` (purchasing); **no GL posting** (nothing posts until the converted order runs its
+normal flow). Lifecycle `draft → submit → approve/reject → convert`: **submit auto-approves at/below
+10,000.00 EGP, else awaits an explicit approve** (`requires_approval` threshold, approver recorded);
+**convert reuses `create_order`** so one document yields exactly one draft SO/PO (`converted_order_number`
+recorded; re-convert blocked `SAL-012`/`PUR-012`; convert-before-approval blocked `SAL-010`/`PUR-010`).
+**Proven (12 service + 3 API tests):** threshold auto-approve vs await, convert builds an order with the
+matching subtotal, double-convert/reject/empty guards. DRF `/api/sales/quotations` +
+`/api/purchasing/requests` (submit/approve/reject/convert; convert → 201 with order id+number) behind
+Branch-Manager RBAC. React: Quotations / Purchase-requests list + new + detail (submit/approve/reject/
+convert) pages, added as new Sales/Purchasing sub-nav tabs; ar/en i18n parity kept. `seed_demo.py` now
+also parks demo quotations + PRs in each state.
+
+Stage 5d-2 / 5e-2 delivered (gates 06/07/08 extended): **returns + partial fulfilment** on Sales &
+Purchasing, built to exercise the GL/stock invariants. Inventory gained two contract methods —
+`return_in` (customer return: stock back at weighted-avg, **Dr Inventory / Cr COGS**) and
+`return_out` (supplier return: stock out, **Dr GRNI / Cr Inventory**) + two movement types; the
+financial leg is posted by Sales/Purchasing (never one cross-module entry). **Sales:** partial
+`deliver_order(delivered={line_no:qty})` accumulates to `partially_delivered`→`delivered`;
+`return_order` (credit note) posts **Dr Sales Returns (4090, new contra-revenue acct) / Cr AR** and
+reduces the receivable; `SAL-006/007/008`. **Purchasing:** `receive_order` now accumulates across
+calls (`partially_received`→`received`); `return_order` (debit note) posts **Dr AP / Cr GRNI** so
+GRNI nets to zero and AP drops; `PUR-006/007/008`. **Proven (50→62 module tests, all green):** every
+flow keeps the **trial balance balanced**, **Inventory GL == stock value** through returns, GRNI back
+to zero after a supplier return, and the excess/empty/wrong-status guards reject. DRF: new
+`/orders/{id}/return` on both modules + partial-qty body on deliver/receive; serializers expose
+`delivered_qty`/`returned_qty`/`returned_minor`/`credit_note_number`/`debit_note_number`. React: order
++ PO detail pages gained Return + "deliver/receive remaining" actions, returned columns, and credit/
+debit-note display; ar/en i18n parity kept (gate03 build green). Seed/COA add account **4090**.
 
 Stage 5f delivered (`erp/crm`, gate09): the **CRM** module — the relationship side of the ERP and the
 last priority module. Models: Lead, Opportunity (+ OpportunityLine), Activity, Ticket. Services:
@@ -184,32 +276,17 @@ Sales → Purchasing → CRM).
 | Python 3.13 | ✅ installed |
 | Node LTS + npm | ✅ installed |
 | PostgreSQL 16 | ✅ installed + DB/role created + migrated |
-| Memurai (Redis) | ❌ BLOCKED — see below |
+| Redis (winget `Redis.Redis`) | ✅ installed, `Redis` service running, `ping`→PONG (Memurai abandoned — see DECISIONS.md) |
 
-## ACTIVE BLOCKER → do this first on resume
-Memurai (Redis) install via winget hung on a UAC elevation prompt; killing it left Windows Installer
-in a stuck **error 1618 ("another installation in progress")** state. The fix chosen: **reboot the
-machine** (clears 1618). After reboot:
-
-1. Reinstall Memurai:
-   ```
-   winget install --id Memurai.MemuraiDeveloper -e --silent --accept-source-agreements --accept-package-agreements
-   ```
-   (If a UAC prompt appears, user approves it. If 1618 returns, the reboot didn't fully clear — retry once.)
-2. Confirm the Memurai service is running and Redis answers:
-   ```
-   Get-Service *memurai*
-   C:\Program Files\Memurai\memurai-cli.exe ping   # expect PONG
-   ```
-   (Memurai listens on 6379 by default, Redis-compatible.)
-3. Run gate 00 (must print `GATE 00 PASSED`):
-   ```
-   cd C:\AhmedGaid\ERP
-   .\.venv\Scripts\python.exe scripts\gates\_run.py 00
-   ```
-
-If Memurai still cannot install, fallback: install `Redis.Redis` via winget, OR (last resort) run
-Celery eager + relax gate00's Redis check, recording it in DECISIONS.md.
+## ACTIVE BLOCKER → none
+No active blocker. Redis runs as the auto-start **`Redis`** service (winget `Redis.Redis` port — the
+earlier Memurai MSI failures were abandoned; see DECISIONS.md), and `gate:00` is green. The only
+common post-reboot hiccup is the Redis service not having started yet — verify and start if needed:
+```
+Get-Service Redis
+& 'C:\Program Files\Redis\redis-cli.exe' ping   # expect PONG
+# if stopped: Start-Service Redis
+```
 
 ## Stage 0 progress (scaffold & gate)
 DONE:

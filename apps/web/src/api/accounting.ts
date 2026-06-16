@@ -213,3 +213,33 @@ export function balanceSheet(asOf?: string): Promise<BalanceSheetReport> {
 export function cashFlow(params: RangeParams = {}): Promise<CashFlowReport> {
   return apiFetch<CashFlowReport>(`/accounting/reports/cash-flow${rangeQuery(params)}`);
 }
+
+// ---- Tax (VAT) ----
+
+export interface TaxCode {
+  code: string;
+  name: string;
+  rate_bps: number;
+  output_account_code: string;
+  input_account_code: string;
+}
+
+export interface VatReturnReport {
+  start_date: string;
+  end_date: string;
+  output_vat: number;
+  reversals: number;
+  input_vat: number;
+  input_reversals: number;
+  net_payable: number;
+  is_payable: boolean;
+}
+
+export function listTaxCodes(): Promise<TaxCode[]> {
+  return apiFetch<TaxCode[]>("/accounting/tax-codes");
+}
+
+export function vatReturn(from: string, to: string): Promise<VatReturnReport> {
+  const q = new URLSearchParams({ from, to });
+  return apiFetch<VatReturnReport>(`/accounting/reports/vat-return?${q.toString()}`);
+}

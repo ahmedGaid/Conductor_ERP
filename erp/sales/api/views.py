@@ -14,13 +14,17 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from .. import services
-from ..domain.models import Customer, SalesOrder
+from ..domain.models import Customer, Quotation, SalesOrder
 from ..repositories import customers as customer_repo
 from .serializers import (
     CustomerSerializer,
+    LinesActionSerializer,
     OrderCreateSerializer,
     OrderSerializer,
     PaymentSerializer,
+    QuotationCreateSerializer,
+    QuotationSerializer,
+    RejectSerializer,
 )
 
 _CanSell = HasAnyRole.require(BRANCH_MANAGER)
@@ -75,10 +79,12 @@ class OrderListCreateView(APIView):
             order_date=v.get("order_date"),
             currency=v.get("currency", "EGP"),
             notes=v.get("notes", ""),
+            tax_code=v.get("tax_code", ""),
             lines=[
                 services.OrderLineInput(
                     item_sku=ln["item_sku"], quantity=ln["quantity"],
                     unit_price_minor=ln["unit_price"], description=ln.get("description", ""),
+                    discount_minor=ln.get("discount", 0),
                 )
                 for ln in v["lines"]
             ],
@@ -105,16 +111,38 @@ class _OrderActionView(APIView):
         return _envelope(OrderSerializer(_order_qs().get(id=order.id)).data)
 
 
+class OrderApproveView(_OrderActionView):
+    action = "approve_order"
+
+
 class OrderConfirmView(_OrderActionView):
     action = "confirm_order"
 
 
-class OrderDeliverView(_OrderActionView):
-    action = "deliver_order"
-
-
 class OrderInvoiceView(_OrderActionView):
     action = "invoice_order"
+
+
+class OrderDeliverView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request, order_id) -> Response:
+        order = get_object_or_404(SalesOrder, id=order_id)
+        s = LinesActionSerializer(data=request.data or {})
+        s.is_valid(raise_exception=True)
+        services.deliver_order(order, delivered=s.as_map(), actor=request.user)
+        return _envelope(OrderSerializer(_order_qs().get(id=order.id)).data)
+
+
+class OrderReturnView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request, order_id) -> Response:
+        order = get_object_or_404(SalesOrder, id=order_id)
+        s = LinesActionSerializer(data=request.data or {})
+        s.is_valid(raise_exception=True)
+        services.return_order(order, returned=s.as_map(), actor=request.user)
+        return _envelope(OrderSerializer(_order_qs().get(id=order.id)).data)
 
 
 class OrderPaymentView(APIView):
@@ -126,3 +154,88 @@ class OrderPaymentView(APIView):
         s.is_valid(raise_exception=True)
         services.receive_payment(order, s.validated_data["amount"], actor=request.user)
         return _envelope(OrderSerializer(_order_qs().get(id=order.id)).data)
+
+
+# --- Quotations ------------------------------------------------------------------------------
+
+def _quote_qs():
+    return Quotation.objects.select_related("customer").prefetch_related("lines")
+
+
+class QuotationListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def get(self, request: Request) -> Response:
+        qs = _quote_qs().order_by("-quote_date", "-created_at")
+        if request.query_params.get("status"):
+            qs = qs.filter(status=request.query_params["status"])
+        return _envelope(QuotationSerializer(qs[:200], many=True).data)
+
+    def post(self, request: Request) -> Response:
+        s = QuotationCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        customer = get_object_or_404(Customer, code=v["customer_code"])
+        quote = services.create_quotation(
+            customer=customer, warehouse_code=v["warehouse_code"],
+            quote_date=v.get("quote_date"), currency=v.get("currency", "EGP"),
+            notes=v.get("notes", ""),
+            lines=[
+                services.QuoteLineInput(
+                    item_sku=ln["item_sku"], quantity=ln["quantity"],
+                    unit_price_minor=ln["unit_price"], description=ln.get("description", ""),
+                )
+                for ln in v["lines"]
+            ],
+            actor=request.user,
+        )
+        return _envelope(QuotationSerializer(_quote_qs().get(id=quote.id)).data, status=201)
+
+
+class QuotationDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def get(self, request: Request, quote_id) -> Response:
+        return _envelope(QuotationSerializer(get_object_or_404(_quote_qs(), id=quote_id)).data)
+
+
+class _QuotationActionView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+    action = ""
+
+    def post(self, request: Request, quote_id) -> Response:
+        quote = get_object_or_404(Quotation, id=quote_id)
+        getattr(services, self.action)(quote, actor=request.user)
+        return _envelope(QuotationSerializer(_quote_qs().get(id=quote.id)).data)
+
+
+class QuotationSubmitView(_QuotationActionView):
+    action = "submit_quotation"
+
+
+class QuotationApproveView(_QuotationActionView):
+    action = "approve_quotation"
+
+
+class QuotationRejectView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request, quote_id) -> Response:
+        quote = get_object_or_404(Quotation, id=quote_id)
+        s = RejectSerializer(data=request.data or {})
+        s.is_valid(raise_exception=True)
+        services.reject_quotation(quote, reason=s.validated_data.get("reason", ""), actor=request.user)
+        return _envelope(QuotationSerializer(_quote_qs().get(id=quote.id)).data)
+
+
+class QuotationConvertView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request, quote_id) -> Response:
+        quote = get_object_or_404(Quotation, id=quote_id)
+        order = services.convert_quotation(quote, actor=request.user)
+        return _envelope(
+            {"quotation": QuotationSerializer(_quote_qs().get(id=quote.id)).data,
+             "order_id": str(order.id), "order_number": order.number},
+            status=201,
+        )

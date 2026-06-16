@@ -17,4 +17,6 @@ urlpatterns = [
     path("reports/income-statement", views.IncomeStatementView.as_view(), name="income-statement"),
     path("reports/balance-sheet", views.BalanceSheetView.as_view(), name="balance-sheet"),
     path("reports/cash-flow", views.CashFlowView.as_view(), name="cash-flow"),
+    path("reports/vat-return", views.VatReturnView.as_view(), name="vat-return"),
+    path("tax-codes", views.TaxCodeListView.as_view(), name="tax-code-list"),
 ]

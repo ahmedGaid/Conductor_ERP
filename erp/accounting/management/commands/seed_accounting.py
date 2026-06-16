@@ -12,7 +12,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from erp.accounting.domain.accounts import AccountType
-from erp.accounting.domain.models import Account, FiscalYear, Period
+from erp.accounting.domain.models import Account, FiscalYear, Period, TaxCode
 
 # (code, name, type, is_postable, parent_code)
 COA = [
@@ -20,6 +20,7 @@ COA = [
     ("1000", "Cash", AccountType.ASSET, True, "1"),
     ("1010", "Bank", AccountType.ASSET, True, "1"),
     ("1100", "Accounts Receivable", AccountType.ASSET, True, "1"),
+    ("1190", "VAT Input (Recoverable)", AccountType.ASSET, True, "1"),
     ("1200", "Inventory", AccountType.ASSET, True, "1"),
     ("2", "Liabilities", AccountType.LIABILITY, False, None),
     ("2000", "Accounts Payable", AccountType.LIABILITY, True, "2"),
@@ -30,6 +31,7 @@ COA = [
     ("3100", "Retained Earnings", AccountType.EQUITY, True, "3"),
     ("4", "Income", AccountType.INCOME, False, None),
     ("4000", "Sales Revenue", AccountType.INCOME, True, "4"),
+    ("4090", "Sales Returns", AccountType.INCOME, True, "4"),
     ("5", "Expenses", AccountType.EXPENSE, False, None),
     ("5000", "Cost of Goods Sold", AccountType.EXPENSE, True, "5"),
     ("5100", "Rent Expense", AccountType.EXPENSE, True, "5"),
@@ -54,6 +56,15 @@ class Command(BaseCommand):
                     "is_cash": code in cash_codes,
                     "parent": parent,
                 },
+            )
+
+        # VAT tax codes (Egypt standard 14%, plus a 0% exempt code).
+        # Output (sales) VAT → 2100 VAT Payable; input (purchase) VAT → 1190 VAT Recoverable.
+        for code, name, rate_bps in [("VAT14", "VAT 14%", 1400), ("VAT0", "Exempt / 0%", 0)]:
+            TaxCode.objects.update_or_create(
+                code=code,
+                defaults={"name": name, "rate_bps": rate_bps, "output_account_code": "2100",
+                          "input_account_code": "1190", "is_active": True},
             )
 
         year = dt.date.today().year

@@ -232,6 +232,33 @@ class BalanceSheetView(APIView):
         )
 
 
+class TaxCodeListView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        from ..domain.models import TaxCode
+
+        rows = TaxCode.objects.filter(is_active=True).order_by("code")
+        return _envelope([
+            {"code": tc.code, "name": tc.name, "rate_bps": tc.rate_bps,
+             "output_account_code": tc.output_account_code,
+             "input_account_code": tc.input_account_code}
+            for tc in rows
+        ])
+
+
+class VatReturnView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        date_from = request.query_params.get("from")
+        date_to = request.query_params.get("to")
+        if not date_from or not date_to:
+            return _envelope({"detail": "from and to query params required"}, status=400)
+        vr = services.vat_return(date_from, date_to)
+        return _envelope(asdict(vr))
+
+
 class CashFlowView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 

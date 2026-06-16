@@ -32,3 +32,51 @@ class OverpaymentError(AppError):
     code = "PUR-005"
     status_code = 422
     message = "Payment exceeds the outstanding balance"
+
+
+class NothingToReturnError(AppError):
+    code = "PUR-006"
+    status_code = 422
+    message = "A return needs at least one line with a positive quantity"
+
+
+class ExcessiveReturnError(AppError):
+    code = "PUR-007"
+    status_code = 422
+    message = "Cannot return more than was received and not already returned"
+
+
+class ExcessiveReceiptError(AppError):
+    code = "PUR-008"
+    status_code = 422
+    message = "Cannot receive more than the outstanding ordered quantity"
+
+
+class ApprovalRequiredError(AppError):
+    code = "PUR-009"
+    status_code = 422
+    message = "This order exceeds the approval threshold and must be approved before confirmation"
+
+
+class RequestInvalidTransitionError(AppError):
+    code = "PUR-010"
+    status_code = 422
+    message = "Invalid purchase request status transition"
+
+
+class EmptyRequestError(AppError):
+    code = "PUR-011"
+    status_code = 422
+    message = "A purchase request needs at least one line"
+
+
+class RequestAlreadyConvertedError(AppError):
+    code = "PUR-012"
+    status_code = 422
+    message = "This purchase request has already been converted to an order"
+
+
+class UnknownTaxCodeError(AppError):
+    code = "PUR-013"
+    status_code = 422
+    message = "Order references an unknown tax code"

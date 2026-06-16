@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
 import {
+  approveOrder,
   confirmOrder,
   deliverOrder,
   getOrder,
   invoiceOrder,
   payOrder,
+  returnOrder,
   type SalesOrder,
 } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
@@ -60,6 +62,12 @@ export function OrderDetailPage() {
                 <span className="sales-summary__label">{t("sales.orders.total")}</span>
                 <span className="sales-summary__value"><Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi></span>
               </div>
+              {data.tax_minor > 0 && (
+                <div className="sales-summary__item">
+                  <span className="sales-summary__label">{t("sales.detail.vat")}{data.tax_code ? ` (${data.tax_code})` : ""}</span>
+                  <span className="sales-summary__value"><Bdi>{formatMinor(data.tax_minor, data.currency)}</Bdi></span>
+                </div>
+              )}
               <div className="sales-summary__item">
                 <span className="sales-summary__label">{t("sales.detail.invoiced")}</span>
                 <span className="sales-summary__value"><Bdi>{formatMinor(data.invoiced_minor, data.currency)}</Bdi></span>
@@ -74,17 +82,42 @@ export function OrderDetailPage() {
                   <span className="latin">{data.invoice_number}</span>
                 </div>
               )}
+              {data.credit_note_number && (
+                <div className="sales-summary__item">
+                  <span className="sales-summary__label">{t("sales.detail.creditNoteNo")}</span>
+                  <span className="latin">{data.credit_note_number}</span>
+                </div>
+              )}
+              {data.returned_minor > 0 && (
+                <div className="sales-summary__item">
+                  <span className="sales-summary__label">{t("sales.detail.returned")}</span>
+                  <span className="sales-summary__value"><Bdi>{formatMinor(data.returned_minor, data.currency)}</Bdi></span>
+                </div>
+              )}
+              {data.requires_approval && (
+                <div className="sales-summary__item">
+                  <span className="sales-summary__label">{t("sales.detail.approval")}</span>
+                  <span className="sales-summary__value">
+                    {data.approved ? t("sales.detail.approved") : t("sales.detail.pendingApproval")}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="sales-actions">
+              {data.status === "draft" && data.requires_approval && !data.approved && (
+                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => approveOrder(data.id))}>
+                  {t("sales.detail.approve")}
+                </button>
+              )}
               {data.status === "draft" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => confirmOrder(data.id))}>
+                <button className="btn btn--primary" disabled={busy || (data.requires_approval && !data.approved)} onClick={() => run(() => confirmOrder(data.id))}>
                   {t("sales.detail.confirm")}
                 </button>
               )}
-              {data.status === "confirmed" && (
+              {(data.status === "confirmed" || data.status === "partially_delivered") && (
                 <button className="btn btn--primary" disabled={busy} onClick={() => run(() => deliverOrder(data.id))}>
-                  {t("sales.detail.deliver")}
+                  {data.status === "partially_delivered" ? t("sales.detail.deliverRemaining") : t("sales.detail.deliver")}
                 </button>
               )}
               {data.status === "delivered" && (
@@ -97,6 +130,11 @@ export function OrderDetailPage() {
                   {t("sales.detail.recordPayment")}
                 </button>
               )}
+              {(data.status === "invoiced" || data.status === "paid") && (
+                <button className="btn" disabled={busy} onClick={() => run(() => returnOrder(data.id))}>
+                  {t("sales.detail.return")}
+                </button>
+              )}
             </div>
             {actionError && <p className="error-text">{actionError}</p>}
           </div>
@@ -107,7 +145,10 @@ export function OrderDetailPage() {
                 <tr>
                   <th>{t("sales.newOrder.item")}</th>
                   <th className="sales-table__num">{t("inventory.onHand.quantity")}</th>
+                  <th className="sales-table__num">{t("sales.detail.delivered")}</th>
+                  <th className="sales-table__num">{t("sales.detail.returnedQty")}</th>
                   <th className="sales-table__num">{t("sales.newOrder.unitPrice")}</th>
+                  <th className="sales-table__num">{t("sales.newOrder.discount")}</th>
                   <th className="sales-table__num">{t("sales.orders.total")}</th>
                 </tr>
               </thead>
@@ -116,7 +157,10 @@ export function OrderDetailPage() {
                   <tr key={l.line_no}>
                     <td><Bdi>{l.item_sku}</Bdi>{l.description ? ` · ${l.description}` : ""}</td>
                     <td className="sales-table__num"><Bdi>{l.quantity}</Bdi></td>
+                    <td className="sales-table__num"><Bdi>{l.delivered_qty}</Bdi></td>
+                    <td className="sales-table__num"><Bdi>{l.returned_qty}</Bdi></td>
                     <td className="sales-table__num"><Bdi>{formatMinor(l.unit_price_minor)}</Bdi></td>
+                    <td className="sales-table__num"><Bdi>{formatMinor(l.discount_minor)}</Bdi></td>
                     <td className="sales-table__num"><Bdi>{formatMinor(l.line_total_minor)}</Bdi></td>
                   </tr>
                 ))}

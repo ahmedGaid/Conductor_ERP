@@ -143,7 +143,9 @@
       "generalLedger": "دفتر الأستاذ",
       "incomeStatement": "قائمة الدخل",
       "balanceSheet": "الميزانية العمومية",
-      "cashFlow": "التدفقات النقدية"
+      "cashFlow": "التدفقات النقدية",
+      "vatReturn": "إقرار ضريبة القيمة المضافة",
+      "einvoices": "الفواتير الإلكترونية"
     },
     "stmt": {
       "totalRevenue": "إجمالي الإيرادات",
@@ -204,7 +206,32 @@
       "running": "الرصيد الجاري",
       "noActivity": "لا توجد حركة.",
       "asOf": "حتى تاريخ",
-      "all": "الكل"
+      "all": "الكل",
+      "from": "من",
+      "to": "إلى"
+    },
+    "vat": {
+      "output": "ضريبة المخرجات (مبيعات)",
+      "reversals": "مرتجعات",
+      "netPayable": "صافي الضريبة المستحقة",
+      "input": "ضريبة المدخلات (مشتريات)",
+      "inputReversals": "مرتجعات المدخلات"
+    },
+    "einvoice": {
+      "empty": "لا توجد فواتير إلكترونية بعد — أصدر فاتورة مبيعات لإنشاء واحدة.",
+      "invoice": "الفاتورة",
+      "tax": "ضريبة",
+      "total": "الإجمالي",
+      "uuid": "معرّف المصلحة",
+      "submit": "إرسال للمصلحة",
+      "poll": "فحص الحالة",
+      "status": {
+        "draft": "مسودة",
+        "submitted": "مُرسَلة",
+        "valid": "صالحة",
+        "rejected": "مرفوضة",
+        "cancelled": "ملغاة"
+      }
     }
   },
   "inventory": {
@@ -256,7 +283,9 @@
     "tabs": {
       "orders": "الطلبات",
       "newOrder": "طلب جديد",
-      "customers": "العملاء"
+      "customers": "العملاء",
+      "quotations": "عروض الأسعار",
+      "newQuotation": "عرض سعر جديد"
     },
     "status": {
       "draft": "مسودة",
@@ -264,7 +293,9 @@
       "delivered": "تم التسليم",
       "invoiced": "تمت الفوترة",
       "paid": "مدفوع",
-      "cancelled": "ملغي"
+      "cancelled": "ملغي",
+      "partially_delivered": "مُسلَّم جزئياً",
+      "returned": "مُرتجع"
     },
     "customer": {
       "code": "رمز العميل",
@@ -286,7 +317,11 @@
       "item": "الصنف",
       "unitPrice": "سعر الوحدة",
       "addLine": "إضافة سطر",
-      "create": "إنشاء الطلب"
+      "create": "إنشاء الطلب",
+      "discount": "خصم",
+      "taxCode": "الضريبة",
+      "noTax": "بدون ضريبة",
+      "subtotal": "الإجمالي الفرعي"
     },
     "detail": {
       "invoiced": "المفوتر",
@@ -295,14 +330,49 @@
       "confirm": "تأكيد الطلب",
       "deliver": "تسليم",
       "invoice": "إصدار فاتورة",
-      "recordPayment": "تسجيل دفعة"
+      "recordPayment": "تسجيل دفعة",
+      "creditNoteNo": "رقم إشعار الدائن",
+      "returned": "مُرتجع",
+      "deliverRemaining": "تسليم المتبقي",
+      "return": "تسجيل مرتجع",
+      "delivered": "مُسلَّم",
+      "returnedQty": "مُرتجع",
+      "approve": "اعتماد",
+      "approval": "الاعتماد",
+      "approved": "مُعتمَد",
+      "pendingApproval": "بانتظار الاعتماد",
+      "vat": "ضريبة القيمة المضافة"
+    },
+    "quotations": {
+      "number": "رقم العرض",
+      "empty": "لا توجد عروض أسعار بعد.",
+      "create": "إنشاء عرض سعر",
+      "approval": "الاعتماد",
+      "needsApproval": "يحتاج اعتماد",
+      "autoApprove": "اعتماد تلقائي",
+      "convertedTo": "حُوِّل إلى",
+      "rejectedReason": "سبب الرفض",
+      "submit": "إرسال للاعتماد",
+      "approve": "اعتماد",
+      "reject": "رفض",
+      "convert": "تحويل إلى طلب"
+    },
+    "quotationStatus": {
+      "draft": "مسودة",
+      "submitted": "مُرسَل",
+      "approved": "مُعتمَد",
+      "rejected": "مرفوض",
+      "converted": "مُحوَّل",
+      "cancelled": "ملغي"
     }
   },
   "purchasing": {
     "tabs": {
       "orders": "أوامر الشراء",
       "newOrder": "أمر شراء جديد",
-      "suppliers": "الموردون"
+      "suppliers": "الموردون",
+      "requests": "طلبات الشراء",
+      "newRequest": "طلب شراء جديد"
     },
     "status": {
       "draft": "مسودة",
@@ -310,7 +380,9 @@
       "received": "تم الاستلام",
       "billed": "تمت الفوترة",
       "paid": "مدفوع",
-      "cancelled": "ملغي"
+      "cancelled": "ملغي",
+      "partially_received": "مُستلَم جزئياً",
+      "returned": "مُرتجع"
     },
     "supplier": {
       "code": "رمز المورد",
@@ -328,7 +400,9 @@
       "needLine": "أضف سطرًا واحدًا على الأقل",
       "unitCost": "تكلفة الوحدة",
       "addLine": "إضافة سطر",
-      "create": "إنشاء أمر الشراء"
+      "create": "إنشاء أمر الشراء",
+      "taxCode": "الضريبة",
+      "noTax": "بدون ضريبة"
     },
     "detail": {
       "billed": "المفوتر",
@@ -338,7 +412,39 @@
       "confirm": "تأكيد الأمر",
       "receive": "استلام البضاعة",
       "bill": "فاتورة المورد",
-      "recordPayment": "تسجيل دفعة"
+      "recordPayment": "تسجيل دفعة",
+      "debitNoteNo": "رقم إشعار المدين",
+      "returned": "مُرتجع",
+      "receiveRemaining": "استلام المتبقي",
+      "return": "تسجيل مرتجع",
+      "returnedQty": "مُرتجع",
+      "approve": "اعتماد",
+      "approval": "الاعتماد",
+      "approved": "مُعتمَد",
+      "pendingApproval": "بانتظار الاعتماد",
+      "vat": "ضريبة القيمة المضافة"
+    },
+    "requests": {
+      "number": "رقم الطلب",
+      "empty": "لا توجد طلبات شراء بعد.",
+      "create": "إنشاء طلب",
+      "approval": "الاعتماد",
+      "needsApproval": "يحتاج اعتماد",
+      "autoApprove": "اعتماد تلقائي",
+      "convertedTo": "حُوِّل إلى",
+      "rejectedReason": "سبب الرفض",
+      "submit": "إرسال للاعتماد",
+      "approve": "اعتماد",
+      "reject": "رفض",
+      "convert": "تحويل إلى أمر شراء"
+    },
+    "requestStatus": {
+      "draft": "مسودة",
+      "submitted": "مُرسَل",
+      "approved": "مُعتمَد",
+      "rejected": "مرفوض",
+      "converted": "مُحوَّل",
+      "cancelled": "ملغي"
     }
   },
   "crm": {

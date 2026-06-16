@@ -5,6 +5,7 @@ import "./sales.css";
 
 const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "orders", to: "/sales", end: true },
+  { key: "quotations", to: "/sales/quotations" },
   { key: "newOrder", to: "/sales/orders/new" },
   { key: "customers", to: "/sales/customers" },
 ];

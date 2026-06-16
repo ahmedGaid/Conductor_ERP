@@ -1,0 +1,63 @@
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+
+import { listQuotations } from "../../api/sales";
+import { useAsync } from "../../hooks/useAsync";
+import { formatMinor } from "../../lib/money";
+import { Bdi } from "../../components/Bdi";
+import { SalesNav } from "./SalesNav";
+import "./sales.css";
+
+export function QuotationsPage() {
+  const { t } = useTranslation();
+  const { data, loading, error } = useAsync(() => listQuotations(), []);
+
+  return (
+    <section className="sales-page">
+      <div className="sales-page__head">
+        <h1>{t("nav.sales")}</h1>
+        <Link className="btn btn--primary" to="/sales/quotations/new">
+          {t("sales.tabs.newQuotation")}
+        </Link>
+      </div>
+      <SalesNav />
+
+      {loading && <p className="muted">{t("common.loading")}</p>}
+      {error && <p className="error-text">{error}</p>}
+      {data && data.length === 0 && <p className="muted">{t("sales.quotations.empty")}</p>}
+
+      {data && data.length > 0 && (
+        <div className="card sales-table-wrap">
+          <table className="sales-table">
+            <thead>
+              <tr>
+                <th>{t("sales.quotations.number")}</th>
+                <th>{t("sales.orders.customer")}</th>
+                <th>{t("accounting.entry.date")}</th>
+                <th>{t("accounting.account.type")}</th>
+                <th className="sales-table__num">{t("sales.orders.total")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((q) => (
+                <tr key={q.id}>
+                  <td>
+                    <Link to={`/sales/quotations/${q.id}`} className="latin">{q.number}</Link>
+                  </td>
+                  <td>{q.customer_name}</td>
+                  <td className="latin muted">{q.quote_date}</td>
+                  <td>
+                    <span className={`sales-badge sales-badge--${q.status}`}>
+                      {t(`sales.quotationStatus.${q.status}`)}
+                    </span>
+                  </td>
+                  <td className="sales-table__num"><Bdi>{formatMinor(q.subtotal_minor, q.currency)}</Bdi></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}

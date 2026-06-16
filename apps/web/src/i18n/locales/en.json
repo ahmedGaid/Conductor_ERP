@@ -143,7 +143,9 @@
       "generalLedger": "General Ledger",
       "incomeStatement": "Income Statement",
       "balanceSheet": "Balance Sheet",
-      "cashFlow": "Cash Flow"
+      "cashFlow": "Cash Flow",
+      "vatReturn": "VAT return",
+      "einvoices": "E-invoices"
     },
     "stmt": {
       "totalRevenue": "Total revenue",
@@ -204,7 +206,32 @@
       "running": "Running balance",
       "noActivity": "No activity.",
       "asOf": "As of",
-      "all": "All"
+      "all": "All",
+      "from": "From",
+      "to": "To"
+    },
+    "vat": {
+      "output": "Output VAT (sales)",
+      "reversals": "Reversals (returns)",
+      "netPayable": "Net VAT payable",
+      "input": "Input VAT (purchases)",
+      "inputReversals": "Input reversals"
+    },
+    "einvoice": {
+      "empty": "No e-invoices yet — issue a sales invoice to create one.",
+      "invoice": "Invoice",
+      "tax": "VAT",
+      "total": "Total",
+      "uuid": "ETA UUID",
+      "submit": "Submit to ETA",
+      "poll": "Check status",
+      "status": {
+        "draft": "Draft",
+        "submitted": "Submitted",
+        "valid": "Valid",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "inventory": {
@@ -256,7 +283,9 @@
     "tabs": {
       "orders": "Orders",
       "newOrder": "New order",
-      "customers": "Customers"
+      "customers": "Customers",
+      "quotations": "Quotations",
+      "newQuotation": "New quotation"
     },
     "status": {
       "draft": "Draft",
@@ -264,7 +293,9 @@
       "delivered": "Delivered",
       "invoiced": "Invoiced",
       "paid": "Paid",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "partially_delivered": "Partially delivered",
+      "returned": "Returned"
     },
     "customer": {
       "code": "Customer code",
@@ -286,7 +317,11 @@
       "item": "Item",
       "unitPrice": "Unit price",
       "addLine": "Add line",
-      "create": "Create order"
+      "create": "Create order",
+      "discount": "Discount",
+      "taxCode": "Tax",
+      "noTax": "No tax",
+      "subtotal": "Subtotal"
     },
     "detail": {
       "invoiced": "Invoiced",
@@ -295,14 +330,49 @@
       "confirm": "Confirm order",
       "deliver": "Deliver",
       "invoice": "Issue invoice",
-      "recordPayment": "Record payment"
+      "recordPayment": "Record payment",
+      "creditNoteNo": "Credit note no.",
+      "returned": "Returned",
+      "deliverRemaining": "Deliver remaining",
+      "return": "Record return",
+      "delivered": "Delivered",
+      "returnedQty": "Returned",
+      "approve": "Approve",
+      "approval": "Approval",
+      "approved": "Approved",
+      "pendingApproval": "Pending approval",
+      "vat": "VAT"
+    },
+    "quotations": {
+      "number": "Quotation no.",
+      "empty": "No quotations yet.",
+      "create": "Create quotation",
+      "approval": "Approval",
+      "needsApproval": "Needs approval",
+      "autoApprove": "Auto-approved",
+      "convertedTo": "Converted to",
+      "rejectedReason": "Rejection reason",
+      "submit": "Submit for approval",
+      "approve": "Approve",
+      "reject": "Reject",
+      "convert": "Convert to order"
+    },
+    "quotationStatus": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "converted": "Converted",
+      "cancelled": "Cancelled"
     }
   },
   "purchasing": {
     "tabs": {
       "orders": "Purchase orders",
       "newOrder": "New PO",
-      "suppliers": "Suppliers"
+      "suppliers": "Suppliers",
+      "requests": "Requests",
+      "newRequest": "New request"
     },
     "status": {
       "draft": "Draft",
@@ -310,7 +380,9 @@
       "received": "Received",
       "billed": "Billed",
       "paid": "Paid",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "partially_received": "Partially received",
+      "returned": "Returned"
     },
     "supplier": {
       "code": "Supplier code",
@@ -328,7 +400,9 @@
       "needLine": "Add at least one line",
       "unitCost": "Unit cost",
       "addLine": "Add line",
-      "create": "Create PO"
+      "create": "Create PO",
+      "taxCode": "Tax",
+      "noTax": "No tax"
     },
     "detail": {
       "billed": "Billed",
@@ -338,7 +412,39 @@
       "confirm": "Confirm order",
       "receive": "Receive goods",
       "bill": "Vendor bill",
-      "recordPayment": "Record payment"
+      "recordPayment": "Record payment",
+      "debitNoteNo": "Debit note no.",
+      "returned": "Returned",
+      "receiveRemaining": "Receive remaining",
+      "return": "Record return",
+      "returnedQty": "Returned",
+      "approve": "Approve",
+      "approval": "Approval",
+      "approved": "Approved",
+      "pendingApproval": "Pending approval",
+      "vat": "VAT"
+    },
+    "requests": {
+      "number": "Request no.",
+      "empty": "No purchase requests yet.",
+      "create": "Create request",
+      "approval": "Approval",
+      "needsApproval": "Needs approval",
+      "autoApprove": "Auto-approved",
+      "convertedTo": "Converted to",
+      "rejectedReason": "Rejection reason",
+      "submit": "Submit for approval",
+      "approve": "Approve",
+      "reject": "Reject",
+      "convert": "Convert to PO"
+    },
+    "requestStatus": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "converted": "Converted",
+      "cancelled": "Cancelled"
     }
   },
   "crm": {

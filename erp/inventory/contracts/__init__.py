@@ -11,7 +11,13 @@ from dataclasses import dataclass
 from ..events import STOCK_ISSUED, STOCK_RECEIVED, STOCK_TRANSFERRED
 from ..repositories import items as _items
 from ..repositories import warehouses as _warehouses
-from ..services.stock import issue_stock, receive_stock, transfer_stock
+from ..services.stock import (
+    issue_stock,
+    receive_stock,
+    return_in_stock,
+    return_out_stock,
+    transfer_stock,
+)
 from ..errors import UnknownItemError, UnknownWarehouseError
 
 
@@ -59,14 +65,38 @@ def receive(sku: str, warehouse_code: str, quantity, unit_cost_minor: int, *, da
     )
 
 
+def return_in(sku: str, warehouse_code: str, quantity, *, date=None, reference: str = "",
+              memo: str = "", actor=None):
+    """Customer return — stock back in at weighted-average cost. Posts Dr Inventory / Cr COGS."""
+    item, warehouse = _resolve(sku, warehouse_code)
+    return return_in_stock(
+        item=item, warehouse=warehouse, quantity=quantity, date=date,
+        reference=reference, memo=memo, actor=actor,
+    )
+
+
+def return_out(sku: str, warehouse_code: str, quantity, *, date=None, reference: str = "",
+               memo: str = "", actor=None):
+    """Supplier return — stock out at weighted-average cost. Posts Dr GRNI / Cr Inventory."""
+    item, warehouse = _resolve(sku, warehouse_code)
+    return return_out_stock(
+        item=item, warehouse=warehouse, quantity=quantity, date=date,
+        reference=reference, memo=memo, actor=actor,
+    )
+
+
 __all__ = [
     "ItemInfo",
     "find_item",
     "issue",
     "receive",
+    "return_in",
+    "return_out",
     # legacy instance-based services (used within tests/other inventory callers)
     "issue_stock",
     "receive_stock",
+    "return_in_stock",
+    "return_out_stock",
     "transfer_stock",
     "STOCK_RECEIVED",
     "STOCK_ISSUED",

@@ -3,9 +3,20 @@ from __future__ import annotations
 
 from .domain.models import (  # noqa: F401
     POStatus,
+    PRStatus,
     PurchaseOrder,
     PurchaseOrderLine,
+    PurchaseRequest,
+    PurchaseRequestLine,
     Supplier,
 )
 
-__all__ = ["POStatus", "PurchaseOrder", "PurchaseOrderLine", "Supplier"]
+__all__ = [
+    "POStatus",
+    "PRStatus",
+    "PurchaseOrder",
+    "PurchaseOrderLine",
+    "PurchaseRequest",
+    "PurchaseRequestLine",
+    "Supplier",
+]

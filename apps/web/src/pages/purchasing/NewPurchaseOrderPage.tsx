@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { createPurchaseOrder, listSuppliers, type NewPOLine } from "../../api/purchasing";
 import { listItems, listWarehouses } from "../../api/inventory";
+import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -24,9 +25,11 @@ export function NewPurchaseOrderPage() {
   const { data: suppliers } = useAsync(listSuppliers, []);
   const { data: warehouses } = useAsync(listWarehouses, []);
   const { data: items } = useAsync(listItems, []);
+  const { data: taxCodes } = useAsync(listTaxCodes, []);
 
   const [supplier, setSupplier] = useState("");
   const [warehouse, setWarehouse] = useState("");
+  const [taxCode, setTaxCode] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +43,8 @@ export function NewPurchaseOrderPage() {
     const cost = parseToMinor(l.unit_cost) ?? 0;
     return s + Math.round(qty * cost);
   }, 0);
+  const taxRateBps = (taxCodes ?? []).find((c) => c.code === taxCode)?.rate_bps ?? 0;
+  const vat = Math.round((subtotal * taxRateBps) / 10000);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -64,7 +69,7 @@ export function NewPurchaseOrderPage() {
     }
     setBusy(true);
     try {
-      const order = await createPurchaseOrder({ supplier_code: supplier, warehouse_code: warehouse, lines: payloadLines });
+      const order = await createPurchaseOrder({ supplier_code: supplier, warehouse_code: warehouse, tax_code: taxCode, lines: payloadLines });
       navigate(`/purchasing/orders/${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -97,6 +102,15 @@ export function NewPurchaseOrderPage() {
               <option value="">—</option>
               {(warehouses ?? []).map((w) => (
                 <option key={w.code} value={w.code}>{w.code} · {w.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="pur-field">
+            <span>{t("purchasing.newOrder.taxCode")}</span>
+            <select value={taxCode} onChange={(e) => setTaxCode(e.target.value)}>
+              <option value="">{t("purchasing.newOrder.noTax")}</option>
+              {(taxCodes ?? []).map((c) => (
+                <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
               ))}
             </select>
           </label>
@@ -142,8 +156,20 @@ export function NewPurchaseOrderPage() {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3}>{t("accounting.entry.totals")}</td>
+                <td colSpan={3}>{t("sales.newOrder.subtotal")}</td>
                 <td className="pur-table__num"><Bdi>{formatMinor(subtotal)}</Bdi></td>
+                <td />
+              </tr>
+              {vat > 0 && (
+                <tr>
+                  <td colSpan={3}>{t("purchasing.detail.vat")}</td>
+                  <td className="pur-table__num"><Bdi>{formatMinor(vat)}</Bdi></td>
+                  <td />
+                </tr>
+              )}
+              <tr>
+                <td colSpan={3}>{t("accounting.entry.totals")}</td>
+                <td className="pur-table__num"><Bdi>{formatMinor(subtotal + vat)}</Bdi></td>
                 <td />
               </tr>
             </tfoot>

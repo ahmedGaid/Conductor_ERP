@@ -13,6 +13,7 @@ from .domain.models import (  # noqa: F401
     JournalLine,
     Period,
     PeriodStatus,
+    TaxCode,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "JournalLine",
     "Period",
     "PeriodStatus",
+    "TaxCode",
 ]

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { createOrder, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
+import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -14,9 +15,10 @@ interface DraftLine {
   item_sku: string;
   quantity: string;
   unit_price: string;
+  discount: string;
 }
 
-const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: "" });
+const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: "", discount: "" });
 
 export function NewOrderPage() {
   const { t } = useTranslation();
@@ -24,9 +26,11 @@ export function NewOrderPage() {
   const { data: customers } = useAsync(listCustomers, []);
   const { data: warehouses } = useAsync(listWarehouses, []);
   const { data: items } = useAsync(listItems, []);
+  const { data: taxCodes } = useAsync(listTaxCodes, []);
 
   const [customer, setCustomer] = useState("");
   const [warehouse, setWarehouse] = useState("");
+  const [taxCode, setTaxCode] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +42,11 @@ export function NewOrderPage() {
   const subtotal = lines.reduce((s, l) => {
     const qty = Number(l.quantity) || 0;
     const price = parseToMinor(l.unit_price) ?? 0;
-    return s + Math.round(qty * price);
+    const discount = parseToMinor(l.discount) ?? 0;
+    return s + Math.round(qty * price) - discount;
   }, 0);
+  const taxRateBps = (taxCodes ?? []).find((c) => c.code === taxCode)?.rate_bps ?? 0;
+  const vat = Math.round((subtotal * taxRateBps) / 10000);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -56,7 +63,12 @@ export function NewOrderPage() {
         setError(t("sales.newOrder.badPrice"));
         return;
       }
-      payloadLines.push({ item_sku: l.item_sku, quantity: l.quantity, unit_price: price });
+      const discount = l.discount ? parseToMinor(l.discount) : 0;
+      if (discount === null) {
+        setError(t("sales.newOrder.badPrice"));
+        return;
+      }
+      payloadLines.push({ item_sku: l.item_sku, quantity: l.quantity, unit_price: price, discount });
     }
     if (payloadLines.length === 0) {
       setError(t("sales.newOrder.needLine"));
@@ -64,7 +76,7 @@ export function NewOrderPage() {
     }
     setBusy(true);
     try {
-      const order = await createOrder({ customer_code: customer, warehouse_code: warehouse, lines: payloadLines });
+      const order = await createOrder({ customer_code: customer, warehouse_code: warehouse, tax_code: taxCode, lines: payloadLines });
       navigate(`/sales/orders/${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -100,6 +112,15 @@ export function NewOrderPage() {
               ))}
             </select>
           </label>
+          <label className="sales-field">
+            <span>{t("sales.newOrder.taxCode")}</span>
+            <select value={taxCode} onChange={(e) => setTaxCode(e.target.value)}>
+              <option value="">{t("sales.newOrder.noTax")}</option>
+              {(taxCodes ?? []).map((c) => (
+                <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="sales-table-wrap">
@@ -109,13 +130,15 @@ export function NewOrderPage() {
                 <th>{t("sales.newOrder.item")}</th>
                 <th className="sales-table__num">{t("inventory.onHand.quantity")}</th>
                 <th className="sales-table__num">{t("sales.newOrder.unitPrice")}</th>
+                <th className="sales-table__num">{t("sales.newOrder.discount")}</th>
                 <th className="sales-table__num">{t("sales.orders.total")}</th>
                 <th />
               </tr>
             </thead>
             <tbody>
               {lines.map((l, i) => {
-                const lineTotal = Math.round((Number(l.quantity) || 0) * (parseToMinor(l.unit_price) ?? 0));
+                const gross = Math.round((Number(l.quantity) || 0) * (parseToMinor(l.unit_price) ?? 0));
+                const lineTotal = gross - (parseToMinor(l.discount) ?? 0);
                 return (
                   <tr key={i}>
                     <td>
@@ -132,6 +155,9 @@ export function NewOrderPage() {
                     <td className="sales-table__num">
                       <input className="latin" inputMode="decimal" value={l.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value })} placeholder="0.00" />
                     </td>
+                    <td className="sales-table__num">
+                      <input className="latin" inputMode="decimal" value={l.discount} onChange={(e) => setLine(i, { discount: e.target.value })} placeholder="0.00" />
+                    </td>
                     <td className="sales-table__num"><Bdi>{formatMinor(lineTotal)}</Bdi></td>
                     <td>
                       <button type="button" className="btn btn--sm" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}>✕</button>
@@ -142,8 +168,20 @@ export function NewOrderPage() {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3}>{t("accounting.entry.totals")}</td>
+                <td colSpan={4}>{t("sales.newOrder.subtotal")}</td>
                 <td className="sales-table__num"><Bdi>{formatMinor(subtotal)}</Bdi></td>
+                <td />
+              </tr>
+              {vat > 0 && (
+                <tr>
+                  <td colSpan={4}>{t("sales.detail.vat")}</td>
+                  <td className="sales-table__num"><Bdi>{formatMinor(vat)}</Bdi></td>
+                  <td />
+                </tr>
+              )}
+              <tr>
+                <td colSpan={4}>{t("accounting.entry.totals")}</td>
+                <td className="sales-table__num"><Bdi>{formatMinor(subtotal + vat)}</Bdi></td>
                 <td />
               </tr>
             </tfoot>

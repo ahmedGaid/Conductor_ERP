@@ -16,6 +16,8 @@ import { GeneralLedgerPage } from "./pages/accounting/GeneralLedgerPage";
 import { IncomeStatementPage } from "./pages/accounting/IncomeStatementPage";
 import { BalanceSheetPage } from "./pages/accounting/BalanceSheetPage";
 import { CashFlowStatementPage } from "./pages/accounting/CashFlowStatementPage";
+import { VatReturnPage } from "./pages/accounting/VatReturnPage";
+import { EInvoicesPage } from "./pages/accounting/EInvoicesPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
 import { WarehousesPage } from "./pages/inventory/WarehousesPage";
@@ -24,10 +26,16 @@ import { OrdersPage } from "./pages/sales/OrdersPage";
 import { NewOrderPage } from "./pages/sales/NewOrderPage";
 import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
 import { CustomersPage } from "./pages/sales/CustomersPage";
+import { QuotationsPage } from "./pages/sales/QuotationsPage";
+import { NewQuotationPage } from "./pages/sales/NewQuotationPage";
+import { QuotationDetailPage } from "./pages/sales/QuotationDetailPage";
 import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
 import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
 import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
 import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
+import { PurchaseRequestsPage } from "./pages/purchasing/PurchaseRequestsPage";
+import { NewPurchaseRequestPage } from "./pages/purchasing/NewPurchaseRequestPage";
+import { PurchaseRequestDetailPage } from "./pages/purchasing/PurchaseRequestDetailPage";
 import { PipelinePage } from "./pages/crm/PipelinePage";
 import { OpportunityDetailPage } from "./pages/crm/OpportunityDetailPage";
 import { LeadsPage } from "./pages/crm/LeadsPage";
@@ -59,6 +67,8 @@ function Protected() {
           <Route path="/accounting/income-statement" element={<IncomeStatementPage />} />
           <Route path="/accounting/balance-sheet" element={<BalanceSheetPage />} />
           <Route path="/accounting/cash-flow" element={<CashFlowStatementPage />} />
+          <Route path="/accounting/vat-return" element={<VatReturnPage />} />
+          <Route path="/accounting/einvoices" element={<EInvoicesPage />} />
           <Route path="/inventory" element={<StockOnHandPage />} />
           <Route path="/inventory/items" element={<ItemsPage />} />
           <Route path="/inventory/warehouses" element={<WarehousesPage />} />
@@ -67,10 +77,16 @@ function Protected() {
           <Route path="/sales" element={<OrdersPage />} />
           <Route path="/sales/orders/new" element={<NewOrderPage />} />
           <Route path="/sales/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/sales/quotations" element={<QuotationsPage />} />
+          <Route path="/sales/quotations/new" element={<NewQuotationPage />} />
+          <Route path="/sales/quotations/:id" element={<QuotationDetailPage />} />
           <Route path="/sales/customers" element={<CustomersPage />} />
           <Route path="/purchasing" element={<PurchaseOrdersPage />} />
           <Route path="/purchasing/orders/new" element={<NewPurchaseOrderPage />} />
           <Route path="/purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
+          <Route path="/purchasing/requests" element={<PurchaseRequestsPage />} />
+          <Route path="/purchasing/requests/new" element={<NewPurchaseRequestPage />} />
+          <Route path="/purchasing/requests/:id" element={<PurchaseRequestDetailPage />} />
           <Route path="/purchasing/suppliers" element={<SuppliersPage />} />
           <Route path="/crm" element={<PipelinePage />} />
           <Route path="/crm/pipeline" element={<PipelinePage />} />

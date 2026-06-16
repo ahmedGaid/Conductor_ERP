@@ -59,6 +59,23 @@ def check() -> None:
         _assert(forbidden not in orders_src, f"purchasing reaches past a contract into {forbidden}")
     _assert("transaction.atomic" in orders_src, "purchasing transitions are not atomic")
     _assert("ThreeWayMatchError" in orders_src, "3-way match is not enforced")
+    # Depth: accumulating partial receipts + supplier returns (debit note) via the inventory contract.
+    _assert("def return_order" in orders_src, "purchasing must support returns (return_order)")
+    _assert("inventory.return_out" in orders_src, "purchasing return must ship stock back via the contract")
+    _assert("PARTIALLY_RECEIVED" in orders_src, "purchasing must support partial receipts")
+    # Purchase request front-end: submit/approve threshold + convert reuses the PO service.
+    reqs_src = _read("erp/purchasing/services/requests.py")
+    for fn in ("def submit_request", "def approve_request", "def convert_request"):
+        _assert(fn in reqs_src, f"purchasing request service missing {fn}")
+    _assert("create_order" in reqs_src, "request convert must reuse the PO service")
+    # Amount-threshold approval gate at confirm.
+    _assert("def approve_order" in orders_src and "ApprovalRequiredError" in orders_src,
+            "purchasing must enforce the order approval gate")
+    # Input VAT: bill books recoverable VAT via the accounting tax contract (not inline rates).
+    _assert("compute_tax" in orders_src and "find_tax_code" in orders_src,
+            "purchasing must compute input VAT via the accounting tax contract")
+    _assert("input_account_code" in orders_src,
+            "purchasing must post input VAT to the tax code's recoverable account")
 
     # 4. Money is integer minor units (no float columns).
     models_src = _read("erp/purchasing/domain/models.py")
@@ -80,13 +97,21 @@ def check() -> None:
         "pages/purchasing/PurchaseOrdersPage.tsx",
         "pages/purchasing/PurchaseOrderDetailPage.tsx",
         "pages/purchasing/NewPurchaseOrderPage.tsx",
+        "pages/purchasing/PurchaseRequestsPage.tsx",
+        "pages/purchasing/NewPurchaseRequestPage.tsx",
+        "pages/purchasing/PurchaseRequestDetailPage.tsx",
     ):
         _assert((WEB_SRC / rel).is_file(), f"missing purchasing screen: src/{rel}")
 
     app = (WEB_SRC / "App.tsx").read_text(encoding="utf-8")
-    for route in ("/purchasing", "/purchasing/orders/new", "/purchasing/orders/:id"):
+    for route in ("/purchasing", "/purchasing/orders/new", "/purchasing/orders/:id",
+                  "/purchasing/requests", "/purchasing/requests/:id"):
         _assert(route in app, f"App.tsx missing purchasing route: {route}")
 
+    req_detail = (WEB_SRC / "pages" / "purchasing" / "PurchaseRequestDetailPage.tsx").read_text(encoding="utf-8")
+    for action in ("submitRequest", "approveRequest", "convertRequest"):
+        _assert(action in req_detail, f"request detail missing {action} action")
+
     detail = (WEB_SRC / "pages" / "purchasing" / "PurchaseOrderDetailPage.tsx").read_text(encoding="utf-8")
-    for action in ("confirm", "receive", "bill"):
+    for action in ("confirm", "receive", "bill", "returnPO", "approvePO"):
         _assert(action in detail, f"PO detail missing {action} action")

@@ -59,6 +59,12 @@ def check() -> None:
             f"inventory reaches past the accounting contract into {forbidden}",
         )
     _assert("transaction.atomic" in stock_src, "stock operations are not atomic")
+    # Returns: stock back in (customer return, Dr Inventory/Cr COGS) and out (supplier return).
+    _assert("def return_in_stock" in stock_src and "def return_out_stock" in stock_src,
+            "inventory must expose return_in_stock + return_out_stock services")
+    contract_src = _read("erp/inventory/contracts/__init__.py")
+    _assert("def return_in" in contract_src and "def return_out" in contract_src,
+            "inventory contract must expose return_in + return_out")
 
     # 4. Money is integer minor units (quantities may be Decimal; value must not be float).
     models_src = _read("erp/inventory/domain/models.py")

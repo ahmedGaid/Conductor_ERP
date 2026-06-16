@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from django.db.models import Sum
 
 from ..domain.accounts import signed_balance
-from ..domain.models import Account, EntryStatus, JournalLine
+from ..domain.models import Account, EntryStatus, JournalLine, TaxCode
 
 
 @dataclass
@@ -92,6 +92,60 @@ class GeneralLedger:
     opening_balance: int
     lines: list[LedgerLine]
     closing_balance: int
+
+
+@dataclass
+class VatReturn:
+    start_date: str
+    end_date: str
+    output_vat: int        # VAT credited on sales invoices over the range
+    reversals: int         # output VAT debited back (sales returns / credit notes)
+    input_vat: int         # VAT debited (recoverable) on purchase bills over the range
+    input_reversals: int   # input VAT credited back (supplier returns / debit notes)
+    net_payable: int       # (output_vat - reversals) - (input_vat - input_reversals)
+
+    @property
+    def is_payable(self) -> bool:
+        return self.net_payable >= 0
+
+
+def _vat_movement(accounts: set[str], start_date, end_date) -> tuple[int, int]:
+    """(debit, credit) totals on the given GL accounts over the posted range."""
+    if not accounts:
+        return 0, 0
+    qs = (
+        JournalLine.objects.filter(entry__status=EntryStatus.POSTED)
+        .filter(account__code__in=accounts)
+        .filter(entry__date__gte=start_date, entry__date__lte=end_date)
+        .aggregate(debit=Sum("debit"), credit=Sum("credit"))
+    )
+    return qs["debit"] or 0, qs["credit"] or 0
+
+
+def vat_return(start_date, end_date) -> VatReturn:
+    """VAT collected and recovered over a date range, from the tax codes' GL accounts.
+
+    Output VAT = credits to the VAT-output (payable) accounts, less debits (sales returns).
+    Input VAT = debits to the VAT-input (recoverable) accounts, less credits (supplier returns).
+    The net payable to the authority is net output − net input (negative ⇒ a refund position).
+    """
+    codes = TaxCode.objects.filter(is_active=True)
+    output_accounts = set(codes.values_list("output_account_code", flat=True))
+    input_accounts = set(codes.values_list("input_account_code", flat=True))
+
+    out_debit, out_credit = _vat_movement(output_accounts, start_date, end_date)
+    # Input accounts are distinct from output accounts; exclude any overlap defensively.
+    in_debit, in_credit = _vat_movement(input_accounts - output_accounts, start_date, end_date)
+
+    output_vat, reversals = out_credit, out_debit
+    input_vat, input_reversals = in_debit, in_credit
+    net_payable = (output_vat - reversals) - (input_vat - input_reversals)
+    return VatReturn(
+        start_date=str(start_date), end_date=str(end_date),
+        output_vat=output_vat, reversals=reversals,
+        input_vat=input_vat, input_reversals=input_reversals,
+        net_payable=net_payable,
+    )
 
 
 def general_ledger(account_code: str, *, period_code: str | None = None) -> GeneralLedger:

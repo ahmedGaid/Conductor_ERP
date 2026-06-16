@@ -38,6 +38,30 @@ class Account(AuditedModel):
         return f"{self.code} — {self.name}"
 
 
+class TaxCode(AuditedModel):
+    """A VAT/tax code. ``rate_bps`` is basis points (1400 = 14%).
+
+    One rate plus the two GL accounts it touches: **output** (sales) VAT credits a payable, and
+    **input** (purchase) VAT debits a recoverable asset. The VAT return nets output minus input.
+    Other modules reference a tax code by its string ``code`` via the accounting contract — never
+    this ORM model.
+    """
+
+    code = models.CharField(max_length=16, unique=True)
+    name = models.CharField(max_length=120)
+    rate_bps = models.IntegerField(default=0)  # basis points: 1400 == 14.00%
+    output_account_code = models.CharField(max_length=32, default="2100")  # VAT Payable (liability)
+    input_account_code = models.CharField(max_length=32, default="1190")  # VAT Recoverable (asset)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "accounting_tax_code"
+        ordering = ["code"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.code} ({self.rate_bps / 100:.2f}%)"
+
+
 class PeriodStatus(models.TextChoices):
     OPEN = "open", "Open"
     CLOSED = "closed", "Closed"

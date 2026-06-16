@@ -12,8 +12,15 @@ from .reports import (  # noqa: F401
     LedgerLine,
     TrialBalance,
     TrialBalanceRow,
+    VatReturn,
     general_ledger,
     trial_balance,
+    vat_return,
+)
+from .taxes import (  # noqa: F401
+    TaxCodeInfo,
+    compute_tax,
+    find_tax_code,
 )
 from .statements import (  # noqa: F401
     BalanceSheet,
@@ -36,6 +43,11 @@ __all__ = [
     "TrialBalanceRow",
     "general_ledger",
     "trial_balance",
+    "VatReturn",
+    "vat_return",
+    "TaxCodeInfo",
+    "compute_tax",
+    "find_tax_code",
     "BalanceSheet",
     "CashFlow",
     "IncomeStatement",

@@ -20,6 +20,8 @@ class MovementType(models.TextChoices):
     RECEIPT = "receipt", "Receipt"
     ISSUE = "issue", "Issue"
     TRANSFER = "transfer", "Transfer"
+    RETURN_IN = "return_in", "Customer return (in)"
+    RETURN_OUT = "return_out", "Supplier return (out)"
 
 
 class Category(TimeStampedModel):

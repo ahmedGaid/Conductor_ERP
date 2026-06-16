@@ -76,10 +76,12 @@ def test_three_way_match_blocks_bill_on_partial_receipt():
     confirm_order(order)
     # Receive only 6 of 10 ordered.
     receive_order(order, received={1: Decimal("6")})
+    order.refresh_from_db()
+    assert order.status == POStatus.PARTIALLY_RECEIVED
     with pytest.raises(ThreeWayMatchError):
         bill_order(order)
     order.refresh_from_db()
-    assert order.status == POStatus.RECEIVED
+    assert order.status == POStatus.PARTIALLY_RECEIVED
     # GRNI reflects only what was received; no AP booked yet.
     assert general_ledger("2150").closing_balance == 600_00
     assert general_ledger("2000").closing_balance == 0

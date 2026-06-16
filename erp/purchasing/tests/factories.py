@@ -4,19 +4,24 @@ from __future__ import annotations
 import datetime as dt
 
 from erp.accounting.domain.accounts import AccountType
-from erp.accounting.domain.models import Account, FiscalYear, Period
+from erp.accounting.domain.models import Account, FiscalYear, Period, TaxCode
 from erp.inventory.domain.models import Item, Warehouse
 from erp.purchasing.domain.models import Supplier
 
 ACCOUNTS = [
     ("1000", "Cash", AccountType.ASSET),
+    ("1190", "VAT Input (Recoverable)", AccountType.ASSET),
     ("1200", "Inventory", AccountType.ASSET),
     ("2000", "Accounts Payable", AccountType.LIABILITY),
+    ("2100", "VAT Payable", AccountType.LIABILITY),
     ("2150", "GRNI", AccountType.LIABILITY),
     ("5000", "Cost of Goods Sold", AccountType.EXPENSE),
 ]
 
 DATE = dt.date(2026, 6, 15)
+# Posting happens at dt.date.today(); use a full-year window for date-range reports.
+YEAR_START = dt.date(2026, 1, 1)
+YEAR_END = dt.date(2026, 12, 31)
 
 
 def make_books() -> None:
@@ -29,6 +34,12 @@ def make_books() -> None:
     Period.objects.create(
         fiscal_year=fy, code="2026", start_date=dt.date(2026, 1, 1),
         end_date=dt.date(2026, 12, 31), status="open",
+    )
+    # Standard 14% VAT: output → 2100 (payable), input → 1190 (recoverable).
+    TaxCode.objects.get_or_create(
+        code="VAT14",
+        defaults={"name": "VAT 14%", "rate_bps": 1400,
+                  "output_account_code": "2100", "input_account_code": "1190"},
     )
 
 

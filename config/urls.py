@@ -23,4 +23,6 @@ urlpatterns = [
     path("api/purchasing/", include("erp.purchasing.api.urls")),
     # CRM API — Stage 5f.
     path("api/crm/", include("erp.crm.api.urls")),
+    # E-invoicing (ETA) API — Stage 6 (compliance).
+    path("api/einvoice/", include("erp.einvoice.api.urls")),
 ]

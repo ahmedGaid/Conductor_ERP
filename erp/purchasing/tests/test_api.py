@@ -45,6 +45,89 @@ def test_po_flow_via_api():
     assert paid["outstanding_minor"] == 0
 
 
+def test_partial_receive_and_return_via_api():
+    make_books()
+    make_item()
+    make_warehouse()
+    client = _admin_client()
+    client.post("/api/purchasing/suppliers", {"code": "SUP1", "name": "Globex"}, format="json")
+    created = client.post(
+        "/api/purchasing/orders",
+        {"supplier_code": "SUP1", "warehouse_code": "MAIN",
+         "lines": [{"item_sku": "WIDGET", "quantity": "10", "unit_cost": 100_00}]},
+        format="json",
+    )
+    oid = created.data["data"]["id"]
+    client.post(f"/api/purchasing/orders/{oid}/confirm")
+
+    partial = client.post(
+        f"/api/purchasing/orders/{oid}/receive",
+        {"lines": [{"line_no": 1, "quantity": "6"}]}, format="json",
+    ).data["data"]
+    assert partial["status"] == "partially_received"
+    assert partial["lines"][0]["received_qty"] == "6.0000"
+
+    full = client.post(f"/api/purchasing/orders/{oid}/receive").data["data"]
+    assert full["status"] == "received"
+    client.post(f"/api/purchasing/orders/{oid}/bill")
+
+    returned = client.post(
+        f"/api/purchasing/orders/{oid}/return",
+        {"lines": [{"line_no": 1, "quantity": "4"}]}, format="json",
+    ).data["data"]
+    assert returned["returned_minor"] == 400_00  # 4 @ 100.00
+    assert returned["debit_note_number"]
+    assert returned["outstanding_minor"] == 600_00
+
+
+def test_po_approval_gate_via_api():
+    make_books()
+    make_item()
+    make_warehouse()
+    client = _admin_client()
+    client.post("/api/purchasing/suppliers", {"code": "SUP1", "name": "Globex"}, format="json")
+    created = client.post(
+        "/api/purchasing/orders",
+        {"supplier_code": "SUP1", "warehouse_code": "MAIN",
+         "lines": [{"item_sku": "WIDGET", "quantity": "200", "unit_cost": 100_00}]},  # 20,000 > threshold
+        format="json",
+    )
+    oid = created.data["data"]["id"]
+    assert created.data["data"]["requires_approval"] is True
+    blocked = client.post(f"/api/purchasing/orders/{oid}/confirm")
+    assert blocked.status_code == 422
+    assert blocked.data["error"]["code"] == "PUR-009"
+    assert client.post(f"/api/purchasing/orders/{oid}/approve").data["data"]["approved"] is True
+    assert client.post(f"/api/purchasing/orders/{oid}/confirm").data["data"]["status"] == "confirmed"
+
+
+def test_request_approval_and_convert_via_api():
+    make_books()
+    make_item()
+    make_warehouse()
+    client = _admin_client()
+    client.post("/api/purchasing/suppliers", {"code": "SUP1", "name": "Globex"}, format="json")
+
+    created = client.post(
+        "/api/purchasing/requests",
+        {"supplier_code": "SUP1", "warehouse_code": "MAIN",
+         "lines": [{"item_sku": "WIDGET", "quantity": "200", "unit_cost": 100_00}]},
+        format="json",
+    )
+    assert created.status_code == 201, created.data
+    rid = created.data["data"]["id"]
+    assert created.data["data"]["requires_approval"] is True
+
+    assert client.post(f"/api/purchasing/requests/{rid}/submit").data["data"]["status"] == "submitted"
+    assert client.post(f"/api/purchasing/requests/{rid}/approve").data["data"]["status"] == "approved"
+
+    conv = client.post(f"/api/purchasing/requests/{rid}/convert")
+    assert conv.status_code == 201, conv.data
+    assert conv.data["data"]["order_number"].startswith("PO-")
+    oid = conv.data["data"]["order_id"]
+    assert client.get(f"/api/purchasing/orders/{oid}").data["data"]["status"] == "draft"
+
+
 def test_purchasing_requires_role():
     plain = User.objects.create_user(username="nobody_pur", password="Dev12345!")
     client = APIClient()

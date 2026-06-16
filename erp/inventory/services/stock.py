@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import datetime as dt
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import transaction
 
@@ -149,6 +149,96 @@ def issue_stock(
     )
     audit.record(
         module="inventory", action="issue_stock", entity_type="StockMovement",
+        entity_id=str(movement.id), actor=actor,
+        after={"sku": item.sku, "warehouse": warehouse.code, "qty": str(quantity), "value": value},
+    )
+    bus.publish(events.STOCK_ISSUED, {"item": item.sku, "warehouse": warehouse.code, "value": value})
+    return movement
+
+
+@transaction.atomic
+def return_in_stock(
+    *, item: Item, warehouse: Warehouse, quantity,
+    date=None, reference: str = "", memo: str = "", actor=None,
+) -> StockMovement:
+    """Customer return — goods come back into stock (the exact reverse of an issue).
+
+    Valued at the current weighted-average unit cost of the item/warehouse, so the Inventory GL
+    keeps matching stock value. GL: Dr Inventory / Cr COGS (reversing the cost of the sale). If the
+    warehouse currently holds none of the item the average is unknown and the return is valued at 0.
+    """
+    _require_stock_item(item)
+    _require_positive(quantity)
+    quantity = Decimal(quantity)
+    date = date or dt.date.today()
+
+    balance = _get_balance(item, warehouse)
+    on_hand = Decimal(balance.quantity)
+    if on_hand > 0:
+        unit = Decimal(balance.value_minor) / on_hand
+        value = int((quantity * unit).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    else:
+        value = 0
+    balance.quantity = on_hand + quantity
+    balance.value_minor += value
+    balance.save(update_fields=["quantity", "value_minor"])
+
+    journal_number = _post_gl(
+        GLPosting(INVENTORY_ACCOUNT, COGS_ACCOUNT, value, memo or f"Return in {item.sku}"),
+        date, actor, reference,
+    )
+    movement = StockMovement.objects.create(
+        item=item, warehouse=warehouse, type=MovementType.RETURN_IN, date=date,
+        quantity=quantity, value_minor=value, reference=reference, memo=memo,
+        journal_number=journal_number,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    audit.record(
+        module="inventory", action="return_in_stock", entity_type="StockMovement",
+        entity_id=str(movement.id), actor=actor,
+        after={"sku": item.sku, "warehouse": warehouse.code, "qty": str(quantity), "value": value},
+    )
+    bus.publish(events.STOCK_RECEIVED, {"item": item.sku, "warehouse": warehouse.code, "value": value})
+    return movement
+
+
+@transaction.atomic
+def return_out_stock(
+    *, item: Item, warehouse: Warehouse, quantity,
+    date=None, reference: str = "", memo: str = "", actor=None,
+) -> StockMovement:
+    """Supplier return — goods leave stock (the exact reverse of a receipt).
+
+    Valued at weighted average. GL: Dr GRNI / Cr Inventory (the Purchasing module then clears GRNI
+    against AP, so the net of a billed receipt + return is nil). Rejects returning more than on hand.
+    """
+    _require_stock_item(item)
+    _require_positive(quantity)
+    quantity = Decimal(quantity)
+    date = date or dt.date.today()
+
+    balance = _get_balance(item, warehouse)
+    if quantity > Decimal(balance.quantity):
+        raise InsufficientStockError(
+            data={"sku": item.sku, "on_hand": str(balance.quantity), "requested": str(quantity)}
+        )
+    value = costing.issue_value(Decimal(balance.quantity), balance.value_minor, quantity)
+    balance.quantity = Decimal(balance.quantity) - quantity
+    balance.value_minor -= value
+    balance.save(update_fields=["quantity", "value_minor"])
+
+    journal_number = _post_gl(
+        GLPosting(GRNI_ACCOUNT, INVENTORY_ACCOUNT, value, memo or f"Return out {item.sku}"),
+        date, actor, reference,
+    )
+    movement = StockMovement.objects.create(
+        item=item, warehouse=warehouse, type=MovementType.RETURN_OUT, date=date,
+        quantity=quantity, value_minor=value, reference=reference, memo=memo,
+        journal_number=journal_number,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    audit.record(
+        module="inventory", action="return_out_stock", entity_type="StockMovement",
         entity_id=str(movement.id), actor=actor,
         after={"sku": item.sku, "warehouse": warehouse.code, "qty": str(quantity), "value": value},
     )

@@ -72,8 +72,17 @@ def check() -> None:
         _assert(fn in stmt_src, f"statements service missing {fn}")
     _assert("is_balanced" in stmt_src, "balance sheet does not assert the accounting equation")
     wf_urls = _read("erp/accounting/api/urls.py")
-    for route in ("income-statement", "balance-sheet", "cash-flow"):
+    for route in ("income-statement", "balance-sheet", "cash-flow", "vat-return", "tax-codes"):
         _assert(route in wf_urls, f"statement endpoint not mounted: {route}")
+
+    # 5c. Tax (VAT): a tax service computes tax and a VAT return nets output VAT against
+    #     recoverable input (purchase) VAT.
+    taxes_src = _read("erp/accounting/services/taxes.py")
+    _assert("def compute_tax" in taxes_src, "tax service missing compute_tax")
+    _assert("input_account_code" in taxes_src, "tax code must expose the input (recoverable) VAT account")
+    reports_src = _read("erp/accounting/services/reports.py")
+    _assert("def vat_return" in reports_src, "reports missing vat_return")
+    _assert("input_vat" in reports_src, "vat_return must net output VAT against input (purchase) VAT")
 
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
@@ -91,6 +100,7 @@ def check() -> None:
         "pages/accounting/IncomeStatementPage.tsx",
         "pages/accounting/BalanceSheetPage.tsx",
         "pages/accounting/CashFlowStatementPage.tsx",
+        "pages/accounting/VatReturnPage.tsx",
     ):
         _assert((WEB_SRC / rel).is_file(), f"missing accounting screen: src/{rel}")
 
@@ -102,6 +112,7 @@ def check() -> None:
         "/accounting/income-statement",
         "/accounting/balance-sheet",
         "/accounting/cash-flow",
+        "/accounting/vat-return",
     ):
         _assert(route in app, f"App.tsx missing accounting route: {route}")
 
