@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { listWorkflows } from "../api/workflows";
 import { useAsync } from "../hooks/useAsync";
 import { Bdi } from "../components/Bdi";
+import { EmptyState } from "../components/EmptyState";
 import "./WorkflowListPage.css";
 
 export function WorkflowListPage() {
@@ -31,7 +32,13 @@ export function WorkflowListPage() {
       )}
       {error && <p className="error-text">{error}</p>}
 
-      {data && data.length === 0 && <p className="muted">{t("workflow.empty")}</p>}
+      {data && data.length === 0 && (
+        <EmptyState
+          title={t("workflow.empty")}
+          hint={t("common.emptyHint")}
+          action={{ label: t("workflow.create"), to: "/workflows/new" }}
+        />
+      )}
 
       {data && data.length > 0 && (
         <div className="card wf-list__table-wrap">

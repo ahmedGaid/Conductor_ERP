@@ -13,6 +13,7 @@ import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { CrmNav } from "./CrmNav";
 import "./crm.css";
 
@@ -191,7 +192,9 @@ export function PipelinePage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
-      {data && data.length === 0 && <p className="muted">{t("crm.pipeline.empty")}</p>}
+      {data && data.length === 0 && (
+        <EmptyState title={t("crm.pipeline.empty")} hint={t("common.emptyHint")} />
+      )}
 
       {data && data.length > 0 && (
         <div className="card crm-table-wrap">

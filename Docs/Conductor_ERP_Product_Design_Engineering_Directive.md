@@ -96,7 +96,14 @@ Translating the five qualities above into rules we can actually build and check 
   convert and a won opportunity also clear the spawned order list). So a created/changed record is
   always freshly refetched the next time its list is shown — never a known-stale view. Centralized, so
   future mutations are covered automatically. gate03 green.
-- **Backlog (apply per screen as we touch them):** designed empty states everywhere (still bare "No
-  data" lines today); per-report skeletons + caching for the filtered statement screens; a responsive
-  pass for narrow/tablet widths; reduce information density on the busiest detail screens via
-  progressive disclosure.
+- **2026-06-16 — Designed empty states on the primary lists.** New reusable `<EmptyState>` (quiet icon
+  + headline + one line of guidance + an optional primary CTA) replaces the bare "No data" lines on the
+  module landing lists: Sales orders/quotations, Purchasing orders/requests, Journals, and Workflows
+  get a create-CTA that routes to their New screen; CRM (leads/tickets/pipeline) and E-invoices show
+  headline + guidance (their create is inline / auto-generated). One shared `common.emptyHint` string
+  (ar+en). gate03 green.
+- **Backlog (apply per screen as we touch them):** empty states on the form+table reference screens
+  (customers/suppliers/items/warehouses/COA — emptiness is already self-evident there next to the add
+  form); per-report skeletons + caching for the filtered statement screens; a responsive pass for
+  narrow/tablet widths; reduce information density on the busiest detail screens via progressive
+  disclosure.

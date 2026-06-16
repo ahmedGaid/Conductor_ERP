@@ -5,6 +5,7 @@ import { listOrders } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
@@ -33,7 +34,13 @@ export function OrdersPage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
-      {data && data.length === 0 && <p className="muted">{t("sales.orders.empty")}</p>}
+      {data && data.length === 0 && (
+        <EmptyState
+          title={t("sales.orders.empty")}
+          hint={t("common.emptyHint")}
+          action={{ label: t("sales.tabs.newOrder"), to: "/sales/orders/new" }}
+        />
+      )}
 
       {data && data.length > 0 && (
         <div className="card sales-table-wrap">

@@ -527,7 +527,8 @@
     "delete": "Delete",
     "yes": "Yes",
     "no": "No",
-    "soon": "Soon"
+    "soon": "Soon",
+    "emptyHint": "Create your first one to get started."
   },
   "einvoice": {
     "tabs": {

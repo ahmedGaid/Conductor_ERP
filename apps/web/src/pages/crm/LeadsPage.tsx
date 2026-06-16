@@ -9,6 +9,7 @@ import {
   type Lead,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { EmptyState } from "../../components/EmptyState";
 import { CrmNav } from "./CrmNav";
 import "./crm.css";
 
@@ -103,7 +104,9 @@ export function LeadsPage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
-      {data && data.length === 0 && <p className="muted">{t("crm.lead.empty")}</p>}
+      {data && data.length === 0 && (
+        <EmptyState title={t("crm.lead.empty")} hint={t("common.emptyHint")} />
+      )}
 
       {data && data.length > 0 && (
         <div className="card crm-table-wrap">

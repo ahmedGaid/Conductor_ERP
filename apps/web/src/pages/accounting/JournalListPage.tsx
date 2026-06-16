@@ -5,6 +5,7 @@ import { listJournals } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
 
@@ -33,7 +34,13 @@ export function JournalListPage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
-      {data && data.length === 0 && <p className="muted">{t("accounting.journals.empty")}</p>}
+      {data && data.length === 0 && (
+        <EmptyState
+          title={t("accounting.journals.empty")}
+          hint={t("common.emptyHint")}
+          action={{ label: t("accounting.tabs.newEntry"), to: "/accounting/journals/new" }}
+        />
+      )}
 
       {data && data.length > 0 && (
         <div className="card acct-table-wrap">

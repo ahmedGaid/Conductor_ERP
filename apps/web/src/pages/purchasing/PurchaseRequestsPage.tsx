@@ -5,6 +5,7 @@ import { listRequests } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { PurchasingNav } from "./PurchasingNav";
 import "./purchasing.css";
 
@@ -33,7 +34,13 @@ export function PurchaseRequestsPage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
-      {data && data.length === 0 && <p className="muted">{t("purchasing.requests.empty")}</p>}
+      {data && data.length === 0 && (
+        <EmptyState
+          title={t("purchasing.requests.empty")}
+          hint={t("common.emptyHint")}
+          action={{ label: t("purchasing.tabs.newRequest"), to: "/purchasing/requests/new" }}
+        />
+      )}
 
       {data && data.length > 0 && (
         <div className="card pur-table-wrap">
