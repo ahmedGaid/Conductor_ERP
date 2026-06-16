@@ -41,3 +41,36 @@
 .appshell__skip:focus {
   transform: translateY(0);
 }
+
+/* Scrim behind the nav drawer on narrow widths. Inert (invisible, unfocusable)
+   on wide screens and whenever the drawer is closed. */
+.appshell__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: none;
+  padding: 0;
+  background-color: var(--color-scrim);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur) var(--ease-out), visibility var(--dur) var(--ease-out);
+}
+
+/* ---- Responsive: tablet / phone ---- */
+@media (max-width: 64rem) {
+  .appshell {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+
+  .appshell__content {
+    padding: var(--space-4);
+  }
+
+  .appshell--nav-open .appshell__overlay {
+    opacity: 1;
+    visibility: visible;
+  }
+}

@@ -102,8 +102,14 @@ Translating the five qualities above into rules we can actually build and check 
   get a create-CTA that routes to their New screen; CRM (leads/tickets/pipeline) and E-invoices show
   headline + guidance (their create is inline / auto-generated). One shared `common.emptyHint` string
   (ar+en). gate03 green.
+- **2026-06-16 — Responsive shell (tablet / phone).** Below 64rem the sidebar becomes an off-canvas
+  **drawer** (RTL-aware slide, behind a scrim overlay) toggled by a hamburger in the command bar; the
+  shell grid goes single-column, content padding tightens, and the command bar drops its placeholder
+  search + non-essential icons to reclaim width. Drawer closes on navigation and on overlay tap. The
+  dashboard KPI grid collapses 4→2→1 across 60rem/38rem; every module table already scrolls within its
+  card, so wide tables never break the page. gate03 green (logical-CSS scan clean — the off-canvas hide
+  uses a dir-flipped transform, not physical left/right).
 - **Backlog (apply per screen as we touch them):** empty states on the form+table reference screens
   (customers/suppliers/items/warehouses/COA — emptiness is already self-evident there next to the add
-  form); per-report skeletons + caching for the filtered statement screens; a responsive pass for
-  narrow/tablet widths; reduce information density on the busiest detail screens via progressive
-  disclosure.
+  form); per-report skeletons + caching for the filtered statement screens; reduce information density
+  on the busiest detail screens via progressive disclosure; sticky table headers on long lists.

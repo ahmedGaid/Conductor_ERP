@@ -51,6 +51,8 @@
   --color-text-muted: var(--palette-ink-500);
   --color-text-subtle: var(--palette-ink-400);
   --color-text-on-brand: var(--palette-white);
+  /* Dim behind the mobile nav drawer / modals. */
+  --color-scrim: rgba(10, 15, 26, 0.45);
 
   /* Brand = near-black (primary buttons, logo, focus accents). */
   --color-brand: var(--palette-ink-900);

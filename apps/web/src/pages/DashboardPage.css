@@ -204,3 +204,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 38rem) {
+  .dash__kpis {
+    grid-template-columns: 1fr;
+  }
+}

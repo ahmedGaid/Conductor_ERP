@@ -177,3 +177,26 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
+
+/* ---- Responsive: off-canvas drawer on narrow widths ----
+   Pinned to the inline-start edge and slid off-screen until the drawer opens.
+   The hide transform is physical, so it's flipped for RTL; the open state
+   (translateX(0)) is listed last and wins for both directions. */
+@media (max-width: 64rem) {
+  .sidebar {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 30;
+    max-inline-size: 85vw;
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-100%);
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+  [dir="rtl"] .sidebar {
+    transform: translateX(100%);
+  }
+  .appshell--nav-open .sidebar {
+    transform: translateX(0);
+  }
+}

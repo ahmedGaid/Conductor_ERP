@@ -71,3 +71,34 @@
   font-size: var(--font-size-lg);
   line-height: 1;
 }
+
+/* Hamburger — only shown when the sidebar becomes a drawer. */
+.commandbar__menu {
+  display: none;
+}
+.commandbar__menu svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.commandbar__aux {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@media (max-width: 64rem) {
+  .commandbar {
+    padding-inline: var(--space-3);
+    gap: var(--space-2);
+  }
+  .commandbar__menu {
+    display: inline-flex;
+  }
+  /* Reclaim width on small screens: the search is a placeholder and the
+     notifications/help are non-essential. */
+  .commandbar__search,
+  .commandbar__aux {
+    display: none;
+  }
+}
