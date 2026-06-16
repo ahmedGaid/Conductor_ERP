@@ -13,7 +13,6 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "balanceSheet", to: "/accounting/balance-sheet" },
   { key: "cashFlow", to: "/accounting/cash-flow" },
   { key: "vatReturn", to: "/accounting/vat-return" },
-  { key: "einvoices", to: "/accounting/einvoices" },
 ];
 
 export function AccountingNav() {

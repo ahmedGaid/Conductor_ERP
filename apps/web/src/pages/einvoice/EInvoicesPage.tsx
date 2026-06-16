@@ -10,8 +10,8 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
-import { AccountingNav } from "./AccountingNav";
-import "./accounting.css";
+import { EInvoiceNav } from "./EInvoiceNav";
+import "./einvoice.css";
 
 export function EInvoicesPage() {
   const { t } = useTranslation();
@@ -33,26 +33,26 @@ export function EInvoicesPage() {
   }
 
   return (
-    <section className="acct-page">
-      <h1>{t("nav.accounting")}</h1>
-      <AccountingNav />
+    <section className="ein-page">
+      <h1>{t("nav.einvoice")}</h1>
+      <EInvoiceNav />
 
       {loading && <p className="muted">{t("common.loading")}</p>}
       {error && <p className="error-text">{error}</p>}
       {actionError && <p className="error-text">{actionError}</p>}
-      {data && data.length === 0 && <p className="muted">{t("accounting.einvoice.empty")}</p>}
+      {data && data.length === 0 && <p className="muted">{t("einvoice.empty")}</p>}
 
       {data && data.length > 0 && (
-        <div className="card acct-table-wrap">
-          <table className="acct-table">
+        <div className="card ein-table-wrap">
+          <table className="ein-table">
             <thead>
               <tr>
-                <th>{t("accounting.einvoice.invoice")}</th>
-                <th>{t("sales.orders.customer")}</th>
-                <th className="acct-table__num">{t("accounting.einvoice.tax")}</th>
-                <th className="acct-table__num">{t("accounting.einvoice.total")}</th>
-                <th>{t("accounting.einvoice.uuid")}</th>
-                <th>{t("accounting.account.type")}</th>
+                <th>{t("einvoice.invoice")}</th>
+                <th>{t("einvoice.customer")}</th>
+                <th className="ein-table__num">{t("einvoice.tax")}</th>
+                <th className="ein-table__num">{t("einvoice.total")}</th>
+                <th>{t("einvoice.uuid")}</th>
+                <th>{t("einvoice.statusHeader")}</th>
                 <th />
               </tr>
             </thead>
@@ -61,23 +61,23 @@ export function EInvoicesPage() {
                 <tr key={e.id}>
                   <td className="latin">{e.invoice_number}</td>
                   <td>{e.customer_name || e.customer_code}</td>
-                  <td className="acct-table__num"><Bdi>{formatMinor(e.tax_minor, e.currency)}</Bdi></td>
-                  <td className="acct-table__num"><Bdi>{formatMinor(e.total_minor, e.currency)}</Bdi></td>
+                  <td className="ein-table__num"><Bdi>{formatMinor(e.tax_minor, e.currency)}</Bdi></td>
+                  <td className="ein-table__num"><Bdi>{formatMinor(e.total_minor, e.currency)}</Bdi></td>
                   <td className="latin muted">{e.uuid ? `${e.uuid.slice(0, 12)}…` : "—"}</td>
                   <td>
-                    <span className={`sales-badge sales-badge--${e.status}`}>
-                      {t(`accounting.einvoice.status.${e.status}`)}
+                    <span className={`ein-badge ein-badge--${e.status}`}>
+                      {t(`einvoice.status.${e.status}`)}
                     </span>
                   </td>
                   <td>
                     {e.status === "draft" && (
                       <button className="btn btn--sm" disabled={busy === e.id} onClick={() => run(e.id, () => submitETAInvoice(e.id))}>
-                        {t("accounting.einvoice.submit")}
+                        {t("einvoice.submit")}
                       </button>
                     )}
                     {e.status === "submitted" && (
                       <button className="btn btn--sm" disabled={busy === e.id} onClick={() => run(e.id, () => pollETAInvoice(e.id))}>
-                        {t("accounting.einvoice.poll")}
+                        {t("einvoice.poll")}
                       </button>
                     )}
                   </td>

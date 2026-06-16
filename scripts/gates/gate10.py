@@ -75,12 +75,16 @@ def check() -> None:
         for banned in (".raw(", "cursor.execute(", "RunSQL"):
             _assert(banned not in src, f"{path.name} uses raw SQL ({banned})")
 
-    # 6. React screen exists and is wired.
+    # 6. React screen exists and is wired as its OWN top-level section (not an accounting sub-tab).
     _assert((WEB_SRC / "api" / "einvoice.ts").is_file(), "missing src/api/einvoice.ts")
-    _assert((WEB_SRC / "pages" / "accounting" / "EInvoicesPage.tsx").is_file(),
-            "missing EInvoicesPage.tsx")
+    _assert((WEB_SRC / "pages" / "einvoice" / "EInvoicesPage.tsx").is_file(),
+            "missing pages/einvoice/EInvoicesPage.tsx")
+    _assert((WEB_SRC / "pages" / "einvoice" / "EInvoiceNav.tsx").is_file(),
+            "missing pages/einvoice/EInvoiceNav.tsx")
     app = (WEB_SRC / "App.tsx").read_text(encoding="utf-8")
-    _assert("/accounting/einvoices" in app, "App.tsx missing /accounting/einvoices route")
-    page = (WEB_SRC / "pages" / "accounting" / "EInvoicesPage.tsx").read_text(encoding="utf-8")
+    _assert('path="/einvoice"' in app, "App.tsx missing the /einvoice route")
+    sidebar = (WEB_SRC / "app" / "Sidebar.tsx").read_text(encoding="utf-8")
+    _assert('to: "/einvoice"' in sidebar, "Sidebar missing the top-level e-invoicing section")
+    page = (WEB_SRC / "pages" / "einvoice" / "EInvoicesPage.tsx").read_text(encoding="utf-8")
     for action in ("submitETAInvoice", "pollETAInvoice"):
         _assert(action in page, f"e-invoices screen missing {action} action")

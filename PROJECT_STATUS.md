@@ -47,9 +47,10 @@ FK); `record_invoice` idempotent per invoice number. **Stubbed deterministic ETA
 (`eta_adapter.py`, no network/cloud): `submit` assigns a UUID = the document's sha256 (idempotent
 retries), `poll` validates; swapping a real client touches only that file. DRF `/api/einvoice/invoices`
 (+ submit/poll) behind Accountant/Branch-Manager RBAC; 7 tests (record-via-bus, submit assigns UUID,
-poll→valid, idempotent, untaxed still recorded, API lifecycle, auth). React **E-invoices** screen
-(list + Submit/Check-status) added to the accounting sub-nav; ar/en parity kept. (Input/purchase VAT
-has since landed — Stage 5b-5 above.)
+poll→valid, idempotent, untaxed still recorded, API lifecycle, auth). React **E-invoicing** is its
+**own top-level sidebar section** (`/einvoice`, `pages/einvoice/` with its own nav — promoted out of
+the accounting sub-nav so the UI mirrors the standalone backend module); ar/en parity kept.
+(Input/purchase VAT has since landed — Stage 5b-5 above.)
 
 Stage 5b-4 delivered (gates 05/07 extended): **VAT/tax on sales** — the first accounting-depth slice.
 New `TaxCode` (rate in basis points; seed adds **VAT14** + **VAT0**, output → 2100 VAT Payable),

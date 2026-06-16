@@ -15,7 +15,8 @@
     "purchasing": "Purchasing",
     "inventory": "Inventory",
     "crm": "CRM",
-    "reports": "Reports"
+    "reports": "Reports",
+    "einvoice": "E-Invoicing"
   },
   "shell": {
     "search": "Search",
@@ -144,8 +145,7 @@
       "incomeStatement": "Income Statement",
       "balanceSheet": "Balance Sheet",
       "cashFlow": "Cash Flow",
-      "vatReturn": "VAT return",
-      "einvoices": "E-invoices"
+      "vatReturn": "VAT return"
     },
     "stmt": {
       "totalRevenue": "Total revenue",
@@ -216,22 +216,6 @@
       "netPayable": "Net VAT payable",
       "input": "Input VAT (purchases)",
       "inputReversals": "Input reversals"
-    },
-    "einvoice": {
-      "empty": "No e-invoices yet — issue a sales invoice to create one.",
-      "invoice": "Invoice",
-      "tax": "VAT",
-      "total": "Total",
-      "uuid": "ETA UUID",
-      "submit": "Submit to ETA",
-      "poll": "Check status",
-      "status": {
-        "draft": "Draft",
-        "submitted": "Submitted",
-        "valid": "Valid",
-        "rejected": "Rejected",
-        "cancelled": "Cancelled"
-      }
     }
   },
   "inventory": {
@@ -544,5 +528,26 @@
     "yes": "Yes",
     "no": "No",
     "soon": "Soon"
+  },
+  "einvoice": {
+    "tabs": {
+      "invoices": "E-invoices"
+    },
+    "empty": "No e-invoices yet — issue a sales invoice to create one.",
+    "invoice": "Invoice",
+    "customer": "Customer",
+    "tax": "VAT",
+    "total": "Total",
+    "uuid": "ETA UUID",
+    "statusHeader": "Status",
+    "submit": "Submit to ETA",
+    "poll": "Check status",
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "valid": "Valid",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    }
   }
 }
