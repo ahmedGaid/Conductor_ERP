@@ -37,14 +37,14 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 - API + React: cost-center master + a cost-center filter on the income statement.
 - Gate: posting with a dimension still balances; the dimensional P&L sums to the un-dimensioned total.
 
-### Phase 3 — Bank Reconciliation  ⬅ NEXT
+### Phase 3 — Bank Reconciliation  ✅ DONE (2026-06-16, committed)
 - `BankStatement` + `BankStatementLine`; match lines against `is_cash`-account GL lines (auto by
   amount+date, manual override); unreconciled report; post adjustment journals for bank-only items
   (fees/interest).
 - API + React: import/enter statement, match screen, unreconciled list.
 - Gate: a fully matched statement reconciles to the cash GL balance; adjustments post + balance.
 
-### Phase 4 — Budgets + Budget-vs-Actual
+### Phase 4 — Budgets + Budget-vs-Actual  ⬅ NEXT
 - `Budget` (fiscal year) + `BudgetLine` (account, period, amount minor). Budget-vs-actual report
   (variance vs the posted GL), with export.
 - API + React: budget entry grid + variance report.

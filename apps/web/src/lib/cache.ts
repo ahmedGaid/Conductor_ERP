@@ -53,6 +53,9 @@ const INVALIDATION: ReadonlyArray<{ prefix: string; keys: readonly string[] }> =
   { prefix: "/accounting/journals", keys: ["accounting:journals", "dashboard"] },
   // Asset acquire / depreciation / dispose all post to the GL.
   { prefix: "/accounting/assets", keys: ["accounting:assets", "accounting:journals", "dashboard"] },
+  // Bank-rec line match/unmatch and statement adjustments (adjustments post to the GL).
+  { prefix: "/accounting/bank-statement-lines", keys: ["accounting:bank-statements"] },
+  { prefix: "/accounting/bank-statements", keys: ["accounting:bank-statements", "accounting:journals", "dashboard"] },
   { prefix: "/einvoice/invoices", keys: ["einvoice:invoices"] },
   { prefix: "/crm/leads", keys: ["crm:leads"] },
   { prefix: "/crm/opportunities", keys: ["crm:opportunities", "sales:orders", "dashboard"] }, // win spawns an SO

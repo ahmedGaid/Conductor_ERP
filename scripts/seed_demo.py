@@ -318,6 +318,46 @@ if _FixedAsset.objects.exists():
 else:
     seed_fixed_assets()
 
+
+def seed_bank_rec() -> None:
+    # Two posted movements on the Bank (1010) GL account, plus a statement that shows them and a
+    # bank-only fee — so the user can Auto-match, Post the fee adjustment, and Mark reconciled.
+    import datetime as _dt
+
+    from erp.accounting.services import (
+        BankLineInput,
+        JournalInput,
+        LineInput,
+        create_statement,
+        post_journal,
+    )
+
+    today = _dt.date.today()
+    post_journal(JournalInput(date=today, memo="Owner funds into bank", lines=[
+        LineInput("1010", debit=50_000_00), LineInput("3000", credit=50_000_00),
+    ]))
+    post_journal(JournalInput(date=today, memo="Cash sale banked", lines=[
+        LineInput("1010", debit=8_000_00), LineInput("4000", credit=8_000_00),
+    ]))
+    stmt = create_statement(
+        account_code="1010", statement_date=today, closing_balance_minor=57_925_00,
+        reference="BANK-DEMO",
+        lines=[
+            BankLineInput(date=today, amount_minor=50_000_00, description="Owner funds"),
+            BankLineInput(date=today, amount_minor=8_000_00, description="Card settlement"),
+            BankLineInput(date=today, amount_minor=-75_00, description="Monthly account fee"),
+        ],
+    )
+    created.append(("BANK", str(stmt.id)[:8], "statement — Auto-match, post the 75.00 fee (contra 6100), Reconcile"))
+
+
+from erp.accounting.domain.models import BankStatement as _BankStatement  # noqa: E402
+
+if _BankStatement.objects.exists():
+    print("Demo bank statement already present — skipping.")
+else:
+    seed_bank_rec()
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")

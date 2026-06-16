@@ -3,15 +3,25 @@
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
 > meaningful step. Last updated: **2026-06-16 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
-> exports (Stage 6b) + COMPLETION_PLAN Phases 1–2: Fixed Assets + Depreciation, Cost Centers;
-> gate:all 00–10 GREEN)**.
+> exports (Stage 6b) + COMPLETION_PLAN Phases 1–3: Fixed Assets + Depreciation, Cost Centers, Bank
+> Reconciliation; gate:all 00–10 GREEN)**.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
 operational depth → Stage 6 finish → frontend polish → Stage 7 hardening/deploy). **Working rhythm:**
 each phase is one gate-green committable increment; after each, the user tests, then we commit + push
-and update this file. **Phases 1–2 DONE** (Fixed Assets + Depreciation; Cost Centers — both committed).
-**NEXT: Phase 3 — Bank Reconciliation.**
+and update this file. **Phases 1–3 DONE** (Fixed Assets + Depreciation; Cost Centers; Bank
+Reconciliation — all committed). **NEXT: Phase 4 — Budgets + Budget-vs-Actual.**
+
+Phase 3 delivered (extends gate05): **Bank Reconciliation.** `BankStatement` + `BankStatementLine`
+reconciled against a cash GL account; statement amounts are signed (+deposit/−withdrawal). `auto_match`
+pairs statement lines to unmatched posted cash GL lines of equal signed amount (a GL line claimed once
+only); manual match/unmatch override. Bank-only items (fees/interest) are booked via `post_adjustment`
+(balanced journal through `post_journal`, auto-matched). `reconciliation()` gives book vs statement,
+the difference, and the outstanding-item lists; `mark_reconciled` locks only on a strict tie-out
+(`ACC-012` otherwise). DRF `/api/accounting/bank-statements` (+auto-match/adjustment/reconcile/
+candidates, line match/unmatch); React statement list/new + detail match screen; ar/en parity. 6 new
+tests; gate:all 00–10 green. New account 6100 Bank Charges; demo seeds a ready-to-reconcile statement.
 
 Phase 2 delivered (extends gate05): **Cost Centers — a dimensional reporting tag.** A `CostCenter`
 master + an optional, nullable `cost_center_code` on each `JournalLine` (purely additive — existing

@@ -148,7 +148,8 @@
       "cashFlow": "التدفقات النقدية",
       "vatReturn": "إقرار ضريبة القيمة المضافة",
       "fixedAssets": "الأصول الثابتة",
-      "costCenters": "مراكز التكلفة"
+      "costCenters": "مراكز التكلفة",
+      "bankRec": "التسوية البنكية"
     },
     "costCenters": {
       "code": "الرمز",
@@ -158,6 +159,40 @@
       "empty": "لا توجد مراكز تكلفة بعد.",
       "label": "مركز التكلفة",
       "all": "كل مراكز التكلفة"
+    },
+    "bankRec": {
+      "account": "الحساب البنكي",
+      "statementDate": "تاريخ الكشف",
+      "closingBalance": "الرصيد الختامي",
+      "lineDate": "التاريخ",
+      "amount": "المبلغ",
+      "description": "البيان",
+      "addLine": "إضافة سطر",
+      "create": "إنشاء كشف",
+      "amountHint": "مبالغ الكشف بإشارة: موجب للإيداع، سالب للسحب.",
+      "invalidInput": "يرجى إدخال قيم صحيحة.",
+      "empty": "لا توجد كشوف بنكية بعد.",
+      "backToList": "العودة إلى الكشوف",
+      "statementClosing": "ختامي الكشف",
+      "bookBalance": "رصيد الدفاتر (حساب النقدية)",
+      "difference": "الفرق",
+      "reconciled": "تمت التسوية",
+      "autoMatch": "مطابقة تلقائية",
+      "markReconciled": "تأكيد التسوية",
+      "match": "مطابقة",
+      "matched": "مطابق",
+      "unmatch": "إلغاء المطابقة",
+      "pickLedgerLine": "اختر سطر القيد",
+      "noCandidate": "لا يوجد سطر قيد مطابق",
+      "noLines": "لا توجد سطور بالكشف.",
+      "adjustment": "ترحيل تسوية (بند بنكي فقط)",
+      "contraAccount": "الحساب المقابل",
+      "memo": "البيان",
+      "postAdjustment": "ترحيل التسوية",
+      "statuses": {
+        "open": "مفتوح",
+        "reconciled": "تمت التسوية"
+      }
     },
     "assets": {
       "code": "الرمز",

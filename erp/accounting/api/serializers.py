@@ -137,6 +137,32 @@ class CostCenterSerializer(serializers.Serializer):
         return {"id": str(obj.id), "code": obj.code, "name": obj.name, "is_active": obj.is_active}
 
 
+class BankLineInputSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    amount_minor = serializers.IntegerField()  # signed
+    description = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+
+
+class BankStatementCreateSerializer(serializers.Serializer):
+    account_code = serializers.CharField(max_length=32)
+    statement_date = serializers.DateField()
+    opening_balance_minor = serializers.IntegerField(required=False, default=0)
+    closing_balance_minor = serializers.IntegerField()
+    reference = serializers.CharField(max_length=128, required=False, allow_blank=True, default="")
+    lines = BankLineInputSerializer(many=True, required=False, default=list)
+
+
+class BankAdjustmentSerializer(serializers.Serializer):
+    amount_minor = serializers.IntegerField()  # signed, non-zero
+    contra_account_code = serializers.CharField(max_length=32)
+    memo = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    date = serializers.DateField(required=False, allow_null=True)
+
+
+class BankMatchSerializer(serializers.Serializer):
+    journal_line_id = serializers.IntegerField()
+
+
 class JournalLineInputSerializer(serializers.Serializer):
     account_code = serializers.CharField(max_length=32)
     debit = serializers.IntegerField(min_value=0, default=0)

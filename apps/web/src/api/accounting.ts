@@ -12,6 +12,7 @@ export interface Account {
   parent_code: string | null;
   is_postable: boolean;
   is_active: boolean;
+  is_cash: boolean;
   currency: string;
 }
 
@@ -262,6 +263,105 @@ export function createCostCenter(payload: { code: string; name: string }): Promi
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// ---- Bank reconciliation ----
+
+export type BankStatementStatus = "open" | "reconciled";
+
+export interface BankStatementLine {
+  id: string;
+  line_no: number;
+  date: string;
+  description: string;
+  amount_minor: number;
+  is_matched: boolean;
+  matched_line_id: number | null;
+}
+
+export interface GLCandidate {
+  id: number;
+  date: string;
+  entry_number: string;
+  memo: string;
+  amount_minor: number;
+}
+
+export interface ReconciliationSummary {
+  book_balance: number;
+  statement_closing: number;
+  difference: number;
+  is_reconciled: boolean;
+  unmatched_statement: { line_no: number; date: string; description: string; amount_minor: number }[];
+  unmatched_book: GLCandidate[];
+}
+
+export interface BankStatement {
+  id: string;
+  account_code: string;
+  statement_date: string;
+  opening_balance_minor: number;
+  closing_balance_minor: number;
+  reference: string;
+  status: BankStatementStatus;
+  lines: BankStatementLine[];
+  reconciliation?: ReconciliationSummary;
+}
+
+export function listBankStatements(): Promise<BankStatement[]> {
+  return apiFetch<BankStatement[]>("/accounting/bank-statements");
+}
+
+export function getBankStatement(id: string): Promise<BankStatement> {
+  return apiFetch<BankStatement>(`/accounting/bank-statements/${id}`);
+}
+
+export function createBankStatement(payload: {
+  account_code: string;
+  statement_date: string;
+  opening_balance_minor?: number;
+  closing_balance_minor: number;
+  reference?: string;
+  lines: { date: string; amount_minor: number; description?: string }[];
+}): Promise<BankStatement> {
+  return apiFetch<BankStatement>("/accounting/bank-statements", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function autoMatchStatement(id: string): Promise<BankStatement> {
+  return apiFetch<BankStatement>(`/accounting/bank-statements/${id}/auto-match`, { method: "POST", body: "{}" });
+}
+
+export function postBankAdjustment(id: string, payload: {
+  amount_minor: number;
+  contra_account_code: string;
+  memo?: string;
+}): Promise<BankStatement> {
+  return apiFetch<BankStatement>(`/accounting/bank-statements/${id}/adjustment`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function reconcileStatement(id: string): Promise<BankStatement> {
+  return apiFetch<BankStatement>(`/accounting/bank-statements/${id}/reconcile`, { method: "POST", body: "{}" });
+}
+
+export function listMatchCandidates(id: string): Promise<GLCandidate[]> {
+  return apiFetch<GLCandidate[]>(`/accounting/bank-statements/${id}/candidates`);
+}
+
+export function matchBankLine(lineId: string, journalLineId: number): Promise<BankStatement> {
+  return apiFetch<BankStatement>(`/accounting/bank-statement-lines/${lineId}/match`, {
+    method: "POST",
+    body: JSON.stringify({ journal_line_id: journalLineId }),
+  });
+}
+
+export function unmatchBankLine(lineId: string): Promise<BankStatement> {
+  return apiFetch<BankStatement>(`/accounting/bank-statement-lines/${lineId}/match`, { method: "DELETE" });
 }
 
 // ---- Fixed assets ----

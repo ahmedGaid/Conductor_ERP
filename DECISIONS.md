@@ -494,6 +494,34 @@ department/project without a new ledger.
   cost-center filter (with matching export) on the Income Statement; ar/en parity. Seeds CC-SALES/
   CC-OPS/CC-ADMIN.
 
+## Accounting — Bank Reconciliation (Phase 3 of the completion plan, 2026-06-16)
+
+Third completion-plan increment: tie a bank statement to its cash/bank GL account.
+
+- **Matching is statement-line ↔ GL-line by signed amount.** A statement line's `amount_minor` is
+  signed (+ deposit / − withdrawal); a cash GL line's signed amount is `debit − credit`. `auto_match`
+  pairs each unmatched statement line to an unmatched posted cash GL line of equal signed amount;
+  `match_line`/`unmatch_line` give manual override. A GL line can be claimed by at most one statement
+  line (across all statements) — `_matched_gl_line_ids()` enforces it, `ACC-011` on a bad match.
+- **Bank-only items are booked, never hand-waved.** Fees/interest that appear on the statement but not
+  the books are entered via `post_adjustment`, which posts a balanced journal through `post_journal`
+  (+amount ⇒ Dr Cash / Cr contra; −amount ⇒ Dr contra / Cr Cash) and then auto-matches the created cash
+  line to its statement line. So every reconciling item ends up in the GL — the books and bank agree by
+  construction, and the trial balance stays balanced (proven).
+- **Reconciled = strict tie-out, outstanding items shown not hidden.** `reconciliation()` returns book
+  balance vs statement closing, the difference, and both lists of unmatched items (in-transit deposits /
+  outstanding checks on the book side; un-booked items on the bank side). `is_reconciled` is true only
+  when **every** statement line is matched, **every** in-range cash GL line is matched, and
+  closing == book balance. `mark_reconciled` refuses otherwise (`ACC-012`) and locks the statement
+  (status → reconciled). Timing differences therefore keep a statement *open* (correct) rather than
+  faking a tie-out.
+- **Cash account required.** A statement's account must be `Account.is_cash` (`ACC-010`). Statement
+  import in this slice is manual line entry (the form supports signed amounts); a CSV/OFX importer can
+  layer on later behind the same `create_statement` service. Money stays integer minor units. Extends
+  **gate05**; 6 new tests. React: a statement list + new-statement form and a detail/match screen
+  (auto-match, per-line manual match, adjustment, reconcile); ar/en parity. New account 6100 Bank
+  Charges; demo seeds a ready-to-reconcile statement.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

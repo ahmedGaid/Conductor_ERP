@@ -145,6 +145,14 @@
   font-size: var(--font-size-md);
 }
 
+.acct-bankrec-matched {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
+}
+
 /* ---- Financial statements ---- */
 .stmt {
   display: flex;

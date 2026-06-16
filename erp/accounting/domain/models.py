@@ -150,6 +150,65 @@ class CostCenter(AuditedModel):
         return f"{self.code} — {self.name}"
 
 
+class BankStatementStatus(models.TextChoices):
+    OPEN = "open", "Open"              # being reconciled
+    RECONCILED = "reconciled", "Reconciled"  # tied out to the cash GL
+
+
+class BankStatement(AuditedModel):
+    """A bank statement reconciled against a cash/bank GL account.
+
+    Reconciliation matches each statement line to a posted GL line on the same cash account; bank-only
+    items (fees/interest) are booked with an adjustment journal. Money is integer minor units.
+    """
+
+    account_code = models.CharField(max_length=32)  # the cash/bank GL account (Account.is_cash)
+    statement_date = models.DateField()
+    opening_balance_minor = models.BigIntegerField(default=0)
+    closing_balance_minor = models.BigIntegerField()
+    reference = models.CharField(max_length=128, blank=True, default="")
+    status = models.CharField(
+        max_length=16, choices=BankStatementStatus.choices, default=BankStatementStatus.OPEN
+    )
+
+    class Meta:
+        db_table = "accounting_bank_statement"
+        ordering = ["-statement_date"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.account_code} @ {self.statement_date}"
+
+
+class BankStatementLine(TimeStampedModel):
+    """One line on a bank statement. ``amount_minor`` is signed: + increases cash, − decreases it.
+
+    ``matched_line`` points at the posted GL journal line this reconciles to (null until matched).
+    """
+
+    statement = models.ForeignKey(
+        BankStatement, on_delete=models.CASCADE, related_name="lines"
+    )
+    line_no = models.IntegerField()
+    date = models.DateField()
+    description = models.CharField(max_length=255, blank=True, default="")
+    amount_minor = models.BigIntegerField()  # signed: + deposit / − withdrawal
+    matched_line = models.ForeignKey(
+        "JournalLine", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        db_table = "accounting_bank_statement_line"
+        ordering = ["statement", "line_no"]
+        unique_together = [("statement", "line_no")]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.statement_id} #{self.line_no}: {self.amount_minor}"
+
+    @property
+    def is_matched(self) -> bool:
+        return self.matched_line_id is not None
+
+
 class PeriodStatus(models.TextChoices):
     OPEN = "open", "Open"
     CLOSED = "closed", "Closed"

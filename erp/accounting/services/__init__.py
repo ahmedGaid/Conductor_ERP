@@ -27,6 +27,17 @@ from .assets import (  # noqa: F401
     dispose_asset,
     run_depreciation,
 )
+from .bank_rec import (  # noqa: F401
+    BankLineInput,
+    Reconciliation,
+    auto_match,
+    create_statement,
+    mark_reconciled,
+    match_line,
+    post_adjustment,
+    reconciliation,
+    unmatch_line,
+)
 from .taxes import (  # noqa: F401
     TaxCodeInfo,
     compute_tax,
@@ -66,6 +77,15 @@ __all__ = [
     "asset_register",
     "dispose_asset",
     "run_depreciation",
+    "BankLineInput",
+    "Reconciliation",
+    "auto_match",
+    "create_statement",
+    "mark_reconciled",
+    "match_line",
+    "post_adjustment",
+    "reconciliation",
+    "unmatch_line",
     "BalanceSheet",
     "CashFlow",
     "IncomeStatement",

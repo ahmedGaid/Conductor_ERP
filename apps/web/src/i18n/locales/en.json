@@ -148,7 +148,8 @@
       "cashFlow": "Cash Flow",
       "vatReturn": "VAT return",
       "fixedAssets": "Fixed Assets",
-      "costCenters": "Cost Centers"
+      "costCenters": "Cost Centers",
+      "bankRec": "Bank Reconciliation"
     },
     "costCenters": {
       "code": "Code",
@@ -158,6 +159,40 @@
       "empty": "No cost centers yet.",
       "label": "Cost center",
       "all": "All cost centers"
+    },
+    "bankRec": {
+      "account": "Bank account",
+      "statementDate": "Statement date",
+      "closingBalance": "Closing balance",
+      "lineDate": "Date",
+      "amount": "Amount",
+      "description": "Description",
+      "addLine": "Add line",
+      "create": "Create statement",
+      "amountHint": "Statement amounts are signed: positive for a deposit, negative for a withdrawal.",
+      "invalidInput": "Please enter valid values.",
+      "empty": "No bank statements yet.",
+      "backToList": "Back to statements",
+      "statementClosing": "Statement closing",
+      "bookBalance": "Book balance (cash GL)",
+      "difference": "Difference",
+      "reconciled": "Reconciled",
+      "autoMatch": "Auto-match",
+      "markReconciled": "Mark reconciled",
+      "match": "Match",
+      "matched": "Matched",
+      "unmatch": "Unmatch",
+      "pickLedgerLine": "Pick a ledger line",
+      "noCandidate": "No matching ledger line",
+      "noLines": "No statement lines.",
+      "adjustment": "Post adjustment (bank-only item)",
+      "contraAccount": "Contra account",
+      "memo": "Memo",
+      "postAdjustment": "Post adjustment",
+      "statuses": {
+        "open": "Open",
+        "reconciled": "Reconciled"
+      }
     },
     "assets": {
       "code": "Code",

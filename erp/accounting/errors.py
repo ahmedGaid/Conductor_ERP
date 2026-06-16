@@ -56,3 +56,21 @@ class UnknownCostCenterError(AppError):
     code = "ACC-009"
     status_code = 422
     message = "Journal line references an unknown or inactive cost center"
+
+
+class NotACashAccountError(AppError):
+    code = "ACC-010"
+    status_code = 422
+    message = "Bank reconciliation requires a cash/bank account"
+
+
+class BankMatchError(AppError):
+    code = "ACC-011"
+    status_code = 422
+    message = "Cannot match this statement line to that ledger line"
+
+
+class NotReconciledError(AppError):
+    code = "ACC-012"
+    status_code = 422
+    message = "Statement does not tie out to the cash ledger yet"

@@ -121,6 +121,20 @@ def check() -> None:
     _assert("/accounting/cost-centers" in _read("apps/web/src/App.tsx"),
             "App.tsx missing the cost-centers route")
 
+    # 5g. Bank reconciliation: the service matches statement lines to the cash GL and books bank-only
+    #     items via post_journal; the endpoints are mounted and the React screens are wired.
+    bank_src = _read("erp/accounting/services/bank_rec.py")
+    for fn in ("def create_statement", "def auto_match", "def post_adjustment",
+               "def reconciliation", "def mark_reconciled"):
+        _assert(fn in bank_src, f"bank_rec service missing {fn}")
+    _assert("post_journal" in bank_src, "bank adjustments must post to the GL via post_journal")
+    for route in ("bank-statements", "auto-match", "adjustment", "reconcile"):
+        _assert(route in wf_urls, f"bank-rec endpoint not mounted: {route}")
+    for rel in ("pages/accounting/BankReconciliationPage.tsx", "pages/accounting/BankStatementDetailPage.tsx"):
+        _assert((WEB_SRC / rel).is_file(), f"missing bank-rec screen: src/{rel}")
+    _assert("/accounting/bank-reconciliation" in _read("apps/web/src/App.tsx"),
+            "App.tsx missing the bank-reconciliation route")
+
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
 

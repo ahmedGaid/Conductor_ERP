@@ -18,12 +18,26 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
 
 from .. import services
-from ..domain.models import Account, CostCenter, FiscalYear, FixedAsset, JournalEntry, Period
+from ..domain.models import (
+    Account,
+    BankStatement,
+    BankStatementLine,
+    CostCenter,
+    FiscalYear,
+    FixedAsset,
+    JournalEntry,
+    JournalLine,
+    Period,
+)
 from ..repositories import accounts as account_repo
 from . import exports as export_tables
 from .serializers import (
     AccountSerializer,
     AssetDisposeSerializer,
+    BankAdjustmentSerializer,
+    BankLineInputSerializer,
+    BankMatchSerializer,
+    BankStatementCreateSerializer,
     CostCenterSerializer,
     DepreciationRunSerializer,
     FiscalYearSerializer,
@@ -271,6 +285,146 @@ class TaxCodeListView(APIView):
              "input_account_code": tc.input_account_code}
             for tc in rows
         ])
+
+
+def _statement_dict(statement: BankStatement, with_reconciliation: bool = False) -> dict:
+    data = {
+        "id": str(statement.id),
+        "account_code": statement.account_code,
+        "statement_date": statement.statement_date,
+        "opening_balance_minor": statement.opening_balance_minor,
+        "closing_balance_minor": statement.closing_balance_minor,
+        "reference": statement.reference,
+        "status": statement.status,
+        "lines": [
+            {
+                "id": str(ln.id),
+                "line_no": ln.line_no,
+                "date": ln.date,
+                "description": ln.description,
+                "amount_minor": ln.amount_minor,
+                "is_matched": ln.is_matched,
+                "matched_line_id": ln.matched_line_id,
+            }
+            for ln in statement.lines.order_by("line_no")
+        ],
+    }
+    if with_reconciliation:
+        rec = services.reconciliation(statement)
+        data["reconciliation"] = {
+            "book_balance": rec.book_balance,
+            "statement_closing": rec.statement_closing,
+            "difference": rec.difference,
+            "is_reconciled": rec.is_reconciled,
+            "unmatched_statement": rec.unmatched_statement,
+            "unmatched_book": [asdict(g) for g in rec.unmatched_book],
+        }
+    return data
+
+
+class BankStatementListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        qs = BankStatement.objects.all().order_by("-statement_date")
+        return _envelope([_statement_dict(s) for s in qs])
+
+    def post(self, request: Request) -> Response:
+        s = BankStatementCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        statement = services.create_statement(
+            account_code=v["account_code"],
+            statement_date=v["statement_date"],
+            opening_balance_minor=v.get("opening_balance_minor", 0),
+            closing_balance_minor=v["closing_balance_minor"],
+            reference=v.get("reference", ""),
+            lines=[
+                services.BankLineInput(date=ln["date"], amount_minor=ln["amount_minor"],
+                                       description=ln.get("description", ""))
+                for ln in v.get("lines", [])
+            ],
+            actor=request.user,
+        )
+        return _envelope(_statement_dict(statement, with_reconciliation=True), status=201)
+
+
+class BankStatementDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request, statement_id) -> Response:
+        statement = get_object_or_404(BankStatement, id=statement_id)
+        return _envelope(_statement_dict(statement, with_reconciliation=True))
+
+
+class BankStatementAutoMatchView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request, statement_id) -> Response:
+        statement = get_object_or_404(BankStatement, id=statement_id)
+        matched = services.auto_match(statement)
+        data = _statement_dict(statement, with_reconciliation=True)
+        data["matched"] = matched
+        return _envelope(data)
+
+
+class BankStatementAdjustmentView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request, statement_id) -> Response:
+        statement = get_object_or_404(BankStatement, id=statement_id)
+        s = BankAdjustmentSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        services.post_adjustment(
+            statement, amount_minor=v["amount_minor"],
+            contra_account_code=v["contra_account_code"], memo=v.get("memo", ""),
+            date=v.get("date"), actor=request.user,
+        )
+        return _envelope(_statement_dict(statement, with_reconciliation=True), status=201)
+
+
+class BankStatementReconcileView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request, statement_id) -> Response:
+        statement = get_object_or_404(BankStatement, id=statement_id)
+        services.mark_reconciled(statement)
+        return _envelope(_statement_dict(statement, with_reconciliation=True))
+
+
+class BankStatementCandidatesView(APIView):
+    """Unmatched posted cash GL lines available to match against this statement (manual override)."""
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request, statement_id) -> Response:
+        from ..services.bank_rec import _candidate_gl_lines
+
+        statement = get_object_or_404(BankStatement, id=statement_id)
+        rows = _candidate_gl_lines(statement).order_by("entry__date", "entry__number", "line_no")
+        return _envelope([
+            {"id": gl.id, "date": gl.entry.date, "entry_number": gl.entry.number,
+             "memo": gl.memo or gl.entry.memo, "amount_minor": gl.debit - gl.credit}
+            for gl in rows
+        ])
+
+
+class BankLineMatchView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request, line_id) -> Response:
+        line = get_object_or_404(BankStatementLine, id=line_id)
+        s = BankMatchSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        gl_line = get_object_or_404(JournalLine.objects.select_related("account"),
+                                    id=s.validated_data["journal_line_id"])
+        services.match_line(line, gl_line)
+        return _envelope(_statement_dict(line.statement, with_reconciliation=True))
+
+    def delete(self, request: Request, line_id) -> Response:
+        line = get_object_or_404(BankStatementLine, id=line_id)
+        services.unmatch_line(line)
+        return _envelope(_statement_dict(line.statement, with_reconciliation=True))
 
 
 class CostCenterListCreateView(APIView):
