@@ -3,15 +3,24 @@
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
 > meaningful step. Last updated: **2026-06-16 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
-> exports (Stage 6b) + COMPLETION_PLAN Phases 1–3: Fixed Assets + Depreciation, Cost Centers, Bank
-> Reconciliation; gate:all 00–10 GREEN)**.
+> exports (Stage 6b) + COMPLETION_PLAN Phases 1–4: Fixed Assets + Depreciation, Cost Centers, Bank
+> Reconciliation, Budgets; gate:all 00–10 GREEN)**.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
 operational depth → Stage 6 finish → frontend polish → Stage 7 hardening/deploy). **Working rhythm:**
 each phase is one gate-green committable increment; after each, the user tests, then we commit + push
-and update this file. **Phases 1–3 DONE** (Fixed Assets + Depreciation; Cost Centers; Bank
-Reconciliation — all committed). **NEXT: Phase 4 — Budgets + Budget-vs-Actual.**
+and update this file. **Phases 1–4 DONE — Track A (accounting depth) complete** (Fixed Assets +
+Depreciation; Cost Centers; Bank Reconciliation; Budgets — all committed). **NEXT: Phase 5 —
+Inventory: stock counts/adjustments + batch/lot (Track B).**
+
+Phase 4 delivered (extends gate05): **Budgets + Budget-vs-Actual.** `Budget` (per fiscal year) +
+`BudgetLine` (planned amount per account+period; upsert, zero deletes). `budget_vs_actual` compares the
+plan to the posted GL over a period or the whole fiscal year; **variance = actual − budget** and the
+totals tie out. DRF `/api/accounting/budgets` (+ set-line, `/variance` with `?period=` and CSV/XLSX
+export); React Budgets list/create + detail (line-entry form + variance table, period filter, export);
+ar/en parity. 5 new tests; gate:all 00–10 green. `ACC-013` validates fiscal year/account. Demo seeds a
+current-year operating plan.
 
 Phase 3 delivered (extends gate05): **Bank Reconciliation.** `BankStatement` + `BankStatementLine`
 reconciled against a cash GL account; statement amounts are signed (+deposit/−withdrawal). `auto_match`

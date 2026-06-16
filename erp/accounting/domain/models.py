@@ -209,6 +209,41 @@ class BankStatementLine(TimeStampedModel):
         return self.matched_line_id is not None
 
 
+class Budget(AuditedModel):
+    """A named budget for one fiscal year. Its lines hold the planned amount per account+period.
+
+    Budget-vs-actual compares these planned amounts to the posted GL. Money is integer minor units.
+    """
+
+    name = models.CharField(max_length=200)
+    fiscal_year_code = models.CharField(max_length=16)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "accounting_budget"
+        ordering = ["fiscal_year_code", "name"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.name} ({self.fiscal_year_code})"
+
+
+class BudgetLine(TimeStampedModel):
+    """A planned amount for one account in one period of the budget's fiscal year."""
+
+    budget = models.ForeignKey(Budget, on_delete=models.CASCADE, related_name="lines")
+    account_code = models.CharField(max_length=32)
+    period_code = models.CharField(max_length=16)
+    amount_minor = models.BigIntegerField(default=0)
+
+    class Meta:
+        db_table = "accounting_budget_line"
+        ordering = ["budget", "account_code", "period_code"]
+        unique_together = [("budget", "account_code", "period_code")]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.account_code} {self.period_code}: {self.amount_minor}"
+
+
 class PeriodStatus(models.TextChoices):
     OPEN = "open", "Open"
     CLOSED = "closed", "Closed"

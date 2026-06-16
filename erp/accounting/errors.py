@@ -74,3 +74,9 @@ class NotReconciledError(AppError):
     code = "ACC-012"
     status_code = 422
     message = "Statement does not tie out to the cash ledger yet"
+
+
+class InvalidBudgetError(AppError):
+    code = "ACC-013"
+    status_code = 422
+    message = "Budget is invalid (unknown fiscal year or account)"

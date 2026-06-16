@@ -44,7 +44,7 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 - API + React: import/enter statement, match screen, unreconciled list.
 - Gate: a fully matched statement reconciles to the cash GL balance; adjustments post + balance.
 
-### Phase 4 — Budgets + Budget-vs-Actual  ⬅ NEXT
+### Phase 4 — Budgets + Budget-vs-Actual  ✅ DONE (2026-06-16, committed)
 - `Budget` (fiscal year) + `BudgetLine` (account, period, amount minor). Budget-vs-actual report
   (variance vs the posted GL), with export.
 - API + React: budget entry grid + variance report.
@@ -52,7 +52,7 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 
 ## Track B — Operational depth
 
-### Phase 5 — Inventory: stock counts/adjustments + batch/lot
+### Phase 5 — Inventory: stock counts/adjustments + batch/lot  ⬅ NEXT
 - Physical **stock count** (snapshot → enter counted qty → post variance adjustment: Dr/Cr Inventory
   vs an adjustment account, keeping `Inventory GL == stock value`). Optional **batch/lot** field on
   movements with expiry, and a batch-balance view.

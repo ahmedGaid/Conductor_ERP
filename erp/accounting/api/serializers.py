@@ -137,6 +137,23 @@ class CostCenterSerializer(serializers.Serializer):
         return {"id": str(obj.id), "code": obj.code, "name": obj.name, "is_active": obj.is_active}
 
 
+class BudgetSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    name = serializers.CharField(max_length=200)
+    fiscal_year_code = serializers.CharField(max_length=16)
+    is_active = serializers.BooleanField(required=False, default=True)
+
+    def to_representation(self, obj) -> dict:
+        return {"id": str(obj.id), "name": obj.name,
+                "fiscal_year_code": obj.fiscal_year_code, "is_active": obj.is_active}
+
+
+class BudgetLineSetSerializer(serializers.Serializer):
+    account_code = serializers.CharField(max_length=32)
+    period_code = serializers.CharField(max_length=16)
+    amount_minor = serializers.IntegerField(min_value=0)
+
+
 class BankLineInputSerializer(serializers.Serializer):
     date = serializers.DateField()
     amount_minor = serializers.IntegerField()  # signed

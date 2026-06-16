@@ -22,6 +22,8 @@ import { FixedAssetDetailPage } from "./pages/accounting/FixedAssetDetailPage";
 import { CostCentersPage } from "./pages/accounting/CostCentersPage";
 import { BankReconciliationPage } from "./pages/accounting/BankReconciliationPage";
 import { BankStatementDetailPage } from "./pages/accounting/BankStatementDetailPage";
+import { BudgetsPage } from "./pages/accounting/BudgetsPage";
+import { BudgetDetailPage } from "./pages/accounting/BudgetDetailPage";
 import { EInvoicesPage } from "./pages/einvoice/EInvoicesPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
@@ -78,6 +80,8 @@ function Protected() {
           <Route path="/accounting/cost-centers" element={<CostCentersPage />} />
           <Route path="/accounting/bank-reconciliation" element={<BankReconciliationPage />} />
           <Route path="/accounting/bank-reconciliation/:id" element={<BankStatementDetailPage />} />
+          <Route path="/accounting/budgets" element={<BudgetsPage />} />
+          <Route path="/accounting/budgets/:id" element={<BudgetDetailPage />} />
           <Route path="/inventory" element={<StockOnHandPage />} />
           <Route path="/inventory/items" element={<ItemsPage />} />
           <Route path="/inventory/warehouses" element={<WarehousesPage />} />

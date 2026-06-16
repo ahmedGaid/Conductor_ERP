@@ -265,6 +265,73 @@ export function createCostCenter(payload: { code: string; name: string }): Promi
   });
 }
 
+// ---- Budgets ----
+
+export interface Budget {
+  id: string;
+  name: string;
+  fiscal_year_code: string;
+  is_active: boolean;
+}
+
+export interface BudgetLineRow {
+  account_code: string;
+  period_code: string;
+  amount_minor: number;
+}
+
+export interface BudgetDetail extends Budget {
+  lines: BudgetLineRow[];
+}
+
+export interface VarianceRow {
+  account_code: string;
+  account_name: string;
+  account_type: AccountType;
+  budget_minor: number;
+  actual_minor: number;
+  variance_minor: number;
+}
+
+export interface BudgetVsActualReport {
+  budget_id: string;
+  budget_name: string;
+  fiscal_year_code: string;
+  period_code: string | null;
+  rows: VarianceRow[];
+  total_budget: number;
+  total_actual: number;
+  total_variance: number;
+}
+
+export function listBudgets(): Promise<Budget[]> {
+  return apiFetch<Budget[]>("/accounting/budgets");
+}
+
+export function createBudget(payload: { name: string; fiscal_year_code: string }): Promise<Budget> {
+  return apiFetch<Budget>("/accounting/budgets", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function getBudget(id: string): Promise<BudgetDetail> {
+  return apiFetch<BudgetDetail>(`/accounting/budgets/${id}`);
+}
+
+export function setBudgetLine(id: string, payload: {
+  account_code: string;
+  period_code: string;
+  amount_minor: number;
+}): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(`/accounting/budgets/${id}/lines`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function budgetVsActual(id: string, period?: string): Promise<BudgetVsActualReport> {
+  const qs = period ? `?period=${encodeURIComponent(period)}` : "";
+  return apiFetch<BudgetVsActualReport>(`/accounting/budgets/${id}/variance${qs}`);
+}
+
 // ---- Bank reconciliation ----
 
 export type BankStatementStatus = "open" | "reconciled";

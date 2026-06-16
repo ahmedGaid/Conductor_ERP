@@ -27,6 +27,15 @@ from .assets import (  # noqa: F401
     dispose_asset,
     run_depreciation,
 )
+from .budgets import (  # noqa: F401
+    BudgetLineInput,
+    BudgetVsActual,
+    VarianceRow,
+    budget_vs_actual,
+    create_budget,
+    set_budget_line,
+    set_budget_lines,
+)
 from .bank_rec import (  # noqa: F401
     BankLineInput,
     Reconciliation,
@@ -86,6 +95,13 @@ __all__ = [
     "post_adjustment",
     "reconciliation",
     "unmatch_line",
+    "BudgetLineInput",
+    "BudgetVsActual",
+    "VarianceRow",
+    "budget_vs_actual",
+    "create_budget",
+    "set_budget_line",
+    "set_budget_lines",
     "BalanceSheet",
     "CashFlow",
     "IncomeStatement",

@@ -522,6 +522,27 @@ Third completion-plan increment: tie a bank statement to its cash/bank GL accoun
   (auto-match, per-line manual match, adjustment, reconcile); ar/en parity. New account 6100 Bank
   Charges; demo seeds a ready-to-reconcile statement.
 
+## Accounting — Budgets + Budget-vs-Actual (Phase 4 of the completion plan, 2026-06-16)
+
+Fourth completion-plan increment, completing Track A (accounting depth).
+
+- **A budget is planned amounts per account+period; actuals come straight from the posted GL.** `Budget`
+  (one per fiscal year) + `BudgetLine` (account_code, period_code, amount_minor; unique per
+  account+period, upsert via `set_budget_line`, a **zero amount deletes** the line). No separate
+  "actuals" store — `budget_vs_actual` reads posted journal lines for the budgeted accounts over the
+  scope and signs them with the same `signed_balance` convention as the statements, so a P&L budget
+  reads in its natural direction.
+- **Variance = actual − budget, and the totals tie out by construction** (`total_variance ==
+  total_actual − total_budget`) — the gate-proven invariant. Scope is a single period (its date range)
+  or, with no period, the whole fiscal year (summing all the budget's lines and the FY date range).
+- **Report shows only budgeted accounts.** An account you budgeted with no actuals shows actual 0
+  (full unfavourable variance); unbudgeted spend is **not** surfaced in this slice — that would need a
+  separate "actuals not in budget" pass, deferred. Keeps the report deterministic and tied to the plan.
+- **Budget targets are validated** (`ACC-013` on an unknown fiscal year or account). Money stays integer
+  minor units. Extends **gate05**; 5 new tests. React: a Budgets list/create + a detail screen with a
+  line-entry form and the variance table (period filter, colour-coded variance, CSV/XLSX export); ar/en
+  parity. Demo seeds a current-year operating plan.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

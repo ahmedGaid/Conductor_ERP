@@ -145,6 +145,28 @@ def asset_register_table(reg, lang: str) -> ReportTable:
                        columns=cols, rows=rows, footer=footer, meta=[], rtl=(lang == "ar"))
 
 
+def budget_vs_actual_table(bva, lang: str) -> ReportTable:
+    cols = [
+        Column("code", _l("Code", "الرمز", lang)),
+        Column("name", _l("Account", "الحساب", lang)),
+        _money("Budget", "الموازنة", "budget", lang),
+        _money("Actual", "الفعلي", "actual", lang),
+        _money("Variance", "الانحراف", "variance", lang),
+    ]
+    rows = [
+        {"code": r.account_code, "name": r.account_name,
+         "budget": r.budget_minor, "actual": r.actual_minor, "variance": r.variance_minor}
+        for r in bva.rows
+    ]
+    footer = [{"code": "", "name": _l("Total", "الإجمالي", lang),
+               "budget": bva.total_budget, "actual": bva.total_actual, "variance": bva.total_variance}]
+    meta = [(_l("Budget", "الموازنة", lang), f"{bva.budget_name} ({bva.fiscal_year_code})")]
+    if bva.period_code:
+        meta.append((_l("Period", "الفترة", lang), bva.period_code))
+    return ReportTable(title=_l("Budget vs Actual", "الموازنة مقابل الفعلي", lang),
+                       columns=cols, rows=rows, footer=footer, meta=meta, rtl=(lang == "ar"))
+
+
 def vat_return_table(vr, lang: str) -> ReportTable:
     cols = [
         Column("label", _l("Line", "البند", lang)),

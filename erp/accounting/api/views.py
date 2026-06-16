@@ -22,6 +22,7 @@ from ..domain.models import (
     Account,
     BankStatement,
     BankStatementLine,
+    Budget,
     CostCenter,
     FiscalYear,
     FixedAsset,
@@ -38,6 +39,8 @@ from .serializers import (
     BankLineInputSerializer,
     BankMatchSerializer,
     BankStatementCreateSerializer,
+    BudgetLineSetSerializer,
+    BudgetSerializer,
     CostCenterSerializer,
     DepreciationRunSerializer,
     FiscalYearSerializer,
@@ -425,6 +428,70 @@ class BankLineMatchView(APIView):
         line = get_object_or_404(BankStatementLine, id=line_id)
         services.unmatch_line(line)
         return _envelope(_statement_dict(line.statement, with_reconciliation=True))
+
+
+class BudgetListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(BudgetSerializer(Budget.objects.all(), many=True).data)
+
+    def post(self, request: Request) -> Response:
+        s = BudgetSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        budget = services.create_budget(
+            name=v["name"], fiscal_year_code=v["fiscal_year_code"], actor=request.user
+        )
+        return _envelope(BudgetSerializer(budget).data, status=201)
+
+
+class BudgetDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request, budget_id) -> Response:
+        budget = get_object_or_404(Budget, id=budget_id)
+        data = BudgetSerializer(budget).data
+        data["lines"] = [
+            {"account_code": ln.account_code, "period_code": ln.period_code,
+             "amount_minor": ln.amount_minor}
+            for ln in budget.lines.order_by("account_code", "period_code")
+        ]
+        return _envelope(data)
+
+
+class BudgetLineSetView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request, budget_id) -> Response:
+        budget = get_object_or_404(Budget, id=budget_id)
+        s = BudgetLineSetSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        services.set_budget_line(budget, v["account_code"], v["period_code"], v["amount_minor"])
+        return _envelope({"ok": True}, status=201)
+
+
+class BudgetVsActualView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request, budget_id) -> Response:
+        budget = get_object_or_404(Budget, id=budget_id)
+        bva = services.budget_vs_actual(budget, period_code=request.query_params.get("period") or None)
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.budget_vs_actual_table(bva, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "budget-vs-actual")
+        return _envelope({
+            "budget_id": bva.budget_id,
+            "budget_name": bva.budget_name,
+            "fiscal_year_code": bva.fiscal_year_code,
+            "period_code": bva.period_code,
+            "rows": [asdict(r) for r in bva.rows],
+            "total_budget": bva.total_budget,
+            "total_actual": bva.total_actual,
+            "total_variance": bva.total_variance,
+        })
 
 
 class CostCenterListCreateView(APIView):

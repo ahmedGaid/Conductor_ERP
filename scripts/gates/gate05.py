@@ -135,6 +135,18 @@ def check() -> None:
     _assert("/accounting/bank-reconciliation" in _read("apps/web/src/App.tsx"),
             "App.tsx missing the bank-reconciliation route")
 
+    # 5h. Budgets: the service computes budget-vs-actual from the posted GL (variance = actual −
+    #     budget), the endpoints are mounted, and the React screens are wired.
+    budgets_src = _read("erp/accounting/services/budgets.py")
+    for fn in ("def create_budget", "def set_budget_line", "def budget_vs_actual"):
+        _assert(fn in budgets_src, f"budgets service missing {fn}")
+    _assert("variance_minor" in budgets_src, "budget report missing the variance figure")
+    for route in ("budgets", "variance"):
+        _assert(route in wf_urls, f"budget endpoint not mounted: {route}")
+    for rel in ("pages/accounting/BudgetsPage.tsx", "pages/accounting/BudgetDetailPage.tsx"):
+        _assert((WEB_SRC / rel).is_file(), f"missing budget screen: src/{rel}")
+    _assert("/accounting/budgets" in _read("apps/web/src/App.tsx"), "App.tsx missing the budgets route")
+
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
 

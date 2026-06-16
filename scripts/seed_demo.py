@@ -358,6 +358,34 @@ if _BankStatement.objects.exists():
 else:
     seed_bank_rec()
 
+
+def seed_budget() -> None:
+    # A budget for the current fiscal year with a few P&L targets, so Budget-vs-Actual shows variance
+    # against the demo's posted sales/expenses.
+    import datetime as _dt
+
+    from erp.accounting.services import BudgetLineInput, create_budget, set_budget_lines
+
+    year = _dt.date.today().year
+    month = _dt.date.today().month
+    period = f"{year}-{month:02d}"
+    budget = create_budget(name=f"{year} Operating Plan", fiscal_year_code=str(year))
+    set_budget_lines(budget, [
+        BudgetLineInput("4000", period, 50_000_00),   # planned sales revenue
+        BudgetLineInput("5000", period, 20_000_00),   # planned COGS
+        BudgetLineInput("5100", period, 5_000_00),    # planned rent
+        BudgetLineInput("5300", period, 1_000_00),    # planned depreciation
+    ])
+    created.append(("BUDGET", budget.name[:14], "open it -> Budget vs Actual shows variance"))
+
+
+from erp.accounting.domain.models import Budget as _Budget  # noqa: E402
+
+if _Budget.objects.exists():
+    print("Demo budget already present — skipping.")
+else:
+    seed_budget()
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")
