@@ -62,6 +62,75 @@ class TaxCode(AuditedModel):
         return f"{self.code} ({self.rate_bps / 100:.2f}%)"
 
 
+class AssetStatus(models.TextChoices):
+    ACTIVE = "active", "Active"          # in service, depreciating
+    DISPOSED = "disposed", "Disposed"    # sold/written off, derecognized
+
+
+class FixedAsset(AuditedModel):
+    """A capitalised fixed asset depreciated straight-line over its useful life.
+
+    Money is integer **minor units**. The GL accounts it touches are referenced by *code*
+    (asset/accumulated-depreciation/expense), mirroring how tax codes reference accounts — the
+    depreciation run and disposal post through ``post_journal`` like any other entry.
+    """
+
+    code = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=200)
+    category = models.CharField(max_length=120, blank=True, default="")
+    acquisition_date = models.DateField()
+    in_service_date = models.DateField()
+    cost_minor = models.BigIntegerField()              # capitalised cost
+    salvage_minor = models.BigIntegerField(default=0)  # residual value (never depreciated below)
+    useful_life_months = models.IntegerField()
+
+    asset_account_code = models.CharField(max_length=32, default="1500")        # Fixed Assets
+    accumulated_account_code = models.CharField(max_length=32, default="1590")  # Accum. Depreciation
+    expense_account_code = models.CharField(max_length=32, default="5300")      # Depreciation Expense
+
+    accumulated_depreciation_minor = models.BigIntegerField(default=0)
+    months_depreciated = models.IntegerField(default=0)
+    acquire_journal_number = models.CharField(max_length=32, blank=True, default="")
+
+    status = models.CharField(max_length=16, choices=AssetStatus.choices, default=AssetStatus.ACTIVE)
+    disposed_date = models.DateField(null=True, blank=True)
+    disposal_proceeds_minor = models.BigIntegerField(null=True, blank=True)
+    disposal_gain_loss_minor = models.BigIntegerField(null=True, blank=True)  # +gain / -loss
+    disposal_journal_number = models.CharField(max_length=32, blank=True, default="")
+
+    class Meta:
+        db_table = "accounting_fixed_asset"
+        ordering = ["code"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.code} — {self.name}"
+
+    @property
+    def depreciable_minor(self) -> int:
+        return self.cost_minor - self.salvage_minor
+
+    @property
+    def net_book_value_minor(self) -> int:
+        return self.cost_minor - self.accumulated_depreciation_minor
+
+
+class DepreciationEntry(TimeStampedModel):
+    """One posted monthly depreciation charge for an asset. Unique per (asset, period)."""
+
+    asset = models.ForeignKey(FixedAsset, on_delete=models.CASCADE, related_name="depreciation_entries")
+    period_code = models.CharField(max_length=16)
+    amount_minor = models.BigIntegerField()
+    journal_number = models.CharField(max_length=32, blank=True, default="")
+
+    class Meta:
+        db_table = "accounting_depreciation_entry"
+        ordering = ["asset", "period_code"]
+        unique_together = [("asset", "period_code")]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.asset.code} {self.period_code}: {self.amount_minor}"
+
+
 class PeriodStatus(models.TextChoices):
     OPEN = "open", "Open"
     CLOSED = "closed", "Closed"

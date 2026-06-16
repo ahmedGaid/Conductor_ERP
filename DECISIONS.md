@@ -439,6 +439,37 @@ financial statements, VAT return, e-invoices) is downloadable.
   loading skeletons, a responsive/narrow-width pass, density reduction via progressive disclosure) —
   applied per screen as we touch them, so the charter is met incrementally rather than in one big reskin.
 
+## Accounting — Fixed Assets + Depreciation (Phase 1 of the completion plan, 2026-06-16)
+
+First increment of the completion plan (`COMPLETION_PLAN.md`): the fixed-asset sub-ledger, finishing
+the priority-1 accounting module's depreciation story.
+
+- **Every money movement posts through `post_journal`.** Acquisition, each monthly depreciation
+  charge, and disposal are ordinary balanced journals — so the asset register, the GL, and the trial
+  balance can never diverge (proven: every asset test asserts `trial_balance().is_balanced`). The asset
+  record just *records* the journal numbers; it is not a parallel money store.
+- **Straight-line, exact, with a salvage floor.** Monthly charge = `round((cost − salvage) / life)`,
+  but each run books `min(standard, remaining_depreciable)` so the **final period trues up** — total
+  depreciation equals `cost − salvage` to the minor unit and **net book value never drops below
+  salvage**. (Declining-balance / units-of-production can be added per-asset later; straight-line is
+  the questionnaire default, matching the weighted-average inventory choice.)
+- **Depreciation run is idempotent per (asset, period).** `DepreciationEntry` has a UNIQUE
+  `(asset, period_code)`; `run_depreciation(period)` skips any asset already charged in that period, so
+  re-running a month posts nothing. Disposed / fully-depreciated assets are skipped.
+- **GL mapping:** acquire → Dr Fixed Assets (1500) / Cr funding account (Cash 1000 default, or AP for a
+  credit purchase); depreciate → Dr Depreciation Expense (5300) / Cr Accumulated Depreciation (1590, a
+  contra-asset whose signed balance reads negative against assets — same pattern as 4090 Sales
+  Returns); dispose → Cr Fixed Assets (cost), Dr Accumulated Depreciation (booked), Dr proceeds
+  account, with the balancing line a **gain (Cr 4200)** or **loss (Dr 5400)** versus net book value.
+  Seed adds accounts 1500/1590/4200/5300/5400.
+- **Disposal is one-shot.** Only an `active` asset can be disposed (`ACC-008` otherwise); invalid
+  acquisitions (non-positive cost/life, salvage ≥ cost) are rejected at entry (`ACC-007`). Money stays
+  integer minor units (gate05 still bans Float/Decimal columns in the ledger models).
+- **No separate gate:** the feature extends **gate05** (asset service posts via `post_journal`, the
+  `/assets` + `/depreciation-run` + `/reports/asset-register` endpoints are mounted, the React screens
+  are wired). 9 new accounting tests. React: a Fixed Assets register (new-asset + run-depreciation
+  inline) + an asset detail/dispose screen, added as an Accounting sub-nav tab; ar/en parity kept.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

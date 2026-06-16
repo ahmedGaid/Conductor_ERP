@@ -146,7 +146,39 @@
       "incomeStatement": "Income Statement",
       "balanceSheet": "Balance Sheet",
       "cashFlow": "Cash Flow",
-      "vatReturn": "VAT return"
+      "vatReturn": "VAT return",
+      "fixedAssets": "Fixed Assets"
+    },
+    "assets": {
+      "code": "Code",
+      "name": "Name",
+      "cost": "Cost",
+      "salvage": "Salvage value",
+      "life": "Useful life (months)",
+      "acquired": "Acquired",
+      "accumulated": "Accum. depreciation",
+      "nbv": "Net book value",
+      "status": "Status",
+      "monthsDepreciated": "Months depreciated",
+      "acquireEntry": "Acquisition entry",
+      "disposalEntry": "Disposal entry",
+      "add": "Add asset",
+      "empty": "No fixed assets yet.",
+      "invalidInput": "Please enter valid amounts.",
+      "runPeriod": "Period",
+      "runDate": "Date",
+      "runDepreciation": "Run depreciation",
+      "runDone": "Depreciation posted for {{count}} asset(s) — {{total}}.",
+      "dispose": "Dispose asset",
+      "disposedDate": "Disposal date",
+      "proceeds": "Proceeds",
+      "gain": "Gain on disposal",
+      "loss": "Loss on disposal",
+      "backToList": "Back to assets",
+      "statuses": {
+        "active": "Active",
+        "disposed": "Disposed"
+      }
     },
     "stmt": {
       "totalRevenue": "Total revenue",

@@ -59,6 +59,74 @@ class PeriodSerializer(serializers.Serializer):
         }
 
 
+class FixedAssetSerializer(serializers.Serializer):
+    """Read representation of a fixed asset (amounts integer minor units)."""
+
+    id = serializers.UUIDField(read_only=True)
+    code = serializers.CharField()
+    name = serializers.CharField()
+    category = serializers.CharField(allow_blank=True)
+    acquisition_date = serializers.DateField()
+    in_service_date = serializers.DateField()
+    cost_minor = serializers.IntegerField()
+    salvage_minor = serializers.IntegerField()
+    useful_life_months = serializers.IntegerField()
+    accumulated_depreciation_minor = serializers.IntegerField()
+    net_book_value_minor = serializers.IntegerField()
+    months_depreciated = serializers.IntegerField()
+    status = serializers.CharField()
+    acquire_journal_number = serializers.CharField()
+    disposed_date = serializers.DateField(allow_null=True)
+    disposal_proceeds_minor = serializers.IntegerField(allow_null=True)
+    disposal_gain_loss_minor = serializers.IntegerField(allow_null=True)
+    disposal_journal_number = serializers.CharField(allow_blank=True)
+
+    def to_representation(self, obj) -> dict:
+        return {
+            "id": str(obj.id),
+            "code": obj.code,
+            "name": obj.name,
+            "category": obj.category,
+            "acquisition_date": obj.acquisition_date,
+            "in_service_date": obj.in_service_date,
+            "cost_minor": obj.cost_minor,
+            "salvage_minor": obj.salvage_minor,
+            "useful_life_months": obj.useful_life_months,
+            "accumulated_depreciation_minor": obj.accumulated_depreciation_minor,
+            "net_book_value_minor": obj.net_book_value_minor,
+            "months_depreciated": obj.months_depreciated,
+            "status": obj.status,
+            "acquire_journal_number": obj.acquire_journal_number,
+            "disposed_date": obj.disposed_date,
+            "disposal_proceeds_minor": obj.disposal_proceeds_minor,
+            "disposal_gain_loss_minor": obj.disposal_gain_loss_minor,
+            "disposal_journal_number": obj.disposal_journal_number,
+        }
+
+
+class FixedAssetCreateSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=32)
+    name = serializers.CharField(max_length=200)
+    category = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    acquisition_date = serializers.DateField()
+    in_service_date = serializers.DateField(required=False, allow_null=True)
+    cost_minor = serializers.IntegerField(min_value=1)
+    salvage_minor = serializers.IntegerField(min_value=0, required=False, default=0)
+    useful_life_months = serializers.IntegerField(min_value=1)
+    funding_account_code = serializers.CharField(max_length=32, required=False, default="1000")
+
+
+class DepreciationRunSerializer(serializers.Serializer):
+    period_code = serializers.CharField(max_length=16)
+    date = serializers.DateField()
+
+
+class AssetDisposeSerializer(serializers.Serializer):
+    disposed_date = serializers.DateField()
+    proceeds_minor = serializers.IntegerField(min_value=0)
+    proceeds_account_code = serializers.CharField(max_length=32, required=False, default="1000")
+
+
 class JournalLineInputSerializer(serializers.Serializer):
     account_code = serializers.CharField(max_length=32)
     debit = serializers.IntegerField(min_value=0, default=0)

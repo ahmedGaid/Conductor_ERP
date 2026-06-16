@@ -98,6 +98,18 @@ def check() -> None:
     _assert("ExportButtons" in _read("apps/web/src/pages/accounting/TrialBalancePage.tsx"),
             "trial balance screen missing the export toolbar")
 
+    # 5e. Fixed assets: the sub-ledger service posts acquisition/depreciation/disposal through
+    #     post_journal, the endpoints are mounted, and the React screens are wired.
+    assets_src = _read("erp/accounting/services/assets.py")
+    for fn in ("def acquire_asset", "def run_depreciation", "def dispose_asset", "def asset_register"):
+        _assert(fn in assets_src, f"assets service missing {fn}")
+    _assert("post_journal" in assets_src, "assets must post to the GL via post_journal")
+    for route in ("assets", "assets/depreciation-run", "reports/asset-register"):
+        _assert(route in wf_urls, f"fixed-asset endpoint not mounted: {route}")
+    for rel in ("pages/accounting/FixedAssetsPage.tsx", "pages/accounting/FixedAssetDetailPage.tsx"):
+        _assert((WEB_SRC / rel).is_file(), f"missing fixed-asset screen: src/{rel}")
+    _assert("/accounting/assets" in _read("apps/web/src/App.tsx"), "App.tsx missing the fixed-assets route")
+
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
 

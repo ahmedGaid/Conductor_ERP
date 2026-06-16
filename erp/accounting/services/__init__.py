@@ -17,6 +17,16 @@ from .reports import (  # noqa: F401
     trial_balance,
     vat_return,
 )
+from .assets import (  # noqa: F401
+    AssetInput,
+    AssetRegister,
+    AssetRegisterRow,
+    DepreciationRunResult,
+    acquire_asset,
+    asset_register,
+    dispose_asset,
+    run_depreciation,
+)
 from .taxes import (  # noqa: F401
     TaxCodeInfo,
     compute_tax,
@@ -48,6 +58,14 @@ __all__ = [
     "TaxCodeInfo",
     "compute_tax",
     "find_tax_code",
+    "AssetInput",
+    "AssetRegister",
+    "AssetRegisterRow",
+    "DepreciationRunResult",
+    "acquire_asset",
+    "asset_register",
+    "dispose_asset",
+    "run_depreciation",
     "BalanceSheet",
     "CashFlow",
     "IncomeStatement",

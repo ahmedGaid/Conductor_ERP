@@ -2,8 +2,24 @@
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
 > meaningful step. Last updated: **2026-06-16 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
-> + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a, new
-> `erp/einvoice` module); gate:all 00–10 GREEN)**.
+> + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
+> exports (Stage 6b) + COMPLETION_PLAN Phase 1: Fixed Assets + Depreciation; gate:all 00–10 GREEN)**.
+
+## COMPLETION PLAN (road to ship)
+A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
+operational depth → Stage 6 finish → frontend polish → Stage 7 hardening/deploy). **Working rhythm:**
+each phase is one gate-green committable increment; after each, the user tests, then we commit + push
+and update this file. **Phase 1 (Fixed Assets + Depreciation) — DONE** (committed; see below).
+**NEXT: Phase 2 — Cost Centers (dimensional accounting).**
+
+Phase 1 delivered (extends gate05): **Fixed Assets + Depreciation.** A fixed-asset sub-ledger
+(`erp/accounting`, models `FixedAsset` + `DepreciationEntry`) where acquisition, monthly straight-line
+depreciation, and disposal all post through `post_journal` (register/GL/trial-balance can't diverge).
+Depreciation run is **idempotent per (asset, period)** and trues up the final period so NBV never drops
+below salvage; disposal books a gain (4200) or loss (5400) vs net book value. Asset register report
+(+CSV/XLSX export). DRF `/api/accounting/assets` (+ depreciation-run, dispose) + `reports/asset-register`;
+React Fixed Assets register + detail/dispose screens (new Accounting sub-nav tab), ar/en parity. New COA
+accounts 1500/1590/4200/5300/5400. 9 new tests; gate:all 00–10 green. Demo seeds FA-VAN + FA-LAPTOP.
 
 ## PRODUCT NAME
 The ERP is branded **"Conductor"** (wordmark + logo tile "C", browser title, i18n `app.title` in both

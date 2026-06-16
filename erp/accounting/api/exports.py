@@ -123,6 +123,28 @@ def cash_flow_table(cf, lang: str) -> ReportTable:
                        columns=cols, rows=rows, footer=footer, meta=meta, rtl=(lang == "ar"))
 
 
+def asset_register_table(reg, lang: str) -> ReportTable:
+    cols = [
+        Column("code", _l("Code", "الرمز", lang)),
+        Column("name", _l("Asset", "الأصل", lang)),
+        Column("category", _l("Category", "الفئة", lang)),
+        Column("acquired", _l("Acquired", "تاريخ الشراء", lang)),
+        _money("Cost", "التكلفة", "cost", lang),
+        _money("Accum. Depr.", "مجمع الإهلاك", "accumulated", lang),
+        _money("Net Book Value", "صافي القيمة الدفترية", "nbv", lang),
+    ]
+    rows = [
+        {"code": r.code, "name": r.name, "category": r.category, "acquired": r.acquisition_date,
+         "cost": r.cost_minor, "accumulated": r.accumulated_depreciation_minor,
+         "nbv": r.net_book_value_minor}
+        for r in reg.rows
+    ]
+    footer = [{"code": "", "name": _l("Total", "الإجمالي", lang), "category": "", "acquired": "",
+               "cost": reg.total_cost, "accumulated": reg.total_accumulated, "nbv": reg.total_nbv}]
+    return ReportTable(title=_l("Fixed Asset Register", "سجل الأصول الثابتة", lang),
+                       columns=cols, rows=rows, footer=footer, meta=[], rtl=(lang == "ar"))
+
+
 def vat_return_table(vr, lang: str) -> ReportTable:
     cols = [
         Column("label", _l("Line", "البند", lang)),

@@ -17,6 +17,8 @@ import { IncomeStatementPage } from "./pages/accounting/IncomeStatementPage";
 import { BalanceSheetPage } from "./pages/accounting/BalanceSheetPage";
 import { CashFlowStatementPage } from "./pages/accounting/CashFlowStatementPage";
 import { VatReturnPage } from "./pages/accounting/VatReturnPage";
+import { FixedAssetsPage } from "./pages/accounting/FixedAssetsPage";
+import { FixedAssetDetailPage } from "./pages/accounting/FixedAssetDetailPage";
 import { EInvoicesPage } from "./pages/einvoice/EInvoicesPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
@@ -68,6 +70,8 @@ function Protected() {
           <Route path="/accounting/balance-sheet" element={<BalanceSheetPage />} />
           <Route path="/accounting/cash-flow" element={<CashFlowStatementPage />} />
           <Route path="/accounting/vat-return" element={<VatReturnPage />} />
+          <Route path="/accounting/assets" element={<FixedAssetsPage />} />
+          <Route path="/accounting/assets/:code" element={<FixedAssetDetailPage />} />
           <Route path="/inventory" element={<StockOnHandPage />} />
           <Route path="/inventory/items" element={<ItemsPage />} />
           <Route path="/inventory/warehouses" element={<WarehousesPage />} />

@@ -38,3 +38,15 @@ class NoPeriodError(AppError):
     code = "ACC-006"
     status_code = 422
     message = "No accounting period contains the entry date"
+
+
+class InvalidAssetError(AppError):
+    code = "ACC-007"
+    status_code = 422
+    message = "Fixed asset is invalid (cost, salvage and useful life must be sensible)"
+
+
+class AssetStateError(AppError):
+    code = "ACC-008"
+    status_code = 409
+    message = "Fixed asset is not in a state that allows this action"

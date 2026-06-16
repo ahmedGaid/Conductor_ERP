@@ -22,6 +22,8 @@ COA = [
     ("1100", "Accounts Receivable", AccountType.ASSET, True, "1"),
     ("1190", "VAT Input (Recoverable)", AccountType.ASSET, True, "1"),
     ("1200", "Inventory", AccountType.ASSET, True, "1"),
+    ("1500", "Fixed Assets", AccountType.ASSET, True, "1"),
+    ("1590", "Accumulated Depreciation", AccountType.ASSET, True, "1"),
     ("2", "Liabilities", AccountType.LIABILITY, False, None),
     ("2000", "Accounts Payable", AccountType.LIABILITY, True, "2"),
     ("2100", "VAT Payable", AccountType.LIABILITY, True, "2"),
@@ -32,10 +34,13 @@ COA = [
     ("4", "Income", AccountType.INCOME, False, None),
     ("4000", "Sales Revenue", AccountType.INCOME, True, "4"),
     ("4090", "Sales Returns", AccountType.INCOME, True, "4"),
+    ("4200", "Gain on Asset Disposal", AccountType.INCOME, True, "4"),
     ("5", "Expenses", AccountType.EXPENSE, False, None),
     ("5000", "Cost of Goods Sold", AccountType.EXPENSE, True, "5"),
     ("5100", "Rent Expense", AccountType.EXPENSE, True, "5"),
     ("5200", "Salaries Expense", AccountType.EXPENSE, True, "5"),
+    ("5300", "Depreciation Expense", AccountType.EXPENSE, True, "5"),
+    ("5400", "Loss on Asset Disposal", AccountType.EXPENSE, True, "5"),
 ]
 
 

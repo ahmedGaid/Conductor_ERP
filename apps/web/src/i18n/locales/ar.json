@@ -146,7 +146,39 @@
       "incomeStatement": "قائمة الدخل",
       "balanceSheet": "الميزانية العمومية",
       "cashFlow": "التدفقات النقدية",
-      "vatReturn": "إقرار ضريبة القيمة المضافة"
+      "vatReturn": "إقرار ضريبة القيمة المضافة",
+      "fixedAssets": "الأصول الثابتة"
+    },
+    "assets": {
+      "code": "الرمز",
+      "name": "الاسم",
+      "cost": "التكلفة",
+      "salvage": "القيمة المتبقية",
+      "life": "العمر الإنتاجي (أشهر)",
+      "acquired": "تاريخ الشراء",
+      "accumulated": "مجمع الإهلاك",
+      "nbv": "صافي القيمة الدفترية",
+      "status": "الحالة",
+      "monthsDepreciated": "عدد أشهر الإهلاك",
+      "acquireEntry": "قيد الشراء",
+      "disposalEntry": "قيد الاستبعاد",
+      "add": "إضافة أصل",
+      "empty": "لا توجد أصول ثابتة بعد.",
+      "invalidInput": "يرجى إدخال قيم صحيحة.",
+      "runPeriod": "الفترة",
+      "runDate": "التاريخ",
+      "runDepreciation": "احتساب الإهلاك",
+      "runDone": "تم ترحيل الإهلاك لعدد {{count}} أصل — {{total}}.",
+      "dispose": "استبعاد الأصل",
+      "disposedDate": "تاريخ الاستبعاد",
+      "proceeds": "المتحصلات",
+      "gain": "ربح الاستبعاد",
+      "loss": "خسارة الاستبعاد",
+      "backToList": "العودة إلى الأصول",
+      "statuses": {
+        "active": "نشط",
+        "disposed": "مستبعد"
+      }
     },
     "stmt": {
       "totalRevenue": "إجمالي الإيرادات",

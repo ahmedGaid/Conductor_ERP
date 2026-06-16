@@ -286,6 +286,38 @@ if Quotation.objects.exists() or PurchaseRequest.objects.exists():
 else:
     seed_quotations_and_requests()
 
+
+def seed_fixed_assets() -> None:
+    # Two assets so the register + depreciation run have something to chew on.
+    import datetime as _dt
+
+    from erp.accounting.services import AssetInput, acquire_asset, run_depreciation
+
+    today = _dt.date.today()
+    acquire_asset(AssetInput(
+        code="FA-VAN", name="Delivery Van", category="Vehicles",
+        acquisition_date=today, cost_minor=600_000_00, salvage_minor=60_000_00,
+        useful_life_months=60,  # 5 years
+    ))
+    acquire_asset(AssetInput(
+        code="FA-LAPTOP", name="Office Laptops", category="IT Equipment",
+        acquisition_date=today, cost_minor=90_000_00, salvage_minor=0,
+        useful_life_months=36,  # 3 years
+    ))
+    # Book one month of depreciation in the current period so the register shows accumulated value.
+    period_code = f"{today.year}-{today.month:02d}"
+    run_depreciation(period_code, today)
+    created.append(("FA", "FA-VAN", "fixed asset — try Run depreciation / Dispose"))
+    created.append(("FA", "FA-LAPTOP", "fixed asset — depreciated 1 month"))
+
+
+from erp.accounting.domain.models import FixedAsset as _FixedAsset  # noqa: E402
+
+if _FixedAsset.objects.exists():
+    print("Demo fixed assets already present — skipping.")
+else:
+    seed_fixed_assets()
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")

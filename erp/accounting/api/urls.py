@@ -18,5 +18,10 @@ urlpatterns = [
     path("reports/balance-sheet", views.BalanceSheetView.as_view(), name="balance-sheet"),
     path("reports/cash-flow", views.CashFlowView.as_view(), name="cash-flow"),
     path("reports/vat-return", views.VatReturnView.as_view(), name="vat-return"),
+    path("reports/asset-register", views.AssetRegisterView.as_view(), name="asset-register"),
     path("tax-codes", views.TaxCodeListView.as_view(), name="tax-code-list"),
+    path("assets", views.FixedAssetListCreateView.as_view(), name="asset-list"),
+    path("assets/depreciation-run", views.DepreciationRunView.as_view(), name="depreciation-run"),
+    path("assets/<str:code>", views.FixedAssetDetailView.as_view(), name="asset-detail"),
+    path("assets/<str:code>/dispose", views.FixedAssetDisposeView.as_view(), name="asset-dispose"),
 ]

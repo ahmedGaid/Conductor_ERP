@@ -239,6 +239,100 @@ export function listTaxCodes(): Promise<TaxCode[]> {
   return apiFetch<TaxCode[]>("/accounting/tax-codes");
 }
 
+// ---- Fixed assets ----
+
+export type AssetStatus = "active" | "disposed";
+
+export interface FixedAsset {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  acquisition_date: string;
+  in_service_date: string;
+  cost_minor: number;
+  salvage_minor: number;
+  useful_life_months: number;
+  accumulated_depreciation_minor: number;
+  net_book_value_minor: number;
+  months_depreciated: number;
+  status: AssetStatus;
+  acquire_journal_number: string;
+  disposed_date: string | null;
+  disposal_proceeds_minor: number | null;
+  disposal_gain_loss_minor: number | null;
+  disposal_journal_number: string;
+}
+
+export interface AssetRegisterRow {
+  code: string;
+  name: string;
+  category: string;
+  acquisition_date: string;
+  cost_minor: number;
+  accumulated_depreciation_minor: number;
+  net_book_value_minor: number;
+  status: AssetStatus;
+}
+
+export interface AssetRegisterReport {
+  rows: AssetRegisterRow[];
+  total_cost: number;
+  total_accumulated: number;
+  total_nbv: number;
+}
+
+export function listAssets(): Promise<FixedAsset[]> {
+  return apiFetch<FixedAsset[]>("/accounting/assets");
+}
+
+export function getAsset(code: string): Promise<FixedAsset> {
+  return apiFetch<FixedAsset>(`/accounting/assets/${encodeURIComponent(code)}`);
+}
+
+export function acquireAsset(payload: {
+  code: string;
+  name: string;
+  category?: string;
+  acquisition_date: string;
+  cost_minor: number;
+  salvage_minor?: number;
+  useful_life_months: number;
+  funding_account_code?: string;
+}): Promise<FixedAsset> {
+  return apiFetch<FixedAsset>("/accounting/assets", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function disposeAsset(
+  code: string,
+  payload: { disposed_date: string; proceeds_minor: number; proceeds_account_code?: string },
+): Promise<FixedAsset> {
+  return apiFetch<FixedAsset>(`/accounting/assets/${encodeURIComponent(code)}/dispose`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface DepreciationRunResult {
+  period_code: string;
+  count: number;
+  total_minor: number;
+}
+
+export function runDepreciation(period_code: string, date: string): Promise<DepreciationRunResult> {
+  return apiFetch<DepreciationRunResult>("/accounting/assets/depreciation-run", {
+    method: "POST",
+    body: JSON.stringify({ period_code, date }),
+  });
+}
+
+export function assetRegister(): Promise<AssetRegisterReport> {
+  return apiFetch<AssetRegisterReport>("/accounting/reports/asset-register");
+}
+
 export function vatReturn(from: string, to: string): Promise<VatReturnReport> {
   const q = new URLSearchParams({ from, to });
   return apiFetch<VatReturnReport>(`/accounting/reports/vat-return?${q.toString()}`);

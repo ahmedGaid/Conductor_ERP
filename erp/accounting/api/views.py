@@ -18,12 +18,16 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
 
 from .. import services
-from ..domain.models import Account, FiscalYear, JournalEntry, Period
+from ..domain.models import Account, FiscalYear, FixedAsset, JournalEntry, Period
 from ..repositories import accounts as account_repo
 from . import exports as export_tables
 from .serializers import (
     AccountSerializer,
+    AssetDisposeSerializer,
+    DepreciationRunSerializer,
     FiscalYearSerializer,
+    FixedAssetCreateSerializer,
+    FixedAssetSerializer,
     JournalEntrySerializer,
     JournalPostSerializer,
     PeriodSerializer,
@@ -279,6 +283,96 @@ class VatReturnView(APIView):
             table = export_tables.vat_return_table(vr, request.query_params.get("lang", "en"))
             return export_response(table, fmt, "vat-return")
         return _envelope(asdict(vr))
+
+
+class FixedAssetListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        qs = FixedAsset.objects.all().order_by("code")
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return _envelope(FixedAssetSerializer(qs, many=True).data)
+
+    def post(self, request: Request) -> Response:
+        s = FixedAssetCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        asset = services.acquire_asset(
+            services.AssetInput(
+                code=v["code"],
+                name=v["name"],
+                category=v.get("category", ""),
+                acquisition_date=v["acquisition_date"],
+                in_service_date=v.get("in_service_date"),
+                cost_minor=v["cost_minor"],
+                salvage_minor=v.get("salvage_minor", 0),
+                useful_life_months=v["useful_life_months"],
+                funding_account_code=v.get("funding_account_code", "1000"),
+            ),
+            actor=request.user,
+        )
+        return _envelope(FixedAssetSerializer(asset).data, status=201)
+
+
+class FixedAssetDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request, code: str) -> Response:
+        asset = get_object_or_404(FixedAsset, code=code)
+        return _envelope(FixedAssetSerializer(asset).data)
+
+
+class FixedAssetDisposeView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request, code: str) -> Response:
+        asset = get_object_or_404(FixedAsset, code=code)
+        s = AssetDisposeSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        asset = services.dispose_asset(
+            asset,
+            disposed_date=v["disposed_date"],
+            proceeds_minor=v["proceeds_minor"],
+            proceeds_account_code=v.get("proceeds_account_code", "1000"),
+            actor=request.user,
+        )
+        return _envelope(FixedAssetSerializer(asset).data)
+
+
+class DepreciationRunView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request) -> Response:
+        s = DepreciationRunSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        result = services.run_depreciation(v["period_code"], v["date"], actor=request.user)
+        return _envelope({
+            "period_code": result.period_code,
+            "count": len(result.entries),
+            "total_minor": result.total_minor,
+        }, status=201)
+
+
+class AssetRegisterView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        include_disposed = request.query_params.get("include_disposed") == "true"
+        reg = services.asset_register(include_disposed=include_disposed)
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.asset_register_table(reg, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "asset-register")
+        return _envelope({
+            "rows": [asdict(r) for r in reg.rows],
+            "total_cost": reg.total_cost,
+            "total_accumulated": reg.total_accumulated,
+            "total_nbv": reg.total_nbv,
+        })
 
 
 class CashFlowView(APIView):

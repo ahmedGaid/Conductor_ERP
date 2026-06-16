@@ -74,6 +74,77 @@
   font-weight: var(--font-weight-medium);
 }
 
+.acct-link {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---- Fixed assets ---- */
+.acct-asset-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.acct-asset-runmsg {
+  align-self: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.acct-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.acct-detail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.acct-detail__head h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+
+.acct-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.acct-detail__grid div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.acct-detail__grid dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.acct-detail__grid dd {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.acct-detail__disposal {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.acct-detail__action-title {
+  inline-size: 100%;
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
 /* ---- Financial statements ---- */
 .stmt {
   display: flex;
