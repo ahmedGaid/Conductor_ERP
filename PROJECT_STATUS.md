@@ -1,20 +1,36 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-16 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
+> meaningful step. Last updated: **2026-06-19 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
-> exports (Stage 6b) + COMPLETION_PLAN Phases 1–6: Fixed Assets + Depreciation, Cost Centers, Bank
+> exports (Stage 6b) + COMPLETION_PLAN Phases 1–7: Fixed Assets + Depreciation, Cost Centers, Bank
 > Reconciliation, Budgets, Inventory counts/adjustments + batch/lot, CRM campaigns + ticket
-> escalation; gate:all 00–10 GREEN)**.
+> escalation, custom report builder + scheduled reports; gate:all 00–10 GREEN)**.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
 operational depth → Stage 6 finish → frontend polish → Stage 7 hardening/deploy). **Working rhythm:**
 each phase is one gate-green committable increment; after each, the user tests, then we commit + push
 and update this file. **Phases 1–4 (Track A, accounting depth) + Phases 5–6 (Track B, operational
-depth) DONE** (Fixed Assets + Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory
-counts/adjustments + batch/lot; CRM campaigns + ticket escalation — all committed). **NEXT: Phase 7 —
-Custom report builder + scheduled reports (Track C).**
+depth) + Phase 7 (Track C, custom report builder + scheduled reports) DONE** (Fixed Assets +
+Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory counts/adjustments + batch/lot;
+CRM campaigns + ticket escalation; custom report builder + scheduled reports — all committed).
+**NEXT: Phase 8 — Integration adapters (email / WhatsApp / payment / bank import) (Track C).**
+
+Phase 7 delivered (extends gate05): **custom report builder + scheduled reports.** Saved
+`ReportDefinition`s (account-type and/or explicit account-code filters, date range, **group by account
+or by period**) run deterministically over the **posted GL** via `report_builder.run_definition` →
+`BuiltReport` (account grouping uses `signed_balance` in each account's normal direction; period
+grouping nets debit−credit) and export to CSV/XLSX through the existing `exports.py` renderer. Optional
+**schedule** (daily/weekly/monthly): a Celery beat task `accounting.run_scheduled_reports` (registered
+in `CELERY_BEAT_SCHEDULE`, hourly tick) calls `run_scheduled(now)`, which itself decides due-ness
+(`is_due`), writes each due report's CSV to `REPORTS_DIR` (= `STORAGE_ROOT/reports`, gitignored), and
+stamps `last_run_at` — so it is **offline-safe and idempotent** (a second sweep in the same window
+writes nothing). DRF `/api/accounting/report-definitions` (CRUD + `/<id>/run` → JSON or
+`?export=csv|xlsx&lang=`); React **Report builder** screen (create form + saved-definition list with
+Run/Delete + inline results table + export toolbar), new accounting sub-nav tab; ar/en parity. 6 new
+tests; gate:all 00–10 green. Demo seeds 3 definitions (Revenue by account, Expenses by account,
+Activity by period [monthly]).
 
 Phase 6 delivered (extends gate09): **CRM campaigns + ticket escalation.** `Campaign` master; leads +
 opportunities carry an optional `campaign_code`. `campaign_metrics` rolls up won-opportunity value vs

@@ -447,6 +447,23 @@ if _Campaign.objects.exists():
 else:
     seed_crm_extras()
 
+
+def seed_report_definitions() -> None:
+    from erp.accounting.domain.models import ReportDefinition
+
+    ReportDefinition.objects.create(name="Revenue by account", account_type="income", group_by="account")
+    ReportDefinition.objects.create(name="Expenses by account", account_type="expense", group_by="account")
+    ReportDefinition.objects.create(name="Activity by period", group_by="period", schedule="monthly")
+    created.append(("REPORT", "Revenue by account", "custom report -> Run / Export on Report Builder"))
+
+
+from erp.accounting.domain.models import ReportDefinition as _ReportDefinition  # noqa: E402
+
+if _ReportDefinition.objects.exists():
+    print("Demo report definitions already present — skipping.")
+else:
+    seed_report_definitions()
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")

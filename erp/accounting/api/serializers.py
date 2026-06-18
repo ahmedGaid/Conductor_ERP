@@ -137,6 +137,26 @@ class CostCenterSerializer(serializers.Serializer):
         return {"id": str(obj.id), "code": obj.code, "name": obj.name, "is_active": obj.is_active}
 
 
+class ReportDefinitionSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    name = serializers.CharField(max_length=200)
+    account_type = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
+    account_codes = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    date_from = serializers.DateField(required=False, allow_null=True)
+    date_to = serializers.DateField(required=False, allow_null=True)
+    group_by = serializers.ChoiceField(choices=["account", "period"], required=False, default="account")
+    schedule = serializers.ChoiceField(choices=["none", "daily", "weekly", "monthly"],
+                                       required=False, default="none")
+    last_run_at = serializers.DateTimeField(read_only=True)
+
+    def to_representation(self, obj) -> dict:
+        return {
+            "id": str(obj.id), "name": obj.name, "account_type": obj.account_type,
+            "account_codes": obj.account_codes, "date_from": obj.date_from, "date_to": obj.date_to,
+            "group_by": obj.group_by, "schedule": obj.schedule, "last_run_at": obj.last_run_at,
+        }
+
+
 class BudgetSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     name = serializers.CharField(max_length=200)

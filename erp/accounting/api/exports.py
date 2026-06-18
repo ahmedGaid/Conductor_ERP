@@ -145,6 +145,27 @@ def asset_register_table(reg, lang: str) -> ReportTable:
                        columns=cols, rows=rows, footer=footer, meta=[], rtl=(lang == "ar"))
 
 
+def built_report_table(built, lang: str) -> ReportTable:
+    group_label = _l("Account", "الحساب", lang) if built.group_by == "account" else _l("Period", "الفترة", lang)
+    cols = [
+        Column("group", group_label),
+        _money("Debit", "مدين", "debit", lang),
+        _money("Credit", "دائن", "credit", lang),
+        _money("Balance", "الرصيد", "balance", lang),
+    ]
+    rows = [
+        {"group": r.group_label, "debit": r.debit, "credit": r.credit, "balance": r.balance}
+        for r in built.rows
+    ]
+    footer = [{"group": _l("Total", "الإجمالي", lang), "debit": built.total_debit,
+               "credit": built.total_credit, "balance": built.total_balance}]
+    meta = []
+    if built.date_from or built.date_to:
+        meta.append((_l("Period", "الفترة", lang), f"{built.date_from or '…'} → {built.date_to or '…'}"))
+    return ReportTable(title=built.name, columns=cols, rows=rows, footer=footer, meta=meta,
+                       rtl=(lang == "ar"))
+
+
 def budget_vs_actual_table(bva, lang: str) -> ReportTable:
     cols = [
         Column("code", _l("Code", "الرمز", lang)),

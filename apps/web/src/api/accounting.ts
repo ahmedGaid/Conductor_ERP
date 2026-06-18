@@ -332,6 +332,70 @@ export function budgetVsActual(id: string, period?: string): Promise<BudgetVsAct
   return apiFetch<BudgetVsActualReport>(`/accounting/budgets/${id}/variance${qs}`);
 }
 
+// ---- Custom report builder ----
+
+export type ReportGroupBy = "account" | "period";
+export type ReportSchedule = "none" | "daily" | "weekly" | "monthly";
+
+export interface ReportDefinition {
+  id: string;
+  name: string;
+  account_type: string;
+  account_codes: string;
+  date_from: string | null;
+  date_to: string | null;
+  group_by: ReportGroupBy;
+  schedule: ReportSchedule;
+  last_run_at: string | null;
+}
+
+export interface BuiltReportRow {
+  group_key: string;
+  group_label: string;
+  debit: number;
+  credit: number;
+  balance: number;
+}
+
+export interface BuiltReport {
+  definition_id: string;
+  name: string;
+  group_by: ReportGroupBy;
+  date_from: string | null;
+  date_to: string | null;
+  rows: BuiltReportRow[];
+  total_debit: number;
+  total_credit: number;
+  total_balance: number;
+}
+
+export function listReportDefinitions(): Promise<ReportDefinition[]> {
+  return apiFetch<ReportDefinition[]>("/accounting/report-definitions");
+}
+
+export function createReportDefinition(payload: {
+  name: string;
+  account_type?: string;
+  account_codes?: string;
+  date_from?: string | null;
+  date_to?: string | null;
+  group_by?: ReportGroupBy;
+  schedule?: ReportSchedule;
+}): Promise<ReportDefinition> {
+  return apiFetch<ReportDefinition>("/accounting/report-definitions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteReportDefinition(id: string): Promise<{ deleted: boolean }> {
+  return apiFetch<{ deleted: boolean }>(`/accounting/report-definitions/${id}`, { method: "DELETE" });
+}
+
+export function runReportDefinition(id: string): Promise<BuiltReport> {
+  return apiFetch<BuiltReport>(`/accounting/report-definitions/${id}/run`);
+}
+
 // ---- Bank reconciliation ----
 
 export type BankStatementStatus = "open" | "reconciled";

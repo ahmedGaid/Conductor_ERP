@@ -24,6 +24,7 @@ import { BankReconciliationPage } from "./pages/accounting/BankReconciliationPag
 import { BankStatementDetailPage } from "./pages/accounting/BankStatementDetailPage";
 import { BudgetsPage } from "./pages/accounting/BudgetsPage";
 import { BudgetDetailPage } from "./pages/accounting/BudgetDetailPage";
+import { ReportBuilderPage } from "./pages/accounting/ReportBuilderPage";
 import { EInvoicesPage } from "./pages/einvoice/EInvoicesPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
@@ -87,6 +88,7 @@ function Protected() {
           <Route path="/accounting/bank-reconciliation/:id" element={<BankStatementDetailPage />} />
           <Route path="/accounting/budgets" element={<BudgetsPage />} />
           <Route path="/accounting/budgets/:id" element={<BudgetDetailPage />} />
+          <Route path="/accounting/report-builder" element={<ReportBuilderPage />} />
           <Route path="/inventory" element={<StockOnHandPage />} />
           <Route path="/inventory/items" element={<ItemsPage />} />
           <Route path="/inventory/warehouses" element={<WarehousesPage />} />

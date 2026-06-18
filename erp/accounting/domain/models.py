@@ -244,6 +244,39 @@ class BudgetLine(TimeStampedModel):
         return f"{self.account_code} {self.period_code}: {self.amount_minor}"
 
 
+class ReportGroupBy(models.TextChoices):
+    ACCOUNT = "account", "By account"
+    PERIOD = "period", "By period"
+
+
+class ReportSchedule(models.TextChoices):
+    NONE = "none", "Not scheduled"
+    DAILY = "daily", "Daily"
+    WEEKLY = "weekly", "Weekly"
+    MONTHLY = "monthly", "Monthly"
+
+
+class ReportDefinition(AuditedModel):
+    """A user-defined GL report: filter posted lines by account type/codes + date range, grouped by
+    account or period. Saved, re-runnable, exportable, and optionally scheduled."""
+
+    name = models.CharField(max_length=200)
+    account_type = models.CharField(max_length=16, blank=True, default="")   # "" = all types
+    account_codes = models.CharField(max_length=500, blank=True, default="")  # comma-separated; "" = all
+    date_from = models.DateField(null=True, blank=True)
+    date_to = models.DateField(null=True, blank=True)
+    group_by = models.CharField(max_length=16, choices=ReportGroupBy.choices, default=ReportGroupBy.ACCOUNT)
+    schedule = models.CharField(max_length=16, choices=ReportSchedule.choices, default=ReportSchedule.NONE)
+    last_run_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "accounting_report_definition"
+        ordering = ["name"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return self.name
+
+
 class PeriodStatus(models.TextChoices):
     OPEN = "open", "Open"
     CLOSED = "closed", "Closed"

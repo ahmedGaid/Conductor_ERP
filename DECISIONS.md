@@ -592,6 +592,28 @@ Sixth completion-plan increment, completing Track B (operational depth).
   action/indicator + a run-escalations sweep; ar/en parity. Demo seeds a campaign (won 15k vs cost 12k)
   and a breached ticket.
 
+## Phase 7 — Custom report builder + scheduled reports (2026-06-19)
+
+- **The report builder lives inside `erp/accounting`, not a new module.** A report definition queries
+  the posted General Ledger — data the accounting module owns — so adding it here respects the
+  module-boundary rule (no new cross-module contract, no new gate). Extends **gate05** rather than
+  introducing one. A saved `ReportDefinition` carries filters (account types and/or explicit account
+  codes, date range) + a `group_by` (account or period); `run_definition` is **pure/deterministic** over
+  the posted ledger (account grouping signs each balance in its normal direction via `signed_balance`;
+  period grouping nets debit−credit), and exports reuse the shared `exports.py` renderer (one renderer
+  for every report, CSV UTF-8-BOM / XLSX).
+- **Scheduling is a self-deciding Celery beat task, made offline-safe and gate-provable.** Rather than
+  one cron entry per definition, a single hourly beat task `accounting.run_scheduled_reports`
+  (registered in `CELERY_BEAT_SCHEDULE`) calls `run_scheduled(now)`, which **itself** computes due-ness
+  (`is_due` from `schedule` + `last_run_at`), writes each due report's CSV to `REPORTS_DIR`
+  (`STORAGE_ROOT/reports`, gitignored), and stamps `last_run_at`. This makes the sweep **idempotent**
+  (a second run in the same window writes nothing) and **unit-testable without a broker** — the test
+  points `settings.REPORTS_DIR` at a tmp dir and asserts the file is written, so the gate proves
+  scheduling end-to-end offline. 6 new tests; gate:all 00–10 green. React: a Report-builder screen
+  (create form + saved-definition list with Run/Delete + inline table + export toolbar), new accounting
+  sub-nav tab; ar/en parity. Demo seeds 3 definitions (Revenue by account, Expenses by account,
+  Activity by period [monthly]).
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

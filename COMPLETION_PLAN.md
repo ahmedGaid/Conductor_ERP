@@ -11,7 +11,7 @@
 > minor units, cross-module only via `contracts/`, logical-CSS + tokens-only + i18n ar/en parity,
 > and a green gate as the only sign-off.
 
-Last updated: 2026-06-16.
+Last updated: 2026-06-19.
 
 ---
 
@@ -67,13 +67,13 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 
 ## Track C — Stage 6 finish (integrations & reporting)
 
-### Phase 7 — Custom report builder + scheduled reports  ⬅ NEXT
+### Phase 7 — Custom report builder + scheduled reports  ✅ DONE (2026-06-19, committed)
 - User-defined report definitions (pick accounts/dimensions/date range, save, run → table + CSV/XLSX
   via the existing `exports.py` renderer). Optional schedule (Celery beat) writing exports to disk.
 - API + React: builder screen, saved-definition list, run/export.
 - Gate: a saved definition runs deterministically and exports; schedule registers a beat task.
 
-### Phase 8 — Integration adapters (email / WhatsApp / payment / bank import)
+### Phase 8 — Integration adapters (email / WhatsApp / payment / bank import)  ⬅ NEXT
 - Pluggable notification adapters behind one interface (email via SMTP first; WhatsApp/payment stubs
   like the ETA adapter — swappable, offline-safe). Wire invoice/ticket events to notifications.
 - Gate: an event triggers the adapter through the interface; failures are bus-isolated.

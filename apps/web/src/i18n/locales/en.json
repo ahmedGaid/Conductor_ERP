@@ -150,7 +150,32 @@
       "fixedAssets": "Fixed Assets",
       "costCenters": "Cost Centers",
       "bankRec": "Bank Reconciliation",
-      "budgets": "Budgets"
+      "budgets": "Budgets",
+      "reportBuilder": "Report Builder"
+    },
+    "reportBuilder": {
+      "name": "Report name",
+      "accountType": "Account type",
+      "allTypes": "All types",
+      "codes": "Account codes",
+      "groupBy": "Group by",
+      "schedule": "Schedule",
+      "scheduleHint": "Scheduled reports are exported to disk automatically (daily/weekly/monthly).",
+      "save": "Save report",
+      "run": "Run",
+      "balance": "Balance",
+      "empty": "No saved reports yet.",
+      "needName": "A report needs a name.",
+      "groups": {
+        "account": "By account",
+        "period": "By period"
+      },
+      "schedules": {
+        "none": "Not scheduled",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      }
     },
     "budgets": {
       "name": "Budget name",

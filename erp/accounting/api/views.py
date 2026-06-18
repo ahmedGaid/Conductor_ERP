@@ -29,6 +29,7 @@ from ..domain.models import (
     JournalEntry,
     JournalLine,
     Period,
+    ReportDefinition,
 )
 from ..repositories import accounts as account_repo
 from . import exports as export_tables
@@ -49,6 +50,7 @@ from .serializers import (
     JournalEntrySerializer,
     JournalPostSerializer,
     PeriodSerializer,
+    ReportDefinitionSerializer,
 )
 
 _CanAccount = HasAnyRole.require(ACCOUNTANT, BRANCH_MANAGER)
@@ -428,6 +430,60 @@ class BankLineMatchView(APIView):
         line = get_object_or_404(BankStatementLine, id=line_id)
         services.unmatch_line(line)
         return _envelope(_statement_dict(line.statement, with_reconciliation=True))
+
+
+class ReportDefinitionListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(ReportDefinitionSerializer(ReportDefinition.objects.all(), many=True).data)
+
+    def post(self, request: Request) -> Response:
+        s = ReportDefinitionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        defn = ReportDefinition.objects.create(
+            name=v["name"], account_type=v.get("account_type", ""),
+            account_codes=v.get("account_codes", ""), date_from=v.get("date_from"),
+            date_to=v.get("date_to"), group_by=v.get("group_by", "account"),
+            schedule=v.get("schedule", "none"),
+            created_by=request.user if request.user.is_authenticated else None,
+        )
+        return _envelope(ReportDefinitionSerializer(defn).data, status=201)
+
+
+class ReportDefinitionDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request, definition_id) -> Response:
+        return _envelope(ReportDefinitionSerializer(get_object_or_404(ReportDefinition, id=definition_id)).data)
+
+    def delete(self, request: Request, definition_id) -> Response:
+        get_object_or_404(ReportDefinition, id=definition_id).delete()
+        return _envelope({"deleted": True})
+
+
+class ReportDefinitionRunView(APIView):
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def get(self, request: Request, definition_id) -> Response:
+        defn = get_object_or_404(ReportDefinition, id=definition_id)
+        built = services.run_definition(defn)
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = export_tables.built_report_table(built, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, f"report-{built.name[:30]}")
+        return _envelope({
+            "definition_id": built.definition_id,
+            "name": built.name,
+            "group_by": built.group_by,
+            "date_from": built.date_from,
+            "date_to": built.date_to,
+            "rows": [asdict(r) for r in built.rows],
+            "total_debit": built.total_debit,
+            "total_credit": built.total_credit,
+            "total_balance": built.total_balance,
+        })
 
 
 class BudgetListCreateView(APIView):

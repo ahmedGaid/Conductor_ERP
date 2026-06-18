@@ -147,6 +147,23 @@ def check() -> None:
         _assert((WEB_SRC / rel).is_file(), f"missing budget screen: src/{rel}")
     _assert("/accounting/budgets" in _read("apps/web/src/App.tsx"), "App.tsx missing the budgets route")
 
+    # 5i. Custom report builder + scheduled reports: a saved definition runs over the GL and exports;
+    #     the scheduler is a Celery task registered on the beat schedule.
+    rb_src = _read("erp/accounting/services/report_builder.py")
+    for fn in ("def run_definition", "def run_scheduled", "def is_due"):
+        _assert(fn in rb_src, f"report_builder missing {fn}")
+    for route in ("report-definitions", "/run"):
+        _assert(route in wf_urls, f"report-builder endpoint not mounted: {route}")
+    tasks_src = _read("erp/accounting/tasks.py")
+    _assert("run_scheduled_reports" in tasks_src, "missing the scheduled-reports Celery task")
+    settings_src = _read("config/settings/base.py")
+    _assert("CELERY_BEAT_SCHEDULE" in settings_src and "accounting.run_scheduled_reports" in settings_src,
+            "scheduled-reports task is not registered on the Celery beat schedule")
+    _assert((WEB_SRC / "pages" / "accounting" / "ReportBuilderPage.tsx").is_file(),
+            "missing report-builder screen: src/pages/accounting/ReportBuilderPage.tsx")
+    _assert("/accounting/report-builder" in _read("apps/web/src/App.tsx"),
+            "App.tsx missing the report-builder route")
+
     # 6. The double-entry invariant point exists and rejects imbalance.
     _assert("UnbalancedEntryError" in posting_src, "posting does not enforce the balanced invariant")
 

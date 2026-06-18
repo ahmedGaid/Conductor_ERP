@@ -36,6 +36,13 @@ from .budgets import (  # noqa: F401
     set_budget_line,
     set_budget_lines,
 )
+from .report_builder import (  # noqa: F401
+    BuiltReport,
+    BuiltRow,
+    is_due,
+    run_definition,
+    run_scheduled,
+)
 from .bank_rec import (  # noqa: F401
     BankLineInput,
     Reconciliation,
@@ -102,6 +109,11 @@ __all__ = [
     "create_budget",
     "set_budget_line",
     "set_budget_lines",
+    "BuiltReport",
+    "BuiltRow",
+    "is_due",
+    "run_definition",
+    "run_scheduled",
     "BalanceSheet",
     "CashFlow",
     "IncomeStatement",

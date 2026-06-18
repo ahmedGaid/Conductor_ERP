@@ -157,6 +157,18 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_ACKS_LATE = True  # recover jobs after a worker crash
 CELERY_RESULT_EXTENDED = True
 
+# Periodic jobs (Celery beat). The scheduled-report task fires hourly and itself decides which saved
+# report definitions are due (daily/weekly/monthly), writing their CSV exports to REPORTS_DIR.
+CELERY_BEAT_SCHEDULE = {
+    "run-scheduled-reports": {
+        "task": "accounting.run_scheduled_reports",
+        "schedule": 3600.0,  # seconds — hourly sweep
+    },
+}
+
+# Where scheduled report exports are written.
+REPORTS_DIR = STORAGE_ROOT / "reports"
+
 REDIS_URL = _redis_url
 
 # --- CORS (frontend dev server) ---
