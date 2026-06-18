@@ -4,6 +4,31 @@ from __future__ import annotations
 from rest_framework import serializers
 
 
+# --- Campaigns -------------------------------------------------------------
+
+class CampaignSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    code = serializers.CharField(max_length=32)
+    name = serializers.CharField(max_length=200)
+    channel = serializers.CharField(max_length=16, required=False, default="other")
+    status = serializers.CharField(read_only=True)
+    start_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
+    cost_minor = serializers.IntegerField(min_value=0, required=False, default=0)
+    notes = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+
+    def to_representation(self, obj) -> dict:
+        return {
+            "id": str(obj.id), "code": obj.code, "name": obj.name, "channel": obj.channel,
+            "status": obj.status, "start_date": obj.start_date, "end_date": obj.end_date,
+            "cost_minor": obj.cost_minor, "notes": obj.notes,
+        }
+
+
+class CampaignStatusSerializer(serializers.Serializer):
+    status = serializers.CharField()
+
+
 # --- Leads -----------------------------------------------------------------
 
 class LeadSerializer(serializers.Serializer):
@@ -26,6 +51,7 @@ class LeadCreateSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
     source = serializers.CharField(max_length=16, required=False, default="other")
     owner = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    campaign_code = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
     notes = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
 
 
@@ -51,6 +77,7 @@ class OppCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     customer_code = serializers.CharField(required=False, allow_blank=True, default="")
     warehouse_code = serializers.CharField(required=False, allow_blank=True, default="")
+    campaign_code = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
     currency = serializers.CharField(max_length=3, required=False, default="EGP")
     probability = serializers.IntegerField(min_value=0, max_value=100, required=False, default=10)
     expected_close = serializers.DateField(required=False, allow_null=True)
@@ -141,7 +168,9 @@ class TicketSerializer(serializers.Serializer):
     opened_at = serializers.DateTimeField()
     sla_due_at = serializers.DateTimeField()
     resolved_at = serializers.DateTimeField()
+    escalated_at = serializers.DateTimeField()
     is_breached = serializers.BooleanField()
+    is_escalated = serializers.BooleanField()
 
 
 class TicketCreateSerializer(serializers.Serializer):

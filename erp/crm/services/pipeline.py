@@ -62,12 +62,12 @@ def _next_number() -> str:
 def create_opportunity(
     *, name: str, lines: list[OppLineInput] | None = None, lead: Lead | None = None,
     customer_code: str = "", warehouse_code: str = "", currency: str = "EGP",
-    probability: int = 10, expected_close=None, notes: str = "", actor=None,
+    probability: int = 10, expected_close=None, notes: str = "", campaign_code: str = "", actor=None,
 ) -> Opportunity:
     opp = Opportunity.objects.create(
         number=_next_number(), name=name, lead=lead, customer_code=customer_code,
-        warehouse_code=warehouse_code, currency=currency, probability=probability,
-        expected_close=expected_close, notes=notes, stage=OppStage.QUALIFYING,
+        warehouse_code=warehouse_code, campaign_code=campaign_code, currency=currency,
+        probability=probability, expected_close=expected_close, notes=notes, stage=OppStage.QUALIFYING,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
     )
     subtotal = 0

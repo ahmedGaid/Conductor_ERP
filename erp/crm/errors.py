@@ -26,3 +26,15 @@ class EmptyOpportunityError(AppError):
     code = "CRM-004"
     status_code = 422
     message = "An opportunity needs at least one line to win into a sales order"
+
+
+class AlreadyEscalatedError(AppError):
+    code = "CRM-005"
+    status_code = 409
+    message = "Ticket has already been escalated"
+
+
+class NotBreachedError(AppError):
+    code = "CRM-006"
+    status_code = 422
+    message = "Ticket has not breached its SLA, so it cannot be escalated"

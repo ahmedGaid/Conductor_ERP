@@ -3,17 +3,27 @@
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
 > meaningful step. Last updated: **2026-06-16 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
-> exports (Stage 6b) + COMPLETION_PLAN Phases 1–5: Fixed Assets + Depreciation, Cost Centers, Bank
-> Reconciliation, Budgets, Inventory counts/adjustments + batch/lot; gate:all 00–10 GREEN)**.
+> exports (Stage 6b) + COMPLETION_PLAN Phases 1–6: Fixed Assets + Depreciation, Cost Centers, Bank
+> Reconciliation, Budgets, Inventory counts/adjustments + batch/lot, CRM campaigns + ticket
+> escalation; gate:all 00–10 GREEN)**.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
 operational depth → Stage 6 finish → frontend polish → Stage 7 hardening/deploy). **Working rhythm:**
 each phase is one gate-green committable increment; after each, the user tests, then we commit + push
-and update this file. **Phases 1–4 (Track A, accounting depth) + Phase 5 (Track B start) DONE**
-(Fixed Assets + Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory stock
-counts/adjustments + batch/lot — all committed). **NEXT: Phase 6 — CRM: campaigns + ticket
-escalation.**
+and update this file. **Phases 1–4 (Track A, accounting depth) + Phases 5–6 (Track B, operational
+depth) DONE** (Fixed Assets + Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory
+counts/adjustments + batch/lot; CRM campaigns + ticket escalation — all committed). **NEXT: Phase 7 —
+Custom report builder + scheduled reports (Track C).**
+
+Phase 6 delivered (extends gate09): **CRM campaigns + ticket escalation.** `Campaign` master; leads +
+opportunities carry an optional `campaign_code`. `campaign_metrics` rolls up won-opportunity value vs
+campaign cost into ROI (+ open pipeline, counts). Ticket SLA escalation: `escalate_ticket` bumps a
+breached/open/un-escalated ticket up one priority **exactly once** (`escalated_at` guard), logs a
+notify Activity, publishes `crm.TicketEscalated`; `run_escalations` sweeps (idempotent). DRF
+`/api/crm/campaigns` (+ status/metrics), ticket `escalate` + `tickets-run-escalations`; React Campaigns
+list/detail + Tickets escalate action/indicator + run-escalations; ar/en parity. 7 new tests; gate:all
+00–10 green. Demo seeds a campaign (won 15k vs cost 12k) + a breached ticket.
 
 Phase 5 delivered (extends gate06): **Inventory stock counts/adjustments + batch/lot.** `StockCount` +
 `StockCountLine` snapshot system quantities; posting reconciles each counted line via a new

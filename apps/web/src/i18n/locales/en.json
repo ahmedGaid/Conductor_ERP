@@ -574,6 +574,7 @@
       "pipeline": "Pipeline",
       "leads": "Leads",
       "tickets": "Tickets",
+      "campaigns": "Campaigns",
       "newOpp": "New opportunity"
     },
     "stage": {
@@ -655,8 +656,46 @@
       "start": "Start",
       "resolve": "Resolve",
       "close": "Close",
+      "escalate": "Escalate",
+      "escalated": "Escalated",
+      "runEscalations": "Run escalations",
+      "runEscalationsHint": "Bumps every breached, un-escalated ticket up a priority (once each).",
       "empty": "No tickets yet.",
       "needSubject": "A ticket needs a subject"
+    },
+    "campaign": {
+      "add": "Create campaign",
+      "code": "Code",
+      "name": "Name",
+      "channel": "Channel",
+      "cost": "Cost",
+      "wonValue": "Won value",
+      "roi": "ROI",
+      "empty": "No campaigns yet.",
+      "invalidInput": "Please enter a code and name.",
+      "backToList": "Back to campaigns",
+      "leads": "Leads",
+      "opportunities": "Opportunities",
+      "won": "Won deals",
+      "openPipeline": "Open pipeline",
+      "linkHint": "Set a campaign code on a lead or opportunity to roll its value into this ROI.",
+      "channels": {
+        "email": "Email",
+        "web": "Web",
+        "call": "Call",
+        "event": "Event",
+        "social": "Social",
+        "other": "Other"
+      },
+      "statuses": {
+        "draft": "Draft",
+        "active": "Active",
+        "completed": "Completed"
+      },
+      "markActions": {
+        "active": "Activate",
+        "completed": "Complete"
+      }
     }
   },
   "common": {

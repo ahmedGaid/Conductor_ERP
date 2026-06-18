@@ -3,8 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import {
   createTicket,
+  escalateTicket,
   listTickets,
   resolveTicket,
+  runEscalations,
   startTicket,
   closeTicket,
   type Ticket,
@@ -91,6 +93,15 @@ export function TicketsPage() {
         {formError && <p className="error-text">{formError}</p>}
       </form>
 
+      {data && data.length > 0 && (
+        <div className="crm-toolbar">
+          <button className="btn btn--sm" disabled={busy} onClick={() => act(() => runEscalations())}>
+            {t("crm.ticket.runEscalations")}
+          </button>
+          <span className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("crm.ticket.runEscalationsHint")}</span>
+        </div>
+      )}
+
       {loading && (
         <div className="page-skeleton" aria-busy="true">
           <span className="visually-hidden">{t("common.loading")}</span>
@@ -136,12 +147,18 @@ export function TicketsPage() {
                     ) : (
                       <span className="crm-ontime">{t("crm.ticket.onTime")}</span>
                     )}
+                    {tk.is_escalated && <span className="crm-escalated">↑ {t("crm.ticket.escalated")}</span>}
                   </td>
                   <td>
                     <div className="crm-actions">
                       {tk.status === "open" && (
                         <button className="btn btn--sm" disabled={busy} onClick={() => act(() => startTicket(tk.id))}>
                           {t("crm.ticket.start")}
+                        </button>
+                      )}
+                      {tk.is_breached && !tk.is_escalated && (tk.status === "open" || tk.status === "in_progress") && (
+                        <button className="btn btn--sm btn--danger" disabled={busy} onClick={() => act(() => escalateTicket(tk.id))}>
+                          {t("crm.ticket.escalate")}
                         </button>
                       )}
                       {(tk.status === "open" || tk.status === "in_progress") && (

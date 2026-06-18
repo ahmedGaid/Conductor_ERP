@@ -32,11 +32,11 @@ def _next_code() -> str:
 @transaction.atomic
 def create_lead(
     *, name: str, company: str = "", email: str = "", phone: str = "",
-    source: str = "other", owner: str = "", notes: str = "", actor=None,
+    source: str = "other", owner: str = "", notes: str = "", campaign_code: str = "", actor=None,
 ) -> Lead:
     lead = Lead.objects.create(
         code=_next_code(), name=name, company=company, email=email, phone=phone,
-        source=source, owner=owner, notes=notes, status=LeadStatus.NEW,
+        source=source, owner=owner, notes=notes, campaign_code=campaign_code, status=LeadStatus.NEW,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(module="crm", action="create_lead", entity_type="Lead",

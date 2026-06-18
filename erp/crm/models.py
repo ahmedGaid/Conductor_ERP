@@ -4,6 +4,9 @@ from __future__ import annotations
 from .domain.models import (  # noqa: F401
     Activity,
     ActivityType,
+    Campaign,
+    CampaignChannel,
+    CampaignStatus,
     Lead,
     LeadSource,
     LeadStatus,
@@ -19,6 +22,9 @@ from .domain.models import (  # noqa: F401
 __all__ = [
     "Activity",
     "ActivityType",
+    "Campaign",
+    "CampaignChannel",
+    "CampaignStatus",
     "Lead",
     "LeadSource",
     "LeadStatus",

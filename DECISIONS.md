@@ -569,6 +569,29 @@ Fifth completion-plan increment, opening Track B (operational depth).
   counts list/new/detail (inline count entry + post) + a Batches view, and batch/expiry fields on the
   receive form; ar/en parity. Demo seeds a batched receipt + an open count.
 
+## CRM — Campaigns + ticket escalation (Phase 6 of the completion plan, 2026-06-17)
+
+Sixth completion-plan increment, completing Track B (operational depth).
+
+- **Campaign ROI rolls up from linked records, by code.** Leads and opportunities carry an optional
+  `campaign_code` (the same decoupled string-key pattern CRM uses for customers); `campaign_metrics`
+  sums **won** opportunity amounts (won value) against the campaign `cost_minor` for ROI, plus
+  open-pipeline and counts. No money is posted — a campaign is a marketing record, not a GL event.
+  Proven: only linked opportunities count, lost ones are excluded from pipeline, ROI = won − cost.
+- **Ticket escalation is idempotent — exactly once per breach.** `escalate_ticket` requires the ticket
+  open + breached + not-yet-escalated (`escalated_at` null), then bumps priority one level
+  (low→…→urgent, urgent is the ceiling), stamps `escalated_at`, logs a notify Activity, and publishes
+  `crm.TicketEscalated` on the bus (a notification adapter can subscribe in Phase 8 — escalation does
+  not send email itself). `run_escalations` sweeps every open/breached/un-escalated ticket; the
+  `escalated_at` guard makes a repeated sweep a no-op. `AlreadyEscalatedError` (CRM-005) /
+  `NotBreachedError` (CRM-006).
+- **Why bump priority rather than reset the SLA.** The ticket has already breached; raising priority
+  surfaces it for re-triage without faking a fresh due time. A multi-tier escalation matrix (reassign,
+  notify a manager) can layer on the same event later. Extends **gate09**; 7 new tests. React: a
+  Campaigns list (ROI column) + detail (metrics, activate/complete) and a Tickets escalate
+  action/indicator + a run-escalations sweep; ar/en parity. Demo seeds a campaign (won 15k vs cost 12k)
+  and a breached ticket.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

@@ -14,10 +14,12 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from .. import services
-from ..domain.models import Activity, Lead, Opportunity, Ticket
+from ..domain.models import Activity, Campaign, Lead, Opportunity, Ticket
 from .serializers import (
     ActivityCreateSerializer,
     ActivitySerializer,
+    CampaignSerializer,
+    CampaignStatusSerializer,
     LeadConvertSerializer,
     LeadCreateSerializer,
     LeadSerializer,
@@ -41,6 +43,60 @@ def _envelope(data, status: int = 200) -> Response:
 
 def _opp_qs():
     return Opportunity.objects.select_related("lead").prefetch_related("lines")
+
+
+# --- Campaigns -------------------------------------------------------------
+
+def _campaign_dict(campaign: Campaign, with_metrics: bool = False) -> dict:
+    data = CampaignSerializer(campaign).data
+    if with_metrics:
+        m = services.campaign_metrics(campaign)
+        data["metrics"] = {
+            "lead_count": m.lead_count,
+            "opportunity_count": m.opportunity_count,
+            "won_count": m.won_count,
+            "open_pipeline_minor": m.open_pipeline_minor,
+            "won_value_minor": m.won_value_minor,
+            "roi_minor": m.roi_minor,
+            "is_profitable": m.is_profitable,
+        }
+    return data
+
+
+class CampaignListCreateView(APIView):
+    permission_classes = [IsAuthenticated, _CanCRM]
+
+    def get(self, request: Request) -> Response:
+        return _envelope([_campaign_dict(c, with_metrics=True) for c in Campaign.objects.all()])
+
+    def post(self, request: Request) -> Response:
+        s = CampaignSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        campaign = services.create_campaign(
+            code=v["code"], name=v["name"], channel=v.get("channel", "other"),
+            cost_minor=v.get("cost_minor", 0), start_date=v.get("start_date"),
+            end_date=v.get("end_date"), notes=v.get("notes", ""), actor=request.user,
+        )
+        return _envelope(_campaign_dict(campaign, with_metrics=True), status=201)
+
+
+class CampaignDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanCRM]
+
+    def get(self, request: Request, campaign_id) -> Response:
+        return _envelope(_campaign_dict(get_object_or_404(Campaign, id=campaign_id), with_metrics=True))
+
+
+class CampaignStatusView(APIView):
+    permission_classes = [IsAuthenticated, _CanCRM]
+
+    def post(self, request: Request, campaign_id) -> Response:
+        campaign = get_object_or_404(Campaign, id=campaign_id)
+        s = CampaignStatusSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        services.set_campaign_status(campaign, s.validated_data["status"], actor=request.user)
+        return _envelope(_campaign_dict(Campaign.objects.get(id=campaign.id), with_metrics=True))
 
 
 # --- Leads -----------------------------------------------------------------
@@ -100,7 +156,8 @@ class OppListCreateView(APIView):
         v = s.validated_data
         opp = services.create_opportunity(
             name=v["name"], customer_code=v.get("customer_code", ""),
-            warehouse_code=v.get("warehouse_code", ""), currency=v.get("currency", "EGP"),
+            warehouse_code=v.get("warehouse_code", ""), campaign_code=v.get("campaign_code", ""),
+            currency=v.get("currency", "EGP"),
             probability=v.get("probability", 10), expected_close=v.get("expected_close"),
             notes=v.get("notes", ""),
             lines=[
@@ -240,3 +297,21 @@ class TicketCloseView(APIView):
         ticket = get_object_or_404(Ticket, id=ticket_id)
         services.close_ticket(ticket, actor=request.user)
         return _envelope(TicketSerializer(Ticket.objects.get(id=ticket.id)).data)
+
+
+class TicketEscalateView(APIView):
+    permission_classes = [IsAuthenticated, _CanCRM]
+
+    def post(self, request: Request, ticket_id) -> Response:
+        ticket = get_object_or_404(Ticket, id=ticket_id)
+        services.escalate_ticket(ticket, actor=request.user)
+        return _envelope(TicketSerializer(Ticket.objects.get(id=ticket.id)).data)
+
+
+class TicketRunEscalationsView(APIView):
+    """Sweep: escalate every open, breached, not-yet-escalated ticket (one-shot batch)."""
+    permission_classes = [IsAuthenticated, _CanCRM]
+
+    def post(self, request: Request) -> Response:
+        escalated = services.run_escalations(actor=request.user)
+        return _envelope({"escalated": [t.number for t in escalated], "count": len(escalated)}, status=201)

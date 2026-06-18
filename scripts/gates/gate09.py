@@ -78,6 +78,19 @@ def check() -> None:
         for banned in (".raw(", "cursor.execute(", "RunSQL"):
             _assert(banned not in src, f"{path.name} uses raw SQL ({banned})")
 
+    # 5b. Campaigns (ROI rollup) + ticket SLA escalation. The campaign metrics roll up won value vs
+    #     cost; a breached ticket escalates exactly once (proven in the test suite). Endpoints mounted.
+    campaigns_src = _read("erp/crm/services/campaigns.py")
+    for fn in ("def create_campaign", "def campaign_metrics"):
+        _assert(fn in campaigns_src, f"campaigns service missing {fn}")
+    _assert("roi_minor" in campaigns_src, "campaign metrics missing ROI")
+    support_src = _read("erp/crm/services/support.py")
+    for fn in ("def escalate_ticket", "def run_escalations"):
+        _assert(fn in support_src, f"support service missing {fn}")
+    crm_urls = _read("erp/crm/api/urls.py")
+    for route in ("campaigns", "escalate"):
+        _assert(route in crm_urls, f"CRM endpoint not mounted: {route}")
+
     # 6. React CRM screens exist and are wired.
     for rel in (
         "api/crm.ts",
@@ -85,11 +98,13 @@ def check() -> None:
         "pages/crm/OpportunityDetailPage.tsx",
         "pages/crm/LeadsPage.tsx",
         "pages/crm/TicketsPage.tsx",
+        "pages/crm/CampaignsPage.tsx",
+        "pages/crm/CampaignDetailPage.tsx",
     ):
         _assert((WEB_SRC / rel).is_file(), f"missing CRM screen: src/{rel}")
 
     app = (WEB_SRC / "App.tsx").read_text(encoding="utf-8")
-    for route in ("/crm", "/crm/opportunities/:id", "/crm/leads", "/crm/tickets"):
+    for route in ("/crm", "/crm/opportunities/:id", "/crm/leads", "/crm/tickets", "/crm/campaigns"):
         _assert(route in app, f"App.tsx missing CRM route: {route}")
 
     detail = (WEB_SRC / "pages" / "crm" / "OpportunityDetailPage.tsx").read_text(encoding="utf-8")

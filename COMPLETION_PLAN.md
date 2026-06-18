@@ -59,7 +59,7 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 - API + React: count session screen, adjustment posting, batch report.
 - Gate: a counted shortage posts a balanced adjustment and the GL-equals-stock-value invariant holds.
 
-### Phase 6 — CRM: campaigns + ticket escalation  ⬅ NEXT
+### Phase 6 — CRM: campaigns + ticket escalation  ✅ DONE (2026-06-17, committed)
 - `Campaign` (target segment, linked leads/opportunities, simple ROI = won value vs cost); **ticket
   escalation** — auto-bump priority/notify when an SLA is breached (event-driven, reuses the bus).
 - API + React: campaign list/detail, escalation indicator + activity on tickets.
@@ -67,7 +67,7 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 
 ## Track C — Stage 6 finish (integrations & reporting)
 
-### Phase 7 — Custom report builder + scheduled reports
+### Phase 7 — Custom report builder + scheduled reports  ⬅ NEXT
 - User-defined report definitions (pick accounts/dimensions/date range, save, run → table + CSV/XLSX
   via the existing `exports.py` renderer). Optional schedule (Celery beat) writing exports to disk.
 - API + React: builder screen, saved-definition list, run/export.

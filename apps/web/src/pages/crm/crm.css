@@ -159,9 +159,15 @@
   color: var(--color-status-failed);
   background-color: var(--color-status-failed-bg);
 }
-.crm-badge--closed {
+.crm-badge--closed,
+.crm-badge--draft,
+.crm-badge--completed {
   color: var(--color-text-muted);
   background-color: var(--color-surface-alt);
+}
+.crm-badge--active {
+  color: var(--color-status-running);
+  background-color: var(--color-status-running-bg);
 }
 
 /* priority pills */
@@ -198,4 +204,63 @@
 .crm-ontime {
   color: var(--color-success-strong);
   font-weight: var(--font-weight-medium);
+}
+.crm-escalated {
+  margin-inline-start: var(--space-2);
+  color: var(--color-status-failed);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+}
+
+.crm-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-link {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.crm-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.crm-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.crm-detail-head h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.crm-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.crm-metrics div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.crm-metrics dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.crm-metrics dd {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
 }

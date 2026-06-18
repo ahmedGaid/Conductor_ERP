@@ -407,6 +407,46 @@ if _StockCount.objects.exists():
 else:
     seed_stock_count()
 
+
+def seed_crm_extras() -> None:
+    # A campaign with a won + an open opportunity (so ROI rolls up), and a breached ticket the user
+    # can Escalate / Run escalations on.
+    import datetime as _dt
+
+    from django.utils import timezone as _tz
+
+    from erp.crm.services import (
+        OppLineInput,
+        create_campaign,
+        create_opportunity,
+        create_ticket,
+        win_opportunity,
+    )
+
+    camp = create_campaign(code="SPRING26", name="Spring 2026 Outreach", channel="email",
+                           cost_minor=12_000_00)
+    won = create_opportunity(name="Acme bulk order", customer_code="ACME", warehouse_code="MAIN",
+                             campaign_code="SPRING26",
+                             lines=[OppLineInput("WIDGET", Decimal("100"), 150_00)])
+    win_opportunity(won, create_sales_order=False)  # 15,000 won value
+    create_opportunity(name="Nile follow-up", customer_code="NILE", campaign_code="SPRING26",
+                       lines=[OppLineInput("GADGET", Decimal("20"), 300_00)])  # 6,000 open
+
+    # A ticket already past its SLA so it shows as breached and can be escalated.
+    tk = create_ticket(subject="Production line down", customer_code="ACME", priority="high")
+    tk.sla_due_at = _tz.now() - _dt.timedelta(hours=2)
+    tk.save(update_fields=["sla_due_at"])
+    created.append(("CAMP", camp.code, "campaign -> open it for ROI (won 15,000 vs cost 12,000)"))
+    created.append(("TKT", tk.number, "breached ticket -> Escalate or Run escalations"))
+
+
+from erp.crm.domain.models import Campaign as _Campaign  # noqa: E402
+
+if _Campaign.objects.exists():
+    print("Demo campaign already present — skipping.")
+else:
+    seed_crm_extras()
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")

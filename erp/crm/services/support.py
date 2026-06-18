@@ -15,12 +15,15 @@ from erp.core.events import bus
 from .. import events
 from ..domain.models import (
     Activity,
+    ActivityType,
+    NEXT_PRIORITY,
     OPEN_TICKET_STATUSES,
+    RelatedType,
     Ticket,
     TicketPriority,
     TicketStatus,
 )
-from ..errors import InvalidTransitionError
+from ..errors import AlreadyEscalatedError, InvalidTransitionError, NotBreachedError
 
 
 def _next_ticket_number() -> str:
@@ -92,6 +95,51 @@ def close_ticket(ticket: Ticket, actor=None) -> Ticket:
     audit.record(module="crm", action="close_ticket", entity_type="Ticket",
                  entity_id=ticket.number, actor=actor)
     return ticket
+
+
+@transaction.atomic
+def escalate_ticket(ticket: Ticket, actor=None) -> Ticket:
+    """Escalate a breached, still-open ticket exactly once: bump priority, flag, notify.
+
+    Guards keep it idempotent — an already-escalated ticket (``escalated_at`` set) is rejected, so a
+    sweep that runs repeatedly escalates each breach only once.
+    """
+    if ticket.status not in OPEN_TICKET_STATUSES:
+        raise InvalidTransitionError(data={"ticket": ticket.number, "status": ticket.status})
+    if ticket.is_escalated:
+        raise AlreadyEscalatedError(data={"ticket": ticket.number})
+    if not ticket.is_breached:
+        raise NotBreachedError(data={"ticket": ticket.number})
+
+    ticket.priority = NEXT_PRIORITY.get(ticket.priority, ticket.priority)
+    ticket.escalated_at = timezone.now()
+    ticket.save(update_fields=["priority", "escalated_at", "updated_at"])
+    # Notify by logging an activity against the ticket (a notification adapter can subscribe later).
+    Activity.objects.create(
+        type=ActivityType.TASK, subject=f"SLA breached — escalated to {ticket.priority}",
+        related_type=RelatedType.TICKET, related_ref=ticket.number, owner=ticket.owner,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    audit.record(module="crm", action="escalate_ticket", entity_type="Ticket",
+                 entity_id=ticket.number, actor=actor, after={"priority": ticket.priority})
+    bus.publish(events.TICKET_ESCALATED,
+                {"ticket": ticket.number, "priority": ticket.priority, "customer": ticket.customer_code})
+    return ticket
+
+
+@transaction.atomic
+def run_escalations(actor=None) -> list[Ticket]:
+    """Escalate every open, breached, not-yet-escalated ticket. Returns the tickets escalated."""
+    now = timezone.now()
+    due = (
+        Ticket.objects.filter(status__in=OPEN_TICKET_STATUSES, escalated_at__isnull=True,
+                              sla_due_at__lt=now)
+        .order_by("sla_due_at")
+    )
+    escalated: list[Ticket] = []
+    for ticket in due:
+        escalated.append(escalate_ticket(ticket, actor=actor))
+    return escalated
 
 
 @transaction.atomic

@@ -6,6 +6,10 @@ from . import views
 app_name = "crm"
 
 urlpatterns = [
+    # Campaigns
+    path("campaigns", views.CampaignListCreateView.as_view(), name="campaign-list"),
+    path("campaigns/<uuid:campaign_id>", views.CampaignDetailView.as_view(), name="campaign-detail"),
+    path("campaigns/<uuid:campaign_id>/status", views.CampaignStatusView.as_view(), name="campaign-status"),
     # Leads
     path("leads", views.LeadListCreateView.as_view(), name="lead-list"),
     path("leads/<uuid:lead_id>/status", views.LeadStatusView.as_view(), name="lead-status"),
@@ -25,4 +29,6 @@ urlpatterns = [
     path("tickets/<uuid:ticket_id>/start", views.TicketStartView.as_view(), name="ticket-start"),
     path("tickets/<uuid:ticket_id>/resolve", views.TicketResolveView.as_view(), name="ticket-resolve"),
     path("tickets/<uuid:ticket_id>/close", views.TicketCloseView.as_view(), name="ticket-close"),
+    path("tickets/<uuid:ticket_id>/escalate", views.TicketEscalateView.as_view(), name="ticket-escalate"),
+    path("tickets-run-escalations", views.TicketRunEscalationsView.as_view(), name="ticket-run-escalations"),
 ]

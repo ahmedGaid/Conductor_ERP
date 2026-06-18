@@ -17,6 +17,44 @@ from django.utils import timezone
 from erp.core.models import AuditedModel
 
 
+# --- Campaigns -------------------------------------------------------------
+
+class CampaignChannel(models.TextChoices):
+    EMAIL = "email", "Email"
+    WEB = "web", "Web"
+    CALL = "call", "Call"
+    EVENT = "event", "Event"
+    SOCIAL = "social", "Social"
+    OTHER = "other", "Other"
+
+
+class CampaignStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    ACTIVE = "active", "Active"
+    COMPLETED = "completed", "Completed"
+
+
+class Campaign(AuditedModel):
+    """A marketing campaign. Leads/opportunities reference it by ``code`` so ROI rolls up from won
+    opportunities (won value) against the campaign cost."""
+
+    code = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=200)
+    channel = models.CharField(max_length=16, choices=CampaignChannel.choices, default=CampaignChannel.OTHER)
+    status = models.CharField(max_length=16, choices=CampaignStatus.choices, default=CampaignStatus.DRAFT)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    cost_minor = models.BigIntegerField(default=0)  # campaign spend
+    notes = models.CharField(max_length=500, blank=True, default="")
+
+    class Meta:
+        db_table = "crm_campaign"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.code} — {self.name}"
+
+
 # --- Leads -----------------------------------------------------------------
 
 class LeadSource(models.TextChoices):
@@ -44,6 +82,7 @@ class Lead(AuditedModel):
     source = models.CharField(max_length=16, choices=LeadSource.choices, default=LeadSource.OTHER)
     status = models.CharField(max_length=16, choices=LeadStatus.choices, default=LeadStatus.NEW)
     owner = models.CharField(max_length=120, blank=True, default="")
+    campaign_code = models.CharField(max_length=32, blank=True, default="")  # crm.Campaign key
     notes = models.CharField(max_length=500, blank=True, default="")
 
     class Meta:
@@ -76,6 +115,7 @@ class Opportunity(AuditedModel):
     )
     customer_code = models.CharField(max_length=32, blank=True, default="")  # sales customer key
     warehouse_code = models.CharField(max_length=32, blank=True, default="")  # for the won → SO
+    campaign_code = models.CharField(max_length=32, blank=True, default="")  # crm.Campaign key
     stage = models.CharField(max_length=16, choices=OppStage.choices, default=OppStage.QUALIFYING)
     currency = models.CharField(max_length=3, default="EGP")
     amount_minor = models.BigIntegerField(default=0)  # sum of line totals
@@ -178,6 +218,14 @@ SLA_HOURS = {
     TicketPriority.LOW: 72,
 }
 
+# Escalation bumps the priority one step (urgent is already the ceiling).
+NEXT_PRIORITY = {
+    TicketPriority.LOW: TicketPriority.MEDIUM,
+    TicketPriority.MEDIUM: TicketPriority.HIGH,
+    TicketPriority.HIGH: TicketPriority.URGENT,
+    TicketPriority.URGENT: TicketPriority.URGENT,
+}
+
 OPEN_TICKET_STATUSES = (TicketStatus.OPEN, TicketStatus.IN_PROGRESS)
 
 
@@ -195,6 +243,7 @@ class Ticket(AuditedModel):
     sla_due_at = models.DateTimeField()
     resolved_at = models.DateTimeField(null=True, blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    escalated_at = models.DateTimeField(null=True, blank=True)  # set once when an SLA breach escalates
 
     class Meta:
         db_table = "crm_ticket"
@@ -214,6 +263,10 @@ class Ticket(AuditedModel):
         if not self.is_open:
             return False
         return timezone.now() > self.sla_due_at
+
+    @property
+    def is_escalated(self) -> bool:
+        return self.escalated_at is not None
 
     @staticmethod
     def sla_due(opened_at: dt.datetime, priority: str) -> dt.datetime:

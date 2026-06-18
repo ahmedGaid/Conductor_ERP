@@ -7,6 +7,7 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "pipeline", to: "/crm", end: true },
   { key: "leads", to: "/crm/leads" },
   { key: "tickets", to: "/crm/tickets" },
+  { key: "campaigns", to: "/crm/campaigns" },
 ];
 
 export function CrmNav() {

@@ -66,7 +66,9 @@ const INVALIDATION: ReadonlyArray<{ prefix: string; keys: readonly string[] }> =
   { prefix: "/einvoice/invoices", keys: ["einvoice:invoices"] },
   { prefix: "/crm/leads", keys: ["crm:leads"] },
   { prefix: "/crm/opportunities", keys: ["crm:opportunities", "sales:orders", "dashboard"] }, // win spawns an SO
+  { prefix: "/crm/tickets-run-escalations", keys: ["crm:tickets"] },
   { prefix: "/crm/tickets", keys: ["crm:tickets"] },
+  { prefix: "/crm/campaigns", keys: ["crm:campaigns"] },
   { prefix: "/workflow/workflows", keys: ["workflows"] },
 ];
 

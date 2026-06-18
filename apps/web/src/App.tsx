@@ -50,6 +50,8 @@ import { PipelinePage } from "./pages/crm/PipelinePage";
 import { OpportunityDetailPage } from "./pages/crm/OpportunityDetailPage";
 import { LeadsPage } from "./pages/crm/LeadsPage";
 import { TicketsPage } from "./pages/crm/TicketsPage";
+import { CampaignsPage } from "./pages/crm/CampaignsPage";
+import { CampaignDetailPage } from "./pages/crm/CampaignDetailPage";
 import type { ReactNode } from "react";
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -113,6 +115,8 @@ function Protected() {
           <Route path="/crm/opportunities/:id" element={<OpportunityDetailPage />} />
           <Route path="/crm/leads" element={<LeadsPage />} />
           <Route path="/crm/tickets" element={<TicketsPage />} />
+          <Route path="/crm/campaigns" element={<CampaignsPage />} />
+          <Route path="/crm/campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
