@@ -25,4 +25,6 @@ urlpatterns = [
     path("api/crm/", include("erp.crm.api.urls")),
     # E-invoicing (ETA) API — Stage 6 (compliance).
     path("api/einvoice/", include("erp.einvoice.api.urls")),
+    # Notifications & integration adapters — Phase 8.
+    path("api/", include("erp.notifications.api.urls")),
 ]

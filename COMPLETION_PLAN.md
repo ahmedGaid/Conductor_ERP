@@ -73,14 +73,14 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 - API + React: builder screen, saved-definition list, run/export.
 - Gate: a saved definition runs deterministically and exports; schedule registers a beat task.
 
-### Phase 8 — Integration adapters (email / WhatsApp / payment / bank import)  ⬅ NEXT
+### Phase 8 — Integration adapters (email / WhatsApp / payment / bank import)  ✅ DONE (2026-06-19, committed)
 - Pluggable notification adapters behind one interface (email via SMTP first; WhatsApp/payment stubs
   like the ETA adapter — swappable, offline-safe). Wire invoice/ticket events to notifications.
 - Gate: an event triggers the adapter through the interface; failures are bus-isolated.
 
 ## Track D — Frontend polish
 
-### Phase 9 — Design charter backlog
+### Phase 9 — Design charter backlog  ⬅ NEXT
 - Per-report loading skeletons + SWR caching on the filtered statement screens; sticky table headers
   on long lists; density reduction via progressive disclosure on the busiest detail screens; empty
   states on the form+table reference screens. (gate03 stays green: tokens/logical-CSS/i18n parity.)

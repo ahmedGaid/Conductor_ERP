@@ -614,6 +614,26 @@ Sixth completion-plan increment, completing Track B (operational depth).
   sub-nav tab; ar/en parity. Demo seeds 3 definitions (Revenue by account, Expenses by account,
   Activity by period [monthly]).
 
+## Phase 8 — Integration adapters (notifications) (2026-06-19)
+
+- **A new `erp/notifications` module, not a field on existing models.** Outbound messaging is a
+  cross-cutting concern (any module may want to notify), so it lives in its own module that
+  *subscribes* to domain events rather than being called inline — the same decoupled pattern as
+  e-invoicing. Sales/CRM publish `OrderInvoiced` / `TicketEscalated` and know nothing about
+  notifications; gate11 forbids the module from importing sales/crm internals.
+- **One adapter interface; channels are swappable and offline-safe.** Every channel implements
+  `NotificationAdapter.send(message) -> SendResult` and registers in a channel registry; `dispatch`
+  only ever calls `get_adapter(channel).send(...)`, so adding/replacing a channel touches one file.
+  Email goes through Django's email framework (so transport = `EMAIL_BACKEND`; console/offline by
+  default, SMTP via env in prod — no hard-coded smtplib); WhatsApp is a deterministic stub like the
+  ETA adapter. Payment/bank gateways slot in the same way.
+- **Every dispatch is logged; failures are recorded, never raised.** `dispatch` writes one
+  `Notification` row per attempt and catches any adapter error onto that row as `failed` (resendable),
+  publishing a `Failed` event instead of throwing. Combined with the event bus's own subscriber
+  isolation, a broken integration can never break invoicing or ticket escalation — proven by a test
+  that escalates a ticket while the handler raises and asserts the escalation still completes. 12
+  tests; gate:all 00–11 green (new gate11). React Notifications section (log + filter + resend).
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

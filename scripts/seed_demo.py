@@ -464,6 +464,27 @@ if _ReportDefinition.objects.exists():
 else:
     seed_report_definitions()
 
+
+def seed_notifications() -> None:
+    from erp.notifications.domain.models import NotificationChannel
+    from erp.notifications.services import dispatch
+
+    # A delivered email (sent) and one to an unconfigured channel (failed) — so the log shows both
+    # outcomes and the Resend action is meaningful. (Invoicing/escalating also auto-create rows.)
+    dispatch(channel=NotificationChannel.EMAIL, recipient="ops@customer.conductor.local",
+             subject="Welcome to Conductor", body="Your account is ready.", reference="DEMO-1")
+    dispatch(channel="sms", recipient="+201000000000",
+             subject="Reminder", body="No SMS adapter configured yet.", reference="DEMO-2")
+    created.append(("NOTIFY", "DEMO-1/DEMO-2", "sent + failed notifications -> Resend on Notifications"))
+
+
+from erp.notifications.domain.models import Notification as _Notification  # noqa: E402
+
+if _Notification.objects.filter(reference__startswith="DEMO-").exists():
+    print("Demo notifications already present — skipping.")
+else:
+    seed_notifications()
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")

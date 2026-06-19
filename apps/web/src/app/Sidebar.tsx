@@ -19,6 +19,7 @@ const PRIMARY: NavItem[] = [
   { key: "accounting", to: "/accounting" },
   { key: "einvoice", to: "/einvoice" },
   { key: "crm", to: "/crm" },
+  { key: "notifications", to: "/notifications" },
   { key: "workflows", to: "/workflows" },
 ];
 

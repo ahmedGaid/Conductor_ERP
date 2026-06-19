@@ -70,6 +70,7 @@ const INVALIDATION: ReadonlyArray<{ prefix: string; keys: readonly string[] }> =
   { prefix: "/crm/tickets-run-escalations", keys: ["crm:tickets"] },
   { prefix: "/crm/tickets", keys: ["crm:tickets"] },
   { prefix: "/crm/campaigns", keys: ["crm:campaigns"] },
+  { prefix: "/notifications", keys: ["notifications"] }, // resend writes a new log row
   { prefix: "/workflow/workflows", keys: ["workflows"] },
 ];
 

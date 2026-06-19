@@ -56,6 +56,7 @@ LOCAL_APPS = [
     "erp.purchasing",
     "erp.crm",
     "erp.einvoice",
+    "erp.notifications",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -168,6 +169,18 @@ CELERY_BEAT_SCHEDULE = {
 
 # Where scheduled report exports are written.
 REPORTS_DIR = STORAGE_ROOT / "reports"
+
+# --- Email / notifications ---
+# The notifications module's email channel sends through Django's email framework. Offline-safe by
+# default: the console backend prints messages and never touches the network. In production, point
+# EMAIL_BACKEND at SMTP via env (host/port/credentials) — the adapter surface is unchanged.
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="conductor@example.com")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 
 REDIS_URL = _redis_url
 

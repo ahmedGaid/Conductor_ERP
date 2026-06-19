@@ -26,6 +26,7 @@ import { BudgetsPage } from "./pages/accounting/BudgetsPage";
 import { BudgetDetailPage } from "./pages/accounting/BudgetDetailPage";
 import { ReportBuilderPage } from "./pages/accounting/ReportBuilderPage";
 import { EInvoicesPage } from "./pages/einvoice/EInvoicesPage";
+import { NotificationsPage } from "./pages/notifications/NotificationsPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
 import { WarehousesPage } from "./pages/inventory/WarehousesPage";
@@ -112,6 +113,7 @@ function Protected() {
           <Route path="/purchasing/requests/:id" element={<PurchaseRequestDetailPage />} />
           <Route path="/purchasing/suppliers" element={<SuppliersPage />} />
           <Route path="/einvoice" element={<EInvoicesPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/crm" element={<PipelinePage />} />
           <Route path="/crm/pipeline" element={<PipelinePage />} />
           <Route path="/crm/opportunities/:id" element={<OpportunityDetailPage />} />

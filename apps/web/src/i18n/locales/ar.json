@@ -16,7 +16,8 @@
     "inventory": "المخزون",
     "crm": "إدارة العملاء",
     "reports": "التقارير",
-    "einvoice": "الفوترة الإلكترونية"
+    "einvoice": "الفوترة الإلكترونية",
+    "notifications": "الإشعارات"
   },
   "shell": {
     "search": "بحث",
@@ -751,6 +752,30 @@
       "valid": "صالحة",
       "rejected": "مرفوضة",
       "cancelled": "ملغاة"
+    }
+  },
+  "notifications": {
+    "tabs": {
+      "log": "سجل الإرسال"
+    },
+    "filterStatus": "الحالة",
+    "allStatuses": "الكل",
+    "empty": "لا توجد إشعارات بعد.",
+    "emptyHint": "إصدار فاتورة لطلب أو تصعيد تذكرة يرسل إشعاراً تلقائياً.",
+    "channel": "القناة",
+    "recipient": "المستلم",
+    "subject": "الموضوع",
+    "reference": "المرجع",
+    "statusHeader": "الحالة",
+    "resend": "إعادة الإرسال",
+    "channels": {
+      "email": "بريد إلكتروني",
+      "whatsapp": "واتساب"
+    },
+    "status": {
+      "pending": "قيد الانتظار",
+      "sent": "مُرسَل",
+      "failed": "فشل"
     }
   },
   "export": {

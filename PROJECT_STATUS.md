@@ -5,7 +5,8 @@
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
 > exports (Stage 6b) + COMPLETION_PLAN Phases 1–7: Fixed Assets + Depreciation, Cost Centers, Bank
 > Reconciliation, Budgets, Inventory counts/adjustments + batch/lot, CRM campaigns + ticket
-> escalation, custom report builder + scheduled reports; gate:all 00–10 GREEN)**.
+> escalation, custom report builder + scheduled reports, notification/integration adapters
+> (email/WhatsApp, event-wired); gate:all 00–11 GREEN)**.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
@@ -14,8 +15,21 @@ each phase is one gate-green committable increment; after each, the user tests, 
 and update this file. **Phases 1–4 (Track A, accounting depth) + Phases 5–6 (Track B, operational
 depth) + Phase 7 (Track C, custom report builder + scheduled reports) DONE** (Fixed Assets +
 Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory counts/adjustments + batch/lot;
-CRM campaigns + ticket escalation; custom report builder + scheduled reports — all committed).
-**NEXT: Phase 8 — Integration adapters (email / WhatsApp / payment / bank import) (Track C).**
+CRM campaigns + ticket escalation; custom report builder + scheduled reports; notification/integration
+adapters — all committed). **NEXT: Phase 9 — Design charter backlog (frontend polish, Track D).**
+
+Phase 8 delivered (new module `erp/notifications`, gate11): **integration adapters.** Pluggable
+outbound-message channels behind one interface (`NotificationAdapter.send`): an **email** adapter
+(Django email framework — offline-safe console backend by default, SMTP via `EMAIL_BACKEND` env in
+prod) and a deterministic **WhatsApp** stub (like the ETA adapter; payment/bank gateways slot in the
+same way). A `dispatch` service resolves the channel via `get_adapter(...).send(...)`, writes exactly
+one `Notification` log row per attempt, and **never propagates a send failure** (records `failed`,
+publishes a Failed event). Event-wired + decoupled: subscribes to `sales.OrderInvoiced` (emails the
+customer) and `crm.TicketEscalated` (WhatsApp alert) by event **name** — neither module knows
+notifications exist, and the bus isolates a broken channel from invoicing/escalation. DRF
+`/api/notifications` (log list/filter + resend) behind auth/Branch-Manager; React **Notifications**
+sidebar section (delivery log, status filter, resend, export). 12 tests; gate:all 00–11 green. Demo
+seeds a sent + a failed row.
 
 Phase 7 delivered (extends gate05): **custom report builder + scheduled reports.** Saved
 `ReportDefinition`s (account-type and/or explicit account-code filters, date range, **group by account

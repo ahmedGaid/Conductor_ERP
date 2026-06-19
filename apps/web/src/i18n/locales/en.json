@@ -16,7 +16,8 @@
     "inventory": "Inventory",
     "crm": "CRM",
     "reports": "Reports",
-    "einvoice": "E-Invoicing"
+    "einvoice": "E-Invoicing",
+    "notifications": "Notifications"
   },
   "shell": {
     "search": "Search",
@@ -751,6 +752,30 @@
       "valid": "Valid",
       "rejected": "Rejected",
       "cancelled": "Cancelled"
+    }
+  },
+  "notifications": {
+    "tabs": {
+      "log": "Delivery log"
+    },
+    "filterStatus": "Status",
+    "allStatuses": "All",
+    "empty": "No notifications yet.",
+    "emptyHint": "Invoicing an order or escalating a ticket sends one automatically.",
+    "channel": "Channel",
+    "recipient": "Recipient",
+    "subject": "Subject",
+    "reference": "Reference",
+    "statusHeader": "Status",
+    "resend": "Resend",
+    "channels": {
+      "email": "Email",
+      "whatsapp": "WhatsApp"
+    },
+    "status": {
+      "pending": "Pending",
+      "sent": "Sent",
+      "failed": "Failed"
     }
   },
   "export": {
