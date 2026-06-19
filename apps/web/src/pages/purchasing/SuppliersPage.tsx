@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { createSupplier, listSuppliers } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { PurchasingNav } from "./PurchasingNav";
 import "./purchasing.css";
 
@@ -64,7 +65,11 @@ export function SuppliersPage() {
       )}
       {error && <p className="error-text">{error}</p>}
 
-      {data && (
+      {data && data.length === 0 && (
+        <EmptyState title={t("purchasing.supplier.empty")} hint={t("purchasing.supplier.emptyHint")} />
+      )}
+
+      {data && data.length > 0 && (
         <div className="card pur-table-wrap">
           <table className="pur-table">
             <thead>

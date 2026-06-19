@@ -80,10 +80,15 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 
 ## Track D — Frontend polish
 
-### Phase 9 — Design charter backlog  ⬅ NEXT
+### Phase 9 — Design charter backlog  🔄 IN PROGRESS
 - Per-report loading skeletons + SWR caching on the filtered statement screens; sticky table headers
   on long lists; density reduction via progressive disclosure on the busiest detail screens; empty
   states on the form+table reference screens. (gate03 stays green: tokens/logical-CSS/i18n parity.)
+- **Landed (2026-06-19):** skeletons + SWR already universal (44 pages); **sticky headers** on every
+  module's long lists (one global `[class$="-table-wrap"]` rule — capped scroll + pinned `thead`);
+  **empty states** on the 5 reference screens (Accounts, Items, Warehouses, Customers, Suppliers).
+- **Remaining:** density reduction / progressive disclosure on the busiest detail pages (order/PO
+  detail) — to be done with the now-installed **impeccable** design skill, translated into our tokens.
 
 ## Track E — Stage 7 (ship it)
 

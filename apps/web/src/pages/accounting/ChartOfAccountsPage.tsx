@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { createAccount, listAccounts, type AccountType } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
 
@@ -86,7 +87,11 @@ export function ChartOfAccountsPage() {
       )}
       {error && <p className="error-text">{error}</p>}
 
-      {data && (
+      {data && data.length === 0 && (
+        <EmptyState title={t("accounting.account.empty")} hint={t("accounting.account.emptyHint")} />
+      )}
+
+      {data && data.length > 0 && (
         <div className="card acct-table-wrap">
           <table className="acct-table">
             <thead>

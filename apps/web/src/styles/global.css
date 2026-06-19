@@ -256,6 +256,21 @@ textarea:focus {
   padding: var(--space-5);
 }
 
+/* ---- Data tables: long lists scroll within a capped area with a pinned header ----
+   Every module's table sits in a `*-table-wrap` (which already scrolls horizontally). Capping the
+   height turns it into a vertical scroll area too, and a sticky header keeps the column labels in
+   view while scrolling a long list. Short tables never reach the cap, so they look unchanged. One
+   attribute-selector rule covers all modules — no per-module repetition. */
+[class$="-table-wrap"] {
+  max-block-size: 70vh;
+}
+[class$="-table-wrap"] thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background-color: var(--color-surface);
+}
+
 .muted {
   color: var(--color-text-muted);
 }

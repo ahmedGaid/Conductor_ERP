@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { createWarehouse, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { InventoryNav } from "./InventoryNav";
 import "./inventory.css";
 
@@ -64,7 +65,11 @@ export function WarehousesPage() {
       )}
       {error && <p className="error-text">{error}</p>}
 
-      {data && (
+      {data && data.length === 0 && (
+        <EmptyState title={t("inventory.warehouse.empty")} hint={t("inventory.warehouse.emptyHint")} />
+      )}
+
+      {data && data.length > 0 && (
         <div className="card inv-table-wrap">
           <table className="inv-table">
             <thead>

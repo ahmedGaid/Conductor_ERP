@@ -298,7 +298,9 @@
       "name": "Name",
       "type": "Type",
       "postable": "Postable",
-      "add": "Add account"
+      "add": "Add account",
+      "empty": "No accounts yet.",
+      "emptyHint": "Add your first account using the form above."
     },
     "entry": {
       "date": "Date",
@@ -360,12 +362,16 @@
       "name": "Name",
       "uom": "Unit",
       "type": "Type",
-      "add": "Add item"
+      "add": "Add item",
+      "empty": "No items yet.",
+      "emptyHint": "Add your first item using the form above."
     },
     "warehouse": {
       "code": "Warehouse code",
       "name": "Warehouse name",
-      "add": "Add warehouse"
+      "add": "Add warehouse",
+      "empty": "No warehouses yet.",
+      "emptyHint": "Add your first warehouse using the form above."
     },
     "onHand": {
       "quantity": "Quantity",
@@ -450,7 +456,9 @@
       "name": "Name",
       "creditLimit": "Credit limit",
       "add": "Add customer",
-      "unlimited": "Unlimited"
+      "unlimited": "Unlimited",
+      "empty": "No customers yet.",
+      "emptyHint": "Add your first customer using the form above."
     },
     "orders": {
       "empty": "No sales orders yet.",
@@ -535,7 +543,9 @@
     "supplier": {
       "code": "Supplier code",
       "name": "Name",
-      "add": "Add supplier"
+      "add": "Add supplier",
+      "empty": "No suppliers yet.",
+      "emptyHint": "Add your first supplier using the form above."
     },
     "orders": {
       "empty": "No purchase orders yet.",

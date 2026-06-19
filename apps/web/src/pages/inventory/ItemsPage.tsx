@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { createItem, listItems, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { InventoryNav } from "./InventoryNav";
 import "./inventory.css";
 
@@ -77,7 +78,11 @@ export function ItemsPage() {
       )}
       {error && <p className="error-text">{error}</p>}
 
-      {data && (
+      {data && data.length === 0 && (
+        <EmptyState title={t("inventory.item.empty")} hint={t("inventory.item.emptyHint")} />
+      )}
+
+      {data && data.length > 0 && (
         <div className="card inv-table-wrap">
           <table className="inv-table">
             <thead>

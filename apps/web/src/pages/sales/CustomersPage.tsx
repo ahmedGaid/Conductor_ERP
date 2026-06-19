@@ -5,6 +5,7 @@ import { createCustomer, listCustomers } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
@@ -72,7 +73,11 @@ export function CustomersPage() {
       )}
       {error && <p className="error-text">{error}</p>}
 
-      {data && (
+      {data && data.length === 0 && (
+        <EmptyState title={t("sales.customer.empty")} hint={t("sales.customer.emptyHint")} />
+      )}
+
+      {data && data.length > 0 && (
         <div className="card sales-table-wrap">
           <table className="sales-table">
             <thead>

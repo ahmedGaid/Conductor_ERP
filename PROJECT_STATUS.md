@@ -17,7 +17,12 @@ and update this file. **Phases 1–4 (Track A, accounting depth) + Phases 5–6 
 depth) + Phase 7 (Track C, custom report builder + scheduled reports) DONE** (Fixed Assets +
 Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory counts/adjustments + batch/lot;
 CRM campaigns + ticket escalation; custom report builder + scheduled reports; notification/integration
-adapters — all committed). **NEXT: Phase 9 — Design charter backlog (frontend polish, Track D).**
+adapters — all committed). **Phase 9 — Design charter backlog (frontend polish, Track D) IN PROGRESS:**
+list-polish landed (sticky headers on every module's long lists via one global `[class$="-table-wrap"]`
+rule; empty states on the 5 reference screens — Accounts/Items/Warehouses/Customers/Suppliers;
+skeletons + SWR confirmed already universal). **Remaining:** density / progressive-disclosure on the
+busy detail pages — to be done with the **impeccable** design skill (now installed) translated into our
+tokens. **impeccable is active** as a Skill + a PostToolUse design hook that scans edited frontend files.
 
 **UI colour preference (durable — applies to ALL future UI work):** keep the near-black **"Uber-style"
 app chrome** (brand / background / primary buttons / logo / active nav) **exactly as-is**; add colour
