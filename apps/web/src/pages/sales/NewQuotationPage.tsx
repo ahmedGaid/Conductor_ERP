@@ -77,7 +77,6 @@ export function NewQuotationPage() {
 
   return (
     <section className="sales-page">
-      <h1>{t("nav.sales")}</h1>
       <SalesNav />
 
       <form className="card sales-page" onSubmit={onSubmit}>

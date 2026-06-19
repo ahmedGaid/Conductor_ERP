@@ -10,7 +10,10 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
 export function NotificationsNav() {
   const { t } = useTranslation();
   return (
-    <nav className="ntf-nav" aria-label={t("nav.notifications")}>
+    <header className="module-head">
+      <h1 className="module-head__title">{t("nav.notifications")}</h1>
+      <p className="module-head__desc">{t("moduleIntro.notifications")}</p>
+      <nav className="ntf-nav" aria-label={t("nav.notifications")}>
       {TABS.map(({ key, to, end }) => (
         <NavLink
           key={key}
@@ -21,6 +24,7 @@ export function NotificationsNav() {
           {t(`notifications.tabs.${key}`)}
         </NavLink>
       ))}
-    </nav>
+      </nav>
+    </header>
   );
 }

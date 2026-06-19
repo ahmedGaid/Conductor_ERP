@@ -40,7 +40,6 @@ export function CampaignDetailPage() {
 
   return (
     <section className="crm-page">
-      <h1>{t("nav.crm")}</h1>
       <CrmNav />
       <Link className="crm-link" to="/crm/campaigns">← {t("crm.campaign.backToList")}</Link>
 

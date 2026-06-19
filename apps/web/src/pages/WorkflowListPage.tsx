@@ -13,8 +13,11 @@ export function WorkflowListPage() {
 
   return (
     <section className="wf-list">
+      <header className="module-head">
+        <h1 className="module-head__title">{t("nav.workflows")}</h1>
+        <p className="module-head__desc">{t("moduleIntro.workflows")}</p>
+      </header>
       <div className="wf-list__head">
-        <h1>{t("nav.workflows")}</h1>
         <Link className="btn btn--primary" to="/workflows/new">
           {t("workflow.create")}
         </Link>

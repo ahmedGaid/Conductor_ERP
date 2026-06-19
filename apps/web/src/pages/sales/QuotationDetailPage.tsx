@@ -51,7 +51,6 @@ export function QuotationDetailPage() {
 
   return (
     <section className="sales-page">
-      <h1>{t("nav.sales")}</h1>
       <SalesNav />
 
       {loading && (

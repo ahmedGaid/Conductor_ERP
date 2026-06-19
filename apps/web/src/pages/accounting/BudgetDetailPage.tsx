@@ -60,7 +60,6 @@ export function BudgetDetailPage() {
 
   return (
     <section className="acct-page">
-      <h1>{t("nav.accounting")}</h1>
       <AccountingNav />
       <Link className="acct-link" to="/accounting/budgets">← {t("accounting.budgets.backToList")}</Link>
 

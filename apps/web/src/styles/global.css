@@ -278,6 +278,27 @@ textarea:focus {
   color: var(--color-danger-strong);
 }
 
+/* ---- Module header (title + one-line description above a module's tab bar) ----
+   Rendered once per module by its *Nav component, so every page in the module opens
+   with the same calm, informative band instead of a cramped bare <h1>. */
+.module-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.module-head__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+}
+.module-head__desc {
+  margin: 0;
+  color: var(--color-text-muted);
+  max-inline-size: 65ch;
+  text-wrap: pretty;
+}
+
 /* ---- Section header (title + actions) ---- */
 .page-head {
   display: flex;

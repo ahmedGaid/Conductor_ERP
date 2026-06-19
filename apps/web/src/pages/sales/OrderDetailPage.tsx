@@ -15,6 +15,7 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Disclosure } from "../../components/Disclosure";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
@@ -40,7 +41,6 @@ export function OrderDetailPage() {
 
   return (
     <section className="sales-page">
-      <h1>{t("nav.sales")}</h1>
       <SalesNav />
 
       {loading && (
@@ -85,32 +85,6 @@ export function OrderDetailPage() {
                 <span className="sales-summary__label">{t("sales.detail.outstanding")}</span>
                 <span className="sales-summary__value"><Bdi>{formatMinor(data.outstanding_minor, data.currency)}</Bdi></span>
               </div>
-              {data.invoice_number && (
-                <div className="sales-summary__item">
-                  <span className="sales-summary__label">{t("sales.detail.invoiceNo")}</span>
-                  <span className="latin">{data.invoice_number}</span>
-                </div>
-              )}
-              {data.credit_note_number && (
-                <div className="sales-summary__item">
-                  <span className="sales-summary__label">{t("sales.detail.creditNoteNo")}</span>
-                  <span className="latin">{data.credit_note_number}</span>
-                </div>
-              )}
-              {data.returned_minor > 0 && (
-                <div className="sales-summary__item">
-                  <span className="sales-summary__label">{t("sales.detail.returned")}</span>
-                  <span className="sales-summary__value"><Bdi>{formatMinor(data.returned_minor, data.currency)}</Bdi></span>
-                </div>
-              )}
-              {data.requires_approval && (
-                <div className="sales-summary__item">
-                  <span className="sales-summary__label">{t("sales.detail.approval")}</span>
-                  <span className="sales-summary__value">
-                    {data.approved ? t("sales.detail.approved") : t("sales.detail.pendingApproval")}
-                  </span>
-                </div>
-              )}
             </div>
 
             <div className="sales-actions">
@@ -146,6 +120,37 @@ export function OrderDetailPage() {
               )}
             </div>
             {actionError && <p className="error-text">{actionError}</p>}
+
+            {(data.invoice_number || data.credit_note_number || data.returned_minor > 0 || data.requires_approval) && (
+              <Disclosure summary={t("common.moreDetails")}>
+                <dl className="sales-meta">
+                  {data.invoice_number && (
+                    <div className="sales-meta__row">
+                      <dt>{t("sales.detail.invoiceNo")}</dt>
+                      <dd className="latin">{data.invoice_number}</dd>
+                    </div>
+                  )}
+                  {data.credit_note_number && (
+                    <div className="sales-meta__row">
+                      <dt>{t("sales.detail.creditNoteNo")}</dt>
+                      <dd className="latin">{data.credit_note_number}</dd>
+                    </div>
+                  )}
+                  {data.returned_minor > 0 && (
+                    <div className="sales-meta__row">
+                      <dt>{t("sales.detail.returned")}</dt>
+                      <dd><Bdi>{formatMinor(data.returned_minor, data.currency)}</Bdi></dd>
+                    </div>
+                  )}
+                  {data.requires_approval && (
+                    <div className="sales-meta__row">
+                      <dt>{t("sales.detail.approval")}</dt>
+                      <dd>{data.approved ? t("sales.detail.approved") : t("sales.detail.pendingApproval")}</dd>
+                    </div>
+                  )}
+                </dl>
+              </Disclosure>
+            )}
           </div>
 
           <div className="card sales-table-wrap">

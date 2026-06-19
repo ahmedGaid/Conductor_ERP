@@ -51,7 +51,6 @@ export function PurchaseRequestDetailPage() {
 
   return (
     <section className="pur-page">
-      <h1>{t("nav.purchasing")}</h1>
       <PurchasingNav />
 
       {loading && (

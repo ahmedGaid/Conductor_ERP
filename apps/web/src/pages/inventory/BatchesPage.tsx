@@ -13,7 +13,6 @@ export function BatchesPage() {
 
   return (
     <section className="inv-page">
-      <h1>{t("nav.inventory")}</h1>
       <InventoryNav />
 
       {loading && (

@@ -42,7 +42,6 @@ export function NotificationsPage() {
 
   return (
     <section className="ntf-page">
-      <h1>{t("nav.notifications")}</h1>
       <NotificationsNav />
 
       <div className="ntf-filters">

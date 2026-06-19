@@ -84,7 +84,6 @@ export function JournalEntryPage() {
 
   return (
     <section className="acct-page">
-      <h1>{t("nav.accounting")}</h1>
       <AccountingNav />
 
       <form className="card" onSubmit={onSubmit}>

@@ -48,7 +48,6 @@ export function StockCountDetailPage() {
 
   return (
     <section className="inv-page">
-      <h1>{t("nav.inventory")}</h1>
       <InventoryNav />
       <Link className="inv-link" to="/inventory/counts">← {t("inventory.counts.backToList")}</Link>
 

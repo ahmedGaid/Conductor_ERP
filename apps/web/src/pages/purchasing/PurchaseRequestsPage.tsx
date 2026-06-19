@@ -15,13 +15,12 @@ export function PurchaseRequestsPage() {
 
   return (
     <section className="pur-page">
+      <PurchasingNav />
       <div className="pur-page__head">
-        <h1>{t("nav.purchasing")}</h1>
         <Link className="btn btn--primary" to="/purchasing/requests/new">
           {t("purchasing.tabs.newRequest")}
         </Link>
       </div>
-      <PurchasingNav />
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

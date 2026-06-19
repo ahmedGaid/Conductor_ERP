@@ -19,6 +19,16 @@
     "einvoice": "E-Invoicing",
     "notifications": "Notifications"
   },
+  "moduleIntro": {
+    "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",
+    "sales": "Quotations, customer orders, deliveries, invoices and the customers behind them.",
+    "purchasing": "Purchase requests, orders to suppliers, goods received, supplier bills and returns.",
+    "inventory": "Items, warehouses, current stock levels and every movement in and out.",
+    "crm": "Leads, sales pipeline, opportunities, marketing campaigns and support tickets.",
+    "einvoice": "Submit your invoices electronically to the Egyptian Tax Authority and track their status.",
+    "notifications": "A log of every email and message the system has sent, with delivery status.",
+    "workflows": "Design and run automated business processes across the whole system."
+  },
   "shell": {
     "search": "Search",
     "commandPlaceholder": "Search or type a command…",
@@ -741,7 +751,8 @@
     "yes": "Yes",
     "no": "No",
     "soon": "Soon",
-    "emptyHint": "Create your first one to get started."
+    "emptyHint": "Create your first one to get started.",
+    "moreDetails": "Details"
   },
   "einvoice": {
     "tabs": {

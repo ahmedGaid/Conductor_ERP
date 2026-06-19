@@ -116,6 +116,27 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Secondary reference fields, shown inside a progressive-disclosure section. */
+.pur-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.pur-meta__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+.pur-meta dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+.pur-meta dd {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
 .pur-badge {
   display: inline-flex;
   align-items: center;

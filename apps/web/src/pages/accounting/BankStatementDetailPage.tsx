@@ -62,7 +62,6 @@ export function BankStatementDetailPage() {
 
   return (
     <section className="acct-page">
-      <h1>{t("nav.accounting")}</h1>
       <AccountingNav />
       <Link className="acct-link" to="/accounting/bank-reconciliation">← {t("accounting.bankRec.backToList")}</Link>
 

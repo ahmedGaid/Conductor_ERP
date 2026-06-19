@@ -14,13 +14,12 @@ export function StockOnHandPage() {
 
   return (
     <section className="inv-page">
+      <InventoryNav />
       <div className="inv-page__head">
-        <h1>{t("nav.inventory")}</h1>
         <Link className="btn btn--primary" to="/inventory/movements">
           {t("inventory.tabs.movements")}
         </Link>
       </div>
-      <InventoryNav />
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

@@ -27,7 +27,6 @@ export function IncomeStatementPage() {
 
   return (
     <section className="acct-page">
-      <h1>{t("nav.accounting")}</h1>
       <AccountingNav />
 
       <div className="acct-toolbar">

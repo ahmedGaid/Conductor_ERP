@@ -15,13 +15,12 @@ export function JournalListPage() {
 
   return (
     <section className="acct-page">
+      <AccountingNav />
       <div className="acct-page__head">
-        <h1>{t("nav.accounting")}</h1>
         <Link className="btn btn--primary" to="/accounting/journals/new">
           {t("accounting.tabs.newEntry")}
         </Link>
       </div>
-      <AccountingNav />
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

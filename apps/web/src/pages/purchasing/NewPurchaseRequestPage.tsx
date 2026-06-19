@@ -77,7 +77,6 @@ export function NewPurchaseRequestPage() {
 
   return (
     <section className="pur-page">
-      <h1>{t("nav.purchasing")}</h1>
       <PurchasingNav />
 
       <form className="card pur-page" onSubmit={onSubmit}>

@@ -15,13 +15,12 @@ export function OrdersPage() {
 
   return (
     <section className="sales-page">
+      <SalesNav />
       <div className="sales-page__head">
-        <h1>{t("nav.sales")}</h1>
         <Link className="btn btn--primary" to="/sales/orders/new">
           {t("sales.tabs.newOrder")}
         </Link>
       </div>
-      <SalesNav />
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

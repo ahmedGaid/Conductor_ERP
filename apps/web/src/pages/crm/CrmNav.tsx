@@ -13,7 +13,10 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
 export function CrmNav() {
   const { t } = useTranslation();
   return (
-    <nav className="crm-nav" aria-label={t("nav.crm")}>
+    <header className="module-head">
+      <h1 className="module-head__title">{t("nav.crm")}</h1>
+      <p className="module-head__desc">{t("moduleIntro.crm")}</p>
+      <nav className="crm-nav" aria-label={t("nav.crm")}>
       {TABS.map(({ key, to, end }) => (
         <NavLink
           key={key}
@@ -24,6 +27,7 @@ export function CrmNav() {
           {t(`crm.tabs.${key}`)}
         </NavLink>
       ))}
-    </nav>
+      </nav>
+    </header>
   );
 }

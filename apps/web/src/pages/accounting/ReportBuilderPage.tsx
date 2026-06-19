@@ -83,7 +83,6 @@ export function ReportBuilderPage() {
 
   return (
     <section className="acct-page">
-      <h1>{t("nav.accounting")}</h1>
       <AccountingNav />
 
       <form className="card acct-toolbar" onSubmit={onCreate}>

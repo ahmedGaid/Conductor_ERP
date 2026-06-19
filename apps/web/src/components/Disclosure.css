@@ -1,0 +1,48 @@
+/* Progressive-disclosure section (native <details>). Direction-agnostic, token-driven. */
+.disclosure {
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space-3);
+}
+
+.disclosure__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+}
+/* Hide the native disclosure triangle (we draw our own chevron). */
+.disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure__summary::marker {
+  content: "";
+}
+.disclosure__summary:hover {
+  color: var(--color-text);
+}
+
+.disclosure__chevron {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.disclosure[open] .disclosure__chevron {
+  transform: rotate(180deg);
+}
+
+.disclosure__body {
+  margin-block-start: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure__chevron {
+    transition: none;
+  }
+}

@@ -36,7 +36,6 @@ export function EInvoicesPage() {
 
   return (
     <section className="ein-page">
-      <h1>{t("nav.einvoice")}</h1>
       <EInvoiceNav />
 
       {loading && (

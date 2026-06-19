@@ -46,7 +46,6 @@ export function OpportunityDetailPage() {
 
   return (
     <section className="crm-page">
-      <h1>{t("nav.crm")}</h1>
       <CrmNav />
 
       {loading && (

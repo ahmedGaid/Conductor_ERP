@@ -77,7 +77,6 @@ export function BankReconciliationPage() {
 
   return (
     <section className="acct-page">
-      <h1>{t("nav.accounting")}</h1>
       <AccountingNav />
 
       <form className="card" onSubmit={onSubmit}>

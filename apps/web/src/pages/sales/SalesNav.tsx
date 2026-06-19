@@ -13,7 +13,10 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
 export function SalesNav() {
   const { t } = useTranslation();
   return (
-    <nav className="sales-nav" aria-label={t("nav.sales")}>
+    <header className="module-head">
+      <h1 className="module-head__title">{t("nav.sales")}</h1>
+      <p className="module-head__desc">{t("moduleIntro.sales")}</p>
+      <nav className="sales-nav" aria-label={t("nav.sales")}>
       {TABS.map(({ key, to, end }) => (
         <NavLink
           key={key}
@@ -24,6 +27,7 @@ export function SalesNav() {
           {t(`sales.tabs.${key}`)}
         </NavLink>
       ))}
-    </nav>
+      </nav>
+    </header>
   );
 }

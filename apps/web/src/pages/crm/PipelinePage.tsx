@@ -90,9 +90,6 @@ export function PipelinePage() {
 
   return (
     <section className="crm-page">
-      <div className="crm-page__head">
-        <h1>{t("nav.crm")}</h1>
-      </div>
       <CrmNav />
 
       <form className="card crm-page" onSubmit={onSubmit}>

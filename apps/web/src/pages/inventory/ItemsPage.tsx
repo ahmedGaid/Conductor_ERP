@@ -37,7 +37,6 @@ export function ItemsPage() {
 
   return (
     <section className="inv-page">
-      <h1>{t("nav.inventory")}</h1>
       <InventoryNav />
 
       <form className="card inv-toolbar" onSubmit={onSubmit}>

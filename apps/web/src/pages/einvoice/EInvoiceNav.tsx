@@ -10,7 +10,10 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
 export function EInvoiceNav() {
   const { t } = useTranslation();
   return (
-    <nav className="ein-nav" aria-label={t("nav.einvoice")}>
+    <header className="module-head">
+      <h1 className="module-head__title">{t("nav.einvoice")}</h1>
+      <p className="module-head__desc">{t("moduleIntro.einvoice")}</p>
+      <nav className="ein-nav" aria-label={t("nav.einvoice")}>
       {TABS.map(({ key, to, end }) => (
         <NavLink
           key={key}
@@ -21,6 +24,7 @@ export function EInvoiceNav() {
           {t(`einvoice.tabs.${key}`)}
         </NavLink>
       ))}
-    </nav>
+      </nav>
+    </header>
   );
 }

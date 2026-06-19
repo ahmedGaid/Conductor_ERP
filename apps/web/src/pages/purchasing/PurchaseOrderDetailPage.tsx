@@ -15,6 +15,7 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Disclosure } from "../../components/Disclosure";
 import { PurchasingNav } from "./PurchasingNav";
 import "./purchasing.css";
 
@@ -40,7 +41,6 @@ export function PurchaseOrderDetailPage() {
 
   return (
     <section className="pur-page">
-      <h1>{t("nav.purchasing")}</h1>
       <PurchasingNav />
 
       {loading && (
@@ -85,32 +85,6 @@ export function PurchaseOrderDetailPage() {
                 <span className="pur-summary__label">{t("purchasing.detail.outstanding")}</span>
                 <span className="pur-summary__value"><Bdi>{formatMinor(data.outstanding_minor, data.currency)}</Bdi></span>
               </div>
-              {data.bill_number && (
-                <div className="pur-summary__item">
-                  <span className="pur-summary__label">{t("purchasing.detail.billNo")}</span>
-                  <span className="latin">{data.bill_number}</span>
-                </div>
-              )}
-              {data.debit_note_number && (
-                <div className="pur-summary__item">
-                  <span className="pur-summary__label">{t("purchasing.detail.debitNoteNo")}</span>
-                  <span className="latin">{data.debit_note_number}</span>
-                </div>
-              )}
-              {data.returned_minor > 0 && (
-                <div className="pur-summary__item">
-                  <span className="pur-summary__label">{t("purchasing.detail.returned")}</span>
-                  <span className="pur-summary__value"><Bdi>{formatMinor(data.returned_minor, data.currency)}</Bdi></span>
-                </div>
-              )}
-              {data.requires_approval && (
-                <div className="pur-summary__item">
-                  <span className="pur-summary__label">{t("purchasing.detail.approval")}</span>
-                  <span className="pur-summary__value">
-                    {data.approved ? t("purchasing.detail.approved") : t("purchasing.detail.pendingApproval")}
-                  </span>
-                </div>
-              )}
             </div>
 
             <div className="pur-actions">
@@ -146,6 +120,37 @@ export function PurchaseOrderDetailPage() {
               )}
             </div>
             {actionError && <p className="error-text">{actionError}</p>}
+
+            {(data.bill_number || data.debit_note_number || data.returned_minor > 0 || data.requires_approval) && (
+              <Disclosure summary={t("common.moreDetails")}>
+                <dl className="pur-meta">
+                  {data.bill_number && (
+                    <div className="pur-meta__row">
+                      <dt>{t("purchasing.detail.billNo")}</dt>
+                      <dd className="latin">{data.bill_number}</dd>
+                    </div>
+                  )}
+                  {data.debit_note_number && (
+                    <div className="pur-meta__row">
+                      <dt>{t("purchasing.detail.debitNoteNo")}</dt>
+                      <dd className="latin">{data.debit_note_number}</dd>
+                    </div>
+                  )}
+                  {data.returned_minor > 0 && (
+                    <div className="pur-meta__row">
+                      <dt>{t("purchasing.detail.returned")}</dt>
+                      <dd><Bdi>{formatMinor(data.returned_minor, data.currency)}</Bdi></dd>
+                    </div>
+                  )}
+                  {data.requires_approval && (
+                    <div className="pur-meta__row">
+                      <dt>{t("purchasing.detail.approval")}</dt>
+                      <dd>{data.approved ? t("purchasing.detail.approved") : t("purchasing.detail.pendingApproval")}</dd>
+                    </div>
+                  )}
+                </dl>
+              </Disclosure>
+            )}
           </div>
 
           <div className="card pur-table-wrap">

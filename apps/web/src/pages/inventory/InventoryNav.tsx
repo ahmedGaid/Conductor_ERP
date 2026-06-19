@@ -15,7 +15,10 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
 export function InventoryNav() {
   const { t } = useTranslation();
   return (
-    <nav className="inv-nav" aria-label={t("nav.inventory")}>
+    <header className="module-head">
+      <h1 className="module-head__title">{t("nav.inventory")}</h1>
+      <p className="module-head__desc">{t("moduleIntro.inventory")}</p>
+      <nav className="inv-nav" aria-label={t("nav.inventory")}>
       {TABS.map(({ key, to, end }) => (
         <NavLink
           key={key}
@@ -26,6 +29,7 @@ export function InventoryNav() {
           {t(`inventory.tabs.${key}`)}
         </NavLink>
       ))}
-    </nav>
+      </nav>
+    </header>
   );
 }
