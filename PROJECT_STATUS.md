@@ -3,10 +3,11 @@
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
 > meaningful step. Last updated: **2026-06-19 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
-> exports (Stage 6b) + COMPLETION_PLAN Phases 1–7: Fixed Assets + Depreciation, Cost Centers, Bank
+> exports (Stage 6b) + COMPLETION_PLAN Phases 1–8: Fixed Assets + Depreciation, Cost Centers, Bank
 > Reconciliation, Budgets, Inventory counts/adjustments + batch/lot, CRM campaigns + ticket
 > escalation, custom report builder + scheduled reports, notification/integration adapters
-> (email/WhatsApp, event-wired); gate:all 00–11 GREEN)**.
+> (email/WhatsApp, event-wired) + context help on every page (bilingual ar/en); gate:all 00–11
+> GREEN. Latest pushed commits: ef6a9a3 (Phase 8 notifications), a420fde (context help))**.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →
@@ -17,6 +18,17 @@ depth) + Phase 7 (Track C, custom report builder + scheduled reports) DONE** (Fi
 Depreciation; Cost Centers; Bank Reconciliation; Budgets; Inventory counts/adjustments + batch/lot;
 CRM campaigns + ticket escalation; custom report builder + scheduled reports; notification/integration
 adapters — all committed). **NEXT: Phase 9 — Design charter backlog (frontend polish, Track D).**
+
+**UI colour preference (durable — applies to ALL future UI work):** keep the near-black **"Uber-style"
+app chrome** (brand / background / primary buttons / logo / active nav) **exactly as-is**; add colour
+**only inside page content** (text, links). An indigo-brand experiment was tried and **rejected +
+fully reverted**. **Committed:** links are now blue app-wide — `global.css` `a` uses `--color-accent`
+(hover `--color-accent-strong` + underline), a new `--color-accent-strong` (`--palette-brand-700`)
+token, help-drawer related-links use the accent. Further in-page colour is done **directly** (reconcile
+into `tokens.css` — hex only there — via `var()`, keep gate03 green: logical CSS + ar/en parity).
+**impeccable** (pbakaus' design plugin) **cannot load in this VS Code environment** — `/plugin` is
+unsupported so `/impeccable` never registers; to use it, `npx skills add pbakaus/impeccable` in an
+external terminal + full Claude Code restart.
 
 Phase 8 delivered (new module `erp/notifications`, gate11): **integration adapters.** Pluggable
 outbound-message channels behind one interface (`NotificationAdapter.send`): an **email** adapter

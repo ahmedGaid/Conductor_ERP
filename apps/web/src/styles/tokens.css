@@ -7,7 +7,8 @@
  * so the same tokens drive both RTL (Arabic, default) and LTR (English).
  *
  * Visual language ("Conductor"): clean, modern, near-monochrome with a near-black
- * brand for primary actions/logo and green/red accents for deltas + status.
+ * brand for primary actions/logo and green/red accents for deltas + status. Colour
+ * lives *inside* pages — links and accent text — not in the app's near-black chrome.
  */
 :root {
   /* ---- Palette (raw, private) — slate neutrals ---- */
@@ -58,7 +59,9 @@
   --color-brand: var(--palette-ink-900);
   --color-brand-strong: var(--palette-ink-950);
   --color-brand-subtle: var(--palette-ink-100);
+  /* Accent = blue — used for in-page colour (links, accent text), NOT the app chrome. */
   --color-accent: var(--palette-brand-600);
+  --color-accent-strong: var(--palette-brand-700);
   --color-accent-subtle: var(--palette-brand-100);
 
   --color-success: var(--palette-success-600);

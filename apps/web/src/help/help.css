@@ -177,7 +177,7 @@
 .help-link {
   border: 0;
   background: transparent;
-  color: var(--color-brand-strong);
+  color: var(--color-accent);
   cursor: pointer;
   padding: var(--space-1) 0;
   font: inherit;
@@ -185,7 +185,7 @@
   text-decoration: underline;
 }
 .help-link:hover {
-  color: var(--color-brand);
+  color: var(--color-accent-strong);
 }
 
 @keyframes help-in {
