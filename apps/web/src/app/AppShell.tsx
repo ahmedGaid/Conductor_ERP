@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
 import { CommandBar } from "./CommandBar";
+import { HelpCenter } from "../help/HelpCenter";
 import "./AppShell.css";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -37,6 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+      <HelpCenter />
     </div>
   );
 }

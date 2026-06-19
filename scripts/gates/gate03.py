@@ -131,3 +131,18 @@ def check() -> None:
                     raise AssertionError(
                         f"physical left/right in CSS (use logical inline-start/end): {path.name}:{i}: {line.strip()}"
                     )
+
+    # 7. Context-help coverage: every page route declared in App.tsx must have a help guide in the
+    #    registry, and the Help center must be mounted once in the app shell. This is the mechanism
+    #    that keeps per-page help in sync as the app grows — a new page without a guide fails here.
+    app_src = _read(SRC / "App.tsx")
+    app_routes = set(re.findall(r'path="([^"]+)"', app_src))
+    app_routes -= {"*", "/*", "/login"}  # catch-alls + the shell-less login screen carry no help
+    _assert((SRC / "help" / "HelpCenter.tsx").is_file(), "missing src/help/HelpCenter.tsx")
+    _assert((SRC / "help" / "registry.ts").is_file(), "missing src/help/registry.ts")
+    registry_src = _read(SRC / "help" / "registry.ts")
+    covered = set(re.findall(r'^\s*"([^"]+)":', registry_src, flags=re.MULTILINE))
+    missing = sorted(app_routes - covered)
+    _assert(not missing, f"pages without a help guide — add them to src/help/registry.ts: {missing}")
+    _assert("HelpCenter" in _read(SRC / "app" / "AppShell.tsx"),
+            "the Help center must be mounted in AppShell so every page gets context help")

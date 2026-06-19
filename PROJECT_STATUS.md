@@ -31,6 +31,15 @@ notifications exist, and the bus isolates a broken channel from invoicing/escala
 sidebar section (delivery log, status filter, resend, export). 12 tests; gate:all 00–11 green. Demo
 seeds a sent + a failed row.
 
+Context help on every page (out-of-band feature, gate03 extended): a floating "?" button mounted once
+in the app shell (`src/help/HelpCenter.tsx`) opens a **bilingual (ar/en) slide-in guide** for the
+current route — purpose, how it works, every field/button, step-by-step tasks, examples, tips, common
+mistakes, and links to related pages. Guides are plain-language (non-technical) and live in
+`src/help/content/*` keyed by route in `src/help/registry.ts` (matchPath resolves the active page,
+most-specific first); content is outside the i18n JSON so prose doesn't bloat the parity files. gate03
+now **fails the build if any App.tsx route lacks a guide**, so help stays in sync as pages are added.
+All ~54 routes covered.
+
 Phase 7 delivered (extends gate05): **custom report builder + scheduled reports.** Saved
 `ReportDefinition`s (account-type and/or explicit account-code filters, date range, **group by account
 or by period**) run deterministically over the **posted GL** via `report_builder.run_definition` →

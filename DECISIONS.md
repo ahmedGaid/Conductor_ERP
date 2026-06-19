@@ -634,6 +634,24 @@ Sixth completion-plan increment, completing Track B (operational depth).
   that escalates a ticket while the handler raises and asserts the escalation still completes. 12
   tests; gate:all 00–11 green (new gate11). React Notifications section (log + filter + resend).
 
+## Context help on every page (2026-06-19)
+
+- **One global Help center, not a per-page button.** The floating "?" + guide drawer is mounted once
+  in `AppShell`, so every page gets context help automatically and no new page can forget it. The
+  guide shown is chosen from the current route via `matchPath` against a route→guide registry
+  (`src/help/registry.ts`), most-specific pattern first (so `/sales/orders/new` beats
+  `/sales/orders/:id`).
+- **Guides are bilingual data outside the i18n JSON.** Each guide is authored in both Arabic and
+  English (the app is Arabic-first; an English-only guide would fail most users) as plain TS objects
+  in `src/help/content/*`. Long-form prose lives there, not in the parity-checked locale files — only
+  the drawer's short chrome labels are i18n keys. The drawer picks the language from the active locale
+  at render.
+- **The gate enforces synchronization.** gate03 now extracts every `path=` route from `App.tsx` and
+  fails the build if any lacks a registry entry. That single check is what keeps per-page help in step
+  with the app as it evolves — adding a page without a guide breaks the build. All ~54 routes covered.
+  Content is non-technical by design (purpose, how it works, fields/buttons, step-by-step, examples,
+  tips, mistakes, related links) so it doubles as an in-app training guide.
+
 ## Open decisions (industry-standard default applied; confirm with client)
 
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,

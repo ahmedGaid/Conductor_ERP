@@ -778,6 +778,19 @@
       "failed": "Failed"
     }
   },
+  "help": {
+    "button": "Help",
+    "close": "Close help",
+    "purpose": "What this page is for",
+    "howItWorks": "How it works",
+    "onThisPage": "Sections & fields",
+    "tasks": "Step by step",
+    "examples": "Examples",
+    "tips": "Tips",
+    "mistakes": "Common mistakes",
+    "related": "Related pages",
+    "noGuide": "A guide for this page is coming soon."
+  },
   "export": {
     "csv": "CSV",
     "excel": "Excel",

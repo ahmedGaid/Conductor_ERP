@@ -1,0 +1,217 @@
+/* Context-help: a floating "?" button and a slide-in guide drawer. Direction-agnostic (logical
+   properties only) so it sits on the correct side in both RTL and LTR. */
+
+.help-fab {
+  position: fixed;
+  inset-block-end: var(--space-5);
+  inset-inline-end: var(--space-5);
+  z-index: 60;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-brand-strong);
+  color: var(--color-on-brand, var(--color-surface));
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.help-fab:hover {
+  transform: translateY(-2px);
+  background-color: var(--color-brand);
+}
+
+.help-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  border: 0;
+  padding: 0;
+  background-color: rgba(0, 0, 0, 0.32);
+  cursor: pointer;
+  animation: help-fade var(--dur-fast) var(--ease-out);
+}
+
+.help-drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 80;
+  inline-size: min(28rem, 92vw);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border-inline-start: 1px solid var(--color-border);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.16);
+  animation: help-in var(--dur) var(--ease-out);
+}
+
+.help-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--space-5);
+  padding-block: var(--space-4);
+  border-block-end: 1px solid var(--color-border);
+}
+.help-drawer__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+.help-drawer__close {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.help-drawer__close:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+}
+
+.help-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding-inline: var(--space-5);
+  padding-block: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.help-empty {
+  color: var(--color-text-muted);
+}
+
+.help-block__title {
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-brand-strong);
+  font-weight: var(--font-weight-bold);
+  margin-block-end: var(--space-2);
+}
+
+.help-block p {
+  margin: 0;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.help-section {
+  margin-block-start: var(--space-3);
+}
+.help-section__heading {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  margin-block-end: var(--space-1);
+}
+
+.help-deflist {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.help-deflist__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.125rem;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--color-border);
+}
+.help-deflist dt {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+.help-deflist dd {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.help-task {
+  margin-block-start: var(--space-3);
+}
+.help-steps {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  line-height: 1.55;
+}
+
+.help-list {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  line-height: 1.55;
+  color: var(--color-text);
+}
+.help-list--tips li {
+  color: var(--color-text);
+}
+.help-list--mistakes li {
+  color: var(--color-text);
+}
+
+.help-links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.help-link {
+  border: 0;
+  background: transparent;
+  color: var(--color-brand-strong);
+  cursor: pointer;
+  padding: var(--space-1) 0;
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+}
+.help-link:hover {
+  color: var(--color-brand);
+}
+
+@keyframes help-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes help-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .help-drawer,
+  .help-scrim,
+  .help-fab {
+    animation: none;
+    transition: none;
+  }
+}
