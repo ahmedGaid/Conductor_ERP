@@ -1,18 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { resolveGuide } from "./registry";
+import { useHelp } from "./HelpContext";
 import type { HelpGuide, L } from "./types";
 import "./help.css";
 
 /** Floating "?" button + the slide-in guide drawer. Mounted once in the app shell, so every page
- *  gets context help automatically — the guide shown is chosen from the current route. */
+ *  gets context help automatically — the guide shown is chosen from the current route. The open
+ *  state lives in HelpContext so the top-bar "?" action can open the same drawer. */
 export function HelpCenter() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const { open, openHelp, closeHelp, toggleHelp } = useHelp();
+  const setOpen = (v: boolean) => (v ? openHelp() : closeHelp());
 
   // Pick the right language for guide content from the active locale.
   const lang: keyof L = i18n.language?.startsWith("ar") ? "ar" : "en";
@@ -45,7 +48,7 @@ export function HelpCenter() {
         aria-expanded={open}
         aria-label={t("help.button")}
         title={t("help.button")}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleHelp}
       >
         <span aria-hidden="true">?</span>
       </button>

@@ -39,6 +39,28 @@
     "notifications": "الإشعارات",
     "help": "المساعدة"
   },
+  "command": {
+    "placeholder": "ابحث في الصفحات والإجراءات…",
+    "empty": "لا نتائج لـ",
+    "groupCreate": "إنشاء",
+    "groupGo": "الانتقال إلى",
+    "hintMove": "تنقّل",
+    "hintOpen": "فتح",
+    "hintClose": "إغلاق",
+    "newOrder": "طلب بيع جديد",
+    "newQuotation": "عرض سعر جديد",
+    "newPurchaseOrder": "أمر شراء جديد",
+    "newPurchaseRequest": "طلب شراء جديد",
+    "newJournal": "قيد يومية جديد",
+    "newWorkflow": "مسار عمل جديد",
+    "customers": "العملاء",
+    "suppliers": "الموردون",
+    "stockOnHand": "الرصيد المتاح",
+    "trialBalance": "ميزان المراجعة",
+    "generalLedger": "دفتر الأستاذ العام",
+    "incomeStatement": "قائمة الدخل",
+    "balanceSheet": "قائمة المركز المالي"
+  },
   "language": {
     "label": "اللغة",
     "arabic": "العربية",

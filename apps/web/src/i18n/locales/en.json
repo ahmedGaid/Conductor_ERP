@@ -39,6 +39,28 @@
     "notifications": "Notifications",
     "help": "Help"
   },
+  "command": {
+    "placeholder": "Search pages and actions…",
+    "empty": "No matches for",
+    "groupCreate": "Create",
+    "groupGo": "Go to",
+    "hintMove": "Move",
+    "hintOpen": "Open",
+    "hintClose": "Close",
+    "newOrder": "New sales order",
+    "newQuotation": "New quotation",
+    "newPurchaseOrder": "New purchase order",
+    "newPurchaseRequest": "New purchase request",
+    "newJournal": "New journal entry",
+    "newWorkflow": "New workflow",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
+    "stockOnHand": "Stock on hand",
+    "trialBalance": "Trial balance",
+    "generalLedger": "General ledger",
+    "incomeStatement": "Income statement",
+    "balanceSheet": "Balance sheet"
+  },
   "language": {
     "label": "Language",
     "arabic": "العربية",

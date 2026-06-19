@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { CommandBar } from "./CommandBar";
 import { HelpCenter } from "../help/HelpCenter";
+import { HelpProvider } from "../help/HelpContext";
 import "./AppShell.css";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -18,27 +19,29 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => setNavOpen(false), [location.pathname]);
 
   return (
-    <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
-      <a className="appshell__skip" href="#main">
-        {t("shell.skipToContent")}
-      </a>
-      <Sidebar />
-      <button
-        type="button"
-        className="appshell__overlay"
-        aria-label={t("shell.closeMenu")}
-        tabIndex={navOpen ? 0 : -1}
-        onClick={() => setNavOpen(false)}
-      />
-      <CommandBar onMenu={() => setNavOpen((v) => !v)} />
-      <main id="main" className="appshell__main">
-        {/* Re-keying on the path replays the enter animation each navigation,
-            so pages glide in instead of snapping. */}
-        <div key={location.pathname} className="appshell__content page-enter">
-          {children}
-        </div>
-      </main>
-      <HelpCenter />
-    </div>
+    <HelpProvider>
+      <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
+        <a className="appshell__skip" href="#main">
+          {t("shell.skipToContent")}
+        </a>
+        <Sidebar />
+        <button
+          type="button"
+          className="appshell__overlay"
+          aria-label={t("shell.closeMenu")}
+          tabIndex={navOpen ? 0 : -1}
+          onClick={() => setNavOpen(false)}
+        />
+        <CommandBar onMenu={() => setNavOpen((v) => !v)} />
+        <main id="main" className="appshell__main">
+          {/* Re-keying on the path replays the enter animation each navigation,
+              so pages glide in instead of snapping. */}
+          <div key={location.pathname} className="appshell__content page-enter">
+            {children}
+          </div>
+        </main>
+        <HelpCenter />
+      </div>
+    </HelpProvider>
   );
 }

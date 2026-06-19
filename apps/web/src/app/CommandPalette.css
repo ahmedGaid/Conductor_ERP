@@ -1,0 +1,176 @@
+/* ⌘K command palette. The <dialog> fills the viewport as a transparent click-away
+   surface; the card sits inside it near the top. Native top-layer = no z-index. */
+.cmdp {
+  margin: 0;
+  inline-size: 100vw;
+  max-inline-size: 100vw;
+  block-size: 100dvh;
+  max-block-size: 100dvh;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.cmdp::backdrop {
+  background-color: var(--color-scrim);
+}
+
+.cmdp__panel {
+  inline-size: min(40rem, calc(100vw - var(--space-6)));
+  max-block-size: 70dvh;
+  margin-block-start: 12vh;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: cmdp-in var(--dur) var(--ease-out);
+}
+
+@keyframes cmdp-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.985);
+  }
+}
+
+.cmdp__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-4);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.cmdp__search-icon {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
+.cmdp__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  padding-block: var(--space-4);
+  padding-inline: 0;
+  font-family: inherit;
+  font-size: var(--font-size-md);
+}
+
+.cmdp__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.cmdp__input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.cmdp__results {
+  overflow-y: auto;
+  padding-block: var(--space-2);
+}
+
+.cmdp__group + .cmdp__group {
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: var(--space-2);
+  padding-block-start: var(--space-2);
+}
+
+.cmdp__group-label {
+  margin: 0;
+  padding-inline: var(--space-4);
+  padding-block: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle);
+}
+
+.cmdp__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cmdp__item {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--space-4);
+  padding-block: var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  text-align: start;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.cmdp__item--active {
+  background-color: var(--color-surface-alt);
+}
+
+.cmdp__item-go {
+  color: var(--color-text-subtle);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.cmdp__item--active .cmdp__item-go {
+  opacity: 1;
+}
+
+.cmdp__empty {
+  margin: 0;
+  padding-inline: var(--space-4);
+  padding-block: var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.cmdp__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding-inline: var(--space-4);
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.cmdp__kbd {
+  display: inline-flex;
+  align-items: center;
+  min-inline-size: 1.25rem;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding-inline: var(--space-1);
+  padding-block: 0.0625rem;
+  margin-inline-end: var(--space-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmdp__panel {
+    animation: none;
+  }
+  .cmdp__item,
+  .cmdp__item-go {
+    transition: none;
+  }
+}
