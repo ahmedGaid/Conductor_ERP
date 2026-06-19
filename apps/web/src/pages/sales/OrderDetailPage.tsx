@@ -19,6 +19,14 @@ import { Disclosure } from "../../components/Disclosure";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
+// Plain-language explanation of the current state and the next step (human language over the bare
+// status word). Display-layer only — the status enum/lifecycle is unchanged. The draft+approval
+// case gets its own "waiting for approval" message; everything else maps from the status.
+function statusExplainKey(o: SalesOrder): string {
+  if (o.status === "draft" && o.requires_approval && !o.approved) return "awaitingApproval";
+  return o.status;
+}
+
 export function OrderDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -65,6 +73,12 @@ export function OrderDetailPage() {
               </div>
               <span className={`sales-badge sales-badge--${data.status}`}>{t(`sales.status.${data.status}`)}</span>
             </div>
+
+            <p className="sales-explain">
+              {t(`sales.statusExplain.${statusExplainKey(data)}`, {
+                amount: formatMinor(data.outstanding_minor, data.currency),
+              })}
+            </p>
 
             <div className="sales-summary">
               <div className="sales-summary__item">

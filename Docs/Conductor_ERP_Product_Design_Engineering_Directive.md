@@ -113,3 +113,64 @@ Translating the five qualities above into rules we can actually build and check 
   (customers/suppliers/items/warehouses/COA — emptiness is already self-evident there next to the add
   form); per-report skeletons + caching for the filtered statement screens; reduce information density
   on the busiest detail screens via progressive disclosure; sticky table headers on long lists.
+
+## Reconciled UX-tips backlog (2026-06-19)
+
+Two external UX/UI agent prompts (`Docs/conductor_erp_ai_agent_prompt ui ux tips.md` and `… tips 2.md`)
+were reviewed against this charter. ~70% of their content is already built or already stated here; they
+are **not** adopted as a second charter (one source of truth — this file). The genuinely new, concrete,
+on-brand rules are folded in below and applied per screen in the normal gate-green rhythm. Items that
+fight our constraints are recorded with the required change so the limitation stays traceable.
+
+**Adopt (new, low-risk, high-value):**
+- **Data into meaning.** Never show a raw number where an insight fits: pair the count with the thing
+  that needs attention ("245 invoices → 32 overdue today"; "stock ≈ 8 orders left"). Dashboard/KPI first.
+- **Context before action.** No isolated `[Approve]`/`[Post]` — the primary action states *what* is
+  being acted on and its impact (amount, party, reversibility) right next to the button.
+- **Human-language statuses.** Render workflow statuses as plain states ("Waiting for Finance approval")
+  — **display-layer mapping only**, never changing the status enum / state machine, and **always via
+  i18n keys with ar/en parity** (no hardcoded strings, or gate03 fails).
+- **Navigation extras.** Breadcrumbs, recent pages, favorites in the shell — additive, logical-CSS.
+- **Explain before asking.** Complex forms get a one-line purpose + what-happens-after (reuse the help
+  content already authored per route).
+
+**Adopt with a required change:**
+- **Forms autosave → explicit draft-save.** Do **not** silently autosave accounting/order/journal
+  forms (a half-entered journal autosaving is unsafe and breaks the confidence rule). Offer an explicit
+  "Save draft" only where a draft entity already exists.
+- **Single icon library.** Fine to standardize on Lucide/Tabler/Heroicons, but it must be **bundled
+  offline** (no CDN) per the customer-hosted "no cloud deps" rule. Low priority (current custom set works).
+
+**Defer / out of scope here:**
+- **AI assistant / "workflow intelligence layer."** A real feature with real scope (likely an LLM
+  integration → cost + offline/on-prem hosting concerns) — its own future stage, not UI polish.
+- **Column resize / pinning.** Low value for the effort right now.
+- **"Retention" framing** (doc 1). Kept as a north star only; an internal ERP earns use by being the
+  job tool — no consumer engagement mechanics.
+
+- **Implemented 2026-06-19 — dark mode.** A full dark theme implemented as a **pure token remap**:
+  `tokens.css` overrides only the semantic colour layer (+ shadows / focus ring) under
+  `:root[data-theme="dark"]`, so every component that already uses `var(--color-*)` flips with zero
+  per-component change — the design-token discipline paying off. **Identity preserved by inversion,
+  not a new hue:** the light theme's high-contrast near-black primary/logo becomes a near-white one on
+  a near-black canvas (same monochrome "Conductor" character); `-strong` variants become more luminous
+  (readable text on dark), `-subtle` variants become dark translucent tints (chips/fills) so existing
+  strong-on-subtle pairings keep contrast. Toggle (`src/theme.ts` + `app/ThemeToggle.tsx`, sun/moon)
+  lives in the command bar and the login head; choice persists to `localStorage["erp.theme"]`; an
+  **early inline script in `index.html`** applies the stored/system theme before first paint (no FOUC),
+  and `color-scheme` is set per theme for native controls. First visit follows the OS
+  `prefers-color-scheme`. New i18n `theme.*` keys (ar/en parity). Verified in-browser: toggle +
+  persistence + no-flash reload across login → dashboard → order detail, light↔dark round-trip; gate03
+  green. (Known follow-up: the React-Flow workflow canvas keeps some of its own default colours — not
+  yet themed.)
+- **Implemented 2026-06-19 — data-into-meaning + human-language statuses.** Dashboard gained a
+  **"Needs attention today"** panel (`DashboardPage.AttentionPanel`): turns raw module data into the
+  few decisions/risks to act on now — pending sales/purchase approvals, outstanding receivables /
+  supplier bills (amount + count), SLA-breached tickets, failed messages — each a one-line insight
+  linking to the right screen; problem signals carry a danger/warn tint, and a calm "all clear" line
+  shows when there's nothing. Cross-module signals are fetched defensively (`.catch(() => [])`) so a
+  role without access or an unreachable module never breaks the dashboard. Order & purchase-order
+  **detail pages** now show a plain-language status line under the badge ("Invoiced — awaiting payment
+  of …"; "Waiting for a manager's approval before it can be confirmed") — display-layer only, the
+  status enum/lifecycle is untouched; new `sales.statusExplain` / `purchasing.statusExplain` i18n keys
+  with ar/en parity. gate:all 00–11 green.

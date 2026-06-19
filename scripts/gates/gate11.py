@@ -107,8 +107,16 @@ def check() -> None:
             "missing pages/notifications/NotificationsNav.tsx")
     app = (WEB_SRC / "App.tsx").read_text(encoding="utf-8")
     _assert('path="/notifications"' in app, "App.tsx missing the /notifications route")
+    # Notifications is wired as a top-level entry point in the app chrome. The whole-app polish
+    # relocated it from the module sidebar to a notifications bell in the always-present command bar
+    # (the conventional home for notifications) + the ⌘K command palette — accept either home.
+    commandbar = (WEB_SRC / "app" / "CommandBar.tsx").read_text(encoding="utf-8")
+    palette = (WEB_SRC / "app" / "CommandPalette.tsx").read_text(encoding="utf-8")
     sidebar = (WEB_SRC / "app" / "Sidebar.tsx").read_text(encoding="utf-8")
-    _assert('to: "/notifications"' in sidebar, "Sidebar missing the top-level notifications section")
+    _assert(
+        '"/notifications"' in commandbar or '"/notifications"' in palette or 'to: "/notifications"' in sidebar,
+        "notifications must be wired as a top-level section (command bar bell, command palette, or sidebar)",
+    )
     page = (WEB_SRC / "pages" / "notifications" / "NotificationsPage.tsx").read_text(encoding="utf-8")
     for fn in ("listNotifications", "resendNotification"):
         _assert(fn in page, f"notifications screen missing {fn}")

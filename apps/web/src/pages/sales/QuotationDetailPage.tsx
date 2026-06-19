@@ -13,6 +13,7 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Disclosure } from "../../components/Disclosure";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
@@ -81,24 +82,6 @@ export function QuotationDetailPage() {
                 <span className="sales-summary__label">{t("sales.orders.total")}</span>
                 <span className="sales-summary__value"><Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi></span>
               </div>
-              <div className="sales-summary__item">
-                <span className="sales-summary__label">{t("sales.quotations.approval")}</span>
-                <span className="sales-summary__value">
-                  {data.requires_approval ? t("sales.quotations.needsApproval") : t("sales.quotations.autoApprove")}
-                </span>
-              </div>
-              {data.converted_order_number && (
-                <div className="sales-summary__item">
-                  <span className="sales-summary__label">{t("sales.quotations.convertedTo")}</span>
-                  <span className="latin">{data.converted_order_number}</span>
-                </div>
-              )}
-              {data.rejected_reason && (
-                <div className="sales-summary__item">
-                  <span className="sales-summary__label">{t("sales.quotations.rejectedReason")}</span>
-                  <span>{data.rejected_reason}</span>
-                </div>
-              )}
             </div>
 
             <div className="sales-actions">
@@ -124,6 +107,27 @@ export function QuotationDetailPage() {
               )}
             </div>
             {actionError && <p className="error-text">{actionError}</p>}
+
+            <Disclosure summary={t("common.moreDetails")}>
+              <dl className="sales-meta">
+                <div className="sales-meta__row">
+                  <dt>{t("sales.quotations.approval")}</dt>
+                  <dd>{data.requires_approval ? t("sales.quotations.needsApproval") : t("sales.quotations.autoApprove")}</dd>
+                </div>
+                {data.converted_order_number && (
+                  <div className="sales-meta__row">
+                    <dt>{t("sales.quotations.convertedTo")}</dt>
+                    <dd className="latin">{data.converted_order_number}</dd>
+                  </div>
+                )}
+                {data.rejected_reason && (
+                  <div className="sales-meta__row">
+                    <dt>{t("sales.quotations.rejectedReason")}</dt>
+                    <dd>{data.rejected_reason}</dd>
+                  </div>
+                )}
+              </dl>
+            </Disclosure>
           </div>
 
           <div className="card sales-table-wrap">

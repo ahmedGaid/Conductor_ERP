@@ -67,6 +67,10 @@
     "english": "English",
     "switchTo": "Switch to {{name}}"
   },
+  "theme": {
+    "toDark": "Switch to dark mode",
+    "toLight": "Switch to light mode"
+  },
   "login": {
     "subtitle": "Sign in to continue",
     "username": "Username",
@@ -83,6 +87,16 @@
       "evening": "Good evening, {{name}}"
     },
     "subtitle": "Here's what's happening with your business today.",
+    "attention": {
+      "title": "Needs attention today",
+      "allClear": "You're all caught up — nothing needs your attention right now.",
+      "salesApprovals": "{{count}} sales orders awaiting approval",
+      "poApprovals": "{{count}} purchase orders awaiting approval",
+      "receivables": "{{amount}} awaiting collection across {{count}} invoices",
+      "payables": "{{amount}} in supplier bills to pay across {{count}} orders",
+      "breachedTickets": "{{count}} support tickets past their SLA",
+      "failedMessages": "{{count}} messages failed to send"
+    },
     "vsLastMonth": "vs last month",
     "asOfNow": "as of now",
     "totalRevenue": "Total Revenue",
@@ -483,6 +497,17 @@
       "partially_delivered": "Partially delivered",
       "returned": "Returned"
     },
+    "statusExplain": {
+      "draft": "Draft — confirm it to proceed with the order.",
+      "awaitingApproval": "Waiting for a manager's approval before it can be confirmed.",
+      "confirmed": "Confirmed — deliver the goods to the customer next.",
+      "partially_delivered": "Partly delivered — deliver the remaining items to continue.",
+      "delivered": "Delivered — raise the invoice to bill the customer.",
+      "invoiced": "Invoiced — awaiting payment of {{amount}}.",
+      "paid": "Paid in full — nothing more to do.",
+      "returned": "Returned — a credit note was issued.",
+      "cancelled": "Cancelled — this order is closed."
+    },
     "customer": {
       "code": "Customer code",
       "name": "Name",
@@ -571,6 +596,17 @@
       "cancelled": "Cancelled",
       "partially_received": "Partially received",
       "returned": "Returned"
+    },
+    "statusExplain": {
+      "draft": "Draft — confirm it to send the order to the supplier.",
+      "awaitingApproval": "Waiting for a manager's approval before it can be confirmed.",
+      "confirmed": "Confirmed — receive the goods when they arrive.",
+      "partially_received": "Partly received — receive the remaining items to continue.",
+      "received": "Received — record the supplier bill next.",
+      "billed": "Billed — awaiting payment of {{amount}}.",
+      "paid": "Paid in full — nothing more to do.",
+      "returned": "Returned — a debit note was issued.",
+      "cancelled": "Cancelled — this order is closed."
     },
     "supplier": {
       "code": "Supplier code",

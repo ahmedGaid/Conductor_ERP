@@ -13,6 +13,7 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Disclosure } from "../../components/Disclosure";
 import { PurchasingNav } from "./PurchasingNav";
 import "./purchasing.css";
 
@@ -81,24 +82,6 @@ export function PurchaseRequestDetailPage() {
                 <span className="pur-summary__label">{t("sales.orders.total")}</span>
                 <span className="pur-summary__value"><Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi></span>
               </div>
-              <div className="pur-summary__item">
-                <span className="pur-summary__label">{t("purchasing.requests.approval")}</span>
-                <span className="pur-summary__value">
-                  {data.requires_approval ? t("purchasing.requests.needsApproval") : t("purchasing.requests.autoApprove")}
-                </span>
-              </div>
-              {data.converted_order_number && (
-                <div className="pur-summary__item">
-                  <span className="pur-summary__label">{t("purchasing.requests.convertedTo")}</span>
-                  <span className="latin">{data.converted_order_number}</span>
-                </div>
-              )}
-              {data.rejected_reason && (
-                <div className="pur-summary__item">
-                  <span className="pur-summary__label">{t("purchasing.requests.rejectedReason")}</span>
-                  <span>{data.rejected_reason}</span>
-                </div>
-              )}
             </div>
 
             <div className="pur-actions">
@@ -124,6 +107,27 @@ export function PurchaseRequestDetailPage() {
               )}
             </div>
             {actionError && <p className="error-text">{actionError}</p>}
+
+            <Disclosure summary={t("common.moreDetails")}>
+              <dl className="pur-meta">
+                <div className="pur-meta__row">
+                  <dt>{t("purchasing.requests.approval")}</dt>
+                  <dd>{data.requires_approval ? t("purchasing.requests.needsApproval") : t("purchasing.requests.autoApprove")}</dd>
+                </div>
+                {data.converted_order_number && (
+                  <div className="pur-meta__row">
+                    <dt>{t("purchasing.requests.convertedTo")}</dt>
+                    <dd className="latin">{data.converted_order_number}</dd>
+                  </div>
+                )}
+                {data.rejected_reason && (
+                  <div className="pur-meta__row">
+                    <dt>{t("purchasing.requests.rejectedReason")}</dt>
+                    <dd>{data.rejected_reason}</dd>
+                  </div>
+                )}
+              </dl>
+            </Disclosure>
           </div>
 
           <div className="card pur-table-wrap">

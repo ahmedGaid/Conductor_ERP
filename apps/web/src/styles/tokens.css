@@ -111,9 +111,9 @@
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.75rem;
-  --font-size-2xl: 2.25rem;
+  --font-size-lg: 1.1875rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 1.875rem;
   --line-height-ui: 1.5;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -143,4 +143,82 @@
   --sidebar-size: 16rem;
   --topbar-size: 4rem;
   --content-max: 90rem;
+
+  color-scheme: light;
+}
+
+/*
+ * ---- Dark theme ----
+ * Dark mode is a pure token remap — it overrides only the *semantic* colour layer (plus
+ * shadows / focus ring), so every component that already uses var(--color-*) flips with no
+ * per-component change. Activated by <html data-theme="dark"> (set by theme.ts / the early
+ * inline script in index.html). The selector outweighs :root, so these values win.
+ *
+ * Identity is preserved by inversion, not by a new hue: the light theme's high-contrast
+ * near-black primary/logo becomes a high-contrast near-white one on a near-black canvas —
+ * the same monochrome "Conductor" character, read in reverse. "-strong" variants become
+ * MORE luminous (readable text on dark), "-subtle" variants become dark translucent tints
+ * (chips/fills), so the existing strong-on-subtle pairings keep their contrast.
+ */
+:root[data-theme="dark"] {
+  /* Surfaces — "Uber-style" PURE BLACK canvas with NEUTRAL greys (no blue/slate cast).
+     bg is true #000; cards/sidebar lift just enough to separate, borders do the rest. */
+  --color-bg: #000000;
+  --color-surface: #0d0d0d;
+  --color-surface-alt: #1a1a1a;
+  --color-surface-hover: #1a1a1a;
+  --color-border: #262626;
+  --color-border-strong: #383838;
+  --color-text: #f5f5f5;
+  --color-text-muted: #a3a3a3;
+  --color-text-subtle: #6e6e6e;
+  --color-text-on-brand: #000000;
+  --color-scrim: rgba(0, 0, 0, 0.7);
+
+  /* Brand inverted: a near-white high-contrast primary on black (logo, primary buttons,
+     avatar). brand-subtle is the neutral dark active-nav / selection fill. */
+  --color-brand: #f5f5f5;
+  --color-brand-strong: #ffffff;
+  --color-brand-subtle: #1f1f1f;
+
+  /* Accent (in-page links/text): a brighter blue that reads on dark. */
+  --color-accent: #60a5fa;
+  --color-accent-strong: #93c5fd;
+  --color-accent-subtle: rgba(37, 99, 235, 0.22);
+
+  /* Semantic status: luminous "-strong" text, dark translucent "-subtle" fills. */
+  --color-success: #22c55e;
+  --color-success-strong: #4ade80;
+  --color-success-subtle: rgba(22, 163, 74, 0.18);
+  --color-warning: #f59e0b;
+  --color-warning-strong: #fbbf24;
+  --color-warning-subtle: rgba(217, 119, 6, 0.18);
+  --color-danger: #ef4444;
+  --color-danger-strong: #f87171;
+  --color-danger-subtle: rgba(220, 38, 38, 0.20);
+  --color-info: #22d3ee;
+  --color-info-subtle: rgba(8, 145, 178, 0.20);
+
+  /* Status pills — tinted bg + luminous text on dark. */
+  --color-status-pending: #cbd5e1;
+  --color-status-pending-bg: rgba(148, 163, 184, 0.16);
+  --color-status-running: #38bdf8;
+  --color-status-running-bg: rgba(8, 145, 178, 0.20);
+  --color-status-waiting: #fbbf24;
+  --color-status-waiting-bg: rgba(217, 119, 6, 0.20);
+  --color-status-failed: #f87171;
+  --color-status-failed-bg: rgba(220, 38, 38, 0.20);
+  --color-status-completed: #4ade80;
+  --color-status-completed-bg: rgba(22, 163, 74, 0.18);
+
+  /* Elevation — shadows barely register on dark, so deepen them. */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6);
+
+  /* Focus ring — a clearly visible accent-tinted ring on dark. */
+  --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.45);
+
+  color-scheme: dark;
 }

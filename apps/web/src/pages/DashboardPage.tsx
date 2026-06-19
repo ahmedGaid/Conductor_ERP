@@ -10,6 +10,10 @@ import {
   type IncomeStatementReport,
   type JournalEntry,
 } from "../api/accounting";
+import { listOrders, type SalesOrder } from "../api/sales";
+import { listPurchaseOrders, type PurchaseOrder } from "../api/purchasing";
+import { listTickets, type Ticket } from "../api/crm";
+import { listNotifications, type Notification } from "../api/notifications";
 import { currentPeriod, pctChange, previousPeriod } from "../lib/dates";
 import { formatMinor } from "../lib/money";
 import { useAsync } from "../hooks/useAsync";
@@ -23,17 +27,29 @@ interface DashboardData {
   previous: IncomeStatementReport;
   cash: CashFlowReport;
   journals: JournalEntry[];
+  // Cross-module signals for the "needs attention" panel. Each is fetched defensively
+  // (a role without access — e.g. an accountant on the sales list — simply 403s and that
+  // category stays empty) so the dashboard never breaks on a single module being unreachable.
+  orders: SalesOrder[];
+  pos: PurchaseOrder[];
+  tickets: Ticket[];
+  failedNotifs: Notification[];
 }
 
 async function loadDashboard(): Promise<DashboardData> {
-  const [me, current, previous, cash, journals] = await Promise.all([
-    getMe(),
-    incomeStatement({ period: currentPeriod() }),
-    incomeStatement({ period: previousPeriod() }),
-    cashFlow({ period: currentPeriod() }),
-    listJournals(),
-  ]);
-  return { username: me.username, current, previous, cash, journals };
+  const [me, current, previous, cash, journals, orders, pos, tickets, failedNotifs] =
+    await Promise.all([
+      getMe(),
+      incomeStatement({ period: currentPeriod() }),
+      incomeStatement({ period: previousPeriod() }),
+      cashFlow({ period: currentPeriod() }),
+      listJournals(),
+      listOrders().catch(() => [] as SalesOrder[]),
+      listPurchaseOrders().catch(() => [] as PurchaseOrder[]),
+      listTickets().catch(() => [] as Ticket[]),
+      listNotifications({ status: "failed" }).catch(() => [] as Notification[]),
+    ]);
+  return { username: me.username, current, previous, cash, journals, orders, pos, tickets, failedNotifs };
 }
 
 function greetingKey(): "morning" | "afternoon" | "evening" {
@@ -112,6 +128,8 @@ export function DashboardPage() {
             />
           </div>
 
+          <AttentionPanel data={data} />
+
           <div className="dash__row">
             <TopExpenses report={data.current} />
             <CashFlowPanel report={data.cash} />
@@ -124,6 +142,75 @@ export function DashboardPage() {
         </>
       )}
     </section>
+  );
+}
+
+interface AttnItem {
+  key: string;
+  icon: string;
+  text: string;
+  to: string;
+  tone?: "danger" | "warn";
+}
+
+// "Needs attention today" — turns raw module data into the few decisions/risks the user should act
+// on now (data → insight → action), rather than another passive number grid. Only non-empty signals
+// are shown; when there's nothing, a calm "all clear" line confirms it (a designed empty state).
+function AttentionPanel({ data }: { data: DashboardData }) {
+  const { t } = useTranslation();
+
+  const salesApprovals = data.orders.filter((o) => o.requires_approval && !o.approved).length;
+  const poApprovals = data.pos.filter((p) => p.requires_approval && !p.approved).length;
+
+  const receivable = data.orders.filter((o) => o.outstanding_minor > 0);
+  const recvAmount = receivable.reduce((s, o) => s + o.outstanding_minor, 0);
+  const payable = data.pos.filter((p) => p.outstanding_minor > 0);
+  const payAmount = payable.reduce((s, p) => s + p.outstanding_minor, 0);
+
+  const breachedTickets = data.tickets.filter((tk) => tk.is_breached).length;
+  const failedMessages = data.failedNotifs.length;
+
+  const items: AttnItem[] = [];
+  if (salesApprovals)
+    items.push({ key: "salesApprovals", icon: "⚑", to: "/sales",
+      text: t("dashboard.attention.salesApprovals", { count: salesApprovals }) });
+  if (poApprovals)
+    items.push({ key: "poApprovals", icon: "⚑", to: "/purchasing",
+      text: t("dashboard.attention.poApprovals", { count: poApprovals }) });
+  if (receivable.length)
+    items.push({ key: "receivables", icon: "↘", to: "/sales",
+      text: t("dashboard.attention.receivables", { amount: formatMinor(recvAmount), count: receivable.length }) });
+  if (payable.length)
+    items.push({ key: "payables", icon: "↗", to: "/purchasing",
+      text: t("dashboard.attention.payables", { amount: formatMinor(payAmount), count: payable.length }) });
+  if (breachedTickets)
+    items.push({ key: "breachedTickets", icon: "⏰", to: "/crm/tickets", tone: "danger",
+      text: t("dashboard.attention.breachedTickets", { count: breachedTickets }) });
+  if (failedMessages)
+    items.push({ key: "failedMessages", icon: "✕", to: "/notifications", tone: "warn",
+      text: t("dashboard.attention.failedMessages", { count: failedMessages }) });
+
+  return (
+    <div className="card dash__panel dash__attn">
+      <div className="dash__panel-head">
+        <h2>{t("dashboard.attention.title")}</h2>
+      </div>
+      {items.length === 0 ? (
+        <p className="dash__attn-clear">{t("dashboard.attention.allClear")}</p>
+      ) : (
+        <ul className="dash__attn-list">
+          {items.map((it) => (
+            <li key={it.key}>
+              <Link className={`dash__attn-item${it.tone ? ` dash__attn-item--${it.tone}` : ""}`} to={it.to}>
+                <span className="dash__attn-icon" aria-hidden="true">{it.icon}</span>
+                <span className="dash__attn-text">{it.text}</span>
+                <span className="dash__attn-arrow" aria-hidden="true">›</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

@@ -87,8 +87,15 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 - **Landed (2026-06-19):** skeletons + SWR already universal (44 pages); **sticky headers** on every
   module's long lists (one global `[class$="-table-wrap"]` rule — capped scroll + pinned `thead`);
   **empty states** on the 5 reference screens (Accounts, Items, Warehouses, Customers, Suppliers).
-- **Remaining:** density reduction / progressive disclosure on the busiest detail pages (order/PO
-  detail) — to be done with the now-installed **impeccable** design skill, translated into our tokens.
+- **Progressive disclosure (2026-06-20):** order/PO detail already lead with primary info + a
+  collapsible "more details"; extended the same `Disclosure` pattern to the **Quotation** and
+  **Purchase Request** detail pages (summary now leads with Total + the primary action; approval /
+  converted-to / rejected-reason tucked into "more details"). Opportunity / Fixed-Asset summaries
+  left as-is (their fields are core metrics, not secondary — collapsing would hurt).
+- **Also this cycle (uncommitted):** dashboard "Needs attention today" panel, human-language status
+  lines (sales/PO), dark mode (toggle + pure-black), gate11 fix, UX-tips reconciliation.
+- **Remaining:** none critical — Phase 9 is effectively complete; deeper per-screen density can
+  continue opportunistically with the **impeccable** skill. Ready to commit, then Phase 10.
 
 ## Track E — Stage 7 (ship it)
 

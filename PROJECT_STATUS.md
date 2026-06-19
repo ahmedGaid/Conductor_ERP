@@ -8,6 +8,40 @@
 > escalation, custom report builder + scheduled reports, notification/integration adapters
 > (email/WhatsApp, event-wired) + context help on every page (bilingual ar/en); gate:all 00–11
 > GREEN. Latest pushed commits: ef6a9a3 (Phase 8 notifications), a420fde (context help))**.
+>
+> **Resume note (2026-06-19, later session):** Phase 9 frontend-polish has progressed past the
+> commits above — pushed since: `b779ebe` (in-page link colour), `5c81c4a` (sticky list headers +
+> empty states), `79a5ca6` (whole-app polish: module header bands + detail-page progressive
+> disclosure), `0bbb744` (real command bar: ⌘K palette + contextual help + **notifications
+> relocated to a topbar bell**). That relocation broke **gate11** (it hard-checked the *sidebar* for
+> the notifications link); gate11 was updated to accept the notifications top-level wiring at its new
+> home (command-bar bell / ⌘K palette / sidebar).
+>
+> **Then, same session — three UX increments landed (ALL UNCOMMITTED in the working tree; gate:all
+> 00–11 + gate03 GREEN; verified live in-browser via Playwright/Edge):**
+> 1. **Reconciled the two external UX-tips docs** (`Docs/conductor_erp_ai_agent_prompt ui ux tips*.md`)
+>    into the design directive backlog (one source of truth — NOT a second charter). Split Adopt /
+>    Adopt-with-change (autosave→explicit draft-save; icons bundled-offline) / Defer (AI assistant,
+>    column pinning, "retention" framing). See `Docs/Conductor_ERP_Product_Design_Engineering_Directive.md`.
+> 2. **Data-into-meaning:** Dashboard **"Needs attention today"** panel (`DashboardPage.AttentionPanel`)
+>    — pending sales/PO approvals, outstanding receivables/payables (amount+count), SLA-breached
+>    tickets, failed messages; each links out; cross-module fetches use `.catch(()=>[])` so a role
+>    without access never breaks the dashboard (verified: accountant sees a degraded panel, no crash).
+> 3. **Human-language statuses:** plain-language status line under the badge on sales + purchasing
+>    **order-detail** pages (display-layer only; new `sales.statusExplain`/`purchasing.statusExplain`
+>    i18n keys, ar/en parity).
+> 4. **Dark mode** (full): pure token remap under `:root[data-theme="dark"]` in `tokens.css` (identity
+>    preserved by inversion); toggle in command bar + login (`src/theme.ts`, `app/ThemeToggle.tsx`);
+>    no-FOUC inline script in `index.html`; persists to `localStorage["erp.theme"]`; first visit
+>    follows OS. New `theme.*` i18n keys (ar/en). **Known follow-up: the React-Flow workflow canvas
+>    isn't dark-themed yet.**
+>
+> **NEXT ACTION:** these four increments + the gate11 fix are **uncommitted** — commit + push the batch
+> (user has tested/seen dark mode). Also uncommitted but NOT part of this work: a user edit to
+> `erp_questionnaire_v4.html`. After committing, candidate next items: theme the workflow canvas for
+> dark; "context before action" on primary buttons; continue Phase 9 density. Stray dev artifacts to
+> ignore/clean: `C:\Users\Rw\pw-verify\` (temp Playwright harness, outside repo); background Django
+> :8000 + Vite dev servers may still be running from verification.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →

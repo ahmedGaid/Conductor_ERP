@@ -19,6 +19,13 @@ import { Disclosure } from "../../components/Disclosure";
 import { PurchasingNav } from "./PurchasingNav";
 import "./purchasing.css";
 
+// Plain-language explanation of the current state + next step (human language over the bare status
+// word). Display-layer only — the lifecycle is unchanged; the draft+approval case gets its own line.
+function statusExplainKey(o: PurchaseOrder): string {
+  if (o.status === "draft" && o.requires_approval && !o.approved) return "awaitingApproval";
+  return o.status;
+}
+
 export function PurchaseOrderDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -65,6 +72,12 @@ export function PurchaseOrderDetailPage() {
               </div>
               <span className={`pur-badge pur-badge--${data.status}`}>{t(`purchasing.status.${data.status}`)}</span>
             </div>
+
+            <p className="pur-explain">
+              {t(`purchasing.statusExplain.${statusExplainKey(data)}`, {
+                amount: formatMinor(data.outstanding_minor, data.currency),
+              })}
+            </p>
 
             <div className="pur-summary">
               <div className="pur-summary__item">

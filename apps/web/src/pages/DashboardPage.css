@@ -57,6 +57,68 @@
   color: var(--color-accent);
 }
 
+/* Needs attention today */
+.dash__attn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dash__attn-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.dash__attn-item:hover {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.dash__attn-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.dash__attn-item--danger .dash__attn-icon {
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger-strong);
+}
+
+.dash__attn-item--warn .dash__attn-icon {
+  background-color: var(--color-warning-subtle);
+  color: var(--color-warning-strong);
+}
+
+.dash__attn-text {
+  font-weight: var(--font-weight-medium);
+}
+
+.dash__attn-arrow {
+  margin-inline-start: auto;
+  color: var(--color-text-subtle);
+}
+
+.dash__attn-clear {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
 /* Top expenses */
 .dash__exp-list {
   list-style: none;

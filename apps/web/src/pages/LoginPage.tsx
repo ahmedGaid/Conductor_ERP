@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
 import { LanguageSwitcher } from "../app/LanguageSwitcher";
+import { ThemeToggle } from "../app/ThemeToggle";
 import "./LoginPage.css";
 
 export function LoginPage() {
@@ -45,7 +46,10 @@ export function LoginPage() {
             <span className="login__logo" aria-hidden="true">C</span>
             <span className="login__wordmark">{t("app.title")}</span>
           </div>
-          <LanguageSwitcher />
+          <span className="login__chrome">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </span>
         </div>
         <p className="login__subtitle">{t("login.subtitle")}</p>
 

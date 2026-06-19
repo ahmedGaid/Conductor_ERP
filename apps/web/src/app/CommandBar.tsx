@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useHelp } from "../help/HelpContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 import { CommandPalette } from "./CommandPalette";
 import { NavIcon } from "./icons";
 import "./CommandBar.css";
@@ -63,6 +64,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
       </button>
 
       <div className="commandbar__actions">
+        <ThemeToggle />
         <LanguageSwitcher />
         <button
           type="button"
