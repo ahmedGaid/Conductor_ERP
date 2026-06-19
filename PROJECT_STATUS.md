@@ -17,31 +17,35 @@
 > the notifications link); gate11 was updated to accept the notifications top-level wiring at its new
 > home (command-bar bell / ⌘K palette / sidebar).
 >
-> **Then, same session — three UX increments landed (ALL UNCOMMITTED in the working tree; gate:all
-> 00–11 + gate03 GREEN; verified live in-browser via Playwright/Edge):**
-> 1. **Reconciled the two external UX-tips docs** (`Docs/conductor_erp_ai_agent_prompt ui ux tips*.md`)
->    into the design directive backlog (one source of truth — NOT a second charter). Split Adopt /
->    Adopt-with-change (autosave→explicit draft-save; icons bundled-offline) / Defer (AI assistant,
->    column pinning, "retention" framing). See `Docs/Conductor_ERP_Product_Design_Engineering_Directive.md`.
+> **Phase 9 COMPLETE + COMMITTED** — commit **`b2bb341`** (pushed to `main`, 2026-06-20) bundles:
+> 1. **Reconciled the two external UX-tips docs** into the design directive backlog (one source of
+>    truth — NOT a second charter). Adopt / Adopt-with-change / Defer split.
 > 2. **Data-into-meaning:** Dashboard **"Needs attention today"** panel (`DashboardPage.AttentionPanel`)
->    — pending sales/PO approvals, outstanding receivables/payables (amount+count), SLA-breached
->    tickets, failed messages; each links out; cross-module fetches use `.catch(()=>[])` so a role
->    without access never breaks the dashboard (verified: accountant sees a degraded panel, no crash).
-> 3. **Human-language statuses:** plain-language status line under the badge on sales + purchasing
->    **order-detail** pages (display-layer only; new `sales.statusExplain`/`purchasing.statusExplain`
->    i18n keys, ar/en parity).
-> 4. **Dark mode** (full): pure token remap under `:root[data-theme="dark"]` in `tokens.css` (identity
->    preserved by inversion); toggle in command bar + login (`src/theme.ts`, `app/ThemeToggle.tsx`);
->    no-FOUC inline script in `index.html`; persists to `localStorage["erp.theme"]`; first visit
->    follows OS. New `theme.*` i18n keys (ar/en). **Known follow-up: the React-Flow workflow canvas
->    isn't dark-themed yet.**
+>    — pending sales/PO approvals, outstanding receivables/payables, SLA-breached tickets, failed
+>    messages; cross-module fetches `.catch(()=>[])` so a role without access can't break the dashboard.
+> 3. **Human-language statuses:** plain-language status line on sales/purchasing **order-detail** pages.
+> 4. **Progressive disclosure:** Quotation + Purchase-Request detail now lead with Total + primary
+>    action; secondary meta behind a "Details" `Disclosure` (matches order/PO).
+> 5. **Dark mode** (full): token remap under `:root[data-theme="dark"]` (pure-black), toggle in command
+>    bar + login, no-FOUC init in `index.html`, persisted to `localStorage["erp.theme"]`.
+> 6. **gate11 fix:** accept notifications wired via the command-bar bell / palette.
+> A monochrome "Uber" restyle was tried this cycle and **fully reverted** at the user's request (not in
+> the commit). **Known follow-ups (not blocking):** React-Flow workflow canvas isn't dark-themed;
+> "context before action" on primary buttons. Stray dev artifacts (outside the repo / git-ignored):
+> `C:\Users\Rw\pw-verify\` (temp Playwright harness); background Django :8000 + Vite dev servers from
+> verification; uncommitted `erp_questionnaire_v4.html` (user edit) + `Images/` were deliberately
+> excluded from the commit.
 >
-> **NEXT ACTION:** these four increments + the gate11 fix are **uncommitted** — commit + push the batch
-> (user has tested/seen dark mode). Also uncommitted but NOT part of this work: a user edit to
-> `erp_questionnaire_v4.html`. After committing, candidate next items: theme the workflow canvas for
-> dark; "context before action" on primary buttons; continue Phase 9 density. Stray dev artifacts to
-> ignore/clean: `C:\Users\Rw\pw-verify\` (temp Playwright harness, outside repo); background Django
-> :8000 + Vite dev servers may still be running from verification.
+> **Phase 10 — Hardening DONE + COMMITTED** (2026-06-20): DRF rate limiting (anon/user, env-tunable;
+> off in dev/test), prod hardening (HSTS/SSL-redirect/proxy-header/CSRF-trusted-origins/env-CORS/secure
+> cookies/secret-required), journals-list N+1 fixed via `Prefetch`. New **gate12** = `manage.py check
+> --deploy --fail-level WARNING` (prod) + a real 429 throttle test + a journals query-budget test;
+> `ALL_GATES` now 00–12, all GREEN. See COMPLETION_PLAN Phase 10.
+>
+> **NEXT: Phase 11 — Deployment packaging + runbook (Track E, the final phase).** Django serving the
+> built React bundle (WhiteNoise/IIS), Celery worker + beat as Windows services, `.env.prod` template,
+> Postgres/Redis prod notes, nightly-backup + tested-restore policy, operator runbook (install/migrate/
+> seed/start/upgrade). Final `gate:all` green = release candidate.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →

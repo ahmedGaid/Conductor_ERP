@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -54,6 +55,13 @@ from .serializers import (
 )
 
 _CanAccount = HasAnyRole.require(ACCOUNTANT, BRANCH_MANAGER)
+
+# Prefetch journal lines (ordered, with their account) so the serializer reads them from cache
+# instead of issuing a query per entry — keeps the journals list at a constant query count.
+_LINES_PREFETCH = Prefetch(
+    "lines",
+    queryset=JournalLine.objects.select_related("account").order_by("line_no"),
+)
 
 
 def _envelope(data, status: int = 200) -> Response:
@@ -136,7 +144,12 @@ class JournalListPostView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request) -> Response:
-        qs = JournalEntry.objects.select_related("period").order_by("-date", "-number")
+        # Prefetch lines (+ their account) so serializing N entries stays O(1) queries, not O(N).
+        qs = (
+            JournalEntry.objects.select_related("period")
+            .prefetch_related(_LINES_PREFETCH)
+            .order_by("-date", "-number")
+        )
         period = request.query_params.get("period")
         if period:
             qs = qs.filter(period__code=period)
@@ -172,7 +185,10 @@ class JournalDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request, entry_id) -> Response:
-        entry = get_object_or_404(JournalEntry.objects.select_related("period"), id=entry_id)
+        entry = get_object_or_404(
+            JournalEntry.objects.select_related("period").prefetch_related(_LINES_PREFETCH),
+            id=entry_id,
+        )
         return _envelope(JournalEntrySerializer(entry).data)
 
 

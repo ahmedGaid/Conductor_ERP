@@ -251,4 +251,6 @@ class JournalEntrySerializer(serializers.Serializer):
         return obj.period.code
 
     def get_lines(self, obj) -> list:
-        return JournalLineSerializer(obj.lines.select_related("account").order_by("line_no"), many=True).data
+        # Read from the prefetched, ordered, account-joined cache (see _LINES_PREFETCH in the views)
+        # so listing many entries doesn't issue a query per entry.
+        return JournalLineSerializer(obj.lines.all(), many=True).data

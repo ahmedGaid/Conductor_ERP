@@ -99,11 +99,18 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 
 ## Track E — Stage 7 (ship it)
 
-### Phase 10 — Hardening (security + performance)
-- Security pass (DRF throttling, prod CORS/CSRF/secure-cookie/HSTS settings, secret handling,
-  dependency audit, RBAC coverage review), N+1/query-count checks on the heavy list endpoints,
-  structured-log/correlation review, an error-catalog audit.
-- Gate: a new `gate11` (security/settings assertions + query-count budgets on key endpoints).
+### Phase 10 — Hardening (security + performance)  ✅ DONE (2026-06-20)
+- **DRF rate limiting** (anon + user throttles, env-tunable) in base settings; disabled in dev/test so
+  the suite isn't throttled. **Prod hardening:** HSTS (1y, subdomains, preload), SSL redirect,
+  `SECURE_PROXY_SSL_HEADER` (reverse proxy), `CSRF_TRUSTED_ORIGINS`, env-driven prod CORS (closed by
+  default), secure cookies, NOSNIFF/X-Frame, secret required (no default). **Performance:** fixed the
+  journals-list N+1 (a `Prefetch` of lines+account; serializer reads the cache) — list is now O(1)
+  queries. (RBAC already enforced via `HasAnyRole`; the other heavy lists already prefetch.)
+- **Gate12** (new; `ALL_GATES` → 00–12): runs `manage.py check --deploy --fail-level WARNING` under
+  the **prod** settings (authoritative deployment-checklist proof), a real DRF 429 throttle test, and a
+  query-count budget on the journals list; asserts throttling + prod directives are wired.
+- Deferred to a later pass (non-blocking): broader query-budget coverage on every module list,
+  automated dependency-vulnerability audit (needs an offline advisory DB), error-catalog audit.
 
 ### Phase 11 — Deployment packaging + runbook
 - Production serving (Django serving the built React bundle behind WhiteNoise/IIS reverse proxy),

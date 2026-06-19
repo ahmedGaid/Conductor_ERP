@@ -138,6 +138,17 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "EXCEPTION_HANDLER": "erp.core.exceptions.drf_exception_handler",
+    # Rate limiting (abuse / brute-force protection). Per-IP for anonymous traffic (login/token),
+    # per-user for authenticated traffic. Rates are env-tunable; dev/test disables them (see dev.py)
+    # so the suite isn't throttled. Uses the default cache backend.
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": env("DRF_THROTTLE_ANON", default="60/min"),
+        "user": env("DRF_THROTTLE_USER", default="1000/min"),
+    },
 }
 
 # --- JWT (access/refresh) ---
