@@ -60,8 +60,24 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
-> **User Management & Personalization — Increment 1 (Settings) BUILT + gate:all 00–13 GREEN
-> (2026-06-20, awaiting client test + commit).** First slice of the new "User Management &
+> **User Management & Personalization — Increment 2 (RBAC permission model) BUILT + COMMITTED +
+> gate:all 00–13 GREEN (2026-06-20).** Backend-only, additive foundation — no frontend, no module
+> rewrites. New `erp/identity/rbac.py` (single source of truth: module→entity registry, the 5 actions
+> View/Create/Edit/Delete/Approve, the data-scope ladder All/Company/Branch/Department/Team/Own,
+> approval document types, and the default role permission sets; pure constants, no model imports).
+> Two additive tables (migration `0004`): `RolePermission` (role=Group, code `"<module>.<entity>.
+> <action>"`, scope) + `ApprovalLimit` (role, document_type, `limit_minor` null=unlimited).
+> `erp/identity/access.py` resolves it: `has_permission`, broadest `scope_for` (broader grant wins
+> across roles), `accessible_modules`, `approval_limit` / `can_approve`; superuser + System Admin bypass.
+> New DRF `HasModulePermission.require("sales.order.view")` is a strict **superset of `HasAnyRole`** —
+> existing endpoints keep their role checks, modules migrate later one at a time. `seed_identity` now
+> seeds default permission sets + approval limits idempotently (Auditor view-only / Accountant full
+> accounting + approve / Branch Manager operational @ BRANCH + limits). 8 tests in
+> `tests/test_access.py` (registry, scope merge, limits, the permission class, seed). **Scope is modeled
+> here; enforcing it across all module querysets is Increment 5.** Commit on `main` (local).
+>
+> **User Management & Personalization — Increment 1 (Settings) BUILT + COMMITTED + gate:all 00–13 GREEN
+> (2026-06-20).** First slice of the new "User Management &
 > Personalization" spec, delivered additively (no change to the auth/RBAC path of the 9 shipped
 > modules). **Backend** (`erp/identity`, migration `0003`): `UserPreferences` (per-user) +
 > `OrgPreferences` (singleton pk=1) tables; services `get/update/effective_preferences` +

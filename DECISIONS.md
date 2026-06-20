@@ -59,6 +59,31 @@ Increment 1 choices:
   later RBAC increments (permission model → user management → role editor → scope-everywhere → approval
   limits) are not in this increment.
 
+## User Management & Personalization — Increment 2 (RBAC permission model, 2026-06-20)
+
+The granular permission model from the spec, built **additively** as a backend foundation — no
+frontend, no module rewrites, so the 9 shipped modules and gate03 are untouched (gate:all 00-13 green).
+
+- **Vocabulary in code, grants in the DB.** `erp/identity/rbac.py` is the single source of truth:
+  the module→entity registry, the fixed action set (View/Create/Edit/Delete/Approve), the data-scope
+  ladder, the approval document types, and the default role permission sets. It is pure constants (no
+  model imports) so `models.py` and `access.py` both depend on it without a cycle. A permission *code*
+  is the string `"<module>.<entity>.<action>"`.
+- **Two additive tables.** `RolePermission` (role = Django Group; code + scope) and `ApprovalLimit`
+  (role; document type; `limit_minor`, null = unlimited). Roles stay Django Groups — we layer a granular
+  set onto them rather than replacing the Group/`HasAnyRole` model.
+- **`HasModulePermission` is a strict superset of `HasAnyRole`.** Same superuser / System-Admin bypass;
+  new endpoints can opt in via `.require("sales.order.view")`, while every existing endpoint keeps its
+  `HasAnyRole` check. Modules migrate one at a time in a later increment — nothing is forced now.
+- **Scope is modeled + resolved, not yet enforced.** `access.py` answers has-permission, broadest
+  effective scope (a broader grant wins when held via several roles), accessible modules, and approval
+  limit / can-approve. Wiring scope into module querysets (the client's "enforce everywhere" choice) is
+  **Increment 5**, done across all modules at once and proven per-module by tests.
+- **Defaults seeded idempotently** by `seed_identity`: Auditor = view-only everywhere; Accountant =
+  full accounting + view elsewhere + invoice approve + unlimited journal/invoice limits; Branch Manager
+  = full operational modules (sales/purchasing/inventory/crm) at BRANCH scope + amount limits; System
+  Admin bypasses (carries no rows).
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

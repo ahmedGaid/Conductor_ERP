@@ -11,6 +11,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from erp.core.models import Branch
+from erp.identity.models import ApprovalLimit, RolePermission
+from erp.identity.rbac import default_approval_limits, default_role_permissions
 from erp.identity.roles import ACCOUNTANT, AUDITOR, BRANCH_MANAGER, DEFAULT_ROLES, SYSTEM_ADMIN
 
 User = get_user_model()
@@ -47,4 +49,21 @@ class Command(BaseCommand):
                 user.save()
             user.groups.set([Group.objects.get(name=role)])
 
-        self.stdout.write(self.style.SUCCESS("identity seeded: roles, HQ branch, demo users"))
+        # Granular RBAC: grant each built-in role its default permission set + approval limits
+        # (System Admin bypasses checks, so it carries no rows). Idempotent via update_or_create.
+        for role_name, perms in default_role_permissions().items():
+            group = Group.objects.get(name=role_name)
+            for code, scope in perms:
+                RolePermission.objects.update_or_create(
+                    role=group, code=code, defaults={"scope": scope}
+                )
+        for role_name, limits in default_approval_limits().items():
+            group = Group.objects.get(name=role_name)
+            for document_type, limit_minor in limits.items():
+                ApprovalLimit.objects.update_or_create(
+                    role=group, document_type=document_type, defaults={"limit_minor": limit_minor}
+                )
+
+        self.stdout.write(
+            self.style.SUCCESS("identity seeded: roles, HQ branch, demo users, role permissions")
+        )

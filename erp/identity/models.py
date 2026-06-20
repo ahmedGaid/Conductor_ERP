@@ -10,6 +10,8 @@ from __future__ import annotations
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from .rbac import DataScope, SCOPE_CHOICES
+
 
 class User(AbstractUser):
     # Email is the primary credential; username kept for admin compatibility.
@@ -144,3 +146,50 @@ class OrgPreferences(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return "org preferences"
+
+
+# --- Granular RBAC (Increment 2) ---------------------------------------------------------------
+#
+# These tables make a role (a Django Group) carry an explicit, granular permission set: each
+# RolePermission grants one "<module>.<entity>.<action>" code at a data scope, and each ApprovalLimit
+# caps a document type by amount. They are purely additive — existing endpoints keep using the
+# role-name check (HasAnyRole); the new HasModulePermission class reads these. Scope is recorded here
+# and exposed by the service layer; queryset enforcement across modules is a later increment.
+
+
+class RolePermission(models.Model):
+    """One granted permission (code + scope) on a role."""
+
+    role = models.ForeignKey(
+        "auth.Group", on_delete=models.CASCADE, related_name="role_permissions"
+    )
+    code = models.CharField(max_length=80)  # "<module>.<entity>.<action>"
+    scope = models.CharField(max_length=12, choices=SCOPE_CHOICES, default=DataScope.ALL)
+
+    class Meta:
+        db_table = "identity_role_permission"
+        constraints = [
+            models.UniqueConstraint(fields=["role", "code"], name="uniq_role_permission"),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.role_id}:{self.code}@{self.scope}"
+
+
+class ApprovalLimit(models.Model):
+    """An amount ceiling a role may approve for a document type (null = unlimited)."""
+
+    role = models.ForeignKey(
+        "auth.Group", on_delete=models.CASCADE, related_name="approval_limits"
+    )
+    document_type = models.CharField(max_length=40)
+    limit_minor = models.BigIntegerField(null=True, blank=True)
+
+    class Meta:
+        db_table = "identity_approval_limit"
+        constraints = [
+            models.UniqueConstraint(fields=["role", "document_type"], name="uniq_role_approval_limit"),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.role_id}:{self.document_type}<={self.limit_minor}"
