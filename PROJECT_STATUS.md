@@ -60,8 +60,17 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
-> **Post-roadmap follow-up — Per-device session revoke BUILT + gate:all 00–13 GREEN, awaiting
-> test+commit (2026-06-21).** Closes the session-revocation gap deferred in Increment 3. Enabled the
+> **Post-roadmap follow-up — Brand icon system integrated (2026-06-21).** Dropped the client's
+> production icon kit into `apps/web/public/branding/` (squircle CE mark + favicon/PWA/desktop assets).
+> `index.html` now wires favicon.svg (+ .ico) / apple-touch-icon / site.webmanifest / browserconfig /
+> theme-color. The sidebar + login "C" letter-tile is replaced by the squircle mark, **swapped by
+> theme per the client's mapping: light mode = black tile (`conductor-icon-dark.svg`), dark mode =
+> white tile (`conductor-icon-light.svg`)** via a `background-image` rule under `:root[data-theme]`
+> (no JS/hex; gate03 green). See DECISIONS. Local (not yet committed) — separate commit from session
+> revoke.
+>
+> **Post-roadmap follow-up — Per-device session revoke BUILT + gate:all 00–13 GREEN (2026-06-21,
+> commit `30aff84`).** Closes the session-revocation gap deferred in Increment 3. Enabled the
 > simplejwt **`token_blacklist`** app (`BLACKLIST_AFTER_ROTATION=True`); every issued refresh token is
 > now tracked as an `OutstandingToken` (one per login = one session). New `erp/identity/sessions.py`:
 > `active_sessions` (non-revoked, non-expired refresh tokens), `revoke_session` (blacklist one device),

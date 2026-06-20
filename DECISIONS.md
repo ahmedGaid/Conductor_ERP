@@ -232,6 +232,24 @@ simplejwt token-blacklist app").
   existing audit-log panel **Sign-in history**. The two are complementary: history is the immutable
   audit trail, active sessions are the live, revocable tokens.
 
+## Brand icon system (2026-06-21)
+
+The client supplied a production icon kit (squircle "CE" mark, Light = white tile/black mark,
+Dark = black tile/white mark, plus favicon/PWA/desktop assets). Dropped into
+`apps/web/public/branding/` as-is (Vite serves `public/` at the web root, so `/branding/...` works in
+dev and is copied into `dist/` for the WhiteNoise prod process).
+
+- **Logo tile swaps by theme, per the client's explicit mapping: light mode shows the *black* tile,
+  dark mode shows the *white* tile.** So the squircle uses `conductor-icon-dark.svg` (black tile) by
+  default and `conductor-icon-light.svg` (white tile) under `:root[data-theme="dark"]` — the inverse
+  of "match the surface", chosen so the mark stays a bold, high-contrast block against the page in both
+  themes (consistent with the near-black "Uber" chrome identity). Applied to the sidebar brand and the
+  login brand; the old CSS "C" letter-tile is replaced by a `background-image` swap (no JS, no hex —
+  keeps gate03's token/logical-CSS rules green; `data-theme` is always resolved to light/dark on
+  `<html>`).
+- **Favicon/PWA wired in `index.html`** (`favicon.svg` auto light/dark + `.ico` fallback,
+  `apple-touch-icon`, `site.webmanifest`, `browserconfig.xml`, `theme-color`).
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

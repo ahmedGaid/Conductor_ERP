@@ -41,9 +41,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <span className="sidebar__logo" aria-hidden="true">
-          C
-        </span>
+        <span className="sidebar__logo" aria-hidden="true" />
         <span className="sidebar__wordmark">{t("app.title")}</span>
       </div>
 

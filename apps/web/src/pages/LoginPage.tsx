@@ -43,7 +43,7 @@ export function LoginPage() {
       <form className="login__card" onSubmit={onSubmit}>
         <div className="login__head">
           <div className="login__brand">
-            <span className="login__logo" aria-hidden="true">C</span>
+            <span className="login__logo" aria-hidden="true" />
             <span className="login__wordmark">{t("app.title")}</span>
           </div>
           <span className="login__chrome">

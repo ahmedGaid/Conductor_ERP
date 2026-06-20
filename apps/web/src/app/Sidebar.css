@@ -20,15 +20,19 @@
 }
 
 .sidebar__logo {
-  display: grid;
-  place-items: center;
   inline-size: 2rem;
   block-size: 2rem;
-  border-radius: var(--radius-md);
-  background-color: var(--color-brand);
-  color: var(--color-text-on-brand);
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-latin);
+  /* Conductor squircle mark. Light mode shows the black tile, dark mode the white tile
+     (the squircle's own corners are transparent, so no container background/radius is needed). */
+  background-image: url("/branding/conductor-icon-dark.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  font-size: 0;
+}
+
+:root[data-theme="dark"] .sidebar__logo {
+  background-image: url("/branding/conductor-icon-light.svg");
 }
 
 .sidebar__wordmark {
