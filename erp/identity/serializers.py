@@ -40,3 +40,28 @@ class OrgPreferencesSerializer(serializers.ModelSerializer):
         model = OrgPreferences
         exclude = ["id"]
         read_only_fields = ["updated_at"]
+
+
+# --- User management (Increment 3) ---
+
+class CreateUserSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    role = serializers.CharField(required=False, allow_blank=True)
+    branch = serializers.CharField(required=False, allow_blank=True)
+    department = serializers.CharField(required=False, allow_blank=True)
+    team = serializers.CharField(required=False, allow_blank=True)
+
+
+class UpdateUserSerializer(serializers.Serializer):
+    role = serializers.CharField(required=False, allow_blank=True)
+    branch = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    department = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    team = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    status = serializers.CharField(required=False, allow_blank=True)
+
+
+class BulkUsersSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["suspend", "activate", "archive", "assign_role"])
+    ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    role = serializers.CharField(required=False, allow_blank=True)

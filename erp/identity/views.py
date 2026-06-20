@@ -7,16 +7,30 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView  # noqa: F401 (re-exported in urls)
 
-from . import services
-from .permissions import HasAnyRole
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+
+from . import services, users as user_svc
+from .models import Department, Team
+from .permissions import HasAnyRole, HasModulePermission
 from .roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
 from .serializers import (
+    BulkUsersSerializer,
+    CreateUserSerializer,
     LoginSerializer,
     OrgPreferencesSerializer,
+    UpdateUserSerializer,
     UserPreferencesSerializer,
     UserSerializer,
     Verify2FASerializer,
 )
+
+User = get_user_model()
+
+
+def _can(action: str):
+    """RBAC for the admin user-management surface: administration.user.<action>."""
+    return HasModulePermission.require(f"administration.user.{action}")
 
 
 def _envelope(data) -> Response:
@@ -115,3 +129,130 @@ class OrgPreferencesView(APIView):
         s.is_valid(raise_exception=True)
         org = services.update_org_preferences(request.user, s.validated_data)
         return _envelope(OrgPreferencesSerializer(org).data)
+
+
+# --- User management (Increment 3) ---
+
+class UsersView(APIView):
+    """List + filter users, or create (invite) one."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can("create" if self.request.method == "POST" else "view")()]
+
+    def get(self, request: Request) -> Response:
+        qs = User.objects.select_related("branch", "department").order_by("username")
+        p = request.query_params
+        if p.get("search"):
+            from django.db.models import Q
+            term = p["search"]
+            qs = qs.filter(Q(username__icontains=term) | Q(email__icontains=term))
+        if p.get("role"):
+            qs = qs.filter(groups__name=p["role"])
+        if p.get("status"):
+            qs = qs.filter(status=p["status"])
+        if p.get("branch"):
+            qs = qs.filter(branch__code=p["branch"])
+        if p.get("department"):
+            qs = qs.filter(department__code=p["department"])
+        return _envelope([user_svc.serialize_list(u) for u in qs.distinct()])
+
+    def post(self, request: Request) -> Response:
+        s = CreateUserSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        branch = _branch(d.get("branch"))
+        user, temp_password = user_svc.create_user(
+            username=d["username"], email=d["email"], role=d.get("role") or None,
+            branch=branch, department=d.get("department") or None, team=d.get("team") or None,
+            actor=request.user,
+        )
+        result = user_svc.serialize_detail(user)
+        result["temp_password"] = temp_password
+        return Response({"data": result}, status=201)
+
+
+class UserDetailView(APIView):
+    """Full profile, or update role/branch/department/team/status."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can("edit" if self.request.method == "PATCH" else "view")()]
+
+    def get(self, request: Request, pk: int) -> Response:
+        return _envelope(user_svc.serialize_detail(_get_user(pk)))
+
+    def patch(self, request: Request, pk: int) -> Response:
+        s = UpdateUserSerializer(data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        kwargs = {"actor": request.user}
+        if "role" in d:
+            kwargs["role"] = d["role"] or None
+        if "branch" in d:
+            kwargs["branch"] = _branch(d["branch"]) if d["branch"] else None
+        if "department" in d:
+            kwargs["department"] = d["department"] or ""
+        if "team" in d:
+            kwargs["team"] = d["team"] or ""
+        if "status" in d and d["status"]:
+            kwargs["status"] = d["status"]
+        user = user_svc.update_user(_get_user(pk), **kwargs)
+        return _envelope(user_svc.serialize_detail(user))
+
+
+class UserResetPasswordView(APIView):
+    def get_permissions(self):
+        return [IsAuthenticated(), _can("edit")()]
+
+    def post(self, request: Request, pk: int) -> Response:
+        temp_password = user_svc.reset_password(_get_user(pk), actor=request.user)
+        return _envelope({"temp_password": temp_password})
+
+
+class UsersBulkView(APIView):
+    def get_permissions(self):
+        return [IsAuthenticated(), _can("edit")()]
+
+    def post(self, request: Request) -> Response:
+        s = BulkUsersSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        count = user_svc.bulk(d["action"], d["ids"], role=d.get("role") or None, actor=request.user)
+        return _envelope({"affected": count})
+
+
+class OrgUnitsView(APIView):
+    """Departments + teams + roles + branches — the option lists the Users UI needs."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        from erp.core.models import Branch
+        return _envelope({
+            "roles": list(Group.objects.order_by("name").values_list("name", flat=True)),
+            "branches": [
+                {"code": b.code, "name": b.name} for b in Branch.objects.filter(is_active=True)
+            ],
+            "departments": [
+                {"code": d.code, "name": d.name} for d in Department.objects.filter(is_active=True)
+            ],
+            "teams": [{"code": t.code, "name": t.name} for t in Team.objects.filter(is_active=True)],
+        })
+
+
+def _get_user(pk: int):
+    from rest_framework.exceptions import NotFound
+    try:
+        return User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        raise NotFound("User not found")
+
+
+def _branch(code: str | None):
+    if not code:
+        return None
+    from rest_framework.exceptions import ValidationError as DRFValidationError
+    from erp.core.models import Branch
+    try:
+        return Branch.objects.get(code=code)
+    except Branch.DoesNotExist:
+        raise DRFValidationError(f"Unknown branch: {code}")

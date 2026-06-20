@@ -60,6 +60,20 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
+> **User Management & Personalization — Increment 3 (User management) BUILT + COMMITTED + gate:all
+> 00–13 GREEN (2026-06-20).** First UI on the RBAC backbone. Backend (erp/identity, migration `0005`):
+> `User` gains `status` (active/invited/suspended/archived, synced to `is_active`), `department`,
+> `team`; new `Department` + `Team` models. `users.py` service (create/invite w/ one-time temp
+> password, set_status, assign_role, update_user, reset_password, bulk, login_history, serialize
+> list/detail). DRF under `/api/identity/users*` gated by `administration.user.*` (so only System Admin
+> by default): list+filter, create, detail, patch (role/status/dept/branch), reset-password, bulk,
+> org-units. Sessions = login history from the audit log (true per-device revoke deferred — needs
+> simplejwt blacklist; suspend blocks access now). 7 tests in `tests/test_users.py`. Frontend:
+> `api/users.ts`; `pages/admin/` **Users** list (filters + bulk activate/suspend/archive + invite) and
+> **User detail** (profile / role+status switch / module access + permissions computed from role /
+> sessions / activity / reset password); admin-gated sidebar "Users" link + 2 help guides; ar/en parity
+> (853 keys). Routes `/admin/users` + `/admin/users/:id`. Commit on `main` (local).
+>
 > **User Management & Personalization — Increment 2 (RBAC permission model) BUILT + COMMITTED +
 > gate:all 00–13 GREEN (2026-06-20).** Backend-only, additive foundation — no frontend, no module
 > rewrites. New `erp/identity/rbac.py` (single source of truth: module→entity registry, the 5 actions

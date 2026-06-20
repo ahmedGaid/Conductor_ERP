@@ -16,4 +16,10 @@ urlpatterns = [
     path("preferences", views.PreferencesView.as_view(), name="preferences"),
     path("preferences/effective", views.EffectivePreferencesView.as_view(), name="preferences-effective"),
     path("org-preferences", views.OrgPreferencesView.as_view(), name="org-preferences"),
+    # User management
+    path("users", views.UsersView.as_view(), name="users"),
+    path("users/bulk", views.UsersBulkView.as_view(), name="users-bulk"),
+    path("users/org-units", views.OrgUnitsView.as_view(), name="users-org-units"),
+    path("users/<int:pk>", views.UserDetailView.as_view(), name="user-detail"),
+    path("users/<int:pk>/reset-password", views.UserResetPasswordView.as_view(), name="user-reset-password"),
 ]

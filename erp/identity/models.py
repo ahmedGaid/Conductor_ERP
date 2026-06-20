@@ -13,6 +13,55 @@ from django.db import models
 from .rbac import DataScope, SCOPE_CHOICES
 
 
+class Department(models.Model):
+    """An org unit a user can belong to (optionally within a branch)."""
+
+    code = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=160)
+    branch = models.ForeignKey(
+        "core.Branch", null=True, blank=True, on_delete=models.SET_NULL, related_name="departments"
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "identity_department"
+        ordering = ["code"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.code} — {self.name}"
+
+
+class Team(models.Model):
+    """A team within a department."""
+
+    code = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=160)
+    department = models.ForeignKey(
+        "identity.Department", null=True, blank=True, on_delete=models.SET_NULL, related_name="teams"
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "identity_team"
+        ordering = ["code"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.code} — {self.name}"
+
+
+# User lifecycle states (spec). is_active is kept in sync by the user service.
+USER_ACTIVE = "active"
+USER_INVITED = "invited"
+USER_SUSPENDED = "suspended"
+USER_ARCHIVED = "archived"
+USER_STATUS_CHOICES = [
+    (USER_ACTIVE, "Active"),
+    (USER_INVITED, "Invited"),
+    (USER_SUSPENDED, "Suspended"),
+    (USER_ARCHIVED, "Archived"),
+]
+
+
 class User(AbstractUser):
     # Email is the primary credential; username kept for admin compatibility.
     email = models.EmailField(unique=True)
@@ -25,6 +74,15 @@ class User(AbstractUser):
         on_delete=models.PROTECT,
         related_name="users",
     )
+
+    # Org placement (admin-managed; personal display name/phone live in UserPreferences).
+    department = models.ForeignKey(
+        "identity.Department", null=True, blank=True, on_delete=models.SET_NULL, related_name="users"
+    )
+    team = models.ForeignKey(
+        "identity.Team", null=True, blank=True, on_delete=models.SET_NULL, related_name="users"
+    )
+    status = models.CharField(max_length=10, choices=USER_STATUS_CHOICES, default=USER_ACTIVE)
 
     # TOTP 2FA.
     is_2fa_enabled = models.BooleanField(default=False)

@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { getMe } from "../api/identity";
 import { usePreferences } from "../preferences/PreferencesContext";
 import { useAsync } from "../hooks/useAsync";
+import { SYSTEM_ADMIN } from "../pages/settings/roles";
 import { NavIcon } from "./icons";
 import "./Sidebar.css";
 
@@ -35,6 +36,7 @@ export function Sidebar() {
   const { data: me } = useAsync(getMe, []);
   const { prefs } = usePreferences();
   const favorites = prefs?.favorites ?? [];
+  const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
 
   return (
     <aside className="sidebar">
@@ -83,6 +85,25 @@ export function Sidebar() {
                   </NavLink>
                 </li>
               ))}
+            </ul>
+          </>
+        )}
+
+        {isAdmin && (
+          <>
+            <div className="sidebar__group-label">{t("nav.administration")}</div>
+            <ul className="sidebar__list">
+              <li>
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) =>
+                    isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                  }
+                >
+                  <span className="sidebar__icon"><NavIcon name="crm" /></span>
+                  <span>{t("nav.usersAdmin")}</span>
+                </NavLink>
+              </li>
             </ul>
           </>
         )}

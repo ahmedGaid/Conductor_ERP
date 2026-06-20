@@ -18,7 +18,9 @@
     "reports": "Reports",
     "einvoice": "E-Invoicing",
     "notifications": "Notifications",
-    "favorites": "Favorites"
+    "favorites": "Favorites",
+    "administration": "Administration",
+    "usersAdmin": "Users"
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",
@@ -811,7 +813,10 @@
     "no": "No",
     "soon": "Soon",
     "emptyHint": "Create your first one to get started.",
-    "moreDetails": "Details"
+    "moreDetails": "Details",
+    "cancel": "Cancel",
+    "on": "On",
+    "off": "Off"
   },
   "einvoice": {
     "tabs": {
@@ -1001,6 +1006,76 @@
       "accentDesc": "The accent colour new users start with.",
       "landing": "Default landing page",
       "landingDesc": "The page users see first after signing in."
+    }
+  },
+  "admin": {
+    "select": "Select",
+    "selected": "{{count}} selected",
+    "bulkDone": "{{count}} user(s) updated",
+    "status": {
+      "active": "Active",
+      "invited": "Invited",
+      "suspended": "Suspended",
+      "archived": "Archived"
+    },
+    "scope": {
+      "all": "All records",
+      "company": "My company",
+      "branch": "My branch",
+      "department": "My department",
+      "team": "My team",
+      "own": "My records only"
+    },
+    "action": {
+      "activate": "Activate",
+      "suspend": "Suspend",
+      "archive": "Archive"
+    },
+    "users": {
+      "title": "Users",
+      "intro": "Manage who can sign in, their roles, and account status.",
+      "search": "Search name or email",
+      "role": "Role",
+      "department": "Department",
+      "branch": "Branch",
+      "status": "Status",
+      "allRoles": "All roles",
+      "allDepartments": "All departments",
+      "allStatuses": "All statuses",
+      "name": "Name",
+      "email": "Email",
+      "lastLogin": "Last login",
+      "never": "Never",
+      "empty": "No users match",
+      "emptyHint": "Try clearing the filters, or invite a new user."
+    },
+    "invite": {
+      "cta": "Invite user",
+      "username": "Username",
+      "email": "Email",
+      "noRole": "No role",
+      "submit": "Send invite",
+      "done": "Invited {{name}} — temporary password: {{password}}"
+    },
+    "detail": {
+      "back": "Back to users",
+      "profile": "Profile",
+      "username": "Username",
+      "jobTitle": "Job title",
+      "phone": "Phone",
+      "twofa": "Two-factor",
+      "roleAccess": "Role & access",
+      "assignedRole": "Assigned role",
+      "resetPassword": "Reset password",
+      "resetDone": "New temporary password: {{password}}",
+      "modules": "Module access",
+      "noModules": "No modules — this user has no permissions yet.",
+      "permissions": "Permissions",
+      "noPermissions": "No permissions.",
+      "sessions": "Sessions",
+      "noSessions": "No sign-ins recorded.",
+      "audit": "Activity",
+      "noAudit": "No recorded activity."
     }
   }
 }

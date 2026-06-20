@@ -12,6 +12,8 @@ import { NavigationSettingsPage } from "./pages/settings/NavigationSettingsPage"
 import { NotificationsSettingsPage } from "./pages/settings/NotificationsSettingsPage";
 import { AccessibilityPage } from "./pages/settings/AccessibilityPage";
 import { OrganizationPage } from "./pages/settings/OrganizationPage";
+import { UsersPage } from "./pages/admin/UsersPage";
+import { UserDetailPage } from "./pages/admin/UserDetailPage";
 import { WorkflowListPage } from "./pages/WorkflowListPage";
 import { WorkflowCanvasPage } from "./pages/WorkflowCanvasPage";
 import { ExecutionViewerPage } from "./pages/ExecutionViewerPage";
@@ -97,6 +99,8 @@ function Protected() {
           <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
           <Route path="/settings/accessibility" element={<AccessibilityPage />} />
           <Route path="/settings/organization" element={<OrganizationPage />} />
+          <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/admin/users/:id" element={<UserDetailPage />} />
           <Route path="/workflows" element={<WorkflowListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />

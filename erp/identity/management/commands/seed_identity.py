@@ -11,7 +11,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from erp.core.models import Branch
-from erp.identity.models import ApprovalLimit, RolePermission
+from erp.identity.models import ApprovalLimit, Department, RolePermission, Team
 from erp.identity.rbac import default_approval_limits, default_role_permissions
 from erp.identity.roles import ACCOUNTANT, AUDITOR, BRANCH_MANAGER, DEFAULT_ROLES, SYSTEM_ADMIN
 
@@ -38,6 +38,18 @@ class Command(BaseCommand):
             code="HQ", defaults={"name": "Headquarters"}
         )
 
+        # Org structure (departments + teams) for user management.
+        dept_specs = [("FIN", "Finance"), ("SALES", "Sales"), ("OPS", "Operations")]
+        departments = {}
+        for code, name in dept_specs:
+            departments[code], _ = Department.objects.get_or_create(
+                code=code, defaults={"name": name, "branch": branch}
+            )
+        for code, name, dept_code in [("FIN-AP", "Accounts Payable", "FIN"), ("SALES-FIELD", "Field Sales", "SALES")]:
+            Team.objects.get_or_create(
+                code=code, defaults={"name": name, "department": departments[dept_code]}
+            )
+
         for username, email, role, is_super in DEMO_USERS:
             user, created = User.objects.get_or_create(
                 username=username,
@@ -48,6 +60,10 @@ class Command(BaseCommand):
                 user.branch = None if is_super else branch
                 user.save()
             user.groups.set([Group.objects.get(name=role)])
+
+        # Place demo users in departments (idempotent, illustrative for the Users screen).
+        for username, dept_code in [("accountant", "FIN"), ("manager", "SALES"), ("auditor", "FIN")]:
+            User.objects.filter(username=username).update(department=departments[dept_code])
 
         # Granular RBAC: grant each built-in role its default permission set + approval limits
         # (System Admin bypasses checks, so it carries no rows). Idempotent via update_or_create.

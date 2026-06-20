@@ -84,6 +84,29 @@ frontend, no module rewrites, so the 9 shipped modules and gate03 are untouched 
   = full operational modules (sales/purchasing/inventory/crm) at BRANCH scope + amount limits; System
   Admin bypasses (carries no rows).
 
+## User Management & Personalization — Increment 3 (User management, 2026-06-20)
+
+Admin user-management on top of the Increment 2 permission model — first UI for the RBAC backbone.
+
+- **User lifecycle is a `status` field** (active/invited/suspended/archived) kept in sync with
+  `is_active` by the service, so a suspended/archived account survives for history but cannot
+  authenticate. Created users start **invited** with a one-time temporary password returned once.
+- **Org structure = `Department` + `Team`** (in identity, FK to core.Branch); `User` gains
+  `department`/`team`/`status`. Personal display name/phone stay in `UserPreferences` (the user owns
+  them); the admin Users screen reads them for display but edits HR/placement fields (role, status,
+  branch, department) — no duplication of ownership.
+- **Admin surface gated by `administration.user.*`** via `HasModulePermission` — so by default only
+  System Admin reaches it (no built-in role is seeded `administration` permissions). Endpoints:
+  `/api/identity/users` (list+filter / create), `/users/<id>` (detail / patch), `/users/<id>/
+  reset-password`, `/users/bulk`, `/users/org-units`.
+- **Sessions = login history from the audit log.** JWT is stateless, so the authoritative record of
+  access is the audit trail; the User detail "Sessions" panel shows it. True per-device revocation
+  needs the simplejwt token-blacklist app and is **deferred** — suspending the user blocks new access
+  today (the immediate, honest lever).
+- **Module access + permissions on the detail page are computed from the role**, not stored per user
+  (via `access.accessible_modules` / `access.user_permissions`), so changing the role updates them
+  live — reinforcing that roles are the single grant surface.
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.
