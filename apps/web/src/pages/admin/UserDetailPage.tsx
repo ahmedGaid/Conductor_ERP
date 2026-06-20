@@ -6,6 +6,8 @@ import {
   getOrgUnits,
   getUser,
   resetUserPassword,
+  revokeAllSessions,
+  revokeSession,
   updateUser,
   type UserDetail,
 } from "../../api/users";
@@ -40,6 +42,17 @@ export function UserDetailPage() {
   async function reset() {
     const { temp_password } = await resetUserPassword(userId);
     setNotice(t("admin.detail.resetDone", { password: temp_password }));
+  }
+
+  async function revokeOne(tokenId: number) {
+    setUser(await revokeSession(userId, tokenId));
+    setNotice(t("admin.detail.sessionRevoked"));
+  }
+
+  async function revokeAll() {
+    const { revoked } = await revokeAllSessions(userId);
+    setNotice(t("admin.detail.allSessionsRevoked", { count: revoked }));
+    reload();
   }
 
   if (loading && !current) {
@@ -137,6 +150,28 @@ export function UserDetailPage() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+
+        <div className="card admin-panel">
+          <div className="admin-panel__head">
+            <h2>{t("admin.detail.activeSessions")}</h2>
+            {current.active_sessions.length > 0 && (
+              <button className="btn btn--sm btn--danger" onClick={revokeAll}>{t("admin.detail.revokeAll")}</button>
+            )}
+          </div>
+          {current.active_sessions.length === 0 ? (
+            <p className="muted">{t("admin.detail.noActiveSessions")}</p>
+          ) : (
+            <ul className="admin-log">
+              {current.active_sessions.map((s) => (
+                <li key={s.id}>
+                  <span className="latin">{s.created_at ? s.created_at.slice(0, 16).replace("T", " ") : "—"}</span>
+                  <span className="muted">{t("admin.detail.expires")}: {s.expires_at ? s.expires_at.slice(0, 10) : "—"}</span>
+                  <button className="btn btn--sm admin-log__ent" onClick={() => revokeOne(s.id)}>{t("admin.detail.revoke")}</button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 

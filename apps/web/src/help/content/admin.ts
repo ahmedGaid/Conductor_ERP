@@ -50,8 +50,8 @@ export const userDetailGuide: HelpGuide = {
     {
       heading: { en: "Sessions", ar: "الجلسات" },
       body: {
-        en: "Recent sign-in history for this account. To block access immediately, set the status to Suspended.",
-        ar: "سجل عمليات الدخول الأخيرة لهذا الحساب. لمنع الوصول فوراً، اضبط الحالة على «موقوف».",
+        en: "Active sessions are this account's signed-in devices — revoke one to sign that device out, or 'Sign out everywhere' to end them all. Suspending the user also signs out every device immediately. Below that, Sign-in history shows recent logins.",
+        ar: "الجلسات النشطة هي أجهزة هذا الحساب المسجَّل دخولها — أبطل واحدة لتسجيل خروج ذلك الجهاز، أو «تسجيل الخروج من كل الأجهزة» لإنهائها جميعاً. إيقاف المستخدم يسجّل الخروج من كل الأجهزة فوراً أيضاً. وأسفل ذلك يعرض سجل الدخول عمليات الدخول الأخيرة.",
       },
     },
   ],

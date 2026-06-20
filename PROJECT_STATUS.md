@@ -60,8 +60,24 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
-> **User Management & Personalization — Increment 6 (Approval limits) BUILT + gate:all 00–13 GREEN,
-> awaiting test+commit (2026-06-20) — COMPLETES THE RBAC ROADMAP.** The editable `ApprovalLimit`
+> **Post-roadmap follow-up — Per-device session revoke BUILT + gate:all 00–13 GREEN, awaiting
+> test+commit (2026-06-21).** Closes the session-revocation gap deferred in Increment 3. Enabled the
+> simplejwt **`token_blacklist`** app (`BLACKLIST_AFTER_ROTATION=True`); every issued refresh token is
+> now tracked as an `OutstandingToken` (one per login = one session). New `erp/identity/sessions.py`:
+> `active_sessions` (non-revoked, non-expired refresh tokens), `revoke_session` (blacklist one device),
+> `revoke_all_sessions` (sign out everywhere). **`set_status` now revokes all sessions when a user is
+> suspended/archived** — so suspend is a real kill-switch (is_active already blocks the next request;
+> revoking refresh tokens stops renewal). DRF: `POST /users/<id>/revoke-sessions` +
+> `POST /users/<id>/sessions/<token_id>/revoke` (gated `administration.user.edit`); `serialize_detail`
+> gains `active_sessions`. Frontend: User-detail **Active sessions** panel (per-session **Revoke** +
+> **Sign out everywhere**), the old panel relabelled **Sign-in history**; help + ar/en parity. 8 tests
+> in `tests/test_sessions.py` (incl. a blacklisted refresh → 401 at `/token/refresh`). Migration is
+> simplejwt's own (`token_blacklist`); no app migration. **Known limit:** an already-issued access
+> token (≤30 min) stays valid after a single-session revoke; suspend blocks it on the next request.
+> Local (not yet committed).
+>
+> **User Management & Personalization — Increment 6 (Approval limits) BUILT + COMMITTED + gate:all 00–13
+> GREEN (2026-06-20, commit `ac9e739`, pushed) — COMPLETED THE RBAC ROADMAP.** The editable `ApprovalLimit`
 > ceilings (Increment 4) are now **enforced** at the approve gates. `approve_order`/`approve_quotation`
 > (sales) and `approve_order`/`approve_request` (purchasing) now reject with a new
 > `ApprovalLimitExceededError` (**SAL-015** / **PUR-014**) when an **authenticated, non-admin** approver

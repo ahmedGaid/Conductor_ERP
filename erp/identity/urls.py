@@ -22,6 +22,8 @@ urlpatterns = [
     path("users/org-units", views.OrgUnitsView.as_view(), name="users-org-units"),
     path("users/<int:pk>", views.UserDetailView.as_view(), name="user-detail"),
     path("users/<int:pk>/reset-password", views.UserResetPasswordView.as_view(), name="user-reset-password"),
+    path("users/<int:pk>/revoke-sessions", views.UserRevokeSessionsView.as_view(), name="user-revoke-sessions"),
+    path("users/<int:pk>/sessions/<int:token_id>/revoke", views.UserRevokeSessionView.as_view(), name="user-revoke-session"),
     # Role editor (registry must precede the <name> catch-all)
     path("roles", views.RolesView.as_view(), name="roles"),
     path("roles/registry", views.RoleRegistryView.as_view(), name="roles-registry"),

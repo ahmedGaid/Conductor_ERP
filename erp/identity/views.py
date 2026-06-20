@@ -211,6 +211,33 @@ class UserResetPasswordView(APIView):
         return _envelope({"temp_password": temp_password})
 
 
+class UserRevokeSessionsView(APIView):
+    """Revoke all of a user's sessions (force sign-out on every device)."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can("edit")()]
+
+    def post(self, request: Request, pk: int) -> Response:
+        from . import sessions
+        revoked = sessions.revoke_all_sessions(_get_user(pk), actor=request.user)
+        return _envelope({"revoked": revoked})
+
+
+class UserRevokeSessionView(APIView):
+    """Revoke a single session (one device) by its outstanding-token id."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can("edit")()]
+
+    def post(self, request: Request, pk: int, token_id: int) -> Response:
+        from . import sessions
+        ok = sessions.revoke_session(_get_user(pk), token_id, actor=request.user)
+        if not ok:
+            from rest_framework.exceptions import NotFound
+            raise NotFound("Session not found")
+        return _envelope(user_svc.serialize_detail(_get_user(pk)))
+
+
 class UsersBulkView(APIView):
     def get_permissions(self):
         return [IsAuthenticated(), _can("edit")()]

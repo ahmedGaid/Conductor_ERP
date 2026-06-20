@@ -80,6 +80,11 @@ def set_status(user, status: str, actor=None):
     user.status = status
     _sync_active(user)
     user.save(update_fields=["status", "is_active"])
+    # Suspending/archiving a user is a real kill-switch: is_active=False already blocks the next
+    # request, and revoking their refresh tokens stops any session from renewing.
+    if status not in _ACTIVE_STATES:
+        from . import sessions
+        sessions.revoke_all_sessions(user, actor=actor)
     audit.record(module="identity", action="set_status", entity_type="User",
                  entity_id=user.pk, actor=actor, after={"status": status})
     return user
@@ -163,7 +168,7 @@ def serialize_list(user) -> dict:
 
 def serialize_detail(user) -> dict:
     """The full profile: identity + role + module access + effective permissions + sessions + audit."""
-    from . import access
+    from . import access, sessions as sessions_svc
 
     p = _prefs(user)
     data = serialize_list(user)
@@ -181,6 +186,7 @@ def serialize_detail(user) -> dict:
              "correlation_id": e.correlation_id}
             for e in login_history(user)
         ],
+        "active_sessions": sessions_svc.active_sessions(user),
         "audit": _recent_actions(user),
     })
     return data

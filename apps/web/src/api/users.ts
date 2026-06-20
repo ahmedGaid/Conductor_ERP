@@ -36,6 +36,12 @@ export interface AuditRow {
   result: string;
 }
 
+export interface ActiveSession {
+  id: number;
+  created_at: string | null;
+  expires_at: string | null;
+}
+
 export interface UserDetail extends UserRow {
   job_title: string;
   phone: string;
@@ -44,6 +50,7 @@ export interface UserDetail extends UserRow {
   modules: string[];
   permissions: PermissionGrant[];
   sessions: SessionRow[];
+  active_sessions: ActiveSession[];
   audit: AuditRow[];
   temp_password?: string;
 }
@@ -109,4 +116,12 @@ export function bulkUsers(
 
 export function getOrgUnits(): Promise<OrgUnits> {
   return apiFetch<OrgUnits>("/identity/users/org-units");
+}
+
+export function revokeAllSessions(id: number): Promise<{ revoked: number }> {
+  return apiFetch<{ revoked: number }>(`/identity/users/${id}/revoke-sessions`, { method: "POST" });
+}
+
+export function revokeSession(id: number, tokenId: number): Promise<UserDetail> {
+  return apiFetch<UserDetail>(`/identity/users/${id}/sessions/${tokenId}/revoke`, { method: "POST" });
 }

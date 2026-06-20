@@ -208,6 +208,30 @@ Increment 4) are now **enforced** at the existing approve gates.
   request over-limit), run under gates 07/08. **This closes the User-Management & Personalization
   roadmap — Increments 1-6 are all delivered.**
 
+## Per-device session revoke (post-roadmap follow-up, 2026-06-21)
+
+Closes the revocation gap Increment 3 explicitly deferred ("true per-device revocation needs the
+simplejwt token-blacklist app").
+
+- **simplejwt `token_blacklist` app, not a hand-rolled store.** Adding it to INSTALLED_APPS makes
+  `RefreshToken.for_user` (already used by `services.login`) record an `OutstandingToken` per issued
+  refresh token — so a "session" is one refresh token = one device/browser, with no schema of our own.
+  `BLACKLIST_AFTER_ROTATION=True` so a rotated-out token can't be replayed.
+- **Revoke = blacklist the refresh token.** `erp/identity/sessions.py` lists active (non-revoked,
+  non-expired) outstanding tokens, revokes one (`BlacklistedToken`), or revokes all. A blacklisted
+  refresh token is rejected at `/token/refresh`, so the device can't renew.
+- **Suspend is now a real kill-switch.** `set_status` revokes all sessions when a user moves to
+  suspended/archived. `is_active=False` already makes simplejwt reject that user on the *next* request
+  (immediate); revoking refresh tokens additionally prevents any renewal. **Documented limit:** an
+  already-issued access token (≤ `ACCESS_TOKEN_LIFETIME` = 30 min) remains valid after a *single*
+  session revoke that isn't a suspend; true per-request access invalidation would need a server-side
+  access-token check (a DB hit per request) and was judged not worth it for a 30-minute window.
+- **Admin-only surface.** `POST /users/<id>/revoke-sessions` and
+  `POST /users/<id>/sessions/<token_id>/revoke` are gated by `administration.user.edit`; the User-detail
+  page gains an **Active sessions** panel (per-device Revoke + Sign out everywhere) and relabels the
+  existing audit-log panel **Sign-in history**. The two are complementary: history is the immutable
+  audit trail, active sessions are the live, revocable tokens.
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

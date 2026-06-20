@@ -40,6 +40,7 @@ DJANGO_APPS = [
 ]
 THIRD_PARTY_APPS = [
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
 ]
 # ERP modules (modular monolith). Each is an isolated Django app under erp/.
@@ -158,6 +159,10 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
+    # With the token_blacklist app installed, every issued refresh token is tracked as an
+    # OutstandingToken (so it can be listed as a session and revoked); a rotated-out token is
+    # blacklisted so it can't be replayed.
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 # --- Celery (Redis / Memurai) ---
