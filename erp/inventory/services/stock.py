@@ -110,6 +110,7 @@ def receive_stock(
         reference=reference, memo=memo, batch_no=batch_no, expiry_date=expiry_date,
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="receive_stock", entity_type="StockMovement",
@@ -149,6 +150,7 @@ def issue_stock(
         quantity=quantity, value_minor=value, reference=reference, memo=memo,
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="issue_stock", entity_type="StockMovement",
@@ -195,6 +197,7 @@ def return_in_stock(
         quantity=quantity, value_minor=value, reference=reference, memo=memo,
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="return_in_stock", entity_type="StockMovement",
@@ -239,6 +242,7 @@ def return_out_stock(
         quantity=quantity, value_minor=value, reference=reference, memo=memo,
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="return_out_stock", entity_type="StockMovement",
@@ -303,6 +307,7 @@ def adjust_stock(
         quantity=variance, value_minor=signed_value, reference=reference, memo=memo,
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="adjust_stock", entity_type="StockMovement",
@@ -346,6 +351,7 @@ def transfer_stock(
         item=item, warehouse=source, dest_warehouse=destination, type=MovementType.TRANSFER,
         date=date, quantity=quantity, value_minor=value, reference=reference, memo=memo,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="transfer_stock", entity_type="StockMovement",

@@ -38,6 +38,7 @@ def create_lead(
         code=_next_code(), name=name, company=company, email=email, phone=phone,
         source=source, owner=owner, notes=notes, campaign_code=campaign_code, status=LeadStatus.NEW,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(module="crm", action="create_lead", entity_type="Lead",
                  entity_id=lead.code, actor=actor)

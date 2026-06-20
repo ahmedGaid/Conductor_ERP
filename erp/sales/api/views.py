@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
+from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import Customer, Quotation, SalesOrder
@@ -62,6 +63,7 @@ class OrderListCreateView(APIView):
 
     def get(self, request: Request) -> Response:
         qs = _order_qs().order_by("-order_date", "-created_at")
+        qs = scope_queryset(request.user, qs, "sales.order.view")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         if request.query_params.get("customer"):
@@ -167,6 +169,7 @@ class QuotationListCreateView(APIView):
 
     def get(self, request: Request) -> Response:
         qs = _quote_qs().order_by("-quote_date", "-created_at")
+        qs = scope_queryset(request.user, qs, "sales.quotation.view")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         return _envelope(QuotationSerializer(qs[:200], many=True).data)

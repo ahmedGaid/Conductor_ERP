@@ -30,6 +30,7 @@ def create_campaign(*, code: str, name: str, channel: str = "other", cost_minor:
         code=code, name=name, channel=channel, cost_minor=cost_minor,
         start_date=start_date, end_date=end_date, notes=notes, status=CampaignStatus.DRAFT,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(module="crm", action="create_campaign", entity_type="Campaign",
                  entity_id=campaign.code, actor=actor)

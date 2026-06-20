@@ -60,8 +60,27 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
-> **User Management & Personalization — Increment 4 (Role editor) BUILT + gate:all 00–13 GREEN,
-> awaiting test+commit (2026-06-20).** The admin UI for the granular RBAC model. Backend: wired the
+> **User Management & Personalization — Increment 5 (Data-scope enforcement) BUILT + gate:all 00–13
+> GREEN, awaiting test+commit (2026-06-20).** Scope stops being advisory and is finally **enforced**.
+> New `erp/identity/scoping.py` `scope_queryset(user, qs, code)` is the single enforcement point: it
+> reads the user's effective scope (Increment 2 `access.scope_for`) for an entity's *view* code and
+> narrows the queryset — **ALL/COMPANY** unrestricted (single tenant), **OWN** = `created_by==user`,
+> **BRANCH/DEPARTMENT/TEAM** = `branch==user.branch OR branch IS NULL` (records carry no dept/team
+> dimension yet, so those resolve to branch; NULL-branch = legacy/shared, stays visible — client-
+> confirmed, see DECISIONS), superuser/System-Admin bypass. **Branch is now stamped on create** from
+> the actor's branch across all transactional records (sales order/quotation, purchase order/request,
+> inventory stock movements + counts, CRM lead/opportunity/ticket/campaign) — additive, one line each.
+> The transactional **list endpoints** of sales/purchasing/inventory/crm run their queryset through
+> `scope_queryset`; shared master catalogs (customers/suppliers/items/warehouses) stay org-wide. Proven
+> per-module: `test_scoping.py` in sales (API branch-isolation + ALL/OWN/superadmin semantics),
+> purchasing, inventory, crm (branch stamped on create + isolation + NULL visible) — run under
+> gates 06/07/08/09. **Demo preserved:** the Branch Manager still sees the NULL-branch seeded data;
+> new records they create are branch-stamped. Backend-only, no migration (branch already on
+> `AuditedModel`). Local (not yet committed). **This completes Increment 5; only Increment 6 (wire
+> approval limits into the existing approval gates) remains on the RBAC roadmap.**
+>
+> **User Management & Personalization — Increment 4 (Role editor) BUILT + COMMITTED + gate:all 00–13
+> GREEN (2026-06-20, commit `3924a93`, pushed).** The admin UI for the granular RBAC model. Backend: wired the
 > already-present `erp/identity/roles_admin.py` service (list/detail/create-or-duplicate/set-permission/
 > set-approval-limit/delete + `registry()`; built-in `DEFAULT_ROLES` protected from deletion, member-
 > bearing roles can't be deleted) into DRF under `/api/identity/roles*` gated by `administration.role.*`

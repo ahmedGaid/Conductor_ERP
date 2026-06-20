@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
+from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import Activity, Campaign, Lead, Opportunity, Ticket
@@ -67,7 +68,8 @@ class CampaignListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def get(self, request: Request) -> Response:
-        return _envelope([_campaign_dict(c, with_metrics=True) for c in Campaign.objects.all()])
+        qs = scope_queryset(request.user, Campaign.objects.all(), "crm.campaign.view")
+        return _envelope([_campaign_dict(c, with_metrics=True) for c in qs])
 
     def post(self, request: Request) -> Response:
         s = CampaignSerializer(data=request.data)
@@ -105,7 +107,7 @@ class LeadListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def get(self, request: Request) -> Response:
-        qs = Lead.objects.all()
+        qs = scope_queryset(request.user, Lead.objects.all(), "crm.lead.view")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         return _envelope(LeadSerializer(qs[:200], many=True).data)
@@ -146,6 +148,7 @@ class OppListCreateView(APIView):
 
     def get(self, request: Request) -> Response:
         qs = _opp_qs().order_by("-created_at")
+        qs = scope_queryset(request.user, qs, "crm.opportunity.view")
         if request.query_params.get("stage"):
             qs = qs.filter(stage=request.query_params["stage"])
         return _envelope(OpportunitySerializer(qs[:200], many=True).data)
@@ -249,7 +252,7 @@ class TicketListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def get(self, request: Request) -> Response:
-        qs = Ticket.objects.all()
+        qs = scope_queryset(request.user, Ticket.objects.all(), "crm.ticket.view")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         if request.query_params.get("priority"):

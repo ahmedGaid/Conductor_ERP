@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
+from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import PurchaseOrder, PurchaseRequest, Supplier
@@ -59,6 +60,7 @@ class POListCreateView(APIView):
 
     def get(self, request: Request) -> Response:
         qs = _po_qs().order_by("-order_date", "-created_at")
+        qs = scope_queryset(request.user, qs, "purchasing.order.view")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         if request.query_params.get("supplier"):
@@ -159,6 +161,7 @@ class RequestListCreateView(APIView):
 
     def get(self, request: Request) -> Response:
         qs = _req_qs().order_by("-request_date", "-created_at")
+        qs = scope_queryset(request.user, qs, "purchasing.request.view")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         return _envelope(RequestSerializer(qs[:200], many=True).data)

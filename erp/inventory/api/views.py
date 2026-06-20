@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
+from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import Category, Item, StockCount, StockCountLine, StockMovement, Warehouse
@@ -149,6 +150,7 @@ class MovementListView(APIView):
         qs = StockMovement.objects.select_related("item", "warehouse", "dest_warehouse").order_by(
             "-date", "-created_at"
         )
+        qs = scope_queryset(request.user, qs, "inventory.stock_movement.view")
         if request.query_params.get("item"):
             qs = qs.filter(item__sku=request.query_params["item"])
         return _envelope(MovementSerializer(qs[:200], many=True).data)
@@ -201,6 +203,7 @@ class StockCountListCreateView(APIView):
 
     def get(self, request: Request) -> Response:
         qs = StockCount.objects.select_related("warehouse").order_by("-count_date", "-created_at")
+        qs = scope_queryset(request.user, qs, "inventory.stock_count.view")
         return _envelope([_count_dict(c) for c in qs[:200]])
 
     def post(self, request: Request) -> Response:

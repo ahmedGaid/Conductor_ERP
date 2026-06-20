@@ -78,6 +78,7 @@ def create_request(
         number=_next_number(), supplier=supplier, request_date=request_date or dt.date.today(),
         warehouse_code=warehouse_code, currency=currency, notes=notes, status=PRStatus.DRAFT,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     subtotal = 0
     for i, ln in enumerate(lines, start=1):

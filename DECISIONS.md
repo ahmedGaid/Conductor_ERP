@@ -137,6 +137,45 @@ The admin UI for the granular permission model, built on the Increment 2 tables 
   covered by gate03's build + i18n-parity + token/logical-CSS + help-coverage checks (both new routes
   have help guides). Role names with spaces are URL-encoded in links and decoded from the `:name` param.
 
+## User Management & Personalization — Increment 5 (Data-scope enforcement, 2026-06-20)
+
+The scope ladder modeled in Increment 2 and made editable in Increment 4 is now **enforced** on read.
+This is the security-sensitive increment, so the enforcement is funnelled through one audited helper
+and bounded to what the data model can faithfully support.
+
+- **One enforcement point: `erp/identity/scoping.py` `scope_queryset(user, qs, code)`.** Every module
+  list endpoint passes its base queryset through it rather than re-implementing scope, so the policy
+  lives in one place. `code` is the entity's *view* permission (e.g. `sales.order.view`); the helper
+  reads the broadest effective scope via `access.scope_for` and filters.
+- **Enforceable dimensions = what `AuditedModel` carries.** Records already have `created_by` (a real
+  User FK, stamped by the services) ⇒ **Own**, and `branch` (a Branch FK) ⇒ **Branch**. There is no
+  department/team dimension on records (only on the User), so those scopes can't be filtered finer.
+- **Semantics (client-confirmed):**
+  - **All / Company** — unrestricted. Single-tenant: the company *is* everything; a separate Company
+    tier would only matter in a multi-company deployment, deferred.
+  - **Branch / Department / Team** — `branch == user.branch OR branch IS NULL`. Dept/Team resolve to
+    branch-level filtering (documented limitation; finer record-level dept/team tagging is a future
+    increment). **NULL-branch records stay visible to every branch** — they are legacy/unstamped or
+    deliberately org-wide (shared masters), and this keeps data created before branch-stamping (and
+    the whole seeded demo) visible. Safe for single-tenant; a stricter "hide unstamped" mode + a
+    backfill can come later if a multi-branch tenant needs a hard wall.
+  - **Own** — `created_by == user`. **Superuser / System Admin** — bypass, as everywhere else.
+- **Branch is stamped on create, additively.** Each transactional create service now sets
+  `branch = actor.branch` alongside the existing `created_by = actor` (sales order/quotation, purchase
+  order/request, inventory stock movements + counts, CRM lead/opportunity/ticket/campaign). One line
+  each; no migration (the column already exists on `AuditedModel`); every prior test stays green
+  because unauthenticated/no-actor paths still write NULL.
+- **Scope applies to transactional/ownership records, not shared master catalogs.** Orders, POs,
+  requests, quotations, stock movements/counts, leads/opportunities/tickets/campaigns are branch-owned
+  and scoped. Customers, suppliers, items, warehouses, accounts are shared reference data and remain
+  org-wide (also left unstamped, so the NULL rule keeps them visible). Documented so the asymmetry is
+  intentional, not an oversight.
+- **Proven per-module.** `test_scoping.py` in sales (full chain: branch stamped on create →
+  `scope_queryset` isolates other branches but keeps NULL → the live `/api/sales/orders` list is
+  scoped → ALL/OWN/superadmin paths), and a focused branch-isolation test in purchasing, inventory,
+  and CRM — run under gates 07/08/06/09. No new gate; no frontend change. **Approval-limit enforcement
+  (wiring `ApprovalLimit` into the confirm/approve gates) is the remaining Increment 6.**
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

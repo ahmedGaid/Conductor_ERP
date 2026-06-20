@@ -102,6 +102,7 @@ def create_order(
         warehouse_code=warehouse_code, currency=currency, notes=notes, tax_code=tax_code,
         status=POStatus.DRAFT,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
     )
     subtotal = 0
     for i, ln in enumerate(lines, start=1):
