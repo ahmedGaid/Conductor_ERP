@@ -112,11 +112,21 @@ New `erp/accounting` depth (asset sub-ledger, reuses `post_journal`).
 - Deferred to a later pass (non-blocking): broader query-budget coverage on every module list,
   automated dependency-vulnerability audit (needs an offline advisory DB), error-catalog audit.
 
-### Phase 11 — Deployment packaging + runbook
-- Production serving (Django serving the built React bundle behind WhiteNoise/IIS reverse proxy),
-  Celery worker + beat as Windows services, `.env.prod` template, Postgres/Redis prod notes, the
-  nightly-backup + tested-restore policy from DECISIONS, and an operator runbook (install, migrate,
-  seed, start, upgrade). Final `gate:all` green = release candidate.
+### Phase 11 — Deployment packaging + runbook  ✅ BUILT (2026-06-20; gate:all 00–13 green; awaiting test+commit)
+- **Production serving:** WhiteNoise wired in `config/settings/prod.py` — one Django process serves the
+  API + Django/DRF static (compressed-manifest storage) + the **built React SPA**. The SPA is served at
+  the root by a testable `config/spa.py` view (HashRouter ⇒ only `/` reaches the server; no catch-all),
+  degrading to a 503 build-hint when `apps/web/dist` is absent. Front it with IIS/Nginx for TLS only.
+- **Windows services:** `deploy/serve_waitress.py` (pure-python WSGI; gunicorn is POSIX-only) +
+  `deploy/windows/install-/uninstall-services.ps1` registering **Conductor-Web / -Worker / -Beat** via
+  NSSM (worker `--pool=solo`, the Windows requirement; auto-start; rotating logs; service deps).
+- **`.env.prod.example`** (`deploy/`), Postgres/Redis prod notes (in the runbook), and the
+  **nightly-backup + tested-restore policy** from DECISIONS implemented: `deploy/backup/backup.ps1`
+  (pg_dump custom-format + storage.zip + MANIFEST + retention), `restore.ps1` (scratch-DB drill or
+  `-Force` live recovery), `register-backup-task.ps1` (02:00 daily scheduled task).
+- **`Docs/RUNBOOK.md`** — operator runbook (install, migrate, collectstatic, seed, start, upgrade,
+  backup, recover, troubleshoot, RC definition). New **gate13** proves packaging coherence; `ALL_GATES`
+  → 00–13. New deps: `whitenoise`, `waitress`. **Final `gate:all` green = release candidate.**
 
 ---
 

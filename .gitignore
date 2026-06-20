@@ -19,6 +19,11 @@ env/
 .env
 .env.*
 !.env.example
+# prod env TEMPLATE (no secrets) — must be tracked
+!deploy/.env.prod.example
+
+# Deployment runtime artifacts (Phase 11)
+deploy/logs/
 
 # Node / frontend
 node_modules/

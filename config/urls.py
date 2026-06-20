@@ -5,6 +5,8 @@ Each module owns its own urls.py and is mounted here under a stable prefix.
 from django.contrib import admin
 from django.urls import include, path
 
+from .spa import spa_index
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     # Health / monitoring (no auth) — Stage 0.
@@ -27,4 +29,7 @@ urlpatterns = [
     path("api/einvoice/", include("erp.einvoice.api.urls")),
     # Notifications & integration adapters — Phase 8.
     path("api/", include("erp.notifications.api.urls")),
+    # Built React SPA at the site root (Phase 11). Last, so admin/api/health win; the HashRouter
+    # keeps every client route in the URL fragment, so only "" ever reaches the server.
+    path("", spa_index, name="spa"),
 ]

@@ -657,5 +657,25 @@ Sixth completion-plan increment, completing Track B (operational depth).
 - **Inventory costing method** — questionnaire says "Not decided." Default **Weighted Average**,
   applied consistently to all valuations.
 - **Backup policy** — left blank. Default: automated nightly backups with periodic tested restores.
+  **IMPLEMENTED in Phase 11** — `deploy/backup/backup.ps1` (nightly pg_dump custom-format + storage
+  archive + retention), `restore.ps1` (scratch-DB tested-restore drill + guarded `-Force` live
+  recovery), `register-backup-task.ps1` (02:00 daily Windows scheduled task). Redis holds only
+  transient broker/cache state and is intentionally out of the backup scope.
 - **Frontend serving** — React built separately; default to serving the static build behind Django for
-  single-tenant simplicity.
+  single-tenant simplicity. **IMPLEMENTED in Phase 11** — WhiteNoise serves the Vite build + Django
+  static from the one prod process; the SPA shell is served at `/` by `config/spa.py` (HashRouter ⇒ no
+  catch-all rewrite). IIS/Nginx is reverse-proxy + TLS only.
+
+## Phase 11 — Deployment packaging (2026-06-20)
+- **WSGI server = waitress**, not gunicorn/uwsgi: those are POSIX-only and this is a Windows-Server
+  target. Waitress is pure-python, production-grade, and runs the same WSGI app (WhiteNoise already in
+  the middleware), so one process serves API + static + SPA. `deploy/serve_waitress.py` is the entry.
+- **Process supervision = NSSM**: Windows has no native Celery service. NSSM wraps Conductor-Web,
+  -Worker, -Beat as auto-start services with rotating logs + service dependencies (Web→Postgres,
+  Worker/Beat→Redis). Celery worker uses **`--pool=solo`** (prefork is POSIX-only).
+- **SPA served by a Django view, not WhiteNoise's index handling**, so the gate can prove `/` returns
+  the bundle through the Django test client without standing up the WSGI/WhiteNoise layer. WhiteNoise
+  (`WHITENOISE_ROOT = apps/web/dist`) still serves `/assets/*`; `WHITENOISE_INDEX_FILE = False` so the
+  dynamic root view owns `/`. The view 503s with a build-hint (never 500) when `dist` is absent.
+- **gate13** owns packaging coherence (WhiteNoise wired, SPA served, deploy/backup kit + runbook
+  present); it deliberately does NOT re-run `check --deploy` — that is gate12's job (security posture).

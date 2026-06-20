@@ -12,6 +12,8 @@ pyotp>=2.9                     # TOTP 2FA (Stage 1)
 django-cors-headers>=4.4
 python-json-logger>=2.0        # structured JSON logging
 openpyxl>=3.1,<3.2             # XLSX report export (Stage 6b; pure-python, offline-safe)
+whitenoise>=6.7,<7.0           # serve the built React bundle + Django static behind Django (Phase 11)
+waitress>=3.0,<4.0             # pure-python WSGI server (Windows-friendly; gunicorn is POSIX-only)
 # JSON-logic engine for workflow edges/script node is added in Stage 2 (pinned then).
 
 # Dev / test

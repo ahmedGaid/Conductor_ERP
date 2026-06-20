@@ -1,7 +1,9 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-19 (Stages 0–5f + Sales/Purchasing depth (5d-2..4/5e-2..4)
+> meaningful step. Last updated: **2026-06-20 (Phase 11 deployment packaging + runbook BUILT, gate:all
+> 00–13 GREEN, awaiting test+commit — see the Phase 11 note below) // earlier: Stages 0–5f +
+> Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
 > exports (Stage 6b) + COMPLETION_PLAN Phases 1–8: Fixed Assets + Depreciation, Cost Centers, Bank
 > Reconciliation, Budgets, Inventory counts/adjustments + batch/lot, CRM campaigns + ticket
@@ -42,10 +44,29 @@
 > --deploy --fail-level WARNING` (prod) + a real 429 throttle test + a journals query-budget test;
 > `ALL_GATES` now 00–12, all GREEN. See COMPLETION_PLAN Phase 10.
 >
-> **NEXT: Phase 11 — Deployment packaging + runbook (Track E, the final phase).** Django serving the
-> built React bundle (WhiteNoise/IIS), Celery worker + beat as Windows services, `.env.prod` template,
-> Postgres/Redis prod notes, nightly-backup + tested-restore policy, operator runbook (install/migrate/
-> seed/start/upgrade). Final `gate:all` green = release candidate.
+> **Phase 11 — Deployment packaging + runbook (Track E, the FINAL phase) — BUILT, gate:all 00–13
+> GREEN, AWAITING YOUR TEST + COMMIT.** Delivered: (1) **WhiteNoise** wired in prod settings — one
+> Django process serves the API + Django/DRF static (compressed-manifest) + the **built React SPA**;
+> no second web server. (2) **SPA served at root** via a testable `config/spa.py` root view (HashRouter
+> ⇒ only `/` ever hits the server, no catch-all needed); 503 build-hint instead of a 500 when `dist`
+> is absent. (3) **`deploy/` kit:** `.env.prod.example`, `serve_waitress.py` (pure-python WSGI, Windows-
+> friendly — gunicorn is POSIX-only), NSSM `install/uninstall-services.ps1` registering **Conductor-Web
+> + -Worker + -Beat** (worker `--pool=solo` for Windows). (4) **Backup/restore** (the DECISIONS policy):
+> `backup.ps1` (nightly pg_dump custom-format + storage.zip + MANIFEST + retention), `restore.ps1`
+> (scratch-DB tested-restore drill or `-Force` live recovery), `register-backup-task.ps1` (02:00 daily
+> task). (5) **`Docs/RUNBOOK.md`** — full operator runbook (install/migrate/seed/start/upgrade/backup/
+> recover/troubleshoot). (6) New **gate13** asserts packaging coherence (WhiteNoise wired, SPA served,
+> deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
+> (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
+>
+> **Phase 11 verify pass (2026-06-20):** ran the app for real under prod settings (waitress+WhiteNoise)
+> and exercised the backup→restore round-trip. Two genuine defects were found at runtime and **fixed**
+> (gate13 now guards both): (a) `serve_waitress.py` failed `import config` because `sys.path[0]` is
+> `deploy/` not the repo root when launched as a script / NSSM service — added a `sys.path.insert` of
+> the repo root; (b) the `.ps1` scripts failed to PARSE in Windows PowerShell 5.1 (BOM-less UTF-8 read
+> as ANSI mangled em-dashes) — made all deploy `.ps1` ASCII-only. After the fixes: `/` serves the SPA,
+> `/health`+`/system-check` 200, anon `/api/...` → 401, `/assets/*` via WhiteNoise, and backup.ps1 →
+> restore.ps1 round-trips (27 accounts/26 journals/4 users into a scratch DB). gate:all 00–13 green.
 
 ## COMPLETION PLAN (road to ship)
 A phased plan to finish everything is in **`COMPLETION_PLAN.md`** (11 phases across accounting depth →

@@ -1,11 +1,36 @@
 """Production settings (customer-hosted, single-tenant, Windows Server capable)."""
 from .base import *  # noqa: F401,F403
-from .base import env
+from .base import BASE_DIR, MIDDLEWARE, env
 
 DEBUG = False
 
 # In prod the secret must be provided; no insecure default.
 SECRET_KEY = env("DJANGO_SECRET_KEY")
+
+# --- Static / SPA serving (WhiteNoise; Phase 11) ---
+# Django serves both its own static (admin/DRF) and the built React bundle behind a single
+# process — no separate web server for static. WhiteNoise sits right after SecurityMiddleware.
+MIDDLEWARE = [
+    MIDDLEWARE[0],  # corsheaders (must stay first)
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    *MIDDLEWARE[1:],
+]
+
+# Compressed + content-hashed manifest for Django's collected static (admin/DRF assets).
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+# Serve the Vite build (apps/web/dist) at the site root, so /assets/* resolve and the SPA's
+# hashed bundles are delivered with long-lived cache headers. The index.html itself is served by
+# the root view (config/spa.py) so it stays testable without the WSGI layer. Guarded by existence
+# so the prod settings still import on a box where the frontend hasn't been built yet.
+_SPA_DIST = BASE_DIR / "apps" / "web" / "dist"
+if _SPA_DIST.exists():
+    WHITENOISE_ROOT = str(_SPA_DIST)
+# index.html is dynamic (served by the root view), never a cached static file.
+WHITENOISE_INDEX_FILE = False
 
 # --- Security hardening (OWASP / Django deployment checklist) ---
 # Header / cookie hardening.

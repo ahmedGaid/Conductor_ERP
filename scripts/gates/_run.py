@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-ALL_GATES = ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]  # extended as later phases land
+ALL_GATES = ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13"]  # extended as later phases land
 
 
 def _bootstrap_django() -> None:
