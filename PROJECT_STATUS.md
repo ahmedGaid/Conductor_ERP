@@ -60,6 +60,29 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
+> **User Management & Personalization — Increment 1 (Settings) BUILT + gate:all 00–13 GREEN
+> (2026-06-20, awaiting client test + commit).** First slice of the new "User Management &
+> Personalization" spec, delivered additively (no change to the auth/RBAC path of the 9 shipped
+> modules). **Backend** (`erp/identity`, migration `0003`): `UserPreferences` (per-user) +
+> `OrgPreferences` (singleton pk=1) tables; services `get/update/effective_preferences` +
+> `get/update_org_preferences` (audited); DRF `GET/PATCH /api/identity/preferences`,
+> `GET /api/identity/preferences/effective` (org defaults ⊕ personal), `GET/PATCH
+> /api/identity/org-preferences` (PATCH = System-Admin only). 5 tests in `erp/identity/tests/
+> test_preferences.py` (run under gate01). **Frontend:** `src/prefs.ts` generalises the `data-theme`
+> no-FOUC pattern to independent `<html data-accent|density|font-size|contrast|motion>` attributes, each
+> remapped in `tokens.css`; `index.html` early script applies all of them pre-paint;
+> `preferences/PreferencesContext` fetches effective prefs on auth, applies them, and does optimistic
+> update+PATCH. New **Settings** section (`pages/settings/`): SettingsNav + Profile / Appearance /
+> Dashboard / Navigation / Notifications / Accessibility tabs + an admin-only **Organization** tab;
+> reached from a now-clickable sidebar user footer (gear) + ⌘K. **Real effects:** accent/density/font-
+> size/high-contrast/reduced-motion/theme apply live and survive reload; default-landing redirect (once
+> per session); dashboard panel hide/reorder applied on `DashboardPage`; sidebar **Favorites** group from
+> pinned pages. Bilingual help guides for all 8 settings routes (gate03) + ar/en i18n parity kept (792
+> keys). **Accent default kept Blue** (Black offered as a monochrome option / org default) — see
+> DECISIONS. **Deferred:** avatar photo upload (initials for now), DnD ordering, desktop/sound firing.
+> Roadmap for the remaining RBAC increments (permission model → user management → role editor →
+> scope-everywhere → approval limits) is in `…/plans/happy-napping-jellyfish.md`.
+>
 > **Phase 11 verify pass (2026-06-20):** ran the app for real under prod settings (waitress+WhiteNoise)
 > and exercised the backup→restore round-trip. Two genuine defects were found at runtime and **fixed**
 > (gate13 now guards both): (a) `serve_waitress.py` failed `import config` because `sys.path[0]` is

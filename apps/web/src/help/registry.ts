@@ -72,6 +72,15 @@ import {
   pipelineGuide,
   ticketsGuide,
 } from "./content/crm";
+import {
+  settingsAccessibilityGuide,
+  settingsAppearanceGuide,
+  settingsDashboardGuide,
+  settingsNavigationGuide,
+  settingsNotificationsGuide,
+  settingsOrganizationGuide,
+  settingsProfileGuide,
+} from "./content/settings";
 
 export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/": dashboardGuide,
@@ -128,6 +137,14 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/crm/tickets": ticketsGuide,
   "/crm/campaigns": campaignsGuide,
   "/crm/campaigns/:id": campaignDetailGuide,
+  "/settings": settingsProfileGuide,
+  "/settings/profile": settingsProfileGuide,
+  "/settings/appearance": settingsAppearanceGuide,
+  "/settings/dashboard": settingsDashboardGuide,
+  "/settings/navigation": settingsNavigationGuide,
+  "/settings/notifications": settingsNotificationsGuide,
+  "/settings/accessibility": settingsAccessibilityGuide,
+  "/settings/organization": settingsOrganizationGuide,
 };
 
 // Pre-sort patterns most-specific first: deeper paths first, and within the same depth, patterns

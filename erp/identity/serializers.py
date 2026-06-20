@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from .models import OrgPreferences, UserPreferences
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -24,3 +26,17 @@ class UserSerializer(serializers.Serializer):
 
     def get_branch(self, obj) -> str | None:
         return obj.branch.code if obj.branch_id else None
+
+
+class UserPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPreferences
+        exclude = ["id", "user"]
+        read_only_fields = ["updated_at"]
+
+
+class OrgPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrgPreferences
+        exclude = ["id"]
+        read_only_fields = ["updated_at"]

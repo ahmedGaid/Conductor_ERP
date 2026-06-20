@@ -222,3 +222,115 @@
 
   color-scheme: dark;
 }
+
+/*
+ * ---- Personalization remaps ----
+ * Each user-chosen preference is one independent <html data-*> attribute (set by prefs.ts / the
+ * no-FOUC script). The blocks below remap ONLY the relevant tokens, so a choice flips the whole app
+ * with no per-component change. Accent deliberately touches just the in-page --color-accent* family
+ * — never the near-black chrome (see DECISIONS). "blue" is the default and needs no block.
+ */
+
+/* Accent palette (raw, private) for the non-default presets. */
+:root {
+  --palette-purple-600: #7c3aed;
+  --palette-purple-700: #6d28d9;
+  --palette-purple-100: #ede9fe;
+  --palette-orange-600: #ea580c;
+  --palette-orange-700: #c2410c;
+  --palette-orange-100: #ffedd5;
+}
+
+:root[data-accent="green"] {
+  --color-accent: var(--palette-success-600);
+  --color-accent-strong: var(--palette-success-700);
+  --color-accent-subtle: var(--palette-success-100);
+}
+:root[data-accent="purple"] {
+  --color-accent: var(--palette-purple-600);
+  --color-accent-strong: var(--palette-purple-700);
+  --color-accent-subtle: var(--palette-purple-100);
+}
+:root[data-accent="orange"] {
+  --color-accent: var(--palette-orange-600);
+  --color-accent-strong: var(--palette-orange-700);
+  --color-accent-subtle: var(--palette-orange-100);
+}
+:root[data-accent="red"] {
+  --color-accent: var(--palette-danger-600);
+  --color-accent-strong: var(--palette-danger-700);
+  --color-accent-subtle: var(--palette-danger-100);
+}
+:root[data-accent="black"] {
+  --color-accent: var(--palette-ink-900);
+  --color-accent-strong: var(--palette-ink-950);
+  --color-accent-subtle: var(--palette-ink-100);
+}
+
+/* Dark-mode accent variants: luminous text + translucent fills so they read on near-black. */
+:root[data-theme="dark"][data-accent="green"] {
+  --color-accent: #4ade80;
+  --color-accent-strong: #86efac;
+  --color-accent-subtle: rgba(22, 163, 74, 0.22);
+}
+:root[data-theme="dark"][data-accent="purple"] {
+  --color-accent: #a78bfa;
+  --color-accent-strong: #c4b5fd;
+  --color-accent-subtle: rgba(124, 58, 237, 0.25);
+}
+:root[data-theme="dark"][data-accent="orange"] {
+  --color-accent: #fb923c;
+  --color-accent-strong: #fdba74;
+  --color-accent-subtle: rgba(234, 88, 12, 0.25);
+}
+:root[data-theme="dark"][data-accent="red"] {
+  --color-accent: #f87171;
+  --color-accent-strong: #fca5a5;
+  --color-accent-subtle: rgba(220, 38, 38, 0.25);
+}
+:root[data-theme="dark"][data-accent="black"] {
+  /* On a near-black canvas the monochrome accent becomes near-white. */
+  --color-accent: #f5f5f5;
+  --color-accent-strong: #ffffff;
+  --color-accent-subtle: rgba(245, 245, 245, 0.14);
+}
+
+/* Density: "compact" tightens the spacing scale, so every gap/padding built on --space-* shrinks. */
+:root[data-density="compact"] {
+  --space-1: 0.2rem;
+  --space-2: 0.375rem;
+  --space-3: 0.5rem;
+  --space-4: 0.75rem;
+  --space-5: 1.1rem;
+  --space-6: 1.5rem;
+  --space-8: 2.25rem;
+}
+
+/* Font size: scales the whole UI proportionally — every rem-based token follows the root size. */
+:root[data-font-size="small"] {
+  font-size: 15px;
+}
+:root[data-font-size="large"] {
+  font-size: 17.5px;
+}
+
+/* High contrast: stronger borders + less-muted secondary text, for both themes. */
+:root[data-contrast="high"] {
+  --color-border: var(--palette-ink-400);
+  --color-border-strong: var(--palette-ink-600);
+  --color-text-muted: var(--palette-ink-700);
+  --color-text-subtle: var(--palette-ink-600);
+}
+:root[data-theme="dark"][data-contrast="high"] {
+  --color-border: #525252;
+  --color-border-strong: #737373;
+  --color-text-muted: #d4d4d4;
+  --color-text-subtle: #a3a3a3;
+}
+
+/* Reduced motion: collapse the duration scale so transitions/animations resolve instantly. */
+:root[data-motion="reduced"] {
+  --dur-fast: 0.01ms;
+  --dur: 0.01ms;
+  --dur-slow: 0.01ms;
+}

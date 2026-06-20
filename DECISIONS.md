@@ -32,6 +32,33 @@ charter, Node/Express workflow-MVP). Confirmed direction with the client:
 - **Custom `User` model created in Stage 0** so `AUTH_USER_MODEL` is locked before the first migration
   (swapping it later requires a destructive reset). Stage 1 expands it (JWT, RBAC, TOTP 2FA, branch scoping).
 
+## User Management & Personalization — Increment 1 (Settings, 2026-06-20)
+
+The client supplied a full "User Management & Personalization" spec. It is far larger than one safe
+change against the green release candidate, so it is delivered as gated increments. Confirmed with the
+client: **start with Personalization + Settings** (self-contained, low-risk); add the granular RBAC
+model **additively** later (new tables + a new permission class beside `HasAnyRole`, migrating modules
+one at a time); and when **data scope** lands it is **enforced everywhere**. Roadmap lives in the plan
+file `…/plans/happy-napping-jellyfish.md`.
+
+Increment 1 choices:
+- **Additive, not a rewrite.** New `UserPreferences` + `OrgPreferences` (single row, pk=1) tables and
+  `/api/identity/{preferences,preferences/effective,org-preferences}`. Nothing in the auth/RBAC path
+  changed; an absent prefs row = product defaults, and blank inheritable fields fall back to the org row.
+- **Presentation via `<html data-*>` + token remaps.** The existing `data-theme` no-FOUC pattern is
+  generalised to independent `data-accent / data-density / data-font-size / data-contrast / data-motion`
+  attributes, each remapping tokens in `tokens.css` (the only file allowed raw hex). One choice flips the
+  whole app with no per-component change; all caches in localStorage so a reload has no flash.
+- **Accent default stays Blue,** not Black as the spec's "(default)" suggested. The shipped UI already
+  committed to "links blue app-wide", and the durable rule keeps the near-black chrome fixed — accent
+  only recolours the in-page `--color-accent*` family (links/accents), never brand/buttons/nav. `Black`
+  is offered as a monochrome accent, and an admin can set the **org default** to Black to match the spec.
+- **Deferred (named follow-ups, to keep the increment gate-green):** avatar **photo upload** (needs
+  MEDIA plumbing/serving; an initials avatar is shown for now); drag-and-drop widget ordering (up/down +
+  show/hide instead); desktop/sound notifications actually firing (preferences are persisted now). The
+  later RBAC increments (permission model → user management → role editor → scope-everywhere → approval
+  limits) are not in this increment.
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

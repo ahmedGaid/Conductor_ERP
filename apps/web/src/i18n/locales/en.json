@@ -17,7 +17,8 @@
     "crm": "CRM",
     "reports": "Reports",
     "einvoice": "E-Invoicing",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "favorites": "Favorites"
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",
@@ -874,5 +875,132 @@
     "csv": "CSV",
     "excel": "Excel",
     "pdf": "Print / PDF"
+  },
+  "settings": {
+    "title": "Settings",
+    "intro": "Personalize your workspace. These preferences are yours alone and never affect other users.",
+    "tabs": {
+      "profile": "Profile",
+      "appearance": "Appearance",
+      "dashboard": "Dashboard",
+      "navigation": "Navigation",
+      "notifications": "Notifications",
+      "accessibility": "Accessibility",
+      "organization": "Organization"
+    },
+    "common": {
+      "auto": "Auto"
+    },
+    "profile": {
+      "displayName": "Display name",
+      "jobTitle": "Job title",
+      "phone": "Phone",
+      "language": "Language",
+      "languageDesc": "Choose your language, or Auto to follow the organization default.",
+      "timeZone": "Time zone",
+      "dateFormat": "Date format",
+      "timeFormat": "Time format",
+      "h24": "24-hour",
+      "h12": "12-hour"
+    },
+    "appearance": {
+      "theme": "Theme",
+      "themeDesc": "Light, dark, or match your device.",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "accent": "Accent colour",
+      "accentDesc": "Colours in-page elements like links. The core brand stays black.",
+      "accents": {
+        "blue": "Blue",
+        "black": "Black",
+        "green": "Green",
+        "purple": "Purple",
+        "orange": "Orange",
+        "red": "Red"
+      },
+      "density": "Density",
+      "densityDesc": "How tightly content is packed.",
+      "comfortable": "Comfortable",
+      "compact": "Compact",
+      "fontSize": "Text size",
+      "fontSizeDesc": "Scales the whole interface.",
+      "small": "Small",
+      "default": "Default",
+      "large": "Large",
+      "sidebar": "Sidebar",
+      "sidebarDesc": "Expanded labels or compact icons.",
+      "expanded": "Expanded",
+      "compactSidebar": "Compact"
+    },
+    "a11y": {
+      "largerText": "Larger text",
+      "largerTextDesc": "Increase text size across the app.",
+      "highContrast": "Higher contrast",
+      "highContrastDesc": "Stronger borders and clearer secondary text.",
+      "reducedMotion": "Reduced motion",
+      "reducedMotionDesc": "Minimize animations and transitions.",
+      "keyboardNav": "Keyboard navigation",
+      "keyboardNavDesc": "Show focus hints for keyboard use."
+    },
+    "notif": {
+      "inapp": "In-app notifications",
+      "inappDesc": "Show alerts inside the app.",
+      "email": "Email notifications",
+      "emailDesc": "Send important alerts to your email.",
+      "sound": "Sound",
+      "soundDesc": "Play a sound on new alerts.",
+      "desktop": "Desktop notifications",
+      "desktopDesc": "Show system notifications on your device.",
+      "digest": "Digest",
+      "digestDesc": "How often to receive a summary.",
+      "off": "Off",
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "dashboard": {
+      "landing": "Landing page",
+      "landingDesc": "The page you see first after signing in.",
+      "landingOptions": {
+        "dashboard": "Dashboard",
+        "sales": "Sales",
+        "purchasing": "Purchasing",
+        "inventory": "Inventory",
+        "accounting": "Accounting",
+        "crm": "CRM",
+        "workflows": "Workflows"
+      },
+      "widgetsTitle": "Dashboard panels",
+      "widgetsDesc": "Reorder or hide the panels on your home dashboard.",
+      "widgets": {
+        "attention": "Needs attention",
+        "expenses": "Top expenses",
+        "cashflow": "Cash flow",
+        "journals": "Recent journals",
+        "shortcuts": "Shortcuts"
+      },
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "show": "Show"
+    },
+    "nav": {
+      "favoritesTitle": "Favorite pages",
+      "favoritesDesc": "Pin pages to a Favorites group at the top of the sidebar.",
+      "pin": "Pin to favorites",
+      "unpin": "Remove from favorites"
+    },
+    "org": {
+      "adminOnly": "Only a System Admin can change organization defaults.",
+      "lead": "Defaults applied to everyone in the organization. Each user can still override these in their own settings.",
+      "companyName": "Company name",
+      "language": "Default language",
+      "languageDesc": "The language new users start with.",
+      "theme": "Default theme",
+      "themeDesc": "The theme new users start with.",
+      "accent": "Default accent",
+      "accentDesc": "The accent colour new users start with.",
+      "landing": "Default landing page",
+      "landingDesc": "The page users see first after signing in."
+    }
   }
 }

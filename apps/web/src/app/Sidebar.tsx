@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
 import { getMe } from "../api/identity";
+import { usePreferences } from "../preferences/PreferencesContext";
 import { useAsync } from "../hooks/useAsync";
 import { NavIcon } from "./icons";
 import "./Sidebar.css";
@@ -32,6 +33,8 @@ function initials(name: string): string {
 export function Sidebar() {
   const { t } = useTranslation();
   const { data: me } = useAsync(getMe, []);
+  const { prefs } = usePreferences();
+  const favorites = prefs?.favorites ?? [];
 
   return (
     <aside className="sidebar">
@@ -62,6 +65,28 @@ export function Sidebar() {
           ))}
         </ul>
 
+        {favorites.length > 0 && (
+          <>
+            <div className="sidebar__group-label">{t("nav.favorites")}</div>
+            <ul className="sidebar__list">
+              {favorites.map((fav) => (
+                <li key={fav.to}>
+                  <NavLink
+                    to={fav.to}
+                    end={fav.to === "/"}
+                    className={({ isActive }) =>
+                      isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                    }
+                  >
+                    <span className="sidebar__icon" aria-hidden="true">★</span>
+                    <span>{t(fav.label)}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
         <div className="sidebar__group-label">{t("nav.modulesSoon")}</div>
         <ul className="sidebar__list">
           {SOON.map(({ key }) => (
@@ -78,15 +103,26 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="sidebar__user">
+      <NavLink
+        to="/settings"
+        className={({ isActive }) =>
+          isActive ? "sidebar__user sidebar__user--active" : "sidebar__user"
+        }
+        title={t("settings.title")}
+      >
         <span className="sidebar__avatar" aria-hidden="true">
-          {initials(me?.username ?? "?")}
+          {initials(prefs?.display_name || me?.username || "?")}
         </span>
         <span className="sidebar__user-meta">
-          <span className="sidebar__user-name latin">{me?.username ?? "—"}</span>
+          <span className="sidebar__user-name latin">
+            {prefs?.display_name || me?.username || "—"}
+          </span>
           <span className="sidebar__user-role">{me?.roles?.[0] ?? ""}</span>
         </span>
-      </div>
+        <span className="sidebar__user-cog" aria-hidden="true">
+          <NavIcon name="settings" />
+        </span>
+      </NavLink>
     </aside>
   );
 }

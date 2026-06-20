@@ -9,8 +9,14 @@ from rest_framework_simplejwt.views import TokenRefreshView  # noqa: F401 (re-ex
 
 from . import services
 from .permissions import HasAnyRole
-from .roles import ACCOUNTANT, BRANCH_MANAGER
-from .serializers import LoginSerializer, UserSerializer, Verify2FASerializer
+from .roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
+from .serializers import (
+    LoginSerializer,
+    OrgPreferencesSerializer,
+    UserPreferencesSerializer,
+    UserSerializer,
+    Verify2FASerializer,
+)
 
 
 def _envelope(data) -> Response:
@@ -63,3 +69,49 @@ class FinanceSampleView(APIView):
 
     def get(self, request: Request) -> Response:
         return _envelope({"ok": True, "scope": "finance", "user": request.user.username})
+
+
+class PreferencesView(APIView):
+    """The signed-in user's personalization. GET reads; PATCH partially updates."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        prefs = services.get_preferences(request.user)
+        return _envelope(UserPreferencesSerializer(prefs).data)
+
+    def patch(self, request: Request) -> Response:
+        prefs = services.get_preferences(request.user)
+        s = UserPreferencesSerializer(prefs, data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        prefs = services.update_preferences(request.user, s.validated_data)
+        return _envelope(UserPreferencesSerializer(prefs).data)
+
+
+class EffectivePreferencesView(APIView):
+    """Personal preferences with org defaults filled in — what the UI applies on load."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(services.effective_preferences(request.user))
+
+
+class OrgPreferencesView(APIView):
+    """Organization-wide defaults. Anyone authenticated may read; only System Admin may change."""
+
+    def get_permissions(self):
+        if self.request.method == "PATCH":
+            return [IsAuthenticated(), HasAnyRole.require(SYSTEM_ADMIN)()]
+        return [IsAuthenticated()]
+
+    def get(self, request: Request) -> Response:
+        org = services.get_org_preferences()
+        return _envelope(OrgPreferencesSerializer(org).data)
+
+    def patch(self, request: Request) -> Response:
+        org = services.get_org_preferences()
+        s = OrgPreferencesSerializer(org, data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        org = services.update_org_preferences(request.user, s.validated_data)
+        return _envelope(OrgPreferencesSerializer(org).data)

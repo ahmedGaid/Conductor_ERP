@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { usePreferences } from "../preferences/PreferencesContext";
+import { orderedVisibleWidgets } from "./settings/dashboardWidgets";
 import { getMe } from "../api/identity";
 import {
   cashFlow,
@@ -70,6 +72,8 @@ const SHORTCUTS = [
 export function DashboardPage() {
   const { t } = useTranslation();
   const { data, loading, error } = useAsync(loadDashboard, [], "dashboard");
+  const { prefs } = usePreferences();
+  const widgets = orderedVisibleWidgets(prefs?.dashboard_layout);
 
   return (
     <section className="dash">
@@ -128,16 +132,25 @@ export function DashboardPage() {
             />
           </div>
 
-          <AttentionPanel data={data} />
+          {widgets.includes("attention") && <AttentionPanel data={data} />}
 
           <div className="dash__row">
-            <TopExpenses report={data.current} />
-            <CashFlowPanel report={data.cash} />
-          </div>
-
-          <div className="dash__row dash__row--split">
-            <RecentJournals journals={data.journals} />
-            <Shortcuts />
+            {widgets
+              .filter((w) => w !== "attention")
+              .map((w) => {
+                switch (w) {
+                  case "expenses":
+                    return <TopExpenses key={w} report={data.current} />;
+                  case "cashflow":
+                    return <CashFlowPanel key={w} report={data.cash} />;
+                  case "journals":
+                    return <RecentJournals key={w} journals={data.journals} />;
+                  case "shortcuts":
+                    return <Shortcuts key={w} />;
+                  default:
+                    return null;
+                }
+              })}
           </div>
         </>
       )}

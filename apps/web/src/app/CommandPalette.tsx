@@ -47,6 +47,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: "go-crm", label: t("nav.crm"), to: "/crm", group: "go" },
       { id: "go-notifications", label: t("nav.notifications"), to: "/notifications", group: "go" },
       { id: "go-workflows", label: t("nav.workflows"), to: "/workflows", group: "go" },
+      { id: "go-settings", label: t("settings.title"), to: "/settings", group: "go" },
       { id: "go-customers", label: t("command.customers"), to: "/sales/customers", group: "go" },
       { id: "go-suppliers", label: t("command.suppliers"), to: "/purchasing/suppliers", group: "go" },
       { id: "go-stock", label: t("command.stockOnHand"), to: "/inventory/stock-on-hand", group: "go" },

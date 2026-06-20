@@ -2,8 +2,16 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "./app/AppShell";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { PreferencesProvider, usePreferences } from "./preferences/PreferencesContext";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { ProfilePage } from "./pages/settings/ProfilePage";
+import { AppearancePage } from "./pages/settings/AppearancePage";
+import { DashboardSettingsPage } from "./pages/settings/DashboardSettingsPage";
+import { NavigationSettingsPage } from "./pages/settings/NavigationSettingsPage";
+import { NotificationsSettingsPage } from "./pages/settings/NotificationsSettingsPage";
+import { AccessibilityPage } from "./pages/settings/AccessibilityPage";
+import { OrganizationPage } from "./pages/settings/OrganizationPage";
 import { WorkflowListPage } from "./pages/WorkflowListPage";
 import { WorkflowCanvasPage } from "./pages/WorkflowCanvasPage";
 import { ExecutionViewerPage } from "./pages/ExecutionViewerPage";
@@ -62,12 +70,33 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+// Land the user on their chosen page right after login — but only once per session, so the
+// Dashboard stays reachable at "/" afterwards (no redirect loop). Defaults to the Dashboard.
+function LandingRedirect() {
+  const { prefs } = usePreferences();
+  const target = prefs?.default_landing;
+  if (prefs && !sessionStorage.getItem("erp.landingApplied")) {
+    sessionStorage.setItem("erp.landingApplied", "1");
+    if (target && target !== "/") return <Navigate to={target} replace />;
+  }
+  return <DashboardPage />;
+}
+
 function Protected() {
   return (
     <RequireAuth>
+      <PreferencesProvider>
       <AppShell>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/" element={<LandingRedirect />} />
+          <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
+          <Route path="/settings/profile" element={<ProfilePage />} />
+          <Route path="/settings/appearance" element={<AppearancePage />} />
+          <Route path="/settings/dashboard" element={<DashboardSettingsPage />} />
+          <Route path="/settings/navigation" element={<NavigationSettingsPage />} />
+          <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
+          <Route path="/settings/accessibility" element={<AccessibilityPage />} />
+          <Route path="/settings/organization" element={<OrganizationPage />} />
           <Route path="/workflows" element={<WorkflowListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />
@@ -124,6 +153,7 @@ function Protected() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
+      </PreferencesProvider>
     </RequireAuth>
   );
 }

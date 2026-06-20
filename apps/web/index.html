@@ -4,17 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Conductor — نظام تخطيط الموارد</title>
-    <!-- Apply the saved/system colour theme before first paint to avoid a flash. -->
+    <!-- Apply the saved presentation preferences before first paint to avoid a flash (no-FOUC).
+         Mirrors src/prefs.ts: theme (resolved), accent, density, font size, contrast, motion. -->
     <script>
       (function () {
         try {
+          var root = document.documentElement;
           var t = localStorage.getItem("erp.theme");
           if (t !== "dark" && t !== "light") {
             t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
               ? "dark"
               : "light";
           }
-          document.documentElement.setAttribute("data-theme", t);
+          root.setAttribute("data-theme", t);
+          root.setAttribute("data-accent", localStorage.getItem("erp.accent") || "blue");
+          root.setAttribute("data-density", localStorage.getItem("erp.density") || "comfortable");
+          root.setAttribute("data-font-size", localStorage.getItem("erp.fontSize") || "default");
+          root.setAttribute("data-contrast", localStorage.getItem("erp.contrast") || "normal");
+          root.setAttribute("data-motion", localStorage.getItem("erp.motion") || "full");
         } catch (e) {}
       })();
     </script>

@@ -1,27 +1,16 @@
-// Colour theme (light / dark). The theme is a single attribute on <html data-theme>; all colour
-// lives in tokens.css, which remaps the semantic colour tokens under [data-theme="dark"]. The
-// early inline script in index.html applies the stored/system theme before first paint (no flash);
-// this module is the source of truth the ThemeToggle reads and writes at runtime.
-export type Theme = "light" | "dark";
+// Backwards-compatible shim. The colour theme is now one of several presentation preferences —
+// the full set lives in ./prefs. This module keeps the original light/dark helper names working.
+export type { Theme } from "./prefs";
+export { systemTheme, applyTheme } from "./prefs";
 
-const STORAGE_KEY = "erp.theme";
+import { applyTheme, getThemeChoice, resolveTheme, type Theme } from "./prefs";
 
-export function systemTheme(): Theme {
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-/** The active theme: an explicit user choice if set, otherwise the OS preference. */
-export function getTheme(): Theme {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === "dark" || stored === "light" ? stored : systemTheme();
-}
-
-export function applyTheme(theme: Theme): void {
-  document.documentElement.setAttribute("data-theme", theme);
+/** The active resolved theme (explicit choice if any, otherwise the OS preference). */
+export function getTheme(): "light" | "dark" {
+  return resolveTheme(getThemeChoice());
 }
 
 /** Persist an explicit choice and reflect it onto <html> immediately. */
 export function setTheme(theme: Theme): void {
-  localStorage.setItem(STORAGE_KEY, theme);
   applyTheme(theme);
 }

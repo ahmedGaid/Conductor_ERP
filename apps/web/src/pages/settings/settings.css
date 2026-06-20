@@ -1,0 +1,230 @@
+/* Settings — personalization tabs. Token-driven + logical CSS only (mirrors the module nav). */
+
+.setnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-block-end: 1px solid var(--color-border);
+  margin-block-end: var(--space-4);
+}
+.setnav__tab {
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  color: var(--color-text-muted);
+  border-block-end: 2px solid transparent;
+  font-weight: var(--font-weight-medium);
+}
+.setnav__tab:hover {
+  color: var(--color-text);
+}
+.setnav__tab--active {
+  color: var(--color-brand-strong);
+  border-block-end-color: var(--color-brand);
+}
+
+.setcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-inline-size: 56rem;
+}
+.setcard__lead {
+  margin-block: 0 var(--space-3);
+  max-inline-size: 60ch;
+}
+
+/* One setting = label/help on one side, the control on the other. */
+.setrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-block-start: 1px solid var(--color-border);
+}
+.setcard > .setrow:first-of-type {
+  border-block-start: none;
+}
+.setrow--block {
+  flex-direction: column;
+  align-items: stretch;
+}
+.setrow__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.setrow__title {
+  font-weight: var(--font-weight-medium);
+}
+.setrow__desc {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  max-inline-size: 48ch;
+}
+.setrow__control {
+  flex-shrink: 0;
+}
+.setrow--block .setrow__control {
+  inline-size: 100%;
+}
+
+/* Segmented (single-choice pill group). */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+}
+.segmented__opt {
+  padding-inline: var(--space-3);
+  padding-block: var(--space-1);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.segmented__opt:hover {
+  color: var(--color-text);
+}
+.segmented__opt--on {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+
+/* On/off switch. */
+.switch {
+  inline-size: 2.5rem;
+  block-size: 1.5rem;
+  padding: 2px;
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border-strong);
+  transition: background-color var(--dur) var(--ease-out);
+}
+.switch--on {
+  background-color: var(--color-brand);
+}
+.switch__knob {
+  display: block;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur) var(--ease-out);
+}
+.switch--on .switch__knob {
+  transform: translateX(1rem);
+}
+:root[dir="rtl"] .switch--on .switch__knob {
+  transform: translateX(-1rem);
+}
+
+/* Accent swatches. Each dot shows a preset colour regardless of the active accent. */
+.swatches {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+.swatch {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-border);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.swatch:hover {
+  transform: scale(1.08);
+}
+.swatch--on {
+  border-color: var(--color-text);
+  box-shadow: var(--focus-ring);
+}
+.swatch[data-accent-dot="blue"] { background-color: var(--palette-brand-600); }
+.swatch[data-accent-dot="black"] { background-color: var(--palette-ink-900); }
+.swatch[data-accent-dot="green"] { background-color: var(--palette-success-600); }
+.swatch[data-accent-dot="purple"] { background-color: var(--palette-purple-600); }
+.swatch[data-accent-dot="orange"] { background-color: var(--palette-orange-600); }
+.swatch[data-accent-dot="red"] { background-color: var(--palette-danger-600); }
+
+/* Profile identity header. */
+.profile-id {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block-end: var(--space-4);
+}
+.profile-id__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-brand);
+  color: var(--color-text-on-brand);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+}
+.profile-id__meta {
+  display: flex;
+  flex-direction: column;
+}
+.profile-id__name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+}
+.profile-id__email {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Dashboard widget list + navigation favorites. */
+.widget-list,
+.fav-list {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.widget-row,
+.fav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  border-block-start: 1px solid var(--color-border);
+}
+.widget-row:first-child,
+.fav-row:first-child {
+  border-block-start: none;
+}
+.widget-row__name,
+.fav-row__name {
+  font-weight: var(--font-weight-medium);
+}
+.widget-row__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fav-star {
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-subtle);
+  line-height: 1;
+  padding: var(--space-1);
+}
+.fav-star--on {
+  color: var(--color-warning);
+}

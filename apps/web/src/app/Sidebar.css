@@ -144,6 +144,24 @@
   gap: var(--space-3);
   padding: var(--space-4);
   border-block-start: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.sidebar__user:hover {
+  background-color: var(--color-surface-hover);
+  text-decoration: none;
+}
+.sidebar__user--active {
+  background-color: var(--color-brand-subtle);
+}
+.sidebar__user-cog {
+  margin-inline-start: auto;
+  color: var(--color-text-muted);
+  display: inline-flex;
+}
+.sidebar__user:hover .sidebar__user-cog {
+  color: var(--color-text);
 }
 
 .sidebar__avatar {
