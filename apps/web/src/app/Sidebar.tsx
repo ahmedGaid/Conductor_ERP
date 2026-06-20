@@ -104,6 +104,17 @@ export function Sidebar() {
                   <span>{t("nav.usersAdmin")}</span>
                 </NavLink>
               </li>
+              <li>
+                <NavLink
+                  to="/admin/roles"
+                  className={({ isActive }) =>
+                    isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                  }
+                >
+                  <span className="sidebar__icon"><NavIcon name="settings" /></span>
+                  <span>{t("nav.rolesAdmin")}</span>
+                </NavLink>
+              </li>
             </ul>
           </>
         )}

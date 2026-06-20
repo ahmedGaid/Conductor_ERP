@@ -65,3 +65,26 @@ class BulkUsersSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["suspend", "activate", "archive", "assign_role"])
     ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     role = serializers.CharField(required=False, allow_blank=True)
+
+
+# --- Role editor (Increment 4) ---
+
+class CreateRoleSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+    copy_from = serializers.CharField(required=False, allow_blank=True)
+
+
+class SetRolePermissionSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    scope = serializers.CharField(required=False, allow_blank=True)
+    granted = serializers.BooleanField()
+
+
+class SetApprovalLimitSerializer(serializers.Serializer):
+    """Set one document type's ceiling. Exactly one of: a ``limit_minor`` ceiling,
+    ``unlimited`` (null limit), or ``remove`` (drop the row entirely)."""
+
+    document_type = serializers.CharField()
+    limit_minor = serializers.IntegerField(required=False, allow_null=True, min_value=0)
+    unlimited = serializers.BooleanField(required=False, default=False)
+    remove = serializers.BooleanField(required=False, default=False)

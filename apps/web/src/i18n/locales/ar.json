@@ -20,7 +20,8 @@
     "notifications": "الإشعارات",
     "favorites": "المفضلة",
     "administration": "الإدارة",
-    "usersAdmin": "المستخدمون"
+    "usersAdmin": "المستخدمون",
+    "rolesAdmin": "الأدوار"
   },
   "moduleIntro": {
     "accounting": "شجرة الحسابات والقيود اليومية ودفاتر الأستاذ والقوائم المالية — دفاتر المنشأة.",
@@ -1076,6 +1077,71 @@
       "noSessions": "لا عمليات دخول مسجّلة.",
       "audit": "النشاط",
       "noAudit": "لا نشاط مسجّل."
+    },
+    "roles": {
+      "title": "الأدوار",
+      "intro": "حدّد ما يمكن لكل دور رؤيته وفعله عبر النظام.",
+      "create": "دور جديد",
+      "name": "اسم الدور",
+      "copyFrom": "ابدأ من",
+      "copyBlank": "دور فارغ",
+      "kind": "النوع",
+      "members": "الأعضاء",
+      "memberCount": "{{count}} عضو",
+      "permissionCount": "الصلاحيات",
+      "modules": "الوحدات",
+      "builtin": "مدمج",
+      "custom": "مخصص",
+      "empty": "لا توجد أدوار بعد",
+      "emptyHint": "أنشئ دوراً للبدء.",
+      "back": "العودة إلى الأدوار",
+      "delete": "حذف الدور",
+      "deleteConfirm": "حذف هذا الدور؟ يجب إعادة إسناد أعضائه أولاً.",
+      "adminNote": "مدير النظام يتجاوز كل فحوصات الصلاحيات وله دائماً وصول كامل — صلاحياته للقراءة فقط.",
+      "protectedNote": "دور مدمج — يديره النظام. انسخه إلى دور مخصص لإجراء التغييرات.",
+      "saved": "تم الحفظ",
+      "permissions": "الصلاحيات",
+      "permissionsHint": "امنح الإجراءات لكل عنصر، ثم اختر كم من البيانات يطالها كل عنصر.",
+      "entity": "العنصر",
+      "scopeLabel": "نطاق البيانات",
+      "approvalLimits": "حدود الاعتماد",
+      "approvalLimitsHint": "حدّد سقف حجم المستند الذي يمكن لهذا الدور اعتماده، لكل نوع مستند.",
+      "documentType": "نوع المستند",
+      "currentLimit": "الحد الحالي",
+      "setLimit": "ضبط الحد",
+      "amount": "المبلغ",
+      "unlimited": "بلا حدود",
+      "remove": "إزالة",
+      "noLimit": "لا حد محدّد",
+      "act": {
+        "view": "عرض",
+        "create": "إنشاء",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "approve": "اعتماد"
+      },
+      "mod": {
+        "accounting": "المحاسبة",
+        "inventory": "المخزون",
+        "sales": "المبيعات",
+        "purchasing": "المشتريات",
+        "crm": "إدارة العلاقات",
+        "einvoice": "الفوترة الإلكترونية",
+        "notifications": "الإشعارات",
+        "workflow": "مسارات العمل",
+        "administration": "الإدارة"
+      },
+      "docType": {
+        "purchase_order": "أمر شراء",
+        "sales_order": "أمر بيع",
+        "quotation": "عرض سعر",
+        "purchase_request": "طلب شراء",
+        "invoice": "فاتورة",
+        "payment": "دفعة",
+        "discount": "خصم",
+        "return": "مرتجع",
+        "journal": "قيد يومية"
+      }
     }
   }
 }

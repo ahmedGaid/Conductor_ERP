@@ -14,6 +14,8 @@ import { AccessibilityPage } from "./pages/settings/AccessibilityPage";
 import { OrganizationPage } from "./pages/settings/OrganizationPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import { UserDetailPage } from "./pages/admin/UserDetailPage";
+import { RolesPage } from "./pages/admin/RolesPage";
+import { RoleDetailPage } from "./pages/admin/RoleDetailPage";
 import { WorkflowListPage } from "./pages/WorkflowListPage";
 import { WorkflowCanvasPage } from "./pages/WorkflowCanvasPage";
 import { ExecutionViewerPage } from "./pages/ExecutionViewerPage";
@@ -101,6 +103,8 @@ function Protected() {
           <Route path="/settings/organization" element={<OrganizationPage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/:id" element={<UserDetailPage />} />
+          <Route path="/admin/roles" element={<RolesPage />} />
+          <Route path="/admin/roles/:name" element={<RoleDetailPage />} />
           <Route path="/workflows" element={<WorkflowListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />

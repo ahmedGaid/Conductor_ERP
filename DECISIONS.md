@@ -107,6 +107,36 @@ Admin user-management on top of the Increment 2 permission model — first UI fo
   (via `access.accessible_modules` / `access.user_permissions`), so changing the role updates them
   live — reinforcing that roles are the single grant surface.
 
+## User Management & Personalization — Increment 4 (Role editor, 2026-06-20)
+
+The admin UI for the granular permission model, built on the Increment 2 tables + the
+`roles_admin.py` service — no module rewrites, gate:all 00-13 stays green.
+
+- **The editor edits Django Groups' grant rows, not a new model.** A role is still a Group;
+  `roles_admin` lists/creates/duplicates/deletes them and toggles their `RolePermission` /
+  `ApprovalLimit` rows. Built-in `DEFAULT_ROLES` are **protected from deletion**, and a role with
+  members can't be deleted (reassign first) — the UI surfaces both as read-only / guarded.
+- **Server-authoritative editing, one grant per request.** Each checkbox toggle / scope change /
+  limit edit POSTs to `/api/identity/roles/<name>/{permission,approval-limit}` and the endpoint
+  returns the **fresh role detail**, which the page renders — so the DB is always the source of truth
+  and there is no client-side divergence to reconcile. Endpoints are gated by `administration.role.*`
+  (System-Admin-only by default, since no built-in role is seeded `administration` permissions).
+- **Data scope is chosen per *entity* in the UI, though stored per *code*.** The natural mental model
+  is "what can this role do to Customers, and over which records" — so the matrix shows one scope
+  dropdown per entity row and applies it to every granted action on that entity. The underlying
+  `RolePermission.scope` is still per `<module>.<entity>.<action>` code; the per-entity UI just writes
+  the same scope to each. **Scope remains modeled only — queryset enforcement is Increment 5.**
+- **System Admin + built-in roles are shown read-only.** System Admin bypasses every check (carries no
+  rows, so editing them would be meaningless); built-in roles are system-managed (duplicate to a custom
+  role to change). The matrix/limits render disabled for both, with an explanatory note.
+- **Approval limit = a ceiling, "unlimited" (null), or "remove" (no row).** One control set per
+  document type; amounts are entered in major units and stored as integer minor units (`parseToMinor`).
+  Entities/modules outside a small translated set are humanized from their code (English) — the
+  repeated, user-facing strings (actions, scopes, modules, document types) are ar/en i18n keys.
+- **No new gate.** Backend tests run under gate01 (`tests/test_roles.py`, 12 tests); the frontend is
+  covered by gate03's build + i18n-parity + token/logical-CSS + help-coverage checks (both new routes
+  have help guides). Role names with spaces are URL-encoded in links and decoded from the `:name` param.
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

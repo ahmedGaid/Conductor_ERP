@@ -20,7 +20,8 @@
     "notifications": "Notifications",
     "favorites": "Favorites",
     "administration": "Administration",
-    "usersAdmin": "Users"
+    "usersAdmin": "Users",
+    "rolesAdmin": "Roles"
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",
@@ -1076,6 +1077,71 @@
       "noSessions": "No sign-ins recorded.",
       "audit": "Activity",
       "noAudit": "No recorded activity."
+    },
+    "roles": {
+      "title": "Roles",
+      "intro": "Define what each role can see and do across the system.",
+      "create": "New role",
+      "name": "Role name",
+      "copyFrom": "Start from",
+      "copyBlank": "Empty role",
+      "kind": "Kind",
+      "members": "Members",
+      "memberCount": "{{count}} member(s)",
+      "permissionCount": "Permissions",
+      "modules": "Modules",
+      "builtin": "Built-in",
+      "custom": "Custom",
+      "empty": "No roles yet",
+      "emptyHint": "Create a role to get started.",
+      "back": "Back to roles",
+      "delete": "Delete role",
+      "deleteConfirm": "Delete this role? Its members must be reassigned first.",
+      "adminNote": "System Admin bypasses every permission check and always has full access — its grants are read-only.",
+      "protectedNote": "Built-in role — managed by the system. Duplicate it to a custom role to make changes.",
+      "saved": "Saved",
+      "permissions": "Permissions",
+      "permissionsHint": "Grant actions per item, then choose how much data each item reaches.",
+      "entity": "Item",
+      "scopeLabel": "Data scope",
+      "approvalLimits": "Approval limits",
+      "approvalLimitsHint": "Cap how large a document this role may approve, per document type.",
+      "documentType": "Document type",
+      "currentLimit": "Current limit",
+      "setLimit": "Set limit",
+      "amount": "Amount",
+      "unlimited": "Unlimited",
+      "remove": "Remove",
+      "noLimit": "No limit set",
+      "act": {
+        "view": "View",
+        "create": "Create",
+        "edit": "Edit",
+        "delete": "Delete",
+        "approve": "Approve"
+      },
+      "mod": {
+        "accounting": "Accounting",
+        "inventory": "Inventory",
+        "sales": "Sales",
+        "purchasing": "Purchasing",
+        "crm": "CRM",
+        "einvoice": "E-invoicing",
+        "notifications": "Notifications",
+        "workflow": "Workflows",
+        "administration": "Administration"
+      },
+      "docType": {
+        "purchase_order": "Purchase order",
+        "sales_order": "Sales order",
+        "quotation": "Quotation",
+        "purchase_request": "Purchase request",
+        "invoice": "Invoice",
+        "payment": "Payment",
+        "discount": "Discount",
+        "return": "Return",
+        "journal": "Journal entry"
+      }
     }
   }
 }

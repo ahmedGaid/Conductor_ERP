@@ -10,15 +10,18 @@ from rest_framework_simplejwt.views import TokenRefreshView  # noqa: F401 (re-ex
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from . import services, users as user_svc
+from . import roles_admin, services, users as user_svc
 from .models import Department, Team
 from .permissions import HasAnyRole, HasModulePermission
 from .roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
 from .serializers import (
     BulkUsersSerializer,
+    CreateRoleSerializer,
     CreateUserSerializer,
     LoginSerializer,
     OrgPreferencesSerializer,
+    SetApprovalLimitSerializer,
+    SetRolePermissionSerializer,
     UpdateUserSerializer,
     UserPreferencesSerializer,
     UserSerializer,
@@ -237,6 +240,92 @@ class OrgUnitsView(APIView):
             ],
             "teams": [{"code": t.code, "name": t.name} for t in Team.objects.filter(is_active=True)],
         })
+
+
+# --- Role editor (Increment 4) ---
+
+def _can_role(action: str):
+    """RBAC for the role-editor surface: administration.role.<action>."""
+    return HasModulePermission.require(f"administration.role.{action}")
+
+
+class RolesView(APIView):
+    """List all roles, or create a new (optionally duplicated) custom role."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can_role("create" if self.request.method == "POST" else "view")()]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(roles_admin.list_roles())
+
+    def post(self, request: Request) -> Response:
+        s = CreateRoleSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        result = roles_admin.create_role(
+            d["name"], copy_from=d.get("copy_from") or None, actor=request.user
+        )
+        return Response({"data": result}, status=201)
+
+
+class RoleRegistryView(APIView):
+    """The vocabulary the editor renders: modules→entities, actions, scopes, document types."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can_role("view")()]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(roles_admin.registry())
+
+
+class RoleDetailView(APIView):
+    """A role's full grant set, or delete a custom role."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can_role("delete" if self.request.method == "DELETE" else "view")()]
+
+    def get(self, request: Request, name: str) -> Response:
+        return _envelope(roles_admin.role_detail(name))
+
+    def delete(self, request: Request, name: str) -> Response:
+        roles_admin.delete_role(name, actor=request.user)
+        return _envelope({"deleted": name})
+
+
+class RolePermissionView(APIView):
+    """Grant or revoke one permission code (with its data scope) on a role."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can_role("edit")()]
+
+    def post(self, request: Request, name: str) -> Response:
+        s = SetRolePermissionSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        result = roles_admin.set_permission(
+            name, d["code"], d.get("scope") or "all", d["granted"], actor=request.user
+        )
+        return _envelope(result)
+
+
+class RoleApprovalLimitView(APIView):
+    """Set, make unlimited, or remove a role's approval ceiling for a document type."""
+
+    def get_permissions(self):
+        return [IsAuthenticated(), _can_role("edit")()]
+
+    def post(self, request: Request, name: str) -> Response:
+        s = SetApprovalLimitSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        if d.get("remove"):
+            value = "remove"
+        elif d.get("unlimited"):
+            value = None  # unlimited
+        else:
+            value = d.get("limit_minor") or 0
+        result = roles_admin.set_approval_limit(name, d["document_type"], value, actor=request.user)
+        return _envelope(result)
 
 
 def _get_user(pk: int):

@@ -60,6 +60,24 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
+> **User Management & Personalization — Increment 4 (Role editor) BUILT + gate:all 00–13 GREEN,
+> awaiting test+commit (2026-06-20).** The admin UI for the granular RBAC model. Backend: wired the
+> already-present `erp/identity/roles_admin.py` service (list/detail/create-or-duplicate/set-permission/
+> set-approval-limit/delete + `registry()`; built-in `DEFAULT_ROLES` protected from deletion, member-
+> bearing roles can't be deleted) into DRF under `/api/identity/roles*` gated by `administration.role.*`
+> (so System-Admin-only by default): `GET/POST /roles`, `GET /roles/registry`, `GET/DELETE
+> /roles/<name>`, `POST /roles/<name>/permission`, `POST /roles/<name>/approval-limit`. Serializers
+> `CreateRole`/`SetRolePermission`/`SetApprovalLimit` (limit = a ceiling, `unlimited`, or `remove`). 12
+> tests in `tests/test_roles.py` (service: protect/duplicate/grant-revoke/limit set-unlimited-remove/
+> delete guards; API: RBAC gate + registry + full create→grant→limit→delete lifecycle). Frontend:
+> `api/roles.ts`; `pages/admin/` **Roles** list (built-in/custom badge + new/duplicate) and **Role
+> editor** (per-module collapsible **permission matrix** of the 5 actions × entities with a per-entity
+> **data-scope** picker, server-authoritative on each toggle; **approval-limits** table with set/
+> unlimited/remove; System-Admin + built-in roles shown **read-only**); admin-gated sidebar "Roles"
+> link + routes `/admin/roles` + `/admin/roles/:name`; 2 bilingual help guides; ar/en parity (911 keys).
+> Scope is set per entity here but still only **modeled** — queryset enforcement is Increment 5. Local
+> (not yet committed).
+>
 > **User Management & Personalization — Increment 3 (User management) BUILT + COMMITTED + gate:all
 > 00–13 GREEN (2026-06-20).** First UI on the RBAC backbone. Backend (erp/identity, migration `0005`):
 > `User` gains `status` (active/invited/suspended/archived, synced to `is_active`), `department`,

@@ -81,7 +81,7 @@ import {
   settingsOrganizationGuide,
   settingsProfileGuide,
 } from "./content/settings";
-import { userDetailGuide, usersGuide } from "./content/admin";
+import { roleDetailGuide, rolesGuide, userDetailGuide, usersGuide } from "./content/admin";
 
 export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/": dashboardGuide,
@@ -148,6 +148,8 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/settings/organization": settingsOrganizationGuide,
   "/admin/users": usersGuide,
   "/admin/users/:id": userDetailGuide,
+  "/admin/roles": rolesGuide,
+  "/admin/roles/:name": roleDetailGuide,
 };
 
 // Pre-sort patterns most-specific first: deeper paths first, and within the same depth, patterns

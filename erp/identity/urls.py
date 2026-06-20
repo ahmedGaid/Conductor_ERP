@@ -22,4 +22,10 @@ urlpatterns = [
     path("users/org-units", views.OrgUnitsView.as_view(), name="users-org-units"),
     path("users/<int:pk>", views.UserDetailView.as_view(), name="user-detail"),
     path("users/<int:pk>/reset-password", views.UserResetPasswordView.as_view(), name="user-reset-password"),
+    # Role editor (registry must precede the <name> catch-all)
+    path("roles", views.RolesView.as_view(), name="roles"),
+    path("roles/registry", views.RoleRegistryView.as_view(), name="roles-registry"),
+    path("roles/<str:name>", views.RoleDetailView.as_view(), name="role-detail"),
+    path("roles/<str:name>/permission", views.RolePermissionView.as_view(), name="role-permission"),
+    path("roles/<str:name>/approval-limit", views.RoleApprovalLimitView.as_view(), name="role-approval-limit"),
 ]
