@@ -44,8 +44,9 @@
 > --deploy --fail-level WARNING` (prod) + a real 429 throttle test + a journals query-budget test;
 > `ALL_GATES` now 00–12, all GREEN. See COMPLETION_PLAN Phase 10.
 >
-> **Phase 11 — Deployment packaging + runbook (Track E, the FINAL phase) — BUILT, gate:all 00–13
-> GREEN, AWAITING YOUR TEST + COMMIT.** Delivered: (1) **WhiteNoise** wired in prod settings — one
+> **Phase 11 — Deployment packaging + runbook (Track E, the FINAL phase) — DONE + COMMITTED + PUSHED
+> (commit `626ad55` on `main`, 2026-06-20). gate:all 00–13 GREEN. This commit is the RELEASE
+> CANDIDATE — the roadmap is complete.** Delivered: (1) **WhiteNoise** wired in prod settings — one
 > Django process serves the API + Django/DRF static (compressed-manifest) + the **built React SPA**;
 > no second web server. (2) **SPA served at root** via a testable `config/spa.py` root view (HashRouter
 > ⇒ only `/` ever hits the server, no catch-all needed); 503 build-hint instead of a 500 when `dist`
