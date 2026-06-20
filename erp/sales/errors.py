@@ -86,3 +86,9 @@ class QuotationAlreadyConvertedError(AppError):
     code = "SAL-012"
     status_code = 422
     message = "This quotation has already been converted to an order"
+
+
+class ApprovalLimitExceededError(AppError):
+    code = "SAL-015"
+    status_code = 422
+    message = "This amount exceeds your approval limit for this document"

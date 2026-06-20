@@ -16,10 +16,12 @@ from django.utils import timezone
 
 from erp.audit import services as audit
 from erp.core.events import bus
+from erp.identity import access
 
 from .. import events
 from ..domain.models import Customer, Quotation, QuotationLine, QuotationStatus
 from ..errors import (
+    ApprovalLimitExceededError,
     EmptyQuotationError,
     QuotationAlreadyConvertedError,
     QuotationInvalidTransitionError,
@@ -116,6 +118,13 @@ def submit_quotation(quote: Quotation, actor=None) -> Quotation:
 @transaction.atomic
 def approve_quotation(quote: Quotation, actor=None) -> Quotation:
     _require(quote, QuotationStatus.SUBMITTED)
+    if getattr(actor, "is_authenticated", False) and not access.can_approve(
+        actor, "quotation", quote.subtotal_minor
+    ):
+        raise ApprovalLimitExceededError(
+            data={"document": quote.number, "amount": quote.subtotal_minor,
+                  "limit": access.approval_limit(actor, "quotation")}
+        )
     quote.status = QuotationStatus.APPROVED
     quote.approved_at = timezone.now()
     quote.approved_by = actor if getattr(actor, "is_authenticated", False) else None

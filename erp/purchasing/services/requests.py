@@ -16,10 +16,12 @@ from django.utils import timezone
 
 from erp.audit import services as audit
 from erp.core.events import bus
+from erp.identity import access
 
 from .. import events
 from ..domain.models import PRStatus, PurchaseRequest, PurchaseRequestLine, Supplier
 from ..errors import (
+    ApprovalLimitExceededError,
     EmptyRequestError,
     RequestAlreadyConvertedError,
     RequestInvalidTransitionError,
@@ -115,6 +117,13 @@ def submit_request(req: PurchaseRequest, actor=None) -> PurchaseRequest:
 @transaction.atomic
 def approve_request(req: PurchaseRequest, actor=None) -> PurchaseRequest:
     _require(req, PRStatus.SUBMITTED)
+    if getattr(actor, "is_authenticated", False) and not access.can_approve(
+        actor, "purchase_request", req.subtotal_minor
+    ):
+        raise ApprovalLimitExceededError(
+            data={"document": req.number, "amount": req.subtotal_minor,
+                  "limit": access.approval_limit(actor, "purchase_request")}
+        )
     req.status = PRStatus.APPROVED
     req.approved_at = timezone.now()
     req.approved_by = actor if getattr(actor, "is_authenticated", False) else None

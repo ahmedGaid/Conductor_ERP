@@ -80,3 +80,9 @@ class UnknownTaxCodeError(AppError):
     code = "PUR-013"
     status_code = 422
     message = "Order references an unknown tax code"
+
+
+class ApprovalLimitExceededError(AppError):
+    code = "PUR-014"
+    status_code = 422
+    message = "This amount exceeds your approval limit for this document"

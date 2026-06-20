@@ -22,11 +22,13 @@ from erp.accounting.contracts import (
 )
 from erp.audit import services as audit
 from erp.core.events import bus
+from erp.identity import access
 from erp.inventory import contracts as inventory
 
 from .. import events
 from ..domain.models import Customer, OrderStatus, SalesOrder, SalesOrderLine
 from ..errors import (
+    ApprovalLimitExceededError,
     ApprovalRequiredError,
     CreditLimitExceededError,
     EmptyOrderError,
@@ -128,8 +130,19 @@ def create_order(
 
 @transaction.atomic
 def approve_order(order: SalesOrder, actor=None) -> SalesOrder:
-    """Manager sign-off for an above-threshold order (required before confirm)."""
+    """Manager sign-off for an above-threshold order (required before confirm).
+
+    An interactive approver may only sign off up to their role's approval limit for sales orders
+    (Increment 6). A system/no-actor call (actor=None) and superuser/System Admin are unrestricted.
+    """
     _require(order, OrderStatus.DRAFT)
+    if getattr(actor, "is_authenticated", False) and not access.can_approve(
+        actor, "sales_order", order.subtotal_minor
+    ):
+        raise ApprovalLimitExceededError(
+            data={"document": order.number, "amount": order.subtotal_minor,
+                  "limit": access.approval_limit(actor, "sales_order")}
+        )
     order.approved = True
     order.approved_at = timezone.now()
     order.approved_by = actor if getattr(actor, "is_authenticated", False) else None

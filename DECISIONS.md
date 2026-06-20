@@ -176,6 +176,38 @@ and bounded to what the data model can faithfully support.
   and CRM — run under gates 07/08/06/09. No new gate; no frontend change. **Approval-limit enforcement
   (wiring `ApprovalLimit` into the confirm/approve gates) is the remaining Increment 6.**
 
+## User Management & Personalization — Increment 6 (Approval limits, 2026-06-20)
+
+The final RBAC increment: the per-role `ApprovalLimit` ceilings (modeled in Increment 2, edited in
+Increment 4) are now **enforced** at the existing approve gates.
+
+- **Enforced in the approve action, via `access.can_approve`.** `approve_order` / `approve_quotation`
+  (sales) and `approve_order` / `approve_request` (purchasing) reject with `ApprovalLimitExceededError`
+  (SAL-015 / PUR-014) when the approver's role limit for that document type does not cover the
+  document's net amount (`subtotal_minor`). One guard line per gate; the services import
+  `erp.identity.access` (allowed — gate07/08 only forbid reaching into accounting/inventory internals).
+- **Only authenticated, non-admin approvers are limit-checked.** The guard is
+  `if actor.is_authenticated and not access.can_approve(actor, doc_type, amount): raise`. A
+  **no-actor** call (`actor=None` — seeds, internal/system flows) and **superuser / System Admin**
+  (which `can_approve` already treats as unlimited) pass unrestricted. This is why every pre-existing
+  test stays green (service tests approve with no actor; API tests authenticate as a superuser) and the
+  demo seed (`approve_request(r2)` with no actor) is unaffected — while a real interactive Branch
+  Manager is now bounded by their seeded ceiling (sales/purchase orders + quotations/requests at
+  50,000.00; the seeded numbers in `rbac.default_approval_limits`).
+- **Two complementary controls, deliberately kept separate.** The existing `requires_approval`
+  threshold (net > 10,000.00 EGP) decides *when* a document needs sign-off; the approval limit decides
+  *who* may grant it and *up to how much*. They compose without overlap — a 12,000 order needs approval
+  and a Branch Manager (limit 50,000) can grant it; a 60,000 order needs approval but only an
+  unlimited approver (System Admin) can. The hard-coded threshold constant was left in place rather
+  than derived from limits, because "needs sign-off" and "may sign off" are genuinely different policies.
+- **Journal / invoice / payment approval gates are not wired** — those documents have no discrete
+  approve step today (journals post directly), so their seeded limits (`journal`, `invoice`, `payment`)
+  remain modeled-only until such a step exists. Recorded so the asymmetry is intentional.
+- **Proven per-module, no new gate, no migration.** `test_approval_limits.py` in sales (order
+  within/over/unlimited/no-actor+superuser + quotation over-limit) and purchasing (order cases +
+  request over-limit), run under gates 07/08. **This closes the User-Management & Personalization
+  roadmap — Increments 1-6 are all delivered.**
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

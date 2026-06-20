@@ -60,8 +60,23 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
-> **User Management & Personalization — Increment 5 (Data-scope enforcement) BUILT + gate:all 00–13
-> GREEN, awaiting test+commit (2026-06-20).** Scope stops being advisory and is finally **enforced**.
+> **User Management & Personalization — Increment 6 (Approval limits) BUILT + gate:all 00–13 GREEN,
+> awaiting test+commit (2026-06-20) — COMPLETES THE RBAC ROADMAP.** The editable `ApprovalLimit`
+> ceilings (Increment 4) are now **enforced** at the approve gates. `approve_order`/`approve_quotation`
+> (sales) and `approve_order`/`approve_request` (purchasing) now reject with a new
+> `ApprovalLimitExceededError` (**SAL-015** / **PUR-014**) when an **authenticated, non-admin** approver
+> signs off an amount above their role's `ApprovalLimit` for that document type (via
+> `access.can_approve`). A **system/no-actor** call (`actor=None`, e.g. seeds/internal) and
+> **superuser/System Admin** are unrestricted, so every prior test + the demo seed (which approves with
+> no actor) stay green. The "needs sign-off above 10,000 EGP" `requires_approval` threshold is
+> unchanged — it triggers *when* approval is needed; the limit governs *who* may grant it (they
+> compose). Proven: `test_approval_limits.py` in sales (order within/over/unlimited/no-actor+superuser
+> + a quotation over-limit) and purchasing (order cases + a request over-limit) — gates 07/08.
+> Backend-only, no migration. Local (not yet committed). **All six RBAC increments are now done;
+> nothing remains on the User-Management roadmap.**
+>
+> **User Management & Personalization — Increment 5 (Data-scope enforcement) BUILT + COMMITTED + gate:all
+> 00–13 GREEN (2026-06-20, commit `3caf385`, pushed).** Scope stops being advisory and is **enforced**.
 > New `erp/identity/scoping.py` `scope_queryset(user, qs, code)` is the single enforcement point: it
 > reads the user's effective scope (Increment 2 `access.scope_for`) for an entity's *view* code and
 > narrows the queryset — **ALL/COMPANY** unrestricted (single tenant), **OWN** = `created_by==user`,
