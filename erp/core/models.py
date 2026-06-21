@@ -69,6 +69,22 @@ class AuditedModel(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="+",
     )
+    # Finer org placement, stamped from the creating actor — drives Department/Team data scopes
+    # (a Department/Team belongs to one Branch, so these narrow within the record's branch).
+    department = models.ForeignKey(
+        "identity.Department",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    team = models.ForeignKey(
+        "identity.Team",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

@@ -111,6 +111,8 @@ def receive_stock(
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="receive_stock", entity_type="StockMovement",
@@ -151,6 +153,8 @@ def issue_stock(
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="issue_stock", entity_type="StockMovement",
@@ -198,6 +202,8 @@ def return_in_stock(
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="return_in_stock", entity_type="StockMovement",
@@ -243,6 +249,8 @@ def return_out_stock(
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="return_out_stock", entity_type="StockMovement",
@@ -308,6 +316,8 @@ def adjust_stock(
         journal_number=journal_number,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="adjust_stock", entity_type="StockMovement",
@@ -352,6 +362,8 @@ def transfer_stock(
         date=date, quantity=quantity, value_minor=value, reference=reference, memo=memo,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(
         module="inventory", action="transfer_stock", entity_type="StockMovement",

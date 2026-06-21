@@ -105,6 +105,8 @@ def create_order(
         status=POStatus.DRAFT,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     subtotal = 0
     for i, ln in enumerate(lines, start=1):

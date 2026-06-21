@@ -60,6 +60,17 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
+> **Post-roadmap follow-up — Department/team record-level scoping BUILT + gate:all 00–13 GREEN
+> (2026-06-21).** Closes the Increment 5 limitation where DEPARTMENT/TEAM scopes collapsed to branch.
+> Added nullable `department`/`team` FKs to `core.AuditedModel` (one `makemigrations` → additive
+> migrations across 7 apps), stamped from the actor on create alongside `branch` in every transactional
+> create service, and generalised `scope_queryset` to filter on the matched dimension (a `_DIMENSION`
+> map: BRANCH/DEPARTMENT/TEAM each `<dim>==user.<dim> OR <dim> IS NULL`; dropped the unused
+> `branch_field` kwarg). A Dept/Team belongs to one Branch, so the finer scopes narrow *within* a
+> branch. Proven by a new sales test (two same-branch, different-department managers isolated). No
+> frontend change (the role editor already offered these scopes). Local (not yet committed). See
+> DECISIONS.
+>
 > **Post-roadmap follow-up — Brand icon system integrated (2026-06-21).** Dropped the client's
 > production icon kit into `apps/web/public/branding/` (squircle CE mark + favicon/PWA/desktop assets).
 > `index.html` now wires favicon.svg (+ .ico) / apple-touch-icon / site.webmanifest / browserconfig /

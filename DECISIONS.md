@@ -250,6 +250,31 @@ dev and is copied into `dist/` for the WhiteNoise prod process).
 - **Favicon/PWA wired in `index.html`** (`favicon.svg` auto light/dark + `.ico` fallback,
   `apple-touch-icon`, `site.webmanifest`, `browserconfig.xml`, `theme-color`).
 
+## Data-scope — department/team record-level enforcement (2026-06-21)
+
+Closes the limitation recorded in Increment 5: DEPARTMENT/TEAM scopes no longer collapse to branch —
+records now carry their own department/team dimension and the filter narrows on it.
+
+- **The dimensions live on `core.AuditedModel`**, next to `branch` — so *every* business record gains
+  nullable `department`/`team` FKs (to `identity.Department`/`identity.Team`) from one place, the same
+  way `branch` was added. One `makemigrations` produced additive nullable-column migrations across the
+  seven apps with concrete `AuditedModel` tables (accounting/crm/einvoice/inventory/notifications/
+  purchasing/sales). No data backfill (all nullable).
+- **Stamped from the actor on create**, alongside `created_by`/`branch`, in the same transactional
+  create services (sales order/quotation, purchase order/request, inventory movements + counts, CRM
+  lead/opportunity/ticket/campaign). Masters stay unstamped (shared, NULL ⇒ visible everywhere).
+- **`scope_queryset` now filters on the matched dimension generically.** A small `_DIMENSION` map
+  routes BRANCH→`branch`, DEPARTMENT→`department`, TEAM→`team`; each filters
+  `<dim> == user.<dim> OR <dim> IS NULL`. Since a Department/Team belongs to exactly one Branch, the
+  finer scopes correctly narrow *within* a branch. The old `branch_field` kwarg was dropped (no caller
+  used it). NULL-on-dimension stays visible (legacy/unstamped/org-wide), consistent with the Increment 5
+  branch rule.
+- **Proven** by `sales/tests/test_scoping.py::test_department_scope_narrows_within_a_branch`: two
+  managers in the *same* branch but different departments, both DEPARTMENT-scoped, are isolated from
+  each other (one cannot see the other's order) while NULL-department records stay visible. gate:all
+  00-13 green. No frontend change — the role editor already offered Department/Team in the scope picker;
+  now choosing them actually filters.
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.

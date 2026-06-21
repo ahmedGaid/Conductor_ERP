@@ -8,19 +8,21 @@ finally apply it to real querysets. Every module list endpoint runs its base que
 ``scope_queryset`` so scope is enforced consistently in one audited place rather than re-implemented
 per module.
 
-Enforceable dimensions today (records inherit ``erp.core.models.AuditedModel``):
+Enforceable dimensions (records inherit ``erp.core.models.AuditedModel``, all stamped from the
+creating actor):
 
-- ``created_by`` — a real User FK, stamped by the services ⇒ the **Own** scope.
-- ``branch`` — stamped on create from the actor's branch (Increment 5) ⇒ the **Branch** scope.
+- ``created_by`` — a real User FK ⇒ the **Own** scope.
+- ``branch`` — the actor's branch ⇒ the **Branch** scope.
+- ``department`` / ``team`` — the actor's org placement ⇒ the **Department** / **Team** scopes
+  (each belongs to one branch, so they narrow *within* a branch).
 
 Semantics (confirmed with the client; see DECISIONS.md):
 
 - **All / Company** — unrestricted (single-tenant: the company *is* everything).
-- **Branch / Department / Team** — ``branch == user.branch OR branch IS NULL``. Records carry no
-  department/team dimension yet, so those finer scopes resolve to branch-level filtering (a
-  documented limitation; finer record tagging is a later increment). NULL-branch records (legacy /
-  unstamped / org-wide) stay visible within any branch — safe for single-tenant and preserves
-  data created before branch stamping.
+- **Branch / Department / Team** — ``<dim> == user.<dim> OR <dim> IS NULL``. A NULL on the matched
+  dimension means the record is legacy/unstamped/org-wide and stays visible (safe for single-tenant,
+  and preserves data created before stamping). A user whose own dimension is unset sees only the
+  NULL/unstamped records at that tier.
 - **Own** — ``created_by == user``.
 - **Superuser / System Admin** — bypass entirely (matches every other RBAC check).
 """
@@ -31,20 +33,26 @@ from django.db.models import Q, QuerySet
 from . import access
 from .rbac import DataScope
 
+# Scope -> (record field, the matching attribute on the user). NULL on the record field always
+# stays visible (legacy / unstamped / org-wide).
+_DIMENSION = {
+    DataScope.BRANCH: ("branch", "branch_id"),
+    DataScope.DEPARTMENT: ("department", "department_id"),
+    DataScope.TEAM: ("team", "team_id"),
+}
+
 
 def scope_queryset(
     user,
     qs: QuerySet,
     code: str,
     *,
-    branch_field: str = "branch",
     owner_field: str = "created_by",
 ) -> QuerySet:
     """Filter ``qs`` to the records ``user`` may see for permission ``code`` at their scope.
 
-    ``code`` is the entity's *view* permission (e.g. ``"sales.order.view"``). ``branch_field`` /
-    ``owner_field`` let a caller point at differently-named columns, but every business record uses
-    the ``AuditedModel`` defaults.
+    ``code`` is the entity's *view* permission (e.g. ``"sales.order.view"``). Every business record
+    uses the ``AuditedModel`` dimension columns (branch/department/team/created_by).
     """
     if access.is_superadmin(user):
         return qs
@@ -55,7 +63,7 @@ def scope_queryset(
         return qs
     if scope == DataScope.OWN:
         return qs.filter(**{owner_field: user})
-    # BRANCH / DEPARTMENT / TEAM all resolve to branch-level filtering (records carry no finer
-    # dimension yet). NULL-branch records remain visible org-wide.
-    branch_id = getattr(user, "branch_id", None)
-    return qs.filter(Q(**{f"{branch_field}_id": branch_id}) | Q(**{f"{branch_field}__isnull": True}))
+
+    field, user_attr = _DIMENSION.get(scope, _DIMENSION[DataScope.BRANCH])
+    value = getattr(user, user_attr, None)
+    return qs.filter(Q(**{f"{field}_id": value}) | Q(**{f"{field}__isnull": True}))

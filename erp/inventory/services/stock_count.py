@@ -34,6 +34,8 @@ def create_count(*, warehouse: Warehouse, item_skus: list[str] | None = None,
         reference=reference, memo=memo, status=CountStatus.COUNTING,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     if item_skus:
         for sku in item_skus:

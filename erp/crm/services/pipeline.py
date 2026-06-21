@@ -70,6 +70,8 @@ def create_opportunity(
         probability=probability, expected_close=expected_close, notes=notes, stage=OppStage.QUALIFYING,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     subtotal = 0
     for i, ln in enumerate(lines or [], start=1):

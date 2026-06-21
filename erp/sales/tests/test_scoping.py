@@ -11,7 +11,7 @@ from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from erp.core.models import Branch
-from erp.identity.models import RolePermission, User
+from erp.identity.models import Department, RolePermission, User
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 from erp.sales import services
@@ -30,12 +30,14 @@ def _catalog():
     make_warehouse()
 
 
-def _manager(username: str, branch: Branch | None, scope: str = "branch") -> User:
+def _manager(username: str, branch: Branch | None, scope: str = "branch",
+             department: Department | None = None) -> User:
     bm, _ = Group.objects.get_or_create(name=BRANCH_MANAGER)
     RolePermission.objects.update_or_create(role=bm, code=VIEW, defaults={"scope": scope})
     u = User.objects.create_user(username=username, email=f"{username}@erp.local", password="pw12345!")
     u.branch = branch
-    u.save(update_fields=["branch"])
+    u.department = department
+    u.save(update_fields=["branch", "department"])
     u.groups.add(bm)
     return u
 
@@ -74,6 +76,27 @@ def test_branch_scope_isolates_other_branch_but_keeps_null():
     seen_by_a = set(scope_queryset(mgr_a, SalesOrder.objects.all(), VIEW).values_list("id", flat=True))
     assert seen_by_a == {order_a.id, order_null.id}
     assert order_b.id not in seen_by_a
+
+
+def test_department_scope_narrows_within_a_branch():
+    # Two managers in the SAME branch but different departments; DEPARTMENT scope must isolate them
+    # from each other (proving it filters finer than branch).
+    _catalog()
+    branch = Branch.objects.create(code="BR-A", name="Alpha")
+    dept_x = Department.objects.create(code="DX", name="Dept X", branch=branch)
+    dept_y = Department.objects.create(code="DY", name="Dept Y", branch=branch)
+    mgr_x = _manager("dx", branch, scope="department", department=dept_x)
+    mgr_y = _manager("dy", branch, scope="department", department=dept_y)
+
+    order_x = _order(mgr_x)
+    order_y = _order(mgr_y)
+    order_null = SalesOrder.objects.create(number="SO-NULL", customer=order_x.customer,
+                                           order_date=order_x.order_date, warehouse_code="MAIN")
+
+    assert order_x.department_id == dept_x.id
+    seen = set(scope_queryset(mgr_x, SalesOrder.objects.all(), VIEW).values_list("id", flat=True))
+    assert seen == {order_x.id, order_null.id}
+    assert order_y.id not in seen  # same branch, different department — hidden
 
 
 def test_all_and_own_and_superadmin_paths():

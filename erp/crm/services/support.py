@@ -51,6 +51,8 @@ def create_ticket(
         opened_at=opened_at, sla_due_at=Ticket.sla_due(opened_at, priority),
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
         branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     audit.record(module="crm", action="create_ticket", entity_type="Ticket",
                  entity_id=ticket.number, actor=actor)
