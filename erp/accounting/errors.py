@@ -80,3 +80,9 @@ class InvalidBudgetError(AppError):
     code = "ACC-013"
     status_code = 422
     message = "Budget is invalid (unknown fiscal year or account)"
+
+
+class ApprovalLimitExceededError(AppError):
+    code = "ACC-014"
+    status_code = 403
+    message = "This journal exceeds your approval limit"

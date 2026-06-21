@@ -60,8 +60,21 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
-> **Post-roadmap follow-up — Department/team record-level scoping BUILT + gate:all 00–13 GREEN
-> (2026-06-21).** Closes the Increment 5 limitation where DEPARTMENT/TEAM scopes collapsed to branch.
+> **Post-roadmap follow-up — Manual journal approval limits BUILT + gate:all 00–13 GREEN (2026-06-21).**
+> Activates the seeded `journal` approval limit. Enforcement lives in
+> `accounting.services.enforce_journal_approval(actor, total)` and is called by the **manual** journal
+> post view only (`/api/accounting/journals`) — `post_journal` (the shared invariant point all modules
+> use) is untouched, so system/module-posted journals are never gated. A manual journal above
+> `JOURNAL_APPROVAL_THRESHOLD_MINOR` (10,000 EGP) may be posted only by an actor whose `journal` limit
+> covers it (`access.can_approve`); at/below threshold no approval; no-actor + superuser/System Admin
+> unrestricted. New error **ACC-014**. Seeded Accountant journal limit is unlimited (primary role
+> unaffected); a finite-ceiling role is now bound. 8 tests (extends gate05); no frontend change.
+> **Invoice/payment approval deliberately deferred** (module-posted + the seeded invoice/payment limits
+> sit on Accountant while those actions are gated by Branch Manager — needs a role↔limit alignment
+> decision; see DECISIONS). Local (not yet committed).
+>
+> **Post-roadmap follow-up — Department/team record-level scoping BUILT + COMMITTED + PUSHED
+> (2026-06-21, commit `4288c0f`).** Closes the Increment 5 limitation where DEPARTMENT/TEAM scopes collapsed to branch.
 > Added nullable `department`/`team` FKs to `core.AuditedModel` (one `makemigrations` → additive
 > migrations across 7 apps), stamped from the actor on create alongside `branch` in every transactional
 > create service, and generalised `scope_queryset` to filter on the matched dimension (a `_DIMENSION`

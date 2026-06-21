@@ -177,6 +177,9 @@ class JournalListPostView(APIView):
                 for ln in v["lines"]
             ],
         )
+        # A large manual journal may be posted only by someone authorised to approve that amount.
+        total_minor = sum(ln.debit for ln in data.lines)
+        services.enforce_journal_approval(request.user, total_minor)
         entry = services.post_journal(data, actor=request.user)
         return _envelope(JournalEntrySerializer(entry).data, status=201)
 

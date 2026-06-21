@@ -26,6 +26,7 @@ from ..domain.models import (
 )
 from ..errors import (
     AlreadyPostedError,
+    ApprovalLimitExceededError,
     ClosedPeriodError,
     InvalidLineError,
     NoPeriodError,
@@ -133,6 +134,34 @@ def _validate_cost_centers(data: JournalInput) -> None:
     missing = codes - known
     if missing:
         raise UnknownCostCenterError(data={"cost_centers": sorted(missing)})
+
+
+# A manual journal whose total exceeds this needs an actor authorised to approve that amount
+# (their "journal" approval limit). System/module posts and superuser/System Admin are unrestricted.
+JOURNAL_APPROVAL_THRESHOLD_MINOR = 1_000_000  # 10,000.00 EGP
+
+
+def journal_requires_approval(total_minor: int) -> bool:
+    return total_minor > JOURNAL_APPROVAL_THRESHOLD_MINOR
+
+
+def enforce_journal_approval(actor, total_minor: int) -> None:
+    """Reject a manual journal an interactive actor isn't authorised to approve at its amount.
+
+    Above ``JOURNAL_APPROVAL_THRESHOLD_MINOR`` the actor's ``journal`` approval limit must cover the
+    total (Increment 6 limits). A non-interactive/no-actor call (module-posted journals) and
+    superuser/System Admin are unrestricted; at or below the threshold no approval is needed.
+    """
+    if not getattr(actor, "is_authenticated", False):
+        return
+    if not journal_requires_approval(total_minor):
+        return
+    from erp.identity import access
+
+    if not access.can_approve(actor, "journal", total_minor):
+        raise ApprovalLimitExceededError(
+            data={"amount": total_minor, "limit": access.approval_limit(actor, "journal")}
+        )
 
 
 @transaction.atomic

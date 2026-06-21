@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 from .posting import (  # noqa: F401
+    JOURNAL_APPROVAL_THRESHOLD_MINOR,
     JournalInput,
     LineInput,
+    enforce_journal_approval,
+    journal_requires_approval,
     post_journal,
     reverse_journal,
 )
@@ -72,6 +75,9 @@ from .statements import (  # noqa: F401
 __all__ = [
     "JournalInput",
     "LineInput",
+    "JOURNAL_APPROVAL_THRESHOLD_MINOR",
+    "enforce_journal_approval",
+    "journal_requires_approval",
     "post_journal",
     "reverse_journal",
     "GeneralLedger",

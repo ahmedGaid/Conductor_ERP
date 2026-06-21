@@ -275,6 +275,34 @@ records now carry their own department/team dimension and the filter narrows on 
   00-13 green. No frontend change — the role editor already offered Department/Team in the scope picker;
   now choosing them actually filters.
 
+## Manual journal approval limits (2026-06-21)
+
+Activates the seeded ``journal`` approval limit (Increment 6) — until now it was configurable but
+nothing enforced it, because journals post in one step with no approve gate.
+
+- **Enforced on the manual-entry path only, not in ``post_journal``.** ``post_journal`` is the shared
+  invariant point every module posts through; gating it would wrongly block large *system* journals
+  (a big sales invoice, an inventory receipt). Instead the check lives in
+  ``services.enforce_journal_approval(actor, total)`` and is called by **``JournalListPostView.post``**
+  (the accountant's manual GL entry via ``/api/accounting/journals``). Module/service posts call
+  ``post_journal`` directly and are never gated.
+- **Single-step semantics (the post *is* the approval).** Journals have no draft→confirm→approve
+  lifecycle, so rather than add one, a manual journal above ``JOURNAL_APPROVAL_THRESHOLD_MINOR``
+  (10,000.00 EGP, same constant as orders) may be posted only by an actor whose ``journal`` limit
+  covers the total (``access.can_approve``). At/below the threshold no approval is needed; a
+  non-interactive/no-actor call and superuser/System Admin are unrestricted. New error **ACC-014**
+  (``ApprovalLimitExceededError``, 403). Seeded Accountant journal limit is ``None`` (unlimited), so
+  the primary GL role is unaffected; a role given a finite ceiling is now actually bound by it.
+- **Scope: journals only this slice; invoice/payment approval deferred (documented).** The spec also
+  lists ``invoice``/``payment`` limits, but those documents are **module-posted** (sales/purchasing)
+  and gated by the *operational* role (Branch Manager), whereas the seeded ``invoice``/``payment``
+  limits sit on **Accountant** — so wiring them needs a role↔limit alignment decision (who signs off a
+  large invoice/payment, and at which step). Left as a follow-up rather than forcing an awkward mapping
+  now. The journal case is clean because the manual poster *is* the approver.
+- Proven by ``erp/accounting/tests/test_journal_approval.py`` (8 tests: threshold boundary, within/over
+  limit, zero-ceiling block, unlimited pass, no-actor/superuser bypass, and the API 403→201 path).
+  Extends **gate05**; no frontend change (the journal form already surfaces the API error message).
+
 ## Toolchain (local dev provisioning, 2026-06-14)
 
 - Machine had only git. Installed via winget: Python 3.13, Node LTS, PostgreSQL 16.
