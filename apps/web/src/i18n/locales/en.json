@@ -1105,7 +1105,7 @@
       "delete": "Delete role",
       "deleteConfirm": "Delete this role? Its members must be reassigned first.",
       "adminNote": "System Admin bypasses every permission check and always has full access — its grants are read-only.",
-      "protectedNote": "Built-in role — managed by the system. Duplicate it to a custom role to make changes.",
+      "protectedNote": "Built-in role — you can adjust its permissions and approval limits here; it just can't be deleted.",
       "saved": "Saved",
       "permissions": "Permissions",
       "permissionsHint": "Grant actions per item, then choose how much data each item reaches.",

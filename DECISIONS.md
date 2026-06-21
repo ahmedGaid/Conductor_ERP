@@ -126,9 +126,12 @@ The admin UI for the granular permission model, built on the Increment 2 tables 
   dropdown per entity row and applies it to every granted action on that entity. The underlying
   `RolePermission.scope` is still per `<module>.<entity>.<action>` code; the per-entity UI just writes
   the same scope to each. **Scope remains modeled only — queryset enforcement is Increment 5.**
-- **System Admin + built-in roles are shown read-only.** System Admin bypasses every check (carries no
-  rows, so editing them would be meaningless); built-in roles are system-managed (duplicate to a custom
-  role to change). The matrix/limits render disabled for both, with an explanatory note.
+- **Only the System Admin role is read-only.** It bypasses every check (carries no rows, so granting it
+  anything is meaningless), so its matrix/limits render disabled. **Built-in roles ARE editable** — an
+  admin tunes their permissions and approval limits in place — they are only **protected from
+  deletion**. (Corrected 2026-06-21: the editor first shipped with *all* built-in roles read-only,
+  which blocked the intended "admin sets a role's invoice/payment/journal ceiling" workflow; built-in
+  roles are now editable-but-undeletable. The backend never restricted editing them.)
 - **Approval limit = a ceiling, "unlimited" (null), or "remove" (no row).** One control set per
   document type; amounts are entered in major units and stored as integer minor units (`parseToMinor`).
   Entities/modules outside a small translated set are humanized from their code (English) — the

@@ -34,9 +34,10 @@ export function RoleDetailPage() {
 
   useEffect(load, [load]);
 
-  // Editing is blocked for built-in roles (their grants are system-managed) and the System Admin
-  // role (it bypasses every check, so there is nothing meaningful to grant).
-  const readOnly = !!role && (role.protected || role.is_admin);
+  // Only the System Admin role is read-only (it bypasses every check, so granting it anything is
+  // meaningless). Built-in roles ARE editable — an admin tunes their permissions and approval limits
+  // here — they just can't be deleted (guarded separately).
+  const readOnly = !!role && role.is_admin;
 
   async function mutate(p: Promise<RoleDetail>) {
     setError(null);
