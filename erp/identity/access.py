@@ -88,8 +88,38 @@ def approval_limit(user, document_type: str) -> int | None:
 
 
 def can_approve(user, document_type: str, amount_minor: int) -> bool:
-    """True if the user may approve ``amount_minor`` of ``document_type``."""
+    """True if the user may approve ``amount_minor`` of ``document_type``.
+
+    Deny-by-default: a user with no configured limit cannot approve. Use this for the explicit
+    document-approval step (orders/quotations/PRs), where the elevated role is granted a limit.
+    """
     limit = approval_limit(user, document_type)
     if limit is None:
         return True  # unlimited
     return amount_minor <= limit
+
+
+def within_limit(user, document_type: str, amount_minor: int) -> bool:
+    """True if ``amount_minor`` of ``document_type`` is within the user's configured ceiling.
+
+    **Opt-in** (the admin decides): if no approval limit is configured for any of the user's roles on
+    this document type, the user is unconstrained — the admin simply hasn't capped it in the role
+    editor. When a ceiling *is* configured it is enforced (a null ceiling = unlimited). Superuser /
+    System Admin are always within limit. Use this for operational transaction caps
+    (journal / invoice / payment) that an admin tunes per role; contrast ``can_approve`` above, which
+    denies by default for the explicit approval step.
+    """
+    if is_superadmin(user):
+        return True
+    from .models import ApprovalLimit
+
+    rows = list(
+        ApprovalLimit.objects.filter(role__user=user, document_type=document_type).values_list(
+            "limit_minor", flat=True
+        )
+    )
+    if not rows:
+        return True  # admin hasn't configured a cap for this role/document → unconstrained
+    if any(r is None for r in rows):
+        return True  # an unlimited grant wins
+    return amount_minor <= max(rows)

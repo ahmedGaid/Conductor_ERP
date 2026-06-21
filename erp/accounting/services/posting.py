@@ -146,10 +146,11 @@ def journal_requires_approval(total_minor: int) -> bool:
 
 
 def enforce_journal_approval(actor, total_minor: int) -> None:
-    """Reject a manual journal an interactive actor isn't authorised to approve at its amount.
+    """Reject a large manual journal that exceeds the actor's configured ``journal`` limit.
 
-    Above ``JOURNAL_APPROVAL_THRESHOLD_MINOR`` the actor's ``journal`` approval limit must cover the
-    total (Increment 6 limits). A non-interactive/no-actor call (module-posted journals) and
+    Above ``JOURNAL_APPROVAL_THRESHOLD_MINOR`` the journal must be within the actor's configured
+    ``journal`` ceiling — but the ceiling is **opt-in**: a role the admin hasn't capped is unconstrained
+    (``access.within_limit``). A non-interactive/no-actor call (module-posted journals) and
     superuser/System Admin are unrestricted; at or below the threshold no approval is needed.
     """
     if not getattr(actor, "is_authenticated", False):
@@ -158,7 +159,7 @@ def enforce_journal_approval(actor, total_minor: int) -> None:
         return
     from erp.identity import access
 
-    if not access.can_approve(actor, "journal", total_minor):
+    if not access.within_limit(actor, "journal", total_minor):
         raise ApprovalLimitExceededError(
             data={"amount": total_minor, "limit": access.approval_limit(actor, "journal")}
         )

@@ -227,6 +227,13 @@ def bill_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
     net = order.received_minor
     vat = compute_tax(net, order.tax_code) if order.tax_code else 0
     gross = net + vat
+    # Admin-configured ceiling (opt-in): blocked only if the actor's role has an 'invoice' limit
+    # below this bill; uncapped roles are unrestricted.
+    if getattr(actor, "is_authenticated", False) and not access.within_limit(actor, "invoice", gross):
+        raise ApprovalLimitExceededError(
+            data={"document": order.number, "amount": gross,
+                  "limit": access.approval_limit(actor, "invoice")}
+        )
     # Clear GRNI into AP, booking recoverable input VAT: Dr GRNI (net) [/ Dr VAT Input (vat)] / Cr AP (gross).
     lines = [LineInput(account_code=GRNI_ACCOUNT, debit=net)]
     if vat > 0:
@@ -258,6 +265,11 @@ def pay_order(order: PurchaseOrder, amount_minor: int, actor=None) -> PurchaseOr
     if amount_minor <= 0 or amount_minor > order.outstanding_minor:
         raise OverpaymentError(
             data={"outstanding": order.outstanding_minor, "amount": amount_minor}
+        )
+    if getattr(actor, "is_authenticated", False) and not access.within_limit(actor, "payment", amount_minor):
+        raise ApprovalLimitExceededError(
+            data={"document": order.number, "amount": amount_minor,
+                  "limit": access.approval_limit(actor, "payment")}
         )
     post_journal(
         JournalInput(

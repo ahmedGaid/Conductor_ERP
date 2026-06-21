@@ -290,6 +290,13 @@ def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
     net = order.subtotal_minor
     vat = compute_tax(net, order.tax_code) if order.tax_code else 0
     gross = net + vat
+    # Admin-configured ceiling (opt-in): blocked only if the actor's role has an 'invoice' limit
+    # below this amount; uncapped roles are unrestricted.
+    if getattr(actor, "is_authenticated", False) and not access.within_limit(actor, "invoice", gross):
+        raise ApprovalLimitExceededError(
+            data={"document": order.number, "amount": gross,
+                  "limit": access.approval_limit(actor, "invoice")}
+        )
     # Dr AR (gross) / Cr Revenue (net) [/ Cr VAT Payable (vat)].
     lines = [
         LineInput(account_code=AR_ACCOUNT, debit=gross),
@@ -334,6 +341,11 @@ def receive_payment(order: SalesOrder, amount_minor: int, actor=None) -> SalesOr
     if amount_minor > order.outstanding_minor:
         raise OverpaymentError(
             data={"outstanding": order.outstanding_minor, "amount": amount_minor}
+        )
+    if getattr(actor, "is_authenticated", False) and not access.within_limit(actor, "payment", amount_minor):
+        raise ApprovalLimitExceededError(
+            data={"document": order.number, "amount": amount_minor,
+                  "limit": access.approval_limit(actor, "payment")}
         )
     post_journal(
         JournalInput(

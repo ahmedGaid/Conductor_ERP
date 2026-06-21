@@ -60,18 +60,22 @@
 > deploy/backup kit + runbook present); `ALL_GATES` now **00–13**. Deps added: `whitenoise`, `waitress`
 > (installed in the venv). **Green `gate:all` = release candidate** — this is the last roadmap phase.
 >
-> **Post-roadmap follow-up — Manual journal approval limits BUILT + gate:all 00–13 GREEN (2026-06-21).**
-> Activates the seeded `journal` approval limit. Enforcement lives in
-> `accounting.services.enforce_journal_approval(actor, total)` and is called by the **manual** journal
-> post view only (`/api/accounting/journals`) — `post_journal` (the shared invariant point all modules
-> use) is untouched, so system/module-posted journals are never gated. A manual journal above
-> `JOURNAL_APPROVAL_THRESHOLD_MINOR` (10,000 EGP) may be posted only by an actor whose `journal` limit
-> covers it (`access.can_approve`); at/below threshold no approval; no-actor + superuser/System Admin
-> unrestricted. New error **ACC-014**. Seeded Accountant journal limit is unlimited (primary role
-> unaffected); a finite-ceiling role is now bound. 8 tests (extends gate05); no frontend change.
-> **Invoice/payment approval deliberately deferred** (module-posted + the seeded invoice/payment limits
-> sit on Accountant while those actions are gated by Branch Manager — needs a role↔limit alignment
-> decision; see DECISIONS). Local (not yet committed).
+> **Post-roadmap follow-up — Journal / invoice / payment approval limits BUILT + gate:all 00–13 GREEN
+> (2026-06-21).** Activates the seeded `journal`/`invoice`/`payment` approval limits — **admin-decided,
+> opt-in**: new `access.within_limit(user, doc, amount)` returns unconstrained when no limit is
+> configured for the user's roles, and enforces the configured ceiling (null = unlimited) otherwise
+> (superuser/System Admin bypass). The admin sets ceilings per role in the existing role editor; code
+> hard-codes no role↔limit mapping. **Journals:** `enforce_journal_approval` on the manual post view
+> only (`/api/accounting/journals`), above `JOURNAL_APPROVAL_THRESHOLD_MINOR` (10,000 EGP);
+> `post_journal` (shared invariant) untouched so module journals are never gated; error **ACC-014**.
+> **Invoices/payments:** `sales.invoice_order`/`purchasing.bill_order` check `within_limit(…,"invoice",
+> gross)`, `sales.receive_payment`/`purchasing.pay_order` check `within_limit(…,"payment",amount)` and
+> raise the module's `ApprovalLimitExceededError` over a configured ceiling — the **acting** user's
+> roles are checked, so the admin binds whatever operational role they choose. Default: Branch Manager
+> has no invoice/payment limit ⇒ unchanged behaviour. 14 tests (8 accounting + 3 sales + 3 purchasing;
+> extends gates 05/07/08); no frontend change (role editor already lists these doc types). Local (not
+> yet committed). **This completes the journal/invoice/payment approval slice — the RBAC system and all
+> its follow-ups are now done.**
 >
 > **Post-roadmap follow-up — Department/team record-level scoping BUILT + COMMITTED + PUSHED
 > (2026-06-21, commit `4288c0f`).** Closes the Increment 5 limitation where DEPARTMENT/TEAM scopes collapsed to branch.

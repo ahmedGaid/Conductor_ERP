@@ -275,33 +275,44 @@ records now carry their own department/team dimension and the filter narrows on 
   00-13 green. No frontend change — the role editor already offered Department/Team in the scope picker;
   now choosing them actually filters.
 
-## Manual journal approval limits (2026-06-21)
+## Journal / invoice / payment approval limits — admin-configured, opt-in (2026-06-21)
 
-Activates the seeded ``journal`` approval limit (Increment 6) — until now it was configurable but
-nothing enforced it, because journals post in one step with no approve gate.
+Activates the seeded ``journal``/``invoice``/``payment`` approval limits (Increment 6), which until now
+were configurable but enforced nothing. **Who is bound, and at what ceiling, is left entirely to the
+admin** (per the client: "make it in the hands of the admin to decide") via the existing role-editor
+approval-limits table — code hard-codes no role↔limit mapping.
 
-- **Enforced on the manual-entry path only, not in ``post_journal``.** ``post_journal`` is the shared
-  invariant point every module posts through; gating it would wrongly block large *system* journals
-  (a big sales invoice, an inventory receipt). Instead the check lives in
-  ``services.enforce_journal_approval(actor, total)`` and is called by **``JournalListPostView.post``**
-  (the accountant's manual GL entry via ``/api/accounting/journals``). Module/service posts call
-  ``post_journal`` directly and are never gated.
-- **Single-step semantics (the post *is* the approval).** Journals have no draft→confirm→approve
-  lifecycle, so rather than add one, a manual journal above ``JOURNAL_APPROVAL_THRESHOLD_MINOR``
-  (10,000.00 EGP, same constant as orders) may be posted only by an actor whose ``journal`` limit
-  covers the total (``access.can_approve``). At/below the threshold no approval is needed; a
-  non-interactive/no-actor call and superuser/System Admin are unrestricted. New error **ACC-014**
-  (``ApprovalLimitExceededError``, 403). Seeded Accountant journal limit is ``None`` (unlimited), so
-  the primary GL role is unaffected; a role given a finite ceiling is now actually bound by it.
-- **Scope: journals only this slice; invoice/payment approval deferred (documented).** The spec also
-  lists ``invoice``/``payment`` limits, but those documents are **module-posted** (sales/purchasing)
-  and gated by the *operational* role (Branch Manager), whereas the seeded ``invoice``/``payment``
-  limits sit on **Accountant** — so wiring them needs a role↔limit alignment decision (who signs off a
-  large invoice/payment, and at which step). Left as a follow-up rather than forcing an awkward mapping
-  now. The journal case is clean because the manual poster *is* the approver.
-- Proven by ``erp/accounting/tests/test_journal_approval.py`` (8 tests: threshold boundary, within/over
-  limit, zero-ceiling block, unlimited pass, no-actor/superuser bypass, and the API 403→201 path).
-  Extends **gate05**; no frontend change (the journal form already surfaces the API error message).
+- **Opt-in semantics: ``access.within_limit(user, document_type, amount)``.** If the admin has set
+  **no** limit for any of the user's roles on that document type, the user is unconstrained — nothing
+  breaks by default. When a ceiling *is* configured it is enforced (a null ceiling = unlimited);
+  superuser/System Admin always pass. This sits beside the existing ``can_approve`` (deny-by-default,
+  used for the explicit order/quotation/PR **approval** step where the elevated role is granted a
+  limit) — two helpers, two intents.
+- **Journals — manual-entry path only, never ``post_journal``.** ``post_journal`` is the shared
+  invariant point every module posts through; gating it would wrongly block large *system* journals (a
+  big sales invoice, an inventory receipt). The check lives in
+  ``accounting.services.enforce_journal_approval(actor, total)`` and is called only by
+  ``JournalListPostView.post`` (the accountant's manual GL entry). Above
+  ``JOURNAL_APPROVAL_THRESHOLD_MINOR`` (10,000.00 EGP) the manual journal must be within the actor's
+  configured ``journal`` ceiling; at/below it, no approval. No-actor/module posts and superuser/System
+  Admin are unrestricted. New error **ACC-014**.
+- **Invoices & payments — gated in the module action, by the acting user.** ``sales.invoice_order``
+  and ``purchasing.bill_order`` check ``within_limit(actor, "invoice", gross)``;
+  ``sales.receive_payment`` and ``purchasing.pay_order`` check ``within_limit(actor, "payment",
+  amount)``; over a configured ceiling they raise the module's ``ApprovalLimitExceededError``. Because
+  the *acting* user's roles are what's checked (not whichever role the spec parked the default on),
+  the admin decides by giving the relevant operational role (Branch Manager, or a custom one) an
+  invoice/payment ceiling. By default Branch Manager has no such limit ⇒ unchanged behaviour; the
+  seeded Accountant invoice/payment limits never gate these actions because Accountant can't perform
+  them (RBAC).
+- **No threshold for invoice/payment** (unlike journals): the configured ceiling *is* the gate, and
+  absence means unrestricted, so a separate "needs approval above X" constant would be redundant.
+- Proven by ``erp/accounting/tests/test_journal_approval.py`` (8) +
+  ``erp/sales/tests/test_invoice_payment_limits.py`` (3) +
+  ``erp/purchasing/tests/test_invoice_payment_limits.py`` (3): uncapped role unrestricted, configured
+  ceiling blocks over-amount then allows within, no-actor/superuser bypass, manual-journal API 403→201.
+  Extends gates 05/07/08; no frontend change (the role editor already lists these document types, and
+  the order/journal screens surface the API error).
 
 ## Toolchain (local dev provisioning, 2026-06-14)
 
