@@ -47,6 +47,7 @@
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
+    "then": "then",
     "general": "General",
     "navigation": "Navigation",
     "palette": "Command palette",

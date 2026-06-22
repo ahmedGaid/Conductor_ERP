@@ -48,8 +48,14 @@
 
 .shortcuts__keys {
   display: inline-flex;
+  align-items: center;
   gap: var(--space-1);
   flex-shrink: 0;
+}
+
+.shortcuts__then {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
 }
 
 @media (max-width: 32rem) {

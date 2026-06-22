@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import "./CommandPalette.css";
@@ -91,12 +91,16 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
 }
 
 function ShortcutRow({ keys, label }: Shortcut) {
+  const { t } = useTranslation();
   return (
     <li className="shortcuts__row">
       <span className="shortcuts__label">{label}</span>
       <span className="shortcuts__keys">
         {keys.map((k, i) => (
-          <kbd key={i} className="cmdp__kbd latin">{k}</kbd>
+          <Fragment key={i}>
+            {i > 0 && <span className="shortcuts__then">{t("shortcuts.then")}</span>}
+            <kbd className="cmdp__kbd latin">{k}</kbd>
+          </Fragment>
         ))}
       </span>
     </li>
