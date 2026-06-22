@@ -6,6 +6,7 @@ import { createPurchaseOrder, listSuppliers, type NewPOLine } from "../../api/pu
 import { listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PurchasingNav } from "./PurchasingNav";
@@ -21,6 +22,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_cost: "" 
 
 export function NewPurchaseOrderPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -70,9 +72,10 @@ export function NewPurchaseOrderPage() {
     setBusy(true);
     try {
       const order = await createPurchaseOrder({ supplier_code: supplier, warehouse_code: warehouse, tax_code: taxCode, lines: payloadLines });
+      toast.show(t("purchasing.toast.poCreated"), "success");
       navigate(`/purchasing/orders/${order.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

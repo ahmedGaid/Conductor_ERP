@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { createQuotation, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
@@ -20,6 +21,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: ""
 
 export function NewQuotationPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -65,9 +67,10 @@ export function NewQuotationPage() {
     setBusy(true);
     try {
       const quote = await createQuotation({ customer_code: customer, warehouse_code: warehouse, lines: payloadLines });
+      toast.show(t("sales.toast.quotationCreated"), "success");
       navigate(`/sales/quotations/${quote.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

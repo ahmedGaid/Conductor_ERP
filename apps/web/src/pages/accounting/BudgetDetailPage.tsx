@@ -10,6 +10,7 @@ import {
   setBudgetLine,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -18,6 +19,7 @@ import "./accounting.css";
 
 export function BudgetDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id = "" } = useParams();
   const { data: budget, reload: reloadBudget } = useAsync(() => getBudget(id), [id], `accounting:budget:${id}`);
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
@@ -51,8 +53,9 @@ export function BudgetDetailPage() {
       setAmount("");
       reloadBudget();
       reloadVariance();
+      toast.show(t("accounting.toast.budgetLineSet"), "success");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

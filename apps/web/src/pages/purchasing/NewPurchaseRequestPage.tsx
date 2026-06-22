@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { createRequest, listSuppliers, type NewPOLine } from "../../api/purchasing";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PurchasingNav } from "./PurchasingNav";
@@ -20,6 +21,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_cost: "" 
 
 export function NewPurchaseRequestPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -65,9 +67,10 @@ export function NewPurchaseRequestPage() {
     setBusy(true);
     try {
       const req = await createRequest({ supplier_code: supplier, warehouse_code: warehouse, lines: payloadLines });
+      toast.show(t("purchasing.toast.prCreated"), "success");
       navigate(`/purchasing/requests/${req.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

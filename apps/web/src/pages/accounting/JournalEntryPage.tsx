@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { listAccounts, listCostCenters, postJournal, type JournalLineInput } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { AccountingNav } from "./AccountingNav";
@@ -25,6 +26,7 @@ function today(): string {
 
 export function JournalEntryPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const { data: costCenters } = useAsync(listCostCenters, [], "accounting:cost-centers");
@@ -74,9 +76,10 @@ export function JournalEntryPage() {
     setBusy(true);
     try {
       const entry = await postJournal({ date, memo, lines: payloadLines });
+      toast.show(t("accounting.toast.journalPosted"), "success");
       navigate(`/accounting/journals/${entry.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

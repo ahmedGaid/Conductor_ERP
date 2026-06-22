@@ -201,7 +201,11 @@
       "adjustmentPosted": "تم ترحيل التسوية",
       "reportDeleted": "تم حذف التقرير",
       "costCenterCreated": "تمت إضافة مركز التكلفة",
-      "budgetCreated": "تمت إضافة الموازنة"
+      "budgetCreated": "تمت إضافة الموازنة",
+      "journalPosted": "تم ترحيل القيد",
+      "bankStatementCreated": "تم إنشاء الكشف",
+      "reportSaved": "تم حفظ التقرير",
+      "budgetLineSet": "تم تعيين بند الموازنة"
     },
     "tabs": {
       "chart": "دليل الحسابات",
@@ -412,6 +416,7 @@
   "inventory": {
     "toast": {
       "countPosted": "تم ترحيل الجرد",
+      "countStarted": "تم بدء الجرد",
       "warehouseCreated": "تمت إضافة المخزن",
       "itemCreated": "تمت إضافة الصنف"
     },
@@ -514,7 +519,9 @@
       "returned": "تم تسجيل المرتجع",
       "quoteSubmitted": "تم إرسال عرض السعر",
       "quoteApproved": "تمت الموافقة على عرض السعر",
-      "quoteRejected": "تم رفض عرض السعر"
+      "quoteRejected": "تم رفض عرض السعر",
+      "orderCreated": "تم إنشاء الطلب",
+      "quotationCreated": "تم إنشاء عرض السعر"
     },
     "tabs": {
       "orders": "الطلبات",
@@ -720,7 +727,9 @@
       "reqSubmitted": "تم إرسال طلب الشراء",
       "reqApproved": "تم اعتماد طلب الشراء",
       "reqRejected": "تم رفض طلب الشراء",
-      "supplierCreated": "تمت إضافة المورد"
+      "supplierCreated": "تمت إضافة المورد",
+      "poCreated": "تم إنشاء أمر الشراء",
+      "prCreated": "تم إنشاء طلب الشراء"
     }
   },
   "crm": {
@@ -739,7 +748,8 @@
       "oppWon": "تم ربح الفرصة",
       "oppLost": "تم خسارة الفرصة",
       "campaignActivated": "تم تفعيل الحملة",
-      "campaignCompleted": "تم إكمال الحملة"
+      "campaignCompleted": "تم إكمال الحملة",
+      "opportunityCreated": "تم إنشاء الفرصة"
     },
     "tabs": {
       "pipeline": "خط الفرص",
@@ -1185,6 +1195,7 @@
       "title": "الأدوار",
       "intro": "حدّد ما يمكن لكل دور رؤيته وفعله عبر النظام.",
       "create": "دور جديد",
+      "created": "تم إنشاء الدور",
       "name": "اسم الدور",
       "copyFrom": "ابدأ من",
       "copyBlank": "دور فارغ",

@@ -67,8 +67,9 @@ export function ReportBuilderPage() {
       setName("");
       setCodes("");
       reload();
+      toast.show(t("accounting.toast.reportSaved"), "success");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

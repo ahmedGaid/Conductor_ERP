@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { createBankStatement, getBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -25,6 +26,7 @@ function today(): string {
 
 export function BankReconciliationPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(listBankStatements, [], "accounting:bank-statements");
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
@@ -68,9 +70,10 @@ export function BankReconciliationPage() {
         lines: payloadLines,
       });
       reload();
+      toast.show(t("accounting.toast.bankStatementCreated"), "success");
       navigate(`/accounting/bank-reconciliation/${stmt.id}`);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

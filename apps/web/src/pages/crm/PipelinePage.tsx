@@ -12,6 +12,7 @@ import {
 import { listCustomers } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -29,6 +30,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: ""
 
 export function PipelinePage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { data, loading, error, reload } = useAsync(() => listOpportunities(), [], "crm:opportunities");
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -81,8 +83,9 @@ export function PipelinePage() {
       setWarehouse("");
       setLines([emptyLine()]);
       reload();
+      toast.show(t("crm.toast.opportunityCreated"), "success");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

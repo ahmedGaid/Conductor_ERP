@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { createStockCount, getStockCount, listStockCounts, listWarehouses, type CountStatus } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -22,6 +23,7 @@ type StockCount = Awaited<ReturnType<typeof listStockCounts>>[number];
 
 export function StockCountsPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(listStockCounts, [], "inventory:counts");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -72,9 +74,10 @@ export function StockCountsPage() {
     try {
       const count = await createStockCount({ warehouse_code: warehouse, count_date: countDate });
       reload();
+      toast.show(t("inventory.toast.countStarted"), "success");
       navigate(`/inventory/counts/${count.id}`);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }

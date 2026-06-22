@@ -201,7 +201,11 @@
       "adjustmentPosted": "Adjustment posted",
       "reportDeleted": "Report deleted",
       "costCenterCreated": "Cost center added",
-      "budgetCreated": "Budget added"
+      "budgetCreated": "Budget added",
+      "journalPosted": "Journal posted",
+      "bankStatementCreated": "Statement created",
+      "reportSaved": "Report saved",
+      "budgetLineSet": "Budget line set"
     },
     "tabs": {
       "chart": "Chart of Accounts",
@@ -412,6 +416,7 @@
   "inventory": {
     "toast": {
       "countPosted": "Count posted",
+      "countStarted": "Count started",
       "warehouseCreated": "Warehouse added",
       "itemCreated": "Item added"
     },
@@ -514,7 +519,9 @@
       "returned": "Return recorded",
       "quoteSubmitted": "Quotation submitted",
       "quoteApproved": "Quotation approved",
-      "quoteRejected": "Quotation rejected"
+      "quoteRejected": "Quotation rejected",
+      "orderCreated": "Order created",
+      "quotationCreated": "Quotation created"
     },
     "tabs": {
       "orders": "Orders",
@@ -720,7 +727,9 @@
       "reqSubmitted": "Request submitted",
       "reqApproved": "Request approved",
       "reqRejected": "Request rejected",
-      "supplierCreated": "Supplier added"
+      "supplierCreated": "Supplier added",
+      "poCreated": "Order created",
+      "prCreated": "Request created"
     }
   },
   "crm": {
@@ -739,7 +748,8 @@
       "oppWon": "Opportunity won",
       "oppLost": "Opportunity lost",
       "campaignActivated": "Campaign activated",
-      "campaignCompleted": "Campaign completed"
+      "campaignCompleted": "Campaign completed",
+      "opportunityCreated": "Opportunity created"
     },
     "tabs": {
       "pipeline": "Pipeline",
@@ -1185,6 +1195,7 @@
       "title": "Roles",
       "intro": "Define what each role can see and do across the system.",
       "create": "New role",
+      "created": "Role created",
       "name": "Role name",
       "copyFrom": "Start from",
       "copyBlank": "Empty role",
