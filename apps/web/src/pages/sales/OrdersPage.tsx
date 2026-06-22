@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { listOrders, type SalesOrder } from "../../api/sales";
+import { listOrders, approveOrder, confirmOrder, type SalesOrder } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -10,6 +10,7 @@ import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
+import { RowActions } from "../../components/RowActions";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
@@ -27,9 +28,11 @@ const ORDER_STATUSES = [
 
 export function OrdersPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listOrders(), [], "sales:orders");
+  const { data, loading, error, reload } = useAsync(() => listOrders(), [], "sales:orders");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fields = useMemo<FilterField<SalesOrder>[]>(
     () => [
@@ -71,6 +74,21 @@ export function OrdersPage() {
     [filtered, tab],
   );
 
+  // One-click row actions mirror the order-detail gating: approve a draft awaiting sign-off, then
+  // confirm a draft that's ready. Heavier steps (deliver/invoice/payment) stay on the detail page.
+  async function run(id: string, fn: () => Promise<SalesOrder>) {
+    setBusy(id);
+    setActionError(null);
+    try {
+      await fn();
+      reload();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <section className="sales-page">
       <SalesNav />
@@ -92,6 +110,7 @@ export function OrdersPage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
+      {actionError && <p className="error-text">{actionError}</p>}
       {data && data.length === 0 && (
         <EmptyState
           title={t("sales.orders.empty")}
@@ -123,6 +142,7 @@ export function OrdersPage() {
                 <th>{t("sales.orders.date")}</th>
                 <th>{t("sales.orders.status")}</th>
                 <th className="sales-table__num">{t("sales.orders.total")}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -139,6 +159,20 @@ export function OrdersPage() {
                     </span>
                   </td>
                   <td className="sales-table__num"><Bdi>{formatMinor(o.subtotal_minor, o.currency)}</Bdi></td>
+                  <td>
+                    <RowActions label={t("common.actions")}>
+                      {o.status === "draft" && o.requires_approval && !o.approved && (
+                        <button className="btn btn--sm" disabled={busy === o.id} onClick={() => run(o.id, () => approveOrder(o.id))}>
+                          {t("sales.detail.approve")}
+                        </button>
+                      )}
+                      {o.status === "draft" && (!o.requires_approval || o.approved) && (
+                        <button className="btn btn--sm btn--primary" disabled={busy === o.id} onClick={() => run(o.id, () => confirmOrder(o.id))}>
+                          {t("sales.detail.confirm")}
+                        </button>
+                      )}
+                    </RowActions>
+                  </td>
                 </tr>
               ))}
             </tbody>

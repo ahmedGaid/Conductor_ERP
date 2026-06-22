@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { listPurchaseOrders, type PurchaseOrder } from "../../api/purchasing";
+import { listPurchaseOrders, approvePO, confirmPO, type PurchaseOrder } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -10,6 +10,7 @@ import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
+import { RowActions } from "../../components/RowActions";
 import { PurchasingNav } from "./PurchasingNav";
 import "./purchasing.css";
 
@@ -26,9 +27,11 @@ const PO_STATUSES = [
 
 export function PurchaseOrdersPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listPurchaseOrders(), [], "purchasing:orders");
+  const { data, loading, error, reload } = useAsync(() => listPurchaseOrders(), [], "purchasing:orders");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fields = useMemo<FilterField<PurchaseOrder>[]>(
     () => [
@@ -59,6 +62,21 @@ export function PurchaseOrdersPage() {
     [filtered, tab],
   );
 
+  // One-click row actions mirror the PO-detail gating: approve a draft awaiting sign-off, then
+  // confirm a draft that's ready. Heavier steps (receive/bill/payment) stay on the detail page.
+  async function run(id: string, fn: () => Promise<PurchaseOrder>) {
+    setBusy(id);
+    setActionError(null);
+    try {
+      await fn();
+      reload();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <section className="pur-page">
       <PurchasingNav />
@@ -80,6 +98,7 @@ export function PurchaseOrdersPage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
+      {actionError && <p className="error-text">{actionError}</p>}
       {data && data.length === 0 && (
         <EmptyState
           title={t("purchasing.orders.empty")}
@@ -111,6 +130,7 @@ export function PurchaseOrdersPage() {
                 <th>{t("common.date")}</th>
                 <th>{t("common.status")}</th>
                 <th className="pur-table__num">{t("sales.orders.total")}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -127,6 +147,20 @@ export function PurchaseOrdersPage() {
                     </span>
                   </td>
                   <td className="pur-table__num"><Bdi>{formatMinor(o.subtotal_minor, o.currency)}</Bdi></td>
+                  <td>
+                    <RowActions label={t("common.actions")}>
+                      {o.status === "draft" && o.requires_approval && !o.approved && (
+                        <button className="btn btn--sm" disabled={busy === o.id} onClick={() => run(o.id, () => approvePO(o.id))}>
+                          {t("purchasing.detail.approve")}
+                        </button>
+                      )}
+                      {o.status === "draft" && (!o.requires_approval || o.approved) && (
+                        <button className="btn btn--sm btn--primary" disabled={busy === o.id} onClick={() => run(o.id, () => confirmPO(o.id))}>
+                          {t("purchasing.detail.confirm")}
+                        </button>
+                      )}
+                    </RowActions>
+                  </td>
                 </tr>
               ))}
             </tbody>
