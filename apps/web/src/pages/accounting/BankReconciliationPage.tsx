@@ -2,8 +2,9 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { createBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
+import { createBankStatement, getBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -175,7 +176,12 @@ export function BankReconciliationPage() {
               {data.map((s) => (
                 <tr key={s.id}>
                   <td>
-                    <Link className="acct-link" to={`/accounting/bank-reconciliation/${s.id}`}>
+                    <Link
+                      className="acct-link"
+                      to={`/accounting/bank-reconciliation/${s.id}`}
+                      onMouseEnter={() => prefetch(`accounting:bank-statement:${s.id}`, () => getBankStatement(s.id))}
+                      onFocus={() => prefetch(`accounting:bank-statement:${s.id}`, () => getBankStatement(s.id))}
+                    >
                       <Bdi>{s.account_code}</Bdi>
                     </Link>
                   </td>

@@ -11,7 +11,7 @@ import "./accounting.css";
 export function JournalDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error } = useAsync<JournalEntry>(() => getJournal(id as string), [id]);
+  const { data, loading, error } = useAsync<JournalEntry>(() => getJournal(id as string), [id], `accounting:journal:${id}`);
 
   return (
     <section className="acct-page">

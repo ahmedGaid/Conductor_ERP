@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
@@ -11,6 +10,8 @@ import {
   type OppStage,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { CrmNav } from "./CrmNav";
@@ -23,25 +24,28 @@ const NEXT_STAGE: Partial<Record<OppStage, OppStage>> = {
 
 export function OpportunityDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, reload } = useAsync<Opportunity>(
+  const { data, loading, error, mutate } = useAsync<Opportunity>(
     () => getOpportunity(id as string),
     [id],
+    `crm:opportunity:${id}`,
   );
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
 
-  async function run(fn: () => Promise<Opportunity>) {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic: flip the stage instantly so the badge and action set update, then let the server's
+  // returned opportunity reconcile derived values (weighted amount, spawned sales order). A failure
+  // rolls the whole opportunity back and shows an error toast.
+  function act(apply: (o: Opportunity) => Opportunity, request: () => Promise<Opportunity>, success: string) {
+    if (!data) return;
+    void runOptimistic<Opportunity, Opportunity>({
+      current: data,
+      mutate,
+      optimistic: apply,
+      request,
+      settle: (_predicted, updated) => updated,
+      toast,
+      success,
+    });
   }
 
   return (
@@ -99,19 +103,30 @@ export function OpportunityDetailPage() {
             {(data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation") && (
               <div className="crm-actions">
                 {NEXT_STAGE[data.stage] && (
-                  <button className="btn" disabled={busy} onClick={() => run(() => advanceStage(data.id, NEXT_STAGE[data.stage]!))}>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      const next = NEXT_STAGE[data.stage]!;
+                      act((o) => ({ ...o, stage: next }), () => advanceStage(data.id, next), t("crm.toast.stageAdvanced", { stage: t(`crm.stage.${next}`) }));
+                    }}
+                  >
                     {t("crm.detail.advanceTo", { stage: t(`crm.stage.${NEXT_STAGE[data.stage]}`) })}
                   </button>
                 )}
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => winOpportunity(data.id, data.lines.length > 0))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon"))}
+                >
                   {t("crm.detail.win")}
                 </button>
-                <button className="btn btn--danger" disabled={busy} onClick={() => run(() => loseOpportunity(data.id))}>
+                <button
+                  className="btn btn--danger"
+                  onClick={() => act((o) => ({ ...o, stage: "lost" }), () => loseOpportunity(data.id), t("crm.toast.oppLost"))}
+                >
                   {t("crm.detail.lose")}
                 </button>
               </div>
             )}
-            {actionError && <p className="error-text">{actionError}</p>}
           </div>
 
           {data.lines.length > 0 && (

@@ -2,8 +2,9 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { createStockCount, listStockCounts, listWarehouses, type CountStatus } from "../../api/inventory";
+import { createStockCount, getStockCount, listStockCounts, listWarehouses, type CountStatus } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -152,7 +153,14 @@ export function StockCountsPage() {
               {visible.map((c) => (
                 <tr key={c.id}>
                   <td>
-                    <Link className="inv-link" to={`/inventory/counts/${c.id}`}><Bdi>{c.warehouse_code}</Bdi></Link>
+                    <Link
+                      className="inv-link"
+                      to={`/inventory/counts/${c.id}`}
+                      onMouseEnter={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
+                      onFocus={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
+                    >
+                      <Bdi>{c.warehouse_code}</Bdi>
+                    </Link>
                   </td>
                   <td><Bdi>{c.count_date}</Bdi></td>
                   <td className="inv-table__num"><Bdi>{c.line_count}</Bdi></td>

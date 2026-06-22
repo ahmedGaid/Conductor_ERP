@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { createCostCenter, listCostCenters } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -14,7 +16,8 @@ type CostCenter = Awaited<ReturnType<typeof listCostCenters>>[number];
 
 export function CostCentersPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listCostCenters, [], "accounting:cost-centers");
+  const toast = useToast();
+  const { data, loading, error, mutate } = useAsync(listCostCenters, [], "accounting:cost-centers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<CostCenter>[]>(
@@ -31,23 +34,24 @@ export function CostCentersPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  // Optimistic create: show the new cost center instantly and clear the form for the next entry; the
+  // server row replaces the placeholder on settle, or it rolls back + toasts.
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setFormError(null);
-    try {
-      await createCostCenter({ code, name });
-      setCode("");
-      setName("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    const c = code.trim();
+    const n = name.trim();
+    if (!c || !n) return;
+    void optimisticCreate<CostCenter>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, code: c, name: n, is_active: true }) as CostCenter,
+      request: () => createCostCenter({ code: c, name: n }),
+      toast,
+      success: t("accounting.toast.costCenterCreated"),
+    });
+    setCode("");
+    setName("");
   }
 
   return (
@@ -63,11 +67,10 @@ export function CostCentersPage() {
           <span>{t("accounting.costCenters.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
-        <button className="btn btn--primary" type="submit" disabled={busy}>
+        <button className="btn btn--primary" type="submit">
           {t("accounting.costCenters.add")}
         </button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

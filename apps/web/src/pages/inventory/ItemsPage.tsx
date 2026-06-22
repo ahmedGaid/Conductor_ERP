@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -15,7 +17,8 @@ const ITEM_TYPES: ItemType[] = ["stock", "service"];
 
 export function ItemsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listItems, [], "inventory:items");
+  const toast = useToast();
+  const { data, loading, error, mutate } = useAsync(listItems, [], "inventory:items");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -52,23 +55,25 @@ export function ItemsPage() {
   const [name, setName] = useState("");
   const [uom, setUom] = useState("unit");
   const [type, setType] = useState<ItemType>("stock");
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  // Optimistic create: show the new item row instantly and clear the form for the next entry; the
+  // server row replaces the placeholder on settle, or it rolls back + toasts.
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setFormError(null);
-    try {
-      await createItem({ sku, name, uom, type });
-      setSku("");
-      setName("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    const s = sku.trim();
+    const n = name.trim();
+    if (!s || !n) return;
+    const u = uom.trim() || "unit";
+    void optimisticCreate<Item>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, sku: s, name: n, uom: u, type }) as Item,
+      request: () => createItem({ sku: s, name: n, uom: u, type }),
+      toast,
+      success: t("inventory.toast.itemCreated"),
+    });
+    setSku("");
+    setName("");
   }
 
   return (
@@ -95,11 +100,10 @@ export function ItemsPage() {
             <option value="service">{t("inventory.types.service")}</option>
           </select>
         </label>
-        <button className="btn btn--primary" type="submit" disabled={busy}>
+        <button className="btn btn--primary" type="submit">
           {t("inventory.item.add")}
         </button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

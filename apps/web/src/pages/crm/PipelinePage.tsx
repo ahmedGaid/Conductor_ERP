@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import {
   createOpportunity,
+  getOpportunity,
   listOpportunities,
   type NewOppLine,
   type Opportunity,
@@ -11,6 +12,7 @@ import {
 import { listCustomers } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -209,7 +211,14 @@ export function PipelinePage() {
               {data.map((o: Opportunity) => (
                 <tr key={o.id}>
                   <td>
-                    <Link to={`/crm/opportunities/${o.id}`} className="latin">{o.number}</Link>
+                    <Link
+                      to={`/crm/opportunities/${o.id}`}
+                      className="latin"
+                      onMouseEnter={() => prefetch(`crm:opportunity:${o.id}`, () => getOpportunity(o.id))}
+                      onFocus={() => prefetch(`crm:opportunity:${o.id}`, () => getOpportunity(o.id))}
+                    >
+                      {o.number}
+                    </Link>
                   </td>
                   <td>{o.name}</td>
                   <td>

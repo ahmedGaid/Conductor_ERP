@@ -4,6 +4,8 @@ import { useLocation } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
 import { CommandBar } from "./CommandBar";
+import { Toaster } from "./Toaster";
+import { ToastProvider } from "./ToastContext";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
 import "./AppShell.css";
@@ -19,8 +21,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => setNavOpen(false), [location.pathname]);
 
   return (
-    <HelpProvider>
-      <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
+    <ToastProvider>
+      <HelpProvider>
+        <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
         <a className="appshell__skip" href="#main">
           {t("shell.skipToContent")}
         </a>
@@ -41,7 +44,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </main>
         <HelpCenter />
+        <Toaster />
       </div>
-    </HelpProvider>
+      </HelpProvider>
+    </ToastProvider>
   );
 }

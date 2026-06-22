@@ -8,6 +8,8 @@ import {
   type ETAInvoice,
 } from "../../api/einvoice";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -23,9 +25,8 @@ const EINVOICE_STATUSES = ["draft", "submitted", "valid", "rejected", "cancelled
 
 export function EInvoicesPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listETAInvoices(), [], "einvoice:invoices");
-  const [busy, setBusy] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const toast = useToast();
+  const { data, loading, error, mutate } = useAsync(() => listETAInvoices(), [], "einvoice:invoices");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -56,17 +57,20 @@ export function EInvoicesPage() {
     [filtered, tab],
   );
 
-  async function run(id: string, fn: () => Promise<ETAInvoice>) {
-    setBusy(id);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(null);
-    }
+  // Optimistic per-row action: patch the invoice in place, reconcile with the server's invoice (it
+  // sets the UUID/hash and final status), roll back + toast on failure. `submit` predicts the obvious
+  // status flip; `poll` can't predict the outcome, so it leaves the row untouched until settle.
+  function act(id: string, apply: (e: ETAInvoice) => ETAInvoice, request: () => Promise<ETAInvoice>, success?: string) {
+    if (!data) return;
+    void runOptimistic<ETAInvoice[], ETAInvoice>({
+      current: data,
+      mutate,
+      optimistic: (rows) => rows.map((e) => (e.id === id ? apply(e) : e)),
+      request,
+      settle: (predicted, updated) => predicted.map((e) => (e.id === id ? updated : e)),
+      toast,
+      success,
+    });
   }
 
   return (
@@ -84,7 +88,6 @@ export function EInvoicesPage() {
         </div>
       )}
       {error && <p className="error-text">{error}</p>}
-      {actionError && <p className="error-text">{actionError}</p>}
       {data && data.length === 0 && <EmptyState title={t("einvoice.empty")} />}
 
       {data && data.length > 0 && (
@@ -137,12 +140,18 @@ export function EInvoicesPage() {
                   <td>
                     <RowActions label={t("common.actions")}>
                       {e.status === "draft" && (
-                        <button className="btn btn--sm" disabled={busy === e.id} onClick={() => run(e.id, () => submitETAInvoice(e.id))}>
+                        <button
+                          className="btn btn--sm"
+                          onClick={() => act(e.id, (x) => ({ ...x, status: "submitted" }), () => submitETAInvoice(e.id), t("einvoice.toast.submitted"))}
+                        >
                           {t("einvoice.submit")}
                         </button>
                       )}
                       {e.status === "submitted" && (
-                        <button className="btn btn--sm" disabled={busy === e.id} onClick={() => run(e.id, () => pollETAInvoice(e.id))}>
+                        <button
+                          className="btn btn--sm"
+                          onClick={() => act(e.id, (x) => x, () => pollETAInvoice(e.id))}
+                        >
                           {t("einvoice.poll")}
                         </button>
                       )}

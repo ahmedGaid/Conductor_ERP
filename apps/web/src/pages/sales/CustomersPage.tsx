@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { createCustomer, listCustomers, type Customer } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -13,7 +15,8 @@ import "./sales.css";
 
 export function CustomersPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listCustomers, [], "sales:customers");
+  const toast = useToast();
+  const { data, loading, error, mutate } = useAsync(listCustomers, [], "sales:customers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Customer>[]>(
@@ -31,25 +34,26 @@ export function CustomersPage() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  // Optimistic create: show the new customer instantly and clear the form for the next entry; the
+  // server row replaces the placeholder on settle, or it rolls back + toasts.
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setFormError(null);
-    try {
-      const credit = parseToMinor(limit) ?? 0;
-      await createCustomer({ code, name, credit_limit_minor: credit });
-      setCode("");
-      setName("");
-      setLimit("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    const c = code.trim();
+    const n = name.trim();
+    if (!c || !n) return;
+    const credit = parseToMinor(limit) ?? 0;
+    void optimisticCreate<Customer>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, code: c, name: n, credit_limit_minor: credit }) as Customer,
+      request: () => createCustomer({ code: c, name: n, credit_limit_minor: credit }),
+      toast,
+      success: t("sales.toast.customerCreated"),
+    });
+    setCode("");
+    setName("");
+    setLimit("");
   }
 
   return (
@@ -69,11 +73,10 @@ export function CustomersPage() {
           <span>{t("sales.customer.creditLimit")}</span>
           <input className="latin" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="0.00" />
         </label>
-        <button className="btn btn--primary" type="submit" disabled={busy}>
+        <button className="btn btn--primary" type="submit">
           {t("sales.customer.add")}
         </button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

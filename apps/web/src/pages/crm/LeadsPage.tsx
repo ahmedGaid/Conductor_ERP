@@ -7,8 +7,11 @@ import {
   listLeads,
   setLeadStatus,
   type Lead,
+  type Opportunity,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -22,7 +25,8 @@ const LEAD_SOURCES = ["web", "referral", "call", "campaign", "other"] as const;
 
 export function LeadsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listLeads(), [], "crm:leads");
+  const toast = useToast();
+  const { data, loading, error, mutate } = useAsync(() => listLeads(), [], "crm:leads");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -64,41 +68,54 @@ export function LeadsPage() {
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("web");
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onAdd(e: FormEvent) {
+  // Optimistic create: show the new lead row instantly and clear the form for the next entry; the
+  // server row (with its assigned code) replaces the placeholder on settle, or it rolls back + toasts.
+  function onAdd(e: FormEvent) {
     e.preventDefault();
-    setFormError(null);
-    if (!name) {
-      setFormError(t("crm.lead.needName"));
-      return;
-    }
-    setBusy(true);
-    try {
-      await createLead({ name, company, email, source });
-      setName("");
-      setCompany("");
-      setEmail("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    const n = name.trim();
+    if (!n) return;
+    void optimisticCreate<Lead>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, code: "", name: n, company, email, source, status: "new" }) as Lead,
+      request: () => createLead({ name: n, company, email, source }),
+      toast,
+      success: t("crm.toast.leadCreated"),
+    });
+    setName("");
+    setCompany("");
+    setEmail("");
   }
 
-  async function act(fn: () => Promise<unknown>) {
-    setBusy(true);
-    setFormError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic row transition: patch the lead in place, reconcile with the server's lead, roll back
+  // + toast on failure.
+  function patchLead(id: string, apply: (l: Lead) => Lead, request: () => Promise<Lead>, success: string) {
+    if (!data) return;
+    void runOptimistic<Lead[], Lead>({
+      current: data,
+      mutate,
+      optimistic: (rows) => rows.map((l) => (l.id === id ? apply(l) : l)),
+      request,
+      settle: (predicted, updated) => predicted.map((l) => (l.id === id ? updated : l)),
+      toast,
+      success,
+    });
+  }
+
+  // Convert spawns a new opportunity (a different entity), so there's nothing on the lead row to
+  // reconcile beyond the status flip — keep the predicted "converted" row; the opportunities list
+  // is refreshed by apiFetch's write-invalidation.
+  function convert(id: string) {
+    if (!data) return;
+    void runOptimistic<Lead[], Opportunity>({
+      current: data,
+      mutate,
+      optimistic: (rows) => rows.map((l) => (l.id === id ? { ...l, status: "converted" } : l)),
+      request: () => convertLead(id, { customer_code: "" }),
+      toast,
+      success: t("crm.toast.leadConverted"),
+    });
   }
 
   return (
@@ -128,11 +145,10 @@ export function LeadsPage() {
               ))}
             </select>
           </label>
-          <button type="submit" className="btn btn--primary" disabled={busy}>
+          <button type="submit" className="btn btn--primary">
             {t("crm.lead.add")}
           </button>
         </div>
-        {formError && <p className="error-text">{formError}</p>}
       </form>
 
       {loading && (
@@ -195,12 +211,15 @@ export function LeadsPage() {
                   <td>
                     <RowActions className="crm-actions" label={t("common.actions")}>
                       {l.status === "new" && (
-                        <button className="btn btn--sm" disabled={busy} onClick={() => act(() => setLeadStatus(l.id, "qualified"))}>
+                        <button
+                          className="btn btn--sm"
+                          onClick={() => patchLead(l.id, (lead) => ({ ...lead, status: "qualified" }), () => setLeadStatus(l.id, "qualified"), t("crm.toast.leadQualified"))}
+                        >
                           {t("crm.leadStatus.qualified")}
                         </button>
                       )}
                       {l.status !== "converted" && (
-                        <button className="btn btn--sm btn--primary" disabled={busy} onClick={() => act(() => convertLead(l.id, { customer_code: "" }))}>
+                        <button className="btn btn--sm btn--primary" onClick={() => convert(l.id)}>
                           {t("crm.lead.convert")}
                         </button>
                       )}

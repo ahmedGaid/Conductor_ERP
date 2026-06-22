@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { listQuotations, type Quotation } from "../../api/sales";
+import { listQuotations, getQuotation, type Quotation } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -108,7 +109,14 @@ export function QuotationsPage() {
               {visible.map((q) => (
                 <tr key={q.id}>
                   <td>
-                    <Link to={`/sales/quotations/${q.id}`} className="latin">{q.number}</Link>
+                    <Link
+                      to={`/sales/quotations/${q.id}`}
+                      className="latin"
+                      onMouseEnter={() => prefetch(`sales:quotation:${q.id}`, () => getQuotation(q.id))}
+                      onFocus={() => prefetch(`sales:quotation:${q.id}`, () => getQuotation(q.id))}
+                    >
+                      {q.number}
+                    </Link>
                   </td>
                   <td>{q.customer_name}</td>
                   <td className="latin muted">{q.quote_date}</td>

@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { listJournals, type JournalEntry } from "../../api/accounting";
+import { getJournal, listJournals, type JournalEntry } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -81,7 +82,12 @@ export function JournalListPage() {
                 return (
                   <tr key={e.id}>
                     <td>
-                      <Link to={`/accounting/journals/${e.id}`} className="latin">
+                      <Link
+                        to={`/accounting/journals/${e.id}`}
+                        className="latin"
+                        onMouseEnter={() => prefetch(`accounting:journal:${e.id}`, () => getJournal(e.id))}
+                        onFocus={() => prefetch(`accounting:journal:${e.id}`, () => getJournal(e.id))}
+                      >
                         {e.number}
                       </Link>
                     </td>

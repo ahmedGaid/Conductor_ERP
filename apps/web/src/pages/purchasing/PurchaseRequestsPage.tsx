@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { listRequests, type PurchaseRequest } from "../../api/purchasing";
+import { listRequests, getRequest, type PurchaseRequest } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -108,7 +109,14 @@ export function PurchaseRequestsPage() {
               {visible.map((r) => (
                 <tr key={r.id}>
                   <td>
-                    <Link to={`/purchasing/requests/${r.id}`} className="latin">{r.number}</Link>
+                    <Link
+                      to={`/purchasing/requests/${r.id}`}
+                      className="latin"
+                      onMouseEnter={() => prefetch(`purchasing:request:${r.id}`, () => getRequest(r.id))}
+                      onFocus={() => prefetch(`purchasing:request:${r.id}`, () => getRequest(r.id))}
+                    >
+                      {r.number}
+                    </Link>
                   </td>
                   <td>{r.supplier_name}</td>
                   <td className="latin muted">{r.request_date}</td>

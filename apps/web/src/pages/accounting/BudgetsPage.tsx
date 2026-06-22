@@ -2,8 +2,11 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { createBudget, listBudgets } from "../../api/accounting";
+import { createBudget, getBudget, listBudgets } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate } from "../../lib/optimistic";
+import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -15,7 +18,8 @@ type Budget = Awaited<ReturnType<typeof listBudgets>>[number];
 
 export function BudgetsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listBudgets, [], "accounting:budgets");
+  const toast = useToast();
+  const { data, loading, error, mutate } = useAsync(listBudgets, [], "accounting:budgets");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Budget>[]>(
@@ -32,22 +36,23 @@ export function BudgetsPage() {
 
   const [name, setName] = useState("");
   const [fy, setFy] = useState(String(new Date().getFullYear()));
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  // Optimistic create: show the new budget instantly and clear the name for the next entry; the
+  // server row replaces the placeholder on settle, or it rolls back + toasts.
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setFormError(null);
-    try {
-      await createBudget({ name, fiscal_year_code: fy });
-      setName("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    const n = name.trim();
+    const f = fy.trim();
+    if (!n || !f) return;
+    void optimisticCreate<Budget>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, name: n, fiscal_year_code: f, is_active: true }) as Budget,
+      request: () => createBudget({ name: n, fiscal_year_code: f }),
+      toast,
+      success: t("accounting.toast.budgetCreated"),
+    });
+    setName("");
   }
 
   return (
@@ -63,11 +68,10 @@ export function BudgetsPage() {
           <span>{t("accounting.budgets.fiscalYear")}</span>
           <input className="latin" value={fy} onChange={(e) => setFy(e.target.value)} required />
         </label>
-        <button className="btn btn--primary" type="submit" disabled={busy}>
+        <button className="btn btn--primary" type="submit">
           {t("accounting.budgets.add")}
         </button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">
@@ -105,7 +109,14 @@ export function BudgetsPage() {
               {filtered.map((b) => (
                 <tr key={b.id}>
                   <td>
-                    <Link className="acct-link" to={`/accounting/budgets/${b.id}`}>{b.name}</Link>
+                    <Link
+                      className="acct-link"
+                      to={`/accounting/budgets/${b.id}`}
+                      onMouseEnter={() => prefetch(`accounting:budget:${b.id}`, () => getBudget(b.id))}
+                      onFocus={() => prefetch(`accounting:budget:${b.id}`, () => getBudget(b.id))}
+                    >
+                      {b.name}
+                    </Link>
                   </td>
                   <td><Bdi>{b.fiscal_year_code}</Bdi></td>
                 </tr>

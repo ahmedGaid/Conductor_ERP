@@ -2,8 +2,10 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { acquireAsset, listAssets, runDepreciation, type AssetStatus, type FixedAsset } from "../../api/accounting";
+import { acquireAsset, getAsset, listAssets, runDepreciation, type AssetStatus, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -26,6 +28,7 @@ function currentPeriod(): string {
 
 export function FixedAssetsPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { data, loading, error, reload } = useAsync(listAssets, [], "accounting:assets");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
@@ -71,7 +74,6 @@ export function FixedAssetsPage() {
   // Depreciation run
   const [runPeriod, setRunPeriod] = useState(currentPeriod());
   const [runDate, setRunDate] = useState(today());
-  const [runMsg, setRunMsg] = useState<string | null>(null);
   const [runBusy, setRunBusy] = useState(false);
 
   async function onAcquire(e: FormEvent) {
@@ -106,16 +108,17 @@ export function FixedAssetsPage() {
     }
   }
 
+  // A depreciation run touches an unknown set of assets server-side, so it can't be predicted; run
+  // it, report the count and total posted via toast, and refresh the register.
   async function onRunDepreciation(e: FormEvent) {
     e.preventDefault();
     setRunBusy(true);
-    setRunMsg(null);
     try {
       const res = await runDepreciation(runPeriod, runDate);
-      setRunMsg(t("accounting.assets.runDone", { count: res.count, total: formatMinor(res.total_minor) }));
       reload();
+      toast.show(t("accounting.assets.runDone", { count: res.count, total: formatMinor(res.total_minor) }), "success");
     } catch (err) {
-      setRunMsg(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setRunBusy(false);
     }
@@ -168,7 +171,6 @@ export function FixedAssetsPage() {
           <button className="btn" type="submit" disabled={runBusy}>
             {t("accounting.assets.runDepreciation")}
           </button>
-          {runMsg && <span className="acct-asset-runmsg">{runMsg}</span>}
         </form>
       </div>
       {formError && <p className="error-text">{formError}</p>}
@@ -224,7 +226,12 @@ export function FixedAssetsPage() {
                 {visible.map((a) => (
                   <tr key={a.id}>
                     <td>
-                      <Link className="acct-link" to={`/accounting/assets/${encodeURIComponent(a.code)}`}>
+                      <Link
+                        className="acct-link"
+                        to={`/accounting/assets/${encodeURIComponent(a.code)}`}
+                        onMouseEnter={() => prefetch(`accounting:asset:${a.code}`, () => getAsset(a.code))}
+                        onFocus={() => prefetch(`accounting:asset:${a.code}`, () => getAsset(a.code))}
+                      >
                         <Bdi>{a.code}</Bdi>
                       </Link>
                     </td>

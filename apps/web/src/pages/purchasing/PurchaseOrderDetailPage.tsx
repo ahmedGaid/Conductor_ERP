@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
@@ -10,9 +9,12 @@ import {
   payPO,
   receivePO,
   returnPO,
+  type POStatus,
   type PurchaseOrder,
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Disclosure } from "../../components/Disclosure";
@@ -28,23 +30,31 @@ function statusExplainKey(o: PurchaseOrder): string {
 
 export function PurchaseOrderDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, reload } = useAsync<PurchaseOrder>(() => getPurchaseOrder(id as string), [id]);
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { data, loading, error, mutate } = useAsync<PurchaseOrder>(
+    () => getPurchaseOrder(id as string),
+    [id],
+    `purchasing:order:${id}`,
+  );
 
-  async function run(fn: () => Promise<PurchaseOrder>) {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
+  // and action set update instantly, then let the server's returned order reconcile the derived
+  // amounts (billed/outstanding/…). A failure rolls the whole order back and shows an error toast.
+  function act(apply: (order: PurchaseOrder) => PurchaseOrder, request: () => Promise<PurchaseOrder>, success: string) {
+    if (!data) return;
+    void runOptimistic<PurchaseOrder, PurchaseOrder>({
+      current: data,
+      mutate,
+      optimistic: apply,
+      request,
+      settle: (_predicted, updated) => updated,
+      toast,
+      success,
+    });
   }
+
+  const setStatus = (status: POStatus) => (order: PurchaseOrder): PurchaseOrder => ({ ...order, status });
 
   return (
     <section className="pur-page">
@@ -102,37 +112,55 @@ export function PurchaseOrderDetailPage() {
 
             <div className="pur-actions">
               {data.status === "draft" && data.requires_approval && !data.approved && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => approvePO(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act((o) => ({ ...o, approved: true }), () => approvePO(data.id), t("purchasing.toast.approved"))}
+                >
                   {t("purchasing.detail.approve")}
                 </button>
               )}
               {data.status === "draft" && (
-                <button className="btn btn--primary" disabled={busy || (data.requires_approval && !data.approved)} onClick={() => run(() => confirmPO(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  disabled={data.requires_approval && !data.approved}
+                  onClick={() => act(setStatus("confirmed"), () => confirmPO(data.id), t("purchasing.toast.confirmed"))}
+                >
                   {t("purchasing.detail.confirm")}
                 </button>
               )}
               {(data.status === "confirmed" || data.status === "partially_received") && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => receivePO(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act(setStatus("received"), () => receivePO(data.id), t("purchasing.toast.received"))}
+                >
                   {data.status === "partially_received" ? t("purchasing.detail.receiveRemaining") : t("purchasing.detail.receive")}
                 </button>
               )}
               {data.status === "received" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => billPO(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act(setStatus("billed"), () => billPO(data.id), t("purchasing.toast.billed"))}
+                >
                   {t("purchasing.detail.bill")}
                 </button>
               )}
               {data.status === "billed" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => payPO(data.id, data.outstanding_minor))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act(setStatus("paid"), () => payPO(data.id, data.outstanding_minor), t("purchasing.toast.paid"))}
+                >
                   {t("purchasing.detail.recordPayment")}
                 </button>
               )}
               {(data.status === "billed" || data.status === "paid") && (
-                <button className="btn" disabled={busy} onClick={() => run(() => returnPO(data.id))}>
+                <button
+                  className="btn"
+                  onClick={() => act(setStatus("returned"), () => returnPO(data.id), t("purchasing.toast.returned"))}
+                >
                   {t("purchasing.detail.return")}
                 </button>
               )}
             </div>
-            {actionError && <p className="error-text">{actionError}</p>}
 
             {(data.bill_number || data.debit_note_number || data.returned_minor > 0 || data.requires_approval) && (
               <Disclosure summary={t("common.moreDetails")}>

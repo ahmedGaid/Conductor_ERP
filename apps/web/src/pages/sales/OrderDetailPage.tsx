@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
@@ -10,9 +9,12 @@ import {
   invoiceOrder,
   payOrder,
   returnOrder,
+  type OrderStatus,
   type SalesOrder,
 } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Disclosure } from "../../components/Disclosure";
@@ -29,23 +31,31 @@ function statusExplainKey(o: SalesOrder): string {
 
 export function OrderDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, reload } = useAsync<SalesOrder>(() => getOrder(id as string), [id]);
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { data, loading, error, mutate } = useAsync<SalesOrder>(
+    () => getOrder(id as string),
+    [id],
+    `sales:order:${id}`,
+  );
 
-  async function run(fn: () => Promise<SalesOrder>) {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
+  // and action set update instantly, then let the server's returned order reconcile the derived
+  // amounts (invoiced/outstanding/…). A failure rolls the whole order back and shows an error toast.
+  function act(apply: (order: SalesOrder) => SalesOrder, request: () => Promise<SalesOrder>, success: string) {
+    if (!data) return;
+    void runOptimistic<SalesOrder, SalesOrder>({
+      current: data,
+      mutate,
+      optimistic: apply,
+      request,
+      settle: (_predicted, updated) => updated,
+      toast,
+      success,
+    });
   }
+
+  const setStatus = (status: OrderStatus) => (order: SalesOrder): SalesOrder => ({ ...order, status });
 
   return (
     <section className="sales-page">
@@ -103,37 +113,55 @@ export function OrderDetailPage() {
 
             <div className="sales-actions">
               {data.status === "draft" && data.requires_approval && !data.approved && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => approveOrder(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act((o) => ({ ...o, approved: true }), () => approveOrder(data.id), t("sales.toast.approved"))}
+                >
                   {t("sales.detail.approve")}
                 </button>
               )}
               {data.status === "draft" && (
-                <button className="btn btn--primary" disabled={busy || (data.requires_approval && !data.approved)} onClick={() => run(() => confirmOrder(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  disabled={data.requires_approval && !data.approved}
+                  onClick={() => act(setStatus("confirmed"), () => confirmOrder(data.id), t("sales.toast.confirmed"))}
+                >
                   {t("sales.detail.confirm")}
                 </button>
               )}
               {(data.status === "confirmed" || data.status === "partially_delivered") && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => deliverOrder(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act(setStatus("delivered"), () => deliverOrder(data.id), t("sales.toast.delivered"))}
+                >
                   {data.status === "partially_delivered" ? t("sales.detail.deliverRemaining") : t("sales.detail.deliver")}
                 </button>
               )}
               {data.status === "delivered" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => invoiceOrder(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act(setStatus("invoiced"), () => invoiceOrder(data.id), t("sales.toast.invoiced"))}
+                >
                   {t("sales.detail.invoice")}
                 </button>
               )}
               {data.status === "invoiced" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => payOrder(data.id, data.outstanding_minor))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act(setStatus("paid"), () => payOrder(data.id, data.outstanding_minor), t("sales.toast.paid"))}
+                >
                   {t("sales.detail.recordPayment")}
                 </button>
               )}
               {(data.status === "invoiced" || data.status === "paid") && (
-                <button className="btn" disabled={busy} onClick={() => run(() => returnOrder(data.id))}>
+                <button
+                  className="btn"
+                  onClick={() => act(setStatus("returned"), () => returnOrder(data.id), t("sales.toast.returned"))}
+                >
                   {t("sales.detail.return")}
                 </button>
               )}
             </div>
-            {actionError && <p className="error-text">{actionError}</p>}
 
             {(data.invoice_number || data.credit_note_number || data.returned_minor > 0 || data.requires_approval) && (
               <Disclosure summary={t("common.moreDetails")}>

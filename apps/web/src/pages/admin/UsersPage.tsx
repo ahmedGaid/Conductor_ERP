@@ -2,8 +2,10 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { bulkUsers, createUser, getOrgUnits, listUsers } from "../../api/users";
+import { bulkUsers, createUser, getOrgUnits, getUser, listUsers } from "../../api/users";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { prefetch } from "../../lib/prefetch";
 import { EmptyState } from "../../components/EmptyState";
 import { UserStatusPill } from "./UserStatusPill";
 import "./admin.css";
@@ -12,6 +14,7 @@ const STATUSES = ["active", "invited", "suspended", "archived"] as const;
 
 export function UsersPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: users, loading, error, reload } = useAsync(() => listUsers(), [], "admin:users");
   const { data: org } = useAsync(getOrgUnits, [], "admin:orgunits");
@@ -42,11 +45,17 @@ export function UsersPage() {
     });
   }
 
+  // A bulk action touches the selected set server-side and returns only a count, so it stays a
+  // round-trip: run it, clear the selection, refresh, and report the count via toast.
   async function runBulk(action: "suspend" | "activate" | "archive") {
-    const { affected } = await bulkUsers(action, [...selected]);
-    setNotice(t("admin.bulkDone", { count: affected }));
-    setSelected(new Set());
-    reload();
+    try {
+      const { affected } = await bulkUsers(action, [...selected]);
+      setSelected(new Set());
+      reload();
+      toast.show(t("admin.bulkDone", { count: affected }), "success");
+    } catch (err) {
+      toast.show(err instanceof Error ? err.message : String(err), "error");
+    }
   }
 
   return (
@@ -119,7 +128,12 @@ export function UsersPage() {
             </thead>
             <tbody>
               {filtered.map((u) => (
-                <tr key={u.id} className="admin-row" onClick={() => navigate(`/admin/users/${u.id}`)}>
+                <tr
+                  key={u.id}
+                  className="admin-row"
+                  onClick={() => navigate(`/admin/users/${u.id}`)}
+                  onMouseEnter={() => prefetch(`admin:user:${u.id}`, () => getUser(u.id))}
+                >
                   <td onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"

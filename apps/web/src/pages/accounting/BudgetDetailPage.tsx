@@ -19,7 +19,7 @@ import "./accounting.css";
 export function BudgetDetailPage() {
   const { t } = useTranslation();
   const { id = "" } = useParams();
-  const { data: budget, reload: reloadBudget } = useAsync(() => getBudget(id), [id]);
+  const { data: budget, reload: reloadBudget } = useAsync(() => getBudget(id), [id], `accounting:budget:${id}`);
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
   const pnlAccounts = (accounts ?? []).filter(

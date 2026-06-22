@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -12,7 +14,8 @@ import "./purchasing.css";
 
 export function SuppliersPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listSuppliers, [], "purchasing:suppliers");
+  const toast = useToast();
+  const { data, loading, error, mutate } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Supplier>[]>(
@@ -29,23 +32,24 @@ export function SuppliersPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  // Optimistic create: show the new supplier row at once and clear the form so the next one can be
+  // typed without waiting; the server row replaces the placeholder on settle, or it rolls back + toasts.
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setFormError(null);
-    try {
-      await createSupplier({ code, name });
-      setCode("");
-      setName("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    const c = code.trim();
+    const n = name.trim();
+    if (!c || !n) return;
+    void optimisticCreate<Supplier>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, code: c, name: n }) as Supplier,
+      request: () => createSupplier({ code: c, name: n }),
+      toast,
+      success: t("purchasing.toast.supplierCreated"),
+    });
+    setCode("");
+    setName("");
   }
 
   return (
@@ -61,11 +65,10 @@ export function SuppliersPage() {
           <span>{t("purchasing.supplier.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
-        <button className="btn btn--primary" type="submit" disabled={busy}>
+        <button className="btn btn--primary" type="submit">
           {t("purchasing.supplier.add")}
         </button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <div className="page-skeleton" aria-busy="true">

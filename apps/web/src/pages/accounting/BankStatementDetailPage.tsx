@@ -11,8 +11,11 @@ import {
   postBankAdjustment,
   reconcileStatement,
   unmatchBankLine,
+  type BankStatement,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { AccountingNav } from "./AccountingNav";
@@ -20,8 +23,13 @@ import "./accounting.css";
 
 export function BankStatementDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id = "" } = useParams();
-  const { data: stmt, loading, error, reload } = useAsync(() => getBankStatement(id), [id]);
+  const { data: stmt, loading, error, mutate } = useAsync<BankStatement>(
+    () => getBankStatement(id),
+    [id],
+    `accounting:bank-statement:${id}`,
+  );
   const { data: candidates, reload: reloadCandidates } = useAsync(() => listMatchCandidates(id), [id]);
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const contraAccounts = (accounts ?? []).filter((a) => a.is_postable && a.is_active && !a.is_cash);
@@ -29,31 +37,40 @@ export function BankStatementDetailPage() {
   const [adjAmount, setAdjAmount] = useState("");
   const [adjContra, setAdjContra] = useState("");
   const [adjMemo, setAdjMemo] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [adjError, setAdjError] = useState<string | null>(null);
 
-  async function run(fn: () => Promise<unknown>) {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-      reloadCandidates();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Every bank-rec action returns the updated statement: reflect the change instantly, settle with
+  // the server's version (it recomputes the reconciliation summary), refresh the GL match candidates,
+  // and roll back + toast on failure. `optimistic` is identity for sweeps we can't predict.
+  async function apply(
+    request: () => Promise<BankStatement>,
+    opts: { optimistic?: (s: BankStatement) => BankStatement; success?: string } = {},
+  ) {
+    if (!stmt) return;
+    await runOptimistic<BankStatement, BankStatement>({
+      current: stmt,
+      mutate,
+      optimistic: opts.optimistic ?? ((s) => s),
+      request,
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: opts.success,
+    });
+    reloadCandidates();
   }
 
   async function onAdjust(e: FormEvent) {
     e.preventDefault();
     const amt = parseToMinor(adjAmount);
     if (amt === null || amt === 0 || !adjContra) {
-      setActionError(t("accounting.bankRec.invalidInput"));
+      setAdjError(t("accounting.bankRec.invalidInput"));
       return;
     }
-    await run(() => postBankAdjustment(id, { amount_minor: amt, contra_account_code: adjContra, memo: adjMemo }));
+    setAdjError(null);
+    await apply(
+      () => postBankAdjustment(id, { amount_minor: amt, contra_account_code: adjContra, memo: adjMemo }),
+      { success: t("accounting.toast.adjustmentPosted") },
+    );
     setAdjAmount("");
     setAdjMemo("");
   }
@@ -102,16 +119,26 @@ export function BankStatementDetailPage() {
             )}
             {stmt.status === "open" && (
               <div className="acct-toolbar">
-                <button className="btn" disabled={busy} onClick={() => run(() => autoMatchStatement(id))}>
+                <button
+                  className="btn"
+                  onClick={() => apply(() => autoMatchStatement(id), { success: t("accounting.toast.autoMatched") })}
+                >
                   {t("accounting.bankRec.autoMatch")}
                 </button>
-                <button className="btn btn--primary" disabled={busy || !rec?.is_reconciled}
-                        onClick={() => run(() => reconcileStatement(id))}>
+                <button
+                  className="btn btn--primary"
+                  disabled={!rec?.is_reconciled}
+                  onClick={() =>
+                    apply(() => reconcileStatement(id), {
+                      optimistic: (s) => ({ ...s, status: "reconciled" }),
+                      success: t("accounting.toast.reconciled"),
+                    })
+                  }
+                >
                   {t("accounting.bankRec.markReconciled")}
                 </button>
               </div>
             )}
-            {actionError && <p className="error-text">{actionError}</p>}
           </div>
 
           <div className="card acct-table-wrap">
@@ -137,15 +164,37 @@ export function BankStatementDetailPage() {
                           <span className="acct-bankrec-matched">
                             ✓ {t("accounting.bankRec.matched")}
                             {stmt.status === "open" && (
-                              <button className="btn btn--sm" disabled={busy}
-                                      onClick={() => run(() => unmatchBankLine(l.id))}>
+                              <button
+                                className="btn btn--sm"
+                                onClick={() =>
+                                  apply(() => unmatchBankLine(l.id), {
+                                    optimistic: (s) => ({
+                                      ...s,
+                                      lines: s.lines.map((x) =>
+                                        x.id === l.id ? { ...x, is_matched: false, matched_line_id: null } : x,
+                                      ),
+                                    }),
+                                  })
+                                }
+                              >
                                 {t("accounting.bankRec.unmatch")}
                               </button>
                             )}
                           </span>
                         ) : stmt.status === "open" ? (
-                          <select className="latin" disabled={busy} value=""
-                                  onChange={(e) => e.target.value && run(() => matchBankLine(l.id, Number(e.target.value)))}>
+                          <select
+                            className="latin"
+                            value=""
+                            onChange={(e) =>
+                              e.target.value &&
+                              apply(() => matchBankLine(l.id, Number(e.target.value)), {
+                                optimistic: (s) => ({
+                                  ...s,
+                                  lines: s.lines.map((x) => (x.id === l.id ? { ...x, is_matched: true } : x)),
+                                }),
+                              })
+                            }
+                          >
                             <option value="">{lineCandidates.length ? t("accounting.bankRec.pickLedgerLine") : t("accounting.bankRec.noCandidate")}</option>
                             {lineCandidates.map((c) => (
                               <option key={c.id} value={c.id}>{c.entry_number} · {c.date} · {formatMinor(c.amount_minor)}</option>
@@ -186,7 +235,8 @@ export function BankStatementDetailPage() {
                 <span>{t("accounting.bankRec.memo")}</span>
                 <input value={adjMemo} onChange={(e) => setAdjMemo(e.target.value)} />
               </label>
-              <button className="btn" type="submit" disabled={busy}>{t("accounting.bankRec.postAdjustment")}</button>
+              <button className="btn" type="submit">{t("accounting.bankRec.postAdjustment")}</button>
+              {adjError && <p className="error-text">{adjError}</p>}
             </form>
           )}
         </>

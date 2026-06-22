@@ -7,10 +7,13 @@ import {
   listReportDefinitions,
   runReportDefinition,
   type AccountType,
+  type ReportDefinition,
   type ReportGroupBy,
   type ReportSchedule,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -24,7 +27,8 @@ const SCHEDULES: ReportSchedule[] = ["none", "daily", "weekly", "monthly"];
 
 export function ReportBuilderPage() {
   const { t } = useTranslation();
-  const { data: defs, loading, error, reload } = useAsync(listReportDefinitions, [], "accounting:report-definitions");
+  const toast = useToast();
+  const { data: defs, loading, error, reload, mutate } = useAsync(listReportDefinitions, [], "accounting:report-definitions");
 
   const [name, setName] = useState("");
   const [accountType, setAccountType] = useState("");
@@ -70,15 +74,18 @@ export function ReportBuilderPage() {
     }
   }
 
-  async function onDelete(id: string) {
-    setBusy(true);
-    try {
-      await deleteReportDefinition(id);
-      if (runId === id) setRunId(null);
-      reload();
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic delete: drop the row instantly, restore it + toast if the request fails.
+  function onDelete(defId: string) {
+    if (!defs) return;
+    if (runId === defId) setRunId(null);
+    void runOptimistic<ReportDefinition[], { deleted: boolean }>({
+      current: defs,
+      mutate,
+      optimistic: (rows) => rows.filter((d) => d.id !== defId),
+      request: () => deleteReportDefinition(defId),
+      toast,
+      success: t("accounting.toast.reportDeleted"),
+    });
   }
 
   return (
@@ -167,7 +174,7 @@ export function ReportBuilderPage() {
                       <button className="btn btn--sm btn--primary" disabled={busy} onClick={() => setRunId(d.id)}>
                         {t("accounting.reportBuilder.run")}
                       </button>
-                      <button className="btn btn--sm btn--danger" disabled={busy} onClick={() => onDelete(d.id)}>
+                      <button className="btn btn--sm btn--danger" onClick={() => onDelete(d.id)}>
                         {t("common.delete")}
                       </button>
                     </div>

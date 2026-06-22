@@ -1,9 +1,10 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
-import { getStockCount, postStockCount, setCountLine } from "../../api/inventory";
+import { getStockCount, postStockCount, setCountLine, type StockCount } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { InventoryNav } from "./InventoryNav";
@@ -11,39 +12,48 @@ import "./inventory.css";
 
 export function StockCountDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id = "" } = useParams();
-  const { data: count, loading, error, reload } = useAsync(() => getStockCount(id), [id]);
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { data: count, loading, error, mutate } = useAsync<StockCount>(
+    () => getStockCount(id),
+    [id],
+    `inventory:count:${id}`,
+  );
 
   const counting = count?.status === "counting";
   const posted = count?.status === "posted";
 
-  async function saveLine(lineId: string, value: string, current: string | null) {
-    if (value === "" || value === current) return;
-    setBusy(true);
-    setActionError(null);
-    try {
-      await setCountLine(lineId, value);
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic line edit: reflect the typed count instantly, reconcile with the server's count.
+  // No success toast — entering many counts in a row should stay quiet (visual restraint); only a
+  // failure surfaces, with a rollback.
+  function saveLine(lineId: string, value: string, current: string | null) {
+    if (value === "" || value === current || !count) return;
+    void runOptimistic<StockCount, StockCount>({
+      current: count,
+      mutate,
+      optimistic: (c) => ({
+        ...c,
+        lines: (c.lines ?? []).map((ln) => (ln.id === lineId ? { ...ln, counted_quantity: value } : ln)),
+      }),
+      request: () => setCountLine(lineId, value),
+      settle: (_predicted, updated) => updated,
+      toast,
+    });
   }
 
-  async function onPost() {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await postStockCount(id);
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic post: flip to "posted" so the variance columns reveal immediately, then let the
+  // server's count reconcile the authoritative variance figures. Failure rolls back to "counting".
+  function onPost() {
+    if (!count) return;
+    void runOptimistic<StockCount, StockCount>({
+      current: count,
+      mutate,
+      optimistic: (c) => ({ ...c, status: "posted" }),
+      request: () => postStockCount(id),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: t("inventory.toast.countPosted"),
+    });
   }
 
   return (
@@ -70,14 +80,13 @@ export function StockCountDetailPage() {
                 {t(`inventory.counts.statuses.${count.status}`)}
               </span>
               {counting && (
-                <button className="btn btn--primary" disabled={busy} onClick={onPost}>
+                <button className="btn btn--primary" onClick={onPost}>
                   {t("inventory.counts.post")}
                 </button>
               )}
             </div>
           </div>
           {counting && <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("inventory.counts.enterHint")}</p>}
-          {actionError && <p className="error-text">{actionError}</p>}
 
           <div className="card inv-table-wrap">
             <table className="inv-table">
@@ -101,7 +110,6 @@ export function StockCountDetailPage() {
                           className="latin inv-count-input"
                           inputMode="decimal"
                           defaultValue={ln.counted_quantity ?? ""}
-                          disabled={busy}
                           onBlur={(e) => saveLine(ln.id, e.target.value.trim(), ln.counted_quantity)}
                         />
                       ) : (

@@ -179,6 +179,10 @@
     "ordering": "Ordering"
   },
   "instance": {
+    "toast": {
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
     "openWorkflow": "Open workflow",
     "awaitingDecision": "Awaiting a decision at node: {{node}}",
     "approve": "Approve",
@@ -190,6 +194,15 @@
     "output": "Output"
   },
   "accounting": {
+    "toast": {
+      "assetDisposed": "Asset disposed",
+      "reconciled": "Statement reconciled",
+      "autoMatched": "Auto-match complete",
+      "adjustmentPosted": "Adjustment posted",
+      "reportDeleted": "Report deleted",
+      "costCenterCreated": "Cost center added",
+      "budgetCreated": "Budget added"
+    },
     "tabs": {
       "chart": "Chart of Accounts",
       "journals": "Journals",
@@ -397,6 +410,11 @@
     }
   },
   "inventory": {
+    "toast": {
+      "countPosted": "Count posted",
+      "warehouseCreated": "Warehouse added",
+      "itemCreated": "Item added"
+    },
     "tabs": {
       "stockOnHand": "Stock on hand",
       "items": "Items",
@@ -486,6 +504,18 @@
     }
   },
   "sales": {
+    "toast": {
+      "customerCreated": "Customer added",
+      "approved": "Order approved",
+      "confirmed": "Order confirmed",
+      "delivered": "Order delivered",
+      "invoiced": "Invoice issued",
+      "paid": "Payment recorded",
+      "returned": "Return recorded",
+      "quoteSubmitted": "Quotation submitted",
+      "quoteApproved": "Quotation approved",
+      "quoteRejected": "Quotation rejected"
+    },
     "tabs": {
       "orders": "Orders",
       "newOrder": "New order",
@@ -679,9 +709,38 @@
       "rejected": "Rejected",
       "converted": "Converted",
       "cancelled": "Cancelled"
+    },
+    "toast": {
+      "approved": "Order approved",
+      "confirmed": "Order confirmed",
+      "received": "Goods received",
+      "billed": "Bill recorded",
+      "paid": "Payment recorded",
+      "returned": "Return recorded",
+      "reqSubmitted": "Request submitted",
+      "reqApproved": "Request approved",
+      "reqRejected": "Request rejected",
+      "supplierCreated": "Supplier added"
     }
   },
   "crm": {
+    "toast": {
+      "leadCreated": "Lead added",
+      "ticketCreated": "Ticket opened",
+      "campaignCreated": "Campaign added",
+      "leadQualified": "Lead qualified",
+      "leadConverted": "Lead converted",
+      "ticketStarted": "Ticket started",
+      "ticketResolved": "Ticket resolved",
+      "ticketClosed": "Ticket closed",
+      "ticketEscalated": "Ticket escalated",
+      "escalationsRun": "Escalated {{count}} ticket(s)",
+      "stageAdvanced": "Moved to {{stage}}",
+      "oppWon": "Opportunity won",
+      "oppLost": "Opportunity lost",
+      "campaignActivated": "Campaign activated",
+      "campaignCompleted": "Campaign completed"
+    },
     "tabs": {
       "pipeline": "Pipeline",
       "leads": "Leads",
@@ -827,6 +886,10 @@
     "all": "All",
     "actions": "Actions"
   },
+  "toast": {
+    "region": "Notifications",
+    "dismiss": "Dismiss"
+  },
   "filter": {
     "add": "Filter",
     "clear": "Clear",
@@ -850,6 +913,9 @@
     }
   },
   "einvoice": {
+    "toast": {
+      "submitted": "Invoice submitted"
+    },
     "tabs": {
       "invoices": "E-invoices"
     },

@@ -179,6 +179,10 @@
     "ordering": "الترتيب"
   },
   "instance": {
+    "toast": {
+      "approved": "تمت الموافقة",
+      "rejected": "تم الرفض"
+    },
     "openWorkflow": "فتح المسار",
     "awaitingDecision": "بانتظار قرار عند العقدة: {{node}}",
     "approve": "موافقة",
@@ -190,6 +194,15 @@
     "output": "المخرجات"
   },
   "accounting": {
+    "toast": {
+      "assetDisposed": "تم استبعاد الأصل",
+      "reconciled": "تمت تسوية الكشف",
+      "autoMatched": "اكتملت المطابقة التلقائية",
+      "adjustmentPosted": "تم ترحيل التسوية",
+      "reportDeleted": "تم حذف التقرير",
+      "costCenterCreated": "تمت إضافة مركز التكلفة",
+      "budgetCreated": "تمت إضافة الموازنة"
+    },
     "tabs": {
       "chart": "دليل الحسابات",
       "journals": "القيود",
@@ -397,6 +410,11 @@
     }
   },
   "inventory": {
+    "toast": {
+      "countPosted": "تم ترحيل الجرد",
+      "warehouseCreated": "تمت إضافة المخزن",
+      "itemCreated": "تمت إضافة الصنف"
+    },
     "tabs": {
       "stockOnHand": "الأرصدة",
       "items": "الأصناف",
@@ -486,6 +504,18 @@
     }
   },
   "sales": {
+    "toast": {
+      "customerCreated": "تمت إضافة العميل",
+      "approved": "تم اعتماد الأمر",
+      "confirmed": "تم تأكيد الأمر",
+      "delivered": "تم تسليم الأمر",
+      "invoiced": "تم إصدار الفاتورة",
+      "paid": "تم تسجيل الدفعة",
+      "returned": "تم تسجيل المرتجع",
+      "quoteSubmitted": "تم إرسال عرض السعر",
+      "quoteApproved": "تمت الموافقة على عرض السعر",
+      "quoteRejected": "تم رفض عرض السعر"
+    },
     "tabs": {
       "orders": "الطلبات",
       "newOrder": "طلب جديد",
@@ -679,9 +709,38 @@
       "rejected": "مرفوض",
       "converted": "مُحوَّل",
       "cancelled": "ملغي"
+    },
+    "toast": {
+      "approved": "تم اعتماد أمر الشراء",
+      "confirmed": "تم تأكيد أمر الشراء",
+      "received": "تم استلام البضائع",
+      "billed": "تم تسجيل الفاتورة",
+      "paid": "تم تسجيل الدفعة",
+      "returned": "تم تسجيل المرتجع",
+      "reqSubmitted": "تم إرسال طلب الشراء",
+      "reqApproved": "تم اعتماد طلب الشراء",
+      "reqRejected": "تم رفض طلب الشراء",
+      "supplierCreated": "تمت إضافة المورد"
     }
   },
   "crm": {
+    "toast": {
+      "leadCreated": "تمت إضافة العميل المحتمل",
+      "ticketCreated": "تم فتح التذكرة",
+      "campaignCreated": "تمت إضافة الحملة",
+      "leadQualified": "تم تأهيل العميل المحتمل",
+      "leadConverted": "تم تحويل العميل المحتمل",
+      "ticketStarted": "تم بدء التذكرة",
+      "ticketResolved": "تم حل التذكرة",
+      "ticketClosed": "تم إغلاق التذكرة",
+      "ticketEscalated": "تم تصعيد التذكرة",
+      "escalationsRun": "تم تصعيد {{count}} تذكرة",
+      "stageAdvanced": "تم الانتقال إلى {{stage}}",
+      "oppWon": "تم ربح الفرصة",
+      "oppLost": "تم خسارة الفرصة",
+      "campaignActivated": "تم تفعيل الحملة",
+      "campaignCompleted": "تم إكمال الحملة"
+    },
     "tabs": {
       "pipeline": "خط الفرص",
       "leads": "العملاء المحتملون",
@@ -827,6 +886,10 @@
     "all": "الكل",
     "actions": "إجراءات"
   },
+  "toast": {
+    "region": "الإشعارات",
+    "dismiss": "إغلاق"
+  },
   "filter": {
     "add": "تصفية",
     "clear": "مسح",
@@ -850,6 +913,9 @@
     }
   },
   "einvoice": {
+    "toast": {
+      "submitted": "تم إرسال الفاتورة"
+    },
     "tabs": {
       "invoices": "الفواتير الإلكترونية"
     },
