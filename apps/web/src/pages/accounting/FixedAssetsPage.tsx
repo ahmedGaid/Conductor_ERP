@@ -1,15 +1,20 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { acquireAsset, listAssets, runDepreciation } from "../../api/accounting";
+import { acquireAsset, listAssets, runDepreciation, type AssetStatus, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
+import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
+
+const ASSET_STATUSES: AssetStatus[] = ["active", "disposed"];
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -22,6 +27,36 @@ function currentPeriod(): string {
 export function FixedAssetsPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(listAssets, [], "accounting:assets");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [tab, setTab] = useState<string>(ALL_TAB);
+
+  const fields = useMemo<FilterField<FixedAsset>[]>(
+    () => [
+      { key: "code", label: t("accounting.assets.code"), type: "text", accessor: (a) => a.code },
+      { key: "name", label: t("accounting.assets.name"), type: "text", accessor: (a) => a.name },
+      {
+        key: "status",
+        label: t("accounting.assets.status"),
+        type: "select",
+        options: ASSET_STATUSES.map((s) => ({ value: s, label: t(`accounting.assets.statuses.${s}`) })),
+        accessor: (a) => a.status,
+      },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((a) => matchesAllFilters(a, fields, filters)) : data),
+    [data, fields, filters],
+  );
+
+  const statusTabs = useMemo(
+    () => ASSET_STATUSES.map((s) => ({ value: s, label: t(`accounting.assets.statuses.${s}`) })),
+    [t],
+  );
+  const visible = useMemo(
+    () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((a) => a.status === tab)) : filtered),
+    [filtered, tab],
+  );
 
   // New-asset form
   const [code, setCode] = useState("");
@@ -155,7 +190,24 @@ export function FixedAssetsPage() {
 
       {data && data.length > 0 && (
         <>
-          <ExportButtons path="/accounting/reports/asset-register" />
+          <div className="acct-toolbar-row">
+            <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+            <ExportButtons path="/accounting/reports/asset-register" />
+          </div>
+          {filtered && (
+            <StatusTabs
+              rows={filtered}
+              tabs={statusTabs}
+              accessor={(a) => a.status}
+              value={tab}
+              onChange={setTab}
+              ariaLabel={t("accounting.assets.status")}
+            />
+          )}
+          {visible && visible.length === 0 && (
+            <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+          )}
+          {visible && visible.length > 0 && (
           <div className="card acct-table-wrap">
             <table className="acct-table">
               <thead>
@@ -169,7 +221,7 @@ export function FixedAssetsPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.map((a) => (
+                {visible.map((a) => (
                   <tr key={a.id}>
                     <td>
                       <Link className="acct-link" to={`/accounting/assets/${encodeURIComponent(a.code)}`}>
@@ -190,6 +242,7 @@ export function FixedAssetsPage() {
               </tbody>
             </table>
           </div>
+          )}
         </>
       )}
     </section>

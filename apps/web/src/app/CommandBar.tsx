@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
 import { useHelp } from "../help/HelpContext";
+import { Tooltip } from "../components/Tooltip";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeToggle } from "./ThemeToggle";
 import { CommandPalette } from "./CommandPalette";
@@ -31,26 +32,28 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
 
   return (
     <header className="commandbar">
-      <button
-        type="button"
-        className="btn btn--ghost btn--icon commandbar__menu"
-        onClick={onMenu}
-        aria-label={t("shell.openMenu")}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          aria-hidden="true"
-          focusable="false"
+      <Tooltip label={t("shell.openMenu")} placement="bottom">
+        <button
+          type="button"
+          className="btn btn--ghost btn--icon commandbar__menu"
+          onClick={onMenu}
+          aria-label={t("shell.openMenu")}
         >
-          <path d="M3 6h18" />
-          <path d="M3 12h18" />
-          <path d="M3 18h18" />
-        </svg>
-      </button>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="M3 6h18" />
+            <path d="M3 12h18" />
+            <path d="M3 18h18" />
+          </svg>
+        </button>
+      </Tooltip>
       <button
         type="button"
         className="commandbar__search"
@@ -66,34 +69,37 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
       <div className="commandbar__actions">
         <ThemeToggle />
         <LanguageSwitcher />
-        <button
-          type="button"
-          className="btn btn--primary btn--icon commandbar__new"
-          title={t("accounting.tabs.newEntry")}
-          onClick={() => navigate("/accounting/journals/new")}
-          aria-label={t("accounting.tabs.newEntry")}
-        >
-          +
-        </button>
+        <Tooltip label={t("accounting.tabs.newEntry")} placement="bottom">
+          <button
+            type="button"
+            className="btn btn--primary btn--icon commandbar__new"
+            onClick={() => navigate("/accounting/journals/new")}
+            aria-label={t("accounting.tabs.newEntry")}
+          >
+            +
+          </button>
+        </Tooltip>
         <span className="commandbar__aux">
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            aria-label={t("shell.notifications")}
-            title={t("shell.notifications")}
-            onClick={() => navigate("/notifications")}
-          >
-            <NavIcon name="notifications" />
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            aria-label={t("shell.help")}
-            title={t("shell.help")}
-            onClick={openHelp}
-          >
-            ?
-          </button>
+          <Tooltip label={t("shell.notifications")} placement="bottom">
+            <button
+              type="button"
+              className="btn btn--ghost btn--icon"
+              aria-label={t("shell.notifications")}
+              onClick={() => navigate("/notifications")}
+            >
+              <NavIcon name="notifications" />
+            </button>
+          </Tooltip>
+          <Tooltip label={t("shell.help")} placement="bottom">
+            <button
+              type="button"
+              className="btn btn--ghost btn--icon"
+              aria-label={t("shell.help")}
+              onClick={openHelp}
+            >
+              ?
+            </button>
+          </Tooltip>
         </span>
         <button type="button" className="btn btn--sm" onClick={logout}>
           {t("shell.logout")}

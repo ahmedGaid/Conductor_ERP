@@ -4,6 +4,15 @@
   gap: var(--space-4);
 }
 
+/* Filter bar + export buttons share one row above the table. */
+.ein-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .ein-nav {
   display: flex;
   flex-wrap: wrap;

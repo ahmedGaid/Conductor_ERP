@@ -1,10 +1,13 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { createAccount, listAccounts, type AccountType } from "../../api/accounting";
+import { createAccount, listAccounts, type Account, type AccountType } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
+import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
 
@@ -13,6 +16,36 @@ const TYPES: AccountType[] = ["asset", "liability", "equity", "income", "expense
 export function ChartOfAccountsPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(listAccounts, [], "accounting:accounts");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [tab, setTab] = useState<string>(ALL_TAB);
+
+  const fields = useMemo<FilterField<Account>[]>(
+    () => [
+      { key: "code", label: t("accounting.account.code"), type: "text", accessor: (a) => a.code },
+      { key: "name", label: t("accounting.account.name"), type: "text", accessor: (a) => a.name },
+      {
+        key: "type",
+        label: t("accounting.account.type"),
+        type: "select",
+        options: TYPES.map((ty) => ({ value: ty, label: t(`accounting.types.${ty}`) })),
+        accessor: (a) => a.type,
+      },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((a) => matchesAllFilters(a, fields, filters)) : data),
+    [data, fields, filters],
+  );
+
+  const typeTabs = useMemo(
+    () => TYPES.map((ty) => ({ value: ty, label: t(`accounting.types.${ty}`) })),
+    [t],
+  );
+  const visible = useMemo(
+    () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((a) => a.type === tab)) : filtered),
+    [filtered, tab],
+  );
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -91,6 +124,25 @@ export function ChartOfAccountsPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="acct-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && (
+        <StatusTabs
+          rows={filtered}
+          tabs={typeTabs}
+          accessor={(a) => a.type}
+          value={tab}
+          onChange={setTab}
+          ariaLabel={t("accounting.account.type")}
+        />
+      )}
+      {data && data.length > 0 && visible && visible.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {visible && visible.length > 0 && (
         <div className="card acct-table-wrap">
           <table className="acct-table">
             <thead>
@@ -102,7 +154,7 @@ export function ChartOfAccountsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((a) => (
+              {visible.map((a) => (
                 <tr key={a.id}>
                   <td>
                     <Bdi>{a.code}</Bdi>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Tooltip } from "../components/Tooltip";
 import { getTheme, setTheme, type Theme } from "../theme";
 
 // Light/dark toggle for the app chrome. Reuses the ghost icon-button styling already in the command
@@ -19,15 +20,16 @@ export function ThemeToggle() {
   const label = t(goingDark ? "theme.toDark" : "theme.toLight");
 
   return (
-    <button
-      type="button"
-      className="btn btn--ghost btn--icon"
-      aria-pressed={theme === "dark"}
-      title={label}
-      aria-label={label}
-      onClick={toggle}
-    >
-      <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
-    </button>
+    <Tooltip label={label} placement="bottom">
+      <button
+        type="button"
+        className="btn btn--ghost btn--icon"
+        aria-pressed={theme === "dark"}
+        aria-label={label}
+        onClick={toggle}
+      >
+        <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+      </button>
+    </Tooltip>
   );
 }

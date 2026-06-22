@@ -1,0 +1,31 @@
+/*
+ * Row quick-actions — present in the DOM and the tab order at all times, but visually quiet until
+ * the row is hovered or holds keyboard focus, so dense tables stay calm. Only opacity animates, so
+ * the cell reserves its width up front and the row never reflows on hover.
+ */
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+/* Reveal when the pointer is over the row, or a button inside it takes keyboard focus. */
+tr:hover .row-actions,
+tr:focus-within .row-actions {
+  opacity: 1;
+}
+
+/* Touch / no-hover devices can't reveal on hover — keep the actions visible there. */
+@media (hover: none), (pointer: coarse) {
+  .row-actions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-actions {
+    transition: none;
+  }
+}

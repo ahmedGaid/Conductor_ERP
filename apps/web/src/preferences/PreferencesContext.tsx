@@ -70,3 +70,13 @@ export function usePreferences(): PreferencesState {
   if (!ctx) throw new Error("usePreferences must be used within PreferencesProvider");
   return ctx;
 }
+
+/**
+ * Like {@link usePreferences} but returns null instead of throwing when no
+ * provider is present (e.g. the pre-auth login screen). Lets shared chrome —
+ * the language switcher — persist to the server when signed in, and fall back
+ * to a local-only change otherwise.
+ */
+export function usePreferencesOptional(): PreferencesState | null {
+  return useContext(PreferencesContext);
+}

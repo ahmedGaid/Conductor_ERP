@@ -1,0 +1,86 @@
+/*
+ * Floating popover panel — portalled to <body>, positioned with `position: fixed` in JS. A calm
+ * surface with a thin border and a soft shadow (the elevation tokens), matching the command palette
+ * and menus elsewhere. Width is set by the caller's className; the panel scrolls if its content is
+ * taller than the viewport allows.
+ */
+.popover {
+  position: fixed;
+  z-index: 50; /* above app chrome; below tooltip (60) in the app's z-scale */
+  min-inline-size: 11rem;
+  max-block-size: min(22rem, 70vh);
+  overflow-y: auto;
+  padding: var(--space-1);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: popover-in var(--dur-fast) var(--ease-out) both;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A simple vertical menu of choices (add-filter field list, operator list). */
+.popover__menu {
+  display: flex;
+  flex-direction: column;
+}
+.popover__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: start;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.popover__item:hover {
+  background-color: var(--color-surface-hover);
+}
+.popover__item--on {
+  font-weight: var(--font-weight-medium);
+}
+.popover__check {
+  margin-inline-start: auto;
+  color: var(--color-accent);
+}
+
+/* Search box at the top of a value list. */
+.popover__search {
+  inline-size: 100%;
+  margin-block-end: var(--space-1);
+}
+
+/* Inline editor (text / date value). */
+.popover__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  min-inline-size: 13rem;
+}
+.popover__editor input {
+  inline-size: 100%;
+}
+
+.popover__empty {
+  padding: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}

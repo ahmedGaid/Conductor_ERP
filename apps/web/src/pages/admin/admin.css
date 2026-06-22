@@ -49,6 +49,11 @@
   flex: 1 1 12rem;
 }
 
+/* Chip-style filter bar (Roles list) — sits between the create CTA and the table. */
+.admin-filterbar {
+  margin-block: var(--space-3);
+}
+
 .admin-bulkbar {
   display: flex;
   align-items: center;

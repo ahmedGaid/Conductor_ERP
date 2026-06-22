@@ -22,6 +22,7 @@ const KEY = {
   fontSize: "erp.fontSize",
   contrast: "erp.contrast",
   motion: "erp.motion",
+  sidebar: "erp.sidebar",
 } as const;
 
 export function systemTheme(): "light" | "dark" {
@@ -76,6 +77,12 @@ export function applyMotion(reduced: boolean): void {
   document.documentElement.setAttribute("data-motion", value);
 }
 
+export function applySidebarStyle(style: string): void {
+  const value = style || "expanded";
+  localStorage.setItem(KEY.sidebar, value);
+  document.documentElement.setAttribute("data-sidebar", value);
+}
+
 /** The subset of a (effective) preferences payload that maps to the document. */
 export interface AppliedPreferences {
   theme?: string;
@@ -84,6 +91,7 @@ export interface AppliedPreferences {
   font_size?: string;
   high_contrast?: boolean;
   reduced_motion?: boolean;
+  sidebar_style?: string;
 }
 
 /** Apply every presentation field present in the payload to <html>. */
@@ -94,4 +102,5 @@ export function applyPreferences(p: AppliedPreferences): void {
   if (p.font_size !== undefined) applyFontSize(p.font_size);
   if (p.high_contrast !== undefined) applyContrast(p.high_contrast);
   if (p.reduced_motion !== undefined) applyMotion(p.reduced_motion);
+  if (p.sidebar_style !== undefined) applySidebarStyle(p.sidebar_style);
 }

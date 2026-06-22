@@ -42,6 +42,31 @@
   letter-spacing: -0.02em;
 }
 
+/* Collapse/expand toggle — a quiet icon button at the end of the brand row. */
+.sidebar__collapse {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  flex: none;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.sidebar__collapse:hover {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+}
+.sidebar__collapse .navicon {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+
 .sidebar__nav {
   flex: 1;
   overflow-y: auto;
@@ -198,6 +223,50 @@
 .sidebar__user-role {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+/* ---- Compact rail (data-sidebar="compact") ----
+   Collapses the sidebar to an icon-only rail to reclaim horizontal space. Scoped to the desktop
+   width only: below the drawer breakpoint the sidebar is an off-canvas drawer (see below), where a
+   narrow rail makes no sense. Labels are hidden by CSS; the nav items grow tooltips in the component
+   so each icon stays identifiable. */
+@media (min-width: 64rem) {
+  :root[data-sidebar="compact"] {
+    --sidebar-size: 4.25rem;
+  }
+  /* Brand row: drop the wordmark + logo, centre the (now expand) toggle. */
+  :root[data-sidebar="compact"] .sidebar__brand {
+    justify-content: center;
+    padding-inline: var(--space-2);
+  }
+  :root[data-sidebar="compact"] .sidebar__logo,
+  :root[data-sidebar="compact"] .sidebar__wordmark {
+    display: none;
+  }
+  :root[data-sidebar="compact"] .sidebar__collapse {
+    margin-inline-start: 0;
+  }
+  /* Nav: centre each icon, hide every non-icon span (labels + "soon" badges) and group headers. */
+  :root[data-sidebar="compact"] .sidebar__nav {
+    padding-inline: var(--space-2);
+  }
+  :root[data-sidebar="compact"] .sidebar__link {
+    justify-content: center;
+    padding-inline: var(--space-2);
+  }
+  :root[data-sidebar="compact"] .sidebar__link > span:not(.sidebar__icon),
+  :root[data-sidebar="compact"] .sidebar__group-label {
+    display: none;
+  }
+  /* User footer: keep just the avatar. */
+  :root[data-sidebar="compact"] .sidebar__user {
+    justify-content: center;
+    padding-inline: var(--space-2);
+  }
+  :root[data-sidebar="compact"] .sidebar__user-meta,
+  :root[data-sidebar="compact"] .sidebar__user-cog {
+    display: none;
+  }
 }
 
 /* ---- Responsive: off-canvas drawer on narrow widths ----

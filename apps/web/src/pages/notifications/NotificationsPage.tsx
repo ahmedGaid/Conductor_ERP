@@ -9,6 +9,8 @@ import {
 } from "../../api/notifications";
 import { useAsync } from "../../hooks/useAsync";
 import { Bdi } from "../../components/Bdi";
+import { Tooltip } from "../../components/Tooltip";
+import { SegmentedControl } from "../../components/SegmentedControl";
 import { ExportButtons } from "../../components/ExportButtons";
 import { EmptyState } from "../../components/EmptyState";
 import { NotificationsNav } from "./NotificationsNav";
@@ -45,16 +47,15 @@ export function NotificationsPage() {
       <NotificationsNav />
 
       <div className="ntf-filters">
-        <label>
-          {t("notifications.filterStatus")}
-          <select value={status} onChange={(e) => setStatus(e.target.value as NotificationStatus | "")}>
-            {STATUSES.map((s) => (
-              <option key={s || "all"} value={s}>
-                {s ? t(`notifications.status.${s}`) : t("notifications.allStatuses")}
-              </option>
-            ))}
-          </select>
-        </label>
+        <SegmentedControl
+          ariaLabel={t("notifications.filterStatus")}
+          value={status}
+          onChange={setStatus}
+          options={STATUSES.map((s) => ({
+            value: s,
+            label: s ? t(`notifications.status.${s}`) : t("notifications.allStatuses"),
+          }))}
+        />
       </div>
 
       {loading && (
@@ -97,9 +98,11 @@ export function NotificationsPage() {
                   <td>{n.subject}</td>
                   <td className="latin muted">{n.reference || "—"}</td>
                   <td>
-                    <span className={`ntf-badge ntf-badge--${n.status}`} title={n.error_text || undefined}>
-                      {t(`notifications.status.${n.status}`)}
-                    </span>
+                    <Tooltip label={n.error_text || ""} placement="top">
+                      <span className={`ntf-badge ntf-badge--${n.status}`}>
+                        {t(`notifications.status.${n.status}`)}
+                      </span>
+                    </Tooltip>
                   </td>
                   <td>
                     <button className="btn btn--sm" disabled={busy === n.id} onClick={() => resend(n.id)}>

@@ -3,6 +3,11 @@ import type { ReactNode } from "react";
 // Small, shared building blocks for the Settings tabs, so every row reads the same: a label +
 // helper text on one side and the control on the other. All styling is token-driven (settings.css).
 
+// The segmented control is one shared, app-wide component now; Settings keeps the familiar
+// `Segmented` / `Option` names by re-exporting it, so its tabs need no change.
+export { SegmentedControl as Segmented } from "../../components/SegmentedControl";
+export type { SegmentedOption as Option } from "../../components/SegmentedControl";
+
 export function SettingRow({
   title,
   desc,
@@ -23,41 +28,6 @@ export function SettingRow({
         {desc && <p className="setrow__desc">{desc}</p>}
       </div>
       <div className="setrow__control">{children}</div>
-    </div>
-  );
-}
-
-export interface Option<T extends string> {
-  value: T;
-  label: string;
-}
-
-/** A horizontal radio group rendered as pill buttons (single choice). */
-export function Segmented<T extends string>({
-  value,
-  options,
-  onChange,
-  ariaLabel,
-}: {
-  value: T;
-  options: Option<T>[];
-  onChange: (value: T) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <div className="segmented" role="radiogroup" aria-label={ariaLabel}>
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          role="radio"
-          aria-checked={o.value === value}
-          className={o.value === value ? "segmented__opt segmented__opt--on" : "segmented__opt"}
-          onClick={() => onChange(o.value)}
-        >
-          {o.label}
-        </button>
-      ))}
     </div>
   );
 }

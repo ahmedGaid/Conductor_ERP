@@ -4,6 +4,15 @@
   gap: var(--space-4);
 }
 
+/* Filter bar + export buttons on one row above a table. */
+.acct-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .acct-page__head {
   display: flex;
   align-items: center;

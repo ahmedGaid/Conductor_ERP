@@ -21,7 +21,9 @@
     "favorites": "Favorites",
     "administration": "Administration",
     "usersAdmin": "Users",
-    "rolesAdmin": "Roles"
+    "rolesAdmin": "Roles",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",
@@ -525,6 +527,8 @@
       "empty": "No sales orders yet.",
       "number": "Order no.",
       "customer": "Customer",
+      "status": "Status",
+      "date": "Date",
       "total": "Total"
     },
     "newOrder": {
@@ -816,8 +820,34 @@
     "emptyHint": "Create your first one to get started.",
     "moreDetails": "Details",
     "cancel": "Cancel",
+    "status": "Status",
+    "date": "Date",
     "on": "On",
-    "off": "Off"
+    "off": "Off",
+    "all": "All",
+    "actions": "Actions"
+  },
+  "filter": {
+    "add": "Filter",
+    "clear": "Clear",
+    "remove": "Remove filter",
+    "search": "Search…",
+    "noResults": "No results",
+    "nSelected": "{{count}} selected",
+    "any": "Any",
+    "noMatch": "No items match these filters.",
+    "noMatchHint": "Try removing a filter to widen the results.",
+    "op": {
+      "is": "is",
+      "isNot": "is not",
+      "isAnyOf": "is any of",
+      "isNoneOf": "is none of",
+      "contains": "contains",
+      "notContains": "does not contain",
+      "before": "before",
+      "after": "after",
+      "on": "on"
+    }
   },
   "einvoice": {
     "tabs": {

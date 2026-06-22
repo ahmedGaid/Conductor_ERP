@@ -1,16 +1,33 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { createCostCenter, listCostCenters } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
+
+type CostCenter = Awaited<ReturnType<typeof listCostCenters>>[number];
 
 export function CostCentersPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(listCostCenters, [], "accounting:cost-centers");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+
+  const fields = useMemo<FilterField<CostCenter>[]>(
+    () => [
+      { key: "code", label: t("accounting.costCenters.code"), type: "text", accessor: (cc) => cc.code },
+      { key: "name", label: t("accounting.costCenters.name"), type: "text", accessor: (cc) => cc.name },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((cc) => matchesAllFilters(cc, fields, filters)) : data),
+    [data, fields, filters],
+  );
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -67,6 +84,15 @@ export function CostCentersPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="acct-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && filtered.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {filtered && filtered.length > 0 && (
         <div className="card acct-table-wrap">
           <table className="acct-table">
             <thead>
@@ -77,7 +103,7 @@ export function CostCentersPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((cc) => (
+              {filtered.map((cc) => (
                 <tr key={cc.id}>
                   <td><Bdi>{cc.code}</Bdi></td>
                   <td>{cc.name}</td>

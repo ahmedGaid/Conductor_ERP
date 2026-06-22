@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { ACCENTS } from "../../prefs";
+import { Tooltip } from "../../components/Tooltip";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { Segmented, SettingRow } from "./controls";
@@ -34,17 +35,17 @@ export function AppearancePage() {
             {ACCENTS.map((a) => {
               const active = (prefs.accent_color || "blue") === a;
               return (
-                <button
-                  key={a}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={t(`settings.appearance.accents.${a}`)}
-                  title={t(`settings.appearance.accents.${a}`)}
-                  className={active ? "swatch swatch--on" : "swatch"}
-                  data-accent-dot={a}
-                  onClick={() => update({ accent_color: a })}
-                />
+                <Tooltip key={a} label={t(`settings.appearance.accents.${a}`)} placement="top">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={t(`settings.appearance.accents.${a}`)}
+                    className={active ? "swatch swatch--on" : "swatch"}
+                    data-accent-dot={a}
+                    onClick={() => update({ accent_color: a })}
+                  />
+                </Tooltip>
               );
             })}
           </div>

@@ -97,6 +97,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M8 17v-3" />
     </>
   ),
+  // Sidebar toggle — panel with a rail divider. Direction-agnostic (reads the same in RTL/LTR).
+  sidebar: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16" />
+    </>
+  ),
   // Settings — gear.
   settings: (
     <>

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -9,13 +9,56 @@ import {
   type Lead,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
+import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
+import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import "./crm.css";
+
+const LEAD_STATUSES = ["new", "contacted", "qualified", "unqualified", "converted"] as const;
+const LEAD_SOURCES = ["web", "referral", "call", "campaign", "other"] as const;
 
 export function LeadsPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(() => listLeads(), [], "crm:leads");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [tab, setTab] = useState<string>(ALL_TAB);
+
+  const fields = useMemo<FilterField<Lead>[]>(
+    () => [
+      {
+        key: "status",
+        label: t("common.status"),
+        type: "select",
+        options: LEAD_STATUSES.map((s) => ({ value: s, label: t(`crm.leadStatus.${s}`) })),
+        accessor: (l) => l.status,
+      },
+      { key: "name", label: t("crm.lead.name"), type: "text", accessor: (l) => l.name },
+      {
+        key: "source",
+        label: t("crm.lead.source"),
+        type: "select",
+        options: LEAD_SOURCES.map((s) => ({ value: s, label: t(`crm.source.${s}`) })),
+        accessor: (l) => l.source,
+      },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((l) => matchesAllFilters(l, fields, filters)) : data),
+    [data, fields, filters],
+  );
+
+  const statusTabs = useMemo(
+    () => LEAD_STATUSES.map((s) => ({ value: s, label: t(`crm.leadStatus.${s}`) })),
+    [t],
+  );
+  const visible = useMemo(
+    () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((l) => l.status === tab)) : filtered),
+    [filtered, tab],
+  );
 
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
@@ -108,6 +151,25 @@ export function LeadsPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="crm-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && (
+        <StatusTabs
+          rows={filtered}
+          tabs={statusTabs}
+          accessor={(l) => l.status}
+          value={tab}
+          onChange={setTab}
+          ariaLabel={t("common.status")}
+        />
+      )}
+      {data && data.length > 0 && visible && visible.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {visible && visible.length > 0 && (
         <div className="card crm-table-wrap">
           <table className="crm-table">
             <thead>
@@ -121,7 +183,7 @@ export function LeadsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((l: Lead) => (
+              {visible.map((l: Lead) => (
                 <tr key={l.id}>
                   <td className="latin">{l.code}</td>
                   <td>{l.name}</td>
@@ -131,7 +193,7 @@ export function LeadsPage() {
                     <span className={`crm-badge crm-badge--${l.status}`}>{t(`crm.leadStatus.${l.status}`)}</span>
                   </td>
                   <td>
-                    <div className="crm-actions">
+                    <RowActions className="crm-actions" label={t("common.actions")}>
                       {l.status === "new" && (
                         <button className="btn btn--sm" disabled={busy} onClick={() => act(() => setLeadStatus(l.id, "qualified"))}>
                           {t("crm.leadStatus.qualified")}
@@ -142,7 +204,7 @@ export function LeadsPage() {
                           {t("crm.lead.convert")}
                         </button>
                       )}
-                    </div>
+                    </RowActions>
                   </td>
                 </tr>
               ))}

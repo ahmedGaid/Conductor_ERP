@@ -1,0 +1,50 @@
+/*
+ * Tooltip bubble — portalled to <body> and positioned with `position: fixed`, so it floats above
+ * everything without a per-call z-index and is never clipped by an overflow ancestor. The bubble is
+ * centred over its trigger with a translate (direction-agnostic, so RTL + LTR match). On-brand:
+ * the near-black brand surface with on-brand text, echoing primary buttons — calm, not a callout.
+ */
+.tooltip {
+  position: fixed;
+  z-index: 60; /* above app chrome + popovers; below modal/toast in the app's mental z-scale */
+  max-inline-size: 16rem;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-brand);
+  color: var(--color-text-on-brand);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-ui);
+  /* Short labels stay on one line; long dynamic labels (e.g. an error reason) wrap within the cap. */
+  text-align: center;
+  text-wrap: balance;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  animation: tooltip-in var(--dur-fast) var(--ease-out) both;
+}
+
+/* Centre horizontally over the trigger; sit fully above (top) or below (bottom) the gap point. */
+.tooltip--top {
+  transform: translate(-50%, -100%);
+}
+.tooltip--bottom {
+  transform: translate(-50%, 0);
+}
+/* Beside the trigger (icon rails): anchored at the gap point, vertically centred. The physical
+   side is already resolved from writing direction in JS, so RTL + LTR both read correctly. */
+.tooltip--right {
+  transform: translateY(-50%);
+}
+.tooltip--left {
+  transform: translate(-100%, -50%);
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

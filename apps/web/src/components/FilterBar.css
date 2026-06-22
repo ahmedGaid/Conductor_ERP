@@ -1,0 +1,80 @@
+/*
+ * Filter bar — a row of active-filter chips plus the "Filter" add button. Each chip is a single
+ * pill split into segments (field · operator · value · remove) divided by hairline rules, echoing
+ * the status-pill / button vocabulary. Neutral by design: colour is reserved for meaning elsewhere,
+ * so filters stay quiet until you read them. Logical properties throughout, so RTL mirrors cleanly.
+ */
+.filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  overflow: hidden;
+}
+
+.filter-chip__field {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--space-2);
+  padding-block: var(--space-2);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+/* The two interactive middle segments + the remove button share one look. */
+.filter-chip__op,
+.filter-chip__value,
+.filter-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--space-2);
+  border: none;
+  border-inline-start: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.filter-chip__op {
+  color: var(--color-text-muted);
+}
+.filter-chip__value {
+  font-weight: var(--font-weight-medium);
+  max-inline-size: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.filter-chip__op:hover,
+.filter-chip__value:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.filter-chip__remove {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+}
+.filter-chip__remove:hover {
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger-strong);
+}
+
+/* Add + clear buttons sit inline with the chips. */
+.filterbar__add svg {
+  color: var(--color-text-muted);
+}
+.filterbar__clear {
+  color: var(--color-text-muted);
+}

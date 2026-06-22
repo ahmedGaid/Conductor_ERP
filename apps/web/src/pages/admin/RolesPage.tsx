@@ -1,16 +1,40 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { createRole, listRoles, type RoleRow } from "../../api/roles";
 import { useAsync } from "../../hooks/useAsync";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
 import "./admin.css";
 
 export function RolesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: roles, loading, error } = useAsync(listRoles, [], "admin:roles");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+
+  const fields = useMemo<FilterField<RoleRow>[]>(
+    () => [
+      { key: "name", label: t("admin.roles.name"), type: "text", accessor: (r) => r.name },
+      {
+        key: "kind",
+        label: t("admin.roles.kind"),
+        type: "select",
+        options: [
+          { value: "builtin", label: t("admin.roles.builtin") },
+          { value: "custom", label: t("admin.roles.custom") },
+        ],
+        accessor: (r) => (r.protected ? "builtin" : "custom"),
+      },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (roles ? roles.filter((r) => matchesAllFilters(r, fields, filters)) : roles),
+    [roles, fields, filters],
+  );
 
   return (
     <section className="page-enter">
@@ -35,6 +59,15 @@ export function RolesPage() {
       )}
 
       {roles && roles.length > 0 && (
+        <div className="admin-filterbar">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {roles && roles.length > 0 && filtered && filtered.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {filtered && filtered.length > 0 && (
         <div className="card admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -47,7 +80,7 @@ export function RolesPage() {
               </tr>
             </thead>
             <tbody>
-              {roles.map((r) => (
+              {filtered.map((r) => (
                 <tr key={r.name} className="admin-row" onClick={() => navigate(`/admin/roles/${encodeURIComponent(r.name)}`)}>
                   <td><span className="admin-id__name">{r.name}</span></td>
                   <td>

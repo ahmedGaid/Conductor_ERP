@@ -1,11 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { createStockCount, listStockCounts, listWarehouses } from "../../api/inventory";
+import { createStockCount, listStockCounts, listWarehouses, type CountStatus } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
+import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { InventoryNav } from "./InventoryNav";
 import "./inventory.css";
 
@@ -13,11 +16,44 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+const COUNT_STATUSES: CountStatus[] = ["counting", "posted", "cancelled"];
+type StockCount = Awaited<ReturnType<typeof listStockCounts>>[number];
+
 export function StockCountsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(listStockCounts, [], "inventory:counts");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [tab, setTab] = useState<string>(ALL_TAB);
+
+  const fields = useMemo<FilterField<StockCount>[]>(
+    () => [
+      { key: "warehouse", label: t("inventory.counts.warehouse"), type: "text", accessor: (c) => c.warehouse_code },
+      { key: "date", label: t("inventory.counts.date"), type: "date", accessor: (c) => c.count_date },
+      {
+        key: "status",
+        label: t("inventory.counts.status"),
+        type: "select",
+        options: COUNT_STATUSES.map((s) => ({ value: s, label: t(`inventory.counts.statuses.${s}`) })),
+        accessor: (c) => c.status,
+      },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((c) => matchesAllFilters(c, fields, filters)) : data),
+    [data, fields, filters],
+  );
+
+  const statusTabs = useMemo(
+    () => COUNT_STATUSES.map((s) => ({ value: s, label: t(`inventory.counts.statuses.${s}`) })),
+    [t],
+  );
+  const visible = useMemo(
+    () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((c) => c.status === tab)) : filtered),
+    [filtered, tab],
+  );
 
   const [warehouse, setWarehouse] = useState("");
   const [countDate, setCountDate] = useState(today());
@@ -83,6 +119,25 @@ export function StockCountsPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="inv-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && (
+        <StatusTabs
+          rows={filtered}
+          tabs={statusTabs}
+          accessor={(c) => c.status}
+          value={tab}
+          onChange={setTab}
+          ariaLabel={t("inventory.counts.status")}
+        />
+      )}
+      {data && data.length > 0 && visible && visible.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {visible && visible.length > 0 && (
         <div className="card inv-table-wrap">
           <table className="inv-table">
             <thead>
@@ -94,7 +149,7 @@ export function StockCountsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((c) => (
+              {visible.map((c) => (
                 <tr key={c.id}>
                   <td>
                     <Link className="inv-link" to={`/inventory/counts/${c.id}`}><Bdi>{c.warehouse_code}</Bdi></Link>

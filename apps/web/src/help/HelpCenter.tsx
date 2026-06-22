@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { Tooltip } from "../components/Tooltip";
 import { resolveGuide } from "./registry";
 import { useHelp } from "./HelpContext";
 import type { HelpGuide, L } from "./types";
@@ -41,17 +42,18 @@ export function HelpCenter() {
 
   return (
     <>
-      <button
-        type="button"
-        className="help-fab"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label={t("help.button")}
-        title={t("help.button")}
-        onClick={toggleHelp}
-      >
-        <span aria-hidden="true">?</span>
-      </button>
+      <Tooltip label={t("help.button")} placement="top">
+        <button
+          type="button"
+          className="help-fab"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={t("help.button")}
+          onClick={toggleHelp}
+        >
+          <span aria-hidden="true">?</span>
+        </button>
+      </Tooltip>
 
       {open && (
         <>

@@ -1,17 +1,32 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { createCustomer, listCustomers } from "../../api/sales";
+import { createCustomer, listCustomers, type Customer } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
 export function CustomersPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(listCustomers, [], "sales:customers");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+
+  const fields = useMemo<FilterField<Customer>[]>(
+    () => [
+      { key: "code", label: t("sales.customer.code"), type: "text", accessor: (c) => c.code },
+      { key: "name", label: t("sales.customer.name"), type: "text", accessor: (c) => c.name },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((c) => matchesAllFilters(c, fields, filters)) : data),
+    [data, fields, filters],
+  );
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -77,6 +92,15 @@ export function CustomersPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="sales-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && filtered.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {filtered && filtered.length > 0 && (
         <div className="card sales-table-wrap">
           <table className="sales-table">
             <thead>
@@ -87,7 +111,7 @@ export function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((c) => (
+              {filtered.map((c) => (
                 <tr key={c.id}>
                   <td><Bdi>{c.code}</Bdi></td>
                   <td>{c.name}</td>

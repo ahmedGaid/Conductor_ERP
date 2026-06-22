@@ -1,20 +1,54 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { createCampaign, listCampaigns, type CampaignChannel } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
+import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { CrmNav } from "./CrmNav";
 import "./crm.css";
 
 const CHANNELS: CampaignChannel[] = ["email", "web", "call", "event", "social", "other"];
+type Campaign = Awaited<ReturnType<typeof listCampaigns>>[number];
 
 export function CampaignsPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(listCampaigns, [], "crm:campaigns");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [tab, setTab] = useState<string>(ALL_TAB);
+
+  const fields = useMemo<FilterField<Campaign>[]>(
+    () => [
+      { key: "code", label: t("crm.campaign.code"), type: "text", accessor: (c) => c.code },
+      { key: "name", label: t("crm.campaign.name"), type: "text", accessor: (c) => c.name },
+      {
+        key: "channel",
+        label: t("crm.campaign.channel"),
+        type: "select",
+        options: CHANNELS.map((c) => ({ value: c, label: t(`crm.campaign.channels.${c}`) })),
+        accessor: (c) => c.channel,
+      },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((c) => matchesAllFilters(c, fields, filters)) : data),
+    [data, fields, filters],
+  );
+
+  const channelTabs = useMemo(
+    () => CHANNELS.map((c) => ({ value: c, label: t(`crm.campaign.channels.${c}`) })),
+    [t],
+  );
+  const visible = useMemo(
+    () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((c) => c.channel === tab)) : filtered),
+    [filtered, tab],
+  );
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -89,6 +123,25 @@ export function CampaignsPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="crm-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && (
+        <StatusTabs
+          rows={filtered}
+          tabs={channelTabs}
+          accessor={(c) => c.channel}
+          value={tab}
+          onChange={setTab}
+          ariaLabel={t("crm.campaign.channel")}
+        />
+      )}
+      {data && data.length > 0 && visible && visible.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {visible && visible.length > 0 && (
         <div className="card crm-table-wrap">
           <table className="crm-table">
             <thead>
@@ -102,7 +155,7 @@ export function CampaignsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((c) => (
+              {visible.map((c) => (
                 <tr key={c.id}>
                   <td>
                     <Link className="crm-link" to={`/crm/campaigns/${c.id}`}><Bdi>{c.code}</Bdi></Link>

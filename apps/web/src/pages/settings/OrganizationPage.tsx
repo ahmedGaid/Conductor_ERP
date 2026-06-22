@@ -8,6 +8,7 @@ import {
   type OrgPreferences,
 } from "../../api/identity";
 import { ACCENTS } from "../../prefs";
+import { Tooltip } from "../../components/Tooltip";
 import { useAsync } from "../../hooks/useAsync";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
@@ -88,17 +89,17 @@ export function OrganizationPage() {
         <SettingRow title={t("settings.org.accent")} desc={t("settings.org.accentDesc")}>
           <div className="swatches" role="radiogroup" aria-label={t("settings.org.accent")}>
             {ACCENTS.map((a) => (
-              <button
-                key={a}
-                type="button"
-                role="radio"
-                aria-checked={org.default_accent === a}
-                aria-label={t(`settings.appearance.accents.${a}`)}
-                title={t(`settings.appearance.accents.${a}`)}
-                className={org.default_accent === a ? "swatch swatch--on" : "swatch"}
-                data-accent-dot={a}
-                onClick={() => save({ default_accent: a })}
-              />
+              <Tooltip key={a} label={t(`settings.appearance.accents.${a}`)} placement="top">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={org.default_accent === a}
+                  aria-label={t(`settings.appearance.accents.${a}`)}
+                  className={org.default_accent === a ? "swatch swatch--on" : "swatch"}
+                  data-accent-dot={a}
+                  onClick={() => save({ default_accent: a })}
+                />
+              </Tooltip>
             ))}
           </div>
         </SettingRow>

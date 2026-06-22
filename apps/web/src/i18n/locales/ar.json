@@ -21,7 +21,9 @@
     "favorites": "المفضلة",
     "administration": "الإدارة",
     "usersAdmin": "المستخدمون",
-    "rolesAdmin": "الأدوار"
+    "rolesAdmin": "الأدوار",
+    "collapseSidebar": "طيّ الشريط الجانبي",
+    "expandSidebar": "توسيع الشريط الجانبي"
   },
   "moduleIntro": {
     "accounting": "شجرة الحسابات والقيود اليومية ودفاتر الأستاذ والقوائم المالية — دفاتر المنشأة.",
@@ -525,6 +527,8 @@
       "empty": "لا توجد طلبات بعد.",
       "number": "رقم الطلب",
       "customer": "العميل",
+      "status": "الحالة",
+      "date": "التاريخ",
       "total": "الإجمالي"
     },
     "newOrder": {
@@ -816,8 +820,34 @@
     "emptyHint": "أنشئ أول عنصر للبدء.",
     "moreDetails": "تفاصيل",
     "cancel": "إلغاء",
+    "status": "الحالة",
+    "date": "التاريخ",
     "on": "مُفعّل",
-    "off": "مُعطّل"
+    "off": "مُعطّل",
+    "all": "الكل",
+    "actions": "إجراءات"
+  },
+  "filter": {
+    "add": "تصفية",
+    "clear": "مسح",
+    "remove": "إزالة عامل التصفية",
+    "search": "بحث…",
+    "noResults": "لا نتائج",
+    "nSelected": "{{count}} محدَّد",
+    "any": "الكل",
+    "noMatch": "لا عناصر تطابق عوامل التصفية هذه.",
+    "noMatchHint": "أزِل أحد عوامل التصفية لتوسيع النتائج.",
+    "op": {
+      "is": "يساوي",
+      "isNot": "لا يساوي",
+      "isAnyOf": "أيٌّ من",
+      "isNoneOf": "ليس أيًّا من",
+      "contains": "يحتوي",
+      "notContains": "لا يحتوي",
+      "before": "قبل",
+      "after": "بعد",
+      "on": "في"
+    }
   },
   "einvoice": {
     "tabs": {

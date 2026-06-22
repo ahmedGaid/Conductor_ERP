@@ -1,17 +1,34 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { createBudget, listBudgets } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
+
+type Budget = Awaited<ReturnType<typeof listBudgets>>[number];
 
 export function BudgetsPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(listBudgets, [], "accounting:budgets");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+
+  const fields = useMemo<FilterField<Budget>[]>(
+    () => [
+      { key: "name", label: t("accounting.budgets.name"), type: "text", accessor: (b) => b.name },
+      { key: "fy", label: t("accounting.budgets.fiscalYear"), type: "text", accessor: (b) => b.fiscal_year_code },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((b) => matchesAllFilters(b, fields, filters)) : data),
+    [data, fields, filters],
+  );
 
   const [name, setName] = useState("");
   const [fy, setFy] = useState(String(new Date().getFullYear()));
@@ -67,6 +84,15 @@ export function BudgetsPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="acct-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && filtered.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {filtered && filtered.length > 0 && (
         <div className="card acct-table-wrap">
           <table className="acct-table">
             <thead>
@@ -76,7 +102,7 @@ export function BudgetsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((b) => (
+              {filtered.map((b) => (
                 <tr key={b.id}>
                   <td>
                     <Link className="acct-link" to={`/accounting/budgets/${b.id}`}>{b.name}</Link>

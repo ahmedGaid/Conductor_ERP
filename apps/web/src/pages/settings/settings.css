@@ -71,32 +71,8 @@
 }
 
 /* Segmented (single-choice pill group). */
-.segmented {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background-color: var(--color-surface-alt);
-  border-radius: var(--radius-md);
-}
-.segmented__opt {
-  padding-inline: var(--space-3);
-  padding-block: var(--space-1);
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
-}
-.segmented__opt:hover {
-  color: var(--color-text);
-}
-.segmented__opt--on {
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: var(--shadow-xs);
-}
+/* The segmented control's styles now live with the shared component (components/SegmentedControl.css),
+   used here via the Segmented re-export in ./controls — one implementation everywhere. */
 
 /* On/off switch. */
 .switch {

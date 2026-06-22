@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -13,15 +13,56 @@ import {
   type TicketPriority,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
+import { FilterBar } from "../../components/FilterBar";
+import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
+import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import "./crm.css";
 
 const PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
+const TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;
 
 export function TicketsPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(() => listTickets(), [], "crm:tickets");
+  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [tab, setTab] = useState<string>(ALL_TAB);
+
+  const fields = useMemo<FilterField<Ticket>[]>(
+    () => [
+      {
+        key: "status",
+        label: t("common.status"),
+        type: "select",
+        options: TICKET_STATUSES.map((s) => ({ value: s, label: t(`crm.ticketStatus.${s}`) })),
+        accessor: (tk) => tk.status,
+      },
+      {
+        key: "priority",
+        label: t("crm.ticket.priority"),
+        type: "select",
+        options: PRIORITIES.map((p) => ({ value: p, label: t(`crm.priority.${p}`) })),
+        accessor: (tk) => tk.priority,
+      },
+      { key: "subject", label: t("crm.ticket.subject"), type: "text", accessor: (tk) => tk.subject },
+    ],
+    [t],
+  );
+  const filtered = useMemo(
+    () => (data ? data.filter((tk) => matchesAllFilters(tk, fields, filters)) : data),
+    [data, fields, filters],
+  );
+
+  const statusTabs = useMemo(
+    () => TICKET_STATUSES.map((s) => ({ value: s, label: t(`crm.ticketStatus.${s}`) })),
+    [t],
+  );
+  const visible = useMemo(
+    () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((tk) => tk.status === tab)) : filtered),
+    [filtered, tab],
+  );
 
   const [subject, setSubject] = useState("");
   const [customer, setCustomer] = useState("");
@@ -117,6 +158,25 @@ export function TicketsPage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="crm-filters">
+          <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+        </div>
+      )}
+      {data && data.length > 0 && filtered && (
+        <StatusTabs
+          rows={filtered}
+          tabs={statusTabs}
+          accessor={(tk) => tk.status}
+          value={tab}
+          onChange={setTab}
+          ariaLabel={t("common.status")}
+        />
+      )}
+      {data && data.length > 0 && visible && visible.length === 0 && (
+        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+      )}
+
+      {visible && visible.length > 0 && (
         <div className="card crm-table-wrap">
           <table className="crm-table">
             <thead>
@@ -130,7 +190,7 @@ export function TicketsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((tk: Ticket) => (
+              {visible.map((tk: Ticket) => (
                 <tr key={tk.id}>
                   <td className="latin">{tk.number}</td>
                   <td>{tk.subject}</td>
@@ -149,7 +209,7 @@ export function TicketsPage() {
                     {tk.is_escalated && <span className="crm-escalated">↑ {t("crm.ticket.escalated")}</span>}
                   </td>
                   <td>
-                    <div className="crm-actions">
+                    <RowActions className="crm-actions" label={t("common.actions")}>
                       {tk.status === "open" && (
                         <button className="btn btn--sm" disabled={busy} onClick={() => act(() => startTicket(tk.id))}>
                           {t("crm.ticket.start")}
@@ -170,7 +230,7 @@ export function TicketsPage() {
                           {t("crm.ticket.close")}
                         </button>
                       )}
-                    </div>
+                    </RowActions>
                   </td>
                 </tr>
               ))}

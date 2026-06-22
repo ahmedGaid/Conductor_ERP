@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { usePreferences } from "../../preferences/PreferencesContext";
+import { Tooltip } from "../../components/Tooltip";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { FAVORITE_CANDIDATES } from "./navFavorites";
@@ -36,16 +37,17 @@ export function NavigationSettingsPage() {
               return (
                 <li key={to} className="fav-row">
                   <span className="fav-row__name">{t(label)}</span>
-                  <button
-                    type="button"
-                    className={on ? "fav-star fav-star--on" : "fav-star"}
-                    aria-pressed={on}
-                    aria-label={t(on ? "settings.nav.unpin" : "settings.nav.pin")}
-                    title={t(on ? "settings.nav.unpin" : "settings.nav.pin")}
-                    onClick={() => toggle(label, to)}
-                  >
-                    <span aria-hidden="true">{on ? "★" : "☆"}</span>
-                  </button>
+                  <Tooltip label={t(on ? "settings.nav.unpin" : "settings.nav.pin")} placement="top">
+                    <button
+                      type="button"
+                      className={on ? "fav-star fav-star--on" : "fav-star"}
+                      aria-pressed={on}
+                      aria-label={t(on ? "settings.nav.unpin" : "settings.nav.pin")}
+                      onClick={() => toggle(label, to)}
+                    >
+                      <span aria-hidden="true">{on ? "★" : "☆"}</span>
+                    </button>
+                  </Tooltip>
                 </li>
               );
             })}
