@@ -1,8 +1,9 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-22 (Linear-style list polish COMMITTED — commit `657ff4c`,
-> gate:all 00–13 GREEN; see the 2026-06-22 note directly below) // earlier: Phase 11 deployment
+> meaningful step. Last updated: **2026-06-22 (Linear-style list polish + orders/PO row actions
+> COMMITTED + PUSHED — commits `657ff4c` + `b416941`, gate:all 00–13 GREEN; see the 2026-06-22 notes
+> directly below) // earlier: Phase 11 deployment
 > packaging + runbook BUILT, gate:all
 > 00–13 GREEN, awaiting test+commit — see the Phase 11 note below) // earlier: Stages 0–5f +
 > Sales/Purchasing depth (5d-2..4/5e-2..4)
@@ -28,10 +29,20 @@
 > StatusTabs on ~13 status-bearing lists; RowActions on the CRM/einvoice lists). On resume the working
 > tree was gate-RED — two TS errors in the new components (SegmentedControl keydown element type;
 > FilterBar FilterField cast) — both **fixed** in the same commit; gate:all then 00–13 GREEN, i18n
-> parity 944 keys. **Possible follow-ups (not blocking):** extend RowActions to the orders/PO lists;
-> push `657ff4c`. **Note:** the earlier per-session-revoke / brand-icon / dept-team-scope / journal-
-> invoice-payment-limit follow-ups that older notes below call "not yet committed" are in fact
-> **committed** (git log through `e8a2e5f`) — those "local, not committed" lines are stale.
+> parity 944 keys. **All pushed to `main`** (commits `657ff4c` polish + `6b09a60` status doc). **Note:**
+> the earlier per-session-revoke / brand-icon / dept-team-scope / journal-invoice-payment-limit
+> follow-ups that older notes below call "not yet committed" are in fact **committed** (git log through
+> `e8a2e5f`) — those "local, not committed" lines are stale.
+>
+> **RowActions extended to the orders/PO lists — COMMITTED + PUSHED (2026-06-22, commit `b416941` on
+> `main`). gate:all 00–13 GREEN.** The hover/focus-revealed `RowActions` (previously only on the
+> CRM/einvoice lists) now sits on the sales-order and purchase-order list pages, surfacing the one-click
+> next step that mirrors the detail-page gating exactly: **Approve** on a draft awaiting sign-off
+> (`requires_approval && !approved`), then **Confirm** on a draft that's ready. Heavier parameterised
+> steps (deliver/invoice/payment, receive/bill/payment) stay on the detail page. Reuses the existing
+> approve/confirm API calls + `sales.detail.*` / `purchasing.detail.*` labels (no new i18n keys),
+> reloads the list on success, surfaces errors inline. **This closes the two follow-ups the polish note
+> above listed (extend RowActions; push) — the Linear-style list-polish slice is fully done + pushed.**
 >
 > **Resume note (2026-06-19, later session):** Phase 9 frontend-polish has progressed past the
 > commits above — pushed since: `b779ebe` (in-page link colour), `5c81c4a` (sticky list headers +
