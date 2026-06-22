@@ -45,6 +45,15 @@
     "notifications": "Notifications",
     "help": "Help"
   },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "general": "General",
+    "navigation": "Navigation",
+    "palette": "Command palette",
+    "search": "Search",
+    "create": "Create…",
+    "help": "Show this cheat-sheet"
+  },
   "command": {
     "placeholder": "Search pages and actions…",
     "empty": "No matches for",

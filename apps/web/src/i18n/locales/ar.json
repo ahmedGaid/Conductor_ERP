@@ -45,6 +45,15 @@
     "notifications": "الإشعارات",
     "help": "المساعدة"
   },
+  "shortcuts": {
+    "title": "اختصارات لوحة المفاتيح",
+    "general": "عام",
+    "navigation": "التنقّل",
+    "palette": "لوحة الأوامر",
+    "search": "بحث",
+    "create": "إنشاء…",
+    "help": "عرض دليل الاختصارات"
+  },
   "command": {
     "placeholder": "ابحث في الصفحات والإجراءات…",
     "empty": "لا نتائج لـ",

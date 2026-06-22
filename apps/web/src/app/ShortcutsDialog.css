@@ -1,0 +1,59 @@
+/* Shortcuts cheat-sheet. Reuses the .cmdp dialog shell and .cmdp__panel card;
+   this file only lays out the two reference columns inside it. */
+.shortcuts {
+  max-block-size: 80dvh;
+}
+
+.shortcuts__head {
+  padding-inline: var(--space-4);
+  padding-block: var(--space-4);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.shortcuts__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.shortcuts__body {
+  overflow-y: auto;
+  padding-block: var(--space-2);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2) var(--space-6);
+}
+
+.shortcuts__section {
+  min-inline-size: 0;
+}
+
+.shortcuts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.shortcuts__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--space-4);
+  padding-block: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.shortcuts__keys {
+  display: inline-flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+@media (max-width: 32rem) {
+  .shortcuts__body {
+    grid-template-columns: 1fr;
+  }
+}
