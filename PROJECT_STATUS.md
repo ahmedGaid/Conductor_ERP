@@ -1,7 +1,9 @@
 # PROJECT STATUS — Conductor ERP (Django)
 
 > Living resume anchor. The `/erp-resume` skill reads this file. Keep it updated after every
-> meaningful step. Last updated: **2026-06-20 (Phase 11 deployment packaging + runbook BUILT, gate:all
+> meaningful step. Last updated: **2026-06-22 (Linear-style list polish COMMITTED — commit `657ff4c`,
+> gate:all 00–13 GREEN; see the 2026-06-22 note directly below) // earlier: Phase 11 deployment
+> packaging + runbook BUILT, gate:all
 > 00–13 GREEN, awaiting test+commit — see the Phase 11 note below) // earlier: Stages 0–5f +
 > Sales/Purchasing depth (5d-2..4/5e-2..4)
 > + Accounting VAT output (5b-4) + input/purchase VAT (5b-5) + ETA e-invoicing (Stage 6a) + report
@@ -10,6 +12,26 @@
 > escalation, custom report builder + scheduled reports, notification/integration adapters
 > (email/WhatsApp, event-wired) + context help on every page (bilingual ar/en); gate:all 00–11
 > GREEN. Latest pushed commits: ef6a9a3 (Phase 8 notifications), a420fde (context help))**.
+>
+> **Linear-style list polish — COMMITTED (2026-06-22, commit `657ff4c` on `main`, local — not yet
+> pushed). gate:all 00–13 GREEN.** A reusable "filter + view" interaction layer adapted from the
+> Linear reference bundles (`Docs/linear_*.txt`, kept untracked as input only) into the project's own
+> discipline — **tokens-only, logical CSS, ar/en parity, no Tailwind/Radix.** New shared components
+> under `apps/web/src/components/`: **FilterBar** (+ `lib/filters.ts`: a page declares filterable
+> fields select/text/date; chips whose operator adapts to value count is→isAnyOf; matched client-side
+> over the existing SWR cache, no new requests), **StatusTabs** (quick status cut with live count
+> badges, computed on the FilterBar result), **SegmentedControl** (WAI-ARIA radiogroup, roving
+> tabindex, direction-aware arrows — also now backs the settings controls + command-bar/sidebar),
+> **Popover** (portalled, overflow-safe, inline-start-aligned, closes on Escape/outside-click/scroll-
+> reflow), **Tooltip** + **RowActions** (hover/focus-revealed per-row quick actions). Wired across the
+> sales/purchasing/inventory/accounting/crm/einvoice/admin/workflow list pages (FilterBar on ~22 lists,
+> StatusTabs on ~13 status-bearing lists; RowActions on the CRM/einvoice lists). On resume the working
+> tree was gate-RED — two TS errors in the new components (SegmentedControl keydown element type;
+> FilterBar FilterField cast) — both **fixed** in the same commit; gate:all then 00–13 GREEN, i18n
+> parity 944 keys. **Possible follow-ups (not blocking):** extend RowActions to the orders/PO lists;
+> push `657ff4c`. **Note:** the earlier per-session-revoke / brand-icon / dept-team-scope / journal-
+> invoice-payment-limit follow-ups that older notes below call "not yet committed" are in fact
+> **committed** (git log through `e8a2e5f`) — those "local, not committed" lines are stale.
 >
 > **Resume note (2026-06-19, later session):** Phase 9 frontend-polish has progressed past the
 > commits above — pushed since: `b779ebe` (in-page link colour), `5c81c4a` (sticky list headers +
