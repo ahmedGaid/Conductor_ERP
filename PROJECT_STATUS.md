@@ -22,7 +22,7 @@ Repo: `C:\AhmedGaid\ERP` (git, `main`), pushed to `github.com/ahmedGaid/Conducto
 For how any piece was built (and the commit that delivered it) → recall the **`erp-history`** skill.
 
 ## Active work — Linear-quality frontend UX overhaul
-**Branch `ui/speed-optimistic`** (off `main`, pushed, NOT yet merged/PR'd). apps/web only — the Python
+**Branch `ui/speed-optimistic`** (off `main`, pushed; **PR #1 open** → `main`, not yet merged). apps/web only — the Python
 `gate:all` is untouched. A focused pass to lift the React UI to Linear's bar (fast, calm,
 keyboard-driven), worked one priority area at a time. Full patterns + primitives → **`erp-frontend`** skill.
 
@@ -49,7 +49,7 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
   a11y label now everywhere). Plus the tooltip key-cap colour fix (`fcc4ff2`).
 - **i18n: 1023 keys** (ar/en parity). Branch commits newest→oldest: `20e0ef7 b2cd887 c2aa1ca 124cd05
   7f9d489 f5f1396 b2daf82 fcc4ff2 55fac56 00232f7 4a380a1 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`
-  (branch NOT yet pushed).
+  (pushed; **PR #1** open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/1).
 
 ### NEXT ACTION
 Speed, low-friction creation, keyboard-first, brand/Arabic search, and designed states are all done.
