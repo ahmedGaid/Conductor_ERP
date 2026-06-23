@@ -36,6 +36,10 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
     { keys: ["K"], label: t("shortcuts.listUp") },
     { keys: ["Enter"], label: t("shortcuts.listOpen") },
   ];
+  const forms: Shortcut[] = [
+    { keys: ["⌘", "Enter"], label: t("shortcuts.formSubmit") },
+    { keys: ["Esc"], label: t("shortcuts.formCancel") },
+  ];
   const navigation: Shortcut[] = [
     { keys: ["G", "D"], label: t("nav.dashboard") },
     { keys: ["G", "S"], label: t("nav.sales") },
@@ -81,6 +85,14 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
             <p className="cmdp__group-label">{t("shortcuts.lists")}</p>
             <ul className="shortcuts__list">
               {lists.map((s) => (
+                <ShortcutRow key={s.label} keys={s.keys} label={s.label} />
+              ))}
+            </ul>
+          </section>
+          <section className="shortcuts__section">
+            <p className="cmdp__group-label">{t("shortcuts.forms")}</p>
+            <ul className="shortcuts__list">
+              {forms.map((s) => (
                 <ShortcutRow key={s.label} keys={s.keys} label={s.label} />
               ))}
             </ul>

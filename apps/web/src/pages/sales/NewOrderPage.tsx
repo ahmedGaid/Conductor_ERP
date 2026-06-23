@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { createOrder, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -36,6 +37,10 @@ export function NewOrderPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ⌘/Ctrl+Enter submits, Esc cancels back to the orders list.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef, onCancel: () => navigate("/sales") });
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -94,7 +99,7 @@ export function NewOrderPage() {
     <section className="sales-page">
       <SalesNav />
 
-      <form className="card sales-page" onSubmit={onSubmit}>
+      <form ref={formRef} className="card sales-page" onSubmit={onSubmit}>
         <div className="sales-toolbar">
           <label className="sales-field">
             <span>{t("sales.orders.customer")}</span>

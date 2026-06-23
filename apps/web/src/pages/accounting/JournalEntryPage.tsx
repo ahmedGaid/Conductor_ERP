@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { listAccounts, listCostCenters, postJournal, type JournalLineInput } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -38,6 +39,10 @@ export function JournalEntryPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine(), emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ⌘/Ctrl+Enter submits, Esc cancels back to the journals list.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef, onCancel: () => navigate("/accounting/journals") });
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -89,7 +94,7 @@ export function JournalEntryPage() {
     <section className="acct-page">
       <AccountingNav />
 
-      <form className="card" onSubmit={onSubmit}>
+      <form ref={formRef} className="card" onSubmit={onSubmit}>
         <div className="acct-toolbar">
           <label className="acct-field">
             <span>{t("accounting.entry.date")}</span>
