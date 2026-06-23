@@ -35,11 +35,20 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
   route-change focus to the page heading; sidebar shortcut tips (`65f860b`, `Tooltip.shortcut`);
   Slice 3 (`00232f7`) `j`/`k`/`Enter` list navigation (`useListKeyboardNav` + `lib/keyboard.ts`
   shared guards) wired across all 11 index→detail lists + "Lists" cheat-sheet section.
-- **i18n: 1017 keys** (ar/en parity). Branch commits newest→oldest: `00232f7 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`.
+- **Brand + Arabic search — DONE this session** (`f5f1396`, `b2daf82`): added the `Docs/Brand` triad
+  (Brief · Directive · new **Visual Identity System**), lean root `CLAUDE.md`, and the `conductor-brand`
+  skill (recalled by `/erp-resume` + `erp-frontend`). **Arabic-insensitive search folding**
+  (`lib/arabicSearch.ts` → `normalizeSearch`) wired into ⌘K / list filters / user search, so "امر البيع"
+  finds "أمر البيع" (display text keeps full orthography). Lexicon calls — warehouse → **مخزن**, approve →
+  **موافقة** (اعتماد unified) — applied in the `ar.json` working tree; they ride with the Slice 4 i18n commit.
+- **i18n: 1017 keys** (ar/en parity). Branch commits newest→oldest: `f5f1396 b2daf82 00232f7 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`.
 
 ### NEXT ACTION
 **Keyboard-first Slice 4** — form key conventions: **Esc to cancel**, **⌘/Ctrl+Enter to submit** across
 the create/edit forms (reuse the `lib/keyboard.ts` guards). After that, the remaining Linear priority areas.
+*(Slice 4 is already started in the working tree — `useFormKeys.ts`, `NewOrderPage`, `ShortcutsDialog`,
++ `forms`/`formSubmit`/`formCancel` i18n keys; its i18n commit also carries this session's `ar.json`
+lexicon edits — مخزن / موافقة.)*
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
