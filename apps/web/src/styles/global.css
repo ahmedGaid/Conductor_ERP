@@ -232,8 +232,8 @@ textarea {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  padding-inline: var(--space-3);
-  padding-block: 0.5rem;
+  padding-inline: var(--field-pad-inline);
+  padding-block: var(--field-pad-block);
   transition: border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
 }
 input::placeholder,
