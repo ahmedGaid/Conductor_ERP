@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import { createAccount, listAccounts, type Account, type AccountType } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 const TYPES: AccountType[] = ["asset", "liability", "equity", "income", "expense"];
@@ -108,16 +110,9 @@ export function ChartOfAccountsPage() {
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.account.empty")} hint={t("accounting.account.emptyHint")} />

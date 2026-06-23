@@ -59,6 +59,10 @@
   --color-brand: var(--palette-ink-900);
   --color-brand-strong: var(--palette-ink-950);
   --color-brand-subtle: var(--palette-ink-100);
+  /* Key-cap chip sitting ON the brand bubble (tooltips): a calm one-step lift of the bubble,
+     NOT the bright page surface. Text uses --color-text-on-brand so it flips with the theme. */
+  --color-kbd-on-brand-bg: var(--palette-ink-700);
+  --color-kbd-on-brand-border: var(--palette-ink-600);
   /* Accent = blue — used for in-page colour (links, accent text), NOT the app chrome. */
   --color-accent: var(--palette-brand-600);
   --color-accent-strong: var(--palette-brand-700);
@@ -180,6 +184,10 @@
   --color-brand: #f5f5f5;
   --color-brand-strong: #ffffff;
   --color-brand-subtle: #1f1f1f;
+  /* On the inverted (near-white) bubble the chip steps DOWN instead of up — black text on a
+     soft grey cap, mirroring the light-mode treatment. */
+  --color-kbd-on-brand-bg: #e2e2e2;
+  --color-kbd-on-brand-border: #cfcfcf;
 
   /* Accent (in-page links/text): a brighter blue that reads on dark. */
   --color-accent: #60a5fa;

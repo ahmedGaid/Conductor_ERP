@@ -1,12 +1,15 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
-import { getCampaign, setCampaignStatus, type CampaignStatus } from "../../api/crm";
+import { getCampaign, setCampaignStatus, type Campaign, type CampaignStatus } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 const NEXT: Record<CampaignStatus, CampaignStatus | null> = {
@@ -17,22 +20,27 @@ const NEXT: Record<CampaignStatus, CampaignStatus | null> = {
 
 export function CampaignDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id = "" } = useParams();
-  const { data: campaign, loading, error, reload } = useAsync(() => getCampaign(id), [id]);
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { data: campaign, loading, error, reload, mutate } = useAsync<Campaign>(
+    () => getCampaign(id),
+    [id],
+    `crm:campaign:${id}`,
+  );
 
-  async function changeStatus(status: CampaignStatus) {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await setCampaignStatus(id, status);
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic status step: flip instantly, reconcile with the server's campaign (metrics may
+  // change), roll back + toast on failure.
+  function changeStatus(status: CampaignStatus) {
+    if (!campaign) return;
+    void runOptimistic<Campaign, Campaign>({
+      current: campaign,
+      mutate,
+      optimistic: (c) => ({ ...c, status }),
+      request: () => setCampaignStatus(id, status),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: status === "active" ? t("crm.toast.campaignActivated") : t("crm.toast.campaignCompleted"),
+    });
   }
 
   const m = campaign?.metrics;
@@ -44,13 +52,9 @@ export function CampaignDetailPage() {
       <Link className="crm-link" to="/crm/campaigns">← {t("crm.campaign.backToList")}</Link>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={1} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {campaign && (
         <div className="card crm-detail">
@@ -59,13 +63,12 @@ export function CampaignDetailPage() {
             <div className="crm-toolbar">
               <span className={`crm-badge crm-badge--${campaign.status}`}>{t(`crm.campaign.statuses.${campaign.status}`)}</span>
               {next && (
-                <button className="btn btn--sm btn--primary" disabled={busy} onClick={() => changeStatus(next)}>
+                <button className="btn btn--sm btn--primary" onClick={() => changeStatus(next)}>
                   {t(`crm.campaign.markActions.${next}`)}
                 </button>
               )}
             </div>
           </div>
-          {actionError && <p className="error-text">{actionError}</p>}
 
           {m && (
             <dl className="crm-metrics">

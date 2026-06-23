@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { listQuotations, type Quotation } from "../../api/sales";
+import { listQuotations, getQuotation, type Quotation } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -11,13 +14,14 @@ import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { SalesNav } from "./SalesNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
 
 const QUOTATION_STATUSES = ["draft", "submitted", "approved", "rejected", "converted", "cancelled"] as const;
 
 export function QuotationsPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listQuotations(), [], "sales:quotations");
+  const { data, loading, error, reload } = useAsync(() => listQuotations(), [], "sales:quotations");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -50,6 +54,13 @@ export function QuotationsPage() {
     [filtered, tab],
   );
 
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Quotation>({
+    items: visible ?? [],
+    onOpen: (q) => navigate(`/sales/quotations/${q.id}`),
+  });
+
   return (
     <section className="sales-page">
       <SalesNav />
@@ -61,16 +72,9 @@ export function QuotationsPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("sales.quotations.empty")}
@@ -105,10 +109,17 @@ export function QuotationsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((q) => (
-                <tr key={q.id}>
+              {visible.map((q, i) => (
+                <tr key={q.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
-                    <Link to={`/sales/quotations/${q.id}`} className="latin">{q.number}</Link>
+                    <Link
+                      to={`/sales/quotations/${q.id}`}
+                      className="latin"
+                      onMouseEnter={() => prefetch(`sales:quotation:${q.id}`, () => getQuotation(q.id))}
+                      onFocus={() => prefetch(`sales:quotation:${q.id}`, () => getQuotation(q.id))}
+                    >
+                      {q.number}
+                    </Link>
                   </td>
                   <td>{q.customer_name}</td>
                   <td className="latin muted">{q.quote_date}</td>

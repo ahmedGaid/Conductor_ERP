@@ -1,0 +1,111 @@
+/*
+ * Toast stack — fixed to the block-end / inline-end corner (RTL-aware via logical
+ * properties). The region ignores pointer events so it never blocks the page; each
+ * toast re-enables them. All colour/spacing/motion comes from tokens.
+ */
+.toaster {
+  position: fixed;
+  inset-block-end: var(--space-5);
+  inset-inline-end: var(--space-5);
+  z-index: 200; /* above the help drawer (80); below the native top-layer command palette */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  inline-size: min(22rem, calc(100vw - var(--space-6)));
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+  animation: toast-in var(--dur-slow) var(--ease-out);
+}
+
+/* A small leading dot carries the variant — colour for meaning, kept quiet. */
+.toast__dot {
+  flex-shrink: 0;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-text-subtle);
+}
+.toast--success .toast__dot {
+  background: var(--color-success);
+}
+.toast--error .toast__dot {
+  background: var(--color-danger);
+}
+.toast--info .toast__dot {
+  background: var(--color-accent);
+}
+
+.toast__msg {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.toast__action {
+  flex-shrink: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.toast__action:hover {
+  background: var(--color-surface-hover);
+}
+
+.toast__close {
+  flex-shrink: 0;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  display: grid;
+  place-items: center;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.toast__close:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.toast__action:focus-visible,
+.toast__close:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-3));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

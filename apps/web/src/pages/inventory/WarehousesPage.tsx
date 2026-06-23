@@ -3,16 +3,21 @@ import { useTranslation } from "react-i18next";
 
 import { createWarehouse, listWarehouses, type Warehouse } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 export function WarehousesPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listWarehouses, [], "inventory:warehouses");
+  const toast = useToast();
+  const { data, loading, error, reload, mutate } = useAsync(listWarehouses, [], "inventory:warehouses");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Warehouse>[]>(
@@ -29,23 +34,24 @@ export function WarehousesPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  // Optimistic create: show the new warehouse row instantly and clear the form for the next entry;
+  // the server row replaces the placeholder on settle, or it rolls back + toasts.
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setFormError(null);
-    try {
-      await createWarehouse({ code, name });
-      setCode("");
-      setName("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    const c = code.trim();
+    const n = name.trim();
+    if (!c || !n) return;
+    void optimisticCreate<Warehouse>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, code: c, name: n }) as Warehouse,
+      request: () => createWarehouse({ code: c, name: n }),
+      toast,
+      success: t("inventory.toast.warehouseCreated"),
+    });
+    setCode("");
+    setName("");
   }
 
   return (
@@ -61,23 +67,15 @@ export function WarehousesPage() {
           <span>{t("inventory.warehouse.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
-        <button className="btn btn--primary" type="submit" disabled={busy}>
+        <button className="btn btn--primary" type="submit">
           {t("inventory.warehouse.add")}
         </button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("inventory.warehouse.empty")} hint={t("inventory.warehouse.emptyHint")} />

@@ -2,14 +2,19 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { createStockCount, listStockCounts, listWarehouses, type CountStatus } from "../../api/inventory";
+import { createStockCount, getStockCount, listStockCounts, listWarehouses, type CountStatus } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useToast } from "../../app/ToastContext";
+import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { InventoryNav } from "./InventoryNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 function today(): string {
@@ -21,6 +26,7 @@ type StockCount = Awaited<ReturnType<typeof listStockCounts>>[number];
 
 export function StockCountsPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(listStockCounts, [], "inventory:counts");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -55,6 +61,12 @@ export function StockCountsPage() {
     [filtered, tab],
   );
 
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const { active } = useListKeyboardNav<StockCount>({
+    items: visible ?? [],
+    onOpen: (c) => navigate(`/inventory/counts/${c.id}`),
+  });
+
   const [warehouse, setWarehouse] = useState("");
   const [countDate, setCountDate] = useState(today());
   const [busy, setBusy] = useState(false);
@@ -71,9 +83,10 @@ export function StockCountsPage() {
     try {
       const count = await createStockCount({ warehouse_code: warehouse, count_date: countDate });
       reload();
+      toast.show(t("inventory.toast.countStarted"), "success");
       navigate(`/inventory/counts/${count.id}`);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -105,14 +118,9 @@ export function StockCountsPage() {
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("inventory.counts.empty")} hint={t("common.emptyHint")} />
@@ -149,10 +157,17 @@ export function StockCountsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((c) => (
-                <tr key={c.id}>
+              {visible.map((c, i) => (
+                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
-                    <Link className="inv-link" to={`/inventory/counts/${c.id}`}><Bdi>{c.warehouse_code}</Bdi></Link>
+                    <Link
+                      className="inv-link"
+                      to={`/inventory/counts/${c.id}`}
+                      onMouseEnter={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
+                      onFocus={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
+                    >
+                      <Bdi>{c.warehouse_code}</Bdi>
+                    </Link>
                   </td>
                   <td><Bdi>{c.count_date}</Bdi></td>
                   <td className="inv-table__num"><Bdi>{c.line_count}</Bdi></td>

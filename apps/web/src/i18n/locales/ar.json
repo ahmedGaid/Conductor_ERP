@@ -45,6 +45,23 @@
     "notifications": "الإشعارات",
     "help": "المساعدة"
   },
+  "shortcuts": {
+    "title": "اختصارات لوحة المفاتيح",
+    "then": "ثم",
+    "general": "عام",
+    "navigation": "التنقّل",
+    "lists": "القوائم",
+    "forms": "النماذج",
+    "palette": "لوحة الأوامر",
+    "search": "بحث",
+    "create": "إنشاء…",
+    "help": "عرض دليل الاختصارات",
+    "listDown": "الصف التالي",
+    "listUp": "الصف السابق",
+    "listOpen": "فتح الصف",
+    "formSubmit": "إرسال النموذج",
+    "formCancel": "إلغاء"
+  },
   "command": {
     "placeholder": "ابحث في الصفحات والإجراءات…",
     "empty": "لا نتائج لـ",
@@ -96,8 +113,8 @@
     "attention": {
       "title": "يحتاج انتباهك اليوم",
       "allClear": "كل شيء على ما يرام — لا يوجد ما يحتاج انتباهك الآن.",
-      "salesApprovals": "{{count}} أوامر بيع بانتظار الاعتماد",
-      "poApprovals": "{{count}} أوامر شراء بانتظار الاعتماد",
+      "salesApprovals": "{{count}} أوامر بيع بانتظار الموافقة",
+      "poApprovals": "{{count}} أوامر شراء بانتظار الموافقة",
       "receivables": "{{amount}} بانتظار التحصيل عبر {{count}} فواتير",
       "payables": "{{amount}} فواتير موردين مستحقة السداد عبر {{count}} أوامر",
       "breachedTickets": "{{count}} تذاكر دعم تجاوزت اتفاقية مستوى الخدمة",
@@ -179,6 +196,10 @@
     "ordering": "الترتيب"
   },
   "instance": {
+    "toast": {
+      "approved": "تمت الموافقة",
+      "rejected": "تم الرفض"
+    },
     "openWorkflow": "فتح المسار",
     "awaitingDecision": "بانتظار قرار عند العقدة: {{node}}",
     "approve": "موافقة",
@@ -190,6 +211,19 @@
     "output": "المخرجات"
   },
   "accounting": {
+    "toast": {
+      "assetDisposed": "تم استبعاد الأصل",
+      "reconciled": "تمت تسوية الكشف",
+      "autoMatched": "اكتملت المطابقة التلقائية",
+      "adjustmentPosted": "تم ترحيل التسوية",
+      "reportDeleted": "تم حذف التقرير",
+      "costCenterCreated": "تمت إضافة مركز التكلفة",
+      "budgetCreated": "تمت إضافة الموازنة",
+      "journalPosted": "تم ترحيل القيد",
+      "bankStatementCreated": "تم إنشاء الكشف",
+      "reportSaved": "تم حفظ التقرير",
+      "budgetLineSet": "تم تعيين بند الموازنة"
+    },
     "tabs": {
       "chart": "دليل الحسابات",
       "journals": "القيود",
@@ -397,6 +431,12 @@
     }
   },
   "inventory": {
+    "toast": {
+      "countPosted": "تم ترحيل الجرد",
+      "countStarted": "تم بدء الجرد",
+      "warehouseCreated": "تمت إضافة المخزن",
+      "itemCreated": "تمت إضافة الصنف"
+    },
     "tabs": {
       "stockOnHand": "الأرصدة",
       "items": "الأصناف",
@@ -422,8 +462,8 @@
       "code": "رمز المخزن",
       "name": "اسم المخزن",
       "add": "إضافة مخزن",
-      "empty": "لا توجد مستودعات بعد.",
-      "emptyHint": "أضف أول مستودع باستخدام النموذج أعلاه."
+      "empty": "لا توجد مخازن بعد.",
+      "emptyHint": "أضف أول مخزن باستخدام النموذج أعلاه."
     },
     "onHand": {
       "quantity": "الكمية",
@@ -486,6 +526,20 @@
     }
   },
   "sales": {
+    "toast": {
+      "customerCreated": "تمت إضافة العميل",
+      "approved": "تمت الموافقة على الأمر",
+      "confirmed": "تم تأكيد الأمر",
+      "delivered": "تم تسليم الأمر",
+      "invoiced": "تم إصدار الفاتورة",
+      "paid": "تم تسجيل الدفعة",
+      "returned": "تم تسجيل المرتجع",
+      "quoteSubmitted": "تم إرسال عرض السعر",
+      "quoteApproved": "تمت الموافقة على عرض السعر",
+      "quoteRejected": "تم رفض عرض السعر",
+      "orderCreated": "تم إنشاء الطلب",
+      "quotationCreated": "تم إنشاء عرض السعر"
+    },
     "tabs": {
       "orders": "الطلبات",
       "newOrder": "طلب جديد",
@@ -505,7 +559,7 @@
     },
     "statusExplain": {
       "draft": "مسودة — اعتمدها للمتابعة في الأمر.",
-      "awaitingApproval": "بانتظار اعتماد المدير قبل أن يمكن تأكيده.",
+      "awaitingApproval": "بانتظار موافقة المدير قبل أن يمكن تأكيده.",
       "confirmed": "مؤكد — قم بتسليم البضاعة إلى العميل.",
       "partially_delivered": "تم التسليم جزئياً — سلّم باقي الأصناف للمتابعة.",
       "delivered": "تم التسليم — أصدر الفاتورة لمطالبة العميل.",
@@ -558,23 +612,23 @@
       "return": "تسجيل مرتجع",
       "delivered": "مُسلَّم",
       "returnedQty": "مُرتجع",
-      "approve": "اعتماد",
-      "approval": "الاعتماد",
+      "approve": "موافقة",
+      "approval": "الموافقة",
       "approved": "مُعتمَد",
-      "pendingApproval": "بانتظار الاعتماد",
+      "pendingApproval": "بانتظار الموافقة",
       "vat": "ضريبة القيمة المضافة"
     },
     "quotations": {
       "number": "رقم العرض",
       "empty": "لا توجد عروض أسعار بعد.",
       "create": "إنشاء عرض سعر",
-      "approval": "الاعتماد",
-      "needsApproval": "يحتاج اعتماد",
-      "autoApprove": "اعتماد تلقائي",
+      "approval": "الموافقة",
+      "needsApproval": "يحتاج موافقة",
+      "autoApprove": "موافقة تلقائية",
       "convertedTo": "حُوِّل إلى",
       "rejectedReason": "سبب الرفض",
-      "submit": "إرسال للاعتماد",
-      "approve": "اعتماد",
+      "submit": "إرسال للموافقة",
+      "approve": "موافقة",
       "reject": "رفض",
       "convert": "تحويل إلى طلب"
     },
@@ -607,7 +661,7 @@
     },
     "statusExplain": {
       "draft": "مسودة — اعتمدها لإرسال الأمر إلى المورد.",
-      "awaitingApproval": "بانتظار اعتماد المدير قبل أن يمكن تأكيده.",
+      "awaitingApproval": "بانتظار موافقة المدير قبل أن يمكن تأكيده.",
       "confirmed": "مؤكد — استلم البضاعة عند وصولها.",
       "partially_received": "تم الاستلام جزئياً — استلم باقي الأصناف للمتابعة.",
       "received": "تم الاستلام — سجّل فاتورة المورد.",
@@ -652,23 +706,23 @@
       "receiveRemaining": "استلام المتبقي",
       "return": "تسجيل مرتجع",
       "returnedQty": "مُرتجع",
-      "approve": "اعتماد",
-      "approval": "الاعتماد",
+      "approve": "موافقة",
+      "approval": "الموافقة",
       "approved": "مُعتمَد",
-      "pendingApproval": "بانتظار الاعتماد",
+      "pendingApproval": "بانتظار الموافقة",
       "vat": "ضريبة القيمة المضافة"
     },
     "requests": {
       "number": "رقم الطلب",
       "empty": "لا توجد طلبات شراء بعد.",
       "create": "إنشاء طلب",
-      "approval": "الاعتماد",
-      "needsApproval": "يحتاج اعتماد",
-      "autoApprove": "اعتماد تلقائي",
+      "approval": "الموافقة",
+      "needsApproval": "يحتاج موافقة",
+      "autoApprove": "موافقة تلقائية",
       "convertedTo": "حُوِّل إلى",
       "rejectedReason": "سبب الرفض",
-      "submit": "إرسال للاعتماد",
-      "approve": "اعتماد",
+      "submit": "إرسال للموافقة",
+      "approve": "موافقة",
       "reject": "رفض",
       "convert": "تحويل إلى أمر شراء"
     },
@@ -679,9 +733,41 @@
       "rejected": "مرفوض",
       "converted": "مُحوَّل",
       "cancelled": "ملغي"
+    },
+    "toast": {
+      "approved": "تمت الموافقة على أمر الشراء",
+      "confirmed": "تم تأكيد أمر الشراء",
+      "received": "تم استلام البضائع",
+      "billed": "تم تسجيل الفاتورة",
+      "paid": "تم تسجيل الدفعة",
+      "returned": "تم تسجيل المرتجع",
+      "reqSubmitted": "تم إرسال طلب الشراء",
+      "reqApproved": "تمت الموافقة على طلب الشراء",
+      "reqRejected": "تم رفض طلب الشراء",
+      "supplierCreated": "تمت إضافة المورد",
+      "poCreated": "تم إنشاء أمر الشراء",
+      "prCreated": "تم إنشاء طلب الشراء"
     }
   },
   "crm": {
+    "toast": {
+      "leadCreated": "تمت إضافة العميل المحتمل",
+      "ticketCreated": "تم فتح التذكرة",
+      "campaignCreated": "تمت إضافة الحملة",
+      "leadQualified": "تم تأهيل العميل المحتمل",
+      "leadConverted": "تم تحويل العميل المحتمل",
+      "ticketStarted": "تم بدء التذكرة",
+      "ticketResolved": "تم حل التذكرة",
+      "ticketClosed": "تم إغلاق التذكرة",
+      "ticketEscalated": "تم تصعيد التذكرة",
+      "escalationsRun": "تم تصعيد {{count}} تذكرة",
+      "stageAdvanced": "تم الانتقال إلى {{stage}}",
+      "oppWon": "تم ربح الفرصة",
+      "oppLost": "تم خسارة الفرصة",
+      "campaignActivated": "تم تفعيل الحملة",
+      "campaignCompleted": "تم إكمال الحملة",
+      "opportunityCreated": "تم إنشاء الفرصة"
+    },
     "tabs": {
       "pipeline": "خط الفرص",
       "leads": "العملاء المحتملون",
@@ -812,6 +898,11 @@
   },
   "common": {
     "loading": "جارٍ التحميل…",
+    "retry": "إعادة المحاولة",
+    "error": {
+      "title": "تعذّر تحميل البيانات",
+      "hint": "حدث خطأ من جانبنا. تحقّق من اتصالك وحاول مرة أخرى."
+    },
     "comingSoon": "قريبًا",
     "delete": "حذف",
     "yes": "نعم",
@@ -826,6 +917,10 @@
     "off": "مُعطّل",
     "all": "الكل",
     "actions": "إجراءات"
+  },
+  "toast": {
+    "region": "الإشعارات",
+    "dismiss": "إغلاق"
   },
   "filter": {
     "add": "تصفية",
@@ -850,6 +945,9 @@
     }
   },
   "einvoice": {
+    "toast": {
+      "submitted": "تم إرسال الفاتورة"
+    },
     "tabs": {
       "invoices": "الفواتير الإلكترونية"
     },
@@ -1119,6 +1217,7 @@
       "title": "الأدوار",
       "intro": "حدّد ما يمكن لكل دور رؤيته وفعله عبر النظام.",
       "create": "دور جديد",
+      "created": "تم إنشاء الدور",
       "name": "اسم الدور",
       "copyFrom": "ابدأ من",
       "copyBlank": "دور فارغ",
@@ -1135,14 +1234,14 @@
       "delete": "حذف الدور",
       "deleteConfirm": "حذف هذا الدور؟ يجب إعادة إسناد أعضائه أولاً.",
       "adminNote": "مدير النظام يتجاوز كل فحوصات الصلاحيات وله دائماً وصول كامل — صلاحياته للقراءة فقط.",
-      "protectedNote": "دور مدمج — يمكنك تعديل صلاحياته وحدود الاعتماد هنا؛ لكنه غير قابل للحذف.",
+      "protectedNote": "دور مدمج — يمكنك تعديل صلاحياته وحدود الموافقة هنا؛ لكنه غير قابل للحذف.",
       "saved": "تم الحفظ",
       "permissions": "الصلاحيات",
       "permissionsHint": "امنح الإجراءات لكل عنصر، ثم اختر كم من البيانات يطالها كل عنصر.",
       "entity": "العنصر",
       "scopeLabel": "نطاق البيانات",
-      "approvalLimits": "حدود الاعتماد",
-      "approvalLimitsHint": "حدّد سقف حجم المستند الذي يمكن لهذا الدور اعتماده، لكل نوع مستند.",
+      "approvalLimits": "حدود الموافقة",
+      "approvalLimitsHint": "حدّد سقف حجم المستند الذي يمكن لهذا الدور الموافقة عليه، لكل نوع مستند.",
       "documentType": "نوع المستند",
       "currentLimit": "الحد الحالي",
       "setLimit": "ضبط الحد",
@@ -1155,7 +1254,7 @@
         "create": "إنشاء",
         "edit": "تعديل",
         "delete": "حذف",
-        "approve": "اعتماد"
+        "approve": "موافقة"
       },
       "mod": {
         "accounting": "المحاسبة",

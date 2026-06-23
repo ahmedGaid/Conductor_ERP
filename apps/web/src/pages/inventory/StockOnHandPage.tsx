@@ -4,18 +4,20 @@ import { Link } from "react-router-dom";
 
 import { stockOnHand, type StockOnHand } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 type StockRow = StockOnHand["rows"][number];
 
 export function StockOnHandPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(stockOnHand, [], "inventory:stock-on-hand");
+  const { data, loading, error, reload } = useAsync(stockOnHand, [], "inventory:stock-on-hand");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<StockRow>[]>(
@@ -44,16 +46,9 @@ export function StockOnHandPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <div className="card inv-table-wrap">

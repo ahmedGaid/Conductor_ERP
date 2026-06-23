@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -8,45 +7,54 @@ import {
   getRequest,
   rejectRequest,
   submitRequest,
+  type PRStatus,
   type PurchaseRequest,
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Disclosure } from "../../components/Disclosure";
 import { PurchasingNav } from "./PurchasingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./purchasing.css";
 
 export function PurchaseRequestDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, reload } = useAsync<PurchaseRequest>(() => getRequest(id as string), [id]);
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { data, loading, error, reload, mutate } = useAsync<PurchaseRequest>(
+    () => getRequest(id as string),
+    [id],
+    `purchasing:request:${id}`,
+  );
 
-  async function run(fn: () => Promise<unknown>) {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic state transition: flip the status instantly, reconcile with the server's request,
+  // roll back + toast on failure.
+  function act(nextStatus: PRStatus, request: () => Promise<PurchaseRequest>, success: string) {
+    if (!data) return;
+    void runOptimistic<PurchaseRequest, PurchaseRequest>({
+      current: data,
+      mutate,
+      optimistic: (r) => ({ ...r, status: nextStatus }),
+      request,
+      settle: (_predicted, updated) => updated,
+      toast,
+      success,
+    });
   }
 
+  // Convert navigates away to the spawned order, so there's no view left to be optimistic about;
+  // just route on success and toast on failure.
   async function onConvert(r: PurchaseRequest) {
-    setBusy(true);
-    setActionError(null);
     try {
       const res = await convertRequest(r.id);
       navigate(`/purchasing/orders/${res.order_id}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-      setBusy(false);
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     }
   }
 
@@ -55,16 +63,9 @@ export function PurchaseRequestDetailPage() {
       <PurchasingNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <>
@@ -86,27 +87,35 @@ export function PurchaseRequestDetailPage() {
 
             <div className="pur-actions">
               {data.status === "draft" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => submitRequest(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act("submitted", () => submitRequest(data.id), t("purchasing.toast.reqSubmitted"))}
+                >
                   {t("purchasing.requests.submit")}
                 </button>
               )}
               {data.status === "submitted" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => approveRequest(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act("approved", () => approveRequest(data.id), t("purchasing.toast.reqApproved"))}
+                >
                   {t("purchasing.requests.approve")}
                 </button>
               )}
               {data.status === "approved" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => onConvert(data)}>
+                <button className="btn btn--primary" onClick={() => onConvert(data)}>
                   {t("purchasing.requests.convert")}
                 </button>
               )}
               {(data.status === "submitted" || data.status === "approved") && (
-                <button className="btn" disabled={busy} onClick={() => run(() => rejectRequest(data.id, ""))}>
+                <button
+                  className="btn"
+                  onClick={() => act("rejected", () => rejectRequest(data.id, ""), t("purchasing.toast.reqRejected"))}
+                >
                   {t("purchasing.requests.reject")}
                 </button>
               )}
             </div>
-            {actionError && <p className="error-text">{actionError}</p>}
 
             <Disclosure summary={t("common.moreDetails")}>
               <dl className="pur-meta">

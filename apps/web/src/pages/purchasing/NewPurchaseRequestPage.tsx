@@ -1,10 +1,12 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { createRequest, listSuppliers, type NewPOLine } from "../../api/purchasing";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useFormKeys } from "../../hooks/useFormKeys";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PurchasingNav } from "./PurchasingNav";
@@ -20,6 +22,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_cost: "" 
 
 export function NewPurchaseRequestPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -30,6 +33,10 @@ export function NewPurchaseRequestPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ⌘/Ctrl+Enter submits, Esc cancels back to the purchase-requests list.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef, onCancel: () => navigate("/purchasing/requests") });
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -65,9 +72,10 @@ export function NewPurchaseRequestPage() {
     setBusy(true);
     try {
       const req = await createRequest({ supplier_code: supplier, warehouse_code: warehouse, lines: payloadLines });
+      toast.show(t("purchasing.toast.prCreated"), "success");
       navigate(`/purchasing/requests/${req.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -79,7 +87,7 @@ export function NewPurchaseRequestPage() {
     <section className="pur-page">
       <PurchasingNav />
 
-      <form className="card pur-page" onSubmit={onSubmit}>
+      <form ref={formRef} className="card pur-page" onSubmit={onSubmit}>
         <div className="pur-toolbar">
           <label className="pur-field">
             <span>{t("purchasing.orders.supplier")}</span>

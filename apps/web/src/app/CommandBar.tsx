@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
 import { useHelp } from "../help/HelpContext";
+import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
 import { Tooltip } from "../components/Tooltip";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeToggle } from "./ThemeToggle";
 import { CommandPalette } from "./CommandPalette";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 import { NavIcon } from "./icons";
 import "./CommandBar.css";
 
@@ -17,18 +19,13 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
   const { openHelp } = useHelp();
   const navigate = useNavigate();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
-  // ⌘K / Ctrl+K opens the command palette from anywhere in the app.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
-        e.preventDefault();
-        setPaletteOpen(true);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  // App-wide keyboard layer: ⌘K / `/` / `c` open the palette, `g`+key navigates,
+  // `?` opens the cheat-sheet. (Stable callbacks so the listener isn't re-bound.)
+  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const openShortcuts = useCallback(() => setShortcutsOpen(true), []);
+  useGlobalShortcuts({ openPalette, openShortcuts });
 
   return (
     <header className="commandbar">
@@ -90,6 +87,17 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
               <NavIcon name="notifications" />
             </button>
           </Tooltip>
+          <Tooltip label={t("shortcuts.title")} placement="bottom">
+            <button
+              type="button"
+              className="btn btn--ghost btn--icon"
+              aria-label={t("shortcuts.title")}
+              aria-keyshortcuts="?"
+              onClick={() => setShortcutsOpen(true)}
+            >
+              <span aria-hidden="true">⌨</span>
+            </button>
+          </Tooltip>
           <Tooltip label={t("shell.help")} placement="bottom">
             <button
               type="button"
@@ -107,6 +115,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </header>
   );
 }

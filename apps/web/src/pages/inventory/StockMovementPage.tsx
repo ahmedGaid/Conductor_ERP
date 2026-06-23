@@ -11,6 +11,7 @@ import {
   type MovementType,
 } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { InventoryNav } from "./InventoryNav";
@@ -24,6 +25,7 @@ function today(): string {
 
 export function StockMovementPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { data: items } = useAsync(listItems, [], "inventory:items");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: movements, reload } = useAsync(() => listMovements(), [], "inventory:movements");
@@ -38,12 +40,10 @@ export function StockMovementPage() {
   const [expiry, setExpiry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setOk(null);
     if (!itemSku || !warehouse || !quantity) {
       setError(t("inventory.movement.fillRequired"));
       return;
@@ -60,10 +60,10 @@ export function StockMovementPage() {
           item_sku: itemSku, warehouse_code: warehouse, quantity, unit_cost: cost, date: today(),
           batch_no: batchNo || undefined, expiry_date: expiry || null,
         });
-        setOk(t("inventory.movement.posted", { ref: mv.journal_number || mv.id.slice(0, 8) }));
+        toast.show(t("inventory.movement.posted", { ref: mv.journal_number || mv.id.slice(0, 8) }), "success");
       } else if (mode === "issue") {
         const mv = await issueStock({ item_sku: itemSku, warehouse_code: warehouse, quantity, date: today() });
-        setOk(t("inventory.movement.posted", { ref: mv.journal_number || mv.id.slice(0, 8) }));
+        toast.show(t("inventory.movement.posted", { ref: mv.journal_number || mv.id.slice(0, 8) }), "success");
       } else {
         if (!dest) {
           setError(t("inventory.movement.fillRequired"));
@@ -72,7 +72,7 @@ export function StockMovementPage() {
         const mv = await transferStock({
           item_sku: itemSku, source_code: warehouse, dest_code: dest, quantity, date: today(),
         });
-        setOk(t("inventory.movement.posted", { ref: mv.id.slice(0, 8) }));
+        toast.show(t("inventory.movement.posted", { ref: mv.id.slice(0, 8) }), "success");
       }
       setQuantity("");
       setUnitCost("");
@@ -80,7 +80,7 @@ export function StockMovementPage() {
       setExpiry("");
       reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -168,7 +168,6 @@ export function StockMovementPage() {
             {t("inventory.movement.post")}
           </button>
         </div>
-        {ok && <p className="inv-ok">{ok}</p>}
         {error && <p className="error-text">{error}</p>}
       </form>
 

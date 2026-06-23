@@ -4,15 +4,18 @@ import { useNavigate } from "react-router-dom";
 
 import { createRole, listRoles, type RoleRow } from "../../api/roles";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 export function RolesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: roles, loading, error } = useAsync(listRoles, [], "admin:roles");
+  const { data: roles, loading, error, reload } = useAsync(listRoles, [], "admin:roles");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<RoleRow>[]>(
@@ -46,14 +49,9 @@ export function RolesPage() {
       <NewRoleForm roles={roles ?? []} onCreated={(name) => navigate(`/admin/roles/${encodeURIComponent(name)}`)} />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {roles && roles.length === 0 && (
         <EmptyState title={t("admin.roles.empty")} hint={t("admin.roles.emptyHint")} />
       )}
@@ -103,21 +101,21 @@ export function RolesPage() {
 
 function NewRoleForm({ roles, onCreated }: { roles: RoleRow[]; onCreated: (name: string) => void }) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [copyFrom, setCopyFrom] = useState("");
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setErr(null);
     try {
       const created = await createRole(name.trim(), copyFrom || undefined);
+      toast.show(t("admin.roles.created"), "success");
       onCreated(created.name);
     } catch (e2) {
-      setErr(e2 instanceof Error ? e2.message : String(e2));
+      toast.show(e2 instanceof Error ? e2.message : String(e2), "error");
     } finally {
       setBusy(false);
     }
@@ -146,7 +144,6 @@ function NewRoleForm({ roles, onCreated }: { roles: RoleRow[]; onCreated: (name:
           </select>
         </label>
       </div>
-      {err && <p className="error-text">{err}</p>}
       <div className="admin-invite__foot">
         <button type="button" className="btn" onClick={() => setOpen(false)}>{t("common.cancel")}</button>
         <button type="submit" className="btn btn--primary" disabled={busy}>{t("admin.roles.create")}</button>

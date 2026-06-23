@@ -2,40 +2,47 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
-import { disposeAsset, getAsset } from "../../api/accounting";
+import { disposeAsset, getAsset, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function FixedAssetDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { code = "" } = useParams();
-  const { data: asset, loading, error, reload } = useAsync(() => getAsset(code), [code]);
+  const { data: asset, loading, error, reload, mutate } = useAsync<FixedAsset>(() => getAsset(code), [code], `accounting:asset:${code}`);
 
   const [disposeDate, setDisposeDate] = useState(new Date().toISOString().slice(0, 10));
   const [proceeds, setProceeds] = useState("0");
-  const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  async function onDispose(e: FormEvent) {
+  // Optimistic disposal: flip the asset to "disposed" so the badge swaps and the form hides at once,
+  // then let the server's asset reconcile the gain/loss and journal number. Failure rolls back + toasts.
+  function onDispose(e: FormEvent) {
     e.preventDefault();
     const proceedsMinor = parseToMinor(proceeds);
     if (proceedsMinor === null || proceedsMinor < 0) {
       setFormError(t("accounting.assets.invalidInput"));
       return;
     }
-    setBusy(true);
     setFormError(null);
-    try {
-      await disposeAsset(code, { disposed_date: disposeDate, proceeds_minor: proceedsMinor });
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    if (!asset) return;
+    void runOptimistic<FixedAsset, FixedAsset>({
+      current: asset,
+      mutate,
+      optimistic: (a) => ({ ...a, status: "disposed" }),
+      request: () => disposeAsset(code, { disposed_date: disposeDate, proceeds_minor: proceedsMinor }),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: t("accounting.toast.assetDisposed"),
+    });
   }
 
   return (
@@ -45,14 +52,9 @@ export function FixedAssetDetailPage() {
       <Link className="acct-link" to="/accounting/assets">← {t("accounting.assets.backToList")}</Link>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {asset && (
         <>
@@ -105,7 +107,7 @@ export function FixedAssetDetailPage() {
                 <span>{t("accounting.assets.proceeds")}</span>
                 <input className="latin" inputMode="decimal" value={proceeds} onChange={(e) => setProceeds(e.target.value)} required />
               </label>
-              <button className="btn btn--danger" type="submit" disabled={busy}>
+              <button className="btn btn--danger" type="submit">
                 {t("accounting.assets.dispose")}
               </button>
               {formError && <p className="error-text">{formError}</p>}

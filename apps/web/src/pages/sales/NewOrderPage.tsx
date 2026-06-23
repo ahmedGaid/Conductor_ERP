@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -6,6 +6,8 @@ import { createOrder, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useFormKeys } from "../../hooks/useFormKeys";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
@@ -22,6 +24,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: ""
 
 export function NewOrderPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -34,6 +37,10 @@ export function NewOrderPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ⌘/Ctrl+Enter submits, Esc cancels back to the orders list.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef, onCancel: () => navigate("/sales") });
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -77,9 +84,10 @@ export function NewOrderPage() {
     setBusy(true);
     try {
       const order = await createOrder({ customer_code: customer, warehouse_code: warehouse, tax_code: taxCode, lines: payloadLines });
+      toast.show(t("sales.toast.orderCreated"), "success");
       navigate(`/sales/orders/${order.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -91,7 +99,7 @@ export function NewOrderPage() {
     <section className="sales-page">
       <SalesNav />
 
-      <form className="card sales-page" onSubmit={onSubmit}>
+      <form ref={formRef} className="card sales-page" onSubmit={onSubmit}>
         <div className="sales-toolbar">
           <label className="sales-field">
             <span>{t("sales.orders.customer")}</span>

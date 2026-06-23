@@ -1,9 +1,13 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { acquireAsset, listAssets, runDepreciation, type AssetStatus, type FixedAsset } from "../../api/accounting";
+import { acquireAsset, getAsset, listAssets, runDepreciation, type AssetStatus, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useToast } from "../../app/ToastContext";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -12,6 +16,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 const ASSET_STATUSES: AssetStatus[] = ["active", "disposed"];
@@ -26,6 +31,7 @@ function currentPeriod(): string {
 
 export function FixedAssetsPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { data, loading, error, reload } = useAsync(listAssets, [], "accounting:assets");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
@@ -58,6 +64,13 @@ export function FixedAssetsPage() {
     [filtered, tab],
   );
 
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<FixedAsset>({
+    items: visible ?? [],
+    onOpen: (a) => navigate(`/accounting/assets/${encodeURIComponent(a.code)}`),
+  });
+
   // New-asset form
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -71,7 +84,6 @@ export function FixedAssetsPage() {
   // Depreciation run
   const [runPeriod, setRunPeriod] = useState(currentPeriod());
   const [runDate, setRunDate] = useState(today());
-  const [runMsg, setRunMsg] = useState<string | null>(null);
   const [runBusy, setRunBusy] = useState(false);
 
   async function onAcquire(e: FormEvent) {
@@ -106,16 +118,17 @@ export function FixedAssetsPage() {
     }
   }
 
+  // A depreciation run touches an unknown set of assets server-side, so it can't be predicted; run
+  // it, report the count and total posted via toast, and refresh the register.
   async function onRunDepreciation(e: FormEvent) {
     e.preventDefault();
     setRunBusy(true);
-    setRunMsg(null);
     try {
       const res = await runDepreciation(runPeriod, runDate);
-      setRunMsg(t("accounting.assets.runDone", { count: res.count, total: formatMinor(res.total_minor) }));
       reload();
+      toast.show(t("accounting.assets.runDone", { count: res.count, total: formatMinor(res.total_minor) }), "success");
     } catch (err) {
-      setRunMsg(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setRunBusy(false);
     }
@@ -168,21 +181,14 @@ export function FixedAssetsPage() {
           <button className="btn" type="submit" disabled={runBusy}>
             {t("accounting.assets.runDepreciation")}
           </button>
-          {runMsg && <span className="acct-asset-runmsg">{runMsg}</span>}
         </form>
       </div>
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={3} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.assets.empty")} hint={t("common.emptyHint")} />
@@ -221,10 +227,15 @@ export function FixedAssetsPage() {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((a) => (
-                  <tr key={a.id}>
+                {visible.map((a, i) => (
+                  <tr key={a.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                     <td>
-                      <Link className="acct-link" to={`/accounting/assets/${encodeURIComponent(a.code)}`}>
+                      <Link
+                        className="acct-link"
+                        to={`/accounting/assets/${encodeURIComponent(a.code)}`}
+                        onMouseEnter={() => prefetch(`accounting:asset:${a.code}`, () => getAsset(a.code))}
+                        onFocus={() => prefetch(`accounting:asset:${a.code}`, () => getAsset(a.code))}
+                      >
                         <Bdi>{a.code}</Bdi>
                       </Link>
                     </td>

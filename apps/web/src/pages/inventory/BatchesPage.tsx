@@ -3,18 +3,20 @@ import { useTranslation } from "react-i18next";
 
 import { listBatches } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 type Batch = Awaited<ReturnType<typeof listBatches>>[number];
 
 export function BatchesPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(listBatches, [], "inventory:batches");
+  const { data, loading, error, reload } = useAsync(listBatches, [], "inventory:batches");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Batch>[]>(
@@ -35,14 +37,9 @@ export function BatchesPage() {
       <InventoryNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("inventory.batches.empty")} hint={t("inventory.batches.hint")} />

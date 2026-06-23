@@ -2,16 +2,22 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { bulkUsers, createUser, getOrgUnits, listUsers } from "../../api/users";
+import { bulkUsers, createUser, getOrgUnits, getUser, listUsers } from "../../api/users";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { prefetch } from "../../lib/prefetch";
+import { normalizeSearch } from "../../lib/arabicSearch";
 import { EmptyState } from "../../components/EmptyState";
 import { UserStatusPill } from "./UserStatusPill";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
 
 export function UsersPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: users, loading, error, reload } = useAsync(() => listUsers(), [], "admin:users");
   const { data: org } = useAsync(getOrgUnits, [], "admin:orgunits");
@@ -24,9 +30,9 @@ export function UsersPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = normalizeSearch(search.trim());
     return (users ?? []).filter((u) => {
-      if (term && !`${u.username} ${u.email} ${u.display_name}`.toLowerCase().includes(term)) return false;
+      if (term && !normalizeSearch(`${u.username} ${u.email} ${u.display_name}`).includes(term)) return false;
       if (role && u.role !== role) return false;
       if (status && u.status !== status) return false;
       if (department && u.department !== department) return false;
@@ -42,11 +48,17 @@ export function UsersPage() {
     });
   }
 
+  // A bulk action touches the selected set server-side and returns only a count, so it stays a
+  // round-trip: run it, clear the selection, refresh, and report the count via toast.
   async function runBulk(action: "suspend" | "activate" | "archive") {
-    const { affected } = await bulkUsers(action, [...selected]);
-    setNotice(t("admin.bulkDone", { count: affected }));
-    setSelected(new Set());
-    reload();
+    try {
+      const { affected } = await bulkUsers(action, [...selected]);
+      setSelected(new Set());
+      reload();
+      toast.show(t("admin.bulkDone", { count: affected }), "success");
+    } catch (err) {
+      toast.show(err instanceof Error ? err.message : String(err), "error");
+    }
   }
 
   return (
@@ -92,14 +104,9 @@ export function UsersPage() {
       )}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {users && filtered.length === 0 && <EmptyState title={t("admin.users.empty")} hint={t("admin.users.emptyHint")} />}
 
       {filtered.length > 0 && (
@@ -119,7 +126,12 @@ export function UsersPage() {
             </thead>
             <tbody>
               {filtered.map((u) => (
-                <tr key={u.id} className="admin-row" onClick={() => navigate(`/admin/users/${u.id}`)}>
+                <tr
+                  key={u.id}
+                  className="admin-row"
+                  onClick={() => navigate(`/admin/users/${u.id}`)}
+                  onMouseEnter={() => prefetch(`admin:user:${u.id}`, () => getUser(u.id))}
+                >
                   <td onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"

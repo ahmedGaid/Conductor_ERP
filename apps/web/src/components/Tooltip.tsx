@@ -1,5 +1,6 @@
 import {
   cloneElement,
+  Fragment,
   useCallback,
   useId,
   useRef,
@@ -8,6 +9,7 @@ import {
   type Ref,
 } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 
 import "./Tooltip.css";
 
@@ -26,6 +28,11 @@ interface TooltipProps {
   placement?: Placement;
   /** Hover dwell before showing, in ms. Default 500 (Linear-style, unobtrusive). */
   delay?: number;
+  /**
+   * Optional keyboard shortcut shown as kbd chips beside the label, e.g. ["G", "S"]
+   * renders “G then S”. Lets a control advertise its global shortcut on hover/focus.
+   */
+  shortcut?: string[];
   /** A single focusable element (button/link). It receives the hover/focus wiring. */
   children: ReactElement;
 }
@@ -54,7 +61,8 @@ function setRef<T>(ref: Ref<T> | undefined, value: T | null) {
  * Accessibility: the trigger is linked to the bubble with `aria-describedby`, and the tip also
  * appears on keyboard focus — not hover only — so it is reachable without a mouse.
  */
-export function Tooltip({ label, placement = "top", delay = 500, children }: TooltipProps) {
+export function Tooltip({ label, placement = "top", delay = 500, shortcut, children }: TooltipProps) {
+  const { t } = useTranslation();
   const id = useId();
   const triggerRef = useRef<HTMLElement | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -114,12 +122,22 @@ export function Tooltip({ label, placement = "top", delay = 500, children }: Too
           <span
             id={id}
             role="tooltip"
-            className={`tooltip tooltip--${coords.side}`}
+            className={`tooltip tooltip--${coords.side}${shortcut ? " tooltip--with-keys" : ""}`}
             // Viewport coords for position:fixed are inherently physical; the bubble is then
             // centred over the trigger by a direction-agnostic translate in CSS, so RTL/LTR match.
             style={{ left: coords.left, top: coords.top }}
           >
-            {label}
+            <span className="tooltip__label">{label}</span>
+            {shortcut && shortcut.length > 0 && (
+              <span className="tooltip__keys">
+                {shortcut.map((k, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && <span className="tooltip__then">{t("shortcuts.then")}</span>}
+                    <kbd className="tooltip__kbd latin">{k}</kbd>
+                  </Fragment>
+                ))}
+              </span>
+            )}
           </span>,
           document.body,
         )}

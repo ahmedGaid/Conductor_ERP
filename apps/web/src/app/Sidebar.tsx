@@ -26,6 +26,19 @@ const PRIMARY: NavItem[] = [
   { key: "workflows", to: "/workflows" },
 ];
 
+// The `g`-leader shortcut for each destination, mirrored from useGlobalShortcuts so
+// the sidebar advertises the exact keys that navigate there (shown in the hover tip).
+const NAV_SHORTCUT: Record<string, string[]> = {
+  dashboard: ["G", "D"],
+  sales: ["G", "S"],
+  purchasing: ["G", "P"],
+  inventory: ["G", "I"],
+  accounting: ["G", "A"],
+  einvoice: ["G", "E"],
+  crm: ["G", "C"],
+  workflows: ["G", "W"],
+};
+
 // Roadmap modules — shown to convey scope, enabled as each stage lands.
 const SOON: { key: string }[] = [{ key: "reports" }];
 
@@ -74,8 +87,9 @@ export function Sidebar() {
         <ul className="sidebar__list">
           {PRIMARY.map(({ key, to }) => (
             <li key={key}>
-              {withTip(
-                t(`nav.${key}`),
+              {/* Always tipped — even with the label visible — so the hover bubble can
+                  advertise the g-shortcut (and double as the label in the compact rail). */}
+              <Tooltip label={t(`nav.${key}`)} shortcut={NAV_SHORTCUT[key]} placement="inlineEnd">
                 <NavLink
                   to={to}
                   end={to === "/"}
@@ -87,8 +101,8 @@ export function Sidebar() {
                     <NavIcon name={key} />
                   </span>
                   <span>{t(`nav.${key}`)}</span>
-                </NavLink>,
-              )}
+                </NavLink>
+              </Tooltip>
             </li>
           ))}
         </ul>
@@ -173,7 +187,7 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <Tooltip label={t("settings.title")} placement={compact ? "inlineEnd" : "top"}>
+      <Tooltip label={t("settings.title")} shortcut={["G", ","]} placement={compact ? "inlineEnd" : "top"}>
         <NavLink
           to="/settings"
           className={({ isActive }) =>

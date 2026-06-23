@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import { generalLedger, listAccounts } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function GeneralLedgerPage() {
@@ -15,7 +17,7 @@ export function GeneralLedgerPage() {
   const postable = (accounts ?? []).filter((a) => a.is_postable);
   const [account, setAccount] = useState("");
 
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, reload } = useAsync(
     () => (account ? generalLedger(account) : Promise.resolve(null)),
     [account],
   );
@@ -44,16 +46,9 @@ export function GeneralLedgerPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {!account && <p className="muted">{t("accounting.report.pickAccount")}</p>}
 
       {data && account && <ExportButtons path={`/accounting/reports/general-ledger?account=${account}`} />}

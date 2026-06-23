@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import { incomeStatement, listCostCenters, listPeriods, type StatementLine } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function IncomeStatementPage() {
@@ -15,7 +17,7 @@ export function IncomeStatementPage() {
   const [costCenter, setCostCenter] = useState("");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
   const { data: costCenters } = useAsync(listCostCenters, [], "accounting:cost-centers");
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, reload } = useAsync(
     () => incomeStatement({ ...(period ? { period } : {}), ...(costCenter ? { cost_center: costCenter } : {}) }),
     [period, costCenter],
   );
@@ -51,16 +53,9 @@ export function IncomeStatementPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && <ExportButtons path={`/accounting/reports/income-statement${exportSuffix}`} />}
 

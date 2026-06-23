@@ -1,51 +1,48 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import { decideInstance, getInstance } from "../api/workflows";
 import type { InstanceDetail, NodeRun } from "../api/types";
 import { useAsync } from "../hooks/useAsync";
+import { ErrorState } from "../components/ErrorState";
+import { useToast } from "../app/ToastContext";
+import { runOptimistic } from "../lib/optimistic";
 import { StatusPill } from "../components/StatusPill";
 import { Bdi } from "../components/Bdi";
+import { ListSkeleton } from "../components/ListSkeleton";
 import "./ExecutionViewerPage.css";
 
 export function ExecutionViewerPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, reload } = useAsync<InstanceDetail>(
+  const { data, loading, error, reload, mutate } = useAsync<InstanceDetail>(
     () => getInstance(id as string),
     [id],
   );
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
 
-  async function decide(decision: "approve" | "reject") {
-    if (!id) return;
-    setBusy(true);
-    setActionError(null);
-    try {
-      await decideInstance(id, decision);
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic decision: leave "waiting" instantly (approve resumes → running, reject fails it) so the
+  // decision card dismisses, then settle with the server's instance — it carries the true final status
+  // and the new node runs. A failure rolls back to "waiting" and toasts.
+  function decide(decision: "approve" | "reject") {
+    if (!id || !data) return;
+    void runOptimistic<InstanceDetail, InstanceDetail>({
+      current: data,
+      mutate,
+      optimistic: (inst) => ({ ...inst, status: decision === "approve" ? "running" : "failed" }),
+      request: () => decideInstance(id, decision),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: decision === "approve" ? t("instance.toast.approved") : t("instance.toast.rejected"),
+    });
   }
 
   return (
     <section className="viewer">
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <>
@@ -69,7 +66,6 @@ export function ExecutionViewerPage() {
                   className="btn btn--primary btn--sm"
                   type="button"
                   onClick={() => decide("approve")}
-                  disabled={busy}
                 >
                   {t("instance.approve")}
                 </button>
@@ -77,7 +73,6 @@ export function ExecutionViewerPage() {
                   className="btn btn--danger btn--sm"
                   type="button"
                   onClick={() => decide("reject")}
-                  disabled={busy}
                 >
                   {t("instance.reject")}
                 </button>
@@ -86,7 +81,6 @@ export function ExecutionViewerPage() {
           )}
 
           {data.error && <p className="error-text">{data.error}</p>}
-          {actionError && <p className="error-text">{actionError}</p>}
 
           <h2>{t("instance.timeline")}</h2>
           <ol className="viewer__timeline">

@@ -1,9 +1,14 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { createCampaign, listCampaigns, type CampaignChannel } from "../../api/crm";
+import { createCampaign, getCampaign, listCampaigns, type CampaignChannel } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useToast } from "../../app/ToastContext";
+import { optimisticCreate } from "../../lib/optimistic";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -11,6 +16,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 const CHANNELS: CampaignChannel[] = ["email", "web", "call", "event", "social", "other"];
@@ -18,7 +24,8 @@ type Campaign = Awaited<ReturnType<typeof listCampaigns>>[number];
 
 export function CampaignsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listCampaigns, [], "crm:campaigns");
+  const toast = useToast();
+  const { data, loading, error, reload, mutate } = useAsync(listCampaigns, [], "crm:campaigns");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -50,33 +57,38 @@ export function CampaignsPage() {
     [filtered, tab],
   );
 
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Campaign>({
+    items: visible ?? [],
+    onOpen: (c) => navigate(`/crm/campaigns/${c.id}`),
+  });
+
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [cost, setCost] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  // Optimistic create: show the new campaign instantly and clear the form for the next entry. The row's
+  // metrics columns are optional-chained, so an unmetered placeholder reads as zeros until the server
+  // row settles in (or it rolls back + toasts on failure).
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
+    const c = code.trim();
+    const n = name.trim();
+    if (!c || !n) return;
     const costMinor = parseToMinor(cost || "0") ?? 0;
-    if (!code || !name) {
-      setFormError(t("crm.campaign.invalidInput"));
-      return;
-    }
-    setBusy(true);
-    setFormError(null);
-    try {
-      await createCampaign({ code, name, channel, cost_minor: costMinor });
-      setCode("");
-      setName("");
-      setCost("");
-      reload();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    void optimisticCreate<Campaign>({
+      current: data ?? [],
+      mutate,
+      placeholder: (id) => ({ id, code: c, name: n, channel, cost_minor: costMinor }) as Campaign,
+      request: () => createCampaign({ code: c, name: n, channel, cost_minor: costMinor }),
+      toast,
+      success: t("crm.toast.campaignCreated"),
+    });
+    setCode("");
+    setName("");
+    setCost("");
   }
 
   return (
@@ -104,19 +116,13 @@ export function CampaignsPage() {
           <span>{t("crm.campaign.cost")}</span>
           <input className="latin" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
         </label>
-        <button className="btn btn--primary" type="submit" disabled={busy}>{t("crm.campaign.add")}</button>
+        <button className="btn btn--primary" type="submit">{t("crm.campaign.add")}</button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("crm.campaign.empty")} hint={t("common.emptyHint")} />
@@ -155,10 +161,17 @@ export function CampaignsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((c) => (
-                <tr key={c.id}>
+              {visible.map((c, i) => (
+                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
-                    <Link className="crm-link" to={`/crm/campaigns/${c.id}`}><Bdi>{c.code}</Bdi></Link>
+                    <Link
+                      className="crm-link"
+                      to={`/crm/campaigns/${c.id}`}
+                      onMouseEnter={() => prefetch(`crm:campaign:${c.id}`, () => getCampaign(c.id))}
+                      onFocus={() => prefetch(`crm:campaign:${c.id}`, () => getCampaign(c.id))}
+                    >
+                      <Bdi>{c.code}</Bdi>
+                    </Link>
                   </td>
                   <td>{c.name}</td>
                   <td>{t(`crm.campaign.channels.${c.channel}`)}</td>

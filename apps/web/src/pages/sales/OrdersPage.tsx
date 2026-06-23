@@ -1,13 +1,19 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { listOrders, approveOrder, confirmOrder, type SalesOrder } from "../../api/sales";
+import { listOrders, getOrder, approveOrder, confirmOrder, type SalesOrder } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
@@ -28,11 +34,10 @@ const ORDER_STATUSES = [
 
 export function OrdersPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listOrders(), [], "sales:orders");
+  const toast = useToast();
+  const { data, loading, error, reload, mutate } = useAsync(() => listOrders(), [], "sales:orders");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const fields = useMemo<FilterField<SalesOrder>[]>(
     () => [
@@ -74,19 +79,30 @@ export function OrdersPage() {
     [filtered, tab],
   );
 
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<SalesOrder>({
+    items: visible ?? [],
+    onOpen: (o) => navigate(`/sales/orders/${o.id}`),
+  });
+
   // One-click row actions mirror the order-detail gating: approve a draft awaiting sign-off, then
   // confirm a draft that's ready. Heavier steps (deliver/invoice/payment) stay on the detail page.
-  async function run(id: string, fn: () => Promise<SalesOrder>) {
-    setBusy(id);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(null);
-    }
+  //
+  // Optimistic: the row updates the instant you click (the matching button disappears as its
+  // gating condition flips), the request runs in the background, the server's canonical row is
+  // reconciled on success, and a failure rolls the row back with an error toast — no spinner, no
+  // full-list refetch for the user's own action.
+  function act(id: string, apply: (order: SalesOrder) => SalesOrder, request: () => Promise<SalesOrder>, success: string) {
+    void runOptimistic<SalesOrder[], SalesOrder>({
+      current: data ?? [],
+      mutate,
+      optimistic: (rows) => rows.map((o) => (o.id === id ? apply(o) : o)),
+      request,
+      settle: (rows, updated) => rows.map((o) => (o.id === updated.id ? updated : o)),
+      toast,
+      success,
+    });
   }
 
   return (
@@ -99,18 +115,8 @@ export function OrdersPage() {
         </Link>
       </div>
 
-      {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
-      )}
-      {error && <p className="error-text">{error}</p>}
-      {actionError && <p className="error-text">{actionError}</p>}
+      {loading && <ListSkeleton />}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("sales.orders.empty")}
@@ -146,10 +152,17 @@ export function OrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((o) => (
-                <tr key={o.id}>
+              {visible.map((o, i) => (
+                <tr key={o.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
-                    <Link to={`/sales/orders/${o.id}`} className="latin">{o.number}</Link>
+                    <Link
+                      to={`/sales/orders/${o.id}`}
+                      className="latin"
+                      onMouseEnter={() => prefetch(`sales:order:${o.id}`, () => getOrder(o.id))}
+                      onFocus={() => prefetch(`sales:order:${o.id}`, () => getOrder(o.id))}
+                    >
+                      {o.number}
+                    </Link>
                   </td>
                   <td>{o.customer_name}</td>
                   <td className="latin muted">{o.order_date}</td>
@@ -162,12 +175,22 @@ export function OrdersPage() {
                   <td>
                     <RowActions label={t("common.actions")}>
                       {o.status === "draft" && o.requires_approval && !o.approved && (
-                        <button className="btn btn--sm" disabled={busy === o.id} onClick={() => run(o.id, () => approveOrder(o.id))}>
+                        <button
+                          className="btn btn--sm"
+                          onClick={() =>
+                            act(o.id, (r) => ({ ...r, approved: true }), () => approveOrder(o.id), t("sales.toast.approved"))
+                          }
+                        >
                           {t("sales.detail.approve")}
                         </button>
                       )}
                       {o.status === "draft" && (!o.requires_approval || o.approved) && (
-                        <button className="btn btn--sm btn--primary" disabled={busy === o.id} onClick={() => run(o.id, () => confirmOrder(o.id))}>
+                        <button
+                          className="btn btn--sm btn--primary"
+                          onClick={() =>
+                            act(o.id, (r) => ({ ...r, status: "confirmed" }), () => confirmOrder(o.id), t("sales.toast.confirmed"))
+                          }
+                        >
                           {t("sales.detail.confirm")}
                         </button>
                       )}

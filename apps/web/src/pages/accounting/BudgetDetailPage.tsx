@@ -10,16 +10,20 @@ import {
   setBudgetLine,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function BudgetDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id = "" } = useParams();
-  const { data: budget, reload: reloadBudget } = useAsync(() => getBudget(id), [id]);
+  const { data: budget, reload: reloadBudget } = useAsync(() => getBudget(id), [id], `accounting:budget:${id}`);
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
   const pnlAccounts = (accounts ?? []).filter(
@@ -51,8 +55,9 @@ export function BudgetDetailPage() {
       setAmount("");
       reloadBudget();
       reloadVariance();
+      toast.show(t("accounting.toast.budgetLineSet"), "success");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -112,14 +117,9 @@ export function BudgetDetailPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reloadVariance} />}
 
       {variance && (
         <ExportButtons path={`/accounting/budgets/${id}/variance${period ? `?period=${period}` : ""}`} />

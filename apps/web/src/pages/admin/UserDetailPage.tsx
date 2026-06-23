@@ -12,7 +12,10 @@ import {
   type UserDetail,
 } from "../../api/users";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { UserStatusPill } from "./UserStatusPill";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
@@ -24,19 +27,32 @@ function initials(name: string): string {
 
 export function UserDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id } = useParams();
   const userId = Number(id);
   const { data: org } = useAsync(getOrgUnits, [], "admin:orgunits");
-  const { data, loading, error, reload } = useAsync(() => getUser(userId), [userId], `admin:user:${userId}`);
+  const { data, loading, error, reload, mutate } = useAsync<UserDetail>(
+    () => getUser(userId),
+    [userId],
+    `admin:user:${userId}`,
+  );
   const [notice, setNotice] = useState<string | null>(null);
-  const [user, setUser] = useState<UserDetail | null>(null);
 
-  const current = user ?? data;
+  const current = data;
 
-  async function patch(changes: Parameters<typeof updateUser>[1]) {
-    const updated = await updateUser(userId, changes);
-    setUser(updated);
-    reload();
+  // Optimistic field edit: reflect the role/status/department change in the dropdown immediately,
+  // settle with the server's user, roll back + toast on failure. No success toast — these dropdowns
+  // are edited freely and shouldn't spam.
+  function patch(changes: Parameters<typeof updateUser>[1]) {
+    if (!data) return;
+    void runOptimistic<UserDetail, UserDetail>({
+      current: data,
+      mutate,
+      optimistic: (u) => ({ ...u, ...changes }) as UserDetail,
+      request: () => updateUser(userId, changes),
+      settle: (_predicted, updated) => updated,
+      toast,
+    });
   }
 
   async function reset() {
@@ -45,23 +61,20 @@ export function UserDetailPage() {
   }
 
   async function revokeOne(tokenId: number) {
-    setUser(await revokeSession(userId, tokenId));
-    setNotice(t("admin.detail.sessionRevoked"));
+    mutate(await revokeSession(userId, tokenId));
+    toast.show(t("admin.detail.sessionRevoked"), "success");
   }
 
   async function revokeAll() {
     const { revoked } = await revokeAllSessions(userId);
-    setNotice(t("admin.detail.allSessionsRevoked", { count: revoked }));
     reload();
+    toast.show(t("admin.detail.allSessionsRevoked", { count: revoked }), "success");
   }
 
   if (loading && !current) {
     return (
       <section>
-        <div className="page-skeleton" aria-busy="true">
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={1} />
       </section>
     );
   }

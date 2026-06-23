@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -9,44 +8,53 @@ import {
   rejectQuotation,
   submitQuotation,
   type Quotation,
+  type QuotationStatus,
 } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Disclosure } from "../../components/Disclosure";
 import { SalesNav } from "./SalesNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
 
 export function QuotationDetailPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, reload } = useAsync<Quotation>(() => getQuotation(id as string), [id]);
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { data, loading, error, reload, mutate } = useAsync<Quotation>(
+    () => getQuotation(id as string),
+    [id],
+    `sales:quotation:${id}`,
+  );
 
-  async function run(fn: () => Promise<unknown>) {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await fn();
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  // Optimistic state transition: flip the status instantly, reconcile with the server's quotation,
+  // roll back + toast on failure.
+  function act(nextStatus: QuotationStatus, request: () => Promise<Quotation>, success: string) {
+    if (!data) return;
+    void runOptimistic<Quotation, Quotation>({
+      current: data,
+      mutate,
+      optimistic: (q) => ({ ...q, status: nextStatus }),
+      request,
+      settle: (_predicted, updated) => updated,
+      toast,
+      success,
+    });
   }
 
+  // Convert navigates away to the spawned order, so there's no view left to be optimistic about;
+  // just route on success and toast on failure.
   async function onConvert(q: Quotation) {
-    setBusy(true);
-    setActionError(null);
     try {
       const res = await convertQuotation(q.id);
       navigate(`/sales/orders/${res.order_id}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-      setBusy(false);
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     }
   }
 
@@ -55,16 +63,9 @@ export function QuotationDetailPage() {
       <SalesNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <>
@@ -86,27 +87,35 @@ export function QuotationDetailPage() {
 
             <div className="sales-actions">
               {data.status === "draft" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => submitQuotation(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act("submitted", () => submitQuotation(data.id), t("sales.toast.quoteSubmitted"))}
+                >
                   {t("sales.quotations.submit")}
                 </button>
               )}
               {data.status === "submitted" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => run(() => approveQuotation(data.id))}>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => act("approved", () => approveQuotation(data.id), t("sales.toast.quoteApproved"))}
+                >
                   {t("sales.quotations.approve")}
                 </button>
               )}
               {data.status === "approved" && (
-                <button className="btn btn--primary" disabled={busy} onClick={() => onConvert(data)}>
+                <button className="btn btn--primary" onClick={() => onConvert(data)}>
                   {t("sales.quotations.convert")}
                 </button>
               )}
               {(data.status === "submitted" || data.status === "approved") && (
-                <button className="btn" disabled={busy} onClick={() => run(() => rejectQuotation(data.id, ""))}>
+                <button
+                  className="btn"
+                  onClick={() => act("rejected", () => rejectQuotation(data.id, ""), t("sales.toast.quoteRejected"))}
+                >
                   {t("sales.quotations.reject")}
                 </button>
               )}
             </div>
-            {actionError && <p className="error-text">{actionError}</p>}
 
             <Disclosure summary={t("common.moreDetails")}>
               <dl className="sales-meta">

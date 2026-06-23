@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { readCache, writeCache } from "../lib/cache";
+import { clearCache, readCache, writeCache } from "../lib/cache";
 
 interface AsyncState<T> {
   data: T | null;
@@ -10,6 +10,12 @@ interface AsyncState<T> {
   validating: boolean;
   error: string | null;
   reload: () => void;
+  /**
+   * Synchronously replace the current data in state *and* cache. Used for optimistic
+   * mutations: paint a predicted value instantly, then reconcile (or roll back) once the
+   * request settles. See `runOptimistic` in `lib/optimistic`.
+   */
+  mutate: (next: T | null) => void;
 }
 
 /**
@@ -56,5 +62,15 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[], cacheKey?
   // stays false and the page renders content right away (background refresh is `validating`).
   const loading = validating && data === null;
   const reload = useCallback(() => setNonce((n) => n + 1), []);
-  return { data, loading, validating, error, reload };
+  const mutate = useCallback(
+    (next: T | null) => {
+      setData(next);
+      if (cacheKey) {
+        if (next === null) clearCache(cacheKey);
+        else writeCache(cacheKey, next);
+      }
+    },
+    [cacheKey],
+  );
+  return { data, loading, validating, error, reload, mutate };
 }

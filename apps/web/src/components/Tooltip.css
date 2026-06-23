@@ -40,6 +40,45 @@
   transform: translate(-100%, -50%);
 }
 
+/* With a shortcut hint the bubble becomes a row: label on the lead edge, kbd chips
+   on the trailing edge — like Linear's "Sales  G then S". */
+.tooltip--with-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: start;
+  text-wrap: nowrap;
+}
+
+.tooltip__keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.tooltip__then {
+  font-size: var(--font-size-xs);
+  opacity: 0.65;
+}
+
+/* Key-caps that sit ON the brand bubble: a calm one-step lift of the bubble itself (not the
+   bright page surface), with on-brand text — so the cap reads as an inset key and flips with
+   the theme (light bubble → dark cap-tint, dark bubble → light cap-tint). */
+.tooltip__kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1.1rem;
+  padding-inline: var(--space-1);
+  padding-block: 0.0625rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-kbd-on-brand-bg);
+  color: var(--color-text-on-brand);
+  border: 1px solid var(--color-kbd-on-brand-border);
+  font-size: var(--font-size-xs);
+}
+
 @keyframes tooltip-in {
   from {
     opacity: 0;

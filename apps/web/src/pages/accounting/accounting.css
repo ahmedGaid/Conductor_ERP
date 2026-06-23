@@ -95,12 +95,6 @@
   gap: var(--space-3);
 }
 
-.acct-asset-runmsg {
-  align-self: center;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
 .acct-detail {
   display: flex;
   flex-direction: column;

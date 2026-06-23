@@ -3,17 +3,19 @@ import { useTranslation } from "react-i18next";
 
 import { cashFlow, listPeriods } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function CashFlowStatementPage() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState("");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
-  const { data, loading, error } = useAsync(() => cashFlow(period ? { period } : {}), [period]);
+  const { data, loading, error, reload } = useAsync(() => cashFlow(period ? { period } : {}), [period]);
 
   const rows: { label: string; value: number; strong?: boolean }[] = data
     ? [
@@ -47,16 +49,9 @@ export function CashFlowStatementPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && <ExportButtons path={`/accounting/reports/cash-flow${period ? `?period=${period}` : ""}`} />}
 

@@ -8,38 +8,43 @@ import {
   type NotificationStatus,
 } from "../../api/notifications";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { Bdi } from "../../components/Bdi";
 import { Tooltip } from "../../components/Tooltip";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { ExportButtons } from "../../components/ExportButtons";
 import { EmptyState } from "../../components/EmptyState";
 import { NotificationsNav } from "./NotificationsNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./notifications.css";
 
 const STATUSES: (NotificationStatus | "")[] = ["", "sent", "failed", "pending"];
 
 export function NotificationsPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const [status, setStatus] = useState<NotificationStatus | "">("");
-  const { data, loading, error, reload } = useAsync(
+  const { data, loading, error, reload, mutate } = useAsync(
     () => listNotifications(status ? { status } : undefined),
     [status],
     `notifications:${status || "all"}`,
   );
-  const [busy, setBusy] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
-  async function resend(id: string) {
-    setBusy(id);
-    setActionError(null);
-    try {
-      await resendNotification(id);
-      reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(null);
-    }
+  // Optimistic resend: flip the row to "pending" so it reads as in-flight at once, then settle with
+  // the server's notification (its new status — sent or failed again — is the real feedback, so no
+  // success toast). A failed request rolls the row back and toasts.
+  function resend(id: string) {
+    if (!data) return;
+    void runOptimistic<Notification[], Notification>({
+      current: data,
+      mutate,
+      optimistic: (rows) => rows.map((n) => (n.id === id ? { ...n, status: "pending" } : n)),
+      request: () => resendNotification(id),
+      settle: (predicted, updated) => predicted.map((n) => (n.id === id ? updated : n)),
+      toast,
+    });
   }
 
   return (
@@ -59,16 +64,9 @@ export function NotificationsPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={3} />
       )}
-      {error && <p className="error-text">{error}</p>}
-      {actionError && <p className="error-text">{actionError}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && <EmptyState title={t("notifications.empty")} hint={t("notifications.emptyHint")} />}
 
       {data && data.length > 0 && <ExportButtons path="/notifications" />}
@@ -105,7 +103,7 @@ export function NotificationsPage() {
                     </Tooltip>
                   </td>
                   <td>
-                    <button className="btn btn--sm" disabled={busy === n.id} onClick={() => resend(n.id)}>
+                    <button className="btn btn--sm" onClick={() => resend(n.id)}>
                       {t("notifications.resend")}
                     </button>
                   </td>

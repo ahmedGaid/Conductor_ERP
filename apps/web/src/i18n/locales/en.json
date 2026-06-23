@@ -45,6 +45,23 @@
     "notifications": "Notifications",
     "help": "Help"
   },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "then": "then",
+    "general": "General",
+    "navigation": "Navigation",
+    "lists": "Lists",
+    "forms": "Forms",
+    "palette": "Command palette",
+    "search": "Search",
+    "create": "Create…",
+    "help": "Show this cheat-sheet",
+    "listDown": "Next row",
+    "listUp": "Previous row",
+    "listOpen": "Open row",
+    "formSubmit": "Submit form",
+    "formCancel": "Cancel"
+  },
   "command": {
     "placeholder": "Search pages and actions…",
     "empty": "No matches for",
@@ -179,6 +196,10 @@
     "ordering": "Ordering"
   },
   "instance": {
+    "toast": {
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
     "openWorkflow": "Open workflow",
     "awaitingDecision": "Awaiting a decision at node: {{node}}",
     "approve": "Approve",
@@ -190,6 +211,19 @@
     "output": "Output"
   },
   "accounting": {
+    "toast": {
+      "assetDisposed": "Asset disposed",
+      "reconciled": "Statement reconciled",
+      "autoMatched": "Auto-match complete",
+      "adjustmentPosted": "Adjustment posted",
+      "reportDeleted": "Report deleted",
+      "costCenterCreated": "Cost center added",
+      "budgetCreated": "Budget added",
+      "journalPosted": "Journal posted",
+      "bankStatementCreated": "Statement created",
+      "reportSaved": "Report saved",
+      "budgetLineSet": "Budget line set"
+    },
     "tabs": {
       "chart": "Chart of Accounts",
       "journals": "Journals",
@@ -397,6 +431,12 @@
     }
   },
   "inventory": {
+    "toast": {
+      "countPosted": "Count posted",
+      "countStarted": "Count started",
+      "warehouseCreated": "Warehouse added",
+      "itemCreated": "Item added"
+    },
     "tabs": {
       "stockOnHand": "Stock on hand",
       "items": "Items",
@@ -486,6 +526,20 @@
     }
   },
   "sales": {
+    "toast": {
+      "customerCreated": "Customer added",
+      "approved": "Order approved",
+      "confirmed": "Order confirmed",
+      "delivered": "Order delivered",
+      "invoiced": "Invoice issued",
+      "paid": "Payment recorded",
+      "returned": "Return recorded",
+      "quoteSubmitted": "Quotation submitted",
+      "quoteApproved": "Quotation approved",
+      "quoteRejected": "Quotation rejected",
+      "orderCreated": "Order created",
+      "quotationCreated": "Quotation created"
+    },
     "tabs": {
       "orders": "Orders",
       "newOrder": "New order",
@@ -679,9 +733,41 @@
       "rejected": "Rejected",
       "converted": "Converted",
       "cancelled": "Cancelled"
+    },
+    "toast": {
+      "approved": "Order approved",
+      "confirmed": "Order confirmed",
+      "received": "Goods received",
+      "billed": "Bill recorded",
+      "paid": "Payment recorded",
+      "returned": "Return recorded",
+      "reqSubmitted": "Request submitted",
+      "reqApproved": "Request approved",
+      "reqRejected": "Request rejected",
+      "supplierCreated": "Supplier added",
+      "poCreated": "Order created",
+      "prCreated": "Request created"
     }
   },
   "crm": {
+    "toast": {
+      "leadCreated": "Lead added",
+      "ticketCreated": "Ticket opened",
+      "campaignCreated": "Campaign added",
+      "leadQualified": "Lead qualified",
+      "leadConverted": "Lead converted",
+      "ticketStarted": "Ticket started",
+      "ticketResolved": "Ticket resolved",
+      "ticketClosed": "Ticket closed",
+      "ticketEscalated": "Ticket escalated",
+      "escalationsRun": "Escalated {{count}} ticket(s)",
+      "stageAdvanced": "Moved to {{stage}}",
+      "oppWon": "Opportunity won",
+      "oppLost": "Opportunity lost",
+      "campaignActivated": "Campaign activated",
+      "campaignCompleted": "Campaign completed",
+      "opportunityCreated": "Opportunity created"
+    },
     "tabs": {
       "pipeline": "Pipeline",
       "leads": "Leads",
@@ -812,6 +898,11 @@
   },
   "common": {
     "loading": "Loading…",
+    "retry": "Try again",
+    "error": {
+      "title": "Couldn't load this",
+      "hint": "Something went wrong on our side. Check your connection and try again."
+    },
     "comingSoon": "Coming soon",
     "delete": "Delete",
     "yes": "Yes",
@@ -826,6 +917,10 @@
     "off": "Off",
     "all": "All",
     "actions": "Actions"
+  },
+  "toast": {
+    "region": "Notifications",
+    "dismiss": "Dismiss"
   },
   "filter": {
     "add": "Filter",
@@ -850,6 +945,9 @@
     }
   },
   "einvoice": {
+    "toast": {
+      "submitted": "Invoice submitted"
+    },
     "tabs": {
       "invoices": "E-invoices"
     },
@@ -1119,6 +1217,7 @@
       "title": "Roles",
       "intro": "Define what each role can see and do across the system.",
       "create": "New role",
+      "created": "Role created",
       "name": "Role name",
       "copyFrom": "Start from",
       "copyBlank": "Empty role",

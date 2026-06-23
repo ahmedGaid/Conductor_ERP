@@ -2,12 +2,17 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { createBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
+import { createBankStatement, getBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useToast } from "../../app/ToastContext";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 interface DraftLine {
@@ -24,10 +29,17 @@ function today(): string {
 
 export function BankReconciliationPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(listBankStatements, [], "accounting:bank-statements");
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const cashAccounts = (accounts ?? []).filter((a) => a.is_cash && a.is_active);
+
+  // j/k move a row highlight in the statements list, Enter/o opens it.
+  const { active } = useListKeyboardNav({
+    items: data ?? [],
+    onOpen: (s) => navigate(`/accounting/bank-reconciliation/${s.id}`),
+  });
 
   const [account, setAccount] = useState("");
   const [stmtDate, setStmtDate] = useState(today());
@@ -67,9 +79,10 @@ export function BankReconciliationPage() {
         lines: payloadLines,
       });
       reload();
+      toast.show(t("accounting.toast.bankStatementCreated"), "success");
       navigate(`/accounting/bank-reconciliation/${stmt.id}`);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -147,14 +160,9 @@ export function BankReconciliationPage() {
       </form>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.bankRec.empty")} hint={t("common.emptyHint")} />
@@ -172,10 +180,15 @@ export function BankReconciliationPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((s) => (
-                <tr key={s.id}>
+              {data.map((s, i) => (
+                <tr key={s.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
-                    <Link className="acct-link" to={`/accounting/bank-reconciliation/${s.id}`}>
+                    <Link
+                      className="acct-link"
+                      to={`/accounting/bank-reconciliation/${s.id}`}
+                      onMouseEnter={() => prefetch(`accounting:bank-statement:${s.id}`, () => getBankStatement(s.id))}
+                      onFocus={() => prefetch(`accounting:bank-statement:${s.id}`, () => getBankStatement(s.id))}
+                    >
                       <Bdi>{s.account_code}</Bdi>
                     </Link>
                   </td>

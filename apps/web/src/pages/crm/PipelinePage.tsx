@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import {
   createOpportunity,
+  getOpportunity,
   listOpportunities,
   type NewOppLine,
   type Opportunity,
@@ -11,10 +12,14 @@ import {
 import { listCustomers } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useToast } from "../../app/ToastContext";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 interface DraftLine {
@@ -27,6 +32,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: ""
 
 export function PipelinePage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { data, loading, error, reload } = useAsync(() => listOpportunities(), [], "crm:opportunities");
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -79,8 +85,9 @@ export function PipelinePage() {
       setWarehouse("");
       setLines([emptyLine()]);
       reload();
+      toast.show(t("crm.toast.opportunityCreated"), "success");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -179,16 +186,9 @@ export function PipelinePage() {
       </form>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState title={t("crm.pipeline.empty")} hint={t("common.emptyHint")} />
       )}
@@ -209,7 +209,14 @@ export function PipelinePage() {
               {data.map((o: Opportunity) => (
                 <tr key={o.id}>
                   <td>
-                    <Link to={`/crm/opportunities/${o.id}`} className="latin">{o.number}</Link>
+                    <Link
+                      to={`/crm/opportunities/${o.id}`}
+                      className="latin"
+                      onMouseEnter={() => prefetch(`crm:opportunity:${o.id}`, () => getOpportunity(o.id))}
+                      onFocus={() => prefetch(`crm:opportunity:${o.id}`, () => getOpportunity(o.id))}
+                    >
+                      {o.number}
+                    </Link>
                   </td>
                   <td>{o.name}</td>
                   <td>

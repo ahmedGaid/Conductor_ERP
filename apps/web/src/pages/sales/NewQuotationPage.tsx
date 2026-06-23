@@ -1,10 +1,12 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { createQuotation, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useFormKeys } from "../../hooks/useFormKeys";
+import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
@@ -20,6 +22,7 @@ const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: ""
 
 export function NewQuotationPage() {
   const { t } = useTranslation();
+  const toast = useToast();
   const navigate = useNavigate();
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
@@ -30,6 +33,10 @@ export function NewQuotationPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ⌘/Ctrl+Enter submits, Esc cancels back to the quotations list.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef, onCancel: () => navigate("/sales/quotations") });
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -65,9 +72,10 @@ export function NewQuotationPage() {
     setBusy(true);
     try {
       const quote = await createQuotation({ customer_code: customer, warehouse_code: warehouse, lines: payloadLines });
+      toast.show(t("sales.toast.quotationCreated"), "success");
       navigate(`/sales/quotations/${quote.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
       setBusy(false);
     }
@@ -79,7 +87,7 @@ export function NewQuotationPage() {
     <section className="sales-page">
       <SalesNav />
 
-      <form className="card sales-page" onSubmit={onSubmit}>
+      <form ref={formRef} className="card sales-page" onSubmit={onSubmit}>
         <div className="sales-toolbar">
           <label className="sales-field">
             <span>{t("sales.orders.customer")}</span>

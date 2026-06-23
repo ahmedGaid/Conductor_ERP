@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { listRequests, type PurchaseRequest } from "../../api/purchasing";
+import { listRequests, getRequest, type PurchaseRequest } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -11,13 +14,14 @@ import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { PurchasingNav } from "./PurchasingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./purchasing.css";
 
 const PR_STATUSES = ["draft", "submitted", "approved", "rejected", "converted", "cancelled"] as const;
 
 export function PurchaseRequestsPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listRequests(), [], "purchasing:requests");
+  const { data, loading, error, reload } = useAsync(() => listRequests(), [], "purchasing:requests");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -50,6 +54,13 @@ export function PurchaseRequestsPage() {
     [filtered, tab],
   );
 
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<PurchaseRequest>({
+    items: visible ?? [],
+    onOpen: (r) => navigate(`/purchasing/requests/${r.id}`),
+  });
+
   return (
     <section className="pur-page">
       <PurchasingNav />
@@ -61,16 +72,9 @@ export function PurchaseRequestsPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("purchasing.requests.empty")}
@@ -105,10 +109,17 @@ export function PurchaseRequestsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((r) => (
-                <tr key={r.id}>
+              {visible.map((r, i) => (
+                <tr key={r.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
-                    <Link to={`/purchasing/requests/${r.id}`} className="latin">{r.number}</Link>
+                    <Link
+                      to={`/purchasing/requests/${r.id}`}
+                      className="latin"
+                      onMouseEnter={() => prefetch(`purchasing:request:${r.id}`, () => getRequest(r.id))}
+                      onFocus={() => prefetch(`purchasing:request:${r.id}`, () => getRequest(r.id))}
+                    >
+                      {r.number}
+                    </Link>
                   </td>
                   <td>{r.supplier_name}</td>
                   <td className="latin muted">{r.request_date}</td>
