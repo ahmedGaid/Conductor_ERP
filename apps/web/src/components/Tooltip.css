@@ -62,7 +62,9 @@
   opacity: 0.65;
 }
 
-/* Light key-caps on the dark bubble — same chip language as the command palette. */
+/* Key-caps that sit ON the brand bubble: a calm one-step lift of the bubble itself (not the
+   bright page surface), with on-brand text — so the cap reads as an inset key and flips with
+   the theme (light bubble → dark cap-tint, dark bubble → light cap-tint). */
 .tooltip__kbd {
   display: inline-flex;
   align-items: center;
@@ -71,9 +73,9 @@
   padding-inline: var(--space-1);
   padding-block: 0.0625rem;
   border-radius: var(--radius-sm);
-  background-color: var(--color-surface);
-  color: var(--color-text-subtle);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-kbd-on-brand-bg);
+  color: var(--color-text-on-brand);
+  border: 1px solid var(--color-kbd-on-brand-border);
   font-size: var(--font-size-xs);
 }
 
