@@ -32,13 +32,14 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
   navigate-away/inline create forms → success toast (survives navigation) + errors via toast, validation inline.
 - **Keyboard-first — IN PROGRESS**: Slice 1 (`50a37a2`) global shortcut layer (`useGlobalShortcuts`:
   `g`+key nav, `/`, `c`, `?` cheat-sheet) on top of the existing ⌘K palette; Slice 2 (`514d6f2`)
-  route-change focus to the page heading; sidebar shortcut tips (`65f860b`, `Tooltip.shortcut`).
-- **i18n: 1013 keys** (ar/en parity). Branch commits newest→oldest: `65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`.
+  route-change focus to the page heading; sidebar shortcut tips (`65f860b`, `Tooltip.shortcut`);
+  Slice 3 (`00232f7`) `j`/`k`/`Enter` list navigation (`useListKeyboardNav` + `lib/keyboard.ts`
+  shared guards) wired across all 11 index→detail lists + "Lists" cheat-sheet section.
+- **i18n: 1017 keys** (ar/en parity). Branch commits newest→oldest: `00232f7 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`.
 
 ### NEXT ACTION
-**Keyboard-first Slice 3** — a shared `j`/`k`/`Enter` list-navigation primitive: build the hook, wire
-**Sales first** as the reviewable pattern, then fan out module-by-module. Then **Slice 4** — form key
-conventions (Esc to cancel, ⌘/Ctrl+Enter to submit). After that, the remaining Linear priority areas.
+**Keyboard-first Slice 4** — form key conventions: **Esc to cancel**, **⌘/Ctrl+Enter to submit** across
+the create/edit forms (reuse the `lib/keyboard.ts` guards). After that, the remaining Linear priority areas.
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
