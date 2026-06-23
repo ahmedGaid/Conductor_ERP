@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import { normalizeSearch } from "../lib/arabicSearch";
 import "./CommandPalette.css";
 
 type Group = "create" | "go";
@@ -60,9 +61,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   );
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = normalizeSearch(query.trim());
     if (!q) return commands;
-    return commands.filter((c) => c.label.toLowerCase().includes(q));
+    return commands.filter((c) => normalizeSearch(c.label).includes(q));
   }, [commands, query]);
 
   // Keep the native dialog's open state in sync with the controlled `open` prop,

@@ -6,6 +6,7 @@ import { bulkUsers, createUser, getOrgUnits, getUser, listUsers } from "../../ap
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
+import { normalizeSearch } from "../../lib/arabicSearch";
 import { EmptyState } from "../../components/EmptyState";
 import { UserStatusPill } from "./UserStatusPill";
 import "./admin.css";
@@ -27,9 +28,9 @@ export function UsersPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = normalizeSearch(search.trim());
     return (users ?? []).filter((u) => {
-      if (term && !`${u.username} ${u.email} ${u.display_name}`.toLowerCase().includes(term)) return false;
+      if (term && !normalizeSearch(`${u.username} ${u.email} ${u.display_name}`).includes(term)) return false;
       if (role && u.role !== role) return false;
       if (status && u.status !== status) return false;
       if (department && u.department !== department) return false;

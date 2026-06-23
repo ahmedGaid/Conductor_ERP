@@ -10,6 +10,8 @@
  * Operators are referenced by key only; the visible words live in i18n (`filter.op.*`, ar/en parity).
  */
 
+import { normalizeSearch } from "./arabicSearch";
+
 export type FilterFieldType = "select" | "text" | "date";
 
 export type FilterOperator =
@@ -101,9 +103,9 @@ function matchesOne<T>(row: T, field: FilterField<T>, filter: ActiveFilter): boo
       return filter.operator === "isNot" || filter.operator === "isNoneOf" ? !member : member;
     }
     case "text": {
-      const needle = (filter.values[0] ?? "").trim().toLowerCase();
+      const needle = normalizeSearch((filter.values[0] ?? "").trim());
       if (!needle) return true;
-      const hay = String(raw ?? "").toLowerCase();
+      const hay = normalizeSearch(String(raw ?? ""));
       const has = hay.includes(needle);
       return filter.operator === "notContains" ? !has : has;
     }
