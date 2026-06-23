@@ -3,6 +3,11 @@
 > Status: **active design charter.** This is the standing UI/UX contract for Conductor. Every new
 > screen, component, and state must satisfy it; gate03 enforces the mechanical parts (tokens-only
 > colour, logical-CSS only, i18n ar/en parity, clean build). The rest is reviewed on sight.
+>
+> Companion docs (one source of truth per concern): the [Brand & Marketing Brief](Conductor_Brand_Marketing_Brief.md)
+> owns *words/voice/claims*; the [Visual Identity System](Conductor_Visual_Identity_System.md) owns
+> *identity assets + off-app surfaces* (logo, type, Arabic lexicon, invoice/email/web). For any in-app
+> pixel/token/motion/a11y/i18n rule, **this Directive wins.**
 
 ## Vision
 
@@ -138,8 +143,10 @@ fight our constraints are recorded with the required change so the limitation st
 - **Forms autosave → explicit draft-save.** Do **not** silently autosave accounting/order/journal
   forms (a half-entered journal autosaving is unsafe and breaks the confidence rule). Offer an explicit
   "Save draft" only where a draft entity already exists.
-- **Single icon library.** Fine to standardize on Lucide/Tabler/Heroicons, but it must be **bundled
-  offline** (no CDN) per the customer-hosted "no cloud deps" rule. Low priority (current custom set works).
+- **Single icon library.** ✅ **Resolved 2026-06-23** — decision recorded in the
+  [Visual Identity System](Conductor_Visual_Identity_System.md) §5: Conductor uses its **own** hand-built
+  single-stroke set (`src/app/icons.tsx`, 24×24 / `currentColor` stroke / rounded), bundled offline by
+  construction — not an imported library. New icons are redrawn to that recipe.
 
 **Defer / out of scope here:**
 - **AI assistant / "workflow intelligence layer."** A real feature with real scope (likely an LLM
