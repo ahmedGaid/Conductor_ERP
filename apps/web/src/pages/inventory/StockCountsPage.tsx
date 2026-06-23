@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { createStockCount, getStockCount, listStockCounts, listWarehouses, type CountStatus } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -57,6 +58,12 @@ export function StockCountsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((c) => c.status === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const { active } = useListKeyboardNav<StockCount>({
+    items: visible ?? [],
+    onOpen: (c) => navigate(`/inventory/counts/${c.id}`),
+  });
 
   const [warehouse, setWarehouse] = useState("");
   const [countDate, setCountDate] = useState(today());
@@ -153,8 +160,8 @@ export function StockCountsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((c) => (
-                <tr key={c.id}>
+              {visible.map((c, i) => (
+                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link
                       className="inv-link"

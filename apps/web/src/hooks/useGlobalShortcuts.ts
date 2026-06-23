@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { isModalOpen, isTypingTarget } from "../lib/keyboard";
 
 // `g` then a destination key — Linear-style "go to" navigation.
 const GO_MAP: Record<string, string> = {
@@ -14,13 +15,6 @@ const GO_MAP: Record<string, string> = {
   w: "/workflows",
   ",": "/settings",
 };
-
-// Single-key shortcuts must never fire while the user is typing into a field.
-function isTypingTarget(el: EventTarget | null): boolean {
-  if (!(el instanceof HTMLElement)) return false;
-  const tag = el.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
-}
 
 /**
  * App-wide keyboard layer. ⌘K/Ctrl+K opens the palette from anywhere (even mid-type);
@@ -51,7 +45,7 @@ export function useGlobalShortcuts({
       // Bare shortcuts: ignore modified chords, typing, and open modals.
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (isTypingTarget(e.target)) return;
-      if (document.querySelector("dialog[open]")) return;
+      if (isModalOpen()) return;
 
       // Leader sequence: a pending `g` consumes the next key as a destination.
       if (goPending.current) {

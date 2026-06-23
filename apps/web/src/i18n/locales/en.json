@@ -50,10 +50,14 @@
     "then": "then",
     "general": "General",
     "navigation": "Navigation",
+    "lists": "Lists",
     "palette": "Command palette",
     "search": "Search",
     "create": "Create…",
-    "help": "Show this cheat-sheet"
+    "help": "Show this cheat-sheet",
+    "listDown": "Next row",
+    "listUp": "Previous row",
+    "listOpen": "Open row"
   },
   "command": {
     "placeholder": "Search pages and actions…",

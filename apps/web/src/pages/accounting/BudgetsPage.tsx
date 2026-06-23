@@ -1,9 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { createBudget, getBudget, listBudgets } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
@@ -33,6 +34,13 @@ export function BudgetsPage() {
     () => (data ? data.filter((b) => matchesAllFilters(b, fields, filters)) : data),
     [data, fields, filters],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Budget>({
+    items: filtered ?? [],
+    onOpen: (b) => navigate(`/accounting/budgets/${b.id}`),
+  });
 
   const [name, setName] = useState("");
   const [fy, setFy] = useState(String(new Date().getFullYear()));
@@ -106,8 +114,8 @@ export function BudgetsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b) => (
-                <tr key={b.id}>
+              {filtered.map((b, i) => (
+                <tr key={b.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link
                       className="acct-link"

@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { listWorkflows } from "../api/workflows";
 import { useAsync } from "../hooks/useAsync";
+import { useListKeyboardNav } from "../hooks/useListKeyboardNav";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../lib/filters";
 import { Bdi } from "../components/Bdi";
 import { EmptyState } from "../components/EmptyState";
@@ -49,6 +50,13 @@ export function WorkflowListPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((w) => w.status === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Workflow>({
+    items: visible ?? [],
+    onOpen: (wf) => navigate(`/workflows/${wf.id}`),
+  });
 
   return (
     <section className="wf-list">
@@ -109,8 +117,8 @@ export function WorkflowListPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((wf) => (
-                <tr key={wf.id}>
+              {visible.map((wf, i) => (
+                <tr key={wf.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link to={`/workflows/${wf.id}`}>{wf.name}</Link>
                   </td>

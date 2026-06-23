@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { createBankStatement, getBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -31,6 +32,12 @@ export function BankReconciliationPage() {
   const { data, loading, error, reload } = useAsync(listBankStatements, [], "accounting:bank-statements");
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const cashAccounts = (accounts ?? []).filter((a) => a.is_cash && a.is_active);
+
+  // j/k move a row highlight in the statements list, Enter/o opens it.
+  const { active } = useListKeyboardNav({
+    items: data ?? [],
+    onOpen: (s) => navigate(`/accounting/bank-reconciliation/${s.id}`),
+  });
 
   const [account, setAccount] = useState("");
   const [stmtDate, setStmtDate] = useState(today());
@@ -176,8 +183,8 @@ export function BankReconciliationPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((s) => (
-                <tr key={s.id}>
+              {data.map((s, i) => (
+                <tr key={s.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link
                       className="acct-link"

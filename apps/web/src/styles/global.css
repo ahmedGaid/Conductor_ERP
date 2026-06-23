@@ -316,3 +316,8 @@ textarea:focus {
   color: var(--color-text-muted);
   margin-block: var(--space-1) 0;
 }
+
+/* ---- Keyboard-navigated list row (j/k/Enter) ---- */
+[data-kbd-active="true"] {
+  background-color: var(--color-surface-alt);
+}

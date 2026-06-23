@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { getJournal, listJournals, type JournalEntry } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -31,6 +32,13 @@ export function JournalListPage() {
     () => (data ? data.filter((e) => matchesAllFilters(e, fields, filters)) : data),
     [data, fields, filters],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<JournalEntry>({
+    items: filtered ?? [],
+    onOpen: (e) => navigate(`/accounting/journals/${e.id}`),
+  });
 
   return (
     <section className="acct-page">
@@ -77,10 +85,10 @@ export function JournalListPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((e) => {
+              {filtered.map((e, i) => {
                 const total = e.lines.reduce((s, l) => s + l.debit, 0);
                 return (
-                  <tr key={e.id}>
+                  <tr key={e.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                     <td>
                       <Link
                         to={`/accounting/journals/${e.id}`}

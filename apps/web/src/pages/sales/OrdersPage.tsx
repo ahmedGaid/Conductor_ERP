@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { listOrders, getOrder, approveOrder, confirmOrder, type SalesOrder } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
@@ -75,6 +76,13 @@ export function OrdersPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((o) => o.status === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<SalesOrder>({
+    items: visible ?? [],
+    onOpen: (o) => navigate(`/sales/orders/${o.id}`),
+  });
 
   // One-click row actions mirror the order-detail gating: approve a draft awaiting sign-off, then
   // confirm a draft that's ready. Heavier steps (deliver/invoice/payment) stay on the detail page.
@@ -151,8 +159,8 @@ export function OrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((o) => (
-                <tr key={o.id}>
+              {visible.map((o, i) => (
+                <tr key={o.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link
                       to={`/sales/orders/${o.id}`}

@@ -1,9 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { createCampaign, getCampaign, listCampaigns, type CampaignChannel } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
@@ -53,6 +54,13 @@ export function CampaignsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((c) => c.channel === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Campaign>({
+    items: visible ?? [],
+    onOpen: (c) => navigate(`/crm/campaigns/${c.id}`),
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -156,8 +164,8 @@ export function CampaignsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((c) => (
-                <tr key={c.id}>
+              {visible.map((c, i) => (
+                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link
                       className="crm-link"

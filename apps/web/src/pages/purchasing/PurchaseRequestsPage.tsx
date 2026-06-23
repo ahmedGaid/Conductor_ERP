@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { listRequests, getRequest, type PurchaseRequest } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -50,6 +51,13 @@ export function PurchaseRequestsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((r) => r.status === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<PurchaseRequest>({
+    items: visible ?? [],
+    onOpen: (r) => navigate(`/purchasing/requests/${r.id}`),
+  });
 
   return (
     <section className="pur-page">
@@ -106,8 +114,8 @@ export function PurchaseRequestsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((r) => (
-                <tr key={r.id}>
+              {visible.map((r, i) => (
+                <tr key={r.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link
                       to={`/purchasing/requests/${r.id}`}

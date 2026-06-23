@@ -1,9 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { acquireAsset, getAsset, listAssets, runDepreciation, type AssetStatus, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -60,6 +61,13 @@ export function FixedAssetsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((a) => a.status === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<FixedAsset>({
+    items: visible ?? [],
+    onOpen: (a) => navigate(`/accounting/assets/${encodeURIComponent(a.code)}`),
+  });
 
   // New-asset form
   const [code, setCode] = useState("");
@@ -223,8 +231,8 @@ export function FixedAssetsPage() {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((a) => (
-                  <tr key={a.id}>
+                {visible.map((a, i) => (
+                  <tr key={a.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                     <td>
                       <Link
                         className="acct-link"

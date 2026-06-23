@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { listQuotations, getQuotation, type Quotation } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -50,6 +51,13 @@ export function QuotationsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((q) => q.status === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens it on the detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Quotation>({
+    items: visible ?? [],
+    onOpen: (q) => navigate(`/sales/quotations/${q.id}`),
+  });
 
   return (
     <section className="sales-page">
@@ -106,8 +114,8 @@ export function QuotationsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((q) => (
-                <tr key={q.id}>
+              {visible.map((q, i) => (
+                <tr key={q.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link
                       to={`/sales/quotations/${q.id}`}

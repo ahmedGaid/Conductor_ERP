@@ -31,6 +31,11 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
     { keys: ["C"], label: t("shortcuts.create") },
     { keys: ["?"], label: t("shortcuts.help") },
   ];
+  const lists: Shortcut[] = [
+    { keys: ["J"], label: t("shortcuts.listDown") },
+    { keys: ["K"], label: t("shortcuts.listUp") },
+    { keys: ["Enter"], label: t("shortcuts.listOpen") },
+  ];
   const navigation: Shortcut[] = [
     { keys: ["G", "D"], label: t("nav.dashboard") },
     { keys: ["G", "S"], label: t("nav.sales") },
@@ -68,6 +73,14 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
             <p className="cmdp__group-label">{t("shortcuts.general")}</p>
             <ul className="shortcuts__list">
               {general.map((s) => (
+                <ShortcutRow key={s.label} keys={s.keys} label={s.label} />
+              ))}
+            </ul>
+          </section>
+          <section className="shortcuts__section">
+            <p className="cmdp__group-label">{t("shortcuts.lists")}</p>
+            <ul className="shortcuts__list">
+              {lists.map((s) => (
                 <ShortcutRow key={s.label} keys={s.keys} label={s.label} />
               ))}
             </ul>
