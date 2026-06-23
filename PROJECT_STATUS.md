@@ -50,11 +50,19 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
 - **i18n: 1023 keys** (ar/en parity). Branch commits newest→oldest: `20e0ef7 b2cd887 c2aa1ca 124cd05
   7f9d489 f5f1396 b2daf82 fcc4ff2 55fac56 00232f7 4a380a1 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`
   (pushed; **PR #1** open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/1).
+- **Density/typography — IN PROGRESS** (branch `ui/density-typography`, **stacked on
+  `ui/speed-optimistic`**, local-only): `25a3302` — `--line-height-heading` (1.25) for crisp titles +
+  token-driven table density (`--table-pad-inline/-block`) unified across all 9 module tables
+  (accounting outlier fixed; canonical density now a one-line token flip). Dashboard widget table left compact.
+  `88fe4b0` — form-control density (`--field-pad-inline/-block`, built on `--space-*`) so
+  inputs/selects/textareas tighten with compact mode too. List/detail vertical rhythm already token-driven.
 
 ### NEXT ACTION
-Speed, low-friction creation, keyboard-first, brand/Arabic search, and designed states are all done.
-**Pick the next Linear priority area** (candidates: density/typography polish, inline-edit affordances),
-or **open a PR to merge `ui/speed-optimistic` → `main`**. The Python `gate:all` (00–13) stays untouched.
+PR #1 (`ui/speed-optimistic` → `main`) is open awaiting review/merge. **Density/typography polish** is
+underway on the stacked `ui/density-typography` branch (table density + heading line-height +
+form-control density done; list/detail rhythm confirmed already token-driven). Next candidate:
+**inline-edit affordances** (click-to-edit fields) — a larger new interaction pattern, not yet
+started. The Python `gate:all` (00–13) stays untouched.
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.

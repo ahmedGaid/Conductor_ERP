@@ -50,8 +50,8 @@
 .inv-table th,
 .inv-table td {
   text-align: start;
-  padding-inline: var(--space-4);
-  padding-block: var(--space-3);
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--table-pad-block);
   border-block-end: 1px solid var(--color-border);
 }
 

@@ -71,7 +71,8 @@
 }
 .admin-table th,
 .admin-table td {
-  padding: var(--space-3);
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--table-pad-block);
   text-align: start;
   border-block-end: 1px solid var(--color-border);
   white-space: nowrap;
