@@ -43,12 +43,18 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
   (`lib/arabicSearch.ts` → `normalizeSearch`) wired into ⌘K / list filters / user search, so "امر البيع"
   finds "أمر البيع" (display text keeps full orthography). Lexicon calls — warehouse → **مخزن**, approve →
   **موافقة** (اعتماد unified) — landed with the Slice 4 i18n commit (`124cd05`).
-- **i18n: 1020 keys** (ar/en parity). Branch commits newest→oldest: `124cd05 f5f1396 b2daf82 00232f7 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e` (Slice 4 not yet pushed).
+- **Designed states — DONE**: all three cold-state primitives now exist + applied consistently —
+  `EmptyState`, `ErrorState` (retry wired to the loader `reload`, `b2cd887`), and `ListSkeleton`
+  (`20e0ef7`) which replaced the inline page-skeleton blob copy-pasted across 49 pages (net −255 lines,
+  a11y label now everywhere). Plus the tooltip key-cap colour fix (`fcc4ff2`).
+- **i18n: 1023 keys** (ar/en parity). Branch commits newest→oldest: `20e0ef7 b2cd887 c2aa1ca 124cd05
+  7f9d489 f5f1396 b2daf82 fcc4ff2 55fac56 00232f7 4a380a1 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`
+  (branch NOT yet pushed).
 
 ### NEXT ACTION
-Keyboard-first is complete (Slices 1–4). **Pick the next Linear priority area** for the UI overhaul
-(candidates: refined empty/loading states, density/typography polish, inline-edit affordances), or
-open a PR to merge `ui/speed-optimistic` → `main`. The Python `gate:all` (00–13) stays untouched.
+Speed, low-friction creation, keyboard-first, brand/Arabic search, and designed states are all done.
+**Pick the next Linear priority area** (candidates: density/typography polish, inline-edit affordances),
+or **open a PR to merge `ui/speed-optimistic` → `main`**. The Python `gate:all` (00–13) stays untouched.
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
