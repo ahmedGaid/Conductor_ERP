@@ -54,12 +54,15 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
   `ui/speed-optimistic`**, local-only): `25a3302` — `--line-height-heading` (1.25) for crisp titles +
   token-driven table density (`--table-pad-inline/-block`) unified across all 9 module tables
   (accounting outlier fixed; canonical density now a one-line token flip). Dashboard widget table left compact.
+  `88fe4b0` — form-control density (`--field-pad-inline/-block`, built on `--space-*`) so
+  inputs/selects/textareas tighten with compact mode too. List/detail vertical rhythm already token-driven.
 
 ### NEXT ACTION
 PR #1 (`ui/speed-optimistic` → `main`) is open awaiting review/merge. **Density/typography polish** is
-underway on the stacked `ui/density-typography` branch (table density + heading line-height done).
-Continue it (candidate next bits: list/detail vertical rhythm, form field density) or move to
-**inline-edit affordances**. The Python `gate:all` (00–13) stays untouched.
+underway on the stacked `ui/density-typography` branch (table density + heading line-height +
+form-control density done; list/detail rhythm confirmed already token-driven). Next candidate:
+**inline-edit affordances** (click-to-edit fields) — a larger new interaction pattern, not yet
+started. The Python `gate:all` (00–13) stays untouched.
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
