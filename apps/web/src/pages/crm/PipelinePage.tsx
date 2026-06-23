@@ -19,6 +19,7 @@ import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 interface DraftLine {
@@ -185,14 +186,7 @@ export function PipelinePage() {
       </form>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (

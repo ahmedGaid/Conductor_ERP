@@ -12,6 +12,7 @@ import {
   type RoleRegistry,
 } from "../../api/roles";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 export function RoleDetailPage() {
@@ -62,11 +63,7 @@ export function RoleDetailPage() {
   if (!role || !registry) {
     return (
       <section className="page-enter">
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={1} />
       </section>
     );
   }

@@ -16,6 +16,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 const CHANNELS: CampaignChannel[] = ["email", "web", "call", "event", "social", "other"];
@@ -119,12 +120,7 @@ export function CampaignsPage() {
       </form>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

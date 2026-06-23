@@ -14,6 +14,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { InventoryNav } from "./InventoryNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 function today(): string {
@@ -117,12 +118,7 @@ export function StockCountsPage() {
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

@@ -9,6 +9,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 const NEXT: Record<CampaignStatus, CampaignStatus | null> = {
@@ -51,11 +52,7 @@ export function CampaignDetailPage() {
       <Link className="crm-link" to="/crm/campaigns">← {t("crm.campaign.backToList")}</Link>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={1} />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

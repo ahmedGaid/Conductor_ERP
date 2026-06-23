@@ -20,6 +20,7 @@ import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
 import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 const TYPES: AccountType[] = ["asset", "liability", "equity", "income", "expense"];
@@ -142,11 +143,7 @@ export function ReportBuilderPage() {
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={1} />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

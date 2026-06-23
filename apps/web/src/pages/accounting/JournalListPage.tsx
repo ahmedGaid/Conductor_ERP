@@ -13,6 +13,7 @@ import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function JournalListPage() {
@@ -52,14 +53,7 @@ export function JournalListPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (

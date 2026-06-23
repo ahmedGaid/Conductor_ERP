@@ -10,6 +10,7 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { Bdi } from "../../components/Bdi";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 type StockRow = StockOnHand["rows"][number];
@@ -45,14 +46,7 @@ export function StockOnHandPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

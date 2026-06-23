@@ -16,6 +16,7 @@ import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
 import { AccountingNav } from "./AccountingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function BudgetDetailPage() {
@@ -116,12 +117,7 @@ export function BudgetDetailPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
       {error && <ErrorState message={error} onRetry={reloadVariance} />}
 

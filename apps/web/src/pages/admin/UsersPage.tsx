@@ -10,6 +10,7 @@ import { prefetch } from "../../lib/prefetch";
 import { normalizeSearch } from "../../lib/arabicSearch";
 import { EmptyState } from "../../components/EmptyState";
 import { UserStatusPill } from "./UserStatusPill";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
@@ -103,12 +104,7 @@ export function UsersPage() {
       )}
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {users && filtered.length === 0 && <EmptyState title={t("admin.users.empty")} hint={t("admin.users.emptyHint")} />}

@@ -9,6 +9,7 @@ import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 type Batch = Awaited<ReturnType<typeof listBatches>>[number];
@@ -36,12 +37,7 @@ export function BatchesPage() {
       <InventoryNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

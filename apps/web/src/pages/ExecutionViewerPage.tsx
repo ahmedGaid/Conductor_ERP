@@ -9,6 +9,7 @@ import { useToast } from "../app/ToastContext";
 import { runOptimistic } from "../lib/optimistic";
 import { StatusPill } from "../components/StatusPill";
 import { Bdi } from "../components/Bdi";
+import { ListSkeleton } from "../components/ListSkeleton";
 import "./ExecutionViewerPage.css";
 
 export function ExecutionViewerPage() {
@@ -39,14 +40,7 @@ export function ExecutionViewerPage() {
   return (
     <section className="viewer">
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

@@ -9,6 +9,7 @@ import { useToast } from "../../app/ToastContext";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 export function RolesPage() {
@@ -48,12 +49,7 @@ export function RolesPage() {
       <NewRoleForm roles={roles ?? []} onCreated={(name) => navigate(`/admin/roles/${encodeURIComponent(name)}`)} />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={2} />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {roles && roles.length === 0 && (

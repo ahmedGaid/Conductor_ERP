@@ -5,6 +5,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { SettingsNav } from "./SettingsNav";
 import { Segmented, SettingRow } from "./controls";
+import { ListSkeleton } from "../../components/ListSkeleton";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -115,12 +116,7 @@ export function SettingsSkeleton() {
     <section>
       <SettingsNav />
       <div className="card setcard">
-        <div className="page-skeleton">
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={3} />
       </div>
     </section>
   );

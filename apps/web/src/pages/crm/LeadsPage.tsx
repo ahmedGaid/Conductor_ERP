@@ -19,6 +19,7 @@ import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 const LEAD_STATUSES = ["new", "contacted", "qualified", "unqualified", "converted"] as const;
@@ -153,14 +154,7 @@ export function LeadsPage() {
       </form>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (

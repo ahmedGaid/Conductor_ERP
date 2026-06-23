@@ -15,6 +15,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { UserStatusPill } from "./UserStatusPill";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
@@ -73,10 +74,7 @@ export function UserDetailPage() {
   if (loading && !current) {
     return (
       <section>
-        <div className="page-skeleton" aria-busy="true">
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton rows={1} />
       </section>
     );
   }

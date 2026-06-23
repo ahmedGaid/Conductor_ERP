@@ -20,6 +20,7 @@ import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Disclosure } from "../../components/Disclosure";
 import { PurchasingNav } from "./PurchasingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./purchasing.css";
 
 // Plain-language explanation of the current state + next step (human language over the bare status
@@ -62,14 +63,7 @@ export function PurchaseOrderDetailPage() {
       <PurchasingNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

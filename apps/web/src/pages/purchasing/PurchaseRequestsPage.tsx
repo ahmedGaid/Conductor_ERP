@@ -14,6 +14,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { PurchasingNav } from "./PurchasingNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./purchasing.css";
 
 const PR_STATUSES = ["draft", "submitted", "approved", "rejected", "converted", "cancelled"] as const;
@@ -71,14 +72,7 @@ export function PurchaseRequestsPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (

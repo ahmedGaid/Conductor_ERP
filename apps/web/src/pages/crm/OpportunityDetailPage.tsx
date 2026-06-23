@@ -16,6 +16,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { CrmNav } from "./CrmNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
 
 const NEXT_STAGE: Partial<Record<OppStage, OppStage>> = {
@@ -54,14 +55,7 @@ export function OpportunityDetailPage() {
       <CrmNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

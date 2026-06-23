@@ -18,6 +18,7 @@ import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Disclosure } from "../../components/Disclosure";
 import { SalesNav } from "./SalesNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
 
 export function QuotationDetailPage() {
@@ -62,14 +63,7 @@ export function QuotationDetailPage() {
       <SalesNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 

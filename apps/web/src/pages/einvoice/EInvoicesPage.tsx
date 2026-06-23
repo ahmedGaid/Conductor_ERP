@@ -20,6 +20,7 @@ import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { EInvoiceNav } from "./EInvoiceNav";
+import { ListSkeleton } from "../../components/ListSkeleton";
 import "./einvoice.css";
 
 const EINVOICE_STATUSES = ["draft", "submitted", "valid", "rejected", "cancelled"] as const;
@@ -79,14 +80,7 @@ export function EInvoicesPage() {
       <EInvoiceNav />
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && <EmptyState title={t("einvoice.empty")} />}

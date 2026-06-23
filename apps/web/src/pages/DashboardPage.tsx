@@ -22,6 +22,7 @@ import { useAsync } from "../hooks/useAsync";
 import { ErrorState } from "../components/ErrorState";
 import { StatCard } from "../components/StatCard";
 import { Bdi } from "../components/Bdi";
+import { ListSkeleton } from "../components/ListSkeleton";
 import "./DashboardPage.css";
 
 interface DashboardData {
@@ -92,14 +93,7 @@ export function DashboardPage() {
       </div>
 
       {loading && (
-        <div className="page-skeleton" aria-busy="true">
-          <span className="visually-hidden">{t("common.loading")}</span>
-          <span className="skeleton skeleton--title" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-          <span className="skeleton skeleton--row" />
-        </div>
+        <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 
