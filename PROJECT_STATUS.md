@@ -3,7 +3,7 @@
 > Living resume anchor — current state only. The `/erp-resume` skill reads this file.
 > Keep it lean (< 200 lines); the full stage/phase/increment build log is archived in the
 > **`erp-history`** skill, and apps/web conventions live in the **`erp-frontend`** skill.
-> **Last updated: 2026-06-22.**
+> **Last updated: 2026-06-23.**
 
 ## What this project is
 Customer-hosted, single-tenant **Django modular-monolith ERP** (Python 3.13 + DRF), React + TS
@@ -30,25 +30,25 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
   (hover-prefetch), `ToastContext`/`Toaster`. Optimistic mutations + toasts + hover-prefetch across all ~32 pages.
 - **Low-friction creation — DONE** (`5ae900e`+`a8b5aa0`): 9 list-creates → optimistic insertion; 12
   navigate-away/inline create forms → success toast (survives navigation) + errors via toast, validation inline.
-- **Keyboard-first — IN PROGRESS**: Slice 1 (`50a37a2`) global shortcut layer (`useGlobalShortcuts`:
+- **Keyboard-first — DONE**: Slice 1 (`50a37a2`) global shortcut layer (`useGlobalShortcuts`:
   `g`+key nav, `/`, `c`, `?` cheat-sheet) on top of the existing ⌘K palette; Slice 2 (`514d6f2`)
   route-change focus to the page heading; sidebar shortcut tips (`65f860b`, `Tooltip.shortcut`);
   Slice 3 (`00232f7`) `j`/`k`/`Enter` list navigation (`useListKeyboardNav` + `lib/keyboard.ts`
-  shared guards) wired across all 11 index→detail lists + "Lists" cheat-sheet section.
+  shared guards) wired across all 11 index→detail lists + "Lists" cheat-sheet section; Slice 4
+  (`124cd05`) `useFormKeys` — **⌘/Ctrl+Enter submit + Esc cancel** across all 5 full-page create
+  forms (order, quotation, PO, PR, journal) + "Forms" cheat-sheet section.
 - **Brand + Arabic search — DONE this session** (`f5f1396`, `b2daf82`): added the `Docs/Brand` triad
   (Brief · Directive · new **Visual Identity System**), lean root `CLAUDE.md`, and the `conductor-brand`
   skill (recalled by `/erp-resume` + `erp-frontend`). **Arabic-insensitive search folding**
   (`lib/arabicSearch.ts` → `normalizeSearch`) wired into ⌘K / list filters / user search, so "امر البيع"
   finds "أمر البيع" (display text keeps full orthography). Lexicon calls — warehouse → **مخزن**, approve →
-  **موافقة** (اعتماد unified) — applied in the `ar.json` working tree; they ride with the Slice 4 i18n commit.
-- **i18n: 1017 keys** (ar/en parity). Branch commits newest→oldest: `f5f1396 b2daf82 00232f7 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`.
+  **موافقة** (اعتماد unified) — landed with the Slice 4 i18n commit (`124cd05`).
+- **i18n: 1020 keys** (ar/en parity). Branch commits newest→oldest: `124cd05 f5f1396 b2daf82 00232f7 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e` (Slice 4 not yet pushed).
 
 ### NEXT ACTION
-**Keyboard-first Slice 4** — form key conventions: **Esc to cancel**, **⌘/Ctrl+Enter to submit** across
-the create/edit forms (reuse the `lib/keyboard.ts` guards). After that, the remaining Linear priority areas.
-*(Slice 4 is already started in the working tree — `useFormKeys.ts`, `NewOrderPage`, `ShortcutsDialog`,
-+ `forms`/`formSubmit`/`formCancel` i18n keys; its i18n commit also carries this session's `ar.json`
-lexicon edits — مخزن / موافقة.)*
+Keyboard-first is complete (Slices 1–4). **Pick the next Linear priority area** for the UI overhaul
+(candidates: refined empty/loading states, density/typography polish, inline-edit affordances), or
+open a PR to merge `ui/speed-optimistic` → `main`. The Python `gate:all` (00–13) stays untouched.
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
