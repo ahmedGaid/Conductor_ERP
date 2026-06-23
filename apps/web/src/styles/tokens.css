@@ -119,10 +119,18 @@
   --font-size-xl: 1.5rem;
   --font-size-2xl: 1.875rem;
   --line-height-ui: 1.5;
+  /* Headings sit tighter than body copy so titles read crisp, not airy (kept safe for Arabic
+     ascenders/diacritics). Body keeps the generous --line-height-ui for long-workday readability. */
+  --line-height-heading: 1.25;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  /* ---- Table density (single source of truth so every module table shares one rhythm;
+     both reference --space-*, so compact density shrinks them together) ---- */
+  --table-pad-inline: var(--space-4);
+  --table-pad-block: var(--space-3);
 
   /* ---- Elevation (subtle, modern) ---- */
   --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
