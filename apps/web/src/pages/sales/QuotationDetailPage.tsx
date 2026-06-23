@@ -11,6 +11,7 @@ import {
   type QuotationStatus,
 } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
@@ -24,7 +25,7 @@ export function QuotationDetailPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, mutate } = useAsync<Quotation>(
+  const { data, loading, error, reload, mutate } = useAsync<Quotation>(
     () => getQuotation(id as string),
     [id],
     `sales:quotation:${id}`,
@@ -70,7 +71,7 @@ export function QuotationDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <>

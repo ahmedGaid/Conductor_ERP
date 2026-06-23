@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { listRequests, getRequest, type PurchaseRequest } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
@@ -19,7 +20,7 @@ const PR_STATUSES = ["draft", "submitted", "approved", "rejected", "converted", 
 
 export function PurchaseRequestsPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listRequests(), [], "purchasing:requests");
+  const { data, loading, error, reload } = useAsync(() => listRequests(), [], "purchasing:requests");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -79,7 +80,7 @@ export function PurchaseRequestsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("purchasing.requests.empty")}

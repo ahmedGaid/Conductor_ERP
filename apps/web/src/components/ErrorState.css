@@ -1,0 +1,48 @@
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding-block: var(--space-8);
+  padding-inline: var(--space-5);
+}
+
+.error-state__icon {
+  display: grid;
+  place-items: center;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger);
+}
+
+.error-state__icon svg {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.error-state__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.error-state__hint {
+  margin: 0;
+  max-inline-size: 28rem;
+  color: var(--color-text-muted);
+}
+
+.error-state__detail {
+  margin: 0;
+  max-inline-size: 28rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-subtle);
+}
+
+.error-state__action {
+  margin-block-start: var(--space-2);
+}

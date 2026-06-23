@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { createCampaign, getCampaign, listCampaigns, type CampaignChannel } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -23,7 +24,7 @@ type Campaign = Awaited<ReturnType<typeof listCampaigns>>[number];
 export function CampaignsPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(listCampaigns, [], "crm:campaigns");
+  const { data, loading, error, reload, mutate } = useAsync(listCampaigns, [], "crm:campaigns");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -125,7 +126,7 @@ export function CampaignsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("crm.campaign.empty")} hint={t("common.emptyHint")} />

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { bulkUsers, createUser, getOrgUnits, getUser, listUsers } from "../../api/users";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { normalizeSearch } from "../../lib/arabicSearch";
@@ -109,7 +110,7 @@ export function UsersPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {users && filtered.length === 0 && <EmptyState title={t("admin.users.empty")} hint={t("admin.users.emptyHint")} />}
 
       {filtered.length > 0 && (

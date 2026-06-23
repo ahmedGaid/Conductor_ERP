@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { getStockCount, postStockCount, setCountLine, type StockCount } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
@@ -14,7 +15,7 @@ export function StockCountDetailPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { id = "" } = useParams();
-  const { data: count, loading, error, mutate } = useAsync<StockCount>(
+  const { data: count, loading, error, reload, mutate } = useAsync<StockCount>(
     () => getStockCount(id),
     [id],
     `inventory:count:${id}`,
@@ -69,7 +70,7 @@ export function StockCountDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {count && (
         <>

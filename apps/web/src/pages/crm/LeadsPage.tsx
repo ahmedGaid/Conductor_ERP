@@ -10,6 +10,7 @@ import {
   type Opportunity,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -26,7 +27,7 @@ const LEAD_SOURCES = ["web", "referral", "call", "campaign", "other"] as const;
 export function LeadsPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(() => listLeads(), [], "crm:leads");
+  const { data, loading, error, reload, mutate } = useAsync(() => listLeads(), [], "crm:leads");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -161,7 +162,7 @@ export function LeadsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState title={t("crm.lead.empty")} hint={t("common.emptyHint")} />
       )}

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { createAccount, listAccounts, type Account, type AccountType } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -117,7 +118,7 @@ export function ChartOfAccountsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.account.empty")} hint={t("accounting.account.emptyHint")} />

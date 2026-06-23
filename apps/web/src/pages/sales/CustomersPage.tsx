@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { createCustomer, listCustomers, type Customer } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -16,7 +17,7 @@ import "./sales.css";
 export function CustomersPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(listCustomers, [], "sales:customers");
+  const { data, loading, error, reload, mutate } = useAsync(listCustomers, [], "sales:customers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Customer>[]>(
@@ -88,7 +89,7 @@ export function CustomersPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("sales.customer.empty")} hint={t("sales.customer.emptyHint")} />

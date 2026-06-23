@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { listBatches } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -14,7 +15,7 @@ type Batch = Awaited<ReturnType<typeof listBatches>>[number];
 
 export function BatchesPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(listBatches, [], "inventory:batches");
+  const { data, loading, error, reload } = useAsync(listBatches, [], "inventory:batches");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Batch>[]>(
@@ -42,7 +43,7 @@ export function BatchesPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("inventory.batches.empty")} hint={t("inventory.batches.hint")} />

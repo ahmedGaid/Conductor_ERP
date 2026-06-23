@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { listWorkflows } from "../api/workflows";
 import { useAsync } from "../hooks/useAsync";
+import { ErrorState } from "../components/ErrorState";
 import { useListKeyboardNav } from "../hooks/useListKeyboardNav";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../lib/filters";
 import { Bdi } from "../components/Bdi";
@@ -16,7 +17,7 @@ type Workflow = Awaited<ReturnType<typeof listWorkflows>>[number];
 
 export function WorkflowListPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(listWorkflows, [], "workflows");
+  const { data, loading, error, reload } = useAsync(listWorkflows, [], "workflows");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -81,7 +82,7 @@ export function WorkflowListPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState

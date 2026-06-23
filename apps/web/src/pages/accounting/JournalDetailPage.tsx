@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 
 import { getJournal, type JournalEntry } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { AccountingNav } from "./AccountingNav";
@@ -11,7 +12,7 @@ import "./accounting.css";
 export function JournalDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error } = useAsync<JournalEntry>(() => getJournal(id as string), [id], `accounting:journal:${id}`);
+  const { data, loading, error, reload } = useAsync<JournalEntry>(() => getJournal(id as string), [id], `accounting:journal:${id}`);
 
   return (
     <section className="acct-page">
@@ -27,7 +28,7 @@ export function JournalDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <div className="card acct-page">

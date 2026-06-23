@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { listQuotations, getQuotation, type Quotation } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
@@ -19,7 +20,7 @@ const QUOTATION_STATUSES = ["draft", "submitted", "approved", "rejected", "conve
 
 export function QuotationsPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listQuotations(), [], "sales:quotations");
+  const { data, loading, error, reload } = useAsync(() => listQuotations(), [], "sales:quotations");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -79,7 +80,7 @@ export function QuotationsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("sales.quotations.empty")}

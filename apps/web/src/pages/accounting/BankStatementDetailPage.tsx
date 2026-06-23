@@ -14,6 +14,7 @@ import {
   type BankStatement,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -25,7 +26,7 @@ export function BankStatementDetailPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { id = "" } = useParams();
-  const { data: stmt, loading, error, mutate } = useAsync<BankStatement>(
+  const { data: stmt, loading, error, reload, mutate } = useAsync<BankStatement>(
     () => getBankStatement(id),
     [id],
     `accounting:bank-statement:${id}`,
@@ -90,7 +91,7 @@ export function BankStatementDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {stmt && (
         <>

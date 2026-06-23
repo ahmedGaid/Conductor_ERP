@@ -898,6 +898,11 @@
   },
   "common": {
     "loading": "Loading…",
+    "retry": "Try again",
+    "error": {
+      "title": "Couldn't load this",
+      "hint": "Something went wrong on our side. Check your connection and try again."
+    },
     "comingSoon": "Coming soon",
     "delete": "Delete",
     "yes": "Yes",

@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { getCampaign, setCampaignStatus, type Campaign, type CampaignStatus } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
@@ -20,7 +21,7 @@ export function CampaignDetailPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { id = "" } = useParams();
-  const { data: campaign, loading, error, mutate } = useAsync<Campaign>(
+  const { data: campaign, loading, error, reload, mutate } = useAsync<Campaign>(
     () => getCampaign(id),
     [id],
     `crm:campaign:${id}`,
@@ -56,7 +57,7 @@ export function CampaignDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {campaign && (
         <div className="card crm-detail">

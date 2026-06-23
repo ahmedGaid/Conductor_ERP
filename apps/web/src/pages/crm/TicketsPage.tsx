@@ -13,6 +13,7 @@ import {
   type TicketPriority,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -165,7 +166,7 @@ export function TicketsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState title={t("crm.ticket.empty")} hint={t("common.emptyHint")} />
       )}

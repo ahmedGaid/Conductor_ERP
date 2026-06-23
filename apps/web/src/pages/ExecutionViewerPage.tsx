@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { decideInstance, getInstance } from "../api/workflows";
 import type { InstanceDetail, NodeRun } from "../api/types";
 import { useAsync } from "../hooks/useAsync";
+import { ErrorState } from "../components/ErrorState";
 import { useToast } from "../app/ToastContext";
 import { runOptimistic } from "../lib/optimistic";
 import { StatusPill } from "../components/StatusPill";
@@ -14,7 +15,7 @@ export function ExecutionViewerPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, mutate } = useAsync<InstanceDetail>(
+  const { data, loading, error, reload, mutate } = useAsync<InstanceDetail>(
     () => getInstance(id as string),
     [id],
   );
@@ -47,7 +48,7 @@ export function ExecutionViewerPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <>

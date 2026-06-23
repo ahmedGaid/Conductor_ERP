@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { createBankStatement, getBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
@@ -165,7 +166,7 @@ export function BankReconciliationPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.bankRec.empty")} hint={t("common.emptyHint")} />

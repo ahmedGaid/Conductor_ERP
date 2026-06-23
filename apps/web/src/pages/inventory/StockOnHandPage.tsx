@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { stockOnHand, type StockOnHand } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -15,7 +16,7 @@ type StockRow = StockOnHand["rows"][number];
 
 export function StockOnHandPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(stockOnHand, [], "inventory:stock-on-hand");
+  const { data, loading, error, reload } = useAsync(stockOnHand, [], "inventory:stock-on-hand");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<StockRow>[]>(
@@ -53,7 +54,7 @@ export function StockOnHandPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <div className="card inv-table-wrap">

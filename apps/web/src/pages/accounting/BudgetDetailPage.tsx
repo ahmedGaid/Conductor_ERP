@@ -10,6 +10,7 @@ import {
   setBudgetLine,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -122,7 +123,7 @@ export function BudgetDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reloadVariance} />}
 
       {variance && (
         <ExportButtons path={`/accounting/budgets/${id}/variance${period ? `?period=${period}` : ""}`} />

@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { createBudget, getBudget, listBudgets } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -20,7 +21,7 @@ type Budget = Awaited<ReturnType<typeof listBudgets>>[number];
 export function BudgetsPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(listBudgets, [], "accounting:budgets");
+  const { data, loading, error, reload, mutate } = useAsync(listBudgets, [], "accounting:budgets");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Budget>[]>(
@@ -89,7 +90,7 @@ export function BudgetsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.budgets.empty")} hint={t("common.emptyHint")} />

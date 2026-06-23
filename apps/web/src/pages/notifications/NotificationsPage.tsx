@@ -8,6 +8,7 @@ import {
   type NotificationStatus,
 } from "../../api/notifications";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { Bdi } from "../../components/Bdi";
@@ -24,7 +25,7 @@ export function NotificationsPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const [status, setStatus] = useState<NotificationStatus | "">("");
-  const { data, loading, error, mutate } = useAsync(
+  const { data, loading, error, reload, mutate } = useAsync(
     () => listNotifications(status ? { status } : undefined),
     [status],
     `notifications:${status || "all"}`,
@@ -70,7 +71,7 @@ export function NotificationsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && <EmptyState title={t("notifications.empty")} hint={t("notifications.emptyHint")} />}
 
       {data && data.length > 0 && <ExportButtons path="/notifications" />}

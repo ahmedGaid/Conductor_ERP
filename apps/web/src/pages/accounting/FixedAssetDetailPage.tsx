@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { disposeAsset, getAsset, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -15,7 +16,7 @@ export function FixedAssetDetailPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { code = "" } = useParams();
-  const { data: asset, loading, error, mutate } = useAsync<FixedAsset>(() => getAsset(code), [code], `accounting:asset:${code}`);
+  const { data: asset, loading, error, reload, mutate } = useAsync<FixedAsset>(() => getAsset(code), [code], `accounting:asset:${code}`);
 
   const [disposeDate, setDisposeDate] = useState(new Date().toISOString().slice(0, 10));
   const [proceeds, setProceeds] = useState("0");
@@ -57,7 +58,7 @@ export function FixedAssetDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {asset && (
         <>

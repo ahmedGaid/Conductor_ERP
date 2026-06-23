@@ -13,6 +13,7 @@ import {
   type PurchaseOrder,
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
@@ -32,7 +33,7 @@ export function PurchaseOrderDetailPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, mutate } = useAsync<PurchaseOrder>(
+  const { data, loading, error, reload, mutate } = useAsync<PurchaseOrder>(
     () => getPurchaseOrder(id as string),
     [id],
     `purchasing:order:${id}`,
@@ -70,7 +71,7 @@ export function PurchaseOrderDetailPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <>

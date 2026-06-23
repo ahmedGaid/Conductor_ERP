@@ -8,6 +8,7 @@ import {
   type ETAInvoice,
 } from "../../api/einvoice";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
@@ -26,7 +27,7 @@ const EINVOICE_STATUSES = ["draft", "submitted", "valid", "rejected", "cancelled
 export function EInvoicesPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(() => listETAInvoices(), [], "einvoice:invoices");
+  const { data, loading, error, reload, mutate } = useAsync(() => listETAInvoices(), [], "einvoice:invoices");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -87,7 +88,7 @@ export function EInvoicesPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && <EmptyState title={t("einvoice.empty")} />}
 
       {data && data.length > 0 && (

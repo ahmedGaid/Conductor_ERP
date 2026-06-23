@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { getJournal, listJournals, type JournalEntry } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
@@ -16,7 +17,7 @@ import "./accounting.css";
 
 export function JournalListPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(() => listJournals(), [], "accounting:journals");
+  const { data, loading, error, reload } = useAsync(() => listJournals(), [], "accounting:journals");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<JournalEntry>[]>(
@@ -60,7 +61,7 @@ export function JournalListPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("accounting.journals.empty")}

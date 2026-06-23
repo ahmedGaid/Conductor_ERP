@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { balanceSheet, type StatementLine } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -12,7 +13,7 @@ import "./accounting.css";
 export function BalanceSheetPage() {
   const { t } = useTranslation();
   const [asOf, setAsOf] = useState("");
-  const { data, loading, error } = useAsync(() => balanceSheet(asOf || undefined), [asOf]);
+  const { data, loading, error, reload } = useAsync(() => balanceSheet(asOf || undefined), [asOf]);
 
   return (
     <section className="acct-page">
@@ -40,7 +41,7 @@ export function BalanceSheetPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && <ExportButtons path={`/accounting/reports/balance-sheet${asOf ? `?as_of=${asOf}` : ""}`} />}
 

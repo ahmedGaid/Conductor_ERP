@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { createCostCenter, listCostCenters } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -17,7 +18,7 @@ type CostCenter = Awaited<ReturnType<typeof listCostCenters>>[number];
 export function CostCentersPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(listCostCenters, [], "accounting:cost-centers");
+  const { data, loading, error, reload, mutate } = useAsync(listCostCenters, [], "accounting:cost-centers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<CostCenter>[]>(
@@ -80,7 +81,7 @@ export function CostCentersPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.costCenters.empty")} hint={t("common.emptyHint")} />

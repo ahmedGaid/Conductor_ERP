@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { listPurchaseOrders, getPurchaseOrder, approvePO, confirmPO, type PurchaseOrder } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -32,7 +33,7 @@ const PO_STATUSES = [
 export function PurchaseOrdersPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(() => listPurchaseOrders(), [], "purchasing:orders");
+  const { data, loading, error, reload, mutate } = useAsync(() => listPurchaseOrders(), [], "purchasing:orders");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -114,7 +115,7 @@ export function PurchaseOrdersPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("purchasing.orders.empty")}

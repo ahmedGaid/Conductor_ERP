@@ -12,6 +12,7 @@ import {
   type ReportSchedule,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
@@ -147,7 +148,7 @@ export function ReportBuilderPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {defs && defs.length === 0 && (
         <EmptyState title={t("accounting.reportBuilder.empty")} hint={t("common.emptyHint")} />

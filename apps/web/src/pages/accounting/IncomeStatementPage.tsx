@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { incomeStatement, listCostCenters, listPeriods, type StatementLine } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -15,7 +16,7 @@ export function IncomeStatementPage() {
   const [costCenter, setCostCenter] = useState("");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
   const { data: costCenters } = useAsync(listCostCenters, [], "accounting:cost-centers");
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, reload } = useAsync(
     () => incomeStatement({ ...(period ? { period } : {}), ...(costCenter ? { cost_center: costCenter } : {}) }),
     [period, costCenter],
   );
@@ -60,7 +61,7 @@ export function IncomeStatementPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && <ExportButtons path={`/accounting/reports/income-statement${exportSuffix}`} />}
 

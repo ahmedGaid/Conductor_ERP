@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -15,7 +16,7 @@ import "./purchasing.css";
 export function SuppliersPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(listSuppliers, [], "purchasing:suppliers");
+  const { data, loading, error, reload, mutate } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Supplier>[]>(
@@ -80,7 +81,7 @@ export function SuppliersPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("purchasing.supplier.empty")} hint={t("purchasing.supplier.emptyHint")} />

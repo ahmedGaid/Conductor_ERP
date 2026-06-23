@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { vatReturn } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -15,7 +16,7 @@ export function VatReturnPage() {
   const { t } = useTranslation();
   const [from, setFrom] = useState(`${year}-01-01`);
   const [to, setTo] = useState(`${year}-12-31`);
-  const { data, loading, error } = useAsync(() => vatReturn(from, to), [from, to]);
+  const { data, loading, error, reload } = useAsync(() => vatReturn(from, to), [from, to]);
 
   const rows: { label: string; value: number; strong?: boolean }[] = data
     ? [
@@ -52,7 +53,7 @@ export function VatReturnPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && <ExportButtons path={`/accounting/reports/vat-return?from=${from}&to=${to}`} />}
 

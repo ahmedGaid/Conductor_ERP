@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { cashFlow, listPeriods } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -13,7 +14,7 @@ export function CashFlowStatementPage() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState("");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
-  const { data, loading, error } = useAsync(() => cashFlow(period ? { period } : {}), [period]);
+  const { data, loading, error, reload } = useAsync(() => cashFlow(period ? { period } : {}), [period]);
 
   const rows: { label: string; value: number; strong?: boolean }[] = data
     ? [
@@ -56,7 +57,7 @@ export function CashFlowStatementPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && <ExportButtons path={`/accounting/reports/cash-flow${period ? `?period=${period}` : ""}`} />}
 

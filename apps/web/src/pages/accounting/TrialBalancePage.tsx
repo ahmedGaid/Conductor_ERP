@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { listPeriods, trialBalance } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -13,7 +14,7 @@ export function TrialBalancePage() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState("");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
-  const { data, loading, error } = useAsync(() => trialBalance(period || undefined), [period]);
+  const { data, loading, error, reload } = useAsync(() => trialBalance(period || undefined), [period]);
 
   return (
     <section className="acct-page">
@@ -48,7 +49,7 @@ export function TrialBalancePage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && <ExportButtons path={`/accounting/reports/trial-balance${period ? `?period=${period}` : ""}`} />}
 

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { createRole, listRoles, type RoleRow } from "../../api/roles";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
@@ -13,7 +14,7 @@ import "./admin.css";
 export function RolesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: roles, loading, error } = useAsync(listRoles, [], "admin:roles");
+  const { data: roles, loading, error, reload } = useAsync(listRoles, [], "admin:roles");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<RoleRow>[]>(
@@ -54,7 +55,7 @@ export function RolesPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {roles && roles.length === 0 && (
         <EmptyState title={t("admin.roles.empty")} hint={t("admin.roles.emptyHint")} />
       )}

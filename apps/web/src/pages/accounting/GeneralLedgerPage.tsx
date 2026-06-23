@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { generalLedger, listAccounts } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -15,7 +16,7 @@ export function GeneralLedgerPage() {
   const postable = (accounts ?? []).filter((a) => a.is_postable);
   const [account, setAccount] = useState("");
 
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, reload } = useAsync(
     () => (account ? generalLedger(account) : Promise.resolve(null)),
     [account],
   );
@@ -53,7 +54,7 @@ export function GeneralLedgerPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {!account && <p className="muted">{t("accounting.report.pickAccount")}</p>}
 
       {data && account && <ExportButtons path={`/accounting/reports/general-ledger?account=${account}`} />}

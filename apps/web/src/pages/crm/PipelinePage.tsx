@@ -12,6 +12,7 @@ import {
 import { listCustomers } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -193,7 +194,7 @@ export function PipelinePage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState title={t("crm.pipeline.empty")} hint={t("common.emptyHint")} />
       )}

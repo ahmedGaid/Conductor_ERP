@@ -19,6 +19,7 @@ import { listNotifications, type Notification } from "../api/notifications";
 import { currentPeriod, pctChange, previousPeriod } from "../lib/dates";
 import { formatMinor } from "../lib/money";
 import { useAsync } from "../hooks/useAsync";
+import { ErrorState } from "../components/ErrorState";
 import { StatCard } from "../components/StatCard";
 import { Bdi } from "../components/Bdi";
 import "./DashboardPage.css";
@@ -71,7 +72,7 @@ const SHORTCUTS = [
 
 export function DashboardPage() {
   const { t } = useTranslation();
-  const { data, loading, error } = useAsync(loadDashboard, [], "dashboard");
+  const { data, loading, error, reload } = useAsync(loadDashboard, [], "dashboard");
   const { prefs } = usePreferences();
   const widgets = orderedVisibleWidgets(prefs?.dashboard_layout);
 
@@ -100,7 +101,7 @@ export function DashboardPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && (
         <>

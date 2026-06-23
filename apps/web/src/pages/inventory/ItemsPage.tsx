@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -18,7 +19,7 @@ const ITEM_TYPES: ItemType[] = ["stock", "service"];
 export function ItemsPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(listItems, [], "inventory:items");
+  const { data, loading, error, reload, mutate } = useAsync(listItems, [], "inventory:items");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -115,7 +116,7 @@ export function ItemsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("inventory.item.empty")} hint={t("inventory.item.emptyHint")} />

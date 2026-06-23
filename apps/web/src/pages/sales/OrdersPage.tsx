@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { listOrders, getOrder, approveOrder, confirmOrder, type SalesOrder } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -33,7 +34,7 @@ const ORDER_STATUSES = [
 export function OrdersPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(() => listOrders(), [], "sales:orders");
+  const { data, loading, error, reload, mutate } = useAsync(() => listOrders(), [], "sales:orders");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -123,7 +124,7 @@ export function OrdersPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && (
         <EmptyState
           title={t("sales.orders.empty")}

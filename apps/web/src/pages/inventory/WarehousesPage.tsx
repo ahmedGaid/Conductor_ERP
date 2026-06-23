@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { createWarehouse, listWarehouses, type Warehouse } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -15,7 +16,7 @@ import "./inventory.css";
 export function WarehousesPage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, mutate } = useAsync(listWarehouses, [], "inventory:warehouses");
+  const { data, loading, error, reload, mutate } = useAsync(listWarehouses, [], "inventory:warehouses");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Warehouse>[]>(
@@ -80,7 +81,7 @@ export function WarehousesPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("inventory.warehouse.empty")} hint={t("inventory.warehouse.emptyHint")} />

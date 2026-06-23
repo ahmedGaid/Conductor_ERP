@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { acquireAsset, getAsset, listAssets, runDepreciation, type AssetStatus, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
@@ -192,7 +193,7 @@ export function FixedAssetsPage() {
           <span className="skeleton skeleton--row" />
         </div>
       )}
-      {error && <p className="error-text">{error}</p>}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("accounting.assets.empty")} hint={t("common.emptyHint")} />
