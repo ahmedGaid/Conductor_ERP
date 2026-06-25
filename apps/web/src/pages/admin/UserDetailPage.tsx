@@ -16,6 +16,7 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { InlineEdit } from "../../components/InlineEdit";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
@@ -102,8 +103,27 @@ export function UserDetailPage() {
           <dl className="admin-dl">
             <div><dt>{t("admin.users.name")}</dt><dd>{current.display_name}</dd></div>
             <div><dt>{t("admin.detail.username")}</dt><dd className="latin">{current.username}</dd></div>
-            <div><dt>{t("admin.detail.jobTitle")}</dt><dd>{current.job_title || "—"}</dd></div>
-            <div><dt>{t("admin.detail.phone")}</dt><dd className="latin">{current.phone || "—"}</dd></div>
+            <div>
+              <dt>{t("admin.detail.jobTitle")}</dt>
+              <dd>
+                <InlineEdit
+                  value={current.job_title}
+                  label={t("admin.detail.jobTitle")}
+                  onSave={(v) => patch({ job_title: v })}
+                />
+              </dd>
+            </div>
+            <div>
+              <dt>{t("admin.detail.phone")}</dt>
+              <dd>
+                <InlineEdit
+                  value={current.phone}
+                  label={t("admin.detail.phone")}
+                  inputClassName="latin"
+                  onSave={(v) => patch({ phone: v })}
+                />
+              </dd>
+            </div>
             <div><dt>{t("admin.users.branch")}</dt><dd className="latin">{current.branch || "—"}</dd></div>
             <div><dt>{t("admin.users.department")}</dt><dd>{current.department || "—"}</dd></div>
             <div><dt>{t("admin.detail.twofa")}</dt><dd>{current.is_2fa_enabled ? t("common.on") : t("common.off")}</dd></div>

@@ -911,6 +911,7 @@
     "soon": "Soon",
     "emptyHint": "Create your first one to get started.",
     "moreDetails": "Details",
+    "editField": "Edit {{field}}",
     "cancel": "Cancel",
     "status": "Status",
     "date": "Date",

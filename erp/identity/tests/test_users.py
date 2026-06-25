@@ -102,6 +102,24 @@ def test_patch_status_and_department(admin, db):
     assert data["department"] == "FIN"
 
 
+def test_patch_profile_text_fields(admin, db):
+    target, _ = user_svc.create_user(username="fay", email="fay@erp.local")
+    c = _auth(admin)
+    # Set free-text profile fields (these live on UserPreferences).
+    resp = c.patch(f"/api/identity/users/{target.id}",
+                   {"job_title": "Controller", "phone": "+20 100 000 0000"}, format="json")
+    assert resp.status_code == 200, resp.content
+    data = resp.json()["data"]
+    assert data["job_title"] == "Controller"
+    assert data["phone"] == "+20 100 000 0000"
+    # A blank value clears the field.
+    resp = c.patch(f"/api/identity/users/{target.id}", {"job_title": ""}, format="json")
+    assert resp.status_code == 200
+    assert resp.json()["data"]["job_title"] == ""
+    # Untouched field is preserved.
+    assert resp.json()["data"]["phone"] == "+20 100 000 0000"
+
+
 def test_reset_password_returns_new_temp(admin):
     target, old = user_svc.create_user(username="ed", email="ed@erp.local")
     resp = _auth(admin).post(f"/api/identity/users/{target.id}/reset-password")

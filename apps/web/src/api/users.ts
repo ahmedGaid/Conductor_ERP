@@ -94,7 +94,15 @@ export function createUser(body: {
 
 export function updateUser(
   id: number,
-  changes: Partial<{ role: string; branch: string | null; department: string | null; team: string | null; status: string }>,
+  changes: Partial<{
+    role: string;
+    branch: string | null;
+    department: string | null;
+    team: string | null;
+    status: string;
+    job_title: string;
+    phone: string;
+  }>,
 ): Promise<UserDetail> {
   return apiFetch<UserDetail>(`/identity/users/${id}`, { method: "PATCH", body: JSON.stringify(changes) });
 }

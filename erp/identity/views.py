@@ -198,6 +198,10 @@ class UserDetailView(APIView):
             kwargs["team"] = d["team"] or ""
         if "status" in d and d["status"]:
             kwargs["status"] = d["status"]
+        if "job_title" in d:
+            kwargs["job_title"] = d["job_title"]
+        if "phone" in d:
+            kwargs["phone"] = d["phone"]
         user = user_svc.update_user(_get_user(pk), **kwargs)
         return _envelope(user_svc.serialize_detail(user))
 

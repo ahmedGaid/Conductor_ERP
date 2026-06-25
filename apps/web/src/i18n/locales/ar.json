@@ -911,6 +911,7 @@
     "soon": "قريبًا",
     "emptyHint": "أنشئ أول عنصر للبدء.",
     "moreDetails": "تفاصيل",
+    "editField": "تعديل {{field}}",
     "cancel": "إلغاء",
     "status": "الحالة",
     "date": "التاريخ",

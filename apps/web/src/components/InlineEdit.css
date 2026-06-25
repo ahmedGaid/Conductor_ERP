@@ -1,0 +1,37 @@
+/* Click-to-edit text field. The trigger reads as the surrounding text and only reveals its
+   editability on hover/focus (a quiet tint + border) — no persistent icon, keeping the chrome
+   calm. Negative inline margin pulls the padded hit-area back into line with non-editable siblings
+   so nothing shifts. Tokens + logical properties only. */
+.inline-edit__trigger {
+  display: inline-flex;
+  align-items: center;
+  max-inline-size: 100%;
+  margin-inline: calc(-1 * var(--space-2));
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: text;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.inline-edit__trigger:hover {
+  background-color: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+.inline-edit__empty {
+  color: var(--color-text-subtle);
+}
+
+/* The active input sits at the same rhythm as the trigger, so the swap doesn't jump. It inherits
+   the global field styling (border, focus ring) from input rules in global.css. */
+.inline-edit__input {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  margin-inline: calc(-1 * var(--space-2));
+  padding-block: var(--space-1);
+}
