@@ -322,3 +322,12 @@ textarea:focus {
 [data-kbd-active="true"] {
   background-color: var(--color-surface-alt);
 }
+/* A crisp leading marker on the active row's first cell separates the keyboard cursor from a plain
+   mouse hover (which only tints the row). Monochrome, layout-neutral (inset shadow takes no space),
+   and direction-aware so the bar always sits at the inline-start edge in both RTL and LTR. */
+[data-kbd-active="true"] > :first-child {
+  box-shadow: inset 2px 0 0 var(--color-text);
+}
+[dir="rtl"] [data-kbd-active="true"] > :first-child {
+  box-shadow: inset -2px 0 0 var(--color-text);
+}
