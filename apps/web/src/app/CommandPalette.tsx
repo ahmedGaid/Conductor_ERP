@@ -144,11 +144,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // Render order: recents, then create, then go — matching the flat `visible` sequence so
   // arrow-key navigation flows top-to-bottom across the groups.
   const recentIds = new Set(recent.map((c) => c.id));
-  const sections: { key: Group; rows: Command[] }[] = [
+  const allSections: { key: Group; rows: Command[] }[] = [
     { key: "recent", rows: recent },
     { key: "create", rows: visible.filter((c) => c.group === "create" && !recentIds.has(c.id)) },
     { key: "go", rows: visible.filter((c) => c.group === "go" && !recentIds.has(c.id)) },
-  ].filter((s) => s.rows.length > 0);
+  ];
+  const sections = allSections.filter((s) => s.rows.length > 0);
 
   return (
     <dialog
