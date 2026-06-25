@@ -132,7 +132,7 @@
 .pur-meta__row {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: var(--space-1);
 }
 .pur-meta dt {
   color: var(--color-text-muted);

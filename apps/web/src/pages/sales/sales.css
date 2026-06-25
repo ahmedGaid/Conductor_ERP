@@ -170,7 +170,7 @@
 .sales-meta__row {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: var(--space-1);
 }
 .sales-meta dt {
   color: var(--color-text-muted);
