@@ -72,6 +72,8 @@ export function PurchaseOrdersPage() {
   const { active } = useListKeyboardNav<PurchaseOrder>({
     items: visible ?? [],
     onOpen: (o) => navigate(`/purchasing/orders/${o.id}`),
+    persistKey: "purchasing:orders",
+    getItemId: (o) => o.id,
   });
 
   // One-click row actions mirror the PO-detail gating: approve a draft awaiting sign-off, then

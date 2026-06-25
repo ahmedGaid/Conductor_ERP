@@ -40,6 +40,8 @@ export function JournalListPage() {
   const { active } = useListKeyboardNav<JournalEntry>({
     items: filtered ?? [],
     onOpen: (e) => navigate(`/accounting/journals/${e.id}`),
+    persistKey: "accounting:journals",
+    getItemId: (e) => e.id,
   });
 
   return (
