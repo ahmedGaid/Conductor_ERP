@@ -100,6 +100,7 @@ export function updateUser(
     department: string | null;
     team: string | null;
     status: string;
+    display_name: string;
     job_title: string;
     phone: string;
   }>,

@@ -29,6 +29,10 @@ export function InlineEdit({ value, onSave, label, emptyText = "—", placeholde
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  // True when a keyboard commit/cancel ended the edit — restore focus to the trigger so Tab order
+  // continues from where it was. Stays false for a blur-commit (the user moved focus on purpose).
+  const restoreFocus = useRef(false);
 
   // Stay in sync if the persisted value changes while we're not actively editing.
   useEffect(() => {
@@ -40,6 +44,9 @@ export function InlineEdit({ value, onSave, label, emptyText = "—", placeholde
     if (editing) {
       inputRef.current?.focus();
       inputRef.current?.select();
+    } else if (restoreFocus.current) {
+      restoreFocus.current = false;
+      triggerRef.current?.focus();
     }
   }, [editing]);
 
@@ -67,10 +74,12 @@ export function InlineEdit({ value, onSave, label, emptyText = "—", placeholde
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
+      restoreFocus.current = true;
       void commit();
     } else if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
+      restoreFocus.current = true;
       cancel();
     }
   }
@@ -78,6 +87,7 @@ export function InlineEdit({ value, onSave, label, emptyText = "—", placeholde
   if (!editing) {
     return (
       <button
+        ref={triggerRef}
         type="button"
         className="inline-edit__trigger"
         onClick={() => setEditing(true)}
