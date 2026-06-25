@@ -59,6 +59,8 @@ export function PurchaseRequestsPage() {
   const { active } = useListKeyboardNav<PurchaseRequest>({
     items: visible ?? [],
     onOpen: (r) => navigate(`/purchasing/requests/${r.id}`),
+    persistKey: "purchasing:requests",
+    getItemId: (r) => r.id,
   });
 
   return (

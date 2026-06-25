@@ -59,6 +59,8 @@ export function QuotationsPage() {
   const { active } = useListKeyboardNav<Quotation>({
     items: visible ?? [],
     onOpen: (q) => navigate(`/sales/quotations/${q.id}`),
+    persistKey: "sales:quotations",
+    getItemId: (q) => q.id,
   });
 
   return (

@@ -84,6 +84,8 @@ export function OrdersPage() {
   const { active } = useListKeyboardNav<SalesOrder>({
     items: visible ?? [],
     onOpen: (o) => navigate(`/sales/orders/${o.id}`),
+    persistKey: "sales:orders",
+    getItemId: (o) => o.id,
   });
 
   // One-click row actions mirror the order-detail gating: approve a draft awaiting sign-off, then
