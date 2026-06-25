@@ -97,7 +97,8 @@ def assign_role(user, role_name: str, actor=None):
     return user
 
 
-def update_user(user, *, role=None, branch=..., department=None, team=None, status=None, actor=None):
+def update_user(user, *, role=None, branch=..., department=None, team=None, status=None,
+                job_title=None, phone=None, actor=None):
     if branch is not ...:
         user.branch = branch
     if department is not None:
@@ -110,6 +111,16 @@ def update_user(user, *, role=None, branch=..., department=None, team=None, stat
         user.status = status
         _sync_active(user)
     user.save()
+    # Personal profile text lives on UserPreferences; a blank value clears the field.
+    if job_title is not None or phone is not None:
+        from .models import UserPreferences
+
+        prefs, _created = UserPreferences.objects.get_or_create(user=user)
+        if job_title is not None:
+            prefs.job_title = job_title
+        if phone is not None:
+            prefs.phone = phone
+        prefs.save()
     if role:
         user.groups.set([_group(role)])
     audit.record(module="identity", action="update_user", entity_type="User",

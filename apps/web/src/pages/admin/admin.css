@@ -196,6 +196,20 @@
   margin: 0;
   text-align: end;
 }
+/* Rows holding an inline-editable field: the input box fills the row and reads start-aligned, with
+   the label centred against the taller box. Read-only rows keep their end-aligned plain text. */
+.admin-dl > .admin-dl__edit {
+  align-items: center;
+  gap: var(--space-4);
+}
+.admin-dl__edit dt {
+  white-space: nowrap;
+}
+.admin-dl__edit dd {
+  flex: 1;
+  min-inline-size: 0;
+  text-align: start;
+}
 
 .admin-chips {
   list-style: none;

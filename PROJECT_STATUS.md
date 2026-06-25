@@ -22,9 +22,10 @@ Repo: `C:\AhmedGaid\ERP` (git, `main`), pushed to `github.com/ahmedGaid/Conducto
 For how any piece was built (and the commit that delivered it) → recall the **`erp-history`** skill.
 
 ## Active work — Linear-quality frontend UX overhaul
-**Branch `ui/speed-optimistic`** (off `main`, pushed; **PR #1 open** → `main`, not yet merged). apps/web only — the Python
-`gate:all` is untouched. A focused pass to lift the React UI to Linear's bar (fast, calm,
-keyboard-driven), worked one priority area at a time. Full patterns + primitives → **`erp-frontend`** skill.
+**Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`
+→ `af045f8`). apps/web only — the Python `gate:all` is untouched. A focused pass to lift the React UI
+to Linear's bar (fast, calm, keyboard-driven), worked one priority area at a time. Full patterns +
+primitives → **`erp-frontend`** skill. (Merged branches still exist on origin; safe to delete.)
 
 - **Speed — DONE** (`5ae900e`): `lib/optimistic.ts` (`runOptimistic`/`optimisticCreate`), `lib/prefetch.ts`
   (hover-prefetch), `ToastContext`/`Toaster`. Optimistic mutations + toasts + hover-prefetch across all ~32 pages.
@@ -50,24 +51,44 @@ keyboard-driven), worked one priority area at a time. Full patterns + primitives
 - **i18n: 1023 keys** (ar/en parity). Branch commits newest→oldest: `20e0ef7 b2cd887 c2aa1ca 124cd05
   7f9d489 f5f1396 b2daf82 fcc4ff2 55fac56 00232f7 4a380a1 65f860b 514d6f2 50a37a2 a8b5aa0 5ae900e`
   (pushed; **PR #1** open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/1).
-- **Density/typography — IN PROGRESS** (branch `ui/density-typography`, **stacked on
-  `ui/speed-optimistic`**, local-only): `25a3302` — `--line-height-heading` (1.25) for crisp titles +
-  token-driven table density (`--table-pad-inline/-block`) unified across all 9 module tables
-  (accounting outlier fixed; canonical density now a one-line token flip). Dashboard widget table left compact.
-  `88fe4b0` — form-control density (`--field-pad-inline/-block`, built on `--space-*`) so
-  inputs/selects/textareas tighten with compact mode too. List/detail vertical rhythm already token-driven.
+- **Density/typography — DONE** (PR #2, merged `af045f8`): `25a3302` — `--line-height-heading` (1.25)
+  for crisp titles + token-driven table density (`--table-pad-inline/-block`) unified across all 9
+  module tables (accounting outlier fixed; canonical density now a one-line token flip). Dashboard
+  widget table left compact. `88fe4b0` — form-control density (`--field-pad-inline/-block`, built on
+  `--space-*`) so inputs/selects/textareas tighten with compact mode too. List/detail vertical rhythm
+  already token-driven.
+
+- **Command-palette recents + inline-edit — DONE** (branch `ui/inline-edit`, off `main`; **pushed, PR #3
+  open** → `main`; commits `ce30535`→`8fe0dc5`):
+  - **Palette recents** (`ce30535`): ⌘K with an empty query surfaces recently-visited pages at the top
+    under a "Recent" group (`lib/recents.ts` localStorage MRU; recorded by the always-mounted palette
+    via `useLocation`). +`command.groupRecent`.
+  - **Inline-edit** (`b7e13d4`, redesigned `8fe0dc5`): reusable `InlineEdit` wired to the user detail
+    page's **job title + phone**. Reads as a **bordered input box** with a **placeholder suggestion**
+    when empty (discoverable, no hover-to-find); display↔input share metrics so no jump; Enter/⌘Enter
+    commit, Esc revert, blur commit. Optimistic save via the page's `saveField()` with a **"Saved"**
+    toast on success (dropdowns stay silent). **Backend touched (authorized):** `UpdateUserSerializer`
+    + `update_user` now accept `job_title`/`phone` (stored on `UserPreferences`, blank clears) over the
+    existing `PATCH /identity/users/{id}`; no migration (fields pre-existed); new `test_users` test.
+    +`common.editField/saved`, +`admin.detail.*Placeholder`. **`gate:all` (00–13) GREEN.**
+  - `1116f54` fixes a palette type error that only `tsc -b` (the real build) caught — see gate note below.
 
 ### NEXT ACTION
-PR #1 (`ui/speed-optimistic` → `main`) is open awaiting review/merge. **Density/typography polish** is
-underway on the stacked `ui/density-typography` branch (table density + heading line-height +
-form-control density done; list/detail rhythm confirmed already token-driven). Next candidate:
-**inline-edit affordances** (click-to-edit fields) — a larger new interaction pattern, not yet
-started. The Python `gate:all` (00–13) stays untouched.
+Full UX overhaul + density/typography are **merged to `main`** (PRs #1, #2). **PR #3** (`ui/inline-edit`)
+is **open** awaiting review/merge: github.com/ahmedGaid/Conductor_ERP/pull/3. After it merges, candidate
+next inline-edit targets: other free-text fields (each needs the same small backend PATCH opening). Or
+pick another frontend-only Linear area (micro-states, palette depth, motion pass).
+
+> **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
+> **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
+> the real build `tsc -b` (run by `gate03`) rejected. **Use `npx tsc -b` from `apps/web` as the true
+> typecheck** before claiming green. (The `erp-frontend` skill now documents `tsc -b`; `npm run build`
+> = `tsc -b && vite build` for full certainty before a PR.)
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
 2. Clear any blocker (Redis after a reboot — see below), then continue from NEXT ACTION.
-3. To continue the frontend work: `git checkout ui/speed-optimistic`.
+3. To continue the frontend work: `git checkout ui/inline-edit` (latest local branch; off `main`).
 4. Keep this file current as steps complete (and let the `erp-history` skill absorb anything historical).
 
 ## Verify / gates

@@ -16,6 +16,7 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { InlineEdit } from "../../components/InlineEdit";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
@@ -52,6 +53,23 @@ export function UserDetailPage() {
       request: () => updateUser(userId, changes),
       settle: (_predicted, updated) => updated,
       toast,
+    });
+  }
+
+  // Inline text edits (job title / phone): same optimistic flow, but confirm the save with a toast
+  // once it lands — text fields are edited deliberately, so the "Saved" acknowledgement is welcome
+  // (unlike the freely-flicked dropdowns above, which stay silent). Awaited so the field stays in
+  // its saving state until the round-trip settles.
+  function saveField(changes: Parameters<typeof updateUser>[1]) {
+    if (!data) return Promise.resolve();
+    return runOptimistic<UserDetail, UserDetail>({
+      current: data,
+      mutate,
+      optimistic: (u) => ({ ...u, ...changes }) as UserDetail,
+      request: () => updateUser(userId, changes),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: t("common.saved"),
     });
   }
 
@@ -102,8 +120,29 @@ export function UserDetailPage() {
           <dl className="admin-dl">
             <div><dt>{t("admin.users.name")}</dt><dd>{current.display_name}</dd></div>
             <div><dt>{t("admin.detail.username")}</dt><dd className="latin">{current.username}</dd></div>
-            <div><dt>{t("admin.detail.jobTitle")}</dt><dd>{current.job_title || "—"}</dd></div>
-            <div><dt>{t("admin.detail.phone")}</dt><dd className="latin">{current.phone || "—"}</dd></div>
+            <div className="admin-dl__edit">
+              <dt>{t("admin.detail.jobTitle")}</dt>
+              <dd>
+                <InlineEdit
+                  value={current.job_title}
+                  label={t("admin.detail.jobTitle")}
+                  placeholder={t("admin.detail.jobTitlePlaceholder")}
+                  onSave={(v) => saveField({ job_title: v })}
+                />
+              </dd>
+            </div>
+            <div className="admin-dl__edit">
+              <dt>{t("admin.detail.phone")}</dt>
+              <dd>
+                <InlineEdit
+                  value={current.phone}
+                  label={t("admin.detail.phone")}
+                  placeholder={t("admin.detail.phonePlaceholder")}
+                  inputClassName="latin"
+                  onSave={(v) => saveField({ phone: v })}
+                />
+              </dd>
+            </div>
             <div><dt>{t("admin.users.branch")}</dt><dd className="latin">{current.branch || "—"}</dd></div>
             <div><dt>{t("admin.users.department")}</dt><dd>{current.department || "—"}</dd></div>
             <div><dt>{t("admin.detail.twofa")}</dt><dd>{current.is_2fa_enabled ? t("common.on") : t("common.off")}</dd></div>
