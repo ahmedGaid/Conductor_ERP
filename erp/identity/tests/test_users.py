@@ -107,17 +107,20 @@ def test_patch_profile_text_fields(admin, db):
     c = _auth(admin)
     # Set free-text profile fields (these live on UserPreferences).
     resp = c.patch(f"/api/identity/users/{target.id}",
-                   {"job_title": "Controller", "phone": "+20 100 000 0000"}, format="json")
+                   {"display_name": "Fay Adel", "job_title": "Controller",
+                    "phone": "+20 100 000 0000"}, format="json")
     assert resp.status_code == 200, resp.content
     data = resp.json()["data"]
+    assert data["display_name"] == "Fay Adel"
     assert data["job_title"] == "Controller"
     assert data["phone"] == "+20 100 000 0000"
     # A blank value clears the field.
     resp = c.patch(f"/api/identity/users/{target.id}", {"job_title": ""}, format="json")
     assert resp.status_code == 200
     assert resp.json()["data"]["job_title"] == ""
-    # Untouched field is preserved.
+    # Untouched fields are preserved.
     assert resp.json()["data"]["phone"] == "+20 100 000 0000"
+    assert resp.json()["data"]["display_name"] == "Fay Adel"
 
 
 def test_reset_password_returns_new_temp(admin):

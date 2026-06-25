@@ -1193,6 +1193,7 @@
       "back": "Back to users",
       "profile": "Profile",
       "username": "Username",
+      "namePlaceholder": "Add a display name",
       "jobTitle": "Job title",
       "jobTitlePlaceholder": "Add a job title",
       "phone": "Phone",

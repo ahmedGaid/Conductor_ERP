@@ -1193,6 +1193,7 @@
       "back": "العودة إلى المستخدمين",
       "profile": "الملف",
       "username": "اسم المستخدم",
+      "namePlaceholder": "أضف اسم العرض",
       "jobTitle": "المسمى الوظيفي",
       "jobTitlePlaceholder": "أضف المسمى الوظيفي",
       "phone": "الهاتف",

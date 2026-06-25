@@ -118,7 +118,17 @@ export function UserDetailPage() {
         <div className="card admin-panel">
           <h2>{t("admin.detail.profile")}</h2>
           <dl className="admin-dl">
-            <div><dt>{t("admin.users.name")}</dt><dd>{current.display_name}</dd></div>
+            <div className="admin-dl__edit">
+              <dt>{t("admin.users.name")}</dt>
+              <dd>
+                <InlineEdit
+                  value={current.display_name}
+                  label={t("admin.users.name")}
+                  placeholder={t("admin.detail.namePlaceholder")}
+                  onSave={(v) => saveField({ display_name: v })}
+                />
+              </dd>
+            </div>
             <div><dt>{t("admin.detail.username")}</dt><dd className="latin">{current.username}</dd></div>
             <div className="admin-dl__edit">
               <dt>{t("admin.detail.jobTitle")}</dt>

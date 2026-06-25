@@ -60,6 +60,7 @@ class UpdateUserSerializer(serializers.Serializer):
     team = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     status = serializers.CharField(required=False, allow_blank=True)
     # Personal profile text (lives on UserPreferences). Blank clears the field.
+    display_name = serializers.CharField(required=False, allow_blank=True, max_length=120)
     job_title = serializers.CharField(required=False, allow_blank=True, max_length=120)
     phone = serializers.CharField(required=False, allow_blank=True, max_length=40)
 

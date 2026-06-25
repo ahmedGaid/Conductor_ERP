@@ -198,6 +198,8 @@ class UserDetailView(APIView):
             kwargs["team"] = d["team"] or ""
         if "status" in d and d["status"]:
             kwargs["status"] = d["status"]
+        if "display_name" in d:
+            kwargs["display_name"] = d["display_name"]
         if "job_title" in d:
             kwargs["job_title"] = d["job_title"]
         if "phone" in d:
