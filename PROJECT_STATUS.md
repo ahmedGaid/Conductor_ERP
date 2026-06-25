@@ -58,30 +58,32 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
   `--space-*`) so inputs/selects/textareas tighten with compact mode too. List/detail vertical rhythm
   already token-driven.
 
-- **Command-palette recents + inline-edit — DONE** (branch `ui/inline-edit`, off `main`, local-only;
-  commits `ce30535`→`b7e13d4`):
+- **Command-palette recents + inline-edit — DONE** (branch `ui/inline-edit`, off `main`; **pushed, PR #3
+  open** → `main`; commits `ce30535`→`8fe0dc5`):
   - **Palette recents** (`ce30535`): ⌘K with an empty query surfaces recently-visited pages at the top
     under a "Recent" group (`lib/recents.ts` localStorage MRU; recorded by the always-mounted palette
     via `useLocation`). +`command.groupRecent`.
-  - **Inline-edit** (`b7e13d4`): reusable `InlineEdit` (display↔input swap; Enter/⌘Enter commit, Esc
-    revert, blur commit; editability on hover, no glyph) wired to the user detail page's **job title +
-    phone** via the page's optimistic `patch()`. **Backend touched (authorized):** `UpdateUserSerializer`
+  - **Inline-edit** (`b7e13d4`, redesigned `8fe0dc5`): reusable `InlineEdit` wired to the user detail
+    page's **job title + phone**. Reads as a **bordered input box** with a **placeholder suggestion**
+    when empty (discoverable, no hover-to-find); display↔input share metrics so no jump; Enter/⌘Enter
+    commit, Esc revert, blur commit. Optimistic save via the page's `saveField()` with a **"Saved"**
+    toast on success (dropdowns stay silent). **Backend touched (authorized):** `UpdateUserSerializer`
     + `update_user` now accept `job_title`/`phone` (stored on `UserPreferences`, blank clears) over the
     existing `PATCH /identity/users/{id}`; no migration (fields pre-existed); new `test_users` test.
-    +`common.editField`. **`gate:all` (00–13) re-run GREEN.**
+    +`common.editField/saved`, +`admin.detail.*Placeholder`. **`gate:all` (00–13) GREEN.**
   - `1116f54` fixes a palette type error that only `tsc -b` (the real build) caught — see gate note below.
 
 ### NEXT ACTION
-Full UX overhaul + density/typography are **merged to `main`** (PRs #1, #2). The `ui/inline-edit`
-branch (palette recents + inline-edit, incl. the authorized backend PATCH) is **local-only** — push +
-PR when ready. Candidate next inline-edit targets if extended: other free-text fields (would each need
-the same kind of backend PATCH support). Or pick another frontend-only Linear area (micro-states,
-palette depth, motion pass).
+Full UX overhaul + density/typography are **merged to `main`** (PRs #1, #2). **PR #3** (`ui/inline-edit`)
+is **open** awaiting review/merge: github.com/ahmedGaid/Conductor_ERP/pull/3. After it merges, candidate
+next inline-edit targets: other free-text fields (each needs the same small backend PATCH opening). Or
+pick another frontend-only Linear area (micro-states, palette depth, motion pass).
 
 > **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
 > **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
 > the real build `tsc -b` (run by `gate03`) rejected. **Use `npx tsc -b` from `apps/web` as the true
-> typecheck** before claiming green. (erp-frontend skill still says `--noEmit`; treat `-b` as the real gate.)
+> typecheck** before claiming green. (The `erp-frontend` skill now documents `tsc -b`; `npm run build`
+> = `tsc -b && vite build` for full certainty before a PR.)
 
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
