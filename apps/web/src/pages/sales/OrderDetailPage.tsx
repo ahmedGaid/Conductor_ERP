@@ -117,7 +117,9 @@ export function OrderDetailPage() {
               )}
               {data.status === "draft" && (
                 <button
-                  className="btn btn--primary"
+                  // Primary only when it's the actionable next step; while approval is still
+                  // pending it stays as a neutral, disabled preview so Approve is the one primary.
+                  className={data.requires_approval && !data.approved ? "btn" : "btn btn--primary"}
                   disabled={data.requires_approval && !data.approved}
                   onClick={() => act(setStatus("confirmed"), () => confirmOrder(data.id), t("sales.toast.confirmed"))}
                 >
