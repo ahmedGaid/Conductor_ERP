@@ -71,18 +71,24 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
     existing `PATCH /identity/users/{id}`; no migration (fields pre-existed); new `test_users` test.
     +`common.editField/saved`, +`admin.detail.*Placeholder`. **`gate:all` (00–13) GREEN.**
   - `1116f54` fixes a palette type error that only `tsc -b` (the real build) caught — see gate note below.
-- **Inline-edit extended + focus polish — DONE** (branch `ui/inline-edit-more`, off `main`, **local-only**;
-  `74a3ef0`): **display name** is now inline-editable too (Profile "Name" row, same `saveField`+toast).
-  Backend: `update_user`/serializer also accept `display_name` (UserPreferences; blank → falls back to
-  username); `test_users` covers it. `InlineEdit` now **returns focus to the field trigger after a
-  keyboard commit/cancel** (Enter/Esc), while a blur-commit leaves focus where the user moved it.
+- **Inline-edit extended + focus polish — DONE** (PR #4, **merged `f059381`**; `74a3ef0`): **display
+  name** is now inline-editable too (Profile "Name" row, same `saveField`+toast). Backend:
+  `update_user`/serializer also accept `display_name` (UserPreferences; blank → falls back to username);
+  `test_users` covers it. `InlineEdit` now **returns focus to the field trigger after a keyboard
+  commit/cancel** (Enter/Esc), while a blur-commit leaves focus where the user moved it.
   +`admin.detail.namePlaceholder`. **`gate:all` (00–13) GREEN** (1029 keys).
+- **Linear polish pass (3 slices) — DONE** (branch `ui/linear-polish`, off `main`, **local-only**;
+  `27c9963 483ce5c caaa5b8`): (1) **palette depth** — ⌘K keeps the arrow-highlighted row scrolled into
+  view; (2) **motion** — audit found the system already token-clean except one stray; tokenized the
+  skip-link transition; (3) **micro-states** — j/k-selected list rows get a distinct monochrome leading
+  marker (inset shadow, direction-aware) so the keyboard cursor reads differently from a mouse hover.
+  Frontend-only; `tsc -b` + `vite build` green.
 
 ### NEXT ACTION
-Everything through PR #3 is **merged to `main`** (PRs #1–#3). The `ui/inline-edit-more` branch (display
-name + focus polish) is **local-only** — push + PR when ready. Further inline-edit targets: other
-free-text fields (each needs the same small backend PATCH opening). Or a frontend-only Linear area
-(micro-states, palette depth, motion pass).
+PRs #1–#4 are **merged to `main`**. The `ui/linear-polish` branch (palette scroll + motion token +
+keyboard-cursor marker) is **local-only** — push + PR when ready. Further options: more inline-edit
+fields (each needs a small backend PATCH opening), deeper palette work (recent *items*, scoped actions),
+or continued micro-state/motion polish.
 
 > **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
 > **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
