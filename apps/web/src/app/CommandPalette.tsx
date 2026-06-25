@@ -28,6 +28,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const location = useLocation();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const activeItemRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
 
@@ -114,6 +115,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     setActive((i) => Math.min(i, Math.max(visible.length - 1, 0)));
   }, [visible.length]);
 
+  // Keep the highlighted row in view while arrowing through a long list.
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
   function run(cmd: Command | undefined) {
     if (!cmd) return;
     onClose();
@@ -194,6 +200,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                     return (
                       <li key={cmd.id}>
                         <button
+                          ref={idx === active ? activeItemRef : undefined}
                           type="button"
                           role="option"
                           aria-selected={idx === active}
