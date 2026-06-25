@@ -49,6 +49,26 @@
   background: var(--color-accent);
 }
 
+/* Success check — colour pairs with the glyph (means "done"), and the stroke draws in over the
+   toast's own entrance: settled, decelerating, no overshoot. Under prefers-reduced-motion the
+   global guard collapses the animation, so the check simply appears fully drawn. */
+.toast__check {
+  flex-shrink: 0;
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  color: var(--color-success);
+}
+.toast__check path {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  animation: toast-check-draw var(--dur-slow) var(--ease-out) forwards;
+}
+@keyframes toast-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .toast__msg {
   flex: 1;
   min-inline-size: 0;
