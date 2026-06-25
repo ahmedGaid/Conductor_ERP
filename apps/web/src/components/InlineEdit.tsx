@@ -6,8 +6,8 @@ import "./InlineEdit.css";
 interface InlineEditProps {
   /** The current persisted value. */
   value: string;
-  /** Persist a new value. May be async; the field exits edit mode once it settles. */
-  onSave: (next: string) => Promise<void> | void;
+  /** Persist a new value. May be async (any result); the field exits edit mode once it settles. */
+  onSave: (next: string) => Promise<unknown> | void;
   /** Accessible name for the trigger and the input (usually the field's label). */
   label: string;
   /** Shown (muted) when the value is empty and not editing. */
@@ -83,7 +83,11 @@ export function InlineEdit({ value, onSave, label, emptyText = "—", placeholde
         onClick={() => setEditing(true)}
         aria-label={t("common.editField", { field: label })}
       >
-        <span className={value ? undefined : "inline-edit__empty"}>{value || emptyText}</span>
+        {value ? (
+          <span>{value}</span>
+        ) : (
+          <span className="inline-edit__placeholder">{placeholder ?? emptyText}</span>
+        )}
       </button>
     );
   }

@@ -56,6 +56,23 @@ export function UserDetailPage() {
     });
   }
 
+  // Inline text edits (job title / phone): same optimistic flow, but confirm the save with a toast
+  // once it lands — text fields are edited deliberately, so the "Saved" acknowledgement is welcome
+  // (unlike the freely-flicked dropdowns above, which stay silent). Awaited so the field stays in
+  // its saving state until the round-trip settles.
+  function saveField(changes: Parameters<typeof updateUser>[1]) {
+    if (!data) return Promise.resolve();
+    return runOptimistic<UserDetail, UserDetail>({
+      current: data,
+      mutate,
+      optimistic: (u) => ({ ...u, ...changes }) as UserDetail,
+      request: () => updateUser(userId, changes),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: t("common.saved"),
+    });
+  }
+
   async function reset() {
     const { temp_password } = await resetUserPassword(userId);
     setNotice(t("admin.detail.resetDone", { password: temp_password }));
@@ -103,24 +120,26 @@ export function UserDetailPage() {
           <dl className="admin-dl">
             <div><dt>{t("admin.users.name")}</dt><dd>{current.display_name}</dd></div>
             <div><dt>{t("admin.detail.username")}</dt><dd className="latin">{current.username}</dd></div>
-            <div>
+            <div className="admin-dl__edit">
               <dt>{t("admin.detail.jobTitle")}</dt>
               <dd>
                 <InlineEdit
                   value={current.job_title}
                   label={t("admin.detail.jobTitle")}
-                  onSave={(v) => patch({ job_title: v })}
+                  placeholder={t("admin.detail.jobTitlePlaceholder")}
+                  onSave={(v) => saveField({ job_title: v })}
                 />
               </dd>
             </div>
-            <div>
+            <div className="admin-dl__edit">
               <dt>{t("admin.detail.phone")}</dt>
               <dd>
                 <InlineEdit
                   value={current.phone}
                   label={t("admin.detail.phone")}
+                  placeholder={t("admin.detail.phonePlaceholder")}
                   inputClassName="latin"
-                  onSave={(v) => patch({ phone: v })}
+                  onSave={(v) => saveField({ phone: v })}
                 />
               </dd>
             </div>
