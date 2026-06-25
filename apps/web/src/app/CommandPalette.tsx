@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { normalizeSearch } from "../lib/arabicSearch";
+import { getRecents, recordRecent } from "../lib/recents";
 import "./CommandPalette.css";
 
-type Group = "create" | "go";
+type Group = "recent" | "create" | "go";
 
 interface Command {
   id: string;
@@ -24,6 +25,7 @@ interface Command {
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -60,11 +62,37 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     [t],
   );
 
-  const filtered = useMemo(() => {
+  // Track every visited page so the palette can offer a "jump back" list. The palette is always
+  // mounted in the shell, so this effect sees all route changes.
+  useEffect(() => {
+    recordRecent(location.pathname);
+  }, [location.pathname]);
+
+  // Recently-visited pages, newest first — only those that map to a known destination, deduped and
+  // capped. Recomputed each time the palette opens (fresh localStorage) and hidden once you type.
+  const recent = useMemo<Command[]>(() => {
+    if (!open || query.trim()) return [];
+    const out: Command[] = [];
+    const seen = new Set<string>();
+    for (const path of getRecents()) {
+      const cmd = commands.find((c) => c.to === path);
+      if (cmd && !seen.has(cmd.id)) {
+        seen.add(cmd.id);
+        out.push(cmd);
+        if (out.length >= 5) break;
+      }
+    }
+    return out;
+  }, [commands, query, open]);
+
+  // The flat, ordered result list that drives arrow-key navigation: recents first (empty query),
+  // then the full set with recents removed; or the label-filtered set while typing.
+  const visible = useMemo(() => {
     const q = normalizeSearch(query.trim());
-    if (!q) return commands;
-    return commands.filter((c) => normalizeSearch(c.label).includes(q));
-  }, [commands, query]);
+    if (q) return commands.filter((c) => normalizeSearch(c.label).includes(q));
+    const recentIds = new Set(recent.map((c) => c.id));
+    return [...recent, ...commands.filter((c) => !recentIds.has(c.id))];
+  }, [commands, query, recent]);
 
   // Keep the native dialog's open state in sync with the controlled `open` prop,
   // resetting the query and focusing the input each time it opens.
@@ -83,8 +111,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   // Clamp the highlighted row whenever the result set shrinks.
   useEffect(() => {
-    setActive((i) => Math.min(i, Math.max(filtered.length - 1, 0)));
-  }, [filtered.length]);
+    setActive((i) => Math.min(i, Math.max(visible.length - 1, 0)));
+  }, [visible.length]);
 
   function run(cmd: Command | undefined) {
     if (!cmd) return;
@@ -95,13 +123,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, filtered.length - 1));
+      setActive((i) => Math.min(i + 1, visible.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActive((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      run(filtered[active]);
+      run(visible[active]);
     }
   }
 
@@ -110,8 +138,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     if (e.target === dialogRef.current) onClose();
   }
 
-  const labelFor = (g: Group) => (g === "create" ? t("command.groupCreate") : t("command.groupGo"));
-  const groups: Group[] = ["create", "go"];
+  const labelFor = (g: Group) =>
+    g === "recent" ? t("command.groupRecent") : g === "create" ? t("command.groupCreate") : t("command.groupGo");
+
+  // Render order: recents, then create, then go — matching the flat `visible` sequence so
+  // arrow-key navigation flows top-to-bottom across the groups.
+  const recentIds = new Set(recent.map((c) => c.id));
+  const sections: { key: Group; rows: Command[] }[] = [
+    { key: "recent", rows: recent },
+    { key: "create", rows: visible.filter((c) => c.group === "create" && !recentIds.has(c.id)) },
+    { key: "go", rows: visible.filter((c) => c.group === "go" && !recentIds.has(c.id)) },
+  ].filter((s) => s.rows.length > 0);
 
   return (
     <dialog
@@ -141,20 +178,18 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         </div>
 
         <div className="cmdp__results" id="cmdp-list" role="listbox">
-          {filtered.length === 0 && (
+          {visible.length === 0 && (
             <p className="cmdp__empty">
               {t("command.empty")} “{query.trim()}”
             </p>
           )}
-          {groups.map((g) => {
-            const rows = filtered.filter((c) => c.group === g);
-            if (rows.length === 0) return null;
+          {sections.map((section) => {
             return (
-              <div className="cmdp__group" key={g}>
-                <p className="cmdp__group-label">{labelFor(g)}</p>
+              <div className="cmdp__group" key={section.key}>
+                <p className="cmdp__group-label">{labelFor(section.key)}</p>
                 <ul className="cmdp__list">
-                  {rows.map((cmd) => {
-                    const idx = filtered.indexOf(cmd);
+                  {section.rows.map((cmd) => {
+                    const idx = visible.indexOf(cmd);
                     return (
                       <li key={cmd.id}>
                         <button
