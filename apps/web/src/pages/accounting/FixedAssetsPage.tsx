@@ -69,6 +69,8 @@ export function FixedAssetsPage() {
   const { active } = useListKeyboardNav<FixedAsset>({
     items: visible ?? [],
     onOpen: (a) => navigate(`/accounting/assets/${encodeURIComponent(a.code)}`),
+    persistKey: "accounting:assets",
+    getItemId: (a) => a.code,
   });
 
   // New-asset form

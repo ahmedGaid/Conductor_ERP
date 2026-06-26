@@ -58,6 +58,8 @@ export function WorkflowListPage() {
   const { active } = useListKeyboardNav<Workflow>({
     items: visible ?? [],
     onOpen: (wf) => navigate(`/workflows/${wf.id}`),
+    persistKey: "workflows",
+    getItemId: (wf) => wf.id,
   });
 
   return (
