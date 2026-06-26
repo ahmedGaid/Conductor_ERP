@@ -65,6 +65,8 @@ export function StockCountsPage() {
   const { active } = useListKeyboardNav<StockCount>({
     items: visible ?? [],
     onOpen: (c) => navigate(`/inventory/counts/${c.id}`),
+    persistKey: "inventory:counts",
+    getItemId: (c) => c.id,
   });
 
   const [warehouse, setWarehouse] = useState("");

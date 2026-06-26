@@ -62,6 +62,8 @@ export function CampaignsPage() {
   const { active } = useListKeyboardNav<Campaign>({
     items: visible ?? [],
     onOpen: (c) => navigate(`/crm/campaigns/${c.id}`),
+    persistKey: "crm:campaigns",
+    getItemId: (c) => c.id,
   });
 
   const [code, setCode] = useState("");

@@ -39,6 +39,8 @@ export function BankReconciliationPage() {
   const { active } = useListKeyboardNav({
     items: data ?? [],
     onOpen: (s) => navigate(`/accounting/bank-reconciliation/${s.id}`),
+    persistKey: "accounting:bank-reconciliation",
+    getItemId: (s) => s.id,
   });
 
   const [account, setAccount] = useState("");

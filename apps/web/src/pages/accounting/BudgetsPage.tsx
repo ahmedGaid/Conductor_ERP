@@ -42,6 +42,8 @@ export function BudgetsPage() {
   const { active } = useListKeyboardNav<Budget>({
     items: filtered ?? [],
     onOpen: (b) => navigate(`/accounting/budgets/${b.id}`),
+    persistKey: "accounting:budgets",
+    getItemId: (b) => b.id,
   });
 
   const [name, setName] = useState("");
