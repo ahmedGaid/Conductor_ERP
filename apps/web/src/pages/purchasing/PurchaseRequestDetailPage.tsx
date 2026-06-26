@@ -12,6 +12,7 @@ import {
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -59,6 +60,29 @@ export function PurchaseRequestDetailPage() {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     }
   }
+
+  // Lifecycle steps mirrored into the ⌘K "This page" group, gated by status exactly as the
+  // buttons are, so the palette never offers a step that isn't the real next move.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft") {
+      pageActions.push({ id: "submit", label: t("purchasing.requests.submit"),
+        run: () => act("submitted", () => submitRequest(data.id), t("purchasing.toast.reqSubmitted")) });
+    }
+    if (s === "submitted") {
+      pageActions.push({ id: "approve", label: t("purchasing.requests.approve"),
+        run: () => act("approved", () => approveRequest(data.id), t("purchasing.toast.reqApproved")) });
+    }
+    if (s === "approved") {
+      pageActions.push({ id: "convert", label: t("purchasing.requests.convert"), run: () => onConvert(data) });
+    }
+    if (s === "submitted" || s === "approved") {
+      pageActions.push({ id: "reject", label: t("purchasing.requests.reject"),
+        run: () => act("rejected", () => rejectRequest(data.id, ""), t("purchasing.toast.reqRejected")) });
+    }
+  }
+  usePaletteActions("pr-detail", pageActions);
 
   return (
     <section className="pur-page">

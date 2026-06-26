@@ -12,6 +12,7 @@ import {
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -69,6 +70,22 @@ export function OpportunityDetailPage() {
       success: t("common.saved"),
     });
   }
+
+  // Stage actions mirrored into the ⌘K "This page" group, gated by stage exactly as the buttons
+  // are (advance / win / lose only while the deal is open).
+  const pageActions: PaletteAction[] = [];
+  if (data && (data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation")) {
+    const next = NEXT_STAGE[data.stage];
+    if (next) {
+      pageActions.push({ id: "advance", label: t("crm.detail.advanceTo", { stage: t(`crm.stage.${next}`) }),
+        run: () => act((o) => ({ ...o, stage: next }), () => advanceStage(data.id, next), t("crm.toast.stageAdvanced", { stage: t(`crm.stage.${next}`) })) });
+    }
+    pageActions.push({ id: "win", label: t("crm.detail.win"),
+      run: () => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon")) });
+    pageActions.push({ id: "lose", label: t("crm.detail.lose"),
+      run: () => act((o) => ({ ...o, stage: "lost" }), () => loseOpportunity(data.id), t("crm.toast.oppLost")) });
+  }
+  usePaletteActions("opportunity-detail", pageActions);
 
   return (
     <section className="crm-page">

@@ -14,6 +14,7 @@ import {
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -59,6 +60,39 @@ export function PurchaseOrderDetailPage() {
   }
 
   const setStatus = (status: POStatus) => (order: PurchaseOrder): PurchaseOrder => ({ ...order, status });
+
+  // Lifecycle steps mirrored into the ⌘K "This page" group, gated by status exactly as the
+  // buttons are, so the palette never offers a step that isn't the real next move.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft" && data.requires_approval && !data.approved) {
+      pageActions.push({ id: "approve", label: t("purchasing.detail.approve"),
+        run: () => act((o) => ({ ...o, approved: true }), () => approvePO(data.id), t("purchasing.toast.approved")) });
+    }
+    if (s === "draft" && (!data.requires_approval || data.approved)) {
+      pageActions.push({ id: "confirm", label: t("purchasing.detail.confirm"),
+        run: () => act(setStatus("confirmed"), () => confirmPO(data.id), t("purchasing.toast.confirmed")) });
+    }
+    if (s === "confirmed" || s === "partially_received") {
+      pageActions.push({ id: "receive",
+        label: s === "partially_received" ? t("purchasing.detail.receiveRemaining") : t("purchasing.detail.receive"),
+        run: () => act(setStatus("received"), () => receivePO(data.id), t("purchasing.toast.received")) });
+    }
+    if (s === "received") {
+      pageActions.push({ id: "bill", label: t("purchasing.detail.bill"),
+        run: () => act(setStatus("billed"), () => billPO(data.id), t("purchasing.toast.billed")) });
+    }
+    if (s === "billed") {
+      pageActions.push({ id: "pay", label: t("purchasing.detail.recordPayment"),
+        run: () => act(setStatus("paid"), () => payPO(data.id, data.outstanding_minor), t("purchasing.toast.paid")) });
+    }
+    if (s === "billed" || s === "paid") {
+      pageActions.push({ id: "return", label: t("purchasing.detail.return"),
+        run: () => act(setStatus("returned"), () => returnPO(data.id), t("purchasing.toast.returned")) });
+    }
+  }
+  usePaletteActions("po-detail", pageActions);
 
   return (
     <section className="pur-page">
