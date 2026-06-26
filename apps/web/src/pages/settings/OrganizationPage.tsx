@@ -61,6 +61,29 @@ export function OrganizationPage() {
           />
         </SettingRow>
 
+        <SettingRow title={t("settings.org.country")} htmlFor="org-country">
+          <input
+            id="org-country"
+            type="text"
+            value={org.country}
+            onChange={(e) => save({ country: e.target.value })}
+          />
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.vatNumber")} desc={t("settings.org.vatNumberDesc")} htmlFor="org-vat">
+          <input
+            id="org-vat"
+            type="text"
+            inputMode="numeric"
+            value={org.vat_number}
+            onChange={(e) => save({ vat_number: e.target.value })}
+          />
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.baseCurrency")} desc={t("settings.org.baseCurrencyDesc")}>
+          <span className="muted">{org.base_currency}</span>
+        </SettingRow>
+
         <SettingRow title={t("settings.org.language")} desc={t("settings.org.languageDesc")}>
           <Segmented
             ariaLabel={t("settings.org.language")}

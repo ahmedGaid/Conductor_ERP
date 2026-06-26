@@ -108,6 +108,12 @@
     "lede": "A few quick steps and Conductor is ready for work — your accounts, tax, and team. Then send your first invoice today.",
     "finish": "Finish setup",
     "adminOnly": "An administrator needs to finish setting up your company before you can start.",
+    "profile": {
+      "title": "Company details",
+      "lede": "The basics that appear on your invoices and documents. You can change any of it later in Settings.",
+      "companyPlaceholder": "Your company's legal name",
+      "vatPlaceholder": "e.g. 100-200-300"
+    },
     "coa": {
       "title": "Chart of accounts",
       "lede": "Start from a ready Egyptian small-business chart — accounts, VAT codes and this year's periods. You can edit any of it later.",
@@ -1143,6 +1149,11 @@
       "adminOnly": "Only a System Admin can change organization defaults.",
       "lead": "Defaults applied to everyone in the organization. Each user can still override these in their own settings.",
       "companyName": "Company name",
+      "country": "Country",
+      "vatNumber": "VAT registration number",
+      "vatNumberDesc": "Shown on your invoices and e-invoice submissions.",
+      "baseCurrency": "Base currency",
+      "baseCurrencyDesc": "The currency your books are kept in.",
       "language": "Default language",
       "languageDesc": "The language new users start with.",
       "theme": "Default theme",

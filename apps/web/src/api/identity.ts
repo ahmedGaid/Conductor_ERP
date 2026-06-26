@@ -48,6 +48,9 @@ export interface OrgPreferences {
   default_accent: "blue" | "black" | "green" | "purple" | "orange" | "red";
   default_landing: string;
   company_name: string;
+  country: string;
+  vat_number: string;
+  base_currency: string;
   updated_at?: string;
 }
 
