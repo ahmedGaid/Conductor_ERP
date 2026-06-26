@@ -110,7 +110,12 @@ function SetupGate() {
   if (!data.is_setup_complete && !onSetup) return <Navigate to="/setup" replace />;
   if (data.is_setup_complete && onSetup) return <Navigate to="/" replace />;
   if (onSetup) {
-    return <SetupWizardPage onCompleted={() => mutate({ is_setup_complete: true })} />;
+    return (
+      <SetupWizardPage
+        status={data}
+        onCompleted={() => mutate({ ...data, is_setup_complete: true })}
+      />
+    );
   }
   return <AppRoutes />;
 }

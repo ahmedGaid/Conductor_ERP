@@ -9,6 +9,7 @@ from __future__ import annotations
 from ..domain.money import DEFAULT_CURRENCY, Money
 from ..events import JOURNAL_POSTED, PERIOD_CLOSED
 from ..services.posting import JournalInput, LineInput, post_journal, reverse_journal
+from ..services.seeding import baseline_summary, seed_baseline_accounting
 from ..services.taxes import TaxCodeInfo, compute_tax, find_tax_code
 
 __all__ = [
@@ -23,4 +24,6 @@ __all__ = [
     "find_tax_code",
     "JOURNAL_POSTED",
     "PERIOD_CLOSED",
+    "seed_baseline_accounting",
+    "baseline_summary",
 ]

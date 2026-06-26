@@ -50,6 +50,27 @@ def test_fresh_org_reads_not_complete(accountant):
     c = _auth(accountant)
     data = c.get("/api/setup/status").json()["data"]
     assert data["is_setup_complete"] is False
+    # A fresh org has no chart of accounts yet.
+    assert data["chart_of_accounts"] == {"seeded": False, "accounts": 0}
+
+
+def test_admin_seeds_chart_of_accounts(admin):
+    c = _auth(admin)
+    resp = c.post("/api/setup/chart-of-accounts")
+    assert resp.status_code == 200
+    coa = resp.json()["data"]
+    assert coa["seeded"] is True
+    assert coa["accounts"] > 0
+    # Reflected in status, and idempotent (count is stable on a second run).
+    after = c.get("/api/setup/status").json()["data"]["chart_of_accounts"]
+    assert after == coa
+    again = c.post("/api/setup/chart-of-accounts").json()["data"]
+    assert again["accounts"] == coa["accounts"]
+
+
+def test_seed_chart_of_accounts_requires_system_admin(accountant):
+    c = _auth(accountant)
+    assert c.post("/api/setup/chart-of-accounts").status_code == 403
 
 
 def test_complete_requires_system_admin(accountant):

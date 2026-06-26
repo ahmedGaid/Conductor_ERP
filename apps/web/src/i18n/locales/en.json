@@ -107,7 +107,14 @@
     "title": "Set up your company",
     "lede": "A few quick steps and Conductor is ready for work — your accounts, tax, and team. Then send your first invoice today.",
     "finish": "Finish setup",
-    "adminOnly": "An administrator needs to finish setting up your company before you can start."
+    "adminOnly": "An administrator needs to finish setting up your company before you can start.",
+    "coa": {
+      "title": "Chart of accounts",
+      "lede": "Start from a ready Egyptian small-business chart — accounts, VAT codes and this year's periods. You can edit any of it later.",
+      "action": "Create chart of accounts",
+      "seeding": "Creating…",
+      "ready": "Ready — {{n}} accounts"
+    }
   },
   "dashboard": {
     "heading": "Home",
