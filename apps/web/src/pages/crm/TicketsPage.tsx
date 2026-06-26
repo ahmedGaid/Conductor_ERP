@@ -13,6 +13,7 @@ import {
   type TicketPriority,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
@@ -107,6 +108,22 @@ export function TicketsPage() {
     });
   }
 
+  // j/k move a row highlight; Enter/o runs the ticket's primary next step (resolve an open/in-progress
+  // ticket, then close a resolved one) — these queues have no detail page, so the keyboard acts on the
+  // row in place. The highlight + scroll position are restored when you come back (cursor-restore).
+  const { active } = useListKeyboardNav<Ticket>({
+    items: visible ?? [],
+    onOpen: (tk) => {
+      if (tk.status === "open" || tk.status === "in_progress") {
+        patchTicket(tk.id, (t0) => ({ ...t0, status: "resolved" }), () => resolveTicket(tk.id), t("crm.toast.ticketResolved"));
+      } else if (tk.status === "resolved") {
+        patchTicket(tk.id, (t0) => ({ ...t0, status: "closed" }), () => closeTicket(tk.id), t("crm.toast.ticketClosed"));
+      }
+    },
+    persistKey: "crm:tickets",
+    getItemId: (tk) => tk.id,
+  });
+
   // Escalation sweep touches an unknown set of tickets server-side, so it can't be predicted; run
   // it, report how many were escalated, and refresh the list.
   async function onRunEscalations() {
@@ -198,8 +215,8 @@ export function TicketsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((tk: Ticket) => (
-                <tr key={tk.id}>
+              {visible.map((tk: Ticket, i) => (
+                <tr key={tk.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td className="latin">{tk.number}</td>
                   <td>{tk.subject}</td>
                   <td>
