@@ -5,16 +5,20 @@ import {
   advanceStage,
   getOpportunity,
   loseOpportunity,
+  updateOpportunity,
   winOpportunity,
   type Opportunity,
   type OppStage,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { InlineEdit } from "../../components/InlineEdit";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
@@ -33,6 +37,7 @@ export function OpportunityDetailPage() {
     [id],
     `crm:opportunity:${id}`,
   );
+  useRecentEntity(data?.number);
 
   // Optimistic: flip the stage instantly so the badge and action set update, then let the server's
   // returned opportunity reconcile derived values (weighted amount, spawned sales order). A failure
@@ -50,6 +55,38 @@ export function OpportunityDetailPage() {
     });
   }
 
+  // Inline edit of the opportunity's title: same optimistic flow, confirmed with a "Saved" toast
+  // once it lands (a deliberate text edit, unlike the freely-clicked stage actions). Awaited so the
+  // field holds its saving state until the round-trip settles.
+  function saveField(changes: { name?: string; notes?: string }) {
+    if (!data) return Promise.resolve();
+    return runOptimistic<Opportunity, Opportunity>({
+      current: data,
+      mutate,
+      optimistic: (o) => ({ ...o, ...changes }),
+      request: () => updateOpportunity(data.id, changes),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: t("common.saved"),
+    });
+  }
+
+  // Stage actions mirrored into the ⌘K "This page" group, gated by stage exactly as the buttons
+  // are (advance / win / lose only while the deal is open).
+  const pageActions: PaletteAction[] = [];
+  if (data && (data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation")) {
+    const next = NEXT_STAGE[data.stage];
+    if (next) {
+      pageActions.push({ id: "advance", label: t("crm.detail.advanceTo", { stage: t(`crm.stage.${next}`) }),
+        run: () => act((o) => ({ ...o, stage: next }), () => advanceStage(data.id, next), t("crm.toast.stageAdvanced", { stage: t(`crm.stage.${next}`) })) });
+    }
+    pageActions.push({ id: "win", label: t("crm.detail.win"),
+      run: () => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon")) });
+    pageActions.push({ id: "lose", label: t("crm.detail.lose"),
+      run: () => act((o) => ({ ...o, stage: "lost" }), () => loseOpportunity(data.id), t("crm.toast.oppLost")) });
+  }
+  usePaletteActions("opportunity-detail", pageActions);
+
   return (
     <section className="crm-page">
       <CrmNav />
@@ -63,13 +100,23 @@ export function OpportunityDetailPage() {
         <>
           <div className="card crm-page">
             <div className="crm-page__head">
-              <div>
+              <div className="crm-page__id">
                 <h2 className="latin">{data.number}</h2>
-                <p className="muted">
-                  {data.name}
-                  {data.customer_code ? ` · ${data.customer_code}` : ""}
-                  {data.lead_code ? ` · ${data.lead_code}` : ""}
-                </p>
+                <div className="crm-page__name">
+                  <InlineEdit
+                    value={data.name}
+                    label={t("crm.opp.name")}
+                    placeholder={t("crm.detail.namePlaceholder")}
+                    onSave={(v) => saveField({ name: v })}
+                  />
+                </div>
+                {(data.customer_code || data.lead_code) && (
+                  <p className="muted">
+                    {data.customer_code}
+                    {data.customer_code && data.lead_code ? " · " : ""}
+                    {data.lead_code}
+                  </p>
+                )}
               </div>
               <span className={`crm-badge crm-badge--${data.stage}`}>{t(`crm.stage.${data.stage}`)}</span>
             </div>
@@ -93,6 +140,16 @@ export function OpportunityDetailPage() {
                   <Link className="latin" to={`/sales/orders`}>{data.sales_order_number}</Link>
                 </div>
               )}
+            </div>
+
+            <div className="crm-page__notes">
+              <span className="crm-summary__label">{t("crm.opp.notes")}</span>
+              <InlineEdit
+                value={data.notes}
+                label={t("crm.opp.notes")}
+                placeholder={t("crm.detail.notesPlaceholder")}
+                onSave={(v) => saveField({ notes: v })}
+              />
             </div>
 
             {(data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation") && (

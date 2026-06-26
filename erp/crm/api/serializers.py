@@ -85,6 +85,12 @@ class OppCreateSerializer(serializers.Serializer):
     lines = OppLineInputSerializer(many=True, required=False, default=list)
 
 
+class OppUpdateSerializer(serializers.Serializer):
+    """Inline edit of an opportunity's free-text metadata; both fields optional (partial update)."""
+    name = serializers.CharField(max_length=200, required=False)
+    notes = serializers.CharField(max_length=500, required=False, allow_blank=True)
+
+
 class OppStageSerializer(serializers.Serializer):
     stage = serializers.CharField()
 

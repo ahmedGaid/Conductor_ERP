@@ -10,6 +10,7 @@ import {
   type Opportunity,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
@@ -120,6 +121,18 @@ export function LeadsPage() {
     });
   }
 
+  // j/k move a row highlight; Enter/o converts the highlighted lead (its primary action) — these
+  // lists have no detail page, so the keyboard acts on the row in place. An already-converted lead
+  // has no next step, so Enter is a no-op there. Highlight + scroll restore on return.
+  const { active } = useListKeyboardNav<Lead>({
+    items: visible ?? [],
+    onOpen: (l) => {
+      if (l.status !== "converted") convert(l.id);
+    },
+    persistKey: "crm:leads",
+    getItemId: (l) => l.id,
+  });
+
   return (
     <section className="crm-page">
       <CrmNav />
@@ -194,8 +207,8 @@ export function LeadsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((l: Lead) => (
-                <tr key={l.id}>
+              {visible.map((l: Lead, i) => (
+                <tr key={l.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td className="latin">{l.code}</td>
                   <td>{l.name}</td>
                   <td>{l.company || "—"}</td>

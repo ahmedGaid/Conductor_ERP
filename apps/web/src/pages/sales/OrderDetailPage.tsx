@@ -15,6 +15,8 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -58,6 +60,43 @@ export function OrderDetailPage() {
   }
 
   const setStatus = (status: OrderStatus) => (order: SalesOrder): SalesOrder => ({ ...order, status });
+
+  // Surface this order in the ⌘K "Recent" list under its number once it has loaded.
+  useRecentEntity(data?.number);
+
+  // The same lifecycle steps the page shows as buttons, mirrored into the palette's "This page"
+  // group so they're reachable from the keyboard. Availability tracks the status exactly as the
+  // buttons do, so the palette never offers a step that isn't the real next move.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft" && data.requires_approval && !data.approved) {
+      pageActions.push({ id: "approve", label: t("sales.detail.approve"),
+        run: () => act((o) => ({ ...o, approved: true }), () => approveOrder(data.id), t("sales.toast.approved")) });
+    }
+    if (s === "draft" && (!data.requires_approval || data.approved)) {
+      pageActions.push({ id: "confirm", label: t("sales.detail.confirm"),
+        run: () => act(setStatus("confirmed"), () => confirmOrder(data.id), t("sales.toast.confirmed")) });
+    }
+    if (s === "confirmed" || s === "partially_delivered") {
+      pageActions.push({ id: "deliver",
+        label: s === "partially_delivered" ? t("sales.detail.deliverRemaining") : t("sales.detail.deliver"),
+        run: () => act(setStatus("delivered"), () => deliverOrder(data.id), t("sales.toast.delivered")) });
+    }
+    if (s === "delivered") {
+      pageActions.push({ id: "invoice", label: t("sales.detail.invoice"),
+        run: () => act(setStatus("invoiced"), () => invoiceOrder(data.id), t("sales.toast.invoiced")) });
+    }
+    if (s === "invoiced") {
+      pageActions.push({ id: "pay", label: t("sales.detail.recordPayment"),
+        run: () => act(setStatus("paid"), () => payOrder(data.id, data.outstanding_minor), t("sales.toast.paid")) });
+    }
+    if (s === "invoiced" || s === "paid") {
+      pageActions.push({ id: "return", label: t("sales.detail.return"),
+        run: () => act(setStatus("returned"), () => returnOrder(data.id), t("sales.toast.returned")) });
+    }
+  }
+  usePaletteActions("order-detail", pageActions);
 
   return (
     <section className="sales-page">

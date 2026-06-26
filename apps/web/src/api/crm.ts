@@ -192,6 +192,16 @@ export function createOpportunity(payload: {
   });
 }
 
+export function updateOpportunity(
+  id: string,
+  changes: { name?: string; notes?: string },
+): Promise<Opportunity> {
+  return apiFetch<Opportunity>(`/crm/opportunities/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(changes),
+  });
+}
+
 export function advanceStage(id: string, stage: OppStage): Promise<Opportunity> {
   return apiFetch<Opportunity>(`/crm/opportunities/${id}/stage`, {
     method: "POST",

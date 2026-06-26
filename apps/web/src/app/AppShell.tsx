@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { CommandBar } from "./CommandBar";
 import { Toaster } from "./Toaster";
 import { ToastProvider } from "./ToastContext";
+import { PaletteActionsProvider } from "./PaletteActionsContext";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
 import "./AppShell.css";
@@ -47,6 +48,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <HelpProvider>
+        <PaletteActionsProvider>
         <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
         <a className="appshell__skip" href="#main">
           {t("shell.skipToContent")}
@@ -70,6 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <HelpCenter />
         <Toaster />
       </div>
+        </PaletteActionsProvider>
       </HelpProvider>
     </ToastProvider>
   );

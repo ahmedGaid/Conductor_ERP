@@ -11,6 +11,8 @@ import {
   type QuotationStatus,
 } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -31,6 +33,7 @@ export function QuotationDetailPage() {
     [id],
     `sales:quotation:${id}`,
   );
+  useRecentEntity(data?.number);
 
   // Optimistic state transition: flip the status instantly, reconcile with the server's quotation,
   // roll back + toast on failure.
@@ -57,6 +60,29 @@ export function QuotationDetailPage() {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     }
   }
+
+  // Lifecycle steps mirrored into the ⌘K "This page" group, gated by status exactly as the
+  // buttons are, so the palette never offers a step that isn't the real next move.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft") {
+      pageActions.push({ id: "submit", label: t("sales.quotations.submit"),
+        run: () => act("submitted", () => submitQuotation(data.id), t("sales.toast.quoteSubmitted")) });
+    }
+    if (s === "submitted") {
+      pageActions.push({ id: "approve", label: t("sales.quotations.approve"),
+        run: () => act("approved", () => approveQuotation(data.id), t("sales.toast.quoteApproved")) });
+    }
+    if (s === "approved") {
+      pageActions.push({ id: "convert", label: t("sales.quotations.convert"), run: () => onConvert(data) });
+    }
+    if (s === "submitted" || s === "approved") {
+      pageActions.push({ id: "reject", label: t("sales.quotations.reject"),
+        run: () => act("rejected", () => rejectQuotation(data.id, ""), t("sales.toast.quoteRejected")) });
+    }
+  }
+  usePaletteActions("quotation-detail", pageActions);
 
   return (
     <section className="sales-page">

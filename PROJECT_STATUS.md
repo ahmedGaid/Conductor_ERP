@@ -101,13 +101,37 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
     six اعتماد-root stragglers (incl. a `مُعتمَد` next to `بانتظار الموافقة` in one block) unified onto
     the موافقة root (§6.1, 2026-06-23): `اعتمدها`→`وافق عليها`, `مُعتمَد`→`مُوافَق عليه`. 1029 keys.
 
+- **Craft continuation (5 slices) — DONE** on branch `ui/craft-continued` (off `main`, **pushed**,
+  PR not yet opened — `gh` unauthenticated locally; open via
+  github.com/ahmedGaid/Conductor_ERP/pull/new/ui/craft-continued. `gate:all` 00–13 GREEN). Worked the open options in order:
+  1. **Eyes-on spacing/rhythm** — ran the app at both densities (browser): row rhythm is clean and
+     token-driven (comfortable ~47px / compact ~39px rows scale via the `--space-*` remap); no
+     concrete defect, so **no blind churn** — the remaining tuning is subjective taste, deferred.
+  2. **More inline-edit fields** (`6414de8`) — opportunity **name + notes** are now click-to-edit on
+     the CRM detail page (optimistic + "Saved" toast). Backend opening: PATCH on the opportunity
+     detail route + `update_opportunity` service (audited) + `OppUpdateSerializer`; new API test.
+  3. **Deeper palette** (`04c58b4`) — ⌘K now lists **recent *items*** (visited entities by number, via
+     `useRecentEntity` + labelled `recents.ts`) and **page-scoped actions** (`PaletteActionsProvider`
+     + `usePaletteActions`; order detail contributes Approve/Confirm/… in a "This page" group).
+  4. **Keyboard nav on the CRM queues** (`3198b2d`) — j/k + cursor-restore on **tickets & leads**
+     (no detail page → Enter runs the row's primary action: resolve / convert). Flat catalogs
+     (customers/suppliers/items) deliberately skipped (no row action = decoration). *(Product call by
+     the user: "Enter = primary row action".)*
+  - Lexicon §6.1 extended: **Notes → ملاحظات**, **Opportunity → فرصة**. i18n now **1033 keys**.
+  5. **Page-scoped palette actions fanned out** (`8dad98d`) — slice-3's "This page" ⌘K group, previously
+     wired only on order-detail, now also on **quotation / purchase-order / purchase-request / opportunity**
+     detail pages. Each mirrors its visible action buttons with identical status-gating (quote:
+     submit/approve/convert/reject · PO: approve/confirm/receive/bill/pay/return · PR: same as quote ·
+     opp: advance-to-{stage}/win/lose). Reuses the existing `usePaletteActions` registry + existing i18n
+     keys (no new keys). **Journal detail is read-only (no lifecycle actions) → deliberately skipped.**
+
 ### NEXT ACTION
-PRs #1–#11 are **merged to `main`**; working tree clean (only the unrelated `erp_questionnaire_v4.html`).
-List-cursor restore now covers all 11 keyboard lists; the success-check toast beat is global. Open
-options: **eyes-on spacing/rhythm tuning** at both densities (the one pass that needs a browser, not
-blind edits); more inline-edit fields (each needs a small backend PATCH opening); deeper palette work
-(recent *items*, scoped actions); add j/k + cursor-restore to lists that don't yet have keyboard nav
-(customers, suppliers, items, leads, tickets, …).
+PRs #1–#11 are **merged to `main`**. The **`ui/craft-continued`** branch (5 slices above) is **pushed**
+but the **PR isn't opened yet** — `gh` is unauthenticated on this machine, so open it from the web
+(github.com/ahmedGaid/Conductor_ERP/pull/new/ui/craft-continued) or run `gh auth login` then `gh pr
+create`. After that, the remaining open craft options are: eyes-on spacing tuning (subjective, browser);
+more inline-edit fields on other detail pages (each a small opening); drill-into-related-view nav for the
+flat catalogs (customers/suppliers/items → pre-filtered lists, needs the target pages to accept filters).
 
 > **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
 > **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
@@ -118,7 +142,8 @@ blind edits); more inline-edit fields (each needs a small backend PATCH opening)
 ## How to resume
 1. Read this file (live state) + recall **`erp-history`** / **`erp-frontend`** skills as needed.
 2. Clear any blocker (Redis after a reboot — see below), then continue from NEXT ACTION.
-3. To continue the frontend work: `git checkout ui/inline-edit` (latest local branch; off `main`).
+3. To continue the frontend work: `git checkout ui/craft-continued` (latest local branch; off `main`,
+   not yet pushed — push + open a PR when ready).
 4. Keep this file current as steps complete (and let the `erp-history` skill absorb anything historical).
 
 ## Verify / gates
