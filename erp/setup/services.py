@@ -16,6 +16,23 @@ def get_status() -> dict:
     return {
         "is_setup_complete": org.is_setup_complete,
         "chart_of_accounts": accounting.baseline_summary(),
+        "tax": {
+            "vat_rate_bps": accounting.get_standard_vat_rate_bps(),
+            "einvoice_enabled": org.einvoice_enabled,
+        },
+    }
+
+
+def set_tax_settings(actor, *, vat_rate_bps=None, einvoice_enabled=None) -> dict:
+    """Set the standard VAT rate (accounting) and/or the e-invoicing toggle (org preference)."""
+    if vat_rate_bps is not None:
+        accounting.set_standard_vat_rate(vat_rate_bps)
+    if einvoice_enabled is not None:
+        identity_services.update_org_preferences(actor, {"einvoice_enabled": bool(einvoice_enabled)})
+    org = identity_services.get_org_preferences()
+    return {
+        "vat_rate_bps": accounting.get_standard_vat_rate_bps(),
+        "einvoice_enabled": org.einvoice_enabled,
     }
 
 

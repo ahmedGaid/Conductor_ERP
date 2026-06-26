@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
 import { useHelp } from "../help/HelpContext";
+import { usePreferences } from "../preferences/PreferencesContext";
 import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
 import { Tooltip } from "../components/Tooltip";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -17,15 +18,20 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
   const { t } = useTranslation();
   const { logout } = useAuth();
   const { openHelp } = useHelp();
+  const { prefs } = usePreferences();
   const navigate = useNavigate();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // When e-invoicing is turned off in setup, hide it from every nav surface (sidebar, palette,
+  // cheat-sheet and the g-key chord) so "disabled" reads consistently.
+  const einvoiceEnabled = prefs?.einvoice_enabled !== false;
 
   // App-wide keyboard layer: ⌘K / `/` / `c` open the palette, `g`+key navigates,
   // `?` opens the cheat-sheet. (Stable callbacks so the listener isn't re-bound.)
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   const openShortcuts = useCallback(() => setShortcutsOpen(true), []);
-  useGlobalShortcuts({ openPalette, openShortcuts });
+  useGlobalShortcuts({ openPalette, openShortcuts, einvoiceEnabled });
 
   return (
     <header className="commandbar">
@@ -114,8 +120,16 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
         </button>
       </div>
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        einvoiceEnabled={einvoiceEnabled}
+      />
+      <ShortcutsDialog
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        einvoiceEnabled={einvoiceEnabled}
+      />
     </header>
   );
 }

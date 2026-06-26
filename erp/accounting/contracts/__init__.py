@@ -9,7 +9,12 @@ from __future__ import annotations
 from ..domain.money import DEFAULT_CURRENCY, Money
 from ..events import JOURNAL_POSTED, PERIOD_CLOSED
 from ..services.posting import JournalInput, LineInput, post_journal, reverse_journal
-from ..services.seeding import baseline_summary, seed_baseline_accounting
+from ..services.seeding import (
+    baseline_summary,
+    get_standard_vat_rate_bps,
+    seed_baseline_accounting,
+    set_standard_vat_rate,
+)
 from ..services.taxes import TaxCodeInfo, compute_tax, find_tax_code
 
 __all__ = [
@@ -26,4 +31,6 @@ __all__ = [
     "PERIOD_CLOSED",
     "seed_baseline_accounting",
     "baseline_summary",
+    "get_standard_vat_rate_bps",
+    "set_standard_vat_rate",
 ]

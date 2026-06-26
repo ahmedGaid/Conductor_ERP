@@ -201,6 +201,8 @@ class OrgPreferences(models.Model):
     vat_number = models.CharField(max_length=32, blank=True, default="")
     # The ledger is EGP-only today; stored so multi-currency can read it later (read-only in the UI).
     base_currency = models.CharField(max_length=3, default="EGP")
+    # Egyptian ETA e-invoicing. Off hides the e-invoicing section from the app's navigation.
+    einvoice_enabled = models.BooleanField(default=True)
 
     # First-run setup. False until the self-serve wizard finishes (flipped only via the setup
     # service, never the generic org-preferences PATCH). Drives the post-login route guard.

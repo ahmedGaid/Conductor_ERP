@@ -39,6 +39,8 @@ export interface Preferences {
   default_landing: string;
   dashboard_layout: { order?: string[]; hidden?: string[] };
   favorites: { label: string; to: string }[];
+  /** Org-wide feature flag merged into effective preferences (the nav reads it). */
+  einvoice_enabled?: boolean;
   updated_at?: string;
 }
 
@@ -51,6 +53,7 @@ export interface OrgPreferences {
   country: string;
   vat_number: string;
   base_currency: string;
+  einvoice_enabled: boolean;
   updated_at?: string;
 }
 

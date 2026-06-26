@@ -84,6 +84,16 @@ export function OrganizationPage() {
           <span className="muted">{org.base_currency}</span>
         </SettingRow>
 
+        <SettingRow title={t("settings.org.einvoice")} desc={t("settings.org.einvoiceDesc")} htmlFor="org-einvoice">
+          <input
+            id="org-einvoice"
+            type="checkbox"
+            role="switch"
+            checked={org.einvoice_enabled}
+            onChange={(e) => save({ einvoice_enabled: e.target.checked })}
+          />
+        </SettingRow>
+
         <SettingRow title={t("settings.org.language")} desc={t("settings.org.languageDesc")}>
           <Segmented
             ariaLabel={t("settings.org.language")}

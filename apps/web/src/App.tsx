@@ -103,6 +103,7 @@ function Protected() {
 // once complete, the wizard is unreachable (redirects home). Auth already passed by here.
 function SetupGate() {
   const { data, loading, mutate } = useAsync(getSetupStatus, []);
+  const { refresh } = usePreferences();
   const location = useLocation();
   const onSetup = location.pathname === "/setup";
 
@@ -113,7 +114,11 @@ function SetupGate() {
     return (
       <SetupWizardPage
         status={data}
-        onCompleted={() => mutate({ ...data, is_setup_complete: true })}
+        onCompleted={async () => {
+          // Pull fresh org flags (e.g. e-invoicing) before entering the app so the nav is correct.
+          await refresh();
+          mutate({ ...data, is_setup_complete: true });
+        }}
       />
     );
   }

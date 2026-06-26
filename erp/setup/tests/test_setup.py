@@ -73,6 +73,27 @@ def test_seed_chart_of_accounts_requires_system_admin(accountant):
     assert c.post("/api/setup/chart-of-accounts").status_code == 403
 
 
+def test_tax_defaults_and_update(admin):
+    c = _auth(admin)
+    # Egypt default before anything is set.
+    tax = c.get("/api/setup/status").json()["data"]["tax"]
+    assert tax == {"vat_rate_bps": 1400, "einvoice_enabled": True}
+    # Set a new rate + disable e-invoicing.
+    resp = c.post("/api/setup/tax", {"vat_rate_bps": 1500, "einvoice_enabled": False}, format="json")
+    assert resp.status_code == 200
+    assert resp.json()["data"] == {"vat_rate_bps": 1500, "einvoice_enabled": False}
+    # Reflected in status, and the e-invoice flag reaches effective preferences (the nav reads it).
+    after = c.get("/api/setup/status").json()["data"]["tax"]
+    assert after == {"vat_rate_bps": 1500, "einvoice_enabled": False}
+    eff = c.get("/api/identity/preferences/effective").json()["data"]
+    assert eff["einvoice_enabled"] is False
+
+
+def test_tax_requires_system_admin(accountant):
+    c = _auth(accountant)
+    assert c.post("/api/setup/tax", {"vat_rate_bps": 1500}, format="json").status_code == 403
+
+
 def test_complete_requires_system_admin(accountant):
     # A non-admin may read status but not finish setup.
     c = _auth(accountant)

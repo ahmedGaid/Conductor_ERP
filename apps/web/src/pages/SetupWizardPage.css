@@ -117,6 +117,36 @@
   color: var(--color-text-muted);
 }
 
+.setup__field--inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.setup__field--inline > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.setup__field-hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.setup__suffixed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.setup__suffixed input {
+  inline-size: 5rem;
+  text-align: end;
+}
+
 .setup__badge {
   display: inline-flex;
   align-items: center;

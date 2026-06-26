@@ -120,6 +120,13 @@
       "action": "Create chart of accounts",
       "seeding": "Creating…",
       "ready": "Ready — {{n}} accounts"
+    },
+    "tax": {
+      "title": "Tax & e-invoicing",
+      "lede": "Your standard VAT rate, and whether you use Egyptian e-invoicing (ETA).",
+      "vatRate": "Standard VAT rate",
+      "einvoice": "Egyptian e-invoicing (ETA)",
+      "einvoiceHint": "Turn off to hide e-invoicing across the app."
     }
   },
   "dashboard": {
@@ -1154,6 +1161,8 @@
       "vatNumberDesc": "Shown on your invoices and e-invoice submissions.",
       "baseCurrency": "Base currency",
       "baseCurrencyDesc": "The currency your books are kept in.",
+      "einvoice": "Egyptian e-invoicing (ETA)",
+      "einvoiceDesc": "When off, e-invoicing is hidden across the app.",
       "language": "Default language",
       "languageDesc": "The language new users start with.",
       "theme": "Default theme",

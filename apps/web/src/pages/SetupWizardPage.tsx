@@ -5,8 +5,10 @@ import { getMe, getOrgPreferences, patchOrgPreferences, type OrgPreferences } fr
 import {
   completeSetup,
   seedChartOfAccounts,
+  setTaxSettings,
   type ChartOfAccountsState,
   type SetupStatus,
+  type TaxState,
 } from "../api/setup";
 import { LanguageSwitcher } from "../app/LanguageSwitcher";
 import { ThemeToggle } from "../app/ThemeToggle";
@@ -50,6 +52,8 @@ export function SetupWizardPage({
   const { data: loadedOrg } = useAsync(getOrgPreferences, []);
   const [org, setOrg] = useState<OrgPreferences | null>(null);
   const [coa, setCoa] = useState<ChartOfAccountsState>(status.chart_of_accounts);
+  const [tax, setTax] = useState<TaxState>(status.tax);
+  const [vatInput, setVatInput] = useState(String(status.tax.vat_rate_bps / 100));
   const [busy, setBusy] = useState<null | "coa" | "finish">(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +81,26 @@ export function SetupWizardPage({
     } finally {
       setBusy(null);
     }
+  }
+
+  function commitTax(changes: Partial<TaxState>) {
+    setError(null);
+    setTaxSettings(changes)
+      .then((next) => {
+        setTax(next);
+        setVatInput(String(next.vat_rate_bps / 100));
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)));
+  }
+
+  function commitVatRate() {
+    const pct = Number(vatInput);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      setVatInput(String(tax.vat_rate_bps / 100)); // revert bad input
+      return;
+    }
+    const bps = Math.round(pct * 100);
+    if (bps !== tax.vat_rate_bps) commitTax({ vat_rate_bps: bps });
   }
 
   async function onFinish() {
@@ -193,6 +217,44 @@ export function SetupWizardPage({
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* Step — tax & e-invoicing */}
+            <div className="setup__step">
+              <span className="setup__step-title">{t("setup.tax.title")}</span>
+              <p className="setup__step-lede">{t("setup.tax.lede")}</p>
+              <div className="setup__fields">
+                <label className="setup__field setup__field--inline">
+                  <span>{t("setup.tax.vatRate")}</span>
+                  <span className="setup__suffixed">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.5"
+                      value={vatInput}
+                      onChange={(e) => setVatInput(e.target.value)}
+                      onBlur={commitVatRate}
+                    />
+                    <span aria-hidden="true">%</span>
+                  </span>
+                </label>
+                <label className="setup__field setup__field--inline">
+                  <span>
+                    {t("setup.tax.einvoice")}
+                    <span className="setup__field-hint">{t("setup.tax.einvoiceHint")}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={tax.einvoice_enabled}
+                    onChange={(e) => {
+                      setTax({ ...tax, einvoice_enabled: e.target.checked });
+                      commitTax({ einvoice_enabled: e.target.checked });
+                    }}
+                  />
+                </label>
+              </div>
             </div>
 
             {error && (

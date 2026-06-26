@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import calendar
 import datetime as dt
+from decimal import Decimal
 
 from django.db import transaction
 
@@ -50,6 +51,10 @@ COA = [
 
 CASH_CODES = {"1000", "1010"}  # Cash, Bank
 
+# The standard sales-VAT code. Its rate is the company's headline VAT rate; the code id stays
+# stable (sales/purchasing reference it as a string) even when the rate is adjusted in setup.
+STANDARD_VAT_CODE = "VAT14"
+
 
 @transaction.atomic
 def seed_baseline_accounting() -> dict:
@@ -69,8 +74,10 @@ def seed_baseline_accounting() -> dict:
 
     # VAT tax codes (Egypt standard 14%, plus a 0% exempt code).
     # Output (sales) VAT → 2100 VAT Payable; input (purchase) VAT → 1190 VAT Recoverable.
+    # get_or_create (not update_or_create) so a rate the setup wizard already customised survives
+    # a re-seed of the chart of accounts.
     for code, name, rate_bps in [("VAT14", "VAT 14%", 1400), ("VAT0", "Exempt / 0%", 0)]:
-        TaxCode.objects.update_or_create(
+        TaxCode.objects.get_or_create(
             code=code,
             defaults={"name": name, "rate_bps": rate_bps, "output_account_code": "2100",
                       "input_account_code": "1190", "is_active": True},
@@ -103,3 +110,22 @@ def baseline_summary() -> dict:
     """Current baseline state — what the setup wizard reads to know if the COA is in place."""
     count = Account.objects.count()
     return {"seeded": count > 0, "accounts": count}
+
+
+def get_standard_vat_rate_bps() -> int:
+    """The standard sales-VAT rate in basis points (1400 == 14%); the Egypt default if unset."""
+    tc = TaxCode.objects.filter(code=STANDARD_VAT_CODE).first()
+    return tc.rate_bps if tc else 1400
+
+
+def set_standard_vat_rate(rate_bps: int) -> int:
+    """Set the standard sales-VAT rate (basis points). Upserts the code so it works pre- or
+    post-COA-seed; the code id stays stable while the display name tracks the rate."""
+    rate_bps = max(0, int(rate_bps))
+    pct = (Decimal(rate_bps) / 100).normalize()
+    TaxCode.objects.update_or_create(
+        code=STANDARD_VAT_CODE,
+        defaults={"name": f"VAT {pct}%", "rate_bps": rate_bps, "output_account_code": "2100",
+                  "input_account_code": "1190", "is_active": True},
+    )
+    return rate_bps

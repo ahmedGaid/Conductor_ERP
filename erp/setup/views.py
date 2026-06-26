@@ -7,6 +7,7 @@ them.
 """
 from __future__ import annotations
 
+from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -20,6 +21,11 @@ from . import services
 
 def _envelope(data) -> Response:
     return Response({"data": data})
+
+
+class TaxSettingsSerializer(serializers.Serializer):
+    vat_rate_bps = serializers.IntegerField(required=False, min_value=0, max_value=10000)
+    einvoice_enabled = serializers.BooleanField(required=False)
 
 
 class SetupStatusView(APIView):
@@ -38,6 +44,17 @@ class SetupChartOfAccountsView(APIView):
 
     def post(self, request: Request) -> Response:
         return _envelope(services.seed_chart_of_accounts())
+
+
+class SetupTaxView(APIView):
+    """Set the standard VAT rate and the e-invoicing toggle (wizard step). System Admin only."""
+
+    permission_classes = [IsAuthenticated, HasAnyRole.require(SYSTEM_ADMIN)]
+
+    def post(self, request: Request) -> Response:
+        s = TaxSettingsSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        return _envelope(services.set_tax_settings(request.user, **s.validated_data))
 
 
 class SetupCompleteView(APIView):
