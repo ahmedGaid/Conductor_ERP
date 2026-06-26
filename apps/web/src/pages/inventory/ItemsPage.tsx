@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
@@ -10,6 +11,7 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { RowActions } from "../../components/RowActions";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -144,6 +146,7 @@ export function ItemsPage() {
                 <th>{t("inventory.item.name")}</th>
                 <th>{t("inventory.item.uom")}</th>
                 <th>{t("inventory.item.type")}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -153,6 +156,15 @@ export function ItemsPage() {
                   <td>{i.name}</td>
                   <td>{i.uom}</td>
                   <td>{t(`inventory.types.${i.type}`)}</td>
+                  <td>
+                    {i.type === "stock" && (
+                      <RowActions label={t("common.actions")}>
+                        <Link className="btn btn--sm" to={`/inventory?sku=${encodeURIComponent(i.sku)}`}>
+                          {t("inventory.item.viewStock")}
+                        </Link>
+                      </RowActions>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

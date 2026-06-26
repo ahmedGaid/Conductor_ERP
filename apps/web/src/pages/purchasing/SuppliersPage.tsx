@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
@@ -10,6 +11,7 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { RowActions } from "../../components/RowActions";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./purchasing.css";
@@ -97,6 +99,7 @@ export function SuppliersPage() {
               <tr>
                 <th>{t("purchasing.supplier.code")}</th>
                 <th>{t("purchasing.supplier.name")}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -104,6 +107,13 @@ export function SuppliersPage() {
                 <tr key={s.id}>
                   <td><Bdi>{s.code}</Bdi></td>
                   <td>{s.name}</td>
+                  <td>
+                    <RowActions label={t("common.actions")}>
+                      <Link className="btn btn--sm" to={`/purchasing?supplier=${encodeURIComponent(s.name)}`}>
+                        {t("purchasing.supplier.viewOrders")}
+                      </Link>
+                    </RowActions>
+                  </td>
                 </tr>
               ))}
             </tbody>

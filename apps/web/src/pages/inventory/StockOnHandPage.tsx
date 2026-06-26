@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { stockOnHand, type StockOnHand } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
-import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
+import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
@@ -18,7 +18,7 @@ type StockRow = StockOnHand["rows"][number];
 export function StockOnHandPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsync(stockOnHand, [], "inventory:stock-on-hand");
-  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [searchParams] = useSearchParams();
 
   const fields = useMemo<FilterField<StockRow>[]>(
     () => [
@@ -28,6 +28,10 @@ export function StockOnHandPage() {
     ],
     [t],
   );
+
+  // Seed the filter chips from the URL once, so a drill-in link (an item row → `/inventory?sku=…`)
+  // opens this list pre-filtered; the chip is then freely editable like any other.
+  const [filters, setFilters] = useState<ActiveFilter[]>(() => filtersFromParams(searchParams, fields));
   const rows = useMemo(
     () => (data ? data.rows.filter((r) => matchesAllFilters(r, fields, filters)) : []),
     [data, fields, filters],
