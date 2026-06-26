@@ -93,6 +93,26 @@
   flex-wrap: wrap;
 }
 
+/* Opportunity head: number, the editable title, then the muted codes line, stacked. */
+.crm-page__id {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+/* The editable title reads as a title-sized field box, constrained so it never spans the whole card. */
+.crm-page__name {
+  inline-size: min(100%, 22rem);
+}
+
+/* The notes editor: a labelled, full-width free-text field below the summary. */
+.crm-page__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .crm-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));

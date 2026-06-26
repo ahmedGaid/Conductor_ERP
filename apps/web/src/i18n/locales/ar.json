@@ -828,7 +828,8 @@
       "amount": "المبلغ",
       "weighted": "المرجَّح",
       "probability": "الاحتمالية",
-      "salesOrder": "أمر البيع"
+      "salesOrder": "أمر البيع",
+      "notes": "ملاحظات"
     },
     "newOpp": {
       "create": "إنشاء فرصة",
@@ -841,7 +842,9 @@
     "detail": {
       "advanceTo": "الانتقال إلى {{stage}}",
       "win": "تحديد كناجحة",
-      "lose": "تحديد كخاسرة"
+      "lose": "تحديد كخاسرة",
+      "namePlaceholder": "اسم الفرصة",
+      "notesPlaceholder": "أضف ملاحظة"
     },
     "ticket": {
       "add": "فتح تذكرة",

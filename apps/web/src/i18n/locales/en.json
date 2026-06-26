@@ -828,7 +828,8 @@
       "amount": "Amount",
       "weighted": "Weighted",
       "probability": "Probability",
-      "salesOrder": "Sales order"
+      "salesOrder": "Sales order",
+      "notes": "Notes"
     },
     "newOpp": {
       "create": "Create opportunity",
@@ -841,7 +842,9 @@
     "detail": {
       "advanceTo": "Move to {{stage}}",
       "win": "Mark won",
-      "lose": "Mark lost"
+      "lose": "Mark lost",
+      "namePlaceholder": "Opportunity name",
+      "notesPlaceholder": "Add a note"
     },
     "ticket": {
       "add": "Open ticket",
