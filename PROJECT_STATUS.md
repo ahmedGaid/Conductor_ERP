@@ -33,9 +33,14 @@ SYSTEM_ADMIN-gated); frontend `apps/web/src/pages/SetupWizardPage.tsx`. `gate:al
 - **1.4** tax step — VAT rate + e-invoicing toggle (`e127dbd`).
 - **1.5** invite-team step — `POST /setup/users` wraps identity `create_user`; status now carries
   `available_roles`; optional step shows each invitee's one-time temp password. Reuses the lexicon
-  `admin.invite.*` labels. 11/11 setup tests; i18n 1057 keys.
-- **NEXT → 1.6** Finish step → land on Dashboard + a "what to do next" checklist; flip
-  `is_setup_complete`. Then Phase 1.5 (backup/restore) + Phase 2 (CSV import) per `GROWTH_PLAN.md`.
+  `admin.invite.*` labels. 11/11 setup tests; i18n 1057 keys. (`d7e96e3`)
+- **1.6** Finish → Dashboard "what to do next" checklist. Frontend-only `GettingStarted` panel on the
+  Dashboard (Finish already lands there via `LandingRedirect`): 5 steps (company profile, COA, first
+  customer, first product, first order) that auto-check off real data (defensive module-list fetches,
+  like the attention panel), admin-only, dismissible, and self-retiring once all done. i18n 1065 keys.
+  **Phase 1 (Setup Wizard) COMPLETE.**
+- **NEXT → Phase 1.5** backup/restore (one-command DB dump+restore for self-hosters), then
+  **Phase 2** CSV import (start with the friction list 2.0) per `GROWTH_PLAN.md`.
 
 ## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`
