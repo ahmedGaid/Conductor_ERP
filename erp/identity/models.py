@@ -196,6 +196,10 @@ class OrgPreferences(models.Model):
     default_landing = models.CharField(max_length=120, blank=True, default="")
     company_name = models.CharField(max_length=160, blank=True, default="")
 
+    # First-run setup. False until the self-serve wizard finishes (flipped only via the setup
+    # service, never the generic org-preferences PATCH). Drives the post-login route guard.
+    is_setup_complete = models.BooleanField(default=False)
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

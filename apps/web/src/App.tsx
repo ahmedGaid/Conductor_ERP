@@ -1,10 +1,13 @@
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { AppShell } from "./app/AppShell";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { PreferencesProvider, usePreferences } from "./preferences/PreferencesContext";
+import { getSetupStatus } from "./api/setup";
+import { useAsync } from "./hooks/useAsync";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { SetupWizardPage } from "./pages/SetupWizardPage";
 import { ProfilePage } from "./pages/settings/ProfilePage";
 import { AppearancePage } from "./pages/settings/AppearancePage";
 import { DashboardSettingsPage } from "./pages/settings/DashboardSettingsPage";
@@ -90,6 +93,30 @@ function Protected() {
   return (
     <RequireAuth>
       <PreferencesProvider>
+        <SetupGate />
+      </PreferencesProvider>
+    </RequireAuth>
+  );
+}
+
+// First-run gate: until the org finishes setup, every protected route funnels to the wizard;
+// once complete, the wizard is unreachable (redirects home). Auth already passed by here.
+function SetupGate() {
+  const { data, loading, mutate } = useAsync(getSetupStatus, []);
+  const location = useLocation();
+  const onSetup = location.pathname === "/setup";
+
+  if (loading || !data) return null;
+  if (!data.is_setup_complete && !onSetup) return <Navigate to="/setup" replace />;
+  if (data.is_setup_complete && onSetup) return <Navigate to="/" replace />;
+  if (onSetup) {
+    return <SetupWizardPage onCompleted={() => mutate({ is_setup_complete: true })} />;
+  }
+  return <AppRoutes />;
+}
+
+function AppRoutes() {
+  return (
       <AppShell>
         <Routes>
           <Route path="/" element={<LandingRedirect />} />
@@ -161,8 +188,6 @@ function Protected() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
-      </PreferencesProvider>
-    </RequireAuth>
   );
 }
 

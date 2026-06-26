@@ -103,6 +103,12 @@
     "otpRequired": "Enter your two-factor code",
     "submit": "Sign in"
   },
+  "setup": {
+    "title": "Set up your company",
+    "lede": "A few quick steps and Conductor is ready for work — your accounts, tax, and team. Then send your first invoice today.",
+    "finish": "Finish setup",
+    "adminOnly": "An administrator needs to finish setting up your company before you can start."
+  },
   "dashboard": {
     "heading": "Home",
     "greeting": {

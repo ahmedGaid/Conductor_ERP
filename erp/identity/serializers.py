@@ -39,7 +39,8 @@ class OrgPreferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrgPreferences
         exclude = ["id"]
-        read_only_fields = ["updated_at"]
+        # is_setup_complete is exposed for reads but only the setup service may flip it.
+        read_only_fields = ["updated_at", "is_setup_complete"]
 
 
 # --- User management (Increment 3) ---
