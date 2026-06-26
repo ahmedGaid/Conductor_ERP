@@ -94,6 +94,29 @@ export function reconcileOperator(field: FilterField<unknown>, op: FilterOperato
   return negative ? "isNot" : "is";
 }
 
+/**
+ * Seed active filters from URL query params, so a list view is deep-linkable: a flat catalog row can
+ * link to "this customer's orders" by navigating to `/sales?customer=Acme`, and the orders list opens
+ * with that chip already applied (and freely editable). For each param whose key matches a declared
+ * field, one chip is built with that field's default operator and the param's value(s); repeated
+ * params (`?x=a&x=b`) become a multi-value chip. Params with no matching field are ignored.
+ */
+export function filtersFromParams<T>(params: URLSearchParams, fields: FilterField<T>[]): ActiveFilter[] {
+  const out: ActiveFilter[] = [];
+  for (const field of fields) {
+    const values = params.getAll(field.key).filter((v) => v !== "");
+    if (values.length === 0) continue;
+    const f = field as FilterField<unknown>;
+    out.push({
+      id: newFilterId(),
+      key: field.key,
+      operator: reconcileOperator(f, defaultOperator(f), values),
+      values,
+    });
+  }
+  return out;
+}
+
 function matchesOne<T>(row: T, field: FilterField<T>, filter: ActiveFilter): boolean {
   const raw = field.accessor(row);
 

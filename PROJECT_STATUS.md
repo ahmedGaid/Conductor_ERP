@@ -102,12 +102,18 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
     the موافقة root (§6.1, 2026-06-23): `اعتمدها`→`وافق عليها`, `مُعتمَد`→`مُوافَق عليه`. 1029 keys.
 
 ### NEXT ACTION
-PRs #1–#11 are **merged to `main`**; working tree clean (only the unrelated `erp_questionnaire_v4.html`).
-List-cursor restore now covers all 11 keyboard lists; the success-check toast beat is global. Open
-options: **eyes-on spacing/rhythm tuning** at both densities (the one pass that needs a browser, not
-blind edits); more inline-edit fields (each needs a small backend PATCH opening); deeper palette work
-(recent *items*, scoped actions); add j/k + cursor-restore to lists that don't yet have keyboard nav
-(customers, suppliers, items, leads, tickets, …).
+PRs #1–#11 are **merged to `main`**. Two craft PRs are **open against `main`** (review/merge them):
+- **PR #12** `ui/craft-continued` — inline-edit opportunity name+notes, deeper ⌘K palette (recent
+  items + page-scoped actions), CRM-queue keyboard nav, **+ page-scoped palette actions fanned out to
+  quotation/PO/PR/opportunity detail**.
+- **PR #13** `ui/catalog-drilldown` (this branch, off `main`) — the flat catalogs (customers/suppliers/
+  items) now drill into their **pre-filtered** related list via a new `filtersFromParams` URL→FilterBar
+  seeder (`/sales?customer=…`, `/purchasing?supplier=…`, `/inventory?sku=…`). **Verified live** (all
+  three chips apply + filter; no console errors). `tsc -b` + parity green (1032 keys).
+
+Remaining open options: **eyes-on spacing/rhythm tuning** at both densities (browser, not blind edits);
+more inline-edit fields; add j/k + cursor-restore to the remaining flat catalogs (now that they have a
+row action, keyboard nav is worthwhile).
 
 > **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
 > **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
