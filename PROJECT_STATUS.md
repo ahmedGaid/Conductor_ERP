@@ -101,8 +101,9 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
     six اعتماد-root stragglers (incl. a `مُعتمَد` next to `بانتظار الموافقة` in one block) unified onto
     the موافقة root (§6.1, 2026-06-23): `اعتمدها`→`وافق عليها`, `مُعتمَد`→`مُوافَق عليه`. 1029 keys.
 
-- **Craft continuation (4 slices) — DONE this session** on branch `ui/craft-continued` (off `main`,
-  **not yet pushed/merged**; `gate:all` 00–13 GREEN). Worked the four open options in order:
+- **Craft continuation (5 slices) — DONE** on branch `ui/craft-continued` (off `main`, **pushed**,
+  PR not yet opened — `gh` unauthenticated locally; open via
+  github.com/ahmedGaid/Conductor_ERP/pull/new/ui/craft-continued. `gate:all` 00–13 GREEN). Worked the open options in order:
   1. **Eyes-on spacing/rhythm** — ran the app at both densities (browser): row rhythm is clean and
      token-driven (comfortable ~47px / compact ~39px rows scale via the `--space-*` remap); no
      concrete defect, so **no blind churn** — the remaining tuning is subjective taste, deferred.
@@ -117,13 +118,20 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
      (customers/suppliers/items) deliberately skipped (no row action = decoration). *(Product call by
      the user: "Enter = primary row action".)*
   - Lexicon §6.1 extended: **Notes → ملاحظات**, **Opportunity → فرصة**. i18n now **1033 keys**.
+  5. **Page-scoped palette actions fanned out** (`8dad98d`) — slice-3's "This page" ⌘K group, previously
+     wired only on order-detail, now also on **quotation / purchase-order / purchase-request / opportunity**
+     detail pages. Each mirrors its visible action buttons with identical status-gating (quote:
+     submit/approve/convert/reject · PO: approve/confirm/receive/bill/pay/return · PR: same as quote ·
+     opp: advance-to-{stage}/win/lose). Reuses the existing `usePaletteActions` registry + existing i18n
+     keys (no new keys). **Journal detail is read-only (no lifecycle actions) → deliberately skipped.**
 
 ### NEXT ACTION
-PRs #1–#11 are **merged to `main`**. The **`ui/craft-continued`** branch (4 slices above) is committed
-locally but **not yet pushed/opened as a PR** — push it + open the PR when ready. After that, the open
-craft options are: eyes-on spacing tuning (subjective, browser); more inline-edit fields / scoped
-palette actions on other detail pages (each a small opening); drill-into-related-view nav for the flat
-catalogs (customers/suppliers/items → pre-filtered lists, needs the target pages to accept filters).
+PRs #1–#11 are **merged to `main`**. The **`ui/craft-continued`** branch (5 slices above) is **pushed**
+but the **PR isn't opened yet** — `gh` is unauthenticated on this machine, so open it from the web
+(github.com/ahmedGaid/Conductor_ERP/pull/new/ui/craft-continued) or run `gh auth login` then `gh pr
+create`. After that, the remaining open craft options are: eyes-on spacing tuning (subjective, browser);
+more inline-edit fields on other detail pages (each a small opening); drill-into-related-view nav for the
+flat catalogs (customers/suppliers/items → pre-filtered lists, needs the target pages to accept filters).
 
 > **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
 > **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
