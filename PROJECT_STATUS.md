@@ -89,7 +89,9 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
     when actionable; otherwise a neutral disabled preview — one obvious primary per state.
   - **#7 list cursor + scroll restore** (`lib/listCursor.ts`): opening a row then returning now restores
     the keyboard highlight (if its row still exists) + scroll position, per route in sessionStorage.
-    `useListKeyboardNav` gained opt-in `persistKey`+`getItemId`; wired the 5 high-traffic lists.
+    `useListKeyboardNav` gained opt-in `persistKey`+`getItemId`. **Now wired on all 11 keyboard lists**
+    (PR #11 extended PR #7's 5 to the remaining 6: crm campaigns, workflows, stock counts, budgets,
+    bank-reconciliation, fixed assets — the last keys on `code`).
   - **#8 settled confirmation beat**: success toasts draw a monochrome check in over the existing
     `toast-in` (decelerating, no bounce; reduced-motion collapses it). No button "working" state —
     optimistic actions vanish on commit, so it would never render.
@@ -100,11 +102,12 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
     the موافقة root (§6.1, 2026-06-23): `اعتمدها`→`وافق عليها`, `مُعتمَد`→`مُوافَق عليه`. 1029 keys.
 
 ### NEXT ACTION
-PRs #1–#10 are **merged to `main`**; working tree clean (only the unrelated `erp_questionnaire_v4.html`).
-Open options: **eyes-on spacing/rhythm tuning** at both densities (the one pass that needs a browser, not
+PRs #1–#11 are **merged to `main`**; working tree clean (only the unrelated `erp_questionnaire_v4.html`).
+List-cursor restore now covers all 11 keyboard lists; the success-check toast beat is global. Open
+options: **eyes-on spacing/rhythm tuning** at both densities (the one pass that needs a browser, not
 blind edits); more inline-edit fields (each needs a small backend PATCH opening); deeper palette work
-(recent *items*, scoped actions); broaden list-cursor restore + the success-check beat to the remaining
-lists/screens.
+(recent *items*, scoped actions); add j/k + cursor-restore to lists that don't yet have keyboard nav
+(customers, suppliers, items, leads, tickets, …).
 
 > **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
 > **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
