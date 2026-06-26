@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getMe, getOrgPreferences, patchOrgPreferences, type OrgPreferences } from "../api/identity";
 import {
   completeSetup,
+  inviteTeamMember,
   seedChartOfAccounts,
   setTaxSettings,
   type ChartOfAccountsState,
+  type InvitedUser,
   type SetupStatus,
   type TaxState,
 } from "../api/setup";
@@ -54,8 +56,14 @@ export function SetupWizardPage({
   const [coa, setCoa] = useState<ChartOfAccountsState>(status.chart_of_accounts);
   const [tax, setTax] = useState<TaxState>(status.tax);
   const [vatInput, setVatInput] = useState(String(status.tax.vat_rate_bps / 100));
-  const [busy, setBusy] = useState<null | "coa" | "finish">(null);
+  const [busy, setBusy] = useState<null | "coa" | "invite" | "finish">(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Invite-team step — optional. Each invited member surfaces a one-time temp password to hand over.
+  const [inviteUsername, setInviteUsername] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("");
+  const [invited, setInvited] = useState<InvitedUser[]>([]);
 
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
 
@@ -101,6 +109,28 @@ export function SetupWizardPage({
     }
     const bps = Math.round(pct * 100);
     if (bps !== tax.vat_rate_bps) commitTax({ vat_rate_bps: bps });
+  }
+
+  async function onInvite(e: FormEvent) {
+    e.preventDefault();
+    if (!inviteUsername.trim() || !inviteEmail.trim()) return;
+    setBusy("invite");
+    setError(null);
+    try {
+      const member = await inviteTeamMember({
+        username: inviteUsername.trim(),
+        email: inviteEmail.trim(),
+        role: inviteRole || undefined,
+      });
+      setInvited((prev) => [...prev, member]);
+      setInviteUsername("");
+      setInviteEmail("");
+      setInviteRole("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onFinish() {
@@ -255,6 +285,66 @@ export function SetupWizardPage({
                   />
                 </label>
               </div>
+            </div>
+
+            {/* Step — invite team (optional) */}
+            <div className="setup__step">
+              <span className="setup__step-title">{t("setup.invite.title")}</span>
+              <p className="setup__step-lede">{t("setup.invite.lede")}</p>
+              <form className="setup__invite-form" onSubmit={onInvite}>
+                <label className="setup__field">
+                  <span>{t("admin.invite.username")}</span>
+                  <input
+                    type="text"
+                    value={inviteUsername}
+                    onChange={(e) => setInviteUsername(e.target.value)}
+                  />
+                </label>
+                <label className="setup__field">
+                  <span>{t("admin.invite.email")}</span>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                  />
+                </label>
+                <label className="setup__field">
+                  <span>{t("admin.users.role")}</span>
+                  <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+                    <option value="">{t("admin.invite.noRole")}</option>
+                    {status.available_roles.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="setup__actions">
+                  <button
+                    className="btn"
+                    type="submit"
+                    disabled={busy !== null || !inviteUsername.trim() || !inviteEmail.trim()}
+                  >
+                    {busy === "invite" ? t("common.loading") : t("admin.invite.submit")}
+                  </button>
+                </div>
+              </form>
+              {invited.length > 0 && (
+                <ul className="setup__invited">
+                  {invited.map((m) => (
+                    <li key={m.id} className="setup__invited-row">
+                      <span className="setup__invited-who">
+                        {m.username}
+                        {m.role && <span className="muted"> · {m.role}</span>}
+                      </span>
+                      <span className="setup__invited-pw">
+                        <span className="setup__field-hint">{t("setup.invite.tempPassword")}</span>
+                        <code>{m.temp_password}</code>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {error && (

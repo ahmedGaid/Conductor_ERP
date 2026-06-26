@@ -108,3 +108,38 @@ def test_admin_completes_and_flag_persists(admin):
     assert resp.json()["data"]["is_setup_complete"] is True
     # Reflected on the next read.
     assert c.get("/api/setup/status").json()["data"]["is_setup_complete"] is True
+
+
+def test_status_exposes_available_roles(admin):
+    # The invite step's role picker reads this list off the status payload.
+    roles = _auth(admin).get("/api/setup/status").json()["data"]["available_roles"]
+    assert SYSTEM_ADMIN in roles
+
+
+def test_admin_invites_user_with_role(admin):
+    # The role must exist as a group (the picker only ever offers status.available_roles).
+    Group.objects.get_or_create(name=ACCOUNTANT)
+    c = _auth(admin)
+    resp = c.post(
+        "/api/setup/users",
+        {"username": "sara", "email": "sara@erp.local", "role": ACCOUNTANT},
+        format="json",
+    )
+    assert resp.status_code == 201
+    data = resp.json()["data"]
+    assert data["username"] == "sara"
+    assert data["role"] == ACCOUNTANT
+    # The one-time temp password comes back so the admin can hand it over.
+    assert data["temp_password"]
+    # The user was really created with the role and the invited status.
+    sara = User.objects.get(username="sara")
+    assert sara.status == "invited"
+    assert sara.groups.filter(name=ACCOUNTANT).exists()
+
+
+def test_invite_requires_system_admin(accountant):
+    c = _auth(accountant)
+    resp = c.post(
+        "/api/setup/users", {"username": "x", "email": "x@erp.local"}, format="json"
+    )
+    assert resp.status_code == 403

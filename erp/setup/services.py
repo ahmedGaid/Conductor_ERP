@@ -6,8 +6,11 @@ the per-step provisioning endpoints (COA / tax / users) land in later wizard sli
 """
 from __future__ import annotations
 
+from django.contrib.auth.models import Group
+
 from erp.accounting import contracts as accounting
 from erp.identity import services as identity_services
+from erp.identity import users as identity_users
 
 
 def get_status() -> dict:
@@ -20,7 +23,23 @@ def get_status() -> dict:
             "vat_rate_bps": accounting.get_standard_vat_rate_bps(),
             "einvoice_enabled": org.einvoice_enabled,
         },
+        # The roles the invite-team step offers — mirrors the org-units role list (same source).
+        "available_roles": list(Group.objects.order_by("name").values_list("name", flat=True)),
     }
+
+
+def invite_user(actor, *, username, email, role=None) -> dict:
+    """Create an invited team member (wizard step 4).
+
+    Reuses identity's own ``create_user`` — the wizard never re-implements user provisioning. The
+    one-time temporary password comes back with the row so the admin can hand it over.
+    """
+    user, temp_password = identity_users.create_user(
+        username=username, email=email, role=role or None, actor=actor,
+    )
+    result = identity_users.serialize_list(user)
+    result["temp_password"] = temp_password
+    return result
 
 
 def set_tax_settings(actor, *, vat_rate_bps=None, einvoice_enabled=None) -> dict:

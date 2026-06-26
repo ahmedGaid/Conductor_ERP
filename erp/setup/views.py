@@ -28,6 +28,12 @@ class TaxSettingsSerializer(serializers.Serializer):
     einvoice_enabled = serializers.BooleanField(required=False)
 
 
+class InviteUserSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    role = serializers.CharField(required=False, allow_blank=True)
+
+
 class SetupStatusView(APIView):
     """Whether first-run setup is done. Any authenticated user may read (the route guard calls it)."""
 
@@ -55,6 +61,21 @@ class SetupTaxView(APIView):
         s = TaxSettingsSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         return _envelope(services.set_tax_settings(request.user, **s.validated_data))
+
+
+class SetupInviteUserView(APIView):
+    """Invite a team member with a role (wizard step). System Admin only."""
+
+    permission_classes = [IsAuthenticated, HasAnyRole.require(SYSTEM_ADMIN)]
+
+    def post(self, request: Request) -> Response:
+        s = InviteUserSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        result = services.invite_user(
+            request.user, username=d["username"], email=d["email"], role=d.get("role") or None
+        )
+        return Response({"data": result}, status=201)
 
 
 class SetupCompleteView(APIView):

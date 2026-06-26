@@ -21,7 +21,23 @@ packaging are all delivered. **`gate:all` spans 00–13, all GREEN.** No active 
 Repo: `C:\AhmedGaid\ERP` (git, `main`), pushed to `github.com/ahmedGaid/Conductor_ERP`.
 For how any piece was built (and the commit that delivered it) → recall the **`erp-history`** skill.
 
-## Active work — Linear-quality frontend UX overhaul
+## Active work — Growth Phase 1: self-serve Setup Wizard
+Strategy pivot (2026-06-26, see `GROWTH_PLAN.md`): **postpone AI, win on speed + one-day self-serve
+setup.** Pitch: *"Sign up in the morning, send your first real invoice before lunch."* Building the
+first-run **Setup Wizard** so a brand-new org can set itself up with no seed script. Branch
+`growth/setup-wizard` (off `main`). Backend `erp/setup/` (wraps existing seed/COA/tax/user services,
+SYSTEM_ADMIN-gated); frontend `apps/web/src/pages/SetupWizardPage.tsx`. `gate:all` (00–13) GREEN.
+- **1.0** first-run gate + `POST /setup/*` group + route guard (`53415ec`).
+- **1.2** one-click chart of accounts (reuses `seed_accounting`) (`57a68a8`).
+- **1.3** company profile → writes to the same OrgPreferences edited later in Settings (`fbc2d36`).
+- **1.4** tax step — VAT rate + e-invoicing toggle (`e127dbd`).
+- **1.5** invite-team step — `POST /setup/users` wraps identity `create_user`; status now carries
+  `available_roles`; optional step shows each invitee's one-time temp password. Reuses the lexicon
+  `admin.invite.*` labels. 11/11 setup tests; i18n 1057 keys.
+- **NEXT → 1.6** Finish step → land on Dashboard + a "what to do next" checklist; flip
+  `is_setup_complete`. Then Phase 1.5 (backup/restore) + Phase 2 (CSV import) per `GROWTH_PLAN.md`.
+
+## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`
 → `af045f8`). apps/web only — the Python `gate:all` is untouched. A focused pass to lift the React UI
 to Linear's bar (fast, calm, keyboard-driven), worked one priority area at a time. Full patterns +

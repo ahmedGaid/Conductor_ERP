@@ -127,6 +127,11 @@
       "vatRate": "Standard VAT rate",
       "einvoice": "Egyptian e-invoicing (ETA)",
       "einvoiceHint": "Turn off to hide e-invoicing across the app."
+    },
+    "invite": {
+      "title": "Invite your team",
+      "lede": "Add the people who'll work with you and pick what each one can do. Optional — you can do this anytime in Settings.",
+      "tempPassword": "Temporary password"
     }
   },
   "dashboard": {
