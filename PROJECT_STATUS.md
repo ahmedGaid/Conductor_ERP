@@ -3,7 +3,7 @@
 > Living resume anchor — current state only. The `/erp-resume` skill reads this file.
 > Keep it lean (< 200 lines); the full stage/phase/increment build log is archived in the
 > **`erp-history`** skill, and apps/web conventions live in the **`erp-frontend`** skill.
-> **Last updated: 2026-06-23.**
+> **Last updated: 2026-06-26.**
 
 ## What this project is
 Customer-hosted, single-tenant **Django modular-monolith ERP** (Python 3.13 + DRF), React + TS
@@ -77,18 +77,34 @@ primitives → **`erp-frontend`** skill. (Merged branches still exist on origin;
   `test_users` covers it. `InlineEdit` now **returns focus to the field trigger after a keyboard
   commit/cancel** (Enter/Esc), while a blur-commit leaves focus where the user moved it.
   +`admin.detail.namePlaceholder`. **`gate:all` (00–13) GREEN** (1029 keys).
-- **Linear polish pass (3 slices) — DONE** (branch `ui/linear-polish`, off `main`, **local-only**;
-  `27c9963 483ce5c caaa5b8`): (1) **palette depth** — ⌘K keeps the arrow-highlighted row scrolled into
-  view; (2) **motion** — audit found the system already token-clean except one stray; tokenized the
-  skip-link transition; (3) **micro-states** — j/k-selected list rows get a distinct monochrome leading
-  marker (inset shadow, direction-aware) so the keyboard cursor reads differently from a mouse hover.
-  Frontend-only; `tsc -b` + `vite build` green.
+- **Linear polish pass (3 slices) — DONE** (PR #5, **merged `1edef42`**; `27c9963 483ce5c caaa5b8`):
+  (1) **palette depth** — ⌘K keeps the arrow-highlighted row scrolled into view; (2) **motion** — audit
+  found the system already token-clean except one stray; tokenized the skip-link transition;
+  (3) **micro-states** — j/k-selected list rows get a distinct monochrome leading marker (inset shadow,
+  direction-aware) so the keyboard cursor reads differently from a mouse hover.
+- **"Things 3" craft pass (5 PRs, #6–#10) — DONE** (frontend-only; Python `gate:all` untouched). Eight
+  Things-3 brand principles → independently-shippable PRs:
+  - **#6 one obvious action** (`134abe4`): order/PO detail showed two primaries in the draft+approval
+    state (actionable Approve + a *disabled* Confirm, both `btn--primary`). Confirm is now primary only
+    when actionable; otherwise a neutral disabled preview — one obvious primary per state.
+  - **#7 list cursor + scroll restore** (`lib/listCursor.ts`): opening a row then returning now restores
+    the keyboard highlight (if its row still exists) + scroll position, per route in sessionStorage.
+    `useListKeyboardNav` gained opt-in `persistKey`+`getItemId`; wired the 5 high-traffic lists.
+  - **#8 settled confirmation beat**: success toasts draw a monochrome check in over the existing
+    `toast-in` (decelerating, no bounce; reduced-motion collapses it). No button "working" state —
+    optimistic actions vanish on commit, so it would never render.
+  - **#9 spacing rhythm**: snapped the off-scale, density-frozen `*-meta__row` gaps (`0.125rem`) onto
+    `var(--space-1)` to match the summary-item rhythm. Deliberately surgical (no blind token churn).
+  - **#10 Arabic nativeness**: lexicon audit found `ar.json` clean except the **approve** concept —
+    six اعتماد-root stragglers (incl. a `مُعتمَد` next to `بانتظار الموافقة` in one block) unified onto
+    the موافقة root (§6.1, 2026-06-23): `اعتمدها`→`وافق عليها`, `مُعتمَد`→`مُوافَق عليه`. 1029 keys.
 
 ### NEXT ACTION
-PRs #1–#4 are **merged to `main`**. The `ui/linear-polish` branch (palette scroll + motion token +
-keyboard-cursor marker) is **local-only** — push + PR when ready. Further options: more inline-edit
-fields (each needs a small backend PATCH opening), deeper palette work (recent *items*, scoped actions),
-or continued micro-state/motion polish.
+PRs #1–#10 are **merged to `main`**; working tree clean (only the unrelated `erp_questionnaire_v4.html`).
+Open options: **eyes-on spacing/rhythm tuning** at both densities (the one pass that needs a browser, not
+blind edits); more inline-edit fields (each needs a small backend PATCH opening); deeper palette work
+(recent *items*, scoped actions); broaden list-cursor restore + the success-check beat to the remaining
+lists/screens.
 
 > **GATE NOTE (important):** the documented apps/web check `npx tsc --noEmit` at the repo root
 > **under-checks** — it doesn't traverse the app's project-referenced tsconfig, so it passed code that
