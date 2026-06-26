@@ -11,6 +11,7 @@ import {
   type QuotationStatus,
 } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -31,6 +32,7 @@ export function QuotationDetailPage() {
     [id],
     `sales:quotation:${id}`,
   );
+  useRecentEntity(data?.number);
 
   // Optimistic state transition: flip the status instantly, reconcile with the server's quotation,
   // roll back + toast on failure.

@@ -13,6 +13,7 @@ import {
   type PurchaseOrder,
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -39,6 +40,7 @@ export function PurchaseOrderDetailPage() {
     [id],
     `purchasing:order:${id}`,
   );
+  useRecentEntity(data?.number);
 
   // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
   // and action set update instantly, then let the server's returned order reconcile the derived

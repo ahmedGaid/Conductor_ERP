@@ -11,6 +11,7 @@ import {
   type OppStage,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -35,6 +36,7 @@ export function OpportunityDetailPage() {
     [id],
     `crm:opportunity:${id}`,
   );
+  useRecentEntity(data?.number);
 
   // Optimistic: flip the stage instantly so the badge and action set update, then let the server's
   // returned opportunity reconcile derived values (weighted amount, spawned sales order). A failure

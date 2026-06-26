@@ -11,6 +11,7 @@ import {
   type PurchaseRequest,
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -31,6 +32,7 @@ export function PurchaseRequestDetailPage() {
     [id],
     `purchasing:request:${id}`,
   );
+  useRecentEntity(data?.number);
 
   // Optimistic state transition: flip the status instantly, reconcile with the server's request,
   // roll back + toast on failure.
