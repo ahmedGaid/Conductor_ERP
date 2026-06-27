@@ -1041,3 +1041,51 @@ Sixth completion-plan increment, completing Track B (operational depth).
   with a sane row cap (a few thousand); larger files get documented chunking later, not a v1 async
   pipeline. Per-list **download-a-template** button (canonical headers + the unit/format notes) ships
   with the importer so the expected columns are obvious and mapping friction is low.
+
+## Phase 3.0 — Daily money loop friction list (2026-06-27)
+> Growth Phase 3 (`GROWTH_PLAN.md`) = make the everyday flow flawless: **Quotation → Sales Order →
+> Invoice → (e-invoice) → mark paid.** This is the friction list from walking that loop as a real
+> user in the running app (admin, demo data), source-verified against `NewQuotationPage`/`NewOrderPage`/
+> `OrderDetailPage`/`EInvoicesPage`. Ordered by daily-pain weight. 3.1–3.3 will fix these; this entry
+> is the "list before code" deliverable, nothing is changed yet.
+
+**A. Missing smart defaults (every new quote/order pays this tax).** *(→ 3.1)*
+- **Customer** starts at `—` on both new-quote and new-order. No "last-used customer" memory. A shop
+  that bills the same handful of customers re-picks every time.
+- **Warehouse** starts at `—`. A single-warehouse org (the common SMB case) must pick `MAIN` on every
+  document. With exactly one warehouse it should be preselected; with a remembered default, that.
+- **Tax code** starts blank on new-order, so VAT is opt-in per order even though Egypt's default is a
+  single 14% rate. Should default to the org's configured VAT code.
+- **Unit price is hand-typed for every line.** Picking an item does **not** prefill its price — the
+  salesperson re-keys a number the system already knows (item has a price). Biggest per-line friction.
+- **Quantity has no default** (empty, not `1`). Most lines are qty ≥ 1; defaulting to 1 saves a keystroke.
+
+**B. Step count / one-obvious-action down the lifecycle.** *(→ 3.2)*
+- Draft → paid is up to **five sequential single-button page actions** (Approve → Confirm → Deliver →
+  Invoice → Record payment), each its own click+reload. The buttons are already correctly "one primary
+  per state" (#6 craft pass), but there's no fast-path for the trivial cash-sale case (e.g.
+  confirm-deliver-invoice in one move for a same-day counter sale). Keep the granular path; **add** a
+  shortcut, don't replace.
+
+**C. Payment is too thin for real bookkeeping.** *(→ 3.1/3.2)*
+- **Record payment always pays the full outstanding** (`payOrder(id, outstanding_minor)`) — no partial
+  payment, common for SMB installments.
+- **No payment date or method** (cash/bank) is captured; it just flips status. Real cash-loop posting
+  wants both.
+
+**D. E-invoice is a context switch, not part of the loop.** *(→ 3.2)*
+- After "Invoice", there is **no link from the order to send it as an ETA e-invoice**. The user must
+  leave the order, open the E-Invoicing section, find the invoice in a list, then Submit/Poll. For the
+  "send your first real invoice before lunch" pitch, the e-invoice submit should be reachable **from the
+  order** once invoiced.
+
+**E. The invoice document itself is missing.** *(→ 3.3)*
+- There is **no per-invoice printable/PDF** anywhere (`print.css` is generic page-print; `ExportButtons`
+  is report CSV/Excel). The invoice number hides inside a "More details" disclosure. The artifact the
+  customer's customer actually sees does not exist yet — this is the whole of 3.3.
+
+**F. Small label/copy snags found en route.** *(→ fold into 3.2)*
+- New-quote warehouse field is labelled **"Warehouse code"** (`inventory.warehouse.code`) — exposes the
+  *code* concept where a human wants just "Warehouse" (mismatched with the new-order "Warehouse" label).
+- (Carried from 2.x verification, same loop surfaces) DRF **choice-field error returns Arabic text in EN
+  mode**; **"Import 1 rows"** isn't singularized — fix when touching shared validation/i18n copy.

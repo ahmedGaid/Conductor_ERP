@@ -57,9 +57,28 @@ GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundl
   `--force` for the live db). RUNBOOK §5 documents the Docker path; gate13 gained a Docker-kit coherence
   check; the previously-untracked Docker packaging (Dockerfile/compose/entrypoint/`.env.docker.example`)
   is now committed. `gate:all` (00–13) GREEN. **Not yet exercised against a live `docker compose` stack.**
-- **NEXT → Phase 2** CSV import — start with the friction list **2.0** (encoding/Win-1256/BOM,
-  duplicates, partial success, re-upload idempotency; decisions written before code), then the generic
-  importer engine and Customers/Suppliers/Items, per `GROWTH_PLAN.md`.
+- **Phase 2 CSV import — COMPLETE** (branch `growth/csv-import`, merged into `growth/combined`):
+  **2.0** friction decisions written before code (`DECISIONS.md`, 2026-06-27); **2.1/2.2** generic
+  importer engine `erp/core/imports.py` + `ImportDialog`, proven on Customers + template download
+  (`856fcea`, 10 tests); **2.3** Suppliers + shared DRF glue `erp/core/import_api.py` (`905640e`);
+  **2.4** Items with `category_code`→Category FK resolution (missing = row error), choice/decimal
+  validation (`6fb8504`). `gate:all` 00–13 GREEN. **Eyes-on browser click-through DONE (2026-06-27):**
+  all three lists verified live — auto-column-map, preview summary (add/skip/problem counts), row-level
+  errors (`required`, `category 'RAW' not found`, choice, `not a number`), commit + "Imported N rows"
+  toast + new rows appear. Two minor polish findings (not blockers): (a) DRF choice-field error returns
+  Arabic text even in EN mode — untranslated default message leaks through; (b) "Import 1 rows" isn't
+  singularized.
+- **Phase 3.0 friction walk — DONE (2026-06-27).** Walked Quote → SO → Invoice → e-invoice → paid as a
+  real user (admin, demo data); friction list written to `DECISIONS.md` "Phase 3.0 — Daily money loop
+  friction list". Headlines: (A) no smart defaults — customer/warehouse/tax-code start empty, **unit
+  price isn't prefilled from the item**, qty has no `1` default; (B) up to 5 sequential single-button
+  steps draft→paid with no cash-sale fast-path; (C) payment always full-amount, no date/method/partial;
+  (D) **e-invoice is a context switch** — no submit link from the order; (E) **no printable/PDF invoice
+  exists** (that's all of 3.3); (F) "Warehouse code" label + minor i18n snags.
+- **NEXT → Phase 3.1** Smart defaults (the biggest daily win): preselect the org's single/last-used
+  warehouse + default VAT code, remember last customer, **prefill unit price from the item**, default
+  qty to 1. Then 3.2 (one primary action + e-invoice-from-order + payment date/method) and 3.3
+  (on-brand PDF invoice). Recall `erp-frontend` + `conductor-brand` before the UI work.
 
 ## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`
