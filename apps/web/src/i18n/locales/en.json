@@ -455,6 +455,9 @@
       "name": "Name",
       "uom": "Unit",
       "type": "Type",
+      "category": "Category",
+      "reorderPoint": "Reorder point",
+      "active": "Active",
       "add": "Add item",
       "empty": "No items yet.",
       "emptyHint": "Add your first item using the form above."
@@ -934,6 +937,9 @@
     },
     "suppliers": {
       "title": "Import suppliers"
+    },
+    "items": {
+      "title": "Import items"
     },
     "upload": {
       "lede": "Bring your customers in from a CSV — Excel's \"Save As CSV\" works. You'll preview before anything is saved.",
