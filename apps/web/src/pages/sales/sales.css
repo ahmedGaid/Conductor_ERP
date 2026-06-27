@@ -187,3 +187,11 @@
   margin: 0;
   font-weight: var(--font-weight-medium);
 }
+
+/* The price-list source under a prefilled unit price — a quiet caption, colour only in the value. */
+.sales-price-source {
+  display: block;
+  margin-block-start: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

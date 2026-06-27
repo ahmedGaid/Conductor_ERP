@@ -5,12 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { createOrder, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
+import { resolvePrice, type PriceResolution } from "../../api/pricing";
 import { useAsync } from "../../hooks/useAsync";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useSmartDefault } from "../../hooks/useSmartDefault";
 import { useToast } from "../../app/ToastContext";
 import { setLastUsed } from "../../lib/lastUsed";
-import { formatMinor, parseToMinor } from "../../lib/money";
+import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
@@ -20,6 +21,7 @@ interface DraftLine {
   quantity: string;
   unit_price: string;
   discount: string;
+  priceSource?: string;
 }
 
 const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "1", unit_price: "", discount: "" });
@@ -52,6 +54,27 @@ export function NewOrderPage() {
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  }
+
+  function sourceLabel(res: PriceResolution): string {
+    return res.source === "customer_item"
+      ? t("pricing.source.negotiated")
+      : t("pricing.source.fromList", { list: res.price_list_code ?? "" });
+  }
+
+  // Pick an item, then ask pricing for its price for this customer (best-effort): fill the line's
+  // unit price (net — tax-inclusive lists are backed out by the order's tax code) and note the source.
+  async function onPickItem(i: number, sku: string) {
+    setLine(i, { item_sku: sku, priceSource: undefined });
+    if (!sku || !customer) return;
+    try {
+      const res = await resolvePrice({
+        customer, sku, qty: lines[i]?.quantity || undefined, taxCode: taxCode || undefined,
+      });
+      if (res) setLine(i, { unit_price: minorToAmount(res.unit_price_minor), priceSource: sourceLabel(res) });
+    } catch {
+      /* prefill is a convenience — never block entry on a pricing lookup failure */
+    }
   }
 
   const subtotal = lines.reduce((s, l) => {
@@ -160,7 +183,7 @@ export function NewOrderPage() {
                 return (
                   <tr key={i}>
                     <td>
-                      <select value={l.item_sku} onChange={(e) => setLine(i, { item_sku: e.target.value })}>
+                      <select value={l.item_sku} onChange={(e) => void onPickItem(i, e.target.value)}>
                         <option value="">—</option>
                         {stockItems.map((it) => (
                           <option key={it.sku} value={it.sku}>{it.sku} · {it.name}</option>
@@ -171,7 +194,8 @@ export function NewOrderPage() {
                       <input className="latin" inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} />
                     </td>
                     <td className="sales-table__num">
-                      <input className="latin" inputMode="decimal" value={l.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value })} placeholder="0.00" />
+                      <input className="latin" inputMode="decimal" value={l.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value, priceSource: undefined })} placeholder="0.00" />
+                      {l.priceSource && <span className="sales-price-source">{l.priceSource}</span>}
                     </td>
                     <td className="sales-table__num">
                       <input className="latin" inputMode="decimal" value={l.discount} onChange={(e) => setLine(i, { discount: e.target.value })} placeholder="0.00" />

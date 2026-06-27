@@ -981,6 +981,10 @@
       "priceAdded": "تمت إضافة السعر",
       "priceRemoved": "تم حذف السعر",
       "updated": "تم الحفظ"
+    },
+    "source": {
+      "fromList": "السعر من {{list}}",
+      "negotiated": "سعر متفاوَض عليه"
     }
   },
   "common": {

@@ -12,6 +12,11 @@ export function formatMinor(minor: number, currency = "EGP"): string {
   return `${sign}${whole.toLocaleString("en-US")}.${String(frac).padStart(2, "0")} ${currency}`;
 }
 
+/** 100050 -> "1000.50" — a plain amount string for a text input (no grouping/currency). */
+export function minorToAmount(minor: number): string {
+  return (minor / MINOR).toFixed(2);
+}
+
 /** "1000.50" -> 100050 minor units; returns null if the input is not a valid amount. */
 export function parseToMinor(input: string): number | null {
   const t = input.trim();

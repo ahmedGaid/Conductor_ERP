@@ -107,9 +107,15 @@ GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundl
     bilingual help guides, i18n 1128 keys (ar/en parity), `pricing.css` (tokens + logical CSS). Verified
     live (create list, add line, toggle default → "تم الحفظ"). `gate:all` 00–13 + gate03 GREEN; build clean.
     *(Per-customer assignment/override management UI deferred to P5 — the API + resolver already support it.)*
-  - **NEXT → P3:** wire the order/quotation line — on (customer + item) call `/pricing/resolve` to prefill
-    the net unit price + show its source ("from Retail"). **This delivers finding A's price-prefill via the
-    engine.** Then P4 (price-list CSV import + demo seed) and P5 (assignment/override + effective-date UI).
+  - **P3 (wire the loop) DONE — finding A's price-prefill delivered.** New order/quotation lines now call
+    `/pricing/resolve` on item-pick (passing customer + qty + the order's tax code): the net unit price
+    fills in automatically and a quiet caption shows the source ("السعر من RETAIL"). Best-effort — a
+    pricing lookup failure never blocks manual entry; editing the price clears the caption. `minorToAmount`
+    helper added; i18n 1130 keys. Verified live (ACME + WIDGET → 100.00, "Price from RETAIL"); gate03 +
+    `tsc -b` + parity GREEN.
+  - **NEXT → P4:** price-list-line CSV import (reuse `erp/core/imports.py`) + template, and a demo seed
+    that ships a default list with item prices so prefill is visible out of the box. Then **P5**: per-customer
+    assignment + item-override management UI, effective-date scheduling, tax-inclusive entry affordance.
 
 ## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`

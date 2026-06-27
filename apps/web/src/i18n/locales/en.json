@@ -981,6 +981,10 @@
       "priceAdded": "Price added",
       "priceRemoved": "Price removed",
       "updated": "Saved"
+    },
+    "source": {
+      "fromList": "Price from {{list}}",
+      "negotiated": "Negotiated price"
     }
   },
   "common": {
