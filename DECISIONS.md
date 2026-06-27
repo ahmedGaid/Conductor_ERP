@@ -964,3 +964,80 @@ Sixth completion-plan increment, completing Track B (operational depth).
   dynamic root view owns `/`. The view 503s with a build-hint (never 500) when `dist` is absent.
 - **gate13** owns packaging coherence (WhiteNoise wired, SPA served, deploy/backup kit + runbook
   present); it deliberately does NOT re-run `check --deploy` — that is gate12's job (security posture).
+
+## Phase 2.0 — CSV import friction decisions (2026-06-27)
+> "Decisions before code" for Growth Phase 2 (`GROWTH_PLAN.md`). CSV import makes one-day setup real
+> for a company that already has its customers/suppliers/products in Excel. These rulings are made
+> *before* the importer is built (2.1) so the engine is designed against the real-world messiness, not
+> a happy path. Grounded in the actual master-data shape: **Customer** (`code` ≤32 unique, `name` ≤200,
+> `credit_limit_minor`, `is_active`), **Supplier** (`code` ≤32 unique, `name` ≤200, `is_active`),
+> **Item** (`sku` ≤64 unique, `name` ≤200, `category_code` FK-by-code, `uom`, `type`∈ItemType,
+> `reorder_point`, `is_active`). The unique **business key is `code` / `sku`** and today it is enforced
+> *only by the DB constraint* — the single-create serializers do not check it (a duplicate currently
+> reaches `Model.objects.create` and would `IntegrityError`). The importer must own existence
+> resolution; it does not get it for free.
+
+- **Validation reuses the existing DRF serializers — one source of truth.** Per-row field validation
+  goes through `CustomerSerializer` / `SupplierSerializer` / `ItemSerializer` (the same code the
+  single-create endpoints use), NOT a parallel validator that can drift. The importer is a thin batch
+  layer that adds only what single-create lacks: encoding normalization, header mapping, business-key
+  existence resolution, and a row-level outcome report.
+
+- **Encoding: detect and normalize on the server, never trust the bytes.** Egyptian SMBs "Save As CSV"
+  from Arabic Excel, which writes **Windows-1256** (legacy code page), while "CSV UTF-8" prepends a
+  **UTF-8 BOM**. Decode order: **utf-8-sig** (strips the BOM) → **cp1256** → utf-8 with replacement as a
+  last resort; if the result still looks broken (replacement chars in a sampled column), **reject the
+  file** with a plain message ("re-save as CSV UTF-8") rather than importing mojibake. Sniff the
+  delimiter (Arabic/European Excel uses **`;`**, not `,`). Normalize text to **NFC**. This is decided
+  server-side because the browser cannot reliably re-decode a cp1256 file.
+
+- **Numbers: normalize digits and separators for parsing only.** Accept **Arabic-Indic (٠–٩)** and
+  Eastern-Arabic digits and Arabic/European decimal+thousands separators in numeric columns, folding
+  them to ASCII before parsing — mirrors the `lib/arabicSearch.ts` ruling (simplify for *machine
+  reading*, never mutate what the user sees). Name/text fields keep their original full orthography.
+
+- **Money columns are MAJOR units, converted at the edge.** A human types `1,000.50` (pounds) in the
+  CSV, not `100050` minor units. The importer parses major → integer **minor** units at the import edge,
+  consistent with the standing money rule (minor units on the wire; format/parse only at the edge). The
+  template header names the unit. A non-numeric money cell is a **row error**, never coerced to 0.
+
+- **Duplicates: business key wins, two kinds, never a silent overwrite.** (a) *Within the file* — the
+  same `code`/`sku` twice: the first row imports, each later one is reported as `duplicate-in-file` and
+  skipped (last-wins would silently drop data). (b) *Against the database* — default mode is
+  **create-only**: an existing business key is reported `already-exists, skipped` (an outcome, not an
+  error). An explicit **"update existing"** toggle turns the run into an upsert-by-business-key for
+  re-imports. The importer always resolves existence by business key *before* writing, so it never
+  relies on catching the DB `IntegrityError`.
+
+- **Partial success is the default, not all-or-nothing.** Each row is validated and saved
+  independently inside its **own savepoint** (`transaction.atomic` per row) so one bad row cannot
+  poison the batch. The run returns a **summary** — `created N / skipped M / failed K` — plus a
+  per-row error report (row number + field + human message), downloadable. All-or-nothing is rejected:
+  a 5 000-row file failing on row 4 999 must not throw away the 4 998 good rows.
+
+- **Truthful preview before commit (two-phase).** Flow is **upload → map → preview → confirm**. Phase 1
+  parses + validates + resolves existence and returns the exact would-be outcome counts and row errors
+  **without writing**; phase 2 commits precisely what the preview showed. Preview and commit run the
+  same code path so the preview can never lie. (Server-side staging mechanism for the confirmed batch
+  is a 2.1 implementation detail; the *contract* — preview == commit — is decided here.)
+
+- **Re-upload is idempotent by construction.** Because dedup is by business key and create-only skips
+  existing, re-running the same file yields `created 0 / skipped all`. With "update existing" on, a
+  re-run is a stable upsert (same end state every time). The **business key is the idempotency key** —
+  v1 does NOT hash the file or track import batches for dedup; that is unnecessary complexity.
+
+- **FK resolution is strict — a missing reference is a row error, not a silent null.** Item
+  `category_code` must match an existing Category; a typo today silently nulls the category in the
+  single-create view, which would quietly lose categorization at scale. The importer instead **fails the
+  row** with "category 'X' not found". v1 does **not** auto-create referenced masters (categories,
+  warehouses) from an import — keeping the master data clean; "create missing categories" is a possible
+  later opt-in. `type` is validated against `ItemType`; unknown → row error; blank `uom` → default `unit`.
+
+- **Over-length is a row error, never a silent truncation.** A `code` >32, `sku` >64, or `name` >200
+  is reported with the limit named. Silent truncation would forge wrong/duplicate business keys.
+
+- **v1 scope (deliberately small, to keep 2.1 shippable).** One entity per file (no multi-sheet/
+  multi-entity). Master rows only — no relationships, opening balances, or contacts in v1. Synchronous
+  with a sane row cap (a few thousand); larger files get documented chunking later, not a v1 async
+  pipeline. Per-list **download-a-template** button (canonical headers + the unit/format notes) ships
+  with the importer so the expected columns are obvious and mapping friction is low.

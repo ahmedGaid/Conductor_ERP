@@ -500,6 +500,9 @@
       "name": "Name",
       "uom": "Unit",
       "type": "Type",
+      "category": "Category",
+      "reorderPoint": "Reorder point",
+      "active": "Active",
       "add": "Add item",
       "empty": "No items yet.",
       "emptyHint": "Add your first item using the form above."
@@ -618,6 +621,7 @@
       "code": "Customer code",
       "name": "Name",
       "creditLimit": "Credit limit",
+      "active": "Active",
       "add": "Add customer",
       "unlimited": "Unlimited",
       "empty": "No customers yet.",
@@ -719,6 +723,7 @@
     "supplier": {
       "code": "Supplier code",
       "name": "Name",
+      "active": "Active",
       "add": "Add supplier",
       "empty": "No suppliers yet.",
       "emptyHint": "Add your first supplier using the form above."
@@ -964,7 +969,57 @@
     "on": "On",
     "off": "Off",
     "all": "All",
-    "actions": "Actions"
+    "actions": "Actions",
+    "close": "Close"
+  },
+  "import": {
+    "action": "Import CSV",
+    "changeFile": "Choose a different file",
+    "confirm": "Import {{count}} rows",
+    "confirmNone": "Nothing to import",
+    "customers": {
+      "title": "Import customers"
+    },
+    "suppliers": {
+      "title": "Import suppliers"
+    },
+    "items": {
+      "title": "Import items"
+    },
+    "upload": {
+      "lede": "Bring your customers in from a CSV — Excel's \"Save As CSV\" works. You'll preview before anything is saved.",
+      "choose": "Choose a file",
+      "template": "Download the template"
+    },
+    "map": {
+      "title": "Match your columns",
+      "hint": "From {{file}}. We matched these automatically — adjust if needed.",
+      "ignore": "Don't import",
+      "missingRequired": "Match a column for: {{fields}}"
+    },
+    "mode": {
+      "title": "If a row already exists",
+      "create": "Skip it",
+      "upsert": "Update it"
+    },
+    "preview": {
+      "title": "Preview"
+    },
+    "outcome": {
+      "created": "to add",
+      "updated": "to update",
+      "skipped": "already there",
+      "failed": "with problems"
+    },
+    "error": {
+      "row": "Row",
+      "field": "Column",
+      "message": "Problem",
+      "more": "and {{count}} more rows with problems"
+    },
+    "toast": {
+      "done": "Imported {{count}} rows"
+    }
   },
   "toast": {
     "region": "Notifications",

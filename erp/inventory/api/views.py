@@ -6,18 +6,21 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import Category, Item, StockCount, StockCountLine, StockMovement, Warehouse
+from ..imports import ITEM_IMPORT
 from ..repositories import items as item_repo
 from ..repositories import warehouses as warehouse_repo
 from .serializers import (
@@ -59,6 +62,24 @@ class ItemListCreateView(APIView):
             created_by=request.user if request.user.is_authenticated else None,
         )
         return _envelope(ItemSerializer(item).data, status=201)
+
+
+class ItemImportView(APIView):
+    """CSV import for items — upload to preview, re-post with commit=true to apply."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def post(self, request: Request) -> Response:
+        return _envelope(run_import_request(ITEM_IMPORT, request))
+
+
+class ItemImportTemplateView(APIView):
+    """Download a CSV template (canonical headers + one example row) so columns are obvious."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request) -> HttpResponse:
+        return template_response(ITEM_IMPORT, "items-template.csv")
 
 
 class CategoryListCreateView(APIView):

@@ -4,18 +4,21 @@ RBAC: sales operations require a Branch Manager (System Admin / superuser bypass
 """
 from __future__ import annotations
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import Customer, Quotation, SalesOrder
+from ..imports import CUSTOMER_IMPORT
 from ..repositories import customers as customer_repo
 from .serializers import (
     CustomerSerializer,
@@ -56,6 +59,29 @@ class CustomerListCreateView(APIView):
             created_by=request.user if request.user.is_authenticated else None,
         )
         return _envelope(CustomerSerializer(customer).data, status=201)
+
+
+class CustomerImportView(APIView):
+    """CSV import for customers — upload to preview, re-post with commit=true to apply.
+
+    Multipart fields: ``file`` (CSV), optional ``mapping`` (JSON {field: source_header}),
+    ``mode`` (create | upsert, default create), ``commit`` (bool, default false = preview).
+    Preview and commit run the same engine path, so the preview is exactly what commit will do.
+    """
+
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request) -> Response:
+        return _envelope(run_import_request(CUSTOMER_IMPORT, request))
+
+
+class CustomerImportTemplateView(APIView):
+    """Download a CSV template (canonical headers + one example row) so columns are obvious."""
+
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def get(self, request: Request) -> HttpResponse:
+        return template_response(CUSTOMER_IMPORT, "customers-template.csv")
 
 
 class OrderListCreateView(APIView):

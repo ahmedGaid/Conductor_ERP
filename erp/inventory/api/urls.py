@@ -7,6 +7,8 @@ app_name = "inventory"
 
 urlpatterns = [
     path("items", views.ItemListCreateView.as_view(), name="item-list"),
+    path("items/import", views.ItemImportView.as_view(), name="item-import"),
+    path("items/import/template", views.ItemImportTemplateView.as_view(), name="item-import-template"),
     path("categories", views.CategoryListCreateView.as_view(), name="category-list"),
     path("warehouses", views.WarehouseListCreateView.as_view(), name="warehouse-list"),
     path("movements", views.MovementListView.as_view(), name="movement-list"),

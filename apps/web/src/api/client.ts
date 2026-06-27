@@ -76,6 +76,37 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   return (body as DataEnvelope<T>).data;
 }
 
+// Multipart upload (e.g. CSV import). Posts FormData WITHOUT a Content-Type header so the browser
+// sets the multipart boundary itself; unwraps the {data}/{error} envelope like apiFetch.
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const token = getToken();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`/api${path}`, { method: "POST", headers, body: form });
+
+  let body: unknown = null;
+  const text = await res.text();
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) setToken(null);
+    const env = body as ErrorEnvelope;
+    const msg =
+      typeof env?.error?.message === "string" ? env.error.message : `Request failed (${res.status})`;
+    throw new ApiError(msg, res.status, env?.error?.code);
+  }
+
+  invalidateForPath(path);
+  return (body as DataEnvelope<T>).data;
+}
+
 // Authenticated file download (CSV/XLSX report exports). Streams the response to a blob and
 // triggers a browser download, taking the filename from the Content-Disposition header.
 export async function downloadExport(path: string, fallbackName = "export"): Promise<void> {
