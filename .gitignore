@@ -21,6 +21,8 @@ env/
 !.env.example
 # prod env TEMPLATE (no secrets) — must be tracked
 !deploy/.env.prod.example
+# Docker env TEMPLATE (no secrets) — must be tracked
+!.env.docker.example
 
 # Deployment runtime artifacts (Phase 11)
 deploy/logs/

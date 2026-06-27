@@ -46,6 +46,10 @@
   --color-surface: var(--palette-white);
   --color-surface-alt: var(--palette-ink-100);
   --color-surface-hover: var(--palette-ink-050);
+  /* A recessed surface with more presence than -alt: darker than the page in light mode, lighter in
+     dark mode (see the dark block). Used for the workspace/company chip. */
+  --color-surface-sunken: var(--palette-ink-200);
+  --color-surface-sunken-hover: var(--palette-ink-300);
   --color-border: var(--palette-ink-200);
   --color-border-strong: var(--palette-ink-300);
   --color-text: var(--palette-ink-900);
@@ -184,6 +188,8 @@
   --color-surface: #0d0d0d;
   --color-surface-alt: #1a1a1a;
   --color-surface-hover: #1a1a1a;
+  --color-surface-sunken: #242424;
+  --color-surface-sunken-hover: #2e2e2e;
   --color-border: #262626;
   --color-border-strong: #383838;
   --color-text: #f5f5f5;

@@ -82,13 +82,9 @@
   block-size: 1.25rem;
 }
 
-.commandbar__aux {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.commandbar__aux .navicon {
+/* Icon glyphs in the top-bar action cluster (e.g. the notifications bell) need an explicit size —
+   the NavIcon SVG has no intrinsic dimensions. */
+.commandbar__actions .navicon {
   inline-size: 1.2rem;
   block-size: 1.2rem;
 }
