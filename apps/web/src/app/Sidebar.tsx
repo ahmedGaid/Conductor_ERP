@@ -137,6 +137,20 @@ export function Sidebar() {
             <ul className="sidebar__list">
               <li>
                 {withTip(
+                  t("nav.pricing"),
+                  <NavLink
+                    to="/pricing"
+                    className={({ isActive }) =>
+                      isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                    }
+                  >
+                    <span className="sidebar__icon"><NavIcon name="pricing" /></span>
+                    <span>{t("nav.pricing")}</span>
+                  </NavLink>,
+                )}
+              </li>
+              <li>
+                {withTip(
                   t("nav.usersAdmin"),
                   <NavLink
                     to="/admin/users"

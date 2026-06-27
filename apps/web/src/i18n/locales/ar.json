@@ -20,6 +20,7 @@
     "notifications": "الإشعارات",
     "favorites": "المفضلة",
     "administration": "الإدارة",
+    "pricing": "التسعير",
     "usersAdmin": "المستخدمون",
     "rolesAdmin": "الأدوار",
     "collapseSidebar": "طيّ الشريط الجانبي",
@@ -945,6 +946,41 @@
         "active": "تفعيل",
         "completed": "إكمال"
       }
+    }
+  },
+  "pricing": {
+    "title": "التسعير",
+    "subtitle": "قوائم الأسعار لعملائك وأصنافك.",
+    "list": {
+      "code": "الرمز",
+      "name": "الاسم",
+      "currency": "العملة",
+      "default": "افتراضية",
+      "taxInclusive": "شاملة الضريبة",
+      "inactive": "غير نشطة",
+      "lines": "الأسعار",
+      "add": "إضافة قائمة أسعار",
+      "empty": "لا توجد قوائم أسعار بعد",
+      "emptyHint": "أنشئ أول قائمة أسعار لتحديد ما تتقاضاه."
+    },
+    "detail": {
+      "back": "كل قوائم الأسعار",
+      "item": "الصنف",
+      "unitPrice": "سعر الوحدة",
+      "minQty": "ابتداءً من كمية",
+      "addLine": "إضافة سعر",
+      "empty": "لا أسعار في هذه القائمة",
+      "emptyHint": "أضف صنفًا وسعره للبدء.",
+      "defaultBadge": "افتراضية",
+      "taxInclusiveLabel": "الأسعار شاملة الضريبة",
+      "activeLabel": "نشطة",
+      "badInput": "أدخل صنفًا وسعرًا صالحًا."
+    },
+    "toast": {
+      "listCreated": "تم إنشاء قائمة الأسعار",
+      "priceAdded": "تمت إضافة السعر",
+      "priceRemoved": "تم حذف السعر",
+      "updated": "تم الحفظ"
     }
   },
   "common": {

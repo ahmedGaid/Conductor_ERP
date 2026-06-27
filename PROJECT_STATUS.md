@@ -97,11 +97,19 @@ GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundl
     with precedence customer-item → customer-list → default-list → None, qty-breaks, effective dates,
     currency filter, tax-agnostic (returns price + `tax_inclusive` flag). Public `contracts/`. **9 resolver
     tests pass; `gate:all` 00–13 GREEN.** No API/UI yet.
-  - **NEXT → P2:** DRF CRUD for price lists/lines + customer assignment/overrides, `GET /pricing/resolve`
-    (backs VAT out of a tax-inclusive result via `accounting.contracts`), a **Pricing** web section to
-    manage lists, and a seeded default list. Then P3 wires order/quotation line prefill (delivers finding
-    A's price-prefill via the engine), P4 import+demo, P5 polish. Recall `erp-frontend` + `conductor-brand`
-    before the UI work.
+  - **P2a (API) DONE:** DRF endpoints under `/api/pricing` — price-lists (CRUD + single-default enforce),
+    nested lines (add/patch/delete), customer-assignments (upsert/delete), customer item overrides, and
+    `GET /resolve` (backs VAT out of a tax-inclusive price via `accounting.contracts.find_tax_code` +
+    `net_of_tax`). Management Branch-Manager-gated; resolve needs only auth. 15 pricing tests; `a900f2f`.
+  - **P2b (management UI) DONE:** **Pricing** section (admin-gated, under ADMINISTRATION) — `PriceListsPage`
+    (create + browse, default/tax-inclusive/inactive tags) + `PriceListDetailPage` (lines editor with
+    qty-break, list toggles). New `api/pricing.ts`, single-stroke price-tag icon, sidebar entry, routes,
+    bilingual help guides, i18n 1128 keys (ar/en parity), `pricing.css` (tokens + logical CSS). Verified
+    live (create list, add line, toggle default → "تم الحفظ"). `gate:all` 00–13 + gate03 GREEN; build clean.
+    *(Per-customer assignment/override management UI deferred to P5 — the API + resolver already support it.)*
+  - **NEXT → P3:** wire the order/quotation line — on (customer + item) call `/pricing/resolve` to prefill
+    the net unit price + show its source ("from Retail"). **This delivers finding A's price-prefill via the
+    engine.** Then P4 (price-list CSV import + demo seed) and P5 (assignment/override + effective-date UI).
 
 ## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`

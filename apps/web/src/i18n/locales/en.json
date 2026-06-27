@@ -20,6 +20,7 @@
     "notifications": "Notifications",
     "favorites": "Favorites",
     "administration": "Administration",
+    "pricing": "Pricing",
     "usersAdmin": "Users",
     "rolesAdmin": "Roles",
     "collapseSidebar": "Collapse sidebar",
@@ -945,6 +946,41 @@
         "active": "Activate",
         "completed": "Complete"
       }
+    }
+  },
+  "pricing": {
+    "title": "Pricing",
+    "subtitle": "Price lists for your customers and items.",
+    "list": {
+      "code": "Code",
+      "name": "Name",
+      "currency": "Currency",
+      "default": "Default",
+      "taxInclusive": "Tax-inclusive",
+      "inactive": "Inactive",
+      "lines": "Prices",
+      "add": "Add price list",
+      "empty": "No price lists yet",
+      "emptyHint": "Create your first price list to set what you charge."
+    },
+    "detail": {
+      "back": "All price lists",
+      "item": "Item",
+      "unitPrice": "Unit price",
+      "minQty": "From quantity",
+      "addLine": "Add price",
+      "empty": "No prices on this list",
+      "emptyHint": "Add an item and its price to start.",
+      "defaultBadge": "Default",
+      "taxInclusiveLabel": "Prices include tax",
+      "activeLabel": "Active",
+      "badInput": "Enter an item and a valid price."
+    },
+    "toast": {
+      "listCreated": "Price list created",
+      "priceAdded": "Price added",
+      "priceRemoved": "Price removed",
+      "updated": "Saved"
     }
   },
   "common": {
