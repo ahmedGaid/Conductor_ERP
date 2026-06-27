@@ -20,6 +20,7 @@ import { currentPeriod, pctChange, previousPeriod } from "../lib/dates";
 import { formatMinor } from "../lib/money";
 import { useAsync } from "../hooks/useAsync";
 import { ErrorState } from "../components/ErrorState";
+import { GettingStarted } from "./GettingStarted";
 import { StatCard } from "../components/StatCard";
 import { Bdi } from "../components/Bdi";
 import { ListSkeleton } from "../components/ListSkeleton";
@@ -91,6 +92,8 @@ export function DashboardPage() {
         </div>
         <span className="dash__period">{currentPeriod()}</span>
       </div>
+
+      <GettingStarted />
 
       {loading && (
         <ListSkeleton />

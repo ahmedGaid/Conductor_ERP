@@ -21,7 +21,47 @@ packaging are all delivered. **`gate:all` spans 00–13, all GREEN.** No active 
 Repo: `C:\AhmedGaid\ERP` (git, `main`), pushed to `github.com/ahmedGaid/Conductor_ERP`.
 For how any piece was built (and the commit that delivered it) → recall the **`erp-history`** skill.
 
-## Active work — Linear-quality frontend UX overhaul
+## Active work — Growth Phase 1: self-serve Setup Wizard
+Strategy pivot (2026-06-26, see `GROWTH_PLAN.md`): **postpone AI, win on speed + one-day self-serve
+setup.** Pitch: *"Sign up in the morning, send your first real invoice before lunch."* Building the
+first-run **Setup Wizard** so a brand-new org can set itself up with no seed script. Branch
+`growth/setup-wizard` (off `main`, pushed). Backend `erp/setup/` (wraps existing seed/COA/tax/user
+services, SYSTEM_ADMIN-gated); frontend `apps/web/src/pages/SetupWizardPage.tsx`. `gate:all` (00–13)
+GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundles Setup Wizard 1.0–1.6
++ chrome identity rework + Phase 1.5 backup/restore).
+- **1.0** first-run gate + `POST /setup/*` group + route guard (`53415ec`).
+- **1.2** one-click chart of accounts (reuses `seed_accounting`) (`57a68a8`).
+- **1.3** company profile → writes to the same OrgPreferences edited later in Settings (`fbc2d36`).
+- **1.4** tax step — VAT rate + e-invoicing toggle (`e127dbd`).
+- **1.5** invite-team step — `POST /setup/users` wraps identity `create_user`; status now carries
+  `available_roles`; optional step shows each invitee's one-time temp password. Reuses the lexicon
+  `admin.invite.*` labels. 11/11 setup tests; i18n 1057 keys. (`d7e96e3`)
+- **1.6** Finish → Dashboard "what to do next" checklist. Frontend-only `GettingStarted` panel on the
+  Dashboard (Finish already lands there via `LandingRedirect`): 5 steps (company profile, COA, first
+  customer, first product, first order) that auto-check off real data (defensive module-list fetches,
+  like the attention panel), admin-only, dismissible, and self-retiring once all done. i18n 1065 keys.
+  **Phase 1 (Setup Wizard) COMPLETE.**
+- **Chrome identity rework (`3661c34`, on `growth/setup-wizard`):** the app frame's identity surfaces
+  split into three tiers — a **workspace/company chip** at the sidebar foot (`SidebarIdentity` → org
+  settings + admin; shows `company_name`, collapses to its initial in the compact rail), a personal
+  **UserMenu** in the top bar (avatar+name → settings, sign out), and a product **AppMenu** ("⋮" →
+  theme, language, cheat-sheet, help). `ShortcutsContext`+`ShortcutsHost` mount one cheat-sheet driven
+  by both `?` and the menu; `Popover` flips upward near the viewport bottom; `effective_preferences`
+  now exposes `company_name`; `--color-surface-sunken` token added. Drive-by: setup invite flushes a
+  filled-but-unsent invite on Finish; org/profile text fields save on blur not per keystroke. i18n
+  1067 keys; `tsc -b` clean; **`gate:all` (00–13) GREEN.** Not yet eyes-on in a browser.
+- **Phase 1.5 backup/restore — DONE (`3044b02`):** the Docker `docker compose` self-host path now
+  has one-command backup/restore at parity with the bare-metal Windows PS kit. `deploy/docker/backup.sh`
+  (pg_dump custom-format out of the `db` container → timestamped host folder + MANIFEST + retention,
+  best-effort storage archive) and `deploy/docker/restore.sh` (pg_restore into a SCRATCH db by default,
+  `--force` for the live db). RUNBOOK §5 documents the Docker path; gate13 gained a Docker-kit coherence
+  check; the previously-untracked Docker packaging (Dockerfile/compose/entrypoint/`.env.docker.example`)
+  is now committed. `gate:all` (00–13) GREEN. **Not yet exercised against a live `docker compose` stack.**
+- **NEXT → Phase 2** CSV import — start with the friction list **2.0** (encoding/Win-1256/BOM,
+  duplicates, partial success, re-upload idempotency; decisions written before code), then the generic
+  importer engine and Customers/Suppliers/Items, per `GROWTH_PLAN.md`.
+
+## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`
 → `af045f8`). apps/web only — the Python `gate:all` is untouched. A focused pass to lift the React UI
 to Linear's bar (fast, calm, keyboard-driven), worked one priority area at a time. Full patterns +

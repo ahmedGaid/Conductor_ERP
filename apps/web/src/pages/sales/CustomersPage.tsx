@@ -11,6 +11,8 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { ImportDialog } from "../../components/ImportDialog";
+import type { ImportFieldInfo } from "../../api/imports";
 import { SalesNav } from "./SalesNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
@@ -36,6 +38,17 @@ export function CustomersPage() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+
+  const importFields = useMemo<ImportFieldInfo[]>(
+    () => [
+      { name: "code", label: t("sales.customer.code"), required: true },
+      { name: "name", label: t("sales.customer.name"), required: true },
+      { name: "credit_limit", label: t("sales.customer.creditLimit") },
+      { name: "is_active", label: t("sales.customer.active") },
+    ],
+    [t],
+  );
 
   // Optimistic create: show the new customer instantly and clear the form for the next entry; the
   // server row replaces the placeholder on settle, or it rolls back + toasts.
@@ -61,6 +74,22 @@ export function CustomersPage() {
   return (
     <section className="sales-page">
       <SalesNav />
+
+      <div className="sales-page-actions">
+        <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
+          {t("import.action")}
+        </button>
+      </div>
+
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        basePath="/sales/customers"
+        title={t("import.customers.title")}
+        templateName="customers-template.csv"
+        fields={importFields}
+        onCommitted={() => reload()}
+      />
 
       <form className="card sales-toolbar" onSubmit={onSubmit}>
         <label className="sales-field">

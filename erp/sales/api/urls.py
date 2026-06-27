@@ -7,6 +7,12 @@ app_name = "sales"
 
 urlpatterns = [
     path("customers", views.CustomerListCreateView.as_view(), name="customer-list"),
+    path("customers/import", views.CustomerImportView.as_view(), name="customer-import"),
+    path(
+        "customers/import/template",
+        views.CustomerImportTemplateView.as_view(),
+        name="customer-import-template",
+    ),
     path("orders", views.OrderListCreateView.as_view(), name="order-list"),
     path("orders/<uuid:order_id>", views.OrderDetailView.as_view(), name="order-detail"),
     path("orders/<uuid:order_id>/approve", views.OrderApproveView.as_view(), name="order-approve"),

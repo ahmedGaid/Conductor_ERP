@@ -119,6 +119,81 @@
   font-size: var(--font-size-sm);
 }
 
+/* Getting started — the post-setup "what to do next" checklist */
+.dash__start-dismiss {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.dash__start-dismiss:hover {
+  color: var(--color-text);
+}
+
+.dash__start-lede {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.dash__start-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dash__start-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.dash__start-item:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.dash__start-check {
+  display: grid;
+  place-items: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  color: var(--color-surface);
+  font-size: var(--font-size-xs);
+  flex-shrink: 0;
+}
+
+.dash__start-item--done .dash__start-check {
+  background-color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+.dash__start-item--done .dash__start-text {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.dash__start-text {
+  font-weight: var(--font-weight-medium);
+}
+
+.dash__start-arrow {
+  margin-inline-start: auto;
+  color: var(--color-text-subtle);
+}
+
 /* Top expenses */
 .dash__exp-list {
   list-style: none;

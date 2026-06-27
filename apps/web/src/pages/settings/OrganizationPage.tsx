@@ -41,9 +41,16 @@ export function OrganizationPage() {
   }
   if (!org) return <SettingsSkeleton />;
 
+  // Immediate-save controls (toggles, segmented, swatches, selects) persist on change.
   function save(changes: Partial<OrgPreferences>) {
     setOrg((cur) => (cur ? { ...cur, ...changes } : cur));
     patchOrgPreferences(changes).then((saved) => setOrg(saved)).catch(() => {});
+  }
+
+  // Text fields update locally while typing and persist on blur — saving on every keystroke would
+  // round-trip the server's trimmed value back into the field and eat spaces mid-word.
+  function edit(changes: Partial<OrgPreferences>) {
+    setOrg((cur) => (cur ? { ...cur, ...changes } : cur));
   }
 
   return (
@@ -57,7 +64,43 @@ export function OrganizationPage() {
             id="org-name"
             type="text"
             value={org.company_name}
-            onChange={(e) => save({ company_name: e.target.value })}
+            onChange={(e) => edit({ company_name: e.target.value })}
+            onBlur={(e) => save({ company_name: e.target.value })}
+          />
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.country")} htmlFor="org-country">
+          <input
+            id="org-country"
+            type="text"
+            value={org.country}
+            onChange={(e) => edit({ country: e.target.value })}
+            onBlur={(e) => save({ country: e.target.value })}
+          />
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.vatNumber")} desc={t("settings.org.vatNumberDesc")} htmlFor="org-vat">
+          <input
+            id="org-vat"
+            type="text"
+            inputMode="numeric"
+            value={org.vat_number}
+            onChange={(e) => edit({ vat_number: e.target.value })}
+            onBlur={(e) => save({ vat_number: e.target.value })}
+          />
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.baseCurrency")} desc={t("settings.org.baseCurrencyDesc")}>
+          <span className="muted">{org.base_currency}</span>
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.einvoice")} desc={t("settings.org.einvoiceDesc")} htmlFor="org-einvoice">
+          <input
+            id="org-einvoice"
+            type="checkbox"
+            role="switch"
+            checked={org.einvoice_enabled}
+            onChange={(e) => save({ einvoice_enabled: e.target.checked })}
           />
         </SettingRow>
 

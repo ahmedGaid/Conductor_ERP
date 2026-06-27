@@ -22,7 +22,15 @@ interface Command {
  * free. Direction-agnostic (logical CSS) and bilingual — it filters on the
  * translated label, so it matches whatever language the user is reading.
  */
-export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CommandPalette({
+  open,
+  onClose,
+  einvoiceEnabled = true,
+}: {
+  open: boolean;
+  onClose: () => void;
+  einvoiceEnabled?: boolean;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,7 +41,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [active, setActive] = useState(0);
 
   const commands = useMemo<Command[]>(
-    () => [
+    () => ([
       // Create — the common "new document" actions.
       { id: "new-order", label: t("command.newOrder"), to: "/sales/orders/new", group: "create" },
       { id: "new-quotation", label: t("command.newQuotation"), to: "/sales/quotations/new", group: "create" },
@@ -59,8 +67,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: "go-general-ledger", label: t("command.generalLedger"), to: "/accounting/general-ledger", group: "go" },
       { id: "go-income", label: t("command.incomeStatement"), to: "/accounting/income-statement", group: "go" },
       { id: "go-balance", label: t("command.balanceSheet"), to: "/accounting/balance-sheet", group: "go" },
-    ],
-    [t],
+    ] as Command[]).filter((cmd) => einvoiceEnabled || cmd.id !== "go-einvoice"),
+    [t, einvoiceEnabled],
   );
 
   // Track every visited page so the palette can offer a "jump back" list. The palette is always

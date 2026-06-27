@@ -10,6 +10,8 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { ImportDialog } from "../../components/ImportDialog";
+import type { ImportFieldInfo } from "../../api/imports";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -57,6 +59,20 @@ export function ItemsPage() {
   const [name, setName] = useState("");
   const [uom, setUom] = useState("unit");
   const [type, setType] = useState<ItemType>("stock");
+  const [importOpen, setImportOpen] = useState(false);
+
+  const importFields = useMemo<ImportFieldInfo[]>(
+    () => [
+      { name: "sku", label: t("inventory.item.sku"), required: true },
+      { name: "name", label: t("inventory.item.name"), required: true },
+      { name: "category_code", label: t("inventory.item.category") },
+      { name: "uom", label: t("inventory.item.uom") },
+      { name: "type", label: t("inventory.item.type") },
+      { name: "reorder_point", label: t("inventory.item.reorderPoint") },
+      { name: "is_active", label: t("inventory.item.active") },
+    ],
+    [t],
+  );
 
   // Optimistic create: show the new item row instantly and clear the form for the next entry; the
   // server row replaces the placeholder on settle, or it rolls back + toasts.
@@ -81,6 +97,22 @@ export function ItemsPage() {
   return (
     <section className="inv-page">
       <InventoryNav />
+
+      <div className="inv-page-actions">
+        <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
+          {t("import.action")}
+        </button>
+      </div>
+
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        basePath="/inventory/items"
+        title={t("import.items.title")}
+        templateName="items-template.csv"
+        fields={importFields}
+        onCommitted={() => reload()}
+      />
 
       <form className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">

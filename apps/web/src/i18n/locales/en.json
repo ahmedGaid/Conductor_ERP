@@ -43,7 +43,8 @@
     "skipToContent": "Skip to content",
     "logout": "Sign out",
     "notifications": "Notifications",
-    "help": "Help"
+    "help": "Help",
+    "menu": "Menu"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -103,6 +104,38 @@
     "otpRequired": "Enter your two-factor code",
     "submit": "Sign in"
   },
+  "setup": {
+    "title": "Set up your company",
+    "lede": "A few quick steps and Conductor is ready for work — your accounts, tax, and team. Then send your first invoice today.",
+    "finish": "Finish setup",
+    "adminOnly": "An administrator needs to finish setting up your company before you can start.",
+    "profile": {
+      "title": "Company details",
+      "lede": "The basics that appear on your invoices and documents. You can change any of it later in Settings.",
+      "companyPlaceholder": "Your company's legal name",
+      "vatPlaceholder": "e.g. 100-200-300"
+    },
+    "coa": {
+      "title": "Chart of accounts",
+      "lede": "Start from a ready Egyptian small-business chart — accounts, VAT codes and this year's periods. You can edit any of it later.",
+      "action": "Create chart of accounts",
+      "seeding": "Creating…",
+      "ready": "Ready — {{n}} accounts"
+    },
+    "tax": {
+      "title": "Tax & e-invoicing",
+      "lede": "Your standard VAT rate, and whether you use Egyptian e-invoicing (ETA).",
+      "vatRate": "Standard VAT rate",
+      "einvoice": "Egyptian e-invoicing (ETA)",
+      "einvoiceHint": "Turn off to hide e-invoicing across the app."
+    },
+    "invite": {
+      "title": "Invite your team",
+      "lede": "Add the people who'll work with you and pick what each one can do. Optional — you can do this anytime in Settings.",
+      "tempPassword": "Temporary password",
+      "pendingHint": "We'll add them when you finish."
+    }
+  },
   "dashboard": {
     "heading": "Home",
     "greeting": {
@@ -111,6 +144,18 @@
       "evening": "Good evening, {{name}}"
     },
     "subtitle": "Here's what's happening with your business today.",
+    "gettingStarted": {
+      "title": "Get started",
+      "progress": "{{done}} of {{total}} done — a few steps to your first invoice.",
+      "dismiss": "Dismiss",
+      "steps": {
+        "profile": "Add your company details",
+        "accounts": "Set up your chart of accounts",
+        "customer": "Add your first customer",
+        "item": "Add your first product",
+        "invoice": "Create your first order"
+      }
+    },
     "attention": {
       "title": "Needs attention today",
       "allClear": "You're all caught up — nothing needs your attention right now.",
@@ -455,6 +500,9 @@
       "name": "Name",
       "uom": "Unit",
       "type": "Type",
+      "category": "Category",
+      "reorderPoint": "Reorder point",
+      "active": "Active",
       "add": "Add item",
       "empty": "No items yet.",
       "emptyHint": "Add your first item using the form above."
@@ -573,6 +621,7 @@
       "code": "Customer code",
       "name": "Name",
       "creditLimit": "Credit limit",
+      "active": "Active",
       "add": "Add customer",
       "unlimited": "Unlimited",
       "empty": "No customers yet.",
@@ -674,6 +723,7 @@
     "supplier": {
       "code": "Supplier code",
       "name": "Name",
+      "active": "Active",
       "add": "Add supplier",
       "empty": "No suppliers yet.",
       "emptyHint": "Add your first supplier using the form above."
@@ -919,7 +969,57 @@
     "on": "On",
     "off": "Off",
     "all": "All",
-    "actions": "Actions"
+    "actions": "Actions",
+    "close": "Close"
+  },
+  "import": {
+    "action": "Import CSV",
+    "changeFile": "Choose a different file",
+    "confirm": "Import {{count}} rows",
+    "confirmNone": "Nothing to import",
+    "customers": {
+      "title": "Import customers"
+    },
+    "suppliers": {
+      "title": "Import suppliers"
+    },
+    "items": {
+      "title": "Import items"
+    },
+    "upload": {
+      "lede": "Bring your customers in from a CSV — Excel's \"Save As CSV\" works. You'll preview before anything is saved.",
+      "choose": "Choose a file",
+      "template": "Download the template"
+    },
+    "map": {
+      "title": "Match your columns",
+      "hint": "From {{file}}. We matched these automatically — adjust if needed.",
+      "ignore": "Don't import",
+      "missingRequired": "Match a column for: {{fields}}"
+    },
+    "mode": {
+      "title": "If a row already exists",
+      "create": "Skip it",
+      "upsert": "Update it"
+    },
+    "preview": {
+      "title": "Preview"
+    },
+    "outcome": {
+      "created": "to add",
+      "updated": "to update",
+      "skipped": "already there",
+      "failed": "with problems"
+    },
+    "error": {
+      "row": "Row",
+      "field": "Column",
+      "message": "Problem",
+      "more": "and {{count}} more rows with problems"
+    },
+    "toast": {
+      "done": "Imported {{count}} rows"
+    }
   },
   "toast": {
     "region": "Notifications",
@@ -1130,6 +1230,13 @@
       "adminOnly": "Only a System Admin can change organization defaults.",
       "lead": "Defaults applied to everyone in the organization. Each user can still override these in their own settings.",
       "companyName": "Company name",
+      "country": "Country",
+      "vatNumber": "VAT registration number",
+      "vatNumberDesc": "Shown on your invoices and e-invoice submissions.",
+      "baseCurrency": "Base currency",
+      "baseCurrencyDesc": "The currency your books are kept in.",
+      "einvoice": "Egyptian e-invoicing (ETA)",
+      "einvoiceDesc": "When off, e-invoicing is hidden across the app.",
       "language": "Default language",
       "languageDesc": "The language new users start with.",
       "theme": "Default theme",

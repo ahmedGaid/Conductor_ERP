@@ -14,7 +14,15 @@ interface Shortcut {
  * Shares the command palette's native-<dialog> shell (top layer, focus trap, Esc)
  * and the same kbd styling, so the two feel like one keyboard system.
  */
-export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ShortcutsDialog({
+  open,
+  onClose,
+  einvoiceEnabled = true,
+}: {
+  open: boolean;
+  onClose: () => void;
+  einvoiceEnabled?: boolean;
+}) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -46,7 +54,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
     { keys: ["G", "P"], label: t("nav.purchasing") },
     { keys: ["G", "I"], label: t("nav.inventory") },
     { keys: ["G", "A"], label: t("nav.accounting") },
-    { keys: ["G", "E"], label: t("nav.einvoice") },
+    ...(einvoiceEnabled ? [{ keys: ["G", "E"], label: t("nav.einvoice") }] : []),
     { keys: ["G", "C"], label: t("nav.crm") },
     { keys: ["G", "N"], label: t("nav.notifications") },
     { keys: ["G", "W"], label: t("nav.workflows") },
