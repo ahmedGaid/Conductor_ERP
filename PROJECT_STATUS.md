@@ -25,8 +25,10 @@ For how any piece was built (and the commit that delivered it) → recall the **
 Strategy pivot (2026-06-26, see `GROWTH_PLAN.md`): **postpone AI, win on speed + one-day self-serve
 setup.** Pitch: *"Sign up in the morning, send your first real invoice before lunch."* Building the
 first-run **Setup Wizard** so a brand-new org can set itself up with no seed script. Branch
-`growth/setup-wizard` (off `main`). Backend `erp/setup/` (wraps existing seed/COA/tax/user services,
-SYSTEM_ADMIN-gated); frontend `apps/web/src/pages/SetupWizardPage.tsx`. `gate:all` (00–13) GREEN.
+`growth/setup-wizard` (off `main`, pushed). Backend `erp/setup/` (wraps existing seed/COA/tax/user
+services, SYSTEM_ADMIN-gated); frontend `apps/web/src/pages/SetupWizardPage.tsx`. `gate:all` (00–13)
+GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundles Setup Wizard 1.0–1.6
++ chrome identity rework + Phase 1.5 backup/restore).
 - **1.0** first-run gate + `POST /setup/*` group + route guard (`53415ec`).
 - **1.2** one-click chart of accounts (reuses `seed_accounting`) (`57a68a8`).
 - **1.3** company profile → writes to the same OrgPreferences edited later in Settings (`fbc2d36`).
