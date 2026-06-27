@@ -43,7 +43,8 @@
     "skipToContent": "Skip to content",
     "logout": "Sign out",
     "notifications": "Notifications",
-    "help": "Help"
+    "help": "Help",
+    "menu": "Menu"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -131,7 +132,8 @@
     "invite": {
       "title": "Invite your team",
       "lede": "Add the people who'll work with you and pick what each one can do. Optional — you can do this anytime in Settings.",
-      "tempPassword": "Temporary password"
+      "tempPassword": "Temporary password",
+      "pendingHint": "We'll add them when you finish."
     }
   },
   "dashboard": {

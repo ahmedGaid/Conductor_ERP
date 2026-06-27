@@ -111,21 +111,29 @@ export function SetupWizardPage({
     if (bps !== tax.vat_rate_bps) commitTax({ vat_rate_bps: bps });
   }
 
+  // Whether the invite form holds a complete, not-yet-added member.
+  const pendingInvite = inviteUsername.trim() !== "" && inviteEmail.trim() !== "";
+
+  // Sends the form's member and clears it. Throws on failure so callers can stop (don't swallow).
+  async function sendInvite() {
+    const member = await inviteTeamMember({
+      username: inviteUsername.trim(),
+      email: inviteEmail.trim(),
+      role: inviteRole || undefined,
+    });
+    setInvited((prev) => [...prev, member]);
+    setInviteUsername("");
+    setInviteEmail("");
+    setInviteRole("");
+  }
+
   async function onInvite(e: FormEvent) {
     e.preventDefault();
-    if (!inviteUsername.trim() || !inviteEmail.trim()) return;
+    if (!pendingInvite) return;
     setBusy("invite");
     setError(null);
     try {
-      const member = await inviteTeamMember({
-        username: inviteUsername.trim(),
-        email: inviteEmail.trim(),
-        role: inviteRole || undefined,
-      });
-      setInvited((prev) => [...prev, member]);
-      setInviteUsername("");
-      setInviteEmail("");
-      setInviteRole("");
+      await sendInvite();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -137,6 +145,9 @@ export function SetupWizardPage({
     setBusy("finish");
     setError(null);
     try {
+      // Don't silently drop a filled-in invite — add it before finishing. If it fails (e.g. a
+      // duplicate), stop here and surface the error so the user can fix it rather than lose it.
+      if (pendingInvite) await sendInvite();
       await completeSetup();
       onCompleted();
     } catch (err) {
@@ -319,11 +330,14 @@ export function SetupWizardPage({
                     ))}
                   </select>
                 </label>
-                <div className="setup__actions">
+                <div className="setup__invite-foot">
+                  {pendingInvite && (
+                    <span className="setup__field-hint">{t("setup.invite.pendingHint")}</span>
+                  )}
                   <button
                     className="btn"
                     type="submit"
-                    disabled={busy !== null || !inviteUsername.trim() || !inviteEmail.trim()}
+                    disabled={busy !== null || !pendingInvite}
                   >
                     {busy === "invite" ? t("common.loading") : t("admin.invite.submit")}
                   </button>

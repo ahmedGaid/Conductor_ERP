@@ -41,6 +41,8 @@ export interface Preferences {
   favorites: { label: string; to: string }[];
   /** Org-wide feature flag merged into effective preferences (the nav reads it). */
   einvoice_enabled?: boolean;
+  /** Org workspace name merged into effective preferences (the sidebar shows it). */
+  company_name?: string;
   updated_at?: string;
 }
 

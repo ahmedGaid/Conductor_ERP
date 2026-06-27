@@ -164,4 +164,6 @@ def effective_preferences(user) -> dict:
         data["default_landing"] = "/"
     # Org-wide feature flags the UI reads (no personal override).
     data["einvoice_enabled"] = org.einvoice_enabled
+    # The workspace identity the sidebar shows (blank until setup; UI falls back to the product name).
+    data["company_name"] = org.company_name
     return data

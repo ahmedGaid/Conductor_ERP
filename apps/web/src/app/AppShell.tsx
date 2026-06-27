@@ -4,10 +4,13 @@ import { useLocation } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
 import { CommandBar } from "./CommandBar";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { ShortcutsProvider, useShortcuts } from "./ShortcutsContext";
 import { Toaster } from "./Toaster";
 import { ToastProvider } from "./ToastContext";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
+import { usePreferences } from "../preferences/PreferencesContext";
 import "./AppShell.css";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -47,30 +50,47 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <HelpProvider>
-        <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
-        <a className="appshell__skip" href="#main">
-          {t("shell.skipToContent")}
-        </a>
-        <Sidebar />
-        <button
-          type="button"
-          className="appshell__overlay"
-          aria-label={t("shell.closeMenu")}
-          tabIndex={navOpen ? 0 : -1}
-          onClick={() => setNavOpen(false)}
-        />
-        <CommandBar onMenu={() => setNavOpen((v) => !v)} />
-        <main id="main" className="appshell__main" ref={mainRef}>
-          {/* Re-keying on the path replays the enter animation each navigation,
-              so pages glide in instead of snapping. */}
-          <div key={location.pathname} className="appshell__content page-enter">
-            {children}
+        <ShortcutsProvider>
+          <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
+            <a className="appshell__skip" href="#main">
+              {t("shell.skipToContent")}
+            </a>
+            <Sidebar />
+            <button
+              type="button"
+              className="appshell__overlay"
+              aria-label={t("shell.closeMenu")}
+              tabIndex={navOpen ? 0 : -1}
+              onClick={() => setNavOpen(false)}
+            />
+            <CommandBar onMenu={() => setNavOpen((v) => !v)} />
+            <main id="main" className="appshell__main" ref={mainRef}>
+              {/* Re-keying on the path replays the enter animation each navigation,
+                  so pages glide in instead of snapping. */}
+              <div key={location.pathname} className="appshell__content page-enter">
+                {children}
+              </div>
+            </main>
+            <HelpCenter />
+            <ShortcutsHost />
+            <Toaster />
           </div>
-        </main>
-        <HelpCenter />
-        <Toaster />
-      </div>
+        </ShortcutsProvider>
       </HelpProvider>
     </ToastProvider>
+  );
+}
+
+// One mounted cheat-sheet, driven by the shared context so the `?` key and the product menu both
+// open the same dialog. Reads the e-invoicing flag so the shortcut list matches the live nav.
+function ShortcutsHost() {
+  const { open, closeShortcuts } = useShortcuts();
+  const { prefs } = usePreferences();
+  return (
+    <ShortcutsDialog
+      open={open}
+      onClose={closeShortcuts}
+      einvoiceEnabled={prefs?.einvoice_enabled !== false}
+    />
   );
 }
