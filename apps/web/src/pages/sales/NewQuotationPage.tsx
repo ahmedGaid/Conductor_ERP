@@ -6,7 +6,9 @@ import { createQuotation, listCustomers, type NewOrderLine } from "../../api/sal
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { useFormKeys } from "../../hooks/useFormKeys";
+import { useSmartDefault } from "../../hooks/useSmartDefault";
 import { useToast } from "../../app/ToastContext";
+import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
@@ -18,7 +20,7 @@ interface DraftLine {
   unit_price: string;
 }
 
-const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: "" });
+const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "1", unit_price: "" });
 
 export function NewQuotationPage() {
   const { t } = useTranslation();
@@ -33,6 +35,11 @@ export function NewQuotationPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Smart defaults: pre-fill the customer/warehouse the user picked last time (or the only
+  // warehouse when there's just one) — shares the memory with the new-order form.
+  useSmartDefault(customers, "sales:customer", customer, setCustomer, { single: false });
+  useSmartDefault(warehouses, "warehouse", warehouse, setWarehouse);
 
   // ⌘/Ctrl+Enter submits, Esc cancels back to the quotations list.
   const formRef = useRef<HTMLFormElement>(null);
@@ -72,6 +79,8 @@ export function NewQuotationPage() {
     setBusy(true);
     try {
       const quote = await createQuotation({ customer_code: customer, warehouse_code: warehouse, lines: payloadLines });
+      setLastUsed("sales:customer", customer);
+      setLastUsed("warehouse", warehouse);
       toast.show(t("sales.toast.quotationCreated"), "success");
       navigate(`/sales/quotations/${quote.id}`);
     } catch (err) {

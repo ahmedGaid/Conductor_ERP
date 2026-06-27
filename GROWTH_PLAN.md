@@ -135,7 +135,11 @@ Each row is one small, shippable PR. Ship in order. Per-PR ritual: `gate:all` (0
 - [x] **3.0** Walk Quote→SO→Invoice→e-invoice→paid; write the friction list. *Done (2026-06-27):*
       friction list in `DECISIONS.md` "Phase 3.0 — Daily money loop friction list" (A smart-defaults,
       B step-count, C thin payment, D e-invoice context switch, E no PDF invoice, F label/i18n snags).
-- [ ] **3.1** Smart defaults (date, warehouse, tax, last-used customer).
+- [x] **3.1** Smart defaults (date, warehouse, tax, last-used customer). *Done (2026-06-27):*
+      `lib/lastUsed.ts` + `hooks/useSmartDefault.ts` seed customer/warehouse/tax on new order+quotation
+      from last-used (or the only option); qty defaults to 1; date is server-defaulted. **Unit-price
+      prefill split out** — `Item` has no price field, needs a schema decision first (see DECISIONS.md
+      finding A).
 - [ ] **3.2** One primary action per screen.
 - [ ] **3.3** On-brand printable/PDF invoice (conductor-brand checklist passes).
 - [ ] **3.4** Time a cold stranger: signup → first invoice. **Record the number.**

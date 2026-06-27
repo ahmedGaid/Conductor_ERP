@@ -7,7 +7,9 @@ import { listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { useFormKeys } from "../../hooks/useFormKeys";
+import { useSmartDefault } from "../../hooks/useSmartDefault";
 import { useToast } from "../../app/ToastContext";
+import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
@@ -20,7 +22,7 @@ interface DraftLine {
   discount: string;
 }
 
-const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: "", discount: "" });
+const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "1", unit_price: "", discount: "" });
 
 export function NewOrderPage() {
   const { t } = useTranslation();
@@ -37,6 +39,12 @@ export function NewOrderPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Smart defaults: pre-fill the customer/warehouse/tax the user picked last time (or the only
+  // option when there's just one), so a new order doesn't make you re-pick the obvious.
+  useSmartDefault(customers, "sales:customer", customer, setCustomer, { single: false });
+  useSmartDefault(warehouses, "warehouse", warehouse, setWarehouse);
+  useSmartDefault(taxCodes, "sales:tax", taxCode, setTaxCode);
 
   // ⌘/Ctrl+Enter submits, Esc cancels back to the orders list.
   const formRef = useRef<HTMLFormElement>(null);
@@ -84,6 +92,9 @@ export function NewOrderPage() {
     setBusy(true);
     try {
       const order = await createOrder({ customer_code: customer, warehouse_code: warehouse, tax_code: taxCode, lines: payloadLines });
+      setLastUsed("sales:customer", customer);
+      setLastUsed("warehouse", warehouse);
+      setLastUsed("sales:tax", taxCode);
       toast.show(t("sales.toast.orderCreated"), "success");
       navigate(`/sales/orders/${order.id}`);
     } catch (err) {

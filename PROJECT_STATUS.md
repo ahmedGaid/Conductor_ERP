@@ -75,10 +75,21 @@ GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundl
   steps draft→paid with no cash-sale fast-path; (C) payment always full-amount, no date/method/partial;
   (D) **e-invoice is a context switch** — no submit link from the order; (E) **no printable/PDF invoice
   exists** (that's all of 3.3); (F) "Warehouse code" label + minor i18n snags.
-- **NEXT → Phase 3.1** Smart defaults (the biggest daily win): preselect the org's single/last-used
-  warehouse + default VAT code, remember last customer, **prefill unit price from the item**, default
-  qty to 1. Then 3.2 (one primary action + e-invoice-from-order + payment date/method) and 3.3
-  (on-brand PDF invoice). Recall `erp-frontend` + `conductor-brand` before the UI work.
+- **Phase 3.1 smart defaults — frontend slice DONE (2026-06-27).** New `lib/lastUsed.ts` (per-key
+  localStorage memory, best-effort) + `hooks/useSmartDefault.ts` (seed a select once from last-used if it
+  still exists, else the only option; never overrides a user pick; single-option fallback opt-out). Wired
+  into `NewOrderPage` (customer/warehouse/tax) + `NewQuotationPage` (customer/warehouse, shares the
+  memory); line **qty now defaults to 1**. Order date is already server-defaulted (no input). Verified
+  live: qty=1, last-used customer/warehouse pre-fill on a fresh form, no false default when there are
+  multiple options + no memory. i18n 1100 keys (no new strings); `tsc -b` + `npm run build` clean.
+  - **SPLIT OUT — unit-price prefill needs a backend decision.** Finding A's biggest item ("prefill unit
+    price from the item") can't be frontend-only: **`Item` has no price field** (model/serializer/import
+    all lack it). Adding it is a schema change (field + migration + serializer + importer + template) with
+    a real modelling question (single price? tax-inclusive? per-currency?). Left for an explicit decision
+    before building — see the daily-loop friction list in `DECISIONS.md` finding A.
+- **NEXT → decide the Item-price model** (then implement price-prefill), or proceed to **3.2** (one
+  primary action + e-invoice-from-order + payment date/method) / **3.3** (on-brand PDF invoice). Recall
+  `erp-frontend` + `conductor-brand` before the UI work.
 
 ## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`
