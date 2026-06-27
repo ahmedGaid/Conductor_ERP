@@ -138,6 +138,33 @@ Stop-Service Conductor-*                                 # stop all writes first
 Start-Service Conductor-*
 ```
 
+### Docker deployments (`docker compose`)
+A stack started with `docker compose up` has the **same backup story in one command** — the
+PostgreSQL data lives in the `pg_data` volume inside the `db` container, so dump/restore go through
+that container (no local `pg_dump` needed on the host). Both scripts are POSIX shell; run them from
+any host with a shell (Linux VPS, or Git Bash / WSL on Windows).
+
+**Take a backup** (writes a timestamped folder on the host, *outside* the Docker volume so it can be
+copied offsite — `db.dump` custom format + best-effort `storage.tar.gz` + `MANIFEST.txt`):
+```bash
+deploy/docker/backup.sh                       # -> <repo>/backups/<timestamp>/
+deploy/docker/backup.sh /mnt/offsite 30       # custom out-dir + keep 30 days
+```
+Schedule it with cron for nightly backups, e.g. `0 2 * * * /opt/conductor/deploy/docker/backup.sh`.
+
+**Tested restore (safe — into a scratch db, never touches production):**
+```bash
+deploy/docker/restore.sh backups/<timestamp>/db.dump      # -> erp_restore_test, prints row counts
+```
+
+**Real recovery (destructive — restores the LIVE database; requires `--force`):**
+```bash
+docker compose stop web worker beat                       # stop writes first
+deploy/docker/restore.sh backups/<timestamp>/db.dump --force
+# if documents were affected: tar -xzf backups/<timestamp>/storage.tar.gz into the storage volume
+docker compose start web worker beat
+```
+
 ## 6. Health, security & troubleshooting
 - **Endpoints:** `/health` (liveness), `/system-check` (db/redis/storage/workers), `/admin` (Django).
 - **Security posture** is enforced by prod settings + verified by `gate12`

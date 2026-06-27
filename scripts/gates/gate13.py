@@ -100,6 +100,29 @@ def check() -> None:
     for kw in ("collectstatic", "restore.ps1", "register-backup-task.ps1", "install-services.ps1"):
         _assert(kw in runbook, f"RUNBOOK.md does not document: {kw}")
 
+    # 6b. The Docker Compose deployment kit is present and coherent: the image build, the stack
+    #     definition, the container entrypoint, the env template, and a one-command backup/restore
+    #     (the Docker parity of the Windows backup kit, for the self-hoster who runs `docker compose
+    #     up`). RUNBOOK documents the Docker backup path too.
+    docker_required = [
+        "Dockerfile",
+        ".dockerignore",
+        "docker-compose.yml",
+        ".env.docker.example",
+        "deploy/docker/entrypoint.sh",
+        "deploy/docker/backup.sh",
+        "deploy/docker/restore.sh",
+    ]
+    for rel in docker_required:
+        _assert((REPO_ROOT / rel).exists(), f"Docker deployment artifact missing: {rel}")
+
+    compose = _read("docker-compose.yml")
+    for sym in ("postgres:16", "pg_data", "RUN_MIGRATIONS"):
+        _assert(sym in compose, f"docker-compose.yml missing expected piece: {sym}")
+
+    for kw in ("docker/backup.sh", "docker/restore.sh", "docker compose"):
+        _assert(kw in runbook, f"RUNBOOK.md does not document the Docker backup path: {kw}")
+
     # 7. The .ps1 scripts must be pure ASCII. Windows PowerShell 5.1 reads a BOM-less file as ANSI,
     #    so a stray non-ASCII char (e.g. an em-dash) makes the whole script fail to PARSE on the
     #    target. Keep them ASCII-only so encoding can never break the operator's deploy.
