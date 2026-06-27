@@ -4,18 +4,29 @@ RBAC: sales operations require a Branch Manager (System Admin / superuser bypass
 """
 from __future__ import annotations
 
+import json
+
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.errors import ValidationError
+from erp.core.imports import (
+    ImportError_,
+    import_from_upload,
+    result_payload,
+    template_csv,
+)
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import Customer, Quotation, SalesOrder
+from ..imports import CUSTOMER_IMPORT
 from ..repositories import customers as customer_repo
 from .serializers import (
     CustomerSerializer,
@@ -56,6 +67,55 @@ class CustomerListCreateView(APIView):
             created_by=request.user if request.user.is_authenticated else None,
         )
         return _envelope(CustomerSerializer(customer).data, status=201)
+
+
+class CustomerImportView(APIView):
+    """CSV import for customers — upload to preview, re-post with commit=true to apply.
+
+    Multipart fields: ``file`` (CSV), optional ``mapping`` (JSON {field: source_header}),
+    ``mode`` (create | upsert, default create), ``commit`` (bool, default false = preview).
+    Preview and commit run the same engine path, so the preview is exactly what commit will do.
+    """
+
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request) -> Response:
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ValidationError("No file was uploaded.")
+
+        mapping = None
+        raw_mapping = request.data.get("mapping")
+        if raw_mapping:
+            try:
+                mapping = json.loads(raw_mapping) if isinstance(raw_mapping, str) else dict(raw_mapping)
+            except (ValueError, TypeError) as exc:
+                raise ValidationError("The column mapping is not valid JSON.") from exc
+
+        mode = request.data.get("mode") or "create"
+        if mode not in ("create", "upsert"):
+            mode = "create"
+        commit = str(request.data.get("commit", "")).strip().lower() in ("1", "true", "yes")
+
+        try:
+            result = import_from_upload(
+                CUSTOMER_IMPORT, upload.read(), mapping,
+                mode=mode, commit=commit, user=request.user,
+            )
+        except ImportError_ as exc:
+            raise ValidationError(str(exc)) from exc
+        return _envelope(result_payload(result))
+
+
+class CustomerImportTemplateView(APIView):
+    """Download a CSV template (canonical headers + one example row) so columns are obvious."""
+
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def get(self, request: Request) -> HttpResponse:
+        response = HttpResponse(template_csv(CUSTOMER_IMPORT), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="customers-template.csv"'
+        return response
 
 
 class OrderListCreateView(APIView):
