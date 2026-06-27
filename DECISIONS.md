@@ -1089,3 +1089,70 @@ Sixth completion-plan increment, completing Track B (operational depth).
   *code* concept where a human wants just "Warehouse" (mismatched with the new-order "Warehouse" label).
 - (Carried from 2.x verification, same loop surfaces) DRF **choice-field error returns Arabic text in EN
   mode**; **"Import 1 rows"** isn't singularized — fix when touching shared validation/i18n copy.
+
+## Pricing engine — Oracle-EBS-core model (Growth 3.1b, design before code, 2026-06-27)
+> Phase 3.1's unit-price prefill exposed that **`Item` carries no price at all**. Rather than bolt a
+> single number onto Item, the decision (user, 2026-06-27) is to build a small **pricing module** modelled
+> on **Oracle EBS pricing — core/basics only**: price lists, per-customer assignment + overrides, effective
+> dating, and a tax-inclusive option, resolved by a precedence engine. This entry fixes the model *before*
+> code so the schema is right the first time (the costly thing to get wrong). New module `erp/pricing/`
+> (registered in `config/settings/base.py` LOCAL_APPS), strict per-module layout, **cross-module by
+> business-key string only** (customer `code`, item `sku`, tax `code`) — pricing imports no other module's
+> ORM, mirroring how sales references warehouse/tax/SKU.
+
+- **Scope = EBS *price lists* + light *qualifiers/modifiers*, NOT the full engine.** In: price-list
+  headers + lines, quantity breaks (basic tiers), effective dates, currency, tax-inclusive, customer→list
+  assignment, customer-specific item overrides. **Out (deliberately, "core only"):** formula-based prices,
+  promotional modifier stacking, GSA/agreement pricing, attribute pricing, pricing phases/buckets. These
+  can layer on later without reshaping the core.
+
+- **Four models (`erp/pricing/domain/models.py`).**
+  - **`PriceList`** (header): `code` ≤32 unique, `name` ≤200, `currency`(3, default EGP), `tax_inclusive`
+    (bool — do this list's prices already include VAT?), `is_default` (bool — the fallback list; the
+    service enforces exactly one active default), `is_active`.
+  - **`PriceListLine`**: `price_list` FK, `item_sku` ≤64 (inventory by string, boundary-clean), `uom` ≤16
+    (default "unit"), `unit_price_minor` (BigInt, in the list's currency), `min_quantity` (Decimal,
+    default 0 — qty-break tier: the highest break ≤ ordered qty wins), `valid_from`/`valid_to` (Date,
+    nullable — open-ended when null). Overlaps are allowed; the resolver picks the best match
+    deterministically (see precedence).
+  - **`CustomerPriceList`** (qualifier-lite): `customer_code` ≤32 **unique**, `price_list` FK. One default
+    list per customer. Kept pricing-side (not a column on sales' Customer) so the module stays
+    self-contained and boundary-clean.
+  - **`CustomerItemPrice`** (per-customer override / modifier-lite): `customer_code` ≤32, `item_sku` ≤64,
+    `uom`, `unit_price_minor`, `tax_inclusive` (bool), `min_quantity`, `valid_from`/`valid_to`. Highest
+    precedence — a negotiated price for one client.
+
+- **Resolution precedence (`erp/pricing/services/resolve.py`).**
+  `resolve_unit_price(customer_code, item_sku, *, on=today, quantity=None, currency="EGP")` returns
+  `PriceResolution(unit_price_minor, tax_inclusive, source, price_list_code)` or `None`. Order:
+  **(1)** `CustomerItemPrice` for (customer, item) → **(2)** the customer's assigned `PriceList` line →
+  **(3)** the active default `PriceList` line → **(4)** `None` (caller leaves the line blank, today's
+  behaviour). Within a tier, filter to: currency match, effective on `on` (valid_from ≤ on ≤ valid_to,
+  nulls = open), `min_quantity` ≤ `quantity`; then pick **highest `min_quantity`**, tie-broken by latest
+  `valid_from`, then lowest price. Pure/deterministic (no `random`, gate-safe).
+
+- **Tax-inclusive stays out of storage; the order line remains tax-*exclusive*.** Sales computes VAT on
+  top of a net line (unchanged). So a tax-inclusive resolved price must be **backed out** to net before it
+  reaches a line: `net = round(gross * 10000 / (10000 + rate_bps))`. The **resolver is tax-agnostic**
+  (returns the stored price + the `tax_inclusive` flag); the back-out happens in the thin **pricing API**
+  `GET /pricing/resolve?customer&sku&qty&date&tax_code`, which reads the rate via `accounting.contracts`
+  and returns a ready-to-drop **net `unit_price_minor`** plus `source` for display ("from Wholesale").
+  Pricing depends on accounting only through its public contract, never its ORM.
+
+- **Pricing only *suggests*; it never rewrites posted documents.** The order/quotation line still stores an
+  explicit `unit_price` the user can edit. Pricing prefills it; invoicing, GL posting, and e-invoice are
+  untouched. This de-risks the whole feature — a wrong price list can't corrupt the ledger, and the engine
+  can ship incrementally behind the existing manual entry.
+
+- **Phase plan (each a small, gate-green PR).**
+  - **P1 — module foundation (backend):** scaffold `erp/pricing/`, the 4 models + migration, repositories,
+    `resolve_unit_price` with full precedence, unit tests (precedence, effective dates, qty breaks,
+    currency, default fallback). No API/UI. *Done = tests + `gate:all` green.*
+  - **P2 — API + management UI:** DRF CRUD for price lists/lines, customer assignment, overrides;
+    `GET /pricing/resolve` (with tax back-out); a **Pricing** section in the web app to manage lists;
+    `seed_accounting`/seed gains a default list. i18n parity.
+  - **P3 — wire the loop:** new order/quotation calls `/pricing/resolve` on (customer+item) to prefill the
+    net unit price and show its source — *this finally delivers finding A's price-prefill, via the engine.*
+  - **P4 — CSV import + demo:** price-list-line importer (reuse `erp/core/imports.py`) + template; demo seed
+    ships a default list so prefill is visible out of the box.
+  - **P5 — polish:** per-customer override + effective-dated scheduling UI; tax-inclusive entry affordance.

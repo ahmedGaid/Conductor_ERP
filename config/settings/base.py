@@ -53,6 +53,7 @@ LOCAL_APPS = [
     "erp.forms",
     "erp.accounting",
     "erp.inventory",
+    "erp.pricing",
     "erp.sales",
     "erp.purchasing",
     "erp.crm",

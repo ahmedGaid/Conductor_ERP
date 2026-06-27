@@ -87,9 +87,21 @@ GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundl
     all lack it). Adding it is a schema change (field + migration + serializer + importer + template) with
     a real modelling question (single price? tax-inclusive? per-currency?). Left for an explicit decision
     before building — see the daily-loop friction list in `DECISIONS.md` finding A.
-- **NEXT → decide the Item-price model** (then implement price-prefill), or proceed to **3.2** (one
-  primary action + e-invoice-from-order + payment date/method) / **3.3** (on-brand PDF invoice). Recall
-  `erp-frontend` + `conductor-brand` before the UI work.
+- **Pricing engine (Growth 3.1b) — decided + P1 DONE (2026-06-27).** Decision (user): build a small
+  **Oracle-EBS-*core* pricing module** instead of a single price on Item — price lists + tiers,
+  per-customer assignment + overrides, effective dates, tax-inclusive, resolved by a precedence engine.
+  Full design + the P1–P5 phase plan in `DECISIONS.md` "Pricing engine — Oracle-EBS-core model".
+  - **P1 (backend foundation) DONE:** new `erp/pricing/` app (registered in `base.py`), 4 domain models
+    (`PriceList`, `PriceListLine`, `CustomerPriceList`, `CustomerItemPrice`) + migration `0001`,
+    repositories, and `services/resolve.py` — `resolve_unit_price(customer, sku, on, quantity, currency)`
+    with precedence customer-item → customer-list → default-list → None, qty-breaks, effective dates,
+    currency filter, tax-agnostic (returns price + `tax_inclusive` flag). Public `contracts/`. **9 resolver
+    tests pass; `gate:all` 00–13 GREEN.** No API/UI yet.
+  - **NEXT → P2:** DRF CRUD for price lists/lines + customer assignment/overrides, `GET /pricing/resolve`
+    (backs VAT out of a tax-inclusive result via `accounting.contracts`), a **Pricing** web section to
+    manage lists, and a seeded default list. Then P3 wires order/quotation line prefill (delivers finding
+    A's price-prefill via the engine), P4 import+demo, P5 polish. Recall `erp-frontend` + `conductor-brand`
+    before the UI work.
 
 ## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`
