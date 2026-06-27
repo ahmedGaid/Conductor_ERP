@@ -19,6 +19,8 @@ urlpatterns = [
     path("api/accounting/", include("erp.accounting.api.urls")),
     # Inventory API — Stage 5c.
     path("api/inventory/", include("erp.inventory.api.urls")),
+    # Pricing (price lists + resolution) API — Growth 3.1b.
+    path("api/pricing/", include("erp.pricing.api.urls")),
     # Sales API — Stage 5d.
     path("api/sales/", include("erp.sales.api.urls")),
     # Purchasing API — Stage 5e.

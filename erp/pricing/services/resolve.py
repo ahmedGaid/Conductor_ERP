@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from ..repositories import (
     customer_item_prices,
@@ -34,6 +34,21 @@ class PriceResolution:
     tax_inclusive: bool
     source: str  # "customer_item" | "customer_list" | "default_list"
     price_list_code: str | None
+
+
+def net_of_tax(gross_minor: int, rate_bps: int) -> int:
+    """Back VAT out of a tax-inclusive price: ``net = gross * 10000 / (10000 + rate)``.
+
+    The mirror of accounting's ``tax = net * rate / 10000`` (same ROUND_HALF_UP), so a net produced
+    here, taxed by sales, lands back on the original gross within rounding. Rate ≤ 0 is a passthrough.
+    """
+    if rate_bps <= 0:
+        return gross_minor
+    return int(
+        (Decimal(gross_minor) * Decimal(10000) / Decimal(10000 + rate_bps)).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        )
+    )
 
 
 def _effective(row, on: date) -> bool:
