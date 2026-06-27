@@ -4,18 +4,21 @@ RBAC: purchasing operations require a Branch Manager (System Admin / superuser b
 """
 from __future__ import annotations
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import PurchaseOrder, PurchaseRequest, Supplier
+from ..imports import SUPPLIER_IMPORT
 from .serializers import (
     LinesActionSerializer,
     POCreateSerializer,
@@ -53,6 +56,24 @@ class SupplierListCreateView(APIView):
             created_by=request.user if request.user.is_authenticated else None,
         )
         return _envelope(SupplierSerializer(supplier).data, status=201)
+
+
+class SupplierImportView(APIView):
+    """CSV import for suppliers — upload to preview, re-post with commit=true to apply."""
+
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def post(self, request: Request) -> Response:
+        return _envelope(run_import_request(SUPPLIER_IMPORT, request))
+
+
+class SupplierImportTemplateView(APIView):
+    """Download a CSV template (canonical headers + one example row) so columns are obvious."""
+
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def get(self, request: Request) -> HttpResponse:
+        return template_response(SUPPLIER_IMPORT, "suppliers-template.csv")
 
 
 class POListCreateView(APIView):

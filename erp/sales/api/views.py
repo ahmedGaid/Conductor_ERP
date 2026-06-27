@@ -4,8 +4,6 @@ RBAC: sales operations require a Branch Manager (System Admin / superuser bypass
 """
 from __future__ import annotations
 
-import json
-
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
@@ -13,13 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from erp.core.errors import ValidationError
-from erp.core.imports import (
-    ImportError_,
-    import_from_upload,
-    result_payload,
-    template_csv,
-)
+from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
@@ -80,31 +72,7 @@ class CustomerImportView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def post(self, request: Request) -> Response:
-        upload = request.FILES.get("file")
-        if upload is None:
-            raise ValidationError("No file was uploaded.")
-
-        mapping = None
-        raw_mapping = request.data.get("mapping")
-        if raw_mapping:
-            try:
-                mapping = json.loads(raw_mapping) if isinstance(raw_mapping, str) else dict(raw_mapping)
-            except (ValueError, TypeError) as exc:
-                raise ValidationError("The column mapping is not valid JSON.") from exc
-
-        mode = request.data.get("mode") or "create"
-        if mode not in ("create", "upsert"):
-            mode = "create"
-        commit = str(request.data.get("commit", "")).strip().lower() in ("1", "true", "yes")
-
-        try:
-            result = import_from_upload(
-                CUSTOMER_IMPORT, upload.read(), mapping,
-                mode=mode, commit=commit, user=request.user,
-            )
-        except ImportError_ as exc:
-            raise ValidationError(str(exc)) from exc
-        return _envelope(result_payload(result))
+        return _envelope(run_import_request(CUSTOMER_IMPORT, request))
 
 
 class CustomerImportTemplateView(APIView):
@@ -113,9 +81,7 @@ class CustomerImportTemplateView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def get(self, request: Request) -> HttpResponse:
-        response = HttpResponse(template_csv(CUSTOMER_IMPORT), content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = 'attachment; filename="customers-template.csv"'
-        return response
+        return template_response(CUSTOMER_IMPORT, "customers-template.csv")
 
 
 class OrderListCreateView(APIView):

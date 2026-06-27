@@ -675,6 +675,7 @@
     "supplier": {
       "code": "Supplier code",
       "name": "Name",
+      "active": "Active",
       "add": "Add supplier",
       "empty": "No suppliers yet.",
       "emptyHint": "Add your first supplier using the form above."
@@ -930,6 +931,9 @@
     "confirmNone": "Nothing to import",
     "customers": {
       "title": "Import customers"
+    },
+    "suppliers": {
+      "title": "Import suppliers"
     },
     "upload": {
       "lede": "Bring your customers in from a CSV — Excel's \"Save As CSV\" works. You'll preview before anything is saved.",
