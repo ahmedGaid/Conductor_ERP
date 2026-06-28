@@ -53,6 +53,13 @@ def general_ledger_table(gl, lang: str, period: str | None = None) -> ReportTabl
     ]
     footer = [{"memo": _l("Closing balance", "الرصيد الختامي", lang), "balance": gl.closing_balance}]
     meta = [(_l("Account", "الحساب", lang), f"{gl.account_code} — {gl.account_name}")]
+    if getattr(gl, "party_code", ""):
+        party_label = (
+            _l("Customer", "العميل", lang) if gl.party_type == "customer"
+            else _l("Supplier", "المورد", lang) if gl.party_type == "supplier"
+            else _l("Party", "الطرف", lang)
+        )
+        meta.append((party_label, gl.party_code))
     if period:
         meta.append((_l("Period", "الفترة", lang), period))
     return ReportTable(title=_l("General Ledger", "دفتر الأستاذ", lang),

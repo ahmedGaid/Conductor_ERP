@@ -1437,7 +1437,16 @@
         <span class="icon">📲</span>
         إرسال عبر واتساب
       </button>
+      <button type="button" class="btn-save" id="btnImport" onclick="document.getElementById('importFile').click()" style="background:var(--gray-600,#566);">
+        <span class="icon">📥</span>
+        استيراد ملف سابق
+      </button>
+      <input type="file" id="importFile" accept=".md,.markdown,.txt,.html,text/markdown,text/plain,text/html" style="display:none"
+             onchange="if(this.files[0]){importFromFile(this.files[0]); this.value='';}">
     </div>
+    <p style="margin:.75rem 0 0;color:var(--text-muted,#666);font-size:.82rem;">
+      📥 «استيراد ملف سابق»: ارفع ملف MD (أو الملف المحمي) الذي تم توليده من قبل، وسيُعاد ملء كل الاختيارات كما اختارها صاحبه.
+    </p>
   </div>
 
   </form>
@@ -2028,6 +2037,7 @@ function generateMarkdown(data) {
 
 // UTF-8 safe base64 (for the email attachment)
 function toB64(str) { return btoa(unescape(encodeURIComponent(str))); }
+function fromB64(b64) { return decodeURIComponent(escape(atob(b64))); }
 
 function specHelpers(d) {
   return {
@@ -2454,10 +2464,38 @@ function generateBuildSpec(data) {
 }
 
 // Full deliverable = build spec + raw answers appendix
+// + a hidden, machine-readable snapshot of the exact choices so the file
+//   can later be re-imported to restore every selection in the form.
+const ANSWERS_MARKER = 'ERP_ANSWERS_JSON';
 function generateFullSpec(data) {
+  const snapshot = toB64(JSON.stringify(data));
   return generateBuildSpec(data) +
     `\n\n---\n\n# Appendix A — Raw Questionnaire Answers\n\n` +
-    generateMarkdown(data);
+    generateMarkdown(data) +
+    `\n\n<!-- ${ANSWERS_MARKER}\n${snapshot}\n${ANSWERS_MARKER} -->\n`;
+}
+
+// استخرج لقطة الإجابات (JSON) من نص ملف تم توليده سابقاً
+function extractAnswers(text) {
+  const re = new RegExp('<!--\\s*' + ANSWERS_MARKER + '\\s*([\\s\\S]*?)\\s*' + ANSWERS_MARKER + '\\s*-->');
+  const m = text.match(re);
+  if (!m) return null;
+  try { return JSON.parse(fromB64(m[1].trim())); } catch (e) { return null; }
+}
+
+// فك تشفير ملف .locked.html (نفس معامِلات encryptToHtml)
+async function decryptLockedHtml(htmlText, password) {
+  const m = htmlText.match(/const DATA=({[\s\S]*?});/);
+  if (!m) throw new Error('no-payload');
+  const DATA = JSON.parse(m[1]);
+  const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const enc = new TextEncoder();
+  const km = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: b64d(DATA.s), iterations: 150000, hash: 'SHA-256' },
+    km, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(DATA.i) }, key, b64d(DATA.c));
+  return new TextDecoder().decode(pt);
 }
 
 // ── ملف محمي بكلمة مرور (AES-256-GCM عبر Web Crypto) ──
@@ -3295,6 +3333,82 @@ function collectData() {
   form.querySelectorAll('input[type="radio"]:checked').forEach(r => { data[r.name] = r.value; });
   Object.assign(data, ynState);
   return data;
+}
+
+// ── Apply data: restore every selection from a saved snapshot into the form ──
+function applyData(data) {
+  if (!data || typeof data !== 'object') return;
+  const form = document.getElementById('erpForm');
+
+  // text-like inputs + textareas
+  form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea')
+    .forEach(el => { if (el.name && data[el.name] !== undefined) el.value = data[el.name]; });
+
+  // selects
+  form.querySelectorAll('select').forEach(el => { if (el.name && data[el.name] !== undefined) el.value = data[el.name]; });
+
+  // checkboxes (value present in the saved array → checked)
+  form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    if (!cb.name) return;
+    const arr = Array.isArray(data[cb.name]) ? data[cb.name] : [];
+    cb.checked = arr.includes(cb.value);
+    const item = cb.closest('.check-item');
+    if (item) item.classList.toggle('checked', cb.checked);
+  });
+
+  // radios
+  form.querySelectorAll('input[type="radio"]').forEach(r => {
+    if (!r.name) return;
+    r.checked = (data[r.name] === r.value);
+    const item = r.closest('.check-item');
+    if (item) item.classList.toggle('checked', r.checked);
+  });
+
+  // Yes/No buttons
+  for (const k in ynState) delete ynState[k];
+  document.querySelectorAll('.yn-btn').forEach(b => {
+    const f = b.dataset.field, v = b.dataset.val;
+    const on = data[f] === v;
+    b.classList.toggle('active', on);
+    if (on) ynState[f] = v;
+  });
+
+  // refresh dependent UI exactly like initApp does
+  updateModuleSections();
+  updateProgress();
+  updateSummary();
+  refreshPriceUI();
+}
+
+// ── Import: read a previously generated file and restore the choices ──
+async function importFromFile(file) {
+  if (!file) return;
+  try {
+    let text = await file.text();
+    // ملف محمي (.locked.html) → فك التشفير بكلمة المرور المضمّنة ثم اطلبها إن لزم
+    if (/const DATA=\{/.test(text) && !text.includes(ANSWERS_MARKER)) {
+      let pw = FILE_PASSWORD;
+      let md = null;
+      try { md = await decryptLockedHtml(text, pw); }
+      catch (e) {
+        pw = prompt('هذا ملف محمي. أدخل كلمة المرور لفتحه:') || '';
+        try { md = await decryptLockedHtml(text, pw); }
+        catch (e2) { alert('كلمة المرور غير صحيحة أو الملف غير صالح.'); return; }
+      }
+      text = md;
+    }
+    const data = extractAnswers(text);
+    if (!data) {
+      alert('لم يتم العثور على بيانات الاختيارات داخل الملف. تأكد أنه ملف تم توليده من هذا الاستبيان (أحدث إصدار).');
+      return;
+    }
+    applyData(data);
+    const ev2 = data.build_mode === 'custom' ? 'تخصيص نظام موجود' : 'بناء من الصفر';
+    apToast(`✅ تم تحميل اختيارات: ${data.company_name || '—'} (${ev2})`);
+    document.getElementById('erpForm').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    alert('تعذّر قراءة الملف: ' + (e && e.message ? e.message : e));
+  }
 }
 
 // ── Init ──

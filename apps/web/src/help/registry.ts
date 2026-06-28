@@ -47,6 +47,7 @@ import {
   warehousesGuide,
 } from "./content/inventory";
 import {
+  customerDetailGuide,
   customersGuide,
   newOrderGuide,
   newQuotationGuide,
@@ -62,6 +63,7 @@ import {
   purchaseOrdersGuide,
   purchaseRequestDetailGuide,
   purchaseRequestsGuide,
+  supplierDetailGuide,
   suppliersGuide,
 } from "./content/purchasing";
 import {
@@ -82,6 +84,7 @@ import {
   settingsProfileGuide,
 } from "./content/settings";
 import { roleDetailGuide, rolesGuide, userDetailGuide, usersGuide } from "./content/admin";
+import { priceListDetailGuide, priceListsGuide } from "./content/pricing";
 
 export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/": dashboardGuide,
@@ -122,6 +125,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/sales/quotations/new": newQuotationGuide,
   "/sales/quotations/:id": quotationDetailGuide,
   "/sales/customers": customersGuide,
+  "/sales/customers/:code": customerDetailGuide,
   "/purchasing": purchaseOrdersGuide,
   "/purchasing/orders/new": newPurchaseOrderGuide,
   "/purchasing/orders/:id": purchaseOrderDetailGuide,
@@ -129,6 +133,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/purchasing/requests/new": newPurchaseRequestGuide,
   "/purchasing/requests/:id": purchaseRequestDetailGuide,
   "/purchasing/suppliers": suppliersGuide,
+  "/purchasing/suppliers/:code": supplierDetailGuide,
   "/einvoice": einvoiceGuide,
   "/notifications": notificationsGuide,
   "/crm": pipelineGuide,
@@ -150,6 +155,8 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/admin/users/:id": userDetailGuide,
   "/admin/roles": rolesGuide,
   "/admin/roles/:name": roleDetailGuide,
+  "/pricing": priceListsGuide,
+  "/pricing/:id": priceListDetailGuide,
 };
 
 // Pre-sort patterns most-specific first: deeper paths first, and within the same depth, patterns

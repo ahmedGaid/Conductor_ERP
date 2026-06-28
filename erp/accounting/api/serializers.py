@@ -245,6 +245,8 @@ class JournalEntrySerializer(serializers.Serializer):
     source = serializers.CharField()
     status = serializers.CharField()
     posted_at = serializers.DateTimeField()
+    party_type = serializers.CharField()
+    party_code = serializers.CharField()
     lines = serializers.SerializerMethodField()
 
     def get_period_code(self, obj) -> str:

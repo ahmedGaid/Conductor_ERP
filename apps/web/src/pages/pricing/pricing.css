@@ -1,0 +1,133 @@
+.pricing-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pricing-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pricing-head__back {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.pricing-head__back:hover {
+  color: var(--color-text);
+}
+
+.pricing-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pricing-toggles {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pricing-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.pricing-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.pricing-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.pricing-field--check {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pricing-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.pricing-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.pricing-table th,
+.pricing-table td {
+  text-align: start;
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--table-pad-block);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.pricing-table th {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.pricing-table__num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-table tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
+/* A titled section within a page (customer pricing groups assignments + overrides). */
+.pricing-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pricing-block__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.pricing-block__hint {
+  margin: 0;
+  margin-block-start: calc(-1 * var(--space-2));
+}
+
+/* A quiet monochrome chip — a default/tax-inclusive marker that pairs with its word. */
+.pricing-tag {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--space-2);
+  padding-block: 2px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+/* Tax-inclusive marker shown beside a price cell. */
+.pricing-tag--inline {
+  margin-inline-start: var(--space-2);
+}

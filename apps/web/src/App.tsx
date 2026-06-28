@@ -1,10 +1,13 @@
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { AppShell } from "./app/AppShell";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { PreferencesProvider, usePreferences } from "./preferences/PreferencesContext";
+import { getSetupStatus } from "./api/setup";
+import { useAsync } from "./hooks/useAsync";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { SetupWizardPage } from "./pages/SetupWizardPage";
 import { ProfilePage } from "./pages/settings/ProfilePage";
 import { AppearancePage } from "./pages/settings/AppearancePage";
 import { DashboardSettingsPage } from "./pages/settings/DashboardSettingsPage";
@@ -42,6 +45,9 @@ import { NotificationsPage } from "./pages/notifications/NotificationsPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
 import { WarehousesPage } from "./pages/inventory/WarehousesPage";
+import { PriceListsPage } from "./pages/pricing/PriceListsPage";
+import { PriceListDetailPage } from "./pages/pricing/PriceListDetailPage";
+import { CustomerPricingPage } from "./pages/pricing/CustomerPricingPage";
 import { StockMovementPage } from "./pages/inventory/StockMovementPage";
 import { StockCountsPage } from "./pages/inventory/StockCountsPage";
 import { StockCountDetailPage } from "./pages/inventory/StockCountDetailPage";
@@ -50,6 +56,7 @@ import { OrdersPage } from "./pages/sales/OrdersPage";
 import { NewOrderPage } from "./pages/sales/NewOrderPage";
 import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
 import { CustomersPage } from "./pages/sales/CustomersPage";
+import { CustomerDetailPage } from "./pages/sales/CustomerDetailPage";
 import { QuotationsPage } from "./pages/sales/QuotationsPage";
 import { NewQuotationPage } from "./pages/sales/NewQuotationPage";
 import { QuotationDetailPage } from "./pages/sales/QuotationDetailPage";
@@ -57,6 +64,7 @@ import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
 import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
 import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
 import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
+import { SupplierDetailPage } from "./pages/purchasing/SupplierDetailPage";
 import { PurchaseRequestsPage } from "./pages/purchasing/PurchaseRequestsPage";
 import { NewPurchaseRequestPage } from "./pages/purchasing/NewPurchaseRequestPage";
 import { PurchaseRequestDetailPage } from "./pages/purchasing/PurchaseRequestDetailPage";
@@ -90,6 +98,40 @@ function Protected() {
   return (
     <RequireAuth>
       <PreferencesProvider>
+        <SetupGate />
+      </PreferencesProvider>
+    </RequireAuth>
+  );
+}
+
+// First-run gate: until the org finishes setup, every protected route funnels to the wizard;
+// once complete, the wizard is unreachable (redirects home). Auth already passed by here.
+function SetupGate() {
+  const { data, loading, mutate } = useAsync(getSetupStatus, []);
+  const { refresh } = usePreferences();
+  const location = useLocation();
+  const onSetup = location.pathname === "/setup";
+
+  if (loading || !data) return null;
+  if (!data.is_setup_complete && !onSetup) return <Navigate to="/setup" replace />;
+  if (data.is_setup_complete && onSetup) return <Navigate to="/" replace />;
+  if (onSetup) {
+    return (
+      <SetupWizardPage
+        status={data}
+        onCompleted={async () => {
+          // Pull fresh org flags (e.g. e-invoicing) before entering the app so the nav is correct.
+          await refresh();
+          mutate({ ...data, is_setup_complete: true });
+        }}
+      />
+    );
+  }
+  return <AppRoutes />;
+}
+
+function AppRoutes() {
+  return (
       <AppShell>
         <Routes>
           <Route path="/" element={<LandingRedirect />} />
@@ -105,6 +147,9 @@ function Protected() {
           <Route path="/admin/users/:id" element={<UserDetailPage />} />
           <Route path="/admin/roles" element={<RolesPage />} />
           <Route path="/admin/roles/:name" element={<RoleDetailPage />} />
+          <Route path="/pricing" element={<PriceListsPage />} />
+          <Route path="/pricing/customers" element={<CustomerPricingPage />} />
+          <Route path="/pricing/:id" element={<PriceListDetailPage />} />
           <Route path="/workflows" element={<WorkflowListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />
@@ -142,6 +187,7 @@ function Protected() {
           <Route path="/sales/quotations/new" element={<NewQuotationPage />} />
           <Route path="/sales/quotations/:id" element={<QuotationDetailPage />} />
           <Route path="/sales/customers" element={<CustomersPage />} />
+          <Route path="/sales/customers/:code" element={<CustomerDetailPage />} />
           <Route path="/purchasing" element={<PurchaseOrdersPage />} />
           <Route path="/purchasing/orders/new" element={<NewPurchaseOrderPage />} />
           <Route path="/purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
@@ -149,6 +195,7 @@ function Protected() {
           <Route path="/purchasing/requests/new" element={<NewPurchaseRequestPage />} />
           <Route path="/purchasing/requests/:id" element={<PurchaseRequestDetailPage />} />
           <Route path="/purchasing/suppliers" element={<SuppliersPage />} />
+          <Route path="/purchasing/suppliers/:code" element={<SupplierDetailPage />} />
           <Route path="/einvoice" element={<EInvoicesPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/crm" element={<PipelinePage />} />
@@ -161,8 +208,6 @@ function Protected() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
-      </PreferencesProvider>
-    </RequireAuth>
   );
 }
 

@@ -8,8 +8,11 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { ImportDialog } from "../../components/ImportDialog";
+import type { ImportFieldInfo } from "../../api/imports";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./purchasing.css";
@@ -34,6 +37,16 @@ export function SuppliersPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+
+  const importFields = useMemo<ImportFieldInfo[]>(
+    () => [
+      { name: "code", label: t("purchasing.supplier.code"), required: true },
+      { name: "name", label: t("purchasing.supplier.name"), required: true },
+      { name: "is_active", label: t("purchasing.supplier.active") },
+    ],
+    [t],
+  );
 
   // Optimistic create: show the new supplier row at once and clear the form so the next one can be
   // typed without waiting; the server row replaces the placeholder on settle, or it rolls back + toasts.
@@ -57,6 +70,22 @@ export function SuppliersPage() {
   return (
     <section className="pur-page">
       <PurchasingNav />
+
+      <div className="pur-page-actions">
+        <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
+          {t("import.action")}
+        </button>
+      </div>
+
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        basePath="/purchasing/suppliers"
+        title={t("import.suppliers.title")}
+        templateName="suppliers-template.csv"
+        fields={importFields}
+        onCommitted={() => reload()}
+      />
 
       <form className="card pur-toolbar" onSubmit={onSubmit}>
         <label className="pur-field">
@@ -102,8 +131,14 @@ export function SuppliersPage() {
             <tbody>
               {filtered.map((s) => (
                 <tr key={s.id}>
-                  <td><Bdi>{s.code}</Bdi></td>
-                  <td>{s.name}</td>
+                  <td>
+                    <PartyLink type="supplier" code={s.code} className="latin">
+                      <Bdi>{s.code}</Bdi>
+                    </PartyLink>
+                  </td>
+                  <td>
+                    <PartyLink type="supplier" code={s.code}>{s.name}</PartyLink>
+                  </td>
                 </tr>
               ))}
             </tbody>

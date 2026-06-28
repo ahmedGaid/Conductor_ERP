@@ -265,6 +265,7 @@ def return_order(order: SalesOrder, returned: dict[int, Decimal] | None = None, 
     entry = post_journal(
         JournalInput(
             date=dt.date.today(), source="sales", reference=order.number,
+            party_type="customer", party_code=order.customer.code,
             memo=f"Credit note {order.number} — {order.customer.code}",
             lines=lines,
         ),
@@ -308,6 +309,7 @@ def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
     entry = post_journal(
         JournalInput(
             date=dt.date.today(), source="sales", reference=order.number,
+            party_type="customer", party_code=order.customer.code,
             memo=f"Invoice {order.number} — {order.customer.code}",
             lines=lines,
         ),
@@ -350,6 +352,7 @@ def receive_payment(order: SalesOrder, amount_minor: int, actor=None) -> SalesOr
     post_journal(
         JournalInput(
             date=dt.date.today(), source="sales", reference=order.number,
+            party_type="customer", party_code=order.customer.code,
             memo=f"Payment {order.number} — {order.customer.code}",
             lines=[
                 LineInput(account_code=CASH_ACCOUNT, debit=amount_minor),

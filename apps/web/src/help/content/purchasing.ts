@@ -126,3 +126,18 @@ export const suppliersGuide: HelpGuide = {
     { to: "/purchasing", label: { en: "Purchase orders", ar: "أوامر الشراء" } },
   ],
 };
+
+export const supplierDetailGuide: HelpGuide = {
+  title: { en: "Supplier", ar: "المورّد" },
+  purpose: {
+    en: "View and edit a supplier's details and see their order history.",
+    ar: "اعرض بيانات المورّد وعدّلها وتابع سجل طلباتهم.",
+  },
+  howItWorks: {
+    en: "Edit the supplier's name, code, or contact details directly on this page.",
+    ar: "عدّل اسم المورّد أو كوده أو بيانات التواصل مباشرة من هذه الصفحة.",
+  },
+  related: [
+    { to: "/purchasing/suppliers", label: { en: "All suppliers", ar: "جميع الموردين" } },
+  ],
+};

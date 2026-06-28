@@ -7,6 +7,12 @@ app_name = "purchasing"
 
 urlpatterns = [
     path("suppliers", views.SupplierListCreateView.as_view(), name="supplier-list"),
+    path("suppliers/import", views.SupplierImportView.as_view(), name="supplier-import"),
+    path(
+        "suppliers/import/template",
+        views.SupplierImportTemplateView.as_view(),
+        name="supplier-import-template",
+    ),
     path("orders", views.POListCreateView.as_view(), name="order-list"),
     path("orders/<uuid:order_id>", views.PODetailView.as_view(), name="order-detail"),
     path("orders/<uuid:order_id>/approve", views.POApproveView.as_view(), name="order-approve"),

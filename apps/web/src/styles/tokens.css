@@ -46,6 +46,10 @@
   --color-surface: var(--palette-white);
   --color-surface-alt: var(--palette-ink-100);
   --color-surface-hover: var(--palette-ink-050);
+  /* A recessed surface with more presence than -alt: darker than the page in light mode, lighter in
+     dark mode (see the dark block). Used for the workspace/company chip. */
+  --color-surface-sunken: var(--palette-ink-200);
+  --color-surface-sunken-hover: var(--palette-ink-300);
   --color-border: var(--palette-ink-200);
   --color-border-strong: var(--palette-ink-300);
   --color-text: var(--palette-ink-900);
@@ -184,6 +188,8 @@
   --color-surface: #0d0d0d;
   --color-surface-alt: #1a1a1a;
   --color-surface-hover: #1a1a1a;
+  --color-surface-sunken: #242424;
+  --color-surface-sunken-hover: #2e2e2e;
   --color-border: #262626;
   --color-border-strong: #383838;
   --color-text: #f5f5f5;
@@ -354,4 +360,21 @@
   --dur-fast: 0.01ms;
   --dur: 0.01ms;
   --dur-slow: 0.01ms;
+}
+
+/* Per-module accent bars — the single drop of colour beside a document number. */
+:root {
+  --module-sales-bar: #6b9bd1;
+  --module-purchasing-bar: #72a869;
+  --module-inventory-bar: #d4964e;
+  --module-accounting-bar: #9b85d4;
+  --module-crm-bar: #6680bc;
+}
+
+:root[data-theme="dark"] {
+  --module-sales-bar: #a7c7e7;
+  --module-purchasing-bar: #a8c5a0;
+  --module-inventory-bar: #e8c49a;
+  --module-accounting-bar: #c3b4e8;
+  --module-crm-bar: #9baed4;
 }

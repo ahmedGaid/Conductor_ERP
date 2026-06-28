@@ -964,3 +964,195 @@ Sixth completion-plan increment, completing Track B (operational depth).
   dynamic root view owns `/`. The view 503s with a build-hint (never 500) when `dist` is absent.
 - **gate13** owns packaging coherence (WhiteNoise wired, SPA served, deploy/backup kit + runbook
   present); it deliberately does NOT re-run `check --deploy` — that is gate12's job (security posture).
+
+## Phase 2.0 — CSV import friction decisions (2026-06-27)
+> "Decisions before code" for Growth Phase 2 (`GROWTH_PLAN.md`). CSV import makes one-day setup real
+> for a company that already has its customers/suppliers/products in Excel. These rulings are made
+> *before* the importer is built (2.1) so the engine is designed against the real-world messiness, not
+> a happy path. Grounded in the actual master-data shape: **Customer** (`code` ≤32 unique, `name` ≤200,
+> `credit_limit_minor`, `is_active`), **Supplier** (`code` ≤32 unique, `name` ≤200, `is_active`),
+> **Item** (`sku` ≤64 unique, `name` ≤200, `category_code` FK-by-code, `uom`, `type`∈ItemType,
+> `reorder_point`, `is_active`). The unique **business key is `code` / `sku`** and today it is enforced
+> *only by the DB constraint* — the single-create serializers do not check it (a duplicate currently
+> reaches `Model.objects.create` and would `IntegrityError`). The importer must own existence
+> resolution; it does not get it for free.
+
+- **Validation reuses the existing DRF serializers — one source of truth.** Per-row field validation
+  goes through `CustomerSerializer` / `SupplierSerializer` / `ItemSerializer` (the same code the
+  single-create endpoints use), NOT a parallel validator that can drift. The importer is a thin batch
+  layer that adds only what single-create lacks: encoding normalization, header mapping, business-key
+  existence resolution, and a row-level outcome report.
+
+- **Encoding: detect and normalize on the server, never trust the bytes.** Egyptian SMBs "Save As CSV"
+  from Arabic Excel, which writes **Windows-1256** (legacy code page), while "CSV UTF-8" prepends a
+  **UTF-8 BOM**. Decode order: **utf-8-sig** (strips the BOM) → **cp1256** → utf-8 with replacement as a
+  last resort; if the result still looks broken (replacement chars in a sampled column), **reject the
+  file** with a plain message ("re-save as CSV UTF-8") rather than importing mojibake. Sniff the
+  delimiter (Arabic/European Excel uses **`;`**, not `,`). Normalize text to **NFC**. This is decided
+  server-side because the browser cannot reliably re-decode a cp1256 file.
+
+- **Numbers: normalize digits and separators for parsing only.** Accept **Arabic-Indic (٠–٩)** and
+  Eastern-Arabic digits and Arabic/European decimal+thousands separators in numeric columns, folding
+  them to ASCII before parsing — mirrors the `lib/arabicSearch.ts` ruling (simplify for *machine
+  reading*, never mutate what the user sees). Name/text fields keep their original full orthography.
+
+- **Money columns are MAJOR units, converted at the edge.** A human types `1,000.50` (pounds) in the
+  CSV, not `100050` minor units. The importer parses major → integer **minor** units at the import edge,
+  consistent with the standing money rule (minor units on the wire; format/parse only at the edge). The
+  template header names the unit. A non-numeric money cell is a **row error**, never coerced to 0.
+
+- **Duplicates: business key wins, two kinds, never a silent overwrite.** (a) *Within the file* — the
+  same `code`/`sku` twice: the first row imports, each later one is reported as `duplicate-in-file` and
+  skipped (last-wins would silently drop data). (b) *Against the database* — default mode is
+  **create-only**: an existing business key is reported `already-exists, skipped` (an outcome, not an
+  error). An explicit **"update existing"** toggle turns the run into an upsert-by-business-key for
+  re-imports. The importer always resolves existence by business key *before* writing, so it never
+  relies on catching the DB `IntegrityError`.
+
+- **Partial success is the default, not all-or-nothing.** Each row is validated and saved
+  independently inside its **own savepoint** (`transaction.atomic` per row) so one bad row cannot
+  poison the batch. The run returns a **summary** — `created N / skipped M / failed K` — plus a
+  per-row error report (row number + field + human message), downloadable. All-or-nothing is rejected:
+  a 5 000-row file failing on row 4 999 must not throw away the 4 998 good rows.
+
+- **Truthful preview before commit (two-phase).** Flow is **upload → map → preview → confirm**. Phase 1
+  parses + validates + resolves existence and returns the exact would-be outcome counts and row errors
+  **without writing**; phase 2 commits precisely what the preview showed. Preview and commit run the
+  same code path so the preview can never lie. (Server-side staging mechanism for the confirmed batch
+  is a 2.1 implementation detail; the *contract* — preview == commit — is decided here.)
+
+- **Re-upload is idempotent by construction.** Because dedup is by business key and create-only skips
+  existing, re-running the same file yields `created 0 / skipped all`. With "update existing" on, a
+  re-run is a stable upsert (same end state every time). The **business key is the idempotency key** —
+  v1 does NOT hash the file or track import batches for dedup; that is unnecessary complexity.
+
+- **FK resolution is strict — a missing reference is a row error, not a silent null.** Item
+  `category_code` must match an existing Category; a typo today silently nulls the category in the
+  single-create view, which would quietly lose categorization at scale. The importer instead **fails the
+  row** with "category 'X' not found". v1 does **not** auto-create referenced masters (categories,
+  warehouses) from an import — keeping the master data clean; "create missing categories" is a possible
+  later opt-in. `type` is validated against `ItemType`; unknown → row error; blank `uom` → default `unit`.
+
+- **Over-length is a row error, never a silent truncation.** A `code` >32, `sku` >64, or `name` >200
+  is reported with the limit named. Silent truncation would forge wrong/duplicate business keys.
+
+- **v1 scope (deliberately small, to keep 2.1 shippable).** One entity per file (no multi-sheet/
+  multi-entity). Master rows only — no relationships, opening balances, or contacts in v1. Synchronous
+  with a sane row cap (a few thousand); larger files get documented chunking later, not a v1 async
+  pipeline. Per-list **download-a-template** button (canonical headers + the unit/format notes) ships
+  with the importer so the expected columns are obvious and mapping friction is low.
+
+## Phase 3.0 — Daily money loop friction list (2026-06-27)
+> Growth Phase 3 (`GROWTH_PLAN.md`) = make the everyday flow flawless: **Quotation → Sales Order →
+> Invoice → (e-invoice) → mark paid.** This is the friction list from walking that loop as a real
+> user in the running app (admin, demo data), source-verified against `NewQuotationPage`/`NewOrderPage`/
+> `OrderDetailPage`/`EInvoicesPage`. Ordered by daily-pain weight. 3.1–3.3 will fix these; this entry
+> is the "list before code" deliverable, nothing is changed yet.
+
+**A. Missing smart defaults (every new quote/order pays this tax).** *(→ 3.1)*
+- **Customer** starts at `—` on both new-quote and new-order. No "last-used customer" memory. A shop
+  that bills the same handful of customers re-picks every time.
+- **Warehouse** starts at `—`. A single-warehouse org (the common SMB case) must pick `MAIN` on every
+  document. With exactly one warehouse it should be preselected; with a remembered default, that.
+- **Tax code** starts blank on new-order, so VAT is opt-in per order even though Egypt's default is a
+  single 14% rate. Should default to the org's configured VAT code.
+- **Unit price is hand-typed for every line.** Picking an item does **not** prefill its price — the
+  salesperson re-keys a number the system already knows (item has a price). Biggest per-line friction.
+- **Quantity has no default** (empty, not `1`). Most lines are qty ≥ 1; defaulting to 1 saves a keystroke.
+
+**B. Step count / one-obvious-action down the lifecycle.** *(→ 3.2)*
+- Draft → paid is up to **five sequential single-button page actions** (Approve → Confirm → Deliver →
+  Invoice → Record payment), each its own click+reload. The buttons are already correctly "one primary
+  per state" (#6 craft pass), but there's no fast-path for the trivial cash-sale case (e.g.
+  confirm-deliver-invoice in one move for a same-day counter sale). Keep the granular path; **add** a
+  shortcut, don't replace.
+
+**C. Payment is too thin for real bookkeeping.** *(→ 3.1/3.2)*
+- **Record payment always pays the full outstanding** (`payOrder(id, outstanding_minor)`) — no partial
+  payment, common for SMB installments.
+- **No payment date or method** (cash/bank) is captured; it just flips status. Real cash-loop posting
+  wants both.
+
+**D. E-invoice is a context switch, not part of the loop.** *(→ 3.2)*
+- After "Invoice", there is **no link from the order to send it as an ETA e-invoice**. The user must
+  leave the order, open the E-Invoicing section, find the invoice in a list, then Submit/Poll. For the
+  "send your first real invoice before lunch" pitch, the e-invoice submit should be reachable **from the
+  order** once invoiced.
+
+**E. The invoice document itself is missing.** *(→ 3.3)*
+- There is **no per-invoice printable/PDF** anywhere (`print.css` is generic page-print; `ExportButtons`
+  is report CSV/Excel). The invoice number hides inside a "More details" disclosure. The artifact the
+  customer's customer actually sees does not exist yet — this is the whole of 3.3.
+
+**F. Small label/copy snags found en route.** *(→ fold into 3.2)*
+- New-quote warehouse field is labelled **"Warehouse code"** (`inventory.warehouse.code`) — exposes the
+  *code* concept where a human wants just "Warehouse" (mismatched with the new-order "Warehouse" label).
+- (Carried from 2.x verification, same loop surfaces) DRF **choice-field error returns Arabic text in EN
+  mode**; **"Import 1 rows"** isn't singularized — fix when touching shared validation/i18n copy.
+
+## Pricing engine — Oracle-EBS-core model (Growth 3.1b, design before code, 2026-06-27)
+> Phase 3.1's unit-price prefill exposed that **`Item` carries no price at all**. Rather than bolt a
+> single number onto Item, the decision (user, 2026-06-27) is to build a small **pricing module** modelled
+> on **Oracle EBS pricing — core/basics only**: price lists, per-customer assignment + overrides, effective
+> dating, and a tax-inclusive option, resolved by a precedence engine. This entry fixes the model *before*
+> code so the schema is right the first time (the costly thing to get wrong). New module `erp/pricing/`
+> (registered in `config/settings/base.py` LOCAL_APPS), strict per-module layout, **cross-module by
+> business-key string only** (customer `code`, item `sku`, tax `code`) — pricing imports no other module's
+> ORM, mirroring how sales references warehouse/tax/SKU.
+
+- **Scope = EBS *price lists* + light *qualifiers/modifiers*, NOT the full engine.** In: price-list
+  headers + lines, quantity breaks (basic tiers), effective dates, currency, tax-inclusive, customer→list
+  assignment, customer-specific item overrides. **Out (deliberately, "core only"):** formula-based prices,
+  promotional modifier stacking, GSA/agreement pricing, attribute pricing, pricing phases/buckets. These
+  can layer on later without reshaping the core.
+
+- **Four models (`erp/pricing/domain/models.py`).**
+  - **`PriceList`** (header): `code` ≤32 unique, `name` ≤200, `currency`(3, default EGP), `tax_inclusive`
+    (bool — do this list's prices already include VAT?), `is_default` (bool — the fallback list; the
+    service enforces exactly one active default), `is_active`.
+  - **`PriceListLine`**: `price_list` FK, `item_sku` ≤64 (inventory by string, boundary-clean), `uom` ≤16
+    (default "unit"), `unit_price_minor` (BigInt, in the list's currency), `min_quantity` (Decimal,
+    default 0 — qty-break tier: the highest break ≤ ordered qty wins), `valid_from`/`valid_to` (Date,
+    nullable — open-ended when null). Overlaps are allowed; the resolver picks the best match
+    deterministically (see precedence).
+  - **`CustomerPriceList`** (qualifier-lite): `customer_code` ≤32 **unique**, `price_list` FK. One default
+    list per customer. Kept pricing-side (not a column on sales' Customer) so the module stays
+    self-contained and boundary-clean.
+  - **`CustomerItemPrice`** (per-customer override / modifier-lite): `customer_code` ≤32, `item_sku` ≤64,
+    `uom`, `unit_price_minor`, `tax_inclusive` (bool), `min_quantity`, `valid_from`/`valid_to`. Highest
+    precedence — a negotiated price for one client.
+
+- **Resolution precedence (`erp/pricing/services/resolve.py`).**
+  `resolve_unit_price(customer_code, item_sku, *, on=today, quantity=None, currency="EGP")` returns
+  `PriceResolution(unit_price_minor, tax_inclusive, source, price_list_code)` or `None`. Order:
+  **(1)** `CustomerItemPrice` for (customer, item) → **(2)** the customer's assigned `PriceList` line →
+  **(3)** the active default `PriceList` line → **(4)** `None` (caller leaves the line blank, today's
+  behaviour). Within a tier, filter to: currency match, effective on `on` (valid_from ≤ on ≤ valid_to,
+  nulls = open), `min_quantity` ≤ `quantity`; then pick **highest `min_quantity`**, tie-broken by latest
+  `valid_from`, then lowest price. Pure/deterministic (no `random`, gate-safe).
+
+- **Tax-inclusive stays out of storage; the order line remains tax-*exclusive*.** Sales computes VAT on
+  top of a net line (unchanged). So a tax-inclusive resolved price must be **backed out** to net before it
+  reaches a line: `net = round(gross * 10000 / (10000 + rate_bps))`. The **resolver is tax-agnostic**
+  (returns the stored price + the `tax_inclusive` flag); the back-out happens in the thin **pricing API**
+  `GET /pricing/resolve?customer&sku&qty&date&tax_code`, which reads the rate via `accounting.contracts`
+  and returns a ready-to-drop **net `unit_price_minor`** plus `source` for display ("from Wholesale").
+  Pricing depends on accounting only through its public contract, never its ORM.
+
+- **Pricing only *suggests*; it never rewrites posted documents.** The order/quotation line still stores an
+  explicit `unit_price` the user can edit. Pricing prefills it; invoicing, GL posting, and e-invoice are
+  untouched. This de-risks the whole feature — a wrong price list can't corrupt the ledger, and the engine
+  can ship incrementally behind the existing manual entry.
+
+- **Phase plan (each a small, gate-green PR).**
+  - **P1 — module foundation (backend):** scaffold `erp/pricing/`, the 4 models + migration, repositories,
+    `resolve_unit_price` with full precedence, unit tests (precedence, effective dates, qty breaks,
+    currency, default fallback). No API/UI. *Done = tests + `gate:all` green.*
+  - **P2 — API + management UI:** DRF CRUD for price lists/lines, customer assignment, overrides;
+    `GET /pricing/resolve` (with tax back-out); a **Pricing** section in the web app to manage lists;
+    `seed_accounting`/seed gains a default list. i18n parity.
+  - **P3 — wire the loop:** new order/quotation calls `/pricing/resolve` on (customer+item) to prefill the
+    net unit price and show its source — *this finally delivers finding A's price-prefill, via the engine.*
+  - **P4 — CSV import + demo:** price-list-line importer (reuse `erp/core/imports.py`) + template; demo seed
+    ships a default list so prefill is visible out of the box.
+  - **P5 — polish:** per-customer override + effective-dated scheduling UI; tax-inclusive entry affordance.

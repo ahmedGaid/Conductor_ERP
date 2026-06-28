@@ -243,6 +243,7 @@ def bill_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
     entry = post_journal(
         JournalInput(
             date=dt.date.today(), source="purchasing", reference=order.number,
+            party_type="supplier", party_code=order.supplier.code,
             memo=f"Bill {order.number} — {order.supplier.code}",
             lines=lines,
         ),
@@ -274,6 +275,7 @@ def pay_order(order: PurchaseOrder, amount_minor: int, actor=None) -> PurchaseOr
     post_journal(
         JournalInput(
             date=dt.date.today(), source="purchasing", reference=order.number,
+            party_type="supplier", party_code=order.supplier.code,
             memo=f"Payment {order.number} — {order.supplier.code}",
             lines=[
                 LineInput(account_code=AP_ACCOUNT, debit=amount_minor),
@@ -338,6 +340,7 @@ def return_order(order: PurchaseOrder, returned: dict[int, Decimal] | None = Non
     entry = post_journal(
         JournalInput(
             date=dt.date.today(), source="purchasing", reference=order.number,
+            party_type="supplier", party_code=order.supplier.code,
             memo=f"Debit note {order.number} — {order.supplier.code}",
             lines=lines,
         ),

@@ -149,3 +149,18 @@ export const customersGuide: HelpGuide = {
     { to: "/sales", label: { en: "Sales orders", ar: "طلبات المبيعات" } },
   ],
 };
+
+export const customerDetailGuide: HelpGuide = {
+  title: { en: "Customer", ar: "العميل" },
+  purpose: {
+    en: "View and edit a customer's details and see their order history.",
+    ar: "اعرض بيانات العميل وعدّلها وتابع سجل طلباتهم.",
+  },
+  howItWorks: {
+    en: "Edit the customer's name, code, or contact details directly on this page.",
+    ar: "عدّل اسم العميل أو كوده أو بيانات التواصل مباشرة من هذه الصفحة.",
+  },
+  related: [
+    { to: "/sales/customers", label: { en: "All customers", ar: "جميع العملاء" } },
+  ],
+};

@@ -61,6 +61,8 @@ export interface JournalEntry {
   source: string;
   status: string;
   posted_at: string | null;
+  party_type: string;
+  party_code: string;
   lines: JournalLine[];
 }
 
@@ -83,6 +85,7 @@ export interface TrialBalanceReport {
 export interface LedgerLine {
   date: string;
   entry_number: string;
+  entry_id: string;
   memo: string;
   debit: number;
   credit: number;
@@ -95,6 +98,8 @@ export interface GeneralLedgerReport {
   account_type: AccountType;
   opening_balance: number;
   closing_balance: number;
+  party_type: string;
+  party_code: string;
   lines: LedgerLine[];
 }
 
@@ -148,9 +153,16 @@ export function trialBalance(period?: string): Promise<TrialBalanceReport> {
   return apiFetch<TrialBalanceReport>(`/accounting/reports/trial-balance${qs}`);
 }
 
-export function generalLedger(account: string, period?: string): Promise<GeneralLedgerReport> {
+export function generalLedger(
+  account: string,
+  opts: { period?: string; partyType?: string; party?: string } = {},
+): Promise<GeneralLedgerReport> {
   const q = new URLSearchParams({ account });
-  if (period) q.set("period", period);
+  if (opts.period) q.set("period", opts.period);
+  if (opts.party) {
+    q.set("party", opts.party);
+    if (opts.partyType) q.set("party_type", opts.partyType);
+  }
   return apiFetch<GeneralLedgerReport>(`/accounting/reports/general-ledger?${q.toString()}`);
 }
 

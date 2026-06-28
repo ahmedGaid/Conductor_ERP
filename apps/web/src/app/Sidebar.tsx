@@ -7,6 +7,7 @@ import { usePreferences } from "../preferences/PreferencesContext";
 import { useAsync } from "../hooks/useAsync";
 import { SYSTEM_ADMIN } from "../pages/settings/roles";
 import { Tooltip } from "../components/Tooltip";
+import { SidebarIdentity } from "./SidebarIdentity";
 import { NavIcon } from "./icons";
 import "./Sidebar.css";
 
@@ -41,10 +42,6 @@ const NAV_SHORTCUT: Record<string, string[]> = {
 
 // Roadmap modules — shown to convey scope, enabled as each stage lands.
 const SOON: { key: string }[] = [{ key: "reports" }];
-
-function initials(name: string): string {
-  return name.slice(0, 2).toUpperCase();
-}
 
 export function Sidebar() {
   const { t } = useTranslation();
@@ -85,7 +82,9 @@ export function Sidebar() {
 
       <nav className="sidebar__nav" aria-label={t("nav.dashboard")}>
         <ul className="sidebar__list">
-          {PRIMARY.map(({ key, to }) => (
+          {PRIMARY.filter(
+            ({ key }) => key !== "einvoice" || prefs?.einvoice_enabled !== false,
+          ).map(({ key, to }) => (
             <li key={key}>
               {/* Always tipped — even with the label visible — so the hover bubble can
                   advertise the g-shortcut (and double as the label in the compact rail). */}
@@ -138,6 +137,20 @@ export function Sidebar() {
             <ul className="sidebar__list">
               <li>
                 {withTip(
+                  t("nav.pricing"),
+                  <NavLink
+                    to="/pricing"
+                    className={({ isActive }) =>
+                      isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                    }
+                  >
+                    <span className="sidebar__icon"><NavIcon name="pricing" /></span>
+                    <span>{t("nav.pricing")}</span>
+                  </NavLink>,
+                )}
+              </li>
+              <li>
+                {withTip(
                   t("nav.usersAdmin"),
                   <NavLink
                     to="/admin/users"
@@ -187,28 +200,10 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <Tooltip label={t("settings.title")} shortcut={["G", ","]} placement={compact ? "inlineEnd" : "top"}>
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            isActive ? "sidebar__user sidebar__user--active" : "sidebar__user"
-          }
-          aria-label={t("settings.title")}
-        >
-          <span className="sidebar__avatar" aria-hidden="true">
-            {initials(prefs?.display_name || me?.username || "?")}
-          </span>
-          <span className="sidebar__user-meta">
-            <span className="sidebar__user-name latin">
-              {prefs?.display_name || me?.username || "—"}
-            </span>
-            <span className="sidebar__user-role">{me?.roles?.[0] ?? ""}</span>
-          </span>
-          <span className="sidebar__user-cog" aria-hidden="true">
-            <NavIcon name="settings" />
-          </span>
-        </NavLink>
-      </Tooltip>
+      <SidebarIdentity
+        companyName={prefs?.company_name?.trim() || t("app.title")}
+        isAdmin={isAdmin}
+      />
     </aside>
   );
 }

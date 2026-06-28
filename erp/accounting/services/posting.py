@@ -56,6 +56,8 @@ class JournalInput:
     memo: str = ""
     reference: str = ""
     source: str = "manual"
+    party_type: str = ""  # "customer" / "supplier" / "" — who the entry is with
+    party_code: str = ""  # customer/supplier code (string contract)
     currency: str = "EGP"
     number: str | None = None
     period_code: str | None = None
@@ -179,6 +181,8 @@ def post_journal(data: JournalInput, actor=None) -> JournalEntry:
         memo=data.memo,
         reference=data.reference,
         source=data.source,
+        party_type=data.party_type,
+        party_code=data.party_code,
         status=EntryStatus.POSTED,
         posted_at=timezone.now(),
         posted_by=actor if getattr(actor, "is_authenticated", False) else None,
@@ -242,6 +246,8 @@ def reverse_journal(entry: JournalEntry, actor=None, date=None) -> JournalEntry:
         memo=f"Reversal of {entry.number}",
         reference=entry.number,
         source=entry.source,
+        party_type=entry.party_type,
+        party_code=entry.party_code,
         currency=entry.currency,
         period_code=None,
     )

@@ -26,9 +26,12 @@ const GO_MAP: Record<string, string> = {
 export function useGlobalShortcuts({
   openPalette,
   openShortcuts,
+  einvoiceEnabled = true,
 }: {
   openPalette: () => void;
   openShortcuts: () => void;
+  /** When false, the `g e` → e-invoicing chord is inert (the feature is hidden). */
+  einvoiceEnabled?: boolean;
 }) {
   const navigate = useNavigate();
   const goPending = useRef(false);
@@ -51,7 +54,8 @@ export function useGlobalShortcuts({
       if (goPending.current) {
         goPending.current = false;
         window.clearTimeout(goTimer.current);
-        const to = GO_MAP[e.key.toLowerCase()];
+        const key = e.key.toLowerCase();
+        const to = key === "e" && !einvoiceEnabled ? undefined : GO_MAP[key];
         if (to) {
           e.preventDefault();
           navigate(to);
@@ -80,5 +84,5 @@ export function useGlobalShortcuts({
       window.removeEventListener("keydown", onKey);
       window.clearTimeout(goTimer.current);
     };
-  }, [navigate, openPalette, openShortcuts]);
+  }, [navigate, openPalette, openShortcuts, einvoiceEnabled]);
 }

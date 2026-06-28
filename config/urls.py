@@ -19,6 +19,8 @@ urlpatterns = [
     path("api/accounting/", include("erp.accounting.api.urls")),
     # Inventory API — Stage 5c.
     path("api/inventory/", include("erp.inventory.api.urls")),
+    # Pricing (price lists + resolution) API — Growth 3.1b.
+    path("api/pricing/", include("erp.pricing.api.urls")),
     # Sales API — Stage 5d.
     path("api/sales/", include("erp.sales.api.urls")),
     # Purchasing API — Stage 5e.
@@ -29,6 +31,8 @@ urlpatterns = [
     path("api/einvoice/", include("erp.einvoice.api.urls")),
     # Notifications & integration adapters — Phase 8.
     path("api/", include("erp.notifications.api.urls")),
+    # First-run self-serve setup wizard — Growth Phase 1.
+    path("api/setup/", include("erp.setup.urls")),
     # Built React SPA at the site root (Phase 11). Last, so admin/api/health win; the HashRouter
     # keeps every client route in the URL fragment, so only "" ever reaches the server.
     path("", spa_index, name="spa"),

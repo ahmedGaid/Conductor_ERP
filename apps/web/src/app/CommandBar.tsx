@@ -2,30 +2,31 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../auth/AuthContext";
-import { useHelp } from "../help/HelpContext";
+import { usePreferences } from "../preferences/PreferencesContext";
 import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
 import { Tooltip } from "../components/Tooltip";
-import { LanguageSwitcher } from "./LanguageSwitcher";
-import { ThemeToggle } from "./ThemeToggle";
+import { AppMenu } from "./AppMenu";
 import { CommandPalette } from "./CommandPalette";
-import { ShortcutsDialog } from "./ShortcutsDialog";
+import { useShortcuts } from "./ShortcutsContext";
+import { UserMenu } from "./UserMenu";
 import { NavIcon } from "./icons";
 import "./CommandBar.css";
 
 export function CommandBar({ onMenu }: { onMenu?: () => void }) {
   const { t } = useTranslation();
-  const { logout } = useAuth();
-  const { openHelp } = useHelp();
+  const { prefs } = usePreferences();
+  const { openShortcuts } = useShortcuts();
   const navigate = useNavigate();
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // When e-invoicing is turned off in setup, hide it from every nav surface (sidebar, palette,
+  // cheat-sheet and the g-key chord) so "disabled" reads consistently.
+  const einvoiceEnabled = prefs?.einvoice_enabled !== false;
 
   // App-wide keyboard layer: ⌘K / `/` / `c` open the palette, `g`+key navigates,
-  // `?` opens the cheat-sheet. (Stable callbacks so the listener isn't re-bound.)
+  // `?` opens the cheat-sheet (mounted in the shell). Stable callback so the listener isn't re-bound.
   const openPalette = useCallback(() => setPaletteOpen(true), []);
-  const openShortcuts = useCallback(() => setShortcutsOpen(true), []);
-  useGlobalShortcuts({ openPalette, openShortcuts });
+  useGlobalShortcuts({ openPalette, openShortcuts, einvoiceEnabled });
 
   return (
     <header className="commandbar">
@@ -64,8 +65,6 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
       </button>
 
       <div className="commandbar__actions">
-        <ThemeToggle />
-        <LanguageSwitcher />
         <Tooltip label={t("accounting.tabs.newEntry")} placement="bottom">
           <button
             type="button"
@@ -76,46 +75,25 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
             +
           </button>
         </Tooltip>
-        <span className="commandbar__aux">
-          <Tooltip label={t("shell.notifications")} placement="bottom">
-            <button
-              type="button"
-              className="btn btn--ghost btn--icon"
-              aria-label={t("shell.notifications")}
-              onClick={() => navigate("/notifications")}
-            >
-              <NavIcon name="notifications" />
-            </button>
-          </Tooltip>
-          <Tooltip label={t("shortcuts.title")} placement="bottom">
-            <button
-              type="button"
-              className="btn btn--ghost btn--icon"
-              aria-label={t("shortcuts.title")}
-              aria-keyshortcuts="?"
-              onClick={() => setShortcutsOpen(true)}
-            >
-              <span aria-hidden="true">⌨</span>
-            </button>
-          </Tooltip>
-          <Tooltip label={t("shell.help")} placement="bottom">
-            <button
-              type="button"
-              className="btn btn--ghost btn--icon"
-              aria-label={t("shell.help")}
-              onClick={openHelp}
-            >
-              ?
-            </button>
-          </Tooltip>
-        </span>
-        <button type="button" className="btn btn--sm" onClick={logout}>
-          {t("shell.logout")}
-        </button>
+        <UserMenu />
+        <Tooltip label={t("shell.notifications")} placement="bottom">
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon"
+            aria-label={t("shell.notifications")}
+            onClick={() => navigate("/notifications")}
+          >
+            <NavIcon name="notifications" />
+          </button>
+        </Tooltip>
+        <AppMenu />
       </div>
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        einvoiceEnabled={einvoiceEnabled}
+      />
     </header>
   );
 }

@@ -117,6 +117,20 @@
   background-color: var(--color-brand-subtle);
   color: var(--color-text);
   font-weight: var(--font-weight-semibold);
+  position: relative;
+}
+/* A crisp near-black rail at the inline-start edge marks the active module at a glance —
+   monochrome wayfinding (colour is reserved for inside pages). Direction-aware so it sits
+   at the start edge in both RTL and LTR. */
+.sidebar__link--active::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 22%;
+  inline-size: 3px;
+  border-start-end-radius: 3px;
+  border-end-end-radius: 3px;
+  background-color: var(--color-text);
 }
 
 .sidebar__link--soon {
@@ -167,52 +181,36 @@
   border-radius: var(--radius-full);
 }
 
-.sidebar__user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-block-start: 1px solid var(--color-border);
-  color: var(--color-text);
-  text-decoration: none;
-  transition: background-color var(--dur-fast) var(--ease-out);
-}
-.sidebar__user:hover {
-  background-color: var(--color-surface-hover);
-  text-decoration: none;
-}
-.sidebar__user--active {
-  background-color: var(--color-brand-subtle);
-}
-.sidebar__user-cog {
-  margin-inline-start: auto;
-  color: var(--color-text-muted);
-  display: inline-flex;
-}
-.sidebar__user:hover .sidebar__user-cog {
-  color: var(--color-text);
-}
-
-.sidebar__avatar {
-  display: grid;
-  place-items: center;
-  inline-size: 2.25rem;
-  block-size: 2.25rem;
-  border-radius: var(--radius-full);
-  background-color: var(--color-brand);
-  color: var(--color-text-on-brand);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-latin);
-}
-
-.sidebar__user-meta {
+/* Workspace tier — the company chip at the foot of the sidebar. */
+.sidebar__identity {
   display: flex;
   flex-direction: column;
-  min-inline-size: 0;
+  padding: var(--space-3);
+  border-block-start: 1px solid var(--color-border);
 }
 
-.sidebar__user-name {
+/* The company chip — a recessed, distinctly-filled surface so the workspace anchors the sidebar.
+   The fill is darker than the page in light mode and lighter than it in dark (surface-sunken). */
+.sidebar__company {
+  display: flex;
+  align-items: center;
+  inline-size: 100%;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: start;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.sidebar__company:hover {
+  background-color: var(--color-surface-sunken-hover);
+}
+
+.sidebar__company-name {
+  min-inline-size: 0;
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
   white-space: nowrap;
@@ -220,9 +218,12 @@
   text-overflow: ellipsis;
 }
 
-.sidebar__user-role {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+/* Shown only in the collapsed rail (see compact rules), where the full name is hidden. */
+.sidebar__company-initial {
+  display: none;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-latin);
 }
 
 /* ---- Compact rail (data-sidebar="compact") ----
@@ -258,14 +259,16 @@
   :root[data-sidebar="compact"] .sidebar__group-label {
     display: none;
   }
-  /* User footer: keep just the avatar. */
-  :root[data-sidebar="compact"] .sidebar__user {
+  /* Workspace footer: collapse the company chip to just its leading initial. */
+  :root[data-sidebar="compact"] .sidebar__company {
     justify-content: center;
     padding-inline: var(--space-2);
   }
-  :root[data-sidebar="compact"] .sidebar__user-meta,
-  :root[data-sidebar="compact"] .sidebar__user-cog {
+  :root[data-sidebar="compact"] .sidebar__company-name {
     display: none;
+  }
+  :root[data-sidebar="compact"] .sidebar__company-initial {
+    display: inline;
   }
 }
 

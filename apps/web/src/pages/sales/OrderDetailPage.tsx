@@ -18,6 +18,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink } from "../../components/PartyLink";
+import { ModuleHeader } from "../../components/ModuleHeader";
 import { Disclosure } from "../../components/Disclosure";
 import { SalesNav } from "./SalesNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -71,13 +73,14 @@ export function OrderDetailPage() {
       {data && (
         <>
           <div className="card sales-page">
-            <div className="sales-page__head">
-              <div>
-                <h2 className="latin">{data.number}</h2>
-                <p className="muted">{data.customer_name} · {data.warehouse_code} · <span className="latin">{data.order_date}</span></p>
-              </div>
-              <span className={`sales-badge sales-badge--${data.status}`}>{t(`sales.status.${data.status}`)}</span>
-            </div>
+            <ModuleHeader
+              module="sales"
+              moduleTo="/sales"
+              section={t("sales.tabs.orders")}
+              title={data.number}
+              status={<span className={`sales-badge sales-badge--${data.status}`}>{t(`sales.status.${data.status}`)}</span>}
+              subtitle={<><PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> · {data.warehouse_code} · <span className="latin">{data.order_date}</span></>}
+            />
 
             <p className="sales-explain">
               {t(`sales.statusExplain.${statusExplainKey(data)}`, {

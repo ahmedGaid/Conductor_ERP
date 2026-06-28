@@ -1,0 +1,78 @@
+/* Monochrome module wayfinding header (see ModuleHeader.tsx).
+   Logical properties only; reads identically in RTL and LTR. No module colour —
+   identity is icon + place; the only colour comes from the status badge slotted in. */
+
+.modhead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── Breadcrumb: [glyph] Module › Section ── */
+.modhead__crumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.modhead__crumb-module {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+.modhead__crumb-module:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.modhead__crumb-icon {
+  display: inline-flex;
+}
+.modhead__crumb-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+/* The chevron points along the reading direction — flip it in RTL. */
+.modhead__chev {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex: none;
+  color: var(--color-text-subtle);
+}
+[dir="rtl"] .modhead__chev {
+  transform: scaleX(-1);
+}
+.modhead__crumb-current {
+  color: var(--color-text);
+}
+
+/* ── Title row: [glyph] document number  …  [status] ── */
+.modhead__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* The single drop of module colour: a thin accent bar beside the document number.
+   No rounded corners issues — it's a full standalone bar. Colour comes from the
+   --module-*-bar token set via an inline style. */
+.modhead__bar {
+  inline-size: 4px;
+  block-size: 1.5rem;
+  flex: none;
+  border-radius: 2px;
+}
+.modhead__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+/* Push the status badge to the far inline-end of the row. */
+.modhead__status {
+  margin-inline-start: auto;
+}
+
+.modhead__subtitle {
+  margin: 0;
+}

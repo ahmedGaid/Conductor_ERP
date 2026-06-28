@@ -53,6 +53,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M3 21h18" />
     </>
   ),
+  // Pricing — price tag.
+  pricing: (
+    <>
+      <path d="M3 7.5V4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 .7.3l11 11a1 1 0 0 1 0 1.4l-3.5 3.5a1 1 0 0 1-1.4 0l-11-11a1 1 0 0 1-.3-.7Z" />
+      <circle cx="7" cy="7" r="1.1" />
+    </>
+  ),
   // E-invoicing — document with lines.
   einvoice: (
     <>
