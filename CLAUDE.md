@@ -18,7 +18,7 @@ This file is deliberately short. The real rules live in **skills** — recall th
 If a task touches both UI behaviour and brand, recall **both** `conductor-brand` and `erp-frontend`.
 
 ## Source-of-truth map (open the file — don't answer from memory)
-- Live status / next steps → `PROJECT_STATUS.md`
+- Live status / next steps → recall the **`erp-status`** skill (via `/erp-resume`)
 - Decisions & rejected paths → `DECISIONS.md`
 - Build spec & phases → `files/ERP_BuildSpec.md`, `files/PHASE_*.md`
 - Brand (3 pillars) → `Docs/Brand/` — Brief (*words*) · Directive (*in-app behaviour*) ·
