@@ -196,6 +196,25 @@
     "byStatus": "التنفيذات حسب الحالة"
   },
   "workflow": {
+    "label": "مسار المعاملة",
+    "sales": {
+      "create": "إنشاء",
+      "confirm": "تأكيد",
+      "deliver": "تسليم",
+      "invoice": "فاتورة",
+      "payment": "تحصيل",
+      "returned": "مرتجع",
+      "cancelled": "ملغي"
+    },
+    "purchasing": {
+      "create": "إنشاء",
+      "confirm": "تأكيد",
+      "receive": "استلام",
+      "bill": "فاتورة المورد",
+      "payment": "سداد",
+      "returned": "مرتجع",
+      "cancelled": "ملغي"
+    },
     "create": "مسار جديد",
     "untitled": "مسار بدون عنوان",
     "name": "الاسم",
@@ -609,8 +628,10 @@
       "confirmed": "تم تأكيد الأمر",
       "delivered": "تم تسليم الأمر",
       "invoiced": "تم إصدار الفاتورة",
+      "invoicedDone": "تم إصدار الفاتورة — {{no}}",
       "paid": "تم تسجيل الدفعة",
       "returned": "تم تسجيل المرتجع",
+      "returnedDone": "تم تسجيل المرتجع — {{no}}",
       "quoteSubmitted": "تم إرسال عرض السعر",
       "quoteApproved": "تمت الموافقة على عرض السعر",
       "quoteRejected": "تم رفض عرض السعر",
@@ -818,8 +839,10 @@
       "confirmed": "تم تأكيد أمر الشراء",
       "received": "تم استلام البضائع",
       "billed": "تم تسجيل الفاتورة",
+      "billedDone": "تم تسجيل فاتورة المورد — {{no}}",
       "paid": "تم تسجيل الدفعة",
       "returned": "تم تسجيل المرتجع",
+      "returnedDone": "تم تسجيل المرتجع — {{no}}",
       "reqSubmitted": "تم إرسال طلب الشراء",
       "reqApproved": "تمت الموافقة على طلب الشراء",
       "reqRejected": "تم رفض طلب الشراء",

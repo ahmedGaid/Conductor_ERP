@@ -20,6 +20,8 @@ import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { ModuleHeader } from "../../components/ModuleHeader";
+import { WorkflowTracker } from "../../components/WorkflowTracker";
+import { workflowFor } from "../../lib/workflow";
 import { Disclosure } from "../../components/Disclosure";
 import { SalesNav } from "./SalesNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -46,7 +48,12 @@ export function OrderDetailPage() {
   // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
   // and action set update instantly, then let the server's returned order reconcile the derived
   // amounts (invoiced/outstanding/…). A failure rolls the whole order back and shows an error toast.
-  function act(apply: (order: SalesOrder) => SalesOrder, request: () => Promise<SalesOrder>, success: string) {
+  function act(
+    apply: (order: SalesOrder) => SalesOrder,
+    request: () => Promise<SalesOrder>,
+    success: string,
+    successFrom?: (updated: SalesOrder) => string,
+  ) {
     if (!data) return;
     void runOptimistic<SalesOrder, SalesOrder>({
       current: data,
@@ -56,6 +63,7 @@ export function OrderDetailPage() {
       settle: (_predicted, updated) => updated,
       toast,
       success,
+      successFrom,
     });
   }
 
@@ -74,13 +82,12 @@ export function OrderDetailPage() {
         <>
           <div className="card sales-page">
             <ModuleHeader
-              module="sales"
-              moduleTo="/sales"
-              section={t("sales.tabs.orders")}
               title={data.number}
               status={<span className={`sales-badge sales-badge--${data.status}`}>{t(`sales.status.${data.status}`)}</span>}
               subtitle={<><PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> · {data.warehouse_code} · <span className="latin">{data.order_date}</span></>}
             />
+
+            <WorkflowTracker kind="sales" steps={workflowFor("sales", data.status)} />
 
             <p className="sales-explain">
               {t(`sales.statusExplain.${statusExplainKey(data)}`, {
@@ -140,7 +147,14 @@ export function OrderDetailPage() {
               {data.status === "delivered" && (
                 <button
                   className="btn btn--primary"
-                  onClick={() => act(setStatus("invoiced"), () => invoiceOrder(data.id), t("sales.toast.invoiced"))}
+                  onClick={() =>
+                    act(
+                      setStatus("invoiced"),
+                      () => invoiceOrder(data.id),
+                      t("sales.toast.invoiced"),
+                      (u) => t("sales.toast.invoicedDone", { no: u.invoice_number }),
+                    )
+                  }
                 >
                   {t("sales.detail.invoice")}
                 </button>
@@ -156,7 +170,14 @@ export function OrderDetailPage() {
               {(data.status === "invoiced" || data.status === "paid") && (
                 <button
                   className="btn"
-                  onClick={() => act(setStatus("returned"), () => returnOrder(data.id), t("sales.toast.returned"))}
+                  onClick={() =>
+                    act(
+                      setStatus("returned"),
+                      () => returnOrder(data.id),
+                      t("sales.toast.returned"),
+                      (u) => t("sales.toast.returnedDone", { no: u.credit_note_number }),
+                    )
+                  }
                 >
                   {t("sales.detail.return")}
                 </button>

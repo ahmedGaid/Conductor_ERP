@@ -29,9 +29,6 @@ export function JournalDetailPage() {
       {data && (
         <div className="card acct-page">
           <ModuleHeader
-            module="accounting"
-            moduleTo="/accounting"
-            section={t("accounting.tabs.journals")}
             title={data.number}
             subtitle={<span className="latin">{data.date} · {data.period_code} · {data.status}</span>}
           />

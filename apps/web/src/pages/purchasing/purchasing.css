@@ -44,8 +44,8 @@
   color: var(--color-text);
 }
 .pur-nav__tab--active {
-  color: var(--color-brand-strong);
-  border-block-end-color: var(--color-brand);
+  color: var(--color-accent-strong);
+  border-block-end-color: var(--color-accent);
 }
 
 .pur-table-wrap {

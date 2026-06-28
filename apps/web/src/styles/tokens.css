@@ -294,6 +294,76 @@
   --color-accent-subtle: var(--palette-ink-100);
 }
 
+/* ── Per-module accent ──────────────────────────────────────────────────────
+ * Each module owns one clean colour. data-module is set on the AppShell wrapper
+ * (from the route), so these remap the in-page --color-accent* family + a light
+ * --module-bar for the document bar — cascading to links, active tab underlines
+ * and the workflow tracker inside that module. Chrome stays monochrome. Light,
+ * clear hues; the bar is a lighter tint of the same accent.
+ */
+[data-module="sales"] {
+  --color-accent: #2f7ff0;
+  --color-accent-strong: #1b63cc;
+  --color-accent-subtle: #e8f1fe;
+  --module-bar: #5b9df0;
+}
+[data-module="purchasing"] {
+  --color-accent: #1f9d57;
+  --color-accent-strong: #157a43;
+  --color-accent-subtle: #e6f6ec;
+  --module-bar: #46c07e;
+}
+[data-module="inventory"] {
+  --color-accent: #c97a12;
+  --color-accent-strong: #a4620c;
+  --color-accent-subtle: #fdf0dd;
+  --module-bar: #e8a23b;
+}
+[data-module="accounting"] {
+  --color-accent: #7c4ddb;
+  --color-accent-strong: #6332bf;
+  --color-accent-subtle: #f0e9fc;
+  --module-bar: #a98ae6;
+}
+[data-module="crm"] {
+  --color-accent: #4f63d6;
+  --color-accent-strong: #3a4cb8;
+  --color-accent-subtle: #ebeefb;
+  --module-bar: #7385e6;
+}
+
+/* Dark-mode per-module accent: luminous text + translucent subtle, lighter bar. */
+:root[data-theme="dark"] [data-module="sales"] {
+  --color-accent: #6fb0f5;
+  --color-accent-strong: #9cc8f8;
+  --color-accent-subtle: rgba(47, 127, 240, 0.22);
+  --module-bar: #6fb0f5;
+}
+:root[data-theme="dark"] [data-module="purchasing"] {
+  --color-accent: #5fd18f;
+  --color-accent-strong: #93e2b4;
+  --color-accent-subtle: rgba(31, 157, 87, 0.22);
+  --module-bar: #5fd18f;
+}
+:root[data-theme="dark"] [data-module="inventory"] {
+  --color-accent: #efb45f;
+  --color-accent-strong: #f6cd8e;
+  --color-accent-subtle: rgba(201, 122, 18, 0.22);
+  --module-bar: #efb45f;
+}
+:root[data-theme="dark"] [data-module="accounting"] {
+  --color-accent: #b69af0;
+  --color-accent-strong: #d2c2f6;
+  --color-accent-subtle: rgba(124, 77, 219, 0.22);
+  --module-bar: #b69af0;
+}
+:root[data-theme="dark"] [data-module="crm"] {
+  --color-accent: #8a9bf0;
+  --color-accent-strong: #b3bdf6;
+  --color-accent-subtle: rgba(79, 99, 214, 0.22);
+  --module-bar: #8a9bf0;
+}
+
 /* Dark-mode accent variants: luminous text + translucent fills so they read on near-black. */
 :root[data-theme="dark"][data-accent="green"] {
   --color-accent: #4ade80;

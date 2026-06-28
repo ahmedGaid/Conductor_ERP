@@ -29,18 +29,22 @@ export interface OptimisticConfig<T, R> {
   toast: ToastApi;
   /** Message shown on success. Omit for a silent success. */
   success?: string;
+  /** Build the success message from the server result (e.g. include a created doc number).
+   *  Used in place of `success` when it returns a non-empty string. */
+  successFrom?: (result: R) => string;
   /** Map a thrown error to a user-facing message. Defaults to the error's own message. */
   errorMessage?: (error: unknown) => string;
 }
 
 export async function runOptimistic<T, R>(cfg: OptimisticConfig<T, R>): Promise<R | undefined> {
-  const { current, mutate, optimistic, request, settle, toast, success, errorMessage } = cfg;
+  const { current, mutate, optimistic, request, settle, toast, success, successFrom, errorMessage } = cfg;
   const predicted = optimistic(current);
   mutate(predicted);
   try {
     const result = await request();
     mutate(settle ? settle(predicted, result) : predicted);
-    if (success) toast.show(success, "success");
+    const msg = (successFrom && successFrom(result)) || success;
+    if (msg) toast.show(msg, "success");
     return result;
   } catch (error) {
     mutate(current); // roll back to the pre-action snapshot

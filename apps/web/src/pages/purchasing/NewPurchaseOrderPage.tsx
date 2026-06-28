@@ -11,6 +11,8 @@ import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PurchasingNav } from "./PurchasingNav";
+import { WorkflowTracker } from "../../components/WorkflowTracker";
+import { workflowFor } from "../../lib/workflow";
 import "./purchasing.css";
 
 interface DraftLine {
@@ -93,6 +95,7 @@ export function NewPurchaseOrderPage() {
       <PurchasingNav />
 
       <form ref={formRef} className="card pur-page" onSubmit={onSubmit}>
+        <WorkflowTracker kind="purchasing" steps={workflowFor("purchasing", "new")} />
         <div className="pur-toolbar">
           <label className="pur-field">
             <span>{t("purchasing.orders.supplier")}</span>

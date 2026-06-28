@@ -20,6 +20,8 @@ import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { ModuleHeader } from "../../components/ModuleHeader";
+import { WorkflowTracker } from "../../components/WorkflowTracker";
+import { workflowFor } from "../../lib/workflow";
 import { Disclosure } from "../../components/Disclosure";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -45,7 +47,12 @@ export function PurchaseOrderDetailPage() {
   // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
   // and action set update instantly, then let the server's returned order reconcile the derived
   // amounts (billed/outstanding/…). A failure rolls the whole order back and shows an error toast.
-  function act(apply: (order: PurchaseOrder) => PurchaseOrder, request: () => Promise<PurchaseOrder>, success: string) {
+  function act(
+    apply: (order: PurchaseOrder) => PurchaseOrder,
+    request: () => Promise<PurchaseOrder>,
+    success: string,
+    successFrom?: (updated: PurchaseOrder) => string,
+  ) {
     if (!data) return;
     void runOptimistic<PurchaseOrder, PurchaseOrder>({
       current: data,
@@ -55,6 +62,7 @@ export function PurchaseOrderDetailPage() {
       settle: (_predicted, updated) => updated,
       toast,
       success,
+      successFrom,
     });
   }
 
@@ -73,13 +81,12 @@ export function PurchaseOrderDetailPage() {
         <>
           <div className="card pur-page">
             <ModuleHeader
-              module="purchasing"
-              moduleTo="/purchasing"
-              section={t("purchasing.tabs.orders")}
               title={data.number}
               status={<span className={`pur-badge pur-badge--${data.status}`}>{t(`purchasing.status.${data.status}`)}</span>}
               subtitle={<><PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> · {data.warehouse_code} · <span className="latin">{data.order_date}</span></>}
             />
+
+            <WorkflowTracker kind="purchasing" steps={workflowFor("purchasing", data.status)} />
 
             <p className="pur-explain">
               {t(`purchasing.statusExplain.${statusExplainKey(data)}`, {
@@ -139,7 +146,14 @@ export function PurchaseOrderDetailPage() {
               {data.status === "received" && (
                 <button
                   className="btn btn--primary"
-                  onClick={() => act(setStatus("billed"), () => billPO(data.id), t("purchasing.toast.billed"))}
+                  onClick={() =>
+                    act(
+                      setStatus("billed"),
+                      () => billPO(data.id),
+                      t("purchasing.toast.billed"),
+                      (u) => t("purchasing.toast.billedDone", { no: u.bill_number }),
+                    )
+                  }
                 >
                   {t("purchasing.detail.bill")}
                 </button>
@@ -155,7 +169,14 @@ export function PurchaseOrderDetailPage() {
               {(data.status === "billed" || data.status === "paid") && (
                 <button
                   className="btn"
-                  onClick={() => act(setStatus("returned"), () => returnPO(data.id), t("purchasing.toast.returned"))}
+                  onClick={() =>
+                    act(
+                      setStatus("returned"),
+                      () => returnPO(data.id),
+                      t("purchasing.toast.returned"),
+                      (u) => t("purchasing.toast.returnedDone", { no: u.debit_note_number }),
+                    )
+                  }
                 >
                   {t("purchasing.detail.return")}
                 </button>

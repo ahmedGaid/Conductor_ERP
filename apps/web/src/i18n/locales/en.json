@@ -196,6 +196,25 @@
     "byStatus": "Instances by status"
   },
   "workflow": {
+    "label": "Workflow",
+    "sales": {
+      "create": "Create",
+      "confirm": "Confirm",
+      "deliver": "Deliver",
+      "invoice": "Invoice",
+      "payment": "Payment",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
+    "purchasing": {
+      "create": "Create",
+      "confirm": "Confirm",
+      "receive": "Receive",
+      "bill": "Bill",
+      "payment": "Payment",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
     "create": "New workflow",
     "untitled": "Untitled workflow",
     "name": "Name",
@@ -609,8 +628,10 @@
       "confirmed": "Order confirmed",
       "delivered": "Order delivered",
       "invoiced": "Invoice issued",
+      "invoicedDone": "Invoice issued — {{no}}",
       "paid": "Payment recorded",
       "returned": "Return recorded",
+      "returnedDone": "Return recorded — {{no}}",
       "quoteSubmitted": "Quotation submitted",
       "quoteApproved": "Quotation approved",
       "quoteRejected": "Quotation rejected",
@@ -818,8 +839,10 @@
       "confirmed": "Order confirmed",
       "received": "Goods received",
       "billed": "Bill recorded",
+      "billedDone": "Bill recorded — {{no}}",
       "paid": "Payment recorded",
       "returned": "Return recorded",
+      "returnedDone": "Return recorded — {{no}}",
       "reqSubmitted": "Request submitted",
       "reqApproved": "Request approved",
       "reqRejected": "Request rejected",

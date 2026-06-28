@@ -14,6 +14,8 @@ import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
+import { WorkflowTracker } from "../../components/WorkflowTracker";
+import { workflowFor } from "../../lib/workflow";
 import "./sales.css";
 
 interface DraftLine {
@@ -134,6 +136,7 @@ export function NewOrderPage() {
       <SalesNav />
 
       <form ref={formRef} className="card sales-page" onSubmit={onSubmit}>
+        <WorkflowTracker kind="sales" steps={workflowFor("sales", "new")} />
         <div className="sales-toolbar">
           <label className="sales-field">
             <span>{t("sales.orders.customer")}</span>

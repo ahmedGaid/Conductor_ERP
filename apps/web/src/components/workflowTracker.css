@@ -1,0 +1,85 @@
+/* Workflow tracker (see WorkflowTracker.tsx). Logical properties; RTL-safe.
+   Colour is the inherited module accent on done/current steps; todo stays monochrome;
+   the return/cancel exception step is danger-toned. */
+.wf {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.wf__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 0;
+  min-inline-size: 5rem;
+  padding-block: var(--space-2);
+  text-align: center;
+}
+
+/* Connector running from this marker back to the previous one. */
+.wf__step:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(var(--space-2) + 0.6875rem);
+  inset-inline-end: 50%;
+  inline-size: 100%;
+  block-size: 2px;
+  background: var(--color-border);
+}
+.wf__step--done::before,
+.wf__step--current::before {
+  background: var(--color-accent);
+}
+.wf__step--exception::before {
+  background: var(--color-danger);
+}
+
+.wf__marker {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+.wf__check {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+.wf__step--done .wf__marker {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-on-brand);
+}
+.wf__step--current .wf__marker {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+.wf__step--exception .wf__marker {
+  border-color: var(--color-danger);
+  background: var(--color-surface);
+  color: var(--color-danger);
+}
+
+.wf__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.wf__step--current .wf__label {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+.wf__step--exception .wf__label {
+  color: var(--color-danger-strong);
+}
