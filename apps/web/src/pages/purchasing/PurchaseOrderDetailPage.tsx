@@ -18,6 +18,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink } from "../../components/PartyLink";
+import { ModuleHeader } from "../../components/ModuleHeader";
 import { Disclosure } from "../../components/Disclosure";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -70,13 +72,14 @@ export function PurchaseOrderDetailPage() {
       {data && (
         <>
           <div className="card pur-page">
-            <div className="pur-page__head">
-              <div>
-                <h2 className="latin">{data.number}</h2>
-                <p className="muted">{data.supplier_name} · {data.warehouse_code} · <span className="latin">{data.order_date}</span></p>
-              </div>
-              <span className={`pur-badge pur-badge--${data.status}`}>{t(`purchasing.status.${data.status}`)}</span>
-            </div>
+            <ModuleHeader
+              module="purchasing"
+              moduleTo="/purchasing"
+              section={t("purchasing.tabs.orders")}
+              title={data.number}
+              status={<span className={`pur-badge pur-badge--${data.status}`}>{t(`purchasing.status.${data.status}`)}</span>}
+              subtitle={<><PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> · {data.warehouse_code} · <span className="latin">{data.order_date}</span></>}
+            />
 
             <p className="pur-explain">
               {t(`purchasing.statusExplain.${statusExplainKey(data)}`, {

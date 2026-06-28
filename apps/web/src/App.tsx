@@ -55,6 +55,7 @@ import { OrdersPage } from "./pages/sales/OrdersPage";
 import { NewOrderPage } from "./pages/sales/NewOrderPage";
 import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
 import { CustomersPage } from "./pages/sales/CustomersPage";
+import { CustomerDetailPage } from "./pages/sales/CustomerDetailPage";
 import { QuotationsPage } from "./pages/sales/QuotationsPage";
 import { NewQuotationPage } from "./pages/sales/NewQuotationPage";
 import { QuotationDetailPage } from "./pages/sales/QuotationDetailPage";
@@ -62,6 +63,7 @@ import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
 import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
 import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
 import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
+import { SupplierDetailPage } from "./pages/purchasing/SupplierDetailPage";
 import { PurchaseRequestsPage } from "./pages/purchasing/PurchaseRequestsPage";
 import { NewPurchaseRequestPage } from "./pages/purchasing/NewPurchaseRequestPage";
 import { PurchaseRequestDetailPage } from "./pages/purchasing/PurchaseRequestDetailPage";
@@ -183,6 +185,7 @@ function AppRoutes() {
           <Route path="/sales/quotations/new" element={<NewQuotationPage />} />
           <Route path="/sales/quotations/:id" element={<QuotationDetailPage />} />
           <Route path="/sales/customers" element={<CustomersPage />} />
+          <Route path="/sales/customers/:code" element={<CustomerDetailPage />} />
           <Route path="/purchasing" element={<PurchaseOrdersPage />} />
           <Route path="/purchasing/orders/new" element={<NewPurchaseOrderPage />} />
           <Route path="/purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
@@ -190,6 +193,7 @@ function AppRoutes() {
           <Route path="/purchasing/requests/new" element={<NewPurchaseRequestPage />} />
           <Route path="/purchasing/requests/:id" element={<PurchaseRequestDetailPage />} />
           <Route path="/purchasing/suppliers" element={<SuppliersPage />} />
+          <Route path="/purchasing/suppliers/:code" element={<SupplierDetailPage />} />
           <Route path="/einvoice" element={<EInvoicesPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/crm" element={<PipelinePage />} />

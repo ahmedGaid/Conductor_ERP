@@ -361,3 +361,20 @@
   --dur: 0.01ms;
   --dur-slow: 0.01ms;
 }
+
+/* Per-module accent bars — the single drop of colour beside a document number. */
+:root {
+  --module-sales-bar: #6b9bd1;
+  --module-purchasing-bar: #72a869;
+  --module-inventory-bar: #d4964e;
+  --module-accounting-bar: #9b85d4;
+  --module-crm-bar: #6680bc;
+}
+
+:root[data-theme="dark"] {
+  --module-sales-bar: #a7c7e7;
+  --module-purchasing-bar: #a8c5a0;
+  --module-inventory-bar: #e8c49a;
+  --module-accounting-bar: #c3b4e8;
+  --module-crm-bar: #9baed4;
+}

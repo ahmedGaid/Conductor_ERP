@@ -467,7 +467,11 @@
       "asOf": "As of",
       "all": "All",
       "from": "From",
-      "to": "To"
+      "to": "To",
+      "party": "Customer / Supplier",
+      "allParties": "All",
+      "customers": "Customers",
+      "suppliers": "Suppliers"
     },
     "vat": {
       "output": "Output VAT (sales)",
@@ -573,6 +577,29 @@
       "expiry": "Earliest expiry",
       "empty": "No batches recorded yet.",
       "hint": "Receive stock with a batch/lot and expiry to see it traced here."
+    }
+  },
+  "party": {
+    "customer": "Customer",
+    "supplier": "Supplier",
+    "backToCustomers": "Back to customers",
+    "backToSuppliers": "Back to suppliers",
+    "ordersTitle": "Orders",
+    "noOrders": "No orders yet.",
+    "statementTitle": "Account statement",
+    "ordersCount": "Orders",
+    "totalInvoiced": "Total invoiced",
+    "totalBilled": "Total billed",
+    "balance": "Balance",
+    "openParty": "Open page",
+    "notFound": "Not found",
+    "notFoundHint": "No customer or supplier with this code.",
+    "col": {
+      "number": "Number",
+      "date": "Date",
+      "status": "Status",
+      "total": "Total",
+      "outstanding": "Outstanding"
     }
   },
   "sales": {
@@ -974,7 +1001,12 @@
       "defaultBadge": "Default",
       "taxInclusiveLabel": "Prices include tax",
       "activeLabel": "Active",
-      "badInput": "Enter an item and a valid price."
+      "badInput": "Enter an item and a valid price.",
+      "importBtn": "Import prices",
+      "importField_item_sku": "SKU",
+      "importField_unit_price": "Unit price",
+      "importField_min_quantity": "Min qty",
+      "importField_uom": "Unit"
     },
     "toast": {
       "listCreated": "Price list created",
@@ -988,6 +1020,7 @@
     }
   },
   "common": {
+    "breadcrumb": "Breadcrumb",
     "loading": "Loading…",
     "retry": "Try again",
     "error": {
@@ -1059,6 +1092,10 @@
     },
     "toast": {
       "done": "Imported {{count}} rows"
+    },
+    "pricingLines": {
+      "title": "Import prices",
+      "lede": "Upload a CSV with item SKUs and their prices. You can include quantity breaks."
     }
   },
   "toast": {

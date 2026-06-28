@@ -336,6 +336,12 @@ class JournalEntry(AuditedModel):
     reference = models.CharField(max_length=128, blank=True, default="")
     # Originating module (e.g. "sales", "manual") for traceability.
     source = models.CharField(max_length=32, blank=True, default="manual")
+    # Optional party dimension: who the entry is with. ``party_type`` is "customer"/"supplier"
+    # (blank ⇒ no party); ``party_code`` is the customer/supplier *code* (string contract, like
+    # accounts/cost centers — accounting never imports the sales/purchasing models). Lets the GL
+    # be filtered into a per-customer or per-supplier statement of account.
+    party_type = models.CharField(max_length=16, blank=True, default="")
+    party_code = models.CharField(max_length=32, blank=True, default="")
     status = models.CharField(max_length=8, choices=EntryStatus.choices, default=EntryStatus.DRAFT)
     posted_at = models.DateTimeField(null=True, blank=True)
     posted_by = models.ForeignKey(
@@ -349,7 +355,11 @@ class JournalEntry(AuditedModel):
     class Meta:
         db_table = "accounting_journal_entry"
         ordering = ["-date", "number"]
-        indexes = [models.Index(fields=["status"]), models.Index(fields=["period"])]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["period"]),
+            models.Index(fields=["party_type", "party_code"]),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return self.number

@@ -113,9 +113,18 @@ GREEN. **PR open → `main`: github.com/ahmedGaid/Conductor_ERP/pull/14** (bundl
     pricing lookup failure never blocks manual entry; editing the price clears the caption. `minorToAmount`
     helper added; i18n 1130 keys. Verified live (ACME + WIDGET → 100.00, "Price from RETAIL"); gate03 +
     `tsc -b` + parity GREEN.
-  - **NEXT → P4:** price-list-line CSV import (reuse `erp/core/imports.py`) + template, and a demo seed
-    that ships a default list with item prices so prefill is visible out of the box. Then **P5**: per-customer
-    assignment + item-override management UI, effective-date scheduling, tax-inclusive entry affordance.
+  - **P4 (bulk prices + demo seed) DONE (2026-06-28).** Price-list-line CSV import reusing the generic
+    engine: new `erp/pricing/imports.py` (`make_price_list_line_import(price_list)` factory captures the
+    target list), import + template endpoints under `/pricing/price-lists/<id>/lines/import[/template]`
+    (Branch-Manager-gated), and an **Import prices** button + `ImportDialog` on `PriceListDetailPage`.
+    Engine gained two flags for compound-keyed rows: `skip_existence_check` (always create — lines have
+    no single-column unique key) + `composite_dedup_fields` (in-file dedup on sku+min_quantity, so qty
+    breaks of the same SKU all import but exact dupes are caught). Demo seed now ships a default
+    **STANDARD** list (WIDGET/GADGET/BOLT + two qty breaks) so prefill is visible out of the box. 7 new
+    import tests; i18n 1161 keys. **`gate:all` 00–13 GREEN.** Drive-by: moved the pre-existing untracked
+    `module-accents.css` raw hex into `tokens.css` (gate03) + added help guides for the untracked
+    supplier/customer detail pages (gate03). **NEXT → P5:** per-customer assignment + item-override
+    management UI, effective-date scheduling, tax-inclusive entry affordance.
 
 ## Active work (earlier) — Linear-quality frontend UX overhaul
 **Both PRs merged to `main`** (PR #1 `ui/speed-optimistic` → `1103010`; PR #2 `ui/density-typography`

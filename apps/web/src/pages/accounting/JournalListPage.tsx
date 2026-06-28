@@ -10,6 +10,7 @@ import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink, type PartyType } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { AccountingNav } from "./AccountingNav";
@@ -98,7 +99,15 @@ export function JournalListPage() {
                     </td>
                     <td className="latin">{e.date}</td>
                     <td className="latin">{e.period_code}</td>
-                    <td>{e.memo}</td>
+                    <td>
+                      {e.party_code ? (
+                        <PartyLink type={e.party_type as PartyType} code={e.party_code}>
+                          {e.memo}
+                        </PartyLink>
+                      ) : (
+                        e.memo
+                      )}
+                    </td>
                     <td className="acct-table__num">
                       <Bdi>{formatMinor(total, e.currency)}</Bdi>
                     </td>

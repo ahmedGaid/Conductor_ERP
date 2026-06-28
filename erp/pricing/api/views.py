@@ -8,6 +8,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db.models import Count
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -15,10 +16,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from erp.accounting.contracts import find_tax_code
+from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from ..domain.models import CustomerItemPrice, CustomerPriceList, PriceList, PriceListLine
+from ..imports import make_price_list_line_import
 from ..services.management import ensure_default_price_list, set_single_default
 from ..services.resolve import net_of_tax, resolve_unit_price
 from .serializers import (
@@ -221,6 +224,28 @@ class ResolveView(APIView):
                 "tax_inclusive": res.tax_inclusive,
             }
         )
+
+
+class PriceListLineImportView(APIView):
+    """CSV import for price-list lines — POST to preview, re-post with commit=true to apply."""
+
+    permission_classes = [IsAuthenticated, _CanManage]
+
+    def post(self, request: Request, list_id) -> Response:
+        price_list = get_object_or_404(PriceList, pk=list_id)
+        spec = make_price_list_line_import(price_list)
+        return _envelope(run_import_request(spec, request))
+
+
+class PriceListLineImportTemplateView(APIView):
+    """Download a CSV template (canonical headers + one example row)."""
+
+    permission_classes = [IsAuthenticated, _CanManage]
+
+    def get(self, request: Request, list_id) -> HttpResponse:
+        price_list = get_object_or_404(PriceList, pk=list_id)
+        spec = make_price_list_line_import(price_list)
+        return template_response(spec, f"price-lines-{price_list.code}.csv")
 
 
 class EnsureDefaultView(APIView):

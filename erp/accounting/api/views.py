@@ -226,7 +226,11 @@ class GeneralLedgerView(APIView):
         if not account_code:
             return _envelope({"detail": "account query param required"}, status=400)
         period = request.query_params.get("period") or None
-        gl = services.general_ledger(account_code, period_code=period)
+        party = request.query_params.get("party") or None
+        party_type = request.query_params.get("party_type") or None
+        gl = services.general_ledger(
+            account_code, period_code=period, party_type=party_type, party_code=party
+        )
         fmt = request.query_params.get("export")
         if fmt in EXPORT_FORMATS:
             table = export_tables.general_ledger_table(gl, request.query_params.get("lang", "en"), period)
@@ -238,6 +242,8 @@ class GeneralLedgerView(APIView):
                 "account_type": gl.account_type,
                 "opening_balance": gl.opening_balance,
                 "closing_balance": gl.closing_balance,
+                "party_type": gl.party_type,
+                "party_code": gl.party_code,
                 "lines": [asdict(ln) for ln in gl.lines],
             }
         )

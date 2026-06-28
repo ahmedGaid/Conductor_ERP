@@ -117,6 +117,20 @@
   background-color: var(--color-brand-subtle);
   color: var(--color-text);
   font-weight: var(--font-weight-semibold);
+  position: relative;
+}
+/* A crisp near-black rail at the inline-start edge marks the active module at a glance —
+   monochrome wayfinding (colour is reserved for inside pages). Direction-aware so it sits
+   at the start edge in both RTL and LTR. */
+.sidebar__link--active::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 22%;
+  inline-size: 3px;
+  border-start-end-radius: 3px;
+  border-end-end-radius: 3px;
+  background-color: var(--color-text);
 }
 
 .sidebar__link--soon {

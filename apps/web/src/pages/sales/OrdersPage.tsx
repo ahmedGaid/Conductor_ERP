@@ -12,6 +12,7 @@ import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { FilterBar } from "../../components/FilterBar";
@@ -166,7 +167,7 @@ export function OrdersPage() {
                       {o.number}
                     </Link>
                   </td>
-                  <td>{o.customer_name}</td>
+                  <td><PartyLink type="customer" code={o.customer_code}>{o.customer_name}</PartyLink></td>
                   <td className="latin muted">{o.order_date}</td>
                   <td>
                     <span className={`sales-badge sales-badge--${o.status}`}>

@@ -56,6 +56,25 @@ def test_general_ledger_running_balance():
     assert gl.closing_balance == 800_00
 
 
+def test_general_ledger_filters_by_party():
+    make_coa()
+    make_period()
+    # Two customers' invoices hit the same AR account (1100).
+    _post([LineInput("1100", debit=300_00), LineInput("4000", credit=300_00)],
+          source="sales", party_type="customer", party_code="CUST-A")
+    _post([LineInput("1100", debit=120_00), LineInput("4000", credit=120_00)],
+          source="sales", party_type="customer", party_code="CUST-B")
+
+    full = general_ledger("1100")
+    assert len(full.lines) == 2
+    assert full.closing_balance == 420_00
+
+    only_a = general_ledger("1100", party_type="customer", party_code="CUST-A")
+    assert len(only_a.lines) == 1
+    assert only_a.closing_balance == 300_00
+    assert only_a.party_code == "CUST-A"
+
+
 def test_trial_balance_excludes_zero_activity_accounts():
     make_coa()
     make_period()

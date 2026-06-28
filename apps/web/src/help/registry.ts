@@ -47,6 +47,7 @@ import {
   warehousesGuide,
 } from "./content/inventory";
 import {
+  customerDetailGuide,
   customersGuide,
   newOrderGuide,
   newQuotationGuide,
@@ -62,6 +63,7 @@ import {
   purchaseOrdersGuide,
   purchaseRequestDetailGuide,
   purchaseRequestsGuide,
+  supplierDetailGuide,
   suppliersGuide,
 } from "./content/purchasing";
 import {
@@ -123,6 +125,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/sales/quotations/new": newQuotationGuide,
   "/sales/quotations/:id": quotationDetailGuide,
   "/sales/customers": customersGuide,
+  "/sales/customers/:code": customerDetailGuide,
   "/purchasing": purchaseOrdersGuide,
   "/purchasing/orders/new": newPurchaseOrderGuide,
   "/purchasing/orders/:id": purchaseOrderDetailGuide,
@@ -130,6 +133,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/purchasing/requests/new": newPurchaseRequestGuide,
   "/purchasing/requests/:id": purchaseRequestDetailGuide,
   "/purchasing/suppliers": suppliersGuide,
+  "/purchasing/suppliers/:code": supplierDetailGuide,
   "/einvoice": einvoiceGuide,
   "/notifications": notificationsGuide,
   "/crm": pipelineGuide,

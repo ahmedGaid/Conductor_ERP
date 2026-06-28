@@ -8,6 +8,7 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { ImportDialog } from "../../components/ImportDialog";
@@ -130,8 +131,14 @@ export function SuppliersPage() {
             <tbody>
               {filtered.map((s) => (
                 <tr key={s.id}>
-                  <td><Bdi>{s.code}</Bdi></td>
-                  <td>{s.name}</td>
+                  <td>
+                    <PartyLink type="supplier" code={s.code} className="latin">
+                      <Bdi>{s.code}</Bdi>
+                    </PartyLink>
+                  </td>
+                  <td>
+                    <PartyLink type="supplier" code={s.code}>{s.name}</PartyLink>
+                  </td>
                 </tr>
               ))}
             </tbody>

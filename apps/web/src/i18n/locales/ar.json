@@ -467,7 +467,11 @@
       "asOf": "حتى تاريخ",
       "all": "الكل",
       "from": "من",
-      "to": "إلى"
+      "to": "إلى",
+      "party": "العميل / المورد",
+      "allParties": "الكل",
+      "customers": "العملاء",
+      "suppliers": "الموردون"
     },
     "vat": {
       "output": "ضريبة المخرجات (مبيعات)",
@@ -573,6 +577,29 @@
       "expiry": "أقرب انتهاء",
       "empty": "لا توجد دفعات مسجلة بعد.",
       "hint": "استلم مخزونًا بدفعة وتاريخ انتهاء لتتبعه هنا."
+    }
+  },
+  "party": {
+    "customer": "العميل",
+    "supplier": "المورد",
+    "backToCustomers": "العودة إلى العملاء",
+    "backToSuppliers": "العودة إلى الموردين",
+    "ordersTitle": "الطلبات",
+    "noOrders": "لا توجد طلبات بعد.",
+    "statementTitle": "كشف الحساب",
+    "ordersCount": "الطلبات",
+    "totalInvoiced": "إجمالي الفواتير",
+    "totalBilled": "إجمالي المشتريات",
+    "balance": "الرصيد",
+    "openParty": "فتح الصفحة",
+    "notFound": "غير موجود",
+    "notFoundHint": "لا يوجد عميل أو مورد بهذا الرمز.",
+    "col": {
+      "number": "الرقم",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "total": "الإجمالي",
+      "outstanding": "المتبقي"
     }
   },
   "sales": {
@@ -974,7 +1001,12 @@
       "defaultBadge": "افتراضية",
       "taxInclusiveLabel": "الأسعار شاملة الضريبة",
       "activeLabel": "نشطة",
-      "badInput": "أدخل صنفًا وسعرًا صالحًا."
+      "badInput": "أدخل صنفًا وسعرًا صالحًا.",
+      "importBtn": "استيراد الأسعار",
+      "importField_item_sku": "رمز الصنف",
+      "importField_unit_price": "سعر الوحدة",
+      "importField_min_quantity": "الحد الأدنى للكمية",
+      "importField_uom": "الوحدة"
     },
     "toast": {
       "listCreated": "تم إنشاء قائمة الأسعار",
@@ -988,6 +1020,7 @@
     }
   },
   "common": {
+    "breadcrumb": "مسار التنقل",
     "loading": "جارٍ التحميل…",
     "retry": "إعادة المحاولة",
     "error": {
@@ -1059,6 +1092,10 @@
     },
     "toast": {
       "done": "تم استيراد {{count}} صف"
+    },
+    "pricingLines": {
+      "title": "استيراد الأسعار",
+      "lede": "ارفع ملف CSV يحتوي على رموز الأصناف وأسعارها. يمكنك تضمين شرائح الكمية."
     }
   },
   "toast": {

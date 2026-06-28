@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
@@ -20,6 +20,8 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ImportDialog } from "../../components/ImportDialog";
+import type { ImportFieldInfo } from "../../api/imports";
 import "./pricing.css";
 
 export function PriceListDetailPage() {
@@ -39,6 +41,14 @@ export function PriceListDetailPage() {
   const [sku, setSku] = useState("");
   const [price, setPrice] = useState("");
   const [minQty, setMinQty] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+
+  const importFields = useMemo<ImportFieldInfo[]>(() => [
+    { name: "item_sku", label: t("pricing.detail.importField_item_sku"), required: true },
+    { name: "unit_price", label: t("pricing.detail.importField_unit_price"), required: true },
+    { name: "min_quantity", label: t("pricing.detail.importField_min_quantity") },
+    { name: "uom", label: t("pricing.detail.importField_uom") },
+  ], [t]);
 
   function patchList(changes: Partial<PriceList>) {
     if (!pl) return;
@@ -132,7 +142,20 @@ export function PriceListDetailPage() {
           <input className="latin" inputMode="decimal" value={minQty} onChange={(e) => setMinQty(e.target.value)} placeholder="0" />
         </label>
         <button className="btn btn--primary" type="submit">{t("pricing.detail.addLine")}</button>
+        <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
+          {t("pricing.detail.importBtn")}
+        </button>
       </form>
+
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        basePath={`/pricing/price-lists/${listId}/lines`}
+        title={t("import.pricingLines.title")}
+        templateName={`price-lines-${pl?.code ?? "template"}.csv`}
+        fields={importFields}
+        onCommitted={() => { reload(); }}
+      />
 
       {loading && <ListSkeleton />}
       {error && <ErrorState message={error} onRetry={reload} />}

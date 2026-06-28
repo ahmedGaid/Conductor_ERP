@@ -485,6 +485,42 @@ if _Notification.objects.filter(reference__startswith="DEMO-").exists():
 else:
     seed_notifications()
 
+from erp.pricing.domain.models import PriceList as _PriceList  # noqa: E402
+
+
+def seed_pricing() -> None:
+    from erp.pricing.domain.models import PriceListLine
+
+    pl, _ = _PriceList.objects.get_or_create(
+        code="STANDARD",
+        defaults={"name": "Standard Prices", "currency": "EGP", "is_default": True, "is_active": True},
+    )
+    # Ensure it is the default (handles the case where another list was set default earlier).
+    if not pl.is_default:
+        pl.is_default = True
+        pl.save()
+
+    LINES = [
+        ("WIDGET", 150_00, 0),
+        ("WIDGET", 140_00, 10),   # 10% break at qty ≥ 10
+        ("GADGET", 300_00, 0),
+        ("BOLT",     8_00, 0),
+        ("BOLT",     7_00, 50),   # qty break at qty ≥ 50
+    ]
+    for sku, price_minor, min_qty in LINES:
+        if not PriceListLine.objects.filter(price_list=pl, item_sku=sku, min_quantity=min_qty).exists():
+            PriceListLine.objects.create(
+                price_list=pl, item_sku=sku, unit_price_minor=price_minor, min_quantity=min_qty,
+            )
+    created.append(("PRICING", "STANDARD", "default price list with WIDGET/GADGET/BOLT prices"))
+
+
+if _PriceList.objects.filter(code="STANDARD").exists():
+    print("Demo pricing already present — skipping.")
+else:
+    seed_pricing()
+
+
 print("\nDemo data created:")
 for kind, number, hint in created:
     print(f"  [{kind}] {number:18s} {hint}")

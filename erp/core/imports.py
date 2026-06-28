@@ -158,6 +158,12 @@ class ImportSpec:
     # Map validated serializer data → model create/update kwargs. Default = pass through. May append
     # row errors (e.g. an FK code that resolves to nothing) by mutating ``errors``.
     to_kwargs: Callable[[dict, list[dict]], dict] | None = None
+    # When True, skip the DB existence check and always create (for entities without a single-column
+    # unique business key, e.g. price-list lines scoped to a specific list).
+    skip_existence_check: bool = False
+    # When set, in-file deduplication uses the concatenation of these data field values (joined by
+    # "|") instead of the single ``key`` field. Use for compound-keyed rows (e.g. sku + min_quantity).
+    composite_dedup_fields: tuple[str, ...] | None = None
 
     def field_by_name(self, name: str) -> ImportField | None:
         return next((f for f in self.fields if f.name == name), None)
@@ -249,9 +255,13 @@ def run_import(
             results.append(RowResult(row_no, "failed", errors))
             continue
 
-        key_value = str(data.get(spec.key, "")).strip()
+        # 3a. Compute the dedup key (composite or single field).
+        if spec.composite_dedup_fields:
+            key_value = "|".join(str(data.get(f, "") or "") for f in spec.composite_dedup_fields)
+        else:
+            key_value = str(data.get(spec.key, "")).strip()
 
-        # 3. Duplicate within the same file (the first wins; later ones are reported, not silent).
+        # 3b. Duplicate within the same file (the first wins; later ones are reported, not silent).
         if key_value in seen_keys:
             results.append(RowResult(
                 row_no, "failed", key=key_value,
@@ -270,12 +280,15 @@ def run_import(
             kwargs = dict(data)
 
         # 5. Existence by business key drives the outcome; never blind-insert.
-        existing = spec.model.objects.filter(**{spec.key: key_value}).first()
-        if existing and mode != "upsert":
-            results.append(RowResult(row_no, "skipped", key=key_value))
-            continue
-
-        outcome = "updated" if existing else "created"
+        if spec.skip_existence_check:
+            existing = None
+            outcome = "created"
+        else:
+            existing = spec.model.objects.filter(**{spec.key: key_value}).first()
+            if existing and mode != "upsert":
+                results.append(RowResult(row_no, "skipped", key=key_value))
+                continue
+            outcome = "updated" if existing else "created"
         if not dry_run:
             try:
                 with transaction.atomic():     # per-row savepoint

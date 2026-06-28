@@ -9,6 +9,7 @@ import { optimisticCreate } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { ImportDialog } from "../../components/ImportDialog";
@@ -140,8 +141,14 @@ export function CustomersPage() {
             <tbody>
               {filtered.map((c) => (
                 <tr key={c.id}>
-                  <td><Bdi>{c.code}</Bdi></td>
-                  <td>{c.name}</td>
+                  <td>
+                    <PartyLink type="customer" code={c.code} className="latin">
+                      <Bdi>{c.code}</Bdi>
+                    </PartyLink>
+                  </td>
+                  <td>
+                    <PartyLink type="customer" code={c.code}>{c.name}</PartyLink>
+                  </td>
                   <td className="sales-table__num">
                     <Bdi>{c.credit_limit_minor ? formatMinor(c.credit_limit_minor) : t("sales.customer.unlimited")}</Bdi>
                   </td>
