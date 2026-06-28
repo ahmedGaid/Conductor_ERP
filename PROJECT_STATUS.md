@@ -19,7 +19,11 @@ The Linear-quality frontend UX overhaul (speed/optimistic, keyboard-first, desig
 inline-edit, palette recents, brand triad + Arabic search) is **merged to `main`** (PRs #1–#11).
 Repo `C:\AhmedGaid\ERP` (git), pushed to `github.com/ahmedGaid/Conductor_ERP`.
 
-## Active work — Growth (branch `growth/combined`)
+## Growth — MERGED to `main` (2026-06-28, commit `b9cc690`)
+The whole Growth line (24 commits) is merged to `main` and pushed. Branch `growth/combined` retained.
+Post-merge cleanup (branch `chore/post-merge-cleanup`): untracked two local artifacts that rode in via
+`37b1d6d` (`project_context.md`, `erp_questionnaire_v4.html`) + gitignored them.
+
 Strategy pivot (2026-06-26, `GROWTH_PLAN.md`): postpone AI, win on **speed + one-day self-serve setup**.
 Pitch: *"Sign up in the morning, send your first real invoice before lunch."* Phases (terse — detail in
 `DECISIONS.md` / commit messages):

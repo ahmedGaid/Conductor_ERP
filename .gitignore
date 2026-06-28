@@ -46,3 +46,7 @@ Thumbs.db
 # Build artifacts / specs archive
 files.zip
 temp/
+
+# Local working artifacts (not project source)
+project_context.md
+erp_questionnaire_v4.html
