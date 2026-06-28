@@ -10,6 +10,7 @@ import { ListSkeleton } from "../../components/ListSkeleton";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { Bdi } from "../../components/Bdi";
+import { PricingTabs } from "./PricingTabs";
 import "./pricing.css";
 
 export function PriceListsPage() {
@@ -54,6 +55,8 @@ export function PriceListsPage() {
         <h1>{t("pricing.title")}</h1>
         <p className="muted">{t("pricing.subtitle")}</p>
       </div>
+
+      <PricingTabs active="lists" />
 
       <form className="card pricing-toolbar" onSubmit={onSubmit}>
         <label className="pricing-field">

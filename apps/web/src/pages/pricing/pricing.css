@@ -96,6 +96,24 @@
   background-color: var(--color-surface-alt);
 }
 
+/* A titled section within a page (customer pricing groups assignments + overrides). */
+.pricing-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pricing-block__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.pricing-block__hint {
+  margin: 0;
+  margin-block-start: calc(-1 * var(--space-2));
+}
+
 /* A quiet monochrome chip — a default/tax-inclusive marker that pairs with its word. */
 .pricing-tag {
   display: inline-flex;
@@ -107,4 +125,9 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
+}
+
+/* Tax-inclusive marker shown beside a price cell. */
+.pricing-tag--inline {
+  margin-inline-start: var(--space-2);
 }

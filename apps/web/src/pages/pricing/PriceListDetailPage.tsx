@@ -41,6 +41,8 @@ export function PriceListDetailPage() {
   const [sku, setSku] = useState("");
   const [price, setPrice] = useState("");
   const [minQty, setMinQty] = useState("");
+  const [validFrom, setValidFrom] = useState("");
+  const [validTo, setValidTo] = useState("");
   const [importOpen, setImportOpen] = useState(false);
 
   const importFields = useMemo<ImportFieldInfo[]>(() => [
@@ -71,18 +73,22 @@ export function PriceListDetailPage() {
       return;
     }
     const mq = minQty.trim() || "0";
+    const from = validFrom || null;
+    const to = validTo || null;
     void optimisticCreate<PriceListLine>({
       current: lines ?? [],
       mutate,
       placeholder: (lid) =>
-        ({ id: lid, item_sku: sku, uom: "unit", unit_price_minor: minor, min_quantity: mq, valid_from: null, valid_to: null }) as PriceListLine,
-      request: () => addLine(listId, { item_sku: sku, unit_price_minor: minor, min_quantity: mq }),
+        ({ id: lid, item_sku: sku, uom: "unit", unit_price_minor: minor, min_quantity: mq, valid_from: from, valid_to: to }) as PriceListLine,
+      request: () => addLine(listId, { item_sku: sku, unit_price_minor: minor, min_quantity: mq, valid_from: from, valid_to: to }),
       toast,
       success: t("pricing.toast.priceAdded"),
     });
     setSku("");
     setPrice("");
     setMinQty("");
+    setValidFrom("");
+    setValidTo("");
   }
 
   function onDelete(line: PriceListLine) {
@@ -141,6 +147,14 @@ export function PriceListDetailPage() {
           <span>{t("pricing.detail.minQty")}</span>
           <input className="latin" inputMode="decimal" value={minQty} onChange={(e) => setMinQty(e.target.value)} placeholder="0" />
         </label>
+        <label className="pricing-field">
+          <span>{t("pricing.customers.validFrom")}</span>
+          <input className="latin" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+        </label>
+        <label className="pricing-field">
+          <span>{t("pricing.customers.validTo")}</span>
+          <input className="latin" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+        </label>
         <button className="btn btn--primary" type="submit">{t("pricing.detail.addLine")}</button>
         <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
           {t("pricing.detail.importBtn")}
@@ -172,6 +186,7 @@ export function PriceListDetailPage() {
                 <th>{t("pricing.detail.item")}</th>
                 <th className="pricing-table__num">{t("pricing.detail.minQty")}</th>
                 <th className="pricing-table__num">{t("pricing.detail.unitPrice")}</th>
+                <th>{t("pricing.customers.valid")}</th>
                 <th />
               </tr>
             </thead>
@@ -181,6 +196,13 @@ export function PriceListDetailPage() {
                   <td><Bdi>{l.item_sku}</Bdi></td>
                   <td className="pricing-table__num"><Bdi>{l.min_quantity}</Bdi></td>
                   <td className="pricing-table__num"><Bdi>{formatMinor(l.unit_price_minor, pl?.currency)}</Bdi></td>
+                  <td>
+                    <Bdi>
+                      {!l.valid_from && !l.valid_to
+                        ? t("pricing.customers.always")
+                        : `${l.valid_from ?? "…"} → ${l.valid_to ?? "…"}`}
+                    </Bdi>
+                  </td>
                   <td className="pricing-table__num">
                     <button type="button" className="btn btn--sm" onClick={() => onDelete(l)} aria-label={t("common.delete")}>✕</button>
                   </td>

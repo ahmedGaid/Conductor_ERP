@@ -44,11 +44,20 @@ Pitch: *"Sign up in the morning, send your first real invoice before lunch."* Ph
   (summary + transactions + ledger). `JournalEntry` gained a `party` field (migration 0011); posting
   records it from sales/purchasing orders; GeneralLedger filters by party. i18n 1161 keys.
 
+- **Pricing P5 — DONE (uncommitted).** Customer-pricing management UI (the backend assignment +
+  customer-price endpoints already existed; P5 was the frontend). New `/pricing/customers` page
+  (`CustomerPricingPage`) with two blocks: customer→price-list assignments (upsert/remove) and
+  per-customer item overrides (add/remove) — both optimistic + designed states. Tax-inclusive entry
+  affordance + effective-date (valid_from/valid_to) scheduling on overrides AND on price-list lines
+  (`PriceListDetailPage` add-line form + Valid column). Shared `PricingTabs` (SegmentedControl)
+  sub-nav between Price lists ↔ Customer pricing. API wrappers added to `api/pricing.ts`. i18n 1187
+  keys (ar/en parity). Gates: parity ✓, `tsc -b` ✓, gate03 ✓.
+
 ### NEXT ACTION
-**Pricing P5:** per-customer assignment + item-override management UI, effective-date scheduling,
-tax-inclusive entry affordance (API + resolver already support it). Then decide PR/merge path for
-`growth/combined` → `main`. Working tree after `4399ca4` is clean except local-only artifacts
-(`erp_questionnaire_v4.html`, `Docs/`, `Images/`, `.claude/`, `project_context.md`).
+**Commit Pricing P5**, then decide PR/merge path for `growth/combined` → `main`. Working tree has the
+uncommitted P5 frontend changes (api/pricing.ts, pages/pricing/*, App.tsx, i18n ar+en, pricing.css)
+plus local-only artifacts (`erp_questionnaire_v4.html`, `Docs/`, `Images/`, `.claude/`,
+`project_context.md`, `.codegraph/`).
 
 > **GATE NOTE:** root `npx tsc --noEmit` under-checks (skips the project-referenced tsconfig). Use
 > **`npx tsc -b` from `apps/web`** as the true typecheck; `npm run build` = `tsc -b && vite build`.

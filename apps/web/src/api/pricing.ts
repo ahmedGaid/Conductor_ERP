@@ -30,6 +30,26 @@ export interface PriceResolution {
   tax_inclusive: boolean;
 }
 
+/** A customer's default price list (one per customer). */
+export interface CustomerAssignment {
+  id: string;
+  customer_code: string;
+  price_list_code: string;
+}
+
+/** A negotiated per-customer item price — the highest-precedence override. */
+export interface CustomerItemPrice {
+  id: string;
+  customer_code: string;
+  item_sku: string;
+  uom: string;
+  unit_price_minor: number;
+  tax_inclusive: boolean;
+  min_quantity: string;
+  valid_from: string | null;
+  valid_to: string | null;
+}
+
 export function listPriceLists(): Promise<PriceList[]> {
   return apiFetch<PriceList[]>("/pricing/price-lists");
 }
@@ -61,7 +81,14 @@ export function listLines(listId: string): Promise<PriceListLine[]> {
 
 export function addLine(
   listId: string,
-  payload: { item_sku: string; unit_price_minor: number; uom?: string; min_quantity?: string },
+  payload: {
+    item_sku: string;
+    unit_price_minor: number;
+    uom?: string;
+    min_quantity?: string;
+    valid_from?: string | null;
+    valid_to?: string | null;
+  },
 ): Promise<PriceListLine> {
   return apiFetch<PriceListLine>(`/pricing/price-lists/${listId}/lines`, {
     method: "POST",
@@ -75,6 +102,51 @@ export function updateLine(lineId: string, changes: Partial<PriceListLine>): Pro
 
 export function deleteLine(lineId: string): Promise<void> {
   return apiFetch<void>(`/pricing/lines/${lineId}`, { method: "DELETE" });
+}
+
+// ── Customer → price-list assignments (P5) ──────────────────────────────────────────────────────────
+export function listAssignments(): Promise<CustomerAssignment[]> {
+  return apiFetch<CustomerAssignment[]>("/pricing/customer-assignments");
+}
+
+/** Upsert a customer's price-list assignment (one per customer — re-assigning moves them). */
+export function setAssignment(payload: {
+  customer_code: string;
+  price_list_code: string;
+}): Promise<CustomerAssignment> {
+  return apiFetch<CustomerAssignment>("/pricing/customer-assignments", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAssignment(id: string): Promise<void> {
+  return apiFetch<void>(`/pricing/customer-assignments/${id}`, { method: "DELETE" });
+}
+
+// ── Per-customer item overrides (P5) ────────────────────────────────────────────────────────────────
+export function listCustomerPrices(): Promise<CustomerItemPrice[]> {
+  return apiFetch<CustomerItemPrice[]>("/pricing/customer-prices");
+}
+
+export function addCustomerPrice(payload: {
+  customer_code: string;
+  item_sku: string;
+  unit_price_minor: number;
+  uom?: string;
+  tax_inclusive?: boolean;
+  min_quantity?: string;
+  valid_from?: string | null;
+  valid_to?: string | null;
+}): Promise<CustomerItemPrice> {
+  return apiFetch<CustomerItemPrice>("/pricing/customer-prices", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteCustomerPrice(id: string): Promise<void> {
+  return apiFetch<void>(`/pricing/customer-prices/${id}`, { method: "DELETE" });
 }
 
 /** Resolve the best net unit price for a customer+item — used to prefill order/quotation lines (P3). */

@@ -47,6 +47,7 @@ import { ItemsPage } from "./pages/inventory/ItemsPage";
 import { WarehousesPage } from "./pages/inventory/WarehousesPage";
 import { PriceListsPage } from "./pages/pricing/PriceListsPage";
 import { PriceListDetailPage } from "./pages/pricing/PriceListDetailPage";
+import { CustomerPricingPage } from "./pages/pricing/CustomerPricingPage";
 import { StockMovementPage } from "./pages/inventory/StockMovementPage";
 import { StockCountsPage } from "./pages/inventory/StockCountsPage";
 import { StockCountDetailPage } from "./pages/inventory/StockCountDetailPage";
@@ -147,6 +148,7 @@ function AppRoutes() {
           <Route path="/admin/roles" element={<RolesPage />} />
           <Route path="/admin/roles/:name" element={<RoleDetailPage />} />
           <Route path="/pricing" element={<PriceListsPage />} />
+          <Route path="/pricing/customers" element={<CustomerPricingPage />} />
           <Route path="/pricing/:id" element={<PriceListDetailPage />} />
           <Route path="/workflows" element={<WorkflowListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
