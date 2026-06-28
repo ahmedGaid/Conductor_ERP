@@ -84,7 +84,7 @@ import {
   settingsProfileGuide,
 } from "./content/settings";
 import { roleDetailGuide, rolesGuide, userDetailGuide, usersGuide } from "./content/admin";
-import { priceListDetailGuide, priceListsGuide } from "./content/pricing";
+import { customerPricingGuide, priceListDetailGuide, priceListsGuide } from "./content/pricing";
 
 export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/": dashboardGuide,
@@ -156,6 +156,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/admin/roles": rolesGuide,
   "/admin/roles/:name": roleDetailGuide,
   "/pricing": priceListsGuide,
+  "/pricing/customers": customerPricingGuide,
   "/pricing/:id": priceListDetailGuide,
 };
 

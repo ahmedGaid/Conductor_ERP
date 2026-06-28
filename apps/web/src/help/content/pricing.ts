@@ -16,6 +16,22 @@ export const priceListsGuide: HelpGuide = {
   ],
 };
 
+export const customerPricingGuide: HelpGuide = {
+  title: { en: "Customer pricing", ar: "تسعير العملاء" },
+  purpose: {
+    en: "Decide which list a customer is charged from, and set negotiated prices for single items — both fill in automatically on that customer's next order.",
+    ar: "حدِّد القائمة التي يُحاسَب منها العميل، واضبط أسعارًا متفاوَضًا عليها لأصناف بعينها — وكلاهما يُملأ تلقائيًا في طلب العميل التالي.",
+  },
+  howItWorks: {
+    en: "Assign a customer to a price list and that list replaces the default for them. An item override goes further: one price for one item for one customer, optionally only at or above a quantity, only inside a date range, and tax-inclusive if you mark it. An override always wins over the assigned list, which wins over the default.",
+    ar: "أسنِد العميل إلى قائمة أسعار فتحلّ تلك القائمة محل الافتراضية له. سعر الصنف الخاص يذهب أبعد: سعر واحد لصنف واحد لعميل واحد، ويمكن قصره على كمية معينة فأكثر، أو على مدى تواريخ، وشاملًا الضريبة إن علَّمته. السعر الخاص يَغلِب القائمة المُسنَدة، وهي تَغلِب الافتراضية.",
+  },
+  related: [
+    { to: "/pricing", label: { en: "All price lists", ar: "كل قوائم الأسعار" } },
+    { to: "/sales/customers", label: { en: "Customers", ar: "العملاء" } },
+  ],
+};
+
 export const priceListDetailGuide: HelpGuide = {
   title: { en: "Price list", ar: "قائمة الأسعار" },
   purpose: {
