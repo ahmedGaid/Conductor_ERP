@@ -5,8 +5,15 @@
 // - Vite proxies /api -> http://localhost:8000 in dev (see vite.config.ts).
 
 import { invalidateForPath } from "../lib/cache";
+import i18n from "../i18n";
 
 const TOKEN_KEY = "erp.token";
+
+// The active UI language, sent as Accept-Language so the server localizes its built-in (DRF)
+// validation messages to match what the user is reading. Falls back to Arabic (the app default).
+function activeLanguage(): string {
+  return i18n.resolvedLanguage || i18n.language || "ar";
+}
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -40,6 +47,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   const token = getToken();
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
+  headers.set("Accept-Language", activeLanguage());
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const res = await fetch(`/api${path}`, { ...init, headers });
@@ -81,6 +89,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const token = getToken();
   const headers = new Headers();
+  headers.set("Accept-Language", activeLanguage());
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const res = await fetch(`/api${path}`, { method: "POST", headers, body: form });

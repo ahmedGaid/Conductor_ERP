@@ -1153,6 +1153,7 @@
     "action": "Import CSV",
     "changeFile": "Choose a different file",
     "confirm": "Import {{count}} rows",
+    "confirmOne": "Import {{count}} row",
     "confirmNone": "Nothing to import",
     "customers": {
       "title": "Import customers"
@@ -1192,10 +1193,12 @@
       "row": "Row",
       "field": "Column",
       "message": "Problem",
-      "more": "and {{count}} more rows with problems"
+      "more": "and {{count}} more rows with problems",
+      "moreOne": "and {{count}} more row with problems"
     },
     "toast": {
-      "done": "Imported {{count}} rows"
+      "done": "Imported {{count}} rows",
+      "doneOne": "Imported {{count}} row"
     },
     "pricingLines": {
       "title": "Import prices",

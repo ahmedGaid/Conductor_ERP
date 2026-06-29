@@ -70,6 +70,10 @@ MIDDLEWARE = [
     "erp.core.middleware.IpWhitelistMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Activate the request's language from Accept-Language (sent by the web client to match the UI),
+    # so DRF's built-in validation messages (e.g. an invalid choice) come back in the user's language
+    # instead of always the LANGUAGE_CODE default. Must sit after Session and before Common.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
