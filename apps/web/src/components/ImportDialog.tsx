@@ -109,7 +109,7 @@ export function ImportDialog({ open, onClose, basePath, title, templateName, fie
     try {
       const res = await runImport(basePath, file, { mapping, mode, commit: true });
       const applied = res.summary.created + res.summary.updated;
-      toast.show(t("import.toast.done", { count: applied }), "success");
+      toast.show(t(applied === 1 ? "import.toast.doneOne" : "import.toast.done", { count: applied }), "success");
       onCommitted(res);
       close();
     } catch (err) {
@@ -267,7 +267,7 @@ export function ImportDialog({ open, onClose, basePath, title, templateName, fie
                       </tbody>
                     </table>
                     {failedRows.length > 50 && (
-                      <p className="import__hint">{t("import.error.more", { count: failedRows.length - 50 })}</p>
+                      <p className="import__hint">{t(failedRows.length - 50 === 1 ? "import.error.moreOne" : "import.error.more", { count: failedRows.length - 50 })}</p>
                     )}
                   </div>
                 )}
@@ -290,7 +290,7 @@ export function ImportDialog({ open, onClose, basePath, title, templateName, fie
               disabled={busy || applyCount === 0 || unmappedRequired.length > 0}
             >
               {applyCount > 0
-                ? t("import.confirm", { count: applyCount })
+                ? t(applyCount === 1 ? "import.confirmOne" : "import.confirm", { count: applyCount })
                 : t("import.confirmNone")}
             </button>
           </footer>
