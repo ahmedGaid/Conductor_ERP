@@ -4,7 +4,7 @@ export const stockOnHandGuide: HelpGuide = {
   title: { en: "Stock on hand", ar: "الأرصدة المتاحة" },
   purpose: {
     en: "See how much of each item you have, in which warehouse, and what it's worth right now.",
-    ar: "اطّلع على كمية كل صنف، وفي أي مستودع، وقيمته الآن.",
+    ar: "اطّلع على كمية كل صنف، وفي أي مخزن، وقيمته الآن.",
   },
   howItWorks: {
     en: "Quantities and values update automatically as you receive, issue, and transfer stock. Value is tracked using weighted-average cost, so the figure here always matches the Inventory account in accounting.",
@@ -15,7 +15,7 @@ export const stockOnHandGuide: HelpGuide = {
       name: { en: "Check an item's stock", ar: "افحص رصيد صنف" },
       steps: [
         { en: "Find the item in the list (or search).", ar: "جد الصنف في القائمة (أو ابحث)." },
-        { en: "Read its quantity and value per warehouse.", ar: "اقرأ كميته وقيمته لكل مستودع." },
+        { en: "Read its quantity and value per warehouse.", ar: "اقرأ كميته وقيمته لكل مخزن." },
       ],
     },
   ],
@@ -48,20 +48,20 @@ export const itemsGuide: HelpGuide = {
     { en: "Choose clear, stable SKUs — they're hard to change once used in transactions.", ar: "اختر رموزاً واضحة وثابتة — يصعب تغييرها بعد استخدامها في المعاملات." },
   ],
   related: [
-    { to: "/inventory/warehouses", label: { en: "Warehouses", ar: "المستودعات" } },
+    { to: "/inventory/warehouses", label: { en: "Warehouses", ar: "المخازن" } },
     { to: "/inventory", label: { en: "Stock on hand", ar: "الأرصدة المتاحة" } },
   ],
 };
 
 export const warehousesGuide: HelpGuide = {
-  title: { en: "Warehouses", ar: "المستودعات" },
+  title: { en: "Warehouses", ar: "المخازن" },
   purpose: {
     en: "The physical locations where you keep stock — a main store, a branch, a van.",
     ar: "المواقع المادية التي تحفظ فيها المخزون — مخزن رئيسي، فرع، سيارة توزيع.",
   },
   howItWorks: {
     en: "Each warehouse has a code. Stock is counted per warehouse, so you always know what's where, and you can transfer between them.",
-    ar: "لكل مستودع رمز. يُحتسب المخزون لكل مستودع، فتعرف دائماً ما الموجود وأين، ويمكنك التحويل بينها.",
+    ar: "لكل مخزن رمز. يُحتسب المخزون لكل مخزن، فتعرف دائماً ما الموجود وأين، ويمكنك التحويل بينها.",
   },
   related: [
     { to: "/inventory/movements", label: { en: "Stock movements", ar: "حركات المخزون" } },
@@ -104,11 +104,11 @@ export const stockMovementGuide: HelpGuide = {
   title: { en: "Stock movement", ar: "حركة المخزون" },
   purpose: {
     en: "Record stock coming in (receive), going out (issue), or moving between warehouses (transfer).",
-    ar: "سجّل دخول المخزون (استلام)، أو خروجه (صرف)، أو نقله بين المستودعات (تحويل).",
+    ar: "سجّل دخول المخزون (استلام)، أو خروجه (صرف)، أو نقله بين المخازن (تحويل).",
   },
   howItWorks: {
     en: "Pick the movement type, the item, the warehouse(s) and quantity. Receives and issues automatically post the matching accounting entry; transfers move stock without touching the books.",
-    ar: "اختر نوع الحركة والصنف والمستودع(ات) والكمية. الاستلام والصرف يُرحّلان القيد المحاسبي تلقائياً؛ والتحويل ينقل المخزون دون المساس بالدفاتر.",
+    ar: "اختر نوع الحركة والصنف والمخزن(المخازن) والكمية. الاستلام والصرف يُرحّلان القيد المحاسبي تلقائياً؛ والتحويل ينقل المخزون دون المساس بالدفاتر.",
   },
   sections: [
     {
@@ -116,7 +116,7 @@ export const stockMovementGuide: HelpGuide = {
       items: [
         { term: { en: "Receive", ar: "استلام" }, desc: { en: "Stock in (e.g. a delivery). Optionally tag a batch number and expiry.", ar: "إدخال مخزون (مثل توريد). يمكن وسم رقم تشغيلة وتاريخ صلاحية." } },
         { term: { en: "Issue", ar: "صرف" }, desc: { en: "Stock out at weighted-average cost.", ar: "إخراج مخزون بمتوسط التكلفة المرجّح." } },
-        { term: { en: "Transfer", ar: "تحويل" }, desc: { en: "Move between warehouses; no financial effect.", ar: "نقل بين المستودعات؛ دون أثر مالي." } },
+        { term: { en: "Transfer", ar: "تحويل" }, desc: { en: "Move between warehouses; no financial effect.", ar: "نقل بين المخازن؛ دون أثر مالي." } },
       ],
     },
   ],
@@ -143,7 +143,7 @@ export const stockCountsGuide: HelpGuide = {
     {
       name: { en: "Run a count", ar: "نفّذ جرداً" },
       steps: [
-        { en: "Create a count for a warehouse.", ar: "أنشئ جرداً لمستودع." },
+        { en: "Create a count for a warehouse.", ar: "أنشئ جرداً لمخزن." },
         { en: "Enter the counted quantity for each line.", ar: "أدخل الكمية المعدودة لكل سطر." },
         { en: "Post it — adjustments are made automatically.", ar: "رحّله — تُجرى التسويات تلقائياً." },
       ],

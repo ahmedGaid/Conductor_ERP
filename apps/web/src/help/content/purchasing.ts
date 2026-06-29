@@ -35,7 +35,7 @@ export const newPurchaseOrderGuide: HelpGuide = {
   },
   howItWorks: {
     en: "Pick the supplier and destination warehouse, then add lines (item + quantity + cost). Choose a tax code if the purchase carries recoverable VAT.",
-    ar: "اختر المورد ومستودع الوجهة، ثم أضف السطور (صنف + كمية + تكلفة). اختر رمزاً ضريبياً إن كانت المشتريات تحمل ضريبة قابلة للاسترداد.",
+    ar: "اختر المورد ومخزن الوجهة، ثم أضف السطور (صنف + كمية + تكلفة). اختر رمزاً ضريبياً إن كانت المشتريات تحمل ضريبة قابلة للاسترداد.",
   },
   related: [
     { to: "/purchasing", label: { en: "All purchase orders", ar: "كل أوامر الشراء" } },

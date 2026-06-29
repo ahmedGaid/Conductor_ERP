@@ -35,13 +35,13 @@ export const newOrderGuide: HelpGuide = {
   },
   howItWorks: {
     en: "Pick the customer and a warehouse, then add lines (item + quantity + price). The form totals the order live, including VAT if you choose a tax code and any line discounts.",
-    ar: "اختر العميل ومستودعاً، ثم أضف السطور (صنف + كمية + سعر). يجمع النموذج الطلب مباشرة، متضمناً الضريبة إن اخترت رمزاً ضريبياً وأي خصومات على السطور.",
+    ar: "اختر العميل ومخزناً، ثم أضف السطور (صنف + كمية + سعر). يجمع النموذج الطلب مباشرة، متضمناً الضريبة إن اخترت رمزاً ضريبياً وأي خصومات على السطور.",
   },
   sections: [
     {
       heading: { en: "Fields", ar: "الحقول" },
       items: [
-        { term: { en: "Warehouse", ar: "المستودع" }, desc: { en: "Where the goods ship from — must have stock to deliver.", ar: "من أين تُشحن البضاعة — يجب أن يتوفر مخزون للتسليم." } },
+        { term: { en: "Warehouse", ar: "المخزن" }, desc: { en: "Where the goods ship from — must have stock to deliver.", ar: "من أين تُشحن البضاعة — يجب أن يتوفر مخزون للتسليم." } },
         { term: { en: "Tax code", ar: "الرمز الضريبي" }, desc: { en: "Optional. Leave blank for no VAT; pick VAT14 to add 14%.", ar: "اختياري. اتركه فارغاً بلا ضريبة؛ اختر VAT14 لإضافة 14%." } },
         { term: { en: "Discount", ar: "الخصم" }, desc: { en: "Per-line amount off the gross.", ar: "مبلغ خصم لكل سطر من الإجمالي." } },
       ],
