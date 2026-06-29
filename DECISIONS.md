@@ -1156,3 +1156,36 @@ Sixth completion-plan increment, completing Track B (operational depth).
   - **P4 — CSV import + demo:** price-list-line importer (reuse `erp/core/imports.py`) + template; demo seed
     ships a default list so prefill is visible out of the box.
   - **P5 — polish:** per-customer override + effective-dated scheduling UI; tax-inclusive entry affordance.
+
+## Phase 4 — leave the AI door open (GROWTH_PLAN.md, 2026-06-29)
+
+**4.0 — API-coverage audit (every action has a clean endpoint; gaps listed).**
+The app is architecturally assistant-ready *by construction*: the React frontend can only mutate through
+`apps/web/src/api/client.ts` (`apiFetch`), and there are **17 typed API modules** (sales, purchasing,
+inventory, accounting, einvoice, crm, pricing, notifications, workflows, users, roles, identity, setup,
+imports, core, …) over **~127 DRF routes**. Every business mutation is a thin DRF view → service call,
+so there is **no UI action that bypasses an endpoint**. An assistant authenticates the same way the UI
+does (`POST /api/identity/login` → JWT bearer) and calls the identical routes.
+- **No assistant-readiness gaps found** for business operations. The only UI actions *without* a
+  dedicated endpoint are pure client-side presentation helpers that intentionally need none: Print /
+  "Save as PDF" (`window.print` + `print.css`/`invoice.css`), copy-share-link, Duplicate (seeds a form,
+  doesn't write), the e-invoice deep-link (navigation), and report CSV/Excel export (already a
+  `GET …` export path on `ExportButtons`). None of these mutate state.
+- **Data is already structured + labelled for an assistant:** money is integer **minor units on the
+  wire** (formatted only at the edge via `lib/money.ts`); cross-module references are stable business
+  keys (customer `code`, item `sku`, tax `code`); every record carries an audit trail.
+- **Minor follow-ups (not blockers):** a machine-readable API index (OpenAPI/schema dump) would let an
+  assistant discover routes without reading `api/*.ts`; consider generating one when AI is un-postponed.
+
+**4.1 — Decision: AI postponed; APIs kept assistant-ready.**
+Per the Growth strategy (2026-06-26), AI is deliberately postponed to win first on **speed + one-day
+self-serve setup**. We are **not building AI now**, but we are **not blocking it**: the clean per-action
+DRF endpoint surface (4.0), integer-minor money, business-key cross-references, and the immutable audit
+trail are kept exactly as-is so an assistant layer can be added later with no re-architecture.
+
+**3.4 — cold-start path (signup → first invoice).** The path is now end-to-end self-serve and was
+exercised live (2026-06-29): Setup Wizard (COA template + company profile + tax) → create a customer →
+new order (smart defaults pre-fill customer/warehouse/tax, price prefilled from the price list) →
+**"Complete sale"** fast-path (one move: confirm→deliver→invoice) → **"Export PDF"** opens the on-brand
+invoice. The remaining "**record the real number**" is a human stopwatch run with a true cold stranger
+on a fresh DB — left as a manual checkpoint, not a code task.

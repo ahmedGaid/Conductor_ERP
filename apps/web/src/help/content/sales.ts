@@ -80,6 +80,24 @@ export const orderDetailGuide: HelpGuide = {
   ],
 };
 
+export const invoiceDocumentGuide: HelpGuide = {
+  title: { en: "Invoice document", ar: "مستند الفاتورة" },
+  purpose: {
+    en: "The clean, printable invoice your customer receives — ready to print or save as PDF.",
+    ar: "الفاتورة النظيفة القابلة للطباعة التي يستلمها عميلك — جاهزة للطباعة أو الحفظ كـ PDF.",
+  },
+  howItWorks: {
+    en: "It shows once an order is invoiced, with your company details, the customer, the lines, and the totals. Click Print and choose 'Save as PDF' to keep a copy — no extra tools needed.",
+    ar: "تظهر بعد فوترة الطلب، وتعرض بيانات شركتك والعميل والسطور والمجاميع. انقر طباعة واختر 'حفظ كـ PDF' للاحتفاظ بنسخة — دون أي أدوات إضافية.",
+  },
+  mistakes: [
+    { en: "Your company name and tax number come from Settings → Organization — fill them in so they appear here.", ar: "يأتي اسم شركتك ورقمك الضريبي من الإعدادات ← المؤسسة — أكملهما ليظهرا هنا." },
+  ],
+  related: [
+    { to: "/settings/organization", label: { en: "Organization settings", ar: "إعدادات المؤسسة" } },
+  ],
+};
+
 export const quotationsGuide: HelpGuide = {
   title: { en: "Quotations", ar: "عروض الأسعار" },
   purpose: {

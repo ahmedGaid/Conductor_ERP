@@ -52,6 +52,7 @@ import {
 import {
   customerDetailGuide,
   customersGuide,
+  invoiceDocumentGuide,
   newOrderGuide,
   newQuotationGuide,
   orderDetailGuide,
@@ -126,6 +127,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/sales": ordersGuide,
   "/sales/orders/new": newOrderGuide,
   "/sales/orders/:id": orderDetailGuide,
+  "/sales/orders/:id/invoice": invoiceDocumentGuide,
   "/sales/quotations": quotationsGuide,
   "/sales/quotations/new": newQuotationGuide,
   "/sales/quotations/:id": quotationDetailGuide,

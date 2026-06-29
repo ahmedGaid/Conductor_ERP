@@ -1,0 +1,170 @@
+/* The printable invoice (Identity System §8.1): monochrome, calm, generous whitespace, thin borders,
+   tabular numerals, Arabic-first/RTL with the Latin mirror reading identically. No boxed grey forms,
+   no colour — the total earns emphasis by a single rule + bold weight, never decoration. The screen
+   view and the printed/PDF artifact share one layout; @media print only strips the toolbar + chrome. */
+
+.invoice-page {
+  max-inline-size: 56rem;
+  margin-inline: auto;
+}
+
+.invoice-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+
+.invoice-doc {
+  padding: var(--space-8);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Masthead: seller (start) + document identity (end). --- */
+.invoice-doc__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.invoice-doc__org {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+}
+
+.invoice-doc__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  text-align: end;
+}
+
+.invoice-doc__meta {
+  text-align: end;
+}
+
+/* Definition pairs (tax no., dates) — quiet label over value. */
+.invoice-doc__id {
+  margin: var(--space-3) 0 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.invoice-doc__meta .invoice-doc__id {
+  justify-items: end;
+}
+
+.invoice-doc__id dt {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.invoice-doc__id dd {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* --- Bill-to. --- */
+.invoice-doc__party {
+  margin-block: var(--space-6);
+  padding-block-start: var(--space-5);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.invoice-doc__party-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.invoice-doc__party-name {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+/* --- Line items. --- */
+.invoice-doc__lines {
+  inline-size: 100%;
+  border-collapse: collapse;
+  margin-block-end: var(--space-5);
+}
+
+.invoice-doc__lines th {
+  text-align: start;
+  padding: var(--table-pad-block) var(--table-pad-inline);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  border-block-end: 1px solid var(--color-border-strong);
+}
+
+.invoice-doc__lines td {
+  padding: var(--table-pad-block) var(--table-pad-inline);
+  font-size: var(--font-size-sm);
+  border-block-end: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.invoice-doc__num {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.invoice-doc__desc {
+  display: block;
+  margin-block-start: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* --- Totals: aligned to the end; the grand total gets the single emphasis rule + bold. --- */
+.invoice-doc__totals {
+  margin-inline-start: auto;
+  max-inline-size: 22rem;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.invoice-doc__total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.invoice-doc__total-row--grand {
+  margin-block-start: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 2px solid var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.invoice-doc__notes {
+  margin-block-start: var(--space-6);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* On paper / PDF: drop the surrounding card chrome so the document sits clean on the page. */
+@media print {
+  .invoice-page {
+    max-inline-size: none;
+  }
+
+  .invoice-doc {
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+}

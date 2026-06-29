@@ -109,6 +109,8 @@ export const deliverOrder = (id: string) => action(id, "deliver");
 export const invoiceOrder = (id: string) => action(id, "invoice");
 export const returnOrder = (id: string) => action(id, "return");
 export const cancelOrder = (id: string) => action(id, "cancel");
+// Fast-path the same-day counter sale: confirm → deliver → invoice in one move (server-side, atomic).
+export const completeSale = (id: string) => action(id, "complete");
 
 export function payOrder(id: string, amount: number): Promise<SalesOrder> {
   return apiFetch<SalesOrder>(`/sales/orders/${id}/payment`, {

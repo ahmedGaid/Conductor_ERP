@@ -116,7 +116,7 @@ export function PipelinePage() {
             </select>
           </label>
           <label className="crm-field">
-            <span>{t("inventory.warehouse.code")}</span>
+            <span>{t("inventory.warehouse.label")}</span>
             <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
               <option value="">—</option>
               {(warehouses ?? []).map((w) => (
