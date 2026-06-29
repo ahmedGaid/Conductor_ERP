@@ -233,7 +233,8 @@
     },
     "snap": {
       "status": "Status",
-      "date": "Date"
+      "date": "Date",
+      "movements": "Stock movements"
     }
   },
   "resolve": {

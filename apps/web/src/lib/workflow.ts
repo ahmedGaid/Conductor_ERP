@@ -101,6 +101,18 @@ export interface OrderSnapshot {
   lines: SnapshotLine[];
 }
 
+/**
+ * Live source documents for the order, passed to the tracker so a stage can link to the real record
+ * it produced — regardless of whether a historical snapshot exists. `invoiceNumber` is the GL journal
+ * of the invoice (sales) / bill (purchasing); `creditNoteNumber` the credit note / debit note. The
+ * delivery / receipt stage looks up stock movements by `orderNumber` instead.
+ */
+export interface StageDocs {
+  orderNumber: string;
+  invoiceNumber?: string | null;
+  creditNoteNumber?: string | null;
+}
+
 export interface StageHistoryEntry {
   action: string;
   /** Workflow stage key this entry belongs to (or null when the action has no forward stage). */

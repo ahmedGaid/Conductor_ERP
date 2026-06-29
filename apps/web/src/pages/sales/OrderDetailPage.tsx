@@ -92,7 +92,16 @@ export function OrderDetailPage() {
               subtitle={<><PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> · <EntityLink type="warehouse" value={data.warehouse_code} /> · <span className="latin">{data.order_date}</span></>}
             />
 
-            <WorkflowTracker kind="sales" steps={workflowFor("sales", data.status)} history={history ?? undefined} />
+            <WorkflowTracker
+              kind="sales"
+              steps={workflowFor("sales", data.status)}
+              history={history ?? undefined}
+              docs={{
+                orderNumber: data.number,
+                invoiceNumber: data.invoice_number,
+                creditNoteNumber: data.credit_note_number,
+              }}
+            />
 
             <p className="sales-explain">
               {t(`sales.statusExplain.${statusExplainKey(data)}`, {

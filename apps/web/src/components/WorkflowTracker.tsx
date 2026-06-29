@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   historyByStage,
+  type StageDocs,
   type StageHistoryEntry,
   type WfStep,
   type WorkflowKind,
@@ -18,16 +19,20 @@ import "./workflowTracker.css";
  * monochrome. Stage labels reuse the kind's i18n (workflow.<kind>.<key>).
  *
  * When `history` is supplied, a stage that has been reached becomes a button: clicking it opens a
- * snapshot of the order exactly as it was at that stage (who, when, and the full record).
+ * snapshot of the order exactly as it was at that stage (who, when, and the full record). `docs`
+ * lets a stage link to the live document it produced — the invoice/bill journal, or the stock
+ * movements of the delivery/receipt.
  */
 export function WorkflowTracker({
   kind,
   steps,
   history,
+  docs,
 }: {
   kind: WorkflowKind;
   steps: WfStep[];
   history?: StageHistoryEntry[];
+  docs?: StageDocs;
 }) {
   const { t } = useTranslation();
   const byStage = history ? historyByStage(history) : {};
@@ -82,6 +87,7 @@ export function WorkflowTracker({
           kind={kind}
           stageKey={open}
           entry={byStage[open]}
+          docs={docs}
           onClose={() => setOpenStage(null)}
         />
       )}

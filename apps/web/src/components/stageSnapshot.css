@@ -70,9 +70,27 @@
   margin: var(--space-1) 0 0;
 }
 
+/* Live document a stage produced: the invoice/bill journal, or a credit/debit note. A labelled
+   row that leads the panel before the historical snapshot. */
+.wf-snap__docs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin-block-start: var(--space-4);
+}
+.wf-snap__docs-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
 .wf-snap__table-wrap {
   margin-block-start: var(--space-4);
   overflow-x: auto;
+}
+/* Title above the movements table (delivery/receipt stage). */
+.wf-snap__table-wrap > .wf-snap__docs-title {
+  margin: 0 0 var(--space-2);
 }
 .wf-snap__table {
   inline-size: 100%;

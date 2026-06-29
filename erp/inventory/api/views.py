@@ -215,6 +215,8 @@ class MovementListView(APIView):
         qs = scope_queryset(request.user, qs, "inventory.stock_movement.view")
         if request.query_params.get("item"):
             qs = qs.filter(item__sku=request.query_params["item"])
+        if request.query_params.get("reference"):
+            qs = qs.filter(reference=request.query_params["reference"])
         return _envelope(MovementSerializer(qs[:200], many=True).data)
 
 

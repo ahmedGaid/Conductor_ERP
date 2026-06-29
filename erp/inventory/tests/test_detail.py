@@ -57,6 +57,25 @@ def test_warehouse_detail_returns_master_stock_and_movements():
     assert data["movements"][0]["warehouse_code"] == "MAIN"
 
 
+def test_movements_filter_by_reference():
+    """The movements list filters by source document reference — powers the workflow tracker's
+    delivery/receipt stage snapshot, which looks up the stock moved under one order number."""
+    make_gl()
+    client = _admin_client()
+    _bootstrap(client)  # receipt with no reference
+    client.post(
+        "/api/inventory/movements/issue",
+        {"item_sku": "WIDGET", "warehouse_code": "MAIN", "quantity": "2", "reference": "SO-TEST-1"},
+        format="json",
+    )
+    res = client.get("/api/inventory/movements?reference=SO-TEST-1")
+    assert res.status_code == 200, res.data
+    rows = res.data["data"]
+    assert len(rows) == 1
+    assert rows[0]["reference"] == "SO-TEST-1"
+    assert rows[0]["type"] == "issue"
+
+
 def test_item_detail_unknown_sku_is_404():
     make_gl()
     client = _admin_client()

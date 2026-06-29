@@ -94,7 +94,16 @@ export function PurchaseOrderDetailPage() {
               subtitle={<><PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> · <EntityLink type="warehouse" value={data.warehouse_code} /> · <span className="latin">{data.order_date}</span></>}
             />
 
-            <WorkflowTracker kind="purchasing" steps={workflowFor("purchasing", data.status)} history={history ?? undefined} />
+            <WorkflowTracker
+              kind="purchasing"
+              steps={workflowFor("purchasing", data.status)}
+              history={history ?? undefined}
+              docs={{
+                orderNumber: data.number,
+                invoiceNumber: data.bill_number,
+                creditNoteNumber: data.debit_note_number,
+              }}
+            />
 
             <p className="pur-explain">
               {t(`purchasing.statusExplain.${statusExplainKey(data)}`, {

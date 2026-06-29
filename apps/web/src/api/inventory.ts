@@ -106,6 +106,12 @@ export function listMovements(item?: string): Promise<Movement[]> {
   return apiFetch<Movement[]>(`/inventory/movements${qs}`);
 }
 
+// Movements tied to one source document (a sales/purchase order number) — the stock issued or
+// received under that order. Powers the delivery/receipt step of the workflow tracker snapshot.
+export function movementsForReference(reference: string): Promise<Movement[]> {
+  return apiFetch<Movement[]>(`/inventory/movements?reference=${encodeURIComponent(reference)}`);
+}
+
 export function receiveStock(payload: {
   item_sku: string;
   warehouse_code: string;

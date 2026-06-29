@@ -1,30 +1,39 @@
 import { useTranslation } from "react-i18next";
 
-import type { StageHistoryEntry, WorkflowKind } from "../lib/workflow";
+import type { StageDocs, StageHistoryEntry, WorkflowKind } from "../lib/workflow";
 import { formatMinor } from "../lib/money";
+import { movementsForReference, type Movement } from "../api/inventory";
+import { useAsync } from "../hooks/useAsync";
 import { Bdi } from "./Bdi";
 import { EntityLink } from "./EntityLink";
 import { NavIcon } from "../app/icons";
 import "./stageSnapshot.css";
 
 /**
- * StageSnapshot — the panel opened when a workflow tracker stage is clicked. Shows who reached the
- * stage and when, then the order exactly as it was at that point (the audit-trail snapshot): party,
- * warehouse, lines and totals. Read-only; monochrome chrome with the module accent only on links.
+ * StageSnapshot — the panel opened when a workflow tracker stage is clicked. It leads with the live
+ * documents that stage produced — the invoice/bill GL journal, or the stock movements of the
+ * delivery/receipt — so the user can jump straight to the real record. Then, when an audit-trail
+ * snapshot exists, it shows the order exactly as it was at that point (party, warehouse, lines,
+ * totals). Read-only; monochrome chrome with the module accent only on links.
  */
 export function StageSnapshot({
   kind,
   stageKey,
   entry,
+  docs,
   onClose,
 }: {
   kind: WorkflowKind;
   stageKey: string;
   entry: StageHistoryEntry;
+  docs?: StageDocs;
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const snap = entry.snapshot;
+  // A snapshot is only usable when it carries the full order (lines). Older audit entries, written
+  // before snapshots existed, hold just the event payload — treat those as no snapshot so the panel
+  // falls back to the live documents below instead of crashing on missing fields.
+  const snap = entry.snapshot && Array.isArray(entry.snapshot.lines) ? entry.snapshot : null;
 
   const when = new Intl.DateTimeFormat(i18n.language, {
     dateStyle: "medium",
@@ -37,6 +46,24 @@ export function StageSnapshot({
   const partyName = snap ? (isSales ? snap.customer_name : snap.supplier_name) ?? "" : "";
   const currency = snap?.currency;
   const outstanding = snap?.outstanding_minor ?? 0;
+
+  // Stage → the document it produced. The invoice (sales) and bill (purchasing) stages both post a
+  // GL journal; the deliver/receive stages move stock; a return posts the credit/debit note.
+  const isInvoiceStage = stageKey === (isSales ? "invoice" : "bill");
+  const isDeliveryStage = stageKey === (isSales ? "deliver" : "receive");
+  const isReturnStage = stageKey === "returned";
+
+  const invoiceNo = docs?.invoiceNumber ?? snap?.invoice_number ?? snap?.bill_number ?? null;
+  const creditNo = docs?.creditNoteNumber ?? snap?.credit_note_number ?? snap?.debit_note_number ?? null;
+
+  // The stock movements behind a delivery/receipt are keyed by the order number (their reference).
+  const ref = docs?.orderNumber ?? snap?.number ?? "";
+  const wantMovements = isDeliveryStage && !!ref;
+  const { data: movements } = useAsync<Movement[]>(
+    () => (wantMovements ? movementsForReference(ref) : Promise.resolve([])),
+    [ref, wantMovements],
+    wantMovements ? `movements:ref:${ref}` : undefined,
+  );
 
   return (
     <div className="wf-snap card" role="group" aria-label={t(`workflow.${kind}.${stageKey}`)}>
@@ -53,6 +80,56 @@ export function StageSnapshot({
           <NavIcon name="close" />
         </button>
       </div>
+
+      {isInvoiceStage && invoiceNo && (
+        <div className="wf-snap__docs">
+          <span className="wf-snap__docs-title">{t(isSales ? "sales.detail.invoiceNo" : "purchasing.detail.billNo")}</span>
+          <span className="latin"><EntityLink type="journal" value={invoiceNo} /></span>
+        </div>
+      )}
+
+      {isReturnStage && creditNo && (
+        <div className="wf-snap__docs">
+          <span className="wf-snap__docs-title">{t(isSales ? "sales.detail.creditNoteNo" : "purchasing.detail.debitNoteNo")}</span>
+          <span className="latin"><EntityLink type="journal" value={creditNo} /></span>
+        </div>
+      )}
+
+      {isDeliveryStage && (
+        <div className="wf-snap__table-wrap">
+          <p className="wf-snap__docs-title">{t("workflow.snap.movements")}</p>
+          {movements && movements.length > 0 ? (
+            <table className="wf-snap__table">
+              <thead>
+                <tr>
+                  <th>{t("sales.newOrder.item")}</th>
+                  <th>{t("inventory.warehouse.code")}</th>
+                  <th className="wf-snap__num">{t("inventory.onHand.quantity")}</th>
+                  <th>{t("accounting.journals.number")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movements.map((m) => (
+                  <tr key={m.id}>
+                    <td><EntityLink type="item" value={m.item_sku} /></td>
+                    <td><EntityLink type="warehouse" value={m.warehouse_code} /></td>
+                    <td className="wf-snap__num"><Bdi>{m.quantity}</Bdi></td>
+                    <td className="latin">
+                      {m.journal_number ? (
+                        <EntityLink type="journal" value={m.journal_number} />
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="wf-snap__meta">{t("inventory.detail.noMovements")}</p>
+          )}
+        </div>
+      )}
 
       {snap && (
         <>
