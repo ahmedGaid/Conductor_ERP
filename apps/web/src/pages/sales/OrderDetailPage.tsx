@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   approveOrder,
   cancelOrder,
+  completeSale,
   confirmOrder,
   deliverOrder,
   getOrder,
@@ -161,7 +162,15 @@ export function OrderDetailPage() {
         }),
     },
     { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
-    { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
+    {
+      key: "pdf",
+      label: t("document.exportPdf"),
+      icon: "download",
+      // Once invoiced, "Export PDF" opens the on-brand invoice document (the artifact the customer's
+      // customer sees); before that it just prints the order copy.
+      onClick: () =>
+        data.invoice_number ? navigate(`/sales/orders/${data.id}/invoice`) : printDocument(data.number),
+    },
     {
       key: "share",
       label: t("document.share"),
@@ -172,6 +181,36 @@ export function OrderDetailPage() {
         ),
     },
   ];
+  // Fast-path the same-day counter sale: drive draft→confirmed→delivered→invoiced in one move.
+  // Additive shortcut to the granular primary action; hidden once nothing remains to fast-path or
+  // when an above-threshold order still needs its approval (the server would refuse the confirm step).
+  const canFastPath =
+    (data.status === "draft" || data.status === "confirmed" || data.status === "partially_delivered") &&
+    !(data.requires_approval && !data.approved);
+  if (canFastPath) {
+    menu.unshift({
+      key: "complete",
+      label: t("sales.detail.completeSale"),
+      icon: "checkCircle",
+      onClick: () =>
+        act(
+          setStatus("invoiced"),
+          () => completeSale(data.id),
+          t("sales.toast.completed"),
+          (u) => t("sales.toast.invoicedDone", { no: u.invoice_number }),
+        ),
+    });
+  }
+  // Once invoiced, the e-invoice submit is reachable straight from the order (no context switch to
+  // the E-invoicing list) — deep-links to that invoice, focused and ready to submit.
+  if ((data.status === "invoiced" || data.status === "paid") && data.invoice_number) {
+    menu.push({
+      key: "einvoice",
+      label: t("sales.detail.sendEinvoice"),
+      icon: "einvoice",
+      onClick: () => navigate(`/einvoice?focus=${encodeURIComponent(data.invoice_number)}`),
+    });
+  }
   // Return is reachable from the menu while it isn't the primary action (i.e. on an invoiced order).
   if (data.status === "invoiced") {
     menu.push({

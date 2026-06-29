@@ -140,7 +140,7 @@ export function NewQuotationPage() {
             </select>
           </label>
           <label className="sales-field">
-            <span>{t("inventory.warehouse.code")}</span>
+            <span>{t("inventory.warehouse.label")}</span>
             <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
               <option value="">—</option>
               {(warehouses ?? []).map((w) => (

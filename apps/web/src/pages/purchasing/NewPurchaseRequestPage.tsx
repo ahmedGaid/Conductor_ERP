@@ -111,7 +111,7 @@ export function NewPurchaseRequestPage() {
             </select>
           </label>
           <label className="pur-field">
-            <span>{t("inventory.warehouse.code")}</span>
+            <span>{t("inventory.warehouse.label")}</span>
             <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
               <option value="">—</option>
               {(warehouses ?? []).map((w) => (

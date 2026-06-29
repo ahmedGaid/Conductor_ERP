@@ -425,3 +425,27 @@ def receive_payment(order: SalesOrder, amount_minor: int, actor=None) -> SalesOr
                  entity_id=order.number, actor=actor, after=_snapshot(order))
     bus.publish(events.PAYMENT_RECEIVED, {"order": order.number, "amount": amount_minor})
     return order
+
+
+@transaction.atomic
+def complete_sale(order: SalesOrder, actor=None) -> SalesOrder:
+    """Fast-path the same-day counter sale: confirm → deliver (full) → invoice in one move.
+
+    The granular per-stage actions still exist; this is an additive shortcut, not a replacement.
+    It drives the order forward through whichever steps remain up to INVOICED, then stops — recording
+    the money (payment) stays a separate, deliberate act. Each step's own guard still applies, so an
+    above-threshold order without approval raises ``ApprovalRequiredError`` here too, and the whole
+    move rolls back atomically. Every sub-step audits + publishes as usual, so the workflow tracker
+    still shows the confirm/deliver/invoice stages individually.
+    """
+    if order.status == OrderStatus.DRAFT:
+        confirm_order(order, actor=actor)
+    if order.status in (OrderStatus.CONFIRMED, OrderStatus.PARTIALLY_DELIVERED):
+        deliver_order(order, actor=actor)
+    if order.status == OrderStatus.DELIVERED:
+        invoice_order(order, actor=actor)
+    if order.status != OrderStatus.INVOICED:
+        raise InvalidTransitionError(
+            data={"order": order.number, "status": order.status, "expected": "draft|confirmed|delivered"}
+        )
+    return order

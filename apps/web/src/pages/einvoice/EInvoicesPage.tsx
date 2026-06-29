@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 import {
   listETAInvoices,
@@ -12,7 +13,7 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
-import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
+import { matchesAllFilters, newFilterId, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
@@ -31,7 +32,12 @@ export function EInvoicesPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { data, loading, error, reload, mutate } = useAsync(() => listETAInvoices(), [], "einvoice:invoices");
-  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  // Deep-link from a sales order ("Send as e-invoice"): land with that invoice pre-filtered in view.
+  const [searchParams] = useSearchParams();
+  const focus = searchParams.get("focus") ?? "";
+  const [filters, setFilters] = useState<ActiveFilter[]>(
+    focus ? [{ id: newFilterId(), key: "invoice", operator: "contains", values: [focus] }] : [],
+  );
   const [tab, setTab] = useState<string>(ALL_TAB);
 
   const fields = useMemo<FilterField<ETAInvoice>[]>(
@@ -43,6 +49,7 @@ export function EInvoicesPage() {
         options: EINVOICE_STATUSES.map((s) => ({ value: s, label: t(`einvoice.status.${s}`) })),
         accessor: (e) => e.status,
       },
+      { key: "invoice", label: t("einvoice.invoice"), type: "text", accessor: (e) => e.invoice_number },
       { key: "customer", label: t("einvoice.customer"), type: "text", accessor: (e) => e.customer_name || e.customer_code },
     ],
     [t],

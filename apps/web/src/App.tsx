@@ -58,6 +58,7 @@ import { BatchesPage } from "./pages/inventory/BatchesPage";
 import { OrdersPage } from "./pages/sales/OrdersPage";
 import { NewOrderPage } from "./pages/sales/NewOrderPage";
 import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
+import { InvoiceDocumentPage } from "./pages/sales/InvoiceDocumentPage";
 import { CustomersPage } from "./pages/sales/CustomersPage";
 import { CustomerDetailPage } from "./pages/sales/CustomerDetailPage";
 import { QuotationsPage } from "./pages/sales/QuotationsPage";
@@ -188,6 +189,7 @@ function AppRoutes() {
           <Route path="/sales" element={<OrdersPage />} />
           <Route path="/sales/orders/new" element={<NewOrderPage />} />
           <Route path="/sales/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/sales/orders/:id/invoice" element={<InvoiceDocumentPage />} />
           <Route path="/sales/quotations" element={<QuotationsPage />} />
           <Route path="/sales/quotations/new" element={<NewQuotationPage />} />
           <Route path="/sales/quotations/:id" element={<QuotationDetailPage />} />

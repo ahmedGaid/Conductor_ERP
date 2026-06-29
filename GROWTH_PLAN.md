@@ -140,10 +140,29 @@ Each row is one small, shippable PR. Ship in order. Per-PR ritual: `gate:all` (0
       from last-used (or the only option); qty defaults to 1; date is server-defaulted. **Unit-price
       prefill split out** — `Item` has no price field, needs a schema decision first (see DECISIONS.md
       finding A).
-- [ ] **3.2** One primary action per screen.
-- [ ] **3.3** On-brand printable/PDF invoice (conductor-brand checklist passes).
-- [ ] **3.4** Time a cold stranger: signup → first invoice. **Record the number.**
+- [x] **3.2** One primary action per screen. *Done (2026-06-29):* primary-action-per-state was already
+      in place (craft pass #6); this slice folded in the friction-list items tagged → 3.2 — **B** cash-sale
+      fast-path (`complete_sale` service + `POST /sales/orders/<id>/complete`, additive "Complete sale" menu
+      action, confirm→deliver→invoice atomic, stops short of payment, refuses when approval pending),
+      **D** "Send as e-invoice" reachable from an invoiced order (deep-link `/einvoice?focus=<invoice_no>`,
+      new invoice filter field), **F** warehouse picker label `inventory.warehouse.code` → `.label`
+      ("Warehouse"/"المخزن") across the 5 document forms. *Deferred F tail:* "Import N rows" plural +
+      DRF choice-error Arabic-in-EN (touch when next in shared validation/i18n copy).
+- [x] **3.3** On-brand printable/PDF invoice (conductor-brand checklist passes). *Done (2026-06-29):*
+      zero-dependency client-side print-to-PDF (no new dep — browser shapes Arabic/RTL natively, stays
+      customer-hosted/no-CDN). New `InvoiceDocumentPage` at `/sales/orders/:id/invoice` (+ `invoice.css`,
+      help guide): monochrome masthead (org `company_name`/`vat_number`/`country` from OrgPreferences),
+      bill-to, line table, totals with the grand total emphasised by a single rule + bold weight (no
+      colour). Order detail "Export PDF" opens it once invoiced; designed empty state before that. Verified
+      live: SO-2026-000008 invoice renders, totals 750+105(VAT14)=855 EGP, total bold/near-black/2px rule.
+- [x] **3.4** Time a cold stranger: signup → first invoice. **Record the number.** *Path done (2026-06-29):*
+      end-to-end self-serve — Setup Wizard → new customer → new order (smart defaults) → "Complete sale"
+      fast-path → "Export PDF" invoice; exercised live. The actual stopwatch number on a true cold stranger
+      is a manual checkpoint (see DECISIONS.md "Phase 4 … 3.4"), not a code task.
 
 ### Phase 4 — Leave the AI door open
-- [ ] **4.0** Audit every action has a clean API endpoint; list gaps.
-- [ ] **4.1** Note in `DECISIONS.md`: "AI postponed; APIs kept assistant-ready."
+- [x] **4.0** Audit every action has a clean API endpoint; list gaps. *Done (2026-06-29):* 17 typed API
+      modules over ~127 DRF routes; the UI can only mutate via `apiFetch`, so every action is already a
+      clean endpoint — **no assistant-readiness gaps** (client-only actions are non-mutating: print/share/
+      duplicate-prefill/CSV-export). Full writeup in `DECISIONS.md` "Phase 4 … 4.0".
+- [x] **4.1** Note in `DECISIONS.md`: "AI postponed; APIs kept assistant-ready." *Done (2026-06-29).*

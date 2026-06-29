@@ -547,6 +547,7 @@
       "emptyHint": "Add your first item using the form above."
     },
     "warehouse": {
+      "label": "Warehouse",
       "code": "Warehouse code",
       "name": "Warehouse name",
       "add": "Add warehouse",
@@ -659,6 +660,7 @@
       "delivered": "Order delivered",
       "invoiced": "Invoice issued",
       "invoicedDone": "Invoice issued — {{no}}",
+      "completed": "Sale completed",
       "paid": "Payment recorded",
       "returned": "Return recorded",
       "returnedDone": "Return recorded — {{no}}",
@@ -728,6 +730,18 @@
       "noTax": "No tax",
       "subtotal": "Subtotal"
     },
+    "invoice": {
+      "title": "Invoice",
+      "org": "Your company",
+      "billTo": "Bill to",
+      "issueDate": "Issue date",
+      "orderNo": "Order no.",
+      "taxNumber": "Tax reg. no.",
+      "country": "Country",
+      "backToOrder": "Back to order",
+      "notIssued": "No invoice for this order yet",
+      "notIssuedHint": "Issue the invoice from the order, then it'll print here."
+    },
     "detail": {
       "invoiced": "Invoiced",
       "outstanding": "Outstanding",
@@ -736,6 +750,8 @@
       "deliver": "Deliver",
       "invoice": "Issue invoice",
       "recordPayment": "Record payment",
+      "completeSale": "Complete sale",
+      "sendEinvoice": "Send as e-invoice",
       "creditNoteNo": "Credit note no.",
       "returned": "Returned",
       "deliverRemaining": "Deliver remaining",

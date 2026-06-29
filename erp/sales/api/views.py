@@ -179,6 +179,12 @@ class OrderCancelView(_OrderActionView):
     action = "cancel_order"
 
 
+class OrderCompleteView(_OrderActionView):
+    """Fast-path the counter sale: confirm → deliver → invoice in one move (additive shortcut)."""
+
+    action = "complete_sale"
+
+
 class OrderDeliverView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 

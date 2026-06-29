@@ -12,6 +12,7 @@ from erp.sales.domain.models import OrderStatus
 from erp.sales.errors import CreditLimitExceededError, OverpaymentError
 from erp.sales.services import (
     OrderLineInput,
+    complete_sale,
     confirm_order,
     create_order,
     deliver_order,
@@ -155,6 +156,33 @@ def test_cancel_order_allowed_in_draft_and_confirmed_blocked_after():
     deliver_order(o3)
     with pytest.raises(InvalidTransitionError):
         cancel_order(o3)
+
+
+def test_complete_sale_drives_draft_to_invoiced_in_one_move():
+    customer, wh = _setup()
+    order = _order(customer, wh)
+
+    complete_sale(order)
+    assert order.status == OrderStatus.INVOICED
+    assert order.invoice_number
+    # Books posted exactly as the granular path would: stock issued, AR + Revenue booked.
+    assert balance_repo.total_value() == 1000_00
+    assert general_ledger("1100").closing_balance == 1500_00  # AR
+    assert general_ledger("4000").closing_balance == 1500_00  # Revenue
+    assert trial_balance().is_balanced
+    # Stops short of payment — the money is recorded separately.
+    assert order.outstanding_minor == 1500_00
+
+
+def test_complete_sale_blocked_when_approval_required():
+    from erp.sales.errors import ApprovalRequiredError
+
+    customer, wh = _setup()
+    order = _order(customer, wh, qty="100", price=150_00)  # 15,000.00 > 10,000.00 threshold
+    with pytest.raises(ApprovalRequiredError):
+        complete_sale(order)
+    order.refresh_from_db()
+    assert order.status == OrderStatus.DRAFT  # atomic rollback — nothing moved
 
 
 def test_cancel_order_respects_org_policy():
