@@ -96,8 +96,17 @@
 }
 
 .wf__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+/* Date a stage was reached (from the lifecycle history), shown under its label. */
+.wf__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+  font-weight: var(--font-weight-regular);
 }
 .wf__step--current .wf__label {
   color: var(--color-text);

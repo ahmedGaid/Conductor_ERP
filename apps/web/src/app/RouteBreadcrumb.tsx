@@ -2,7 +2,16 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 
 import { NavIcon } from "./icons";
+import { useDocumentCrumb } from "./DocumentCrumb";
 import "./RouteBreadcrumb.css";
+
+function Chevron() {
+  return (
+    <svg className="crumb__chev" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 /**
  * Route-driven breadcrumb shown above every module work page (Sales, Purchasing,
@@ -77,11 +86,15 @@ function sectionKey(module: string, seg2: string, seg3: string): string | null {
 export function RouteBreadcrumb() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
+  const doc = useDocumentCrumb();
   const [, seg1 = "", seg2 = "", seg3 = ""] = pathname.split("/");
 
   if (!MODULE_SET.has(seg1)) return null;
 
   const section = sectionKey(seg1, seg2, seg3);
+  // On a detail page the document number is the current crumb, so the section steps back to a link
+  // to its list (e.g. Sales › Orders › SO-2026-000007, where "Orders" returns to the list).
+  const sectionTo = seg2 ? `/${seg1}/${seg2}` : `/${seg1}`;
 
   return (
     <nav className="crumb" aria-label={t("common.breadcrumb")}>
@@ -93,10 +106,20 @@ export function RouteBreadcrumb() {
       </Link>
       {section && (
         <>
-          <svg className="crumb__chev" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="crumb__current">{t(section)}</span>
+          <Chevron />
+          {doc ? (
+            <Link to={sectionTo} className="crumb__link">
+              {t(section)}
+            </Link>
+          ) : (
+            <span className="crumb__current">{t(section)}</span>
+          )}
+        </>
+      )}
+      {doc && (
+        <>
+          <Chevron />
+          <span className="crumb__current latin">{doc}</span>
         </>
       )}
     </nav>

@@ -666,7 +666,8 @@
       "quoteApproved": "تمت الموافقة على عرض السعر",
       "quoteRejected": "تم رفض عرض السعر",
       "orderCreated": "تم إنشاء الطلب",
-      "quotationCreated": "تم إنشاء عرض السعر"
+      "quotationCreated": "تم إنشاء عرض السعر",
+      "cancelled": "تم إلغاء الطلب"
     },
     "tabs": {
       "orders": "الطلبات",
@@ -745,7 +746,8 @@
       "approval": "الموافقة",
       "approved": "مُوافَق عليه",
       "pendingApproval": "بانتظار الموافقة",
-      "vat": "ضريبة القيمة المضافة"
+      "vat": "ضريبة القيمة المضافة",
+      "orderDetails": "تفاصيل الطلب"
     },
     "quotations": {
       "number": "رقم العرض",
@@ -840,7 +842,8 @@
       "approval": "الموافقة",
       "approved": "مُوافَق عليه",
       "pendingApproval": "بانتظار الموافقة",
-      "vat": "ضريبة القيمة المضافة"
+      "vat": "ضريبة القيمة المضافة",
+      "orderDetails": "تفاصيل الطلب"
     },
     "requests": {
       "number": "رقم الطلب",
@@ -878,7 +881,8 @@
       "reqRejected": "تم رفض طلب الشراء",
       "supplierCreated": "تمت إضافة المورد",
       "poCreated": "تم إنشاء أمر الشراء",
-      "prCreated": "تم إنشاء طلب الشراء"
+      "prCreated": "تم إنشاء طلب الشراء",
+      "cancelled": "تم إلغاء الطلب"
     }
   },
   "crm": {
@@ -1126,7 +1130,8 @@
     "off": "مُعطّل",
     "all": "الكل",
     "actions": "إجراءات",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "notFound": "تعذّر العثور على هذا السجل."
   },
   "import": {
     "action": "استيراد CSV",
@@ -1404,7 +1409,14 @@
       "accent": "اللون الافتراضي",
       "accentDesc": "اللون المميّز الذي يبدأ به المستخدمون الجدد.",
       "landing": "الصفحة الأولى الافتراضية",
-      "landingDesc": "الصفحة التي يراها المستخدمون أولاً بعد تسجيل الدخول."
+      "landingDesc": "الصفحة التي يراها المستخدمون أولاً بعد تسجيل الدخول.",
+      "orderCancel": "إلغاء الطلبات",
+      "orderCancelDesc": "إلى أي مرحلة يظل بالإمكان إلغاء طلب البيع أو الشراء. بعد التسليم استخدم المرتجع بدلاً من ذلك.",
+      "orderCancelOptions": {
+        "disabled": "أبدًا",
+        "draft": "المسودات فقط",
+        "confirmed": "حتى التأكيد"
+      }
     }
   },
   "admin": {
@@ -1552,5 +1564,18 @@
         "journal": "قيد يومية"
       }
     }
+  },
+  "document": {
+    "moreActions": "إجراءات أخرى",
+    "duplicate": "تكرار",
+    "print": "طباعة",
+    "exportPdf": "تصدير PDF",
+    "share": "مشاركة",
+    "cancelOrder": "إلغاء الطلب",
+    "linkCopied": "تم نسخ الرابط",
+    "linkCopyFailed": "تعذّر نسخ الرابط",
+    "completedOn": "اكتملت كل الخطوات في {{date}}",
+    "cancelConfirmTitle": "إلغاء {{number}}؟",
+    "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء."
   }
 }

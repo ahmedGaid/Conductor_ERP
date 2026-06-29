@@ -34,9 +34,12 @@ export function WorkflowTracker({
   history?: StageHistoryEntry[];
   docs?: StageDocs;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const byStage = history ? historyByStage(history) : {};
   const [openStage, setOpenStage] = useState<string | null>(null);
+
+  const dateFmt = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" });
+  const stageDate = (iso: string) => dateFmt.format(new Date(iso));
 
   const open = openStage && byStage[openStage] ? openStage : null;
 
@@ -56,7 +59,12 @@ export function WorkflowTracker({
               )}
             </span>
           );
-          const label = <span className="wf__label">{t(`workflow.${kind}.${s.key}`)}</span>;
+          const label = (
+            <span className="wf__label">
+              {t(`workflow.${kind}.${s.key}`)}
+              {entry && <span className="wf__date latin">{stageDate(entry.at)}</span>}
+            </span>
+          );
           const cls = `wf__step wf__step--${s.state}${s.exception ? " wf__step--exception" : ""}`;
 
           return (

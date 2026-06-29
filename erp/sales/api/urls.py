@@ -21,6 +21,7 @@ urlpatterns = [
     path("orders/<uuid:order_id>/deliver", views.OrderDeliverView.as_view(), name="order-deliver"),
     path("orders/<uuid:order_id>/invoice", views.OrderInvoiceView.as_view(), name="order-invoice"),
     path("orders/<uuid:order_id>/return", views.OrderReturnView.as_view(), name="order-return"),
+    path("orders/<uuid:order_id>/cancel", views.OrderCancelView.as_view(), name="order-cancel"),
     path("orders/<uuid:order_id>/payment", views.OrderPaymentView.as_view(), name="order-payment"),
     path("quotations", views.QuotationListCreateView.as_view(), name="quotation-list"),
     path("quotations/<uuid:quote_id>", views.QuotationDetailView.as_view(), name="quotation-detail"),

@@ -666,7 +666,8 @@
       "quoteApproved": "Quotation approved",
       "quoteRejected": "Quotation rejected",
       "orderCreated": "Order created",
-      "quotationCreated": "Quotation created"
+      "quotationCreated": "Quotation created",
+      "cancelled": "Order cancelled"
     },
     "tabs": {
       "orders": "Orders",
@@ -745,7 +746,8 @@
       "approval": "Approval",
       "approved": "Approved",
       "pendingApproval": "Pending approval",
-      "vat": "VAT"
+      "vat": "VAT",
+      "orderDetails": "Order details"
     },
     "quotations": {
       "number": "Quotation no.",
@@ -840,7 +842,8 @@
       "approval": "Approval",
       "approved": "Approved",
       "pendingApproval": "Pending approval",
-      "vat": "VAT"
+      "vat": "VAT",
+      "orderDetails": "Order details"
     },
     "requests": {
       "number": "Request no.",
@@ -878,7 +881,8 @@
       "reqRejected": "Request rejected",
       "supplierCreated": "Supplier added",
       "poCreated": "Order created",
-      "prCreated": "Request created"
+      "prCreated": "Request created",
+      "cancelled": "Order cancelled"
     }
   },
   "crm": {
@@ -1126,7 +1130,8 @@
     "off": "Off",
     "all": "All",
     "actions": "Actions",
-    "close": "Close"
+    "close": "Close",
+    "notFound": "We couldn’t find that record."
   },
   "import": {
     "action": "Import CSV",
@@ -1404,7 +1409,14 @@
       "accent": "Default accent",
       "accentDesc": "The accent colour new users start with.",
       "landing": "Default landing page",
-      "landingDesc": "The page users see first after signing in."
+      "landingDesc": "The page users see first after signing in.",
+      "orderCancel": "Order cancellation",
+      "orderCancelDesc": "How far a sales or purchase order may still be cancelled. After delivery, use a return instead.",
+      "orderCancelOptions": {
+        "disabled": "Never",
+        "draft": "Drafts only",
+        "confirmed": "Until confirmed"
+      }
     }
   },
   "admin": {
@@ -1552,5 +1564,18 @@
         "journal": "Journal entry"
       }
     }
+  },
+  "document": {
+    "moreActions": "More actions",
+    "duplicate": "Duplicate",
+    "print": "Print",
+    "exportPdf": "Export PDF",
+    "share": "Share",
+    "cancelOrder": "Cancel Order",
+    "linkCopied": "Link copied",
+    "linkCopyFailed": "Couldn’t copy link",
+    "completedOn": "All steps completed on {{date}}",
+    "cancelConfirmTitle": "Cancel {{number}}?",
+    "cancelConfirmBody": "This can’t be undone."
   }
 }

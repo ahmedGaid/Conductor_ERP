@@ -260,6 +260,24 @@ def deliver_order(order: SalesOrder, delivered: dict[int, Decimal] | None = None
 
 
 @transaction.atomic
+def cancel_order(order: SalesOrder, actor=None) -> SalesOrder:
+    """Cancel an order that has not yet moved stock or posted to the GL.
+
+    Allowed only for the states the org's cancellation policy permits (draft/confirmed); past
+    delivery, cancellation is never offered — use a return / credit note instead. A pure status
+    flip, so there is nothing to reverse."""
+    if not access.order_cancellable(order.status):
+        raise InvalidTransitionError(
+            data={"order": order.number, "status": order.status, "expected": "draft|confirmed"}
+        )
+    order.status = OrderStatus.CANCELLED
+    order.save(update_fields=["status", "updated_at"])
+    audit.record(module="sales", action="cancel_order", entity_type="SalesOrder",
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
+    return order
+
+
+@transaction.atomic
 def return_order(order: SalesOrder, returned: dict[int, Decimal] | None = None, actor=None) -> SalesOrder:
     """Customer return / credit note on an invoiced (or paid) order.
 

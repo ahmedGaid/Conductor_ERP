@@ -35,6 +35,14 @@
 [dir="rtl"] .crumb__chev {
   transform: scaleX(-1);
 }
+.crumb__link {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+.crumb__link:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
 .crumb__current {
   color: var(--color-text);
 }

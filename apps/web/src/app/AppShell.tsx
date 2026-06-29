@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
 import { RouteBreadcrumb } from "./RouteBreadcrumb";
+import { DocumentCrumbProvider } from "./DocumentCrumb";
 import { CommandBar } from "./CommandBar";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { ShortcutsProvider, useShortcuts } from "./ShortcutsContext";
@@ -81,10 +82,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             <main id="main" className="appshell__main" ref={mainRef}>
               {/* Re-keying on the path replays the enter animation each navigation,
                   so pages glide in instead of snapping. */}
-              <div key={location.pathname} className="appshell__content page-enter">
-                <RouteBreadcrumb />
-                {children}
-              </div>
+              <DocumentCrumbProvider key={location.pathname}>
+                <div className="appshell__content page-enter">
+                  <RouteBreadcrumb />
+                  {children}
+                </div>
+              </DocumentCrumbProvider>
             </main>
             <HelpCenter />
             <ShortcutsHost />

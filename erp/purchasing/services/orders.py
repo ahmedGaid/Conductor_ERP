@@ -203,6 +203,24 @@ def confirm_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
 
 
 @transaction.atomic
+def cancel_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
+    """Cancel a purchase order that has not yet received stock or posted to the GL.
+
+    Allowed only for the states the org's cancellation policy permits (draft/confirmed); past
+    receipt, cancellation is never offered — use a return / debit note instead. A pure status flip,
+    so there is nothing to reverse."""
+    if not access.order_cancellable(order.status):
+        raise InvalidTransitionError(
+            data={"order": order.number, "status": order.status, "expected": "draft|confirmed"}
+        )
+    order.status = POStatus.CANCELLED
+    order.save(update_fields=["status", "updated_at"])
+    audit.record(module="purchasing", action="cancel_order", entity_type="PurchaseOrder",
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
+    return order
+
+
+@transaction.atomic
 def receive_order(order: PurchaseOrder, received: dict[int, Decimal] | None = None, actor=None) -> PurchaseOrder:
     """Goods receipt (GRN). Full by default; pass ``{line_no: qty}`` for a partial receipt.
 

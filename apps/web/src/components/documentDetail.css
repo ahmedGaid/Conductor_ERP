@@ -1,0 +1,79 @@
+/* Shared chrome for a transaction detail page (DocumentHeader + DocumentStatusNote). Logical
+   properties throughout; monochrome but for the status badge and the note icon, which always pairs
+   with words. */
+
+.docdetail__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.docdetail__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.docdetail__number {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+.docdetail__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.docdetail__actions .btn .navicon {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+}
+
+/* Party · warehouse · date sub-line under the document number. */
+.docdetail__sub {
+  margin: var(--space-2) 0 0;
+}
+
+/* Plain-language state note. */
+.docnote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}
+.docnote__icon {
+  display: inline-flex;
+  flex: none;
+  margin-block-start: 0.1rem;
+}
+.docnote__icon .navicon {
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+}
+.docnote--done .docnote__icon {
+  color: var(--color-success);
+}
+.docnote--exception .docnote__icon {
+  color: var(--color-danger);
+}
+.docnote--active .docnote__icon {
+  color: var(--color-text-muted);
+}
+.docnote__title {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+.docnote__detail {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* A thin divider between the header/note block, the tracker and the summary. */
+.docdetail__rule {
+  block-size: 1px;
+  border: none;
+  background: var(--color-border);
+  margin-block: var(--space-5);
+}

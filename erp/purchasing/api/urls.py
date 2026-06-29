@@ -21,6 +21,7 @@ urlpatterns = [
     path("orders/<uuid:order_id>/receive", views.POReceiveView.as_view(), name="order-receive"),
     path("orders/<uuid:order_id>/bill", views.POBillView.as_view(), name="order-bill"),
     path("orders/<uuid:order_id>/return", views.POReturnView.as_view(), name="order-return"),
+    path("orders/<uuid:order_id>/cancel", views.POCancelView.as_view(), name="order-cancel"),
     path("orders/<uuid:order_id>/payment", views.POPaymentView.as_view(), name="order-payment"),
     path("requests", views.RequestListCreateView.as_view(), name="request-list"),
     path("requests/<uuid:req_id>", views.RequestDetailView.as_view(), name="request-detail"),

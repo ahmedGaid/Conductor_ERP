@@ -128,6 +128,14 @@ SIDEBAR_CHOICES = [("expanded", "Expanded"), ("compact", "Compact")]
 DATE_FORMAT_CHOICES = [("iso", "2026-06-20"), ("dmy", "20/06/2026"), ("mdy", "06/20/2026")]
 TIME_FORMAT_CHOICES = [("24h", "24-hour"), ("12h", "12-hour")]
 DIGEST_CHOICES = [("off", "Off"), ("daily", "Daily"), ("weekly", "Weekly")]
+# How far an order may still be cancelled. Cancellation is only ever safe before stock/GL
+# side-effects (draft, confirmed); past delivery it is never offered (use a return/credit note).
+# This picks the cutoff among those safe states.
+ORDER_CANCEL_CHOICES = [
+    ("disabled", "Never"),
+    ("draft", "Drafts only"),
+    ("confirmed", "Until confirmed"),
+]
 
 
 class UserPreferences(models.Model):
@@ -207,6 +215,12 @@ class OrgPreferences(models.Model):
     # First-run setup. False until the self-serve wizard finishes (flipped only via the setup
     # service, never the generic org-preferences PATCH). Drives the post-login route guard.
     is_setup_complete = models.BooleanField(default=False)
+
+    # How far a sales/purchase order may still be cancelled (see ORDER_CANCEL_CHOICES). Governs the
+    # Cancel action offered on the order detail page; the service enforces it server-side.
+    order_cancel_until = models.CharField(
+        max_length=10, choices=ORDER_CANCEL_CHOICES, default="confirmed"
+    )
 
     updated_at = models.DateTimeField(auto_now=True)
 

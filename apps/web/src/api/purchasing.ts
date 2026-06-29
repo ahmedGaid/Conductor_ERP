@@ -102,6 +102,7 @@ export const confirmPO = (id: string) => action(id, "confirm");
 export const receivePO = (id: string) => action(id, "receive");
 export const billPO = (id: string) => action(id, "bill");
 export const returnPO = (id: string) => action(id, "return");
+export const cancelPO = (id: string) => action(id, "cancel");
 
 export function payPO(id: string, amount: number): Promise<PurchaseOrder> {
   return apiFetch<PurchaseOrder>(`/purchasing/orders/${id}/payment`, {

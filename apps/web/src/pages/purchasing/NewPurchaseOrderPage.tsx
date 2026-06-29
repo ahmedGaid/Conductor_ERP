@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { createPurchaseOrder, listSuppliers, type NewPOLine } from "../../api/purchasing";
 import { listItems, listWarehouses } from "../../api/inventory";
@@ -8,7 +8,7 @@ import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
-import { formatMinor, parseToMinor } from "../../lib/money";
+import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PurchasingNav } from "./PurchasingNav";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
@@ -23,19 +23,32 @@ interface DraftLine {
 
 const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_cost: "" });
 
+// Prefill carried by the Duplicate action on an existing purchase order (see PurchaseOrderDetailPage).
+interface DuplicateInit {
+  supplier_code: string;
+  warehouse_code: string;
+  tax_code: string;
+  lines: { item_sku: string; quantity: string; unit_cost: number }[];
+}
+
 export function NewPurchaseOrderPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
+  const dup = (useLocation().state as { duplicate?: DuplicateInit } | null)?.duplicate;
   const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: items } = useAsync(listItems, [], "inventory:items");
   const { data: taxCodes } = useAsync(listTaxCodes, [], "accounting:tax-codes");
 
-  const [supplier, setSupplier] = useState("");
-  const [warehouse, setWarehouse] = useState("");
-  const [taxCode, setTaxCode] = useState("");
-  const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
+  const [supplier, setSupplier] = useState(dup?.supplier_code ?? "");
+  const [warehouse, setWarehouse] = useState(dup?.warehouse_code ?? "");
+  const [taxCode, setTaxCode] = useState(dup?.tax_code ?? "");
+  const [lines, setLines] = useState<DraftLine[]>(
+    dup?.lines?.length
+      ? dup.lines.map((l) => ({ item_sku: l.item_sku, quantity: l.quantity, unit_cost: minorToAmount(l.unit_cost) }))
+      : [emptyLine()],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -175,6 +175,10 @@ class OrderInvoiceView(_OrderActionView):
     action = "invoice_order"
 
 
+class OrderCancelView(_OrderActionView):
+    action = "cancel_order"
+
+
 class OrderDeliverView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 

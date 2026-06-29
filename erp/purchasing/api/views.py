@@ -162,6 +162,10 @@ class POBillView(_POActionView):
     action = "bill_order"
 
 
+class POCancelView(_POActionView):
+    action = "cancel_order"
+
+
 class POReceiveView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 

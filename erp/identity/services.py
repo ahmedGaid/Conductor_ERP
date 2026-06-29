@@ -166,4 +166,6 @@ def effective_preferences(user) -> dict:
     data["einvoice_enabled"] = org.einvoice_enabled
     # The workspace identity the sidebar shows (blank until setup; UI falls back to the product name).
     data["company_name"] = org.company_name
+    # Cancellation policy the order detail page reads to decide whether to offer Cancel.
+    data["order_cancel_until"] = org.order_cancel_until
     return data
