@@ -44,7 +44,10 @@ import { EInvoicesPage } from "./pages/einvoice/EInvoicesPage";
 import { NotificationsPage } from "./pages/notifications/NotificationsPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
 import { ItemsPage } from "./pages/inventory/ItemsPage";
+import { ItemDetailPage } from "./pages/inventory/ItemDetailPage";
 import { WarehousesPage } from "./pages/inventory/WarehousesPage";
+import { WarehouseDetailPage } from "./pages/inventory/WarehouseDetailPage";
+import { ResolveRedirect } from "./app/ResolveRedirect";
 import { PriceListsPage } from "./pages/pricing/PriceListsPage";
 import { PriceListDetailPage } from "./pages/pricing/PriceListDetailPage";
 import { CustomerPricingPage } from "./pages/pricing/CustomerPricingPage";
@@ -174,7 +177,9 @@ function AppRoutes() {
           <Route path="/accounting/report-builder" element={<ReportBuilderPage />} />
           <Route path="/inventory" element={<StockOnHandPage />} />
           <Route path="/inventory/items" element={<ItemsPage />} />
+          <Route path="/inventory/items/:sku" element={<ItemDetailPage />} />
           <Route path="/inventory/warehouses" element={<WarehousesPage />} />
+          <Route path="/inventory/warehouses/:code" element={<WarehouseDetailPage />} />
           <Route path="/inventory/movements" element={<StockMovementPage />} />
           <Route path="/inventory/stock-on-hand" element={<StockOnHandPage />} />
           <Route path="/inventory/counts" element={<StockCountsPage />} />
@@ -198,6 +203,8 @@ function AppRoutes() {
           <Route path="/purchasing/suppliers/:code" element={<SupplierDetailPage />} />
           <Route path="/einvoice" element={<EInvoicesPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          {/* Universal entity links resolve a business number → its UUID detail route. */}
+          <Route path="/go/:type/:key" element={<ResolveRedirect />} />
           <Route path="/crm" element={<PipelinePage />} />
           <Route path="/crm/pipeline" element={<PipelinePage />} />
           <Route path="/crm/opportunities/:id" element={<OpportunityDetailPage />} />

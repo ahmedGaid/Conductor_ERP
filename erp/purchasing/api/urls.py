@@ -15,6 +15,7 @@ urlpatterns = [
     ),
     path("orders", views.POListCreateView.as_view(), name="order-list"),
     path("orders/<uuid:order_id>", views.PODetailView.as_view(), name="order-detail"),
+    path("orders/<uuid:order_id>/history", views.POHistoryView.as_view(), name="order-history"),
     path("orders/<uuid:order_id>/approve", views.POApproveView.as_view(), name="order-approve"),
     path("orders/<uuid:order_id>/confirm", views.POConfirmView.as_view(), name="order-confirm"),
     path("orders/<uuid:order_id>/receive", views.POReceiveView.as_view(), name="order-receive"),

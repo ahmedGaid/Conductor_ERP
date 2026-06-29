@@ -7,7 +7,7 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
-import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
@@ -102,7 +102,7 @@ export function WarehousesPage() {
             <tbody>
               {filtered.map((w) => (
                 <tr key={w.id}>
-                  <td><Bdi>{w.code}</Bdi></td>
+                  <td><EntityLink type="warehouse" value={w.code} /></td>
                   <td>{w.name}</td>
                 </tr>
               ))}

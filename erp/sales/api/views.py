@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.audit.history import order_history
 from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
@@ -126,6 +127,29 @@ class OrderDetailView(APIView):
 
     def get(self, request: Request, order_id) -> Response:
         return _envelope(OrderSerializer(get_object_or_404(_order_qs(), id=order_id)).data)
+
+
+# Audit action → workflow tracker stage key (see apps/web/src/lib/workflow.ts). Approval gates the
+# confirm stage, so it shares it; a return is the lifecycle's exception stage.
+_SALES_STAGE = {
+    "create_order": "create",
+    "approve_order": "confirm",
+    "confirm_order": "confirm",
+    "deliver_order": "deliver",
+    "invoice_order": "invoice",
+    "receive_payment": "payment",
+    "return_order": "returned",
+}
+
+
+class OrderHistoryView(APIView):
+    """Lifecycle of one order: who reached each stage, when, and the order's snapshot at that point."""
+
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def get(self, request: Request, order_id) -> Response:
+        order = get_object_or_404(SalesOrder, id=order_id)
+        return _envelope(order_history("SalesOrder", order.number, _SALES_STAGE))
 
 
 class _OrderActionView(APIView):

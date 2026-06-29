@@ -7,7 +7,7 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
-import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { ImportDialog } from "../../components/ImportDialog";
@@ -181,7 +181,7 @@ export function ItemsPage() {
             <tbody>
               {visible.map((i) => (
                 <tr key={i.id}>
-                  <td><Bdi>{i.sku}</Bdi></td>
+                  <td><EntityLink type="item" value={i.sku} /></td>
                   <td>{i.name}</td>
                   <td>{i.uom}</td>
                   <td>{t(`inventory.types.${i.type}`)}</td>

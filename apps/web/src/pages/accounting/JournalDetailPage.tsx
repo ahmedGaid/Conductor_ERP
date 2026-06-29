@@ -7,10 +7,18 @@ import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
+import { EntityLink, type EntityType } from "../../components/EntityLink";
 import { ModuleHeader } from "../../components/ModuleHeader";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
+
+// A journal's source module tells us which document its reference points to (so the GL can drill
+// back to the order that posted it). Other sources (manual, etc.) leave the reference as plain text.
+const SOURCE_ENTITY: Record<string, EntityType> = {
+  sales: "salesOrder",
+  purchasing: "purchaseOrder",
+};
 
 export function JournalDetailPage() {
   const { t } = useTranslation();
@@ -41,6 +49,12 @@ export function JournalDetailPage() {
               ) : (
                 data.memo
               )}
+            </p>
+          )}
+          {data.reference && SOURCE_ENTITY[data.source] && (
+            <p className="muted">
+              {t("accounting.entry.sourceDoc")}:{" "}
+              <EntityLink type={SOURCE_ENTITY[data.source]} value={data.reference} />
             </p>
           )}
 

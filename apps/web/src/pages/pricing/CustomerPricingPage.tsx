@@ -22,6 +22,8 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
+import { PartyLink } from "../../components/PartyLink";
 import { PricingTabs } from "./PricingTabs";
 import "./pricing.css";
 
@@ -160,7 +162,9 @@ function AssignmentsBlock({
               {data.map((row) => (
                 <tr key={row.id}>
                   <td>
-                    <Bdi>{nameOf(row.customer_code) ?? row.customer_code}</Bdi>
+                    <PartyLink type="customer" code={row.customer_code}>
+                      {nameOf(row.customer_code) ?? row.customer_code}
+                    </PartyLink>
                   </td>
                   <td>
                     <Bdi>{row.price_list_code}</Bdi>
@@ -361,10 +365,12 @@ function OverridesBlock({
               {data.map((row) => (
                 <tr key={row.id}>
                   <td>
-                    <Bdi>{nameOf(row.customer_code) ?? row.customer_code}</Bdi>
+                    <PartyLink type="customer" code={row.customer_code}>
+                      {nameOf(row.customer_code) ?? row.customer_code}
+                    </PartyLink>
                   </td>
                   <td>
-                    <Bdi>{row.item_sku}</Bdi>
+                    <EntityLink type="item" value={row.item_sku} />
                   </td>
                   <td className="pricing-table__num">
                     <Bdi>{row.min_quantity}</Bdi>

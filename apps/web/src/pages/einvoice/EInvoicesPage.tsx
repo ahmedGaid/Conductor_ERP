@@ -14,6 +14,8 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
+import { PartyLink } from "../../components/PartyLink";
 import { ExportButtons } from "../../components/ExportButtons";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -122,8 +124,8 @@ export function EInvoicesPage() {
             <tbody>
               {visible.map((e) => (
                 <tr key={e.id}>
-                  <td className="latin">{e.invoice_number}</td>
-                  <td>{e.customer_name || e.customer_code}</td>
+                  <td className="latin"><EntityLink type="journal" value={e.invoice_number} /></td>
+                  <td><PartyLink type="customer" code={e.customer_code}>{e.customer_name || e.customer_code}</PartyLink></td>
                   <td className="ein-table__num"><Bdi>{formatMinor(e.tax_minor, e.currency)}</Bdi></td>
                   <td className="ein-table__num"><Bdi>{formatMinor(e.total_minor, e.currency)}</Bdi></td>
                   <td className="latin muted">{e.uuid ? `${e.uuid.slice(0, 12)}…` : "—"}</td>

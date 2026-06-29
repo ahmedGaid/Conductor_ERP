@@ -111,6 +111,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M9 4v16" />
     </>
   ),
+  // Close — X.
+  close: (
+    <>
+      <path d="M6 6 18 18" />
+      <path d="M18 6 6 18" />
+    </>
+  ),
   // Settings — gear.
   settings: (
     <>

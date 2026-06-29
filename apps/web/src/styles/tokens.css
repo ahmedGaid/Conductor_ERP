@@ -302,66 +302,66 @@
  * clear hues; the bar is a lighter tint of the same accent.
  */
 [data-module="sales"] {
-  --color-accent: #2f7ff0;
-  --color-accent-strong: #1b63cc;
-  --color-accent-subtle: #e8f1fe;
-  --module-bar: #5b9df0;
+  --color-accent: #0d6efd;
+  --color-accent-strong: #0a53c4;
+  --color-accent-subtle: #e6f0ff;
+  --module-bar: #2f86ff;
 }
 [data-module="purchasing"] {
-  --color-accent: #1f9d57;
-  --color-accent-strong: #157a43;
-  --color-accent-subtle: #e6f6ec;
-  --module-bar: #46c07e;
+  --color-accent: #0f9d51;
+  --color-accent-strong: #0a763c;
+  --color-accent-subtle: #e2f6ea;
+  --module-bar: #1fc274;
 }
 [data-module="inventory"] {
-  --color-accent: #c97a12;
-  --color-accent-strong: #a4620c;
-  --color-accent-subtle: #fdf0dd;
-  --module-bar: #e8a23b;
+  --color-accent: #d97706;
+  --color-accent-strong: #aa5c04;
+  --color-accent-subtle: #fdeed6;
+  --module-bar: #f59e0b;
 }
 [data-module="accounting"] {
-  --color-accent: #7c4ddb;
-  --color-accent-strong: #6332bf;
-  --color-accent-subtle: #f0e9fc;
-  --module-bar: #a98ae6;
+  --color-accent: #7c3aed;
+  --color-accent-strong: #6022cc;
+  --color-accent-subtle: #efe6fd;
+  --module-bar: #9d6cf2;
 }
 [data-module="crm"] {
-  --color-accent: #4f63d6;
-  --color-accent-strong: #3a4cb8;
-  --color-accent-subtle: #ebeefb;
-  --module-bar: #7385e6;
+  --color-accent: #3b4fe0;
+  --color-accent-strong: #2a3ac0;
+  --color-accent-subtle: #e6e9fc;
+  --module-bar: #5d70f5;
 }
 
 /* Dark-mode per-module accent: luminous text + translucent subtle, lighter bar. */
 :root[data-theme="dark"] [data-module="sales"] {
-  --color-accent: #6fb0f5;
-  --color-accent-strong: #9cc8f8;
-  --color-accent-subtle: rgba(47, 127, 240, 0.22);
-  --module-bar: #6fb0f5;
+  --color-accent: #4d9bff;
+  --color-accent-strong: #84bdff;
+  --color-accent-subtle: rgba(13, 110, 253, 0.26);
+  --module-bar: #4d9bff;
 }
 :root[data-theme="dark"] [data-module="purchasing"] {
-  --color-accent: #5fd18f;
-  --color-accent-strong: #93e2b4;
-  --color-accent-subtle: rgba(31, 157, 87, 0.22);
-  --module-bar: #5fd18f;
+  --color-accent: #3ecb83;
+  --color-accent-strong: #7ee0aa;
+  --color-accent-subtle: rgba(15, 157, 81, 0.26);
+  --module-bar: #3ecb83;
 }
 :root[data-theme="dark"] [data-module="inventory"] {
-  --color-accent: #efb45f;
-  --color-accent-strong: #f6cd8e;
-  --color-accent-subtle: rgba(201, 122, 18, 0.22);
-  --module-bar: #efb45f;
+  --color-accent: #f7a73a;
+  --color-accent-strong: #fac478;
+  --color-accent-subtle: rgba(217, 119, 6, 0.26);
+  --module-bar: #f7a73a;
 }
 :root[data-theme="dark"] [data-module="accounting"] {
-  --color-accent: #b69af0;
-  --color-accent-strong: #d2c2f6;
-  --color-accent-subtle: rgba(124, 77, 219, 0.22);
-  --module-bar: #b69af0;
+  --color-accent: #a47cf3;
+  --color-accent-strong: #c6aef8;
+  --color-accent-subtle: rgba(124, 58, 237, 0.26);
+  --module-bar: #a47cf3;
 }
 :root[data-theme="dark"] [data-module="crm"] {
-  --color-accent: #8a9bf0;
-  --color-accent-strong: #b3bdf6;
-  --color-accent-subtle: rgba(79, 99, 214, 0.22);
-  --module-bar: #8a9bf0;
+  --color-accent: #6f81f5;
+  --color-accent-strong: #9da9f8;
+  --color-accent-subtle: rgba(59, 79, 224, 0.26);
+  --module-bar: #6f81f5;
 }
 
 /* Dark-mode accent variants: luminous text + translucent fills so they read on near-black. */

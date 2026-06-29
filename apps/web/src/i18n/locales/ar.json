@@ -226,7 +226,20 @@
     "statusValue": {
       "active": "نشط",
       "archived": "مؤرشف"
+    },
+    "stage": {
+      "byWhen": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    },
+    "snap": {
+      "status": "الحالة",
+      "date": "التاريخ"
     }
+  },
+  "resolve": {
+    "notFoundTitle": "تعذّر العثور على المطلوب",
+    "notFound": "لا يوجد ما يطابق ”{{key}}“.",
+    "backHome": "العودة إلى لوحة المعلومات"
   },
   "status": {
     "pending": "قيد الانتظار",
@@ -461,6 +474,7 @@
       "debit": "مدين",
       "credit": "دائن",
       "lineMemo": "بيان السطر",
+      "sourceDoc": "المستند المصدر",
       "costCenter": "مركز التكلفة",
       "totals": "الإجماليات",
       "balanced": "متوازن",
@@ -596,6 +610,21 @@
       "expiry": "أقرب انتهاء",
       "empty": "لا توجد دفعات مسجلة بعد.",
       "hint": "استلم مخزونًا بدفعة وتاريخ انتهاء لتتبعه هنا."
+    },
+    "detail": {
+      "backToItems": "العودة إلى الأصناف",
+      "backToWarehouses": "العودة إلى المخازن",
+      "onHandValue": "قيمة المخزون المتاح",
+      "stockByWarehouse": "المخزون حسب المخزن",
+      "stockByItem": "المخزون حسب الصنف",
+      "movements": "أحدث الحركات",
+      "noStock": "لا يوجد مخزون متاح.",
+      "noMovements": "لا توجد حركات بعد",
+      "noMovementsHint": "ستظهر هنا عمليات الاستلام والصرف والتحويل.",
+      "reference": "المرجع",
+      "status": "الحالة",
+      "active": "نشط",
+      "inactive": "غير نشط"
     }
   },
   "party": {

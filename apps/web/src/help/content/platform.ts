@@ -1,5 +1,17 @@
 import type { HelpGuide } from "../types";
 
+export const entityLinkGuide: HelpGuide = {
+  title: { en: "Opening a linked record", ar: "فتح سجلّ مرتبط" },
+  purpose: {
+    en: "A brief stop while the app opens the record you clicked — an order, a journal entry, or another document referenced by its number.",
+    ar: "محطة قصيرة بينما يفتح التطبيق السجلّ الذي نقرت عليه — طلب أو قيد أو مستند آخر مُشار إليه برقمه.",
+  },
+  howItWorks: {
+    en: "Codes and numbers throughout the app (item SKUs, warehouses, order and journal numbers) are clickable. When you click one, the app looks up the record and takes you straight to its page. If nothing matches, you'll see a short note and a way back.",
+    ar: "الرموز والأرقام في كل أنحاء التطبيق (أكواد الأصناف، المخازن، أرقام الطلبات والقيود) قابلة للنقر. عند النقر، يبحث التطبيق عن السجلّ وينقلك مباشرة إلى صفحته. وإن لم يوجد ما يطابقه، تظهر لك ملاحظة قصيرة وطريقة للعودة.",
+  },
+};
+
 export const dashboardGuide: HelpGuide = {
   title: { en: "Home dashboard", ar: "لوحة البداية" },
   purpose: {

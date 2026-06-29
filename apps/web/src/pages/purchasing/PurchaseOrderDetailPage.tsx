@@ -6,6 +6,7 @@ import {
   billPO,
   confirmPO,
   getPurchaseOrder,
+  getPurchaseOrderHistory,
   payPO,
   receivePO,
   returnPO,
@@ -19,6 +20,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
+import { EntityLink } from "../../components/EntityLink";
 import { ModuleHeader } from "../../components/ModuleHeader";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
@@ -42,6 +44,12 @@ export function PurchaseOrderDetailPage() {
     () => getPurchaseOrder(id as string),
     [id],
     `purchasing:order:${id}`,
+  );
+  // Lifecycle trail behind each tracker stage (see OrderDetailPage for why it's load-time only).
+  const { data: history } = useAsync(
+    () => getPurchaseOrderHistory(id as string),
+    [id],
+    `purchasing:order:${id}:history`,
   );
 
   // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
@@ -83,10 +91,10 @@ export function PurchaseOrderDetailPage() {
             <ModuleHeader
               title={data.number}
               status={<span className={`pur-badge pur-badge--${data.status}`}>{t(`purchasing.status.${data.status}`)}</span>}
-              subtitle={<><PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> · {data.warehouse_code} · <span className="latin">{data.order_date}</span></>}
+              subtitle={<><PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> · <EntityLink type="warehouse" value={data.warehouse_code} /> · <span className="latin">{data.order_date}</span></>}
             />
 
-            <WorkflowTracker kind="purchasing" steps={workflowFor("purchasing", data.status)} />
+            <WorkflowTracker kind="purchasing" steps={workflowFor("purchasing", data.status)} history={history ?? undefined} />
 
             <p className="pur-explain">
               {t(`purchasing.statusExplain.${statusExplainKey(data)}`, {
@@ -189,13 +197,13 @@ export function PurchaseOrderDetailPage() {
                   {data.bill_number && (
                     <div className="pur-meta__row">
                       <dt>{t("purchasing.detail.billNo")}</dt>
-                      <dd className="latin">{data.bill_number}</dd>
+                      <dd className="latin"><EntityLink type="journal" value={data.bill_number} /></dd>
                     </div>
                   )}
                   {data.debit_note_number && (
                     <div className="pur-meta__row">
                       <dt>{t("purchasing.detail.debitNoteNo")}</dt>
-                      <dd className="latin">{data.debit_note_number}</dd>
+                      <dd className="latin"><EntityLink type="journal" value={data.debit_note_number} /></dd>
                     </div>
                   )}
                   {data.returned_minor > 0 && (
@@ -230,7 +238,7 @@ export function PurchaseOrderDetailPage() {
               <tbody>
                 {data.lines.map((l) => (
                   <tr key={l.line_no}>
-                    <td><Bdi>{l.item_sku}</Bdi>{l.description ? ` · ${l.description}` : ""}</td>
+                    <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
                     <td className="pur-table__num"><Bdi>{l.quantity}</Bdi></td>
                     <td className="pur-table__num"><Bdi>{l.received_qty}</Bdi></td>
                     <td className="pur-table__num"><Bdi>{l.returned_qty}</Bdi></td>

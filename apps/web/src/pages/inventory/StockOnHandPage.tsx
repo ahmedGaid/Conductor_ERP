@@ -8,6 +8,7 @@ import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -66,12 +67,12 @@ export function StockOnHandPage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={`${r.sku}-${r.warehouse_code}`}>
-                  <td><Bdi>{r.sku}</Bdi></td>
+                  <td><EntityLink type="item" value={r.sku} /></td>
                   <td>
                     {r.item_name}
                     {r.below_reorder && <span className="inv-warn"> · {t("inventory.onHand.reorder")}</span>}
                   </td>
-                  <td><Bdi>{r.warehouse_code}</Bdi></td>
+                  <td><EntityLink type="warehouse" value={r.warehouse_code} /></td>
                   <td className="inv-table__num"><Bdi>{r.quantity}</Bdi></td>
                   <td className="inv-table__num"><Bdi>{formatMinor(r.avg_cost_minor)}</Bdi></td>
                   <td className="inv-table__num"><Bdi>{formatMinor(r.value_minor)}</Bdi></td>

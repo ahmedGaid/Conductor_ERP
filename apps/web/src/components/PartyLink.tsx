@@ -1,14 +1,10 @@
-import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 
-// A customer/supplier rendered as a link to its party page (transactions + ledger). Used anywhere a
-// party appears so the drill-down is consistent. Falls back to plain text when there's no code.
-export type PartyType = "customer" | "supplier";
+import { EntityLink } from "./EntityLink";
 
-const BASE: Record<PartyType, string> = {
-  customer: "/sales/customers",
-  supplier: "/purchasing/suppliers",
-};
+// A customer/supplier rendered as a link to its party page (transactions + ledger). Thin wrapper
+// over the general EntityLink so party drill-downs stay consistent with every other entity mention.
+export type PartyType = "customer" | "supplier";
 
 export function PartyLink({
   type,
@@ -21,10 +17,9 @@ export function PartyLink({
   children?: ReactNode;
   className?: string;
 }) {
-  if (!code) return <>{children}</>;
   return (
-    <Link to={`${BASE[type]}/${encodeURIComponent(code)}`} className={className}>
-      {children ?? code}
-    </Link>
+    <EntityLink type={type} value={code} className={className}>
+      {children}
+    </EntityLink>
   );
 }

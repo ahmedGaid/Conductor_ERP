@@ -226,7 +226,20 @@
     "statusValue": {
       "active": "Active",
       "archived": "Archived"
+    },
+    "stage": {
+      "byWhen": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    },
+    "snap": {
+      "status": "Status",
+      "date": "Date"
     }
+  },
+  "resolve": {
+    "notFoundTitle": "We couldn't find that",
+    "notFound": "Nothing matches “{{key}}”.",
+    "backHome": "Back to dashboard"
   },
   "status": {
     "pending": "Pending",
@@ -461,6 +474,7 @@
       "debit": "Debit",
       "credit": "Credit",
       "lineMemo": "Line memo",
+      "sourceDoc": "Source document",
       "costCenter": "Cost center",
       "totals": "Totals",
       "balanced": "Balanced",
@@ -596,6 +610,21 @@
       "expiry": "Earliest expiry",
       "empty": "No batches recorded yet.",
       "hint": "Receive stock with a batch/lot and expiry to see it traced here."
+    },
+    "detail": {
+      "backToItems": "Back to items",
+      "backToWarehouses": "Back to warehouses",
+      "onHandValue": "On-hand value",
+      "stockByWarehouse": "Stock by warehouse",
+      "stockByItem": "Stock by item",
+      "movements": "Recent movements",
+      "noStock": "No stock on hand.",
+      "noMovements": "No movements yet",
+      "noMovementsHint": "Receipts, issues and transfers will show up here.",
+      "reference": "Reference",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive"
     }
   },
   "party": {

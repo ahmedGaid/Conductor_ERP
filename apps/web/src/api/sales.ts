@@ -1,5 +1,6 @@
 // Typed wrappers for the sales API (/api/sales/*). Prices/values are integer minor units.
 import { apiFetch } from "./client";
+import type { StageHistoryEntry } from "../lib/workflow";
 
 export type OrderStatus =
   | "draft"
@@ -74,6 +75,10 @@ export function listOrders(status?: OrderStatus): Promise<SalesOrder[]> {
 
 export function getOrder(id: string): Promise<SalesOrder> {
   return apiFetch<SalesOrder>(`/sales/orders/${id}`);
+}
+
+export function getOrderHistory(id: string): Promise<StageHistoryEntry[]> {
+  return apiFetch<StageHistoryEntry[]>(`/sales/orders/${id}/history`);
 }
 
 export interface NewOrderLine {

@@ -6,6 +6,7 @@ import {
   confirmOrder,
   deliverOrder,
   getOrder,
+  getOrderHistory,
   invoiceOrder,
   payOrder,
   returnOrder,
@@ -19,6 +20,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
+import { EntityLink } from "../../components/EntityLink";
 import { ModuleHeader } from "../../components/ModuleHeader";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
@@ -44,6 +46,9 @@ export function OrderDetailPage() {
     [id],
     `sales:order:${id}`,
   );
+  // The lifecycle trail behind each tracker stage. Loads with the page; the snapshot is historical,
+  // so it doesn't need to follow in-page optimistic flips (it refreshes on the next visit/reload).
+  const { data: history } = useAsync(() => getOrderHistory(id as string), [id], `sales:order:${id}:history`);
 
   // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
   // and action set update instantly, then let the server's returned order reconcile the derived
@@ -84,10 +89,10 @@ export function OrderDetailPage() {
             <ModuleHeader
               title={data.number}
               status={<span className={`sales-badge sales-badge--${data.status}`}>{t(`sales.status.${data.status}`)}</span>}
-              subtitle={<><PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> · {data.warehouse_code} · <span className="latin">{data.order_date}</span></>}
+              subtitle={<><PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> · <EntityLink type="warehouse" value={data.warehouse_code} /> · <span className="latin">{data.order_date}</span></>}
             />
 
-            <WorkflowTracker kind="sales" steps={workflowFor("sales", data.status)} />
+            <WorkflowTracker kind="sales" steps={workflowFor("sales", data.status)} history={history ?? undefined} />
 
             <p className="sales-explain">
               {t(`sales.statusExplain.${statusExplainKey(data)}`, {
@@ -190,13 +195,13 @@ export function OrderDetailPage() {
                   {data.invoice_number && (
                     <div className="sales-meta__row">
                       <dt>{t("sales.detail.invoiceNo")}</dt>
-                      <dd className="latin">{data.invoice_number}</dd>
+                      <dd className="latin"><EntityLink type="journal" value={data.invoice_number} /></dd>
                     </div>
                   )}
                   {data.credit_note_number && (
                     <div className="sales-meta__row">
                       <dt>{t("sales.detail.creditNoteNo")}</dt>
-                      <dd className="latin">{data.credit_note_number}</dd>
+                      <dd className="latin"><EntityLink type="journal" value={data.credit_note_number} /></dd>
                     </div>
                   )}
                   {data.returned_minor > 0 && (
@@ -232,7 +237,7 @@ export function OrderDetailPage() {
               <tbody>
                 {data.lines.map((l) => (
                   <tr key={l.line_no}>
-                    <td><Bdi>{l.item_sku}</Bdi>{l.description ? ` · ${l.description}` : ""}</td>
+                    <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
                     <td className="sales-table__num"><Bdi>{l.quantity}</Bdi></td>
                     <td className="sales-table__num"><Bdi>{l.delivered_qty}</Bdi></td>
                     <td className="sales-table__num"><Bdi>{l.returned_qty}</Bdi></td>

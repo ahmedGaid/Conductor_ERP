@@ -15,6 +15,7 @@ urlpatterns = [
     ),
     path("orders", views.OrderListCreateView.as_view(), name="order-list"),
     path("orders/<uuid:order_id>", views.OrderDetailView.as_view(), name="order-detail"),
+    path("orders/<uuid:order_id>/history", views.OrderHistoryView.as_view(), name="order-history"),
     path("orders/<uuid:order_id>/approve", views.OrderApproveView.as_view(), name="order-approve"),
     path("orders/<uuid:order_id>/confirm", views.OrderConfirmView.as_view(), name="order-confirm"),
     path("orders/<uuid:order_id>/deliver", views.OrderDeliverView.as_view(), name="order-deliver"),
