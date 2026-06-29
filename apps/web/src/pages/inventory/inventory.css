@@ -40,8 +40,8 @@
 }
 
 .inv-nav__tab--active {
-  color: var(--color-brand-strong);
-  border-block-end-color: var(--color-brand);
+  color: var(--color-accent-strong);
+  border-block-end-color: var(--color-accent);
 }
 
 .inv-table-wrap {
@@ -147,4 +147,49 @@
   gap: var(--space-3);
   flex-wrap: wrap;
   margin-block-end: var(--space-3);
+}
+
+/* Item / warehouse detail pages (ItemDetailPage, WarehouseDetailPage). */
+.inv-back {
+  align-self: start;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.inv-back:hover {
+  color: var(--color-text);
+}
+
+.inv-detail__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.inv-detail__title {
+  margin: 0;
+}
+.inv-detail__name {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.inv-detail__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+}
+.inv-detail__fact dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.inv-detail__fact dd {
+  margin: var(--space-1) 0 0;
+}
+
+.inv-section-title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+.inv-detail__empty {
+  margin: 0;
 }

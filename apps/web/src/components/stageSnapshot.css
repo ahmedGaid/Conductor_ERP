@@ -1,0 +1,129 @@
+/* Stage snapshot panel (see StageSnapshot.tsx). Opens under the workflow tracker when a stage is
+   clicked. Logical properties, RTL-safe; settled fade+rise from the token scale (reduced-motion
+   collapses it via the global --dur reset). Monochrome — accent only reaches the inner links. */
+.wf-snap {
+  margin-block-start: var(--space-3);
+  padding: var(--space-4);
+  animation: wf-snap-in var(--dur-slow) var(--ease-out);
+}
+
+@keyframes wf-snap-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wf-snap__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.wf-snap__stage {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+.wf-snap__meta {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.wf-snap__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.wf-snap__close:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.wf-snap__close .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+
+.wf-snap__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+}
+.wf-snap__fact dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.wf-snap__fact dd {
+  margin: var(--space-1) 0 0;
+}
+
+/* Live document a stage produced: the invoice/bill journal, or a credit/debit note. A labelled
+   row that leads the panel before the historical snapshot. */
+.wf-snap__docs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin-block-start: var(--space-4);
+}
+.wf-snap__docs-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.wf-snap__table-wrap {
+  margin-block-start: var(--space-4);
+  overflow-x: auto;
+}
+/* Title above the movements table (delivery/receipt stage). */
+.wf-snap__table-wrap > .wf-snap__docs-title {
+  margin: 0 0 var(--space-2);
+}
+.wf-snap__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+.wf-snap__table th,
+.wf-snap__table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+  border-block-end: 1px solid var(--color-border);
+}
+.wf-snap__table th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+.wf-snap__num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-snap__totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin-block-start: var(--space-4);
+}
+.wf-snap__total {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.wf-snap__total span:first-child {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

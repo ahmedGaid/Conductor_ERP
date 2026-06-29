@@ -12,6 +12,7 @@ import type { HelpGuide } from "./types";
 import {
   dashboardGuide,
   einvoiceGuide,
+  entityLinkGuide,
   executionViewerGuide,
   notificationsGuide,
   workflowCanvasGuide,
@@ -39,11 +40,13 @@ import {
 } from "./content/accounting";
 import {
   batchesGuide,
+  itemDetailGuide,
   itemsGuide,
   stockCountDetailGuide,
   stockCountsGuide,
   stockMovementGuide,
   stockOnHandGuide,
+  warehouseDetailGuide,
   warehousesGuide,
 } from "./content/inventory";
 import {
@@ -112,7 +115,9 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/accounting/report-builder": reportBuilderGuide,
   "/inventory": stockOnHandGuide,
   "/inventory/items": itemsGuide,
+  "/inventory/items/:sku": itemDetailGuide,
   "/inventory/warehouses": warehousesGuide,
+  "/inventory/warehouses/:code": warehouseDetailGuide,
   "/inventory/movements": stockMovementGuide,
   "/inventory/stock-on-hand": stockOnHandGuide,
   "/inventory/counts": stockCountsGuide,
@@ -136,6 +141,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/purchasing/suppliers/:code": supplierDetailGuide,
   "/einvoice": einvoiceGuide,
   "/notifications": notificationsGuide,
+  "/go/:type/:key": entityLinkGuide,
   "/crm": pipelineGuide,
   "/crm/pipeline": pipelineGuide,
   "/crm/opportunities/:id": opportunityDetailGuide,

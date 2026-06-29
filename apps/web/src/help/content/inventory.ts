@@ -68,6 +68,38 @@ export const warehousesGuide: HelpGuide = {
   ],
 };
 
+export const itemDetailGuide: HelpGuide = {
+  title: { en: "Item detail", ar: "تفاصيل الصنف" },
+  purpose: {
+    en: "Everything about one item in one place: how much you hold in each warehouse and every movement it has been through.",
+    ar: "كل ما يخصّ صنفاً واحداً في مكان واحد: كم لديك منه في كل مخزن وكل حركة مرّ بها.",
+  },
+  howItWorks: {
+    en: "You reach this page by clicking an item's SKU anywhere in the app. The stock table shows the on-hand quantity and value per warehouse; the movements table lists recent receipts, issues and transfers, each linking back to its warehouse, source order and accounting entry.",
+    ar: "تصل إلى هذه الصفحة بالنقر على رمز الصنف في أي مكان بالتطبيق. يعرض جدول المخزون الكمية والقيمة المتاحة لكل مخزن؛ ويسرد جدول الحركات أحدث عمليات الاستلام والصرف والتحويل، وكلٌّ منها يرتبط بمخزنه وطلبه المصدر وقيده المحاسبي.",
+  },
+  related: [
+    { to: "/inventory/items", label: { en: "Items", ar: "الأصناف" } },
+    { to: "/inventory", label: { en: "Stock on hand", ar: "الأرصدة المتاحة" } },
+  ],
+};
+
+export const warehouseDetailGuide: HelpGuide = {
+  title: { en: "Warehouse detail", ar: "تفاصيل المخزن" },
+  purpose: {
+    en: "Everything about one warehouse: what's stored in it and every movement in and out.",
+    ar: "كل ما يخصّ مخزناً واحداً: ما المُخزّن فيه وكل حركة دخول وخروج.",
+  },
+  howItWorks: {
+    en: "You reach this page by clicking a warehouse code anywhere in the app. The stock table shows the on-hand quantity and value per item; the movements table lists recent activity, each row linking back to its item, source order and accounting entry.",
+    ar: "تصل إلى هذه الصفحة بالنقر على رمز المخزن في أي مكان بالتطبيق. يعرض جدول المخزون الكمية والقيمة المتاحة لكل صنف؛ ويسرد جدول الحركات النشاط الأخير، وكل سطر يرتبط بصنفه وطلبه المصدر وقيده المحاسبي.",
+  },
+  related: [
+    { to: "/inventory/warehouses", label: { en: "Warehouses", ar: "المخازن" } },
+    { to: "/inventory/movements", label: { en: "Stock movements", ar: "حركات المخزون" } },
+  ],
+};
+
 export const stockMovementGuide: HelpGuide = {
   title: { en: "Stock movement", ar: "حركة المخزون" },
   purpose: {

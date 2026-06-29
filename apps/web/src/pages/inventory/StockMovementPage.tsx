@@ -14,6 +14,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { InventoryNav } from "./InventoryNav";
 import "./inventory.css";
 
@@ -188,14 +189,14 @@ export function StockMovementPage() {
               {movements.map((m) => (
                 <tr key={m.id}>
                   <td>{t(`inventory.movement.${m.type}`)}</td>
-                  <td><Bdi>{m.item_sku}</Bdi></td>
+                  <td><EntityLink type="item" value={m.item_sku} /></td>
                   <td>
-                    <Bdi>{m.warehouse_code}</Bdi>
-                    {m.dest_warehouse_code && <> → <Bdi>{m.dest_warehouse_code}</Bdi></>}
+                    <EntityLink type="warehouse" value={m.warehouse_code} />
+                    {m.dest_warehouse_code && <> → <EntityLink type="warehouse" value={m.dest_warehouse_code} /></>}
                   </td>
                   <td className="inv-table__num"><Bdi>{m.quantity}</Bdi></td>
                   <td className="inv-table__num"><Bdi>{formatMinor(m.value_minor)}</Bdi></td>
-                  <td className="latin muted">{m.journal_number || "—"}</td>
+                  <td className="latin">{m.journal_number ? <EntityLink type="journal" value={m.journal_number} /> : <span className="muted">—</span>}</td>
                 </tr>
               ))}
             </tbody>

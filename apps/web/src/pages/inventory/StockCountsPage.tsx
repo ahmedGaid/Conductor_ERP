@@ -10,6 +10,7 @@ import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -168,7 +169,7 @@ export function StockCountsPage() {
                       onMouseEnter={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
                       onFocus={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
                     >
-                      <Bdi>{c.warehouse_code}</Bdi>
+                      <EntityLink type="warehouse" value={c.warehouse_code} />
                     </Link>
                   </td>
                   <td><Bdi>{c.count_date}</Bdi></td>

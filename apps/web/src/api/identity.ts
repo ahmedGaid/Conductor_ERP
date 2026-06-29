@@ -43,8 +43,13 @@ export interface Preferences {
   einvoice_enabled?: boolean;
   /** Org workspace name merged into effective preferences (the sidebar shows it). */
   company_name?: string;
+  /** Org cancellation policy merged into effective preferences (the order page reads it). */
+  order_cancel_until?: OrderCancelUntil;
   updated_at?: string;
 }
+
+/** How far an order may still be cancelled (org policy). */
+export type OrderCancelUntil = "disabled" | "draft" | "confirmed";
 
 export interface OrgPreferences {
   default_language: "ar" | "en";
@@ -56,6 +61,7 @@ export interface OrgPreferences {
   vat_number: string;
   base_currency: string;
   einvoice_enabled: boolean;
+  order_cancel_until: OrderCancelUntil;
   updated_at?: string;
 }
 

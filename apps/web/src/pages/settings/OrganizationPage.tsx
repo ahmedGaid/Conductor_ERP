@@ -104,6 +104,19 @@ export function OrganizationPage() {
           />
         </SettingRow>
 
+        <SettingRow title={t("settings.org.orderCancel")} desc={t("settings.org.orderCancelDesc")}>
+          <Segmented
+            ariaLabel={t("settings.org.orderCancel")}
+            value={org.order_cancel_until}
+            onChange={(v) => save({ order_cancel_until: v })}
+            options={[
+              { value: "disabled", label: t("settings.org.orderCancelOptions.disabled") },
+              { value: "draft", label: t("settings.org.orderCancelOptions.draft") },
+              { value: "confirmed", label: t("settings.org.orderCancelOptions.confirmed") },
+            ]}
+          />
+        </SettingRow>
+
         <SettingRow title={t("settings.org.language")} desc={t("settings.org.languageDesc")}>
           <Segmented
             ariaLabel={t("settings.org.language")}

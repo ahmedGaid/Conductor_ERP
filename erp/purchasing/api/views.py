@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.audit.history import order_history
 from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
@@ -116,6 +117,29 @@ class PODetailView(APIView):
         return _envelope(POSerializer(get_object_or_404(_po_qs(), id=order_id)).data)
 
 
+# Audit action → workflow tracker stage key (see apps/web/src/lib/workflow.ts). Approval gates the
+# confirm stage, so it shares it; a return is the lifecycle's exception stage.
+_PO_STAGE = {
+    "create_order": "create",
+    "approve_order": "confirm",
+    "confirm_order": "confirm",
+    "receive_order": "receive",
+    "bill_order": "bill",
+    "pay_order": "payment",
+    "return_order": "returned",
+}
+
+
+class POHistoryView(APIView):
+    """Lifecycle of one PO: who reached each stage, when, and the PO's snapshot at that point."""
+
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def get(self, request: Request, order_id) -> Response:
+        order = get_object_or_404(PurchaseOrder, id=order_id)
+        return _envelope(order_history("PurchaseOrder", order.number, _PO_STAGE))
+
+
 class _POActionView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
     action = ""
@@ -136,6 +160,10 @@ class POConfirmView(_POActionView):
 
 class POBillView(_POActionView):
     action = "bill_order"
+
+
+class POCancelView(_POActionView):
+    action = "cancel_order"
 
 
 class POReceiveView(APIView):

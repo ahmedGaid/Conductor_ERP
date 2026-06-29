@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { createOrder, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
@@ -14,6 +14,8 @@ import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
+import { WorkflowTracker } from "../../components/WorkflowTracker";
+import { workflowFor } from "../../lib/workflow";
 import "./sales.css";
 
 interface DraftLine {
@@ -26,19 +28,38 @@ interface DraftLine {
 
 const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "1", unit_price: "", discount: "" });
 
+// Prefill carried by the Duplicate action on an existing order (see OrderDetailPage). Prices/discounts
+// arrive as integer minor units and are shown as editable major-unit strings.
+interface DuplicateInit {
+  customer_code: string;
+  warehouse_code: string;
+  tax_code: string;
+  lines: { item_sku: string; quantity: string; unit_price: number; discount: number }[];
+}
+
 export function NewOrderPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
+  const dup = (useLocation().state as { duplicate?: DuplicateInit } | null)?.duplicate;
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: items } = useAsync(listItems, [], "inventory:items");
   const { data: taxCodes } = useAsync(listTaxCodes, [], "accounting:tax-codes");
 
-  const [customer, setCustomer] = useState("");
-  const [warehouse, setWarehouse] = useState("");
-  const [taxCode, setTaxCode] = useState("");
-  const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
+  const [customer, setCustomer] = useState(dup?.customer_code ?? "");
+  const [warehouse, setWarehouse] = useState(dup?.warehouse_code ?? "");
+  const [taxCode, setTaxCode] = useState(dup?.tax_code ?? "");
+  const [lines, setLines] = useState<DraftLine[]>(
+    dup?.lines?.length
+      ? dup.lines.map((l) => ({
+          item_sku: l.item_sku,
+          quantity: l.quantity,
+          unit_price: minorToAmount(l.unit_price),
+          discount: l.discount ? minorToAmount(l.discount) : "",
+        }))
+      : [emptyLine()],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,6 +155,7 @@ export function NewOrderPage() {
       <SalesNav />
 
       <form ref={formRef} className="card sales-page" onSubmit={onSubmit}>
+        <WorkflowTracker kind="sales" steps={workflowFor("sales", "new")} />
         <div className="sales-toolbar">
           <label className="sales-field">
             <span>{t("sales.orders.customer")}</span>

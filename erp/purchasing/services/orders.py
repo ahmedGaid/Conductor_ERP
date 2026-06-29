@@ -85,6 +85,43 @@ def _require(order: PurchaseOrder, status: str) -> None:
         )
 
 
+def _snapshot(order: PurchaseOrder) -> dict:
+    """Point-in-time view of the PO, stored on the audit trail (``after``) at every transition so each
+    workflow stage can be replayed exactly as it was when the actor reached it."""
+    return {
+        "number": order.number,
+        "status": order.status,
+        "supplier_code": order.supplier.code,
+        "supplier_name": order.supplier.name,
+        "warehouse_code": order.warehouse_code,
+        "currency": order.currency,
+        "order_date": order.order_date.isoformat(),
+        "subtotal_minor": order.subtotal_minor,
+        "tax_code": order.tax_code,
+        "tax_minor": order.tax_minor,
+        "received_minor": order.received_minor,
+        "billed_minor": order.billed_minor,
+        "paid_minor": order.paid_minor,
+        "returned_minor": order.returned_minor,
+        "outstanding_minor": order.billed_minor - order.paid_minor,
+        "bill_number": order.bill_number,
+        "debit_note_number": order.debit_note_number,
+        "lines": [
+            {
+                "line_no": ln.line_no,
+                "item_sku": ln.item_sku,
+                "description": ln.description,
+                "quantity": str(ln.quantity),
+                "received_qty": str(ln.received_qty),
+                "returned_qty": str(ln.returned_qty),
+                "unit_cost_minor": ln.unit_cost_minor,
+                "line_total_minor": ln.line_total_minor,
+            }
+            for ln in order.lines.all().order_by("line_no")
+        ],
+    }
+
+
 @transaction.atomic
 def create_order(
     *, supplier: Supplier, warehouse_code: str, lines: list[POLineInput],
@@ -119,6 +156,8 @@ def create_order(
         subtotal += total
     order.subtotal_minor = subtotal
     order.save(update_fields=["subtotal_minor"])
+    audit.record(module="purchasing", action="create_order", entity_type="PurchaseOrder",
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     return order
 
 
@@ -142,7 +181,7 @@ def approve_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
     order.approved_by = actor if getattr(actor, "is_authenticated", False) else None
     order.save(update_fields=["approved", "approved_at", "approved_by", "updated_at"])
     audit.record(module="purchasing", action="approve_order", entity_type="PurchaseOrder",
-                 entity_id=order.number, actor=actor)
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     bus.publish(events.PO_APPROVED, {"order": order.number})
     return order
 
@@ -158,8 +197,26 @@ def confirm_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
     order.status = POStatus.CONFIRMED
     order.save(update_fields=["status", "updated_at"])
     audit.record(module="purchasing", action="confirm_order", entity_type="PurchaseOrder",
-                 entity_id=order.number, actor=actor)
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     bus.publish(events.PO_CONFIRMED, {"order": order.number, "supplier": order.supplier.code})
+    return order
+
+
+@transaction.atomic
+def cancel_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
+    """Cancel a purchase order that has not yet received stock or posted to the GL.
+
+    Allowed only for the states the org's cancellation policy permits (draft/confirmed); past
+    receipt, cancellation is never offered — use a return / debit note instead. A pure status flip,
+    so there is nothing to reverse."""
+    if not access.order_cancellable(order.status):
+        raise InvalidTransitionError(
+            data={"order": order.number, "status": order.status, "expected": "draft|confirmed"}
+        )
+    order.status = POStatus.CANCELLED
+    order.save(update_fields=["status", "updated_at"])
+    audit.record(module="purchasing", action="cancel_order", entity_type="PurchaseOrder",
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     return order
 
 
@@ -203,8 +260,7 @@ def receive_order(order: PurchaseOrder, received: dict[int, Decimal] | None = No
     order.status = POStatus.RECEIVED if fully else POStatus.PARTIALLY_RECEIVED
     order.save(update_fields=["received_minor", "status", "updated_at"])
     audit.record(module="purchasing", action="receive_order", entity_type="PurchaseOrder",
-                 entity_id=order.number, actor=actor, after={"received": received_total,
-                                                            "status": order.status})
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     bus.publish(events.PO_RECEIVED, {"order": order.number, "value": received_total,
                                      "status": order.status})
     return order
@@ -255,7 +311,7 @@ def bill_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
     order.bill_number = entry.number
     order.save(update_fields=["status", "tax_minor", "billed_minor", "bill_number", "updated_at"])
     audit.record(module="purchasing", action="bill_order", entity_type="PurchaseOrder",
-                 entity_id=order.number, actor=actor, after={"bill": entry.number})
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     bus.publish(events.PO_BILLED, {"order": order.number, "bill": entry.number})
     return order
 
@@ -289,7 +345,7 @@ def pay_order(order: PurchaseOrder, amount_minor: int, actor=None) -> PurchaseOr
         order.status = POStatus.PAID
     order.save(update_fields=["paid_minor", "status", "updated_at"])
     audit.record(module="purchasing", action="pay_order", entity_type="PurchaseOrder",
-                 entity_id=order.number, actor=actor, after={"amount": amount_minor})
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     bus.publish(events.PO_PAID, {"order": order.number, "amount": amount_minor})
     return order
 
@@ -354,7 +410,6 @@ def return_order(order: PurchaseOrder, returned: dict[int, Decimal] | None = Non
     order.save(update_fields=["returned_minor", "billed_minor", "debit_note_number",
                               "status", "updated_at"])
     audit.record(module="purchasing", action="return_order", entity_type="PurchaseOrder",
-                 entity_id=order.number, actor=actor, after={"debit_note": entry.number,
-                                                            "value": cost_value})
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
     bus.publish(events.PO_RETURNED, {"order": order.number, "debit_note": entry.number})
     return order

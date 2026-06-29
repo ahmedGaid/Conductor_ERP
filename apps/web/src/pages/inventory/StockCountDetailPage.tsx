@@ -8,6 +8,7 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
@@ -71,7 +72,7 @@ export function StockCountDetailPage() {
       {count && (
         <>
           <div className="inv-detail-head">
-            <h2><Bdi>{count.warehouse_code}</Bdi> · <Bdi>{count.count_date}</Bdi></h2>
+            <h2><EntityLink type="warehouse" value={count.warehouse_code} /> · <Bdi>{count.count_date}</Bdi></h2>
             <div className="inv-toolbar">
               <span className={`pill pill--${posted ? "completed" : count.status === "cancelled" ? "failed" : "running"}`}>
                 {t(`inventory.counts.statuses.${count.status}`)}
@@ -99,7 +100,7 @@ export function StockCountDetailPage() {
               <tbody>
                 {(count.lines ?? []).map((ln) => (
                   <tr key={ln.id}>
-                    <td><Bdi>{ln.item_sku}</Bdi> · {ln.item_name}</td>
+                    <td><EntityLink type="item" value={ln.item_sku} /> · {ln.item_name}</td>
                     <td className="inv-table__num"><Bdi>{ln.system_quantity}</Bdi></td>
                     <td className="inv-table__num">
                       {counting ? (

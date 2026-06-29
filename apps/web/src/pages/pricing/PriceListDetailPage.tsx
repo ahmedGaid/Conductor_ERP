@@ -20,6 +20,7 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import "./pricing.css";
@@ -193,7 +194,7 @@ export function PriceListDetailPage() {
             <tbody>
               {lines.map((l) => (
                 <tr key={l.id}>
-                  <td><Bdi>{l.item_sku}</Bdi></td>
+                  <td><EntityLink type="item" value={l.item_sku} /></td>
                   <td className="pricing-table__num"><Bdi>{l.min_quantity}</Bdi></td>
                   <td className="pricing-table__num"><Bdi>{formatMinor(l.unit_price_minor, pl?.currency)}</Bdi></td>
                   <td>

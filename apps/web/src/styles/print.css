@@ -8,8 +8,21 @@
   .acctnav,
   .ein-nav,
   .crm-nav,
-  .acct-toolbar {
+  .acct-toolbar,
+  .crumb,
+  .toaster,
+  .help-center,
+  .help-fab,
+  .docdetail__actions,
+  .sales-actions,
+  .pur-actions,
+  .wf-snap {
     display: none !important;
+  }
+
+  /* Open any collapsed details (e.g. Order details) so the full document prints. */
+  details:not([open]) > *:not(summary) {
+    display: revert !important;
   }
 
   .appshell {

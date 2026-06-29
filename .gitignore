@@ -50,3 +50,6 @@ temp/
 # Local working artifacts (not project source)
 project_context.md
 erp_questionnaire_v4.html
+
+# CodeGraph index cache (local tooling)
+.codegraph/

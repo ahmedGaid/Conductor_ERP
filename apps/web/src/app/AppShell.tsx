@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
+import { RouteBreadcrumb } from "./RouteBreadcrumb";
+import { DocumentCrumbProvider } from "./DocumentCrumb";
 import { CommandBar } from "./CommandBar";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { ShortcutsProvider, useShortcuts } from "./ShortcutsContext";
@@ -13,9 +15,19 @@ import { HelpProvider } from "../help/HelpContext";
 import { usePreferences } from "../preferences/PreferencesContext";
 import "./AppShell.css";
 
+// First path segment names the active module; exposed as data-module on the shell so
+// the per-module accent (tokens.css) cascades to the page (links, tabs, bars). Only the
+// modules with a defined accent qualify; everything else stays the global accent.
+const MODULE_SET = new Set(["sales", "purchasing", "inventory", "accounting", "crm"]);
+function moduleFromPath(pathname: string): string | undefined {
+  const seg = pathname.split("/")[1];
+  return MODULE_SET.has(seg) ? seg : undefined;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const location = useLocation();
+  const activeModule = moduleFromPath(location.pathname);
   // On narrow widths the sidebar is an off-canvas drawer; on wide it's always shown
   // and this flag is inert (CSS only reacts to it under the breakpoint).
   const [navOpen, setNavOpen] = useState(false);
@@ -51,7 +63,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     <ToastProvider>
       <HelpProvider>
         <ShortcutsProvider>
-          <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
+          <div
+            className={navOpen ? "appshell appshell--nav-open" : "appshell"}
+            data-module={activeModule}
+          >
             <a className="appshell__skip" href="#main">
               {t("shell.skipToContent")}
             </a>
@@ -67,9 +82,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             <main id="main" className="appshell__main" ref={mainRef}>
               {/* Re-keying on the path replays the enter animation each navigation,
                   so pages glide in instead of snapping. */}
-              <div key={location.pathname} className="appshell__content page-enter">
-                {children}
-              </div>
+              <DocumentCrumbProvider key={location.pathname}>
+                <div className="appshell__content page-enter">
+                  <RouteBreadcrumb />
+                  {children}
+                </div>
+              </DocumentCrumbProvider>
             </main>
             <HelpCenter />
             <ShortcutsHost />

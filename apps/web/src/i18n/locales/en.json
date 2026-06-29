@@ -196,6 +196,25 @@
     "byStatus": "Instances by status"
   },
   "workflow": {
+    "label": "Workflow",
+    "sales": {
+      "create": "Create",
+      "confirm": "Confirm",
+      "deliver": "Deliver",
+      "invoice": "Invoice",
+      "payment": "Payment",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
+    "purchasing": {
+      "create": "Create",
+      "confirm": "Confirm",
+      "receive": "Receive",
+      "bill": "Bill",
+      "payment": "Payment",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
     "create": "New workflow",
     "untitled": "Untitled workflow",
     "name": "Name",
@@ -207,7 +226,21 @@
     "statusValue": {
       "active": "Active",
       "archived": "Archived"
+    },
+    "stage": {
+      "byWhen": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    },
+    "snap": {
+      "status": "Status",
+      "date": "Date",
+      "movements": "Stock movements"
     }
+  },
+  "resolve": {
+    "notFoundTitle": "We couldn't find that",
+    "notFound": "Nothing matches “{{key}}”.",
+    "backHome": "Back to dashboard"
   },
   "status": {
     "pending": "Pending",
@@ -442,6 +475,7 @@
       "debit": "Debit",
       "credit": "Credit",
       "lineMemo": "Line memo",
+      "sourceDoc": "Source document",
       "costCenter": "Cost center",
       "totals": "Totals",
       "balanced": "Balanced",
@@ -577,6 +611,21 @@
       "expiry": "Earliest expiry",
       "empty": "No batches recorded yet.",
       "hint": "Receive stock with a batch/lot and expiry to see it traced here."
+    },
+    "detail": {
+      "backToItems": "Back to items",
+      "backToWarehouses": "Back to warehouses",
+      "onHandValue": "On-hand value",
+      "stockByWarehouse": "Stock by warehouse",
+      "stockByItem": "Stock by item",
+      "movements": "Recent movements",
+      "noStock": "No stock on hand.",
+      "noMovements": "No movements yet",
+      "noMovementsHint": "Receipts, issues and transfers will show up here.",
+      "reference": "Reference",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive"
     }
   },
   "party": {
@@ -609,13 +658,16 @@
       "confirmed": "Order confirmed",
       "delivered": "Order delivered",
       "invoiced": "Invoice issued",
+      "invoicedDone": "Invoice issued — {{no}}",
       "paid": "Payment recorded",
       "returned": "Return recorded",
+      "returnedDone": "Return recorded — {{no}}",
       "quoteSubmitted": "Quotation submitted",
       "quoteApproved": "Quotation approved",
       "quoteRejected": "Quotation rejected",
       "orderCreated": "Order created",
-      "quotationCreated": "Quotation created"
+      "quotationCreated": "Quotation created",
+      "cancelled": "Order cancelled"
     },
     "tabs": {
       "orders": "Orders",
@@ -694,7 +746,8 @@
       "approval": "Approval",
       "approved": "Approved",
       "pendingApproval": "Pending approval",
-      "vat": "VAT"
+      "vat": "VAT",
+      "orderDetails": "Order details"
     },
     "quotations": {
       "number": "Quotation no.",
@@ -789,7 +842,8 @@
       "approval": "Approval",
       "approved": "Approved",
       "pendingApproval": "Pending approval",
-      "vat": "VAT"
+      "vat": "VAT",
+      "orderDetails": "Order details"
     },
     "requests": {
       "number": "Request no.",
@@ -818,14 +872,17 @@
       "confirmed": "Order confirmed",
       "received": "Goods received",
       "billed": "Bill recorded",
+      "billedDone": "Bill recorded — {{no}}",
       "paid": "Payment recorded",
       "returned": "Return recorded",
+      "returnedDone": "Return recorded — {{no}}",
       "reqSubmitted": "Request submitted",
       "reqApproved": "Request approved",
       "reqRejected": "Request rejected",
       "supplierCreated": "Supplier added",
       "poCreated": "Order created",
-      "prCreated": "Request created"
+      "prCreated": "Request created",
+      "cancelled": "Order cancelled"
     }
   },
   "crm": {
@@ -1073,7 +1130,8 @@
     "off": "Off",
     "all": "All",
     "actions": "Actions",
-    "close": "Close"
+    "close": "Close",
+    "notFound": "We couldn’t find that record."
   },
   "import": {
     "action": "Import CSV",
@@ -1351,7 +1409,14 @@
       "accent": "Default accent",
       "accentDesc": "The accent colour new users start with.",
       "landing": "Default landing page",
-      "landingDesc": "The page users see first after signing in."
+      "landingDesc": "The page users see first after signing in.",
+      "orderCancel": "Order cancellation",
+      "orderCancelDesc": "How far a sales or purchase order may still be cancelled. After delivery, use a return instead.",
+      "orderCancelOptions": {
+        "disabled": "Never",
+        "draft": "Drafts only",
+        "confirmed": "Until confirmed"
+      }
     }
   },
   "admin": {
@@ -1499,5 +1564,18 @@
         "journal": "Journal entry"
       }
     }
+  },
+  "document": {
+    "moreActions": "More actions",
+    "duplicate": "Duplicate",
+    "print": "Print",
+    "exportPdf": "Export PDF",
+    "share": "Share",
+    "cancelOrder": "Cancel Order",
+    "linkCopied": "Link copied",
+    "linkCopyFailed": "Couldn’t copy link",
+    "completedOn": "All steps completed on {{date}}",
+    "cancelConfirmTitle": "Cancel {{number}}?",
+    "cancelConfirmBody": "This can’t be undone."
   }
 }

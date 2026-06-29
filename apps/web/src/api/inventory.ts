@@ -70,6 +70,16 @@ export function createItem(payload: {
   return apiFetch<Item>("/inventory/items", { method: "POST", body: JSON.stringify(payload) });
 }
 
+export interface ItemDetail {
+  item: Item;
+  stock: StockOnHand;
+  movements: Movement[];
+}
+
+export function getItem(sku: string): Promise<ItemDetail> {
+  return apiFetch<ItemDetail>(`/inventory/items/${encodeURIComponent(sku)}`);
+}
+
 export function listWarehouses(): Promise<Warehouse[]> {
   return apiFetch<Warehouse[]>("/inventory/warehouses");
 }
@@ -81,9 +91,25 @@ export function createWarehouse(payload: { code: string; name: string }): Promis
   });
 }
 
+export interface WarehouseDetail {
+  warehouse: Warehouse;
+  stock: StockOnHand;
+  movements: Movement[];
+}
+
+export function getWarehouse(code: string): Promise<WarehouseDetail> {
+  return apiFetch<WarehouseDetail>(`/inventory/warehouses/${encodeURIComponent(code)}`);
+}
+
 export function listMovements(item?: string): Promise<Movement[]> {
   const qs = item ? `?item=${encodeURIComponent(item)}` : "";
   return apiFetch<Movement[]>(`/inventory/movements${qs}`);
+}
+
+// Movements tied to one source document (a sales/purchase order number) — the stock issued or
+// received under that order. Powers the delivery/receipt step of the workflow tracker snapshot.
+export function movementsForReference(reference: string): Promise<Movement[]> {
+  return apiFetch<Movement[]>(`/inventory/movements?reference=${encodeURIComponent(reference)}`);
 }
 
 export function receiveStock(payload: {

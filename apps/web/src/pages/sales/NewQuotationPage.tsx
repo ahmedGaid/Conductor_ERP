@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { createQuotation, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
@@ -24,17 +24,29 @@ interface DraftLine {
 
 const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "1", unit_price: "" });
 
+// Prefill carried by the Duplicate action on an existing quotation (see QuotationDetailPage).
+interface DuplicateInit {
+  customer_code: string;
+  warehouse_code: string;
+  lines: { item_sku: string; quantity: string; unit_price: number }[];
+}
+
 export function NewQuotationPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
+  const dup = (useLocation().state as { duplicate?: DuplicateInit } | null)?.duplicate;
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: items } = useAsync(listItems, [], "inventory:items");
 
-  const [customer, setCustomer] = useState("");
-  const [warehouse, setWarehouse] = useState("");
-  const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
+  const [customer, setCustomer] = useState(dup?.customer_code ?? "");
+  const [warehouse, setWarehouse] = useState(dup?.warehouse_code ?? "");
+  const [lines, setLines] = useState<DraftLine[]>(
+    dup?.lines?.length
+      ? dup.lines.map((l) => ({ item_sku: l.item_sku, quantity: l.quantity, unit_price: minorToAmount(l.unit_price) }))
+      : [emptyLine()],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
