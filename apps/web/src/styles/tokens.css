@@ -116,12 +116,14 @@
   --font-arabic: "IBM Plex Sans Arabic", system-ui, sans-serif;
   --font-latin: "Inter", system-ui, sans-serif;
   --font-ui: var(--font-arabic), var(--font-latin);
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.1875rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 1.875rem;
+  /* Dense, Linear/Telegram-grade scale: content reads at 14px (md), chrome matches it, and
+     hierarchy comes from weight + a tight step up. (Base 16px → rem.) */
+  --font-size-xs: 0.6875rem; /* 11 — micro: section labels, badges */
+  --font-size-sm: 0.8125rem; /* 13 — secondary / muted */
+  --font-size-md: 0.875rem; /* 14 — body & primary reading size */
+  --font-size-lg: 1rem; /* 16 — h2 / section heads */
+  --font-size-xl: 1.3125rem; /* 21 — page title (h1) */
+  --font-size-2xl: 1.625rem; /* 26 — hero stats */
   --line-height-ui: 1.5;
   /* Headings sit tighter than body copy so titles read crisp, not airy (kept safe for Arabic
      ascenders/diacritics). Body keeps the generous --line-height-ui for long-workday readability. */
@@ -161,7 +163,7 @@
   --focus-ring: 0 0 0 3px var(--color-brand-subtle);
 
   /* ---- Layout ---- */
-  --sidebar-size: 16rem;
+  --sidebar-size: 14.5rem;
   --topbar-size: 4rem;
   --content-max: 90rem;
 

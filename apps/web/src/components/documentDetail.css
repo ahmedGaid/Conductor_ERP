@@ -17,7 +17,7 @@
 }
 .docdetail__number {
   margin: 0;
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
 }
 .docdetail__actions {
