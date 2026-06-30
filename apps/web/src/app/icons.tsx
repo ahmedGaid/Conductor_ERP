@@ -126,6 +126,13 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="19" cy="12" r="1.1" />
     </>
   ),
+  // Search — magnifying glass (command bar + palette).
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m16.2 16.2 4.3 4.3" />
+    </>
+  ),
   // Duplicate — overlapping sheets (copy).
   duplicate: (
     <>

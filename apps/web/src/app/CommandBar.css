@@ -42,7 +42,12 @@
 }
 
 .commandbar__search-icon {
+  display: inline-flex;
   color: var(--color-text-muted);
+}
+.commandbar__search-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
 }
 
 .commandbar__search-text {

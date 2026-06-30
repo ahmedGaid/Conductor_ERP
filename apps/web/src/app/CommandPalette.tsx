@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { searchEntities } from "../api/core";
 import { normalizeSearch } from "../lib/arabicSearch";
 import { getRecents, recordRecent } from "../lib/recents";
+import { NavIcon } from "./icons";
 import "./CommandPalette.css";
 
 type Group = "results" | "recent" | "create" | "go";
@@ -220,7 +221,7 @@ export function CommandPalette({
     >
       <div className="cmdp__panel">
         <div className="cmdp__search">
-          <span className="cmdp__search-icon" aria-hidden="true">⌕</span>
+          <span className="cmdp__search-icon" aria-hidden="true"><NavIcon name="search" /></span>
           <input
             ref={inputRef}
             type="text"
