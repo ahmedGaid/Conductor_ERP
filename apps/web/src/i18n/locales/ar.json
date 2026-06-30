@@ -7,7 +7,7 @@
   "nav": {
     "dashboard": "الرئيسية",
     "workflows": "مسارات العمل",
-    "accounting": "المحاسبة",
+    "accounting": "المالية",
     "forms": "النماذج",
     "settings": "الإعدادات",
     "modulesSoon": "وحدات قادمة",
@@ -1387,7 +1387,7 @@
         "sales": "المبيعات",
         "purchasing": "المشتريات",
         "inventory": "المخزون",
-        "accounting": "المحاسبة",
+        "accounting": "المالية",
         "crm": "إدارة العملاء",
         "workflows": "مسارات العمل"
       },
@@ -1561,7 +1561,7 @@
         "approve": "موافقة"
       },
       "mod": {
-        "accounting": "المحاسبة",
+        "accounting": "المالية",
         "inventory": "المخزون",
         "sales": "المبيعات",
         "purchasing": "المشتريات",

@@ -201,6 +201,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Reconcile (settle) | تسوية | — |
 | Match (link transactions) | مطابقة | — (a *distinct* sub-action of reconcile — not drift) |
 | e-invoice | فاتورة إلكترونية | — |
+| Accounting module (name) | المالية | المحاسبة (the *module label* is **المالية**; "محاسبة/محاسبي" stays only for the bookkeeping discipline in prose, 2026-06-30) |
 
 ### 6.2 Status & action voice (Arabic)
 Human-language statuses (Directive — "Waiting for Finance approval") must read as **natural Egyptian

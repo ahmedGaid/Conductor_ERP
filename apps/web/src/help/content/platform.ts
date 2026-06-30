@@ -64,7 +64,7 @@ export const dashboardGuide: HelpGuide = {
     { en: "Don't treat the dashboard as a place to edit — it only reflects data entered elsewhere.", ar: "لا تعامل اللوحة كمكان للتعديل — هي تعكس فقط بيانات أُدخلت في صفحات أخرى." },
   ],
   related: [
-    { to: "/accounting", label: { en: "Accounting", ar: "المحاسبة" } },
+    { to: "/accounting", label: { en: "Accounting", ar: "المالية" } },
     { to: "/sales", label: { en: "Sales", ar: "المبيعات" } },
   ],
 };
