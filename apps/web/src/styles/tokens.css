@@ -163,7 +163,7 @@
   --focus-ring: 0 0 0 3px var(--color-brand-subtle);
 
   /* ---- Layout ---- */
-  --sidebar-size: 16rem;
+  --sidebar-size: 14.5rem;
   --topbar-size: 4rem;
   --content-max: 90rem;
 
