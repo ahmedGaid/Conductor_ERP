@@ -65,11 +65,20 @@
     "formCancel": "إلغاء"
   },
   "command": {
-    "placeholder": "ابحث في الصفحات والإجراءات…",
+    "placeholder": "ابحث في السجلات والصفحات والإجراءات…",
     "empty": "لا نتائج لـ",
     "groupCreate": "إنشاء",
     "groupGo": "الانتقال إلى",
     "groupRecent": "الأخيرة",
+    "groupResults": "السجلات",
+    "type": {
+      "customer": "عميل",
+      "supplier": "مورّد",
+      "item": "صنف",
+      "sales_order": "طلب بيع",
+      "purchase_order": "أمر شراء",
+      "journal": "قيد يومية"
+    },
     "hintMove": "تنقّل",
     "hintOpen": "فتح",
     "hintClose": "إغلاق",

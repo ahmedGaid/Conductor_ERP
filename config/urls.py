@@ -15,6 +15,8 @@ urlpatterns = [
     path("api/identity/", include("erp.identity.urls")),
     # Cross-module helpers (business-key → id resolver for universal entity links).
     path("api/core/", include("erp.core.resolve_api")),
+    # Universal entity search backing the ⌘K command palette (Charter R10).
+    path("api/core/", include("erp.core.search_api")),
     # Workflow / instance API — Stage 4 (platform screens backend).
     path("api/workflow/", include("erp.workflow.urls")),
     # Accounting / GL API — Stage 5.

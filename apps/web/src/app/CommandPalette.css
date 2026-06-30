@@ -119,6 +119,29 @@
   background-color: var(--color-surface-alt);
 }
 
+/* Two-line cell for live record hits: name/number over a muted code + type. Static commands carry
+   no sublabel, so they render as a single line unchanged. */
+.cmdp__item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.cmdp__item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmdp__item-sub {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cmdp__item-go {
   color: var(--color-text-subtle);
   opacity: 0;
