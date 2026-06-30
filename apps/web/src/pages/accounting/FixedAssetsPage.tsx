@@ -11,6 +11,7 @@ import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
 import { ExportButtons } from "../../components/ExportButtons";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -246,9 +247,9 @@ export function FixedAssetsPage() {
                     <td className="acct-table__num"><Bdi>{formatMinor(a.accumulated_depreciation_minor)}</Bdi></td>
                     <td className="acct-table__num"><Bdi>{formatMinor(a.net_book_value_minor)}</Bdi></td>
                     <td>
-                      <span className={`pill pill--${a.status === "active" ? "running" : "completed"}`}>
+                      <Badge tone={a.status === "active" ? "running" : "completed"}>
                         {t(`accounting.assets.statuses.${a.status}`)}
-                      </span>
+                      </Badge>
                     </td>
                   </tr>
                 ))}

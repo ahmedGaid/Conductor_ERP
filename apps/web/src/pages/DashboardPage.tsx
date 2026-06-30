@@ -22,6 +22,7 @@ import { useAsync } from "../hooks/useAsync";
 import { ErrorState } from "../components/ErrorState";
 import { GettingStarted } from "./GettingStarted";
 import { StatCard } from "../components/StatCard";
+import { NavIcon } from "../app/icons";
 import { Bdi } from "../components/Bdi";
 import { ListSkeleton } from "../components/ListSkeleton";
 import "./DashboardPage.css";
@@ -85,8 +86,7 @@ export function DashboardPage() {
           <h1 className="page-title">
             {data
               ? t(`dashboard.greeting.${greetingKey()}`, { name: data.username })
-              : t("dashboard.heading")}{" "}
-            <span aria-hidden="true">👋</span>
+              : t("dashboard.heading")}
           </h1>
           <p className="page-subtitle">{t("dashboard.subtitle")}</p>
         </div>
@@ -106,26 +106,26 @@ export function DashboardPage() {
             <StatCard
               label={t("dashboard.totalRevenue")}
               value={formatMinor(data.current.total_revenue)}
-              icon="⊕"
+              icon="trendUp"
               delta={pctChange(data.current.total_revenue, data.previous.total_revenue)}
             />
             <StatCard
               label={t("dashboard.totalExpenses")}
               value={formatMinor(data.current.total_expenses)}
-              icon="▤"
+              icon="trendDown"
               delta={pctChange(data.current.total_expenses, data.previous.total_expenses)}
               invertDelta
             />
             <StatCard
               label={t("dashboard.netProfit")}
               value={formatMinor(data.current.net_income)}
-              icon="↗"
+              icon="reports"
               delta={pctChange(data.current.net_income, data.previous.net_income)}
             />
             <StatCard
               label={t("dashboard.cashBalance")}
               value={formatMinor(data.cash.closing_balance)}
-              icon="◆"
+              icon="accounting"
               hint={t("dashboard.asOfNow")}
             />
           </div>
@@ -183,22 +183,22 @@ function AttentionPanel({ data }: { data: DashboardData }) {
 
   const items: AttnItem[] = [];
   if (salesApprovals)
-    items.push({ key: "salesApprovals", icon: "⚑", to: "/sales",
+    items.push({ key: "salesApprovals", icon: "flag", to: "/sales",
       text: t("dashboard.attention.salesApprovals", { count: salesApprovals }) });
   if (poApprovals)
-    items.push({ key: "poApprovals", icon: "⚑", to: "/purchasing",
+    items.push({ key: "poApprovals", icon: "flag", to: "/purchasing",
       text: t("dashboard.attention.poApprovals", { count: poApprovals }) });
   if (receivable.length)
-    items.push({ key: "receivables", icon: "↘", to: "/sales",
+    items.push({ key: "receivables", icon: "trendUp", to: "/sales",
       text: t("dashboard.attention.receivables", { amount: formatMinor(recvAmount), count: receivable.length }) });
   if (payable.length)
-    items.push({ key: "payables", icon: "↗", to: "/purchasing",
+    items.push({ key: "payables", icon: "trendDown", to: "/purchasing",
       text: t("dashboard.attention.payables", { amount: formatMinor(payAmount), count: payable.length }) });
   if (breachedTickets)
-    items.push({ key: "breachedTickets", icon: "⏰", to: "/crm/tickets", tone: "danger",
+    items.push({ key: "breachedTickets", icon: "clock", to: "/crm/tickets", tone: "danger",
       text: t("dashboard.attention.breachedTickets", { count: breachedTickets }) });
   if (failedMessages)
-    items.push({ key: "failedMessages", icon: "✕", to: "/notifications", tone: "warn",
+    items.push({ key: "failedMessages", icon: "close", to: "/notifications", tone: "warn",
       text: t("dashboard.attention.failedMessages", { count: failedMessages }) });
 
   return (
@@ -213,7 +213,7 @@ function AttentionPanel({ data }: { data: DashboardData }) {
           {items.map((it) => (
             <li key={it.key}>
               <Link className={`dash__attn-item${it.tone ? ` dash__attn-item--${it.tone}` : ""}`} to={it.to}>
-                <span className="dash__attn-icon" aria-hidden="true">{it.icon}</span>
+                <span className="dash__attn-icon" aria-hidden="true"><NavIcon name={it.icon} /></span>
                 <span className="dash__attn-text">{it.text}</span>
                 <span className="dash__attn-arrow" aria-hidden="true">›</span>
               </Link>

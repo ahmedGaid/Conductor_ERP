@@ -10,6 +10,7 @@ import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -175,9 +176,9 @@ export function StockCountsPage() {
                   <td><Bdi>{c.count_date}</Bdi></td>
                   <td className="inv-table__num"><Bdi>{c.line_count}</Bdi></td>
                   <td>
-                    <span className={`pill pill--${c.status === "posted" ? "completed" : c.status === "cancelled" ? "failed" : "running"}`}>
+                    <Badge tone={c.status === "posted" ? "completed" : c.status === "cancelled" ? "failed" : "running"}>
                       {t(`inventory.counts.statuses.${c.status}`)}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

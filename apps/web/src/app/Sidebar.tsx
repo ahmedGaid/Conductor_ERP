@@ -121,7 +121,7 @@ export function Sidebar() {
                         isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
                       }
                     >
-                      <span className="sidebar__icon" aria-hidden="true">★</span>
+                      <span className="sidebar__icon" aria-hidden="true"><NavIcon name="star" /></span>
                       <span>{t(fav.label)}</span>
                     </NavLink>,
                   )}

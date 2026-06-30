@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import { NavIcon } from "../../app/icons";
+
 import {
   addCustomerPrice,
   deleteAssignment,
@@ -172,11 +174,11 @@ function AssignmentsBlock({
                   <td className="pricing-table__num">
                     <button
                       type="button"
-                      className="btn btn--sm"
+                      className="btn btn--sm btn--icon"
                       onClick={() => onRemove(row)}
                       aria-label={t("common.delete")}
                     >
-                      ✕
+                      <NavIcon name="close" />
                     </button>
                   </td>
                 </tr>
@@ -387,11 +389,11 @@ function OverridesBlock({
                   <td className="pricing-table__num">
                     <button
                       type="button"
-                      className="btn btn--sm"
+                      className="btn btn--sm btn--icon"
                       onClick={() => onRemove(row)}
                       aria-label={t("common.delete")}
                     >
-                      ✕
+                      <NavIcon name="close" />
                     </button>
                   </td>
                 </tr>

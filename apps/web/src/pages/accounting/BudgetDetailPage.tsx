@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { BackLink } from "../../components/BackLink";
 
 import {
   budgetVsActual,
@@ -66,7 +68,7 @@ export function BudgetDetailPage() {
   return (
     <section className="acct-page">
       <AccountingNav />
-      <Link className="acct-link" to="/accounting/budgets">← {t("accounting.budgets.backToList")}</Link>
+      <BackLink to="/accounting/budgets">{t("accounting.budgets.backToList")}</BackLink>
 
       {budget && (
         <div className="card acct-detail">

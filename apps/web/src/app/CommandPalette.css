@@ -46,8 +46,12 @@
 }
 
 .cmdp__search-icon {
+  display: inline-flex;
   color: var(--color-text-muted);
-  font-size: var(--font-size-lg);
+}
+.cmdp__search-icon .navicon {
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
 }
 
 .cmdp__input {

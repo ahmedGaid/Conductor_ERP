@@ -23,6 +23,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
+import { Badge } from "../../components/Badge";
+import { salesTone } from "../../lib/statusTone";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EntityLink } from "../../components/EntityLink";
@@ -235,7 +237,7 @@ export function OrderDetailPage() {
       <div className="card sales-page">
         <DocumentHeader
           number={data.number}
-          status={<span className={`sales-badge sales-badge--${data.status}`}>{t(`sales.status.${data.status}`)}</span>}
+          status={<Badge tone={salesTone(data.status)}>{t(`sales.status.${data.status}`)}</Badge>}
           primary={primaryAction()}
           menu={menu}
           menuLabel={t("document.moreActions")}

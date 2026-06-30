@@ -59,7 +59,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
         aria-haspopup="dialog"
         aria-label={t("shell.search")}
       >
-        <span className="commandbar__search-icon" aria-hidden="true">⌕</span>
+        <span className="commandbar__search-icon" aria-hidden="true"><NavIcon name="search" /></span>
         <span className="commandbar__search-text">{t("shell.commandPlaceholder")}</span>
         <kbd className="commandbar__kbd latin">⌘K</kbd>
       </button>

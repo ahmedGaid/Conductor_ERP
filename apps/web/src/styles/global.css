@@ -221,6 +221,12 @@ h3 {
   border-radius: var(--radius-md);
   line-height: 1;
 }
+/* NavIcon has no intrinsic size; give one consistent glyph size to every icon-button
+   (theme toggle, etc.) so the chrome's icons match the sidebar/topbar hand. */
+.btn--icon .navicon {
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
+}
 
 /* ---- Form fields ---- */
 input,
@@ -316,6 +322,30 @@ textarea:focus {
 .page-subtitle {
   color: var(--color-text-muted);
   margin-block: var(--space-1) 0;
+}
+
+/* ---- Back link (one app-wide back affordance) ----
+   Quiet muted link + single-stroke arrow. The arrow points inline-start and is mirrored in RTL,
+   so "back" reads correctly in the Arabic default (replaces the old hardcoded "←" glyph). */
+.backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: start;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+.backlink:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.backlink .navicon {
+  inline-size: 1.05em;
+  block-size: 1.05em;
+}
+[dir="rtl"] .backlink .navicon {
+  transform: scaleX(-1);
 }
 
 /* ---- Keyboard-navigated list row (j/k/Enter) ---- */

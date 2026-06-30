@@ -12,6 +12,8 @@ import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { purchasingTone } from "../../lib/statusTone";
 import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -163,9 +165,7 @@ export function PurchaseOrdersPage() {
                   <td><PartyLink type="supplier" code={o.supplier_code}>{o.supplier_name}</PartyLink></td>
                   <td className="latin muted">{o.order_date}</td>
                   <td>
-                    <span className={`pur-badge pur-badge--${o.status}`}>
-                      {t(`purchasing.status.${o.status}`)}
-                    </span>
+                    <Badge tone={purchasingTone(o.status)}>{t(`purchasing.status.${o.status}`)}</Badge>
                   </td>
                   <td className="pur-table__num"><Bdi>{formatMinor(o.subtotal_minor, o.currency)}</Bdi></td>
                   <td>

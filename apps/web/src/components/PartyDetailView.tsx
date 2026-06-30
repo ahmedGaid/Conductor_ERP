@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { BackLink } from "./BackLink";
+
 import type { GeneralLedgerReport } from "../api/accounting";
 import { formatMinor } from "../lib/money";
 import { Bdi } from "./Bdi";
@@ -70,9 +72,7 @@ export function PartyDetailView({
     <section className="sales-page">
       {nav}
 
-      <Link className="party-back" to={backHref}>
-        ← {backLabel}
-      </Link>
+      <BackLink to={backHref}>{backLabel}</BackLink>
 
       {loading && <ListSkeleton rows={3} />}
       {error && <ErrorState message={error} onRetry={onRetry} />}

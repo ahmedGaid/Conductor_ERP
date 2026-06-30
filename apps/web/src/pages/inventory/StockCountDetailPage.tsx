@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { BackLink } from "../../components/BackLink";
 
 import { getStockCount, postStockCount, setCountLine, type StockCount } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
@@ -8,6 +10,7 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
 import { EntityLink } from "../../components/EntityLink";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -62,7 +65,7 @@ export function StockCountDetailPage() {
   return (
     <section className="inv-page">
       <InventoryNav />
-      <Link className="inv-link" to="/inventory/counts">← {t("inventory.counts.backToList")}</Link>
+      <BackLink to="/inventory/counts">{t("inventory.counts.backToList")}</BackLink>
 
       {loading && (
         <ListSkeleton rows={2} />
@@ -74,9 +77,9 @@ export function StockCountDetailPage() {
           <div className="inv-detail-head">
             <h2><EntityLink type="warehouse" value={count.warehouse_code} /> · <Bdi>{count.count_date}</Bdi></h2>
             <div className="inv-toolbar">
-              <span className={`pill pill--${posted ? "completed" : count.status === "cancelled" ? "failed" : "running"}`}>
+              <Badge tone={posted ? "completed" : count.status === "cancelled" ? "failed" : "running"}>
                 {t(`inventory.counts.statuses.${count.status}`)}
-              </span>
+              </Badge>
               {counting && (
                 <button className="btn btn--primary" onClick={onPost}>
                   {t("inventory.counts.post")}

@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { NavIcon } from "../../app/icons";
+import { BackLink } from "../../components/BackLink";
+import { Badge } from "../../components/Badge";
 
 import {
   autoMatchStatement,
@@ -82,7 +86,7 @@ export function BankStatementDetailPage() {
   return (
     <section className="acct-page">
       <AccountingNav />
-      <Link className="acct-link" to="/accounting/bank-reconciliation">← {t("accounting.bankRec.backToList")}</Link>
+      <BackLink to="/accounting/bank-reconciliation">{t("accounting.bankRec.backToList")}</BackLink>
 
       {loading && (
         <ListSkeleton rows={2} />
@@ -94,9 +98,9 @@ export function BankStatementDetailPage() {
           <div className="card acct-detail">
             <header className="acct-detail__head">
               <h2><Bdi>{stmt.account_code}</Bdi> · <Bdi>{stmt.statement_date}</Bdi></h2>
-              <span className={`pill pill--${stmt.status === "reconciled" ? "completed" : "running"}`}>
+              <Badge tone={stmt.status === "reconciled" ? "completed" : "running"}>
                 {t(`accounting.bankRec.statuses.${stmt.status}`)}
-              </span>
+              </Badge>
             </header>
             {rec && (
               <dl className="acct-detail__grid">
@@ -159,7 +163,7 @@ export function BankStatementDetailPage() {
                       <td>
                         {l.is_matched ? (
                           <span className="acct-bankrec-matched">
-                            ✓ {t("accounting.bankRec.matched")}
+                            <NavIcon name="check" /> {t("accounting.bankRec.matched")}
                             {stmt.status === "open" && (
                               <button
                                 className="btn btn--sm"

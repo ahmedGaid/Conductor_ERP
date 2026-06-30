@@ -17,6 +17,8 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { salesTone } from "../../lib/statusTone";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader } from "../../components/DocumentHeader";
@@ -122,7 +124,7 @@ export function QuotationDetailPage() {
       <div className="card sales-page">
         <DocumentHeader
           number={data.number}
-          status={<span className={`sales-badge sales-badge--${data.status}`}>{t(`sales.quotationStatus.${data.status}`)}</span>}
+          status={<Badge tone={salesTone(data.status)}>{t(`sales.quotationStatus.${data.status}`)}</Badge>}
           primary={primaryAction()}
           menu={menu}
           menuLabel={t("document.moreActions")}

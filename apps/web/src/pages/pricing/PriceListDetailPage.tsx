@@ -1,6 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+
+import { NavIcon } from "../../app/icons";
+import { useParams } from "react-router-dom";
+
+import { BackLink } from "../../components/BackLink";
 
 import {
   addLine,
@@ -108,7 +112,7 @@ export function PriceListDetailPage() {
   return (
     <section className="pricing-page">
       <div className="pricing-head">
-        <Link to="/pricing" className="pricing-head__back">← {t("pricing.detail.back")}</Link>
+        <BackLink to="/pricing">{t("pricing.detail.back")}</BackLink>
         <div className="pricing-detail-head">
           <h1>{pl ? pl.name : t("pricing.title")}</h1>
           {pl && (
@@ -205,7 +209,7 @@ export function PriceListDetailPage() {
                     </Bdi>
                   </td>
                   <td className="pricing-table__num">
-                    <button type="button" className="btn btn--sm" onClick={() => onDelete(l)} aria-label={t("common.delete")}>✕</button>
+                    <button type="button" className="btn btn--sm btn--icon" onClick={() => onDelete(l)} aria-label={t("common.delete")}><NavIcon name="close" /></button>
                   </td>
                 </tr>
               ))}

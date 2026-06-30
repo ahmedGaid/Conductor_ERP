@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { BackLink } from "../components/BackLink";
 
 import { decideInstance, getInstance } from "../api/workflows";
 import type { InstanceDetail, NodeRun } from "../api/types";
@@ -54,9 +56,7 @@ export function ExecutionViewerPage() {
             <StatusPill status={data.status} />
           </div>
 
-          <Link className="viewer__back" to={`/workflows/${data.workflow_id}`}>
-            ← {t("instance.openWorkflow")}
-          </Link>
+          <BackLink to={`/workflows/${data.workflow_id}`}>{t("instance.openWorkflow")}</BackLink>
 
           {data.status === "waiting" && (
             <div className="card viewer__decision">

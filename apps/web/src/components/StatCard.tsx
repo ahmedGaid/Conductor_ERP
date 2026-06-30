@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Bdi } from "./Bdi";
+import { NavIcon } from "../app/icons";
 import "./StatCard.css";
 
 interface Props {
@@ -24,7 +25,7 @@ export function StatCard({ label, value, icon, delta, hint, invertDelta }: Props
         <span className="statcard__label">{label}</span>
         {icon && (
           <span className="statcard__icon" aria-hidden="true">
-            {icon}
+            <NavIcon name={icon} />
           </span>
         )}
       </div>

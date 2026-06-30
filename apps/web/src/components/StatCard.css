@@ -37,6 +37,10 @@
   background-color: var(--color-surface-alt);
   color: var(--color-text-muted);
 }
+.statcard__icon .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
 
 .statcard__value {
   font-size: var(--font-size-2xl);

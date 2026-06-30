@@ -10,6 +10,8 @@ import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { salesTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -126,9 +128,7 @@ export function QuotationsPage() {
                   <td>{q.customer_name}</td>
                   <td className="latin muted">{q.quote_date}</td>
                   <td>
-                    <span className={`sales-badge sales-badge--${q.status}`}>
-                      {t(`sales.quotationStatus.${q.status}`)}
-                    </span>
+                    <Badge tone={salesTone(q.status)}>{t(`sales.quotationStatus.${q.status}`)}</Badge>
                   </td>
                   <td className="sales-table__num"><Bdi>{formatMinor(q.subtotal_minor, q.currency)}</Bdi></td>
                 </tr>

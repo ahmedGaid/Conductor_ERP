@@ -204,3 +204,7 @@
 .fav-star--on {
   color: var(--color-warning);
 }
+.fav-star .navicon {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+}

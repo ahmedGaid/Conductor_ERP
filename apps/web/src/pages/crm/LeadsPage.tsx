@@ -10,6 +10,8 @@ import {
   type Opportunity,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { Badge } from "../../components/Badge";
+import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
@@ -201,7 +203,7 @@ export function LeadsPage() {
                   <td>{l.company || "—"}</td>
                   <td className="muted">{t(`crm.source.${l.source}`)}</td>
                   <td>
-                    <span className={`crm-badge crm-badge--${l.status}`}>{t(`crm.leadStatus.${l.status}`)}</span>
+                    <Badge tone={crmTone(l.status)}>{t(`crm.leadStatus.${l.status}`)}</Badge>
                   </td>
                   <td>
                     <RowActions className="crm-actions" label={t("common.actions")}>
