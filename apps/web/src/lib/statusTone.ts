@@ -41,6 +41,14 @@ const CRM_TONES: Record<string, BadgeTone> = {
   completed: "neutral",
 };
 
+const CRM_PRIORITY_TONES: Record<string, BadgeTone> = {
+  low: "neutral",
+  medium: "running",
+  high: "waiting",
+  urgent: "failed",
+};
+
 export const salesTone = (status: string): BadgeTone => SALES_TONES[status] ?? "pending";
 export const purchasingTone = (status: string): BadgeTone => PURCHASING_TONES[status] ?? "pending";
 export const crmTone = (status: string): BadgeTone => CRM_TONES[status] ?? "pending";
+export const crmPriorityTone = (priority: string): BadgeTone => CRM_PRIORITY_TONES[priority] ?? "neutral";

@@ -1,33 +1,6 @@
 /* Shared page/table/toolbar/field/actions/summary/badge-base rules now live in
    styles/data-surfaces.css. Only CRM-specific rules remain here. */
 
-/* priority pills */
-.crm-prio {
-  display: inline-flex;
-  align-items: center;
-  padding-inline: var(--space-2);
-  padding-block: 0.125rem;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-.crm-prio--low {
-  color: var(--color-text-muted);
-  background-color: var(--color-surface-alt);
-}
-.crm-prio--medium {
-  color: var(--color-status-running);
-  background-color: var(--color-status-running-bg);
-}
-.crm-prio--high {
-  color: var(--color-status-waiting);
-  background-color: var(--color-status-waiting-bg);
-}
-.crm-prio--urgent {
-  color: var(--color-status-failed);
-  background-color: var(--color-status-failed-bg);
-}
-
 .crm-breach {
   color: var(--color-status-failed);
   font-weight: var(--font-weight-bold);

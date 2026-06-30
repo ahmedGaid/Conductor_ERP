@@ -14,7 +14,7 @@ import {
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
 import { Badge } from "../../components/Badge";
-import { crmTone } from "../../lib/statusTone";
+import { crmTone, crmPriorityTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
@@ -205,7 +205,7 @@ export function TicketsPage() {
                   <td className="latin">{tk.number}</td>
                   <td>{tk.subject}</td>
                   <td>
-                    <span className={`crm-prio crm-prio--${tk.priority}`}>{t(`crm.priority.${tk.priority}`)}</span>
+                    <Badge tone={crmPriorityTone(tk.priority)}>{t(`crm.priority.${tk.priority}`)}</Badge>
                   </td>
                   <td>
                     <Badge tone={crmTone(tk.status)}>{t(`crm.ticketStatus.${tk.status}`)}</Badge>
