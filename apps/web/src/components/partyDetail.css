@@ -1,15 +1,5 @@
 /* Shared layout for the customer/supplier detail pages (summary + orders + account statement).
    Section-agnostic so it reads identically under sales and purchasing; logical CSS, tokens only. */
-.party-back {
-  display: inline-block;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  margin-block-end: var(--space-2);
-}
-.party-back:hover {
-  color: var(--color-text);
-}
-
 .party-head h2 {
   margin: 0;
 }

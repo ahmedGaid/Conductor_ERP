@@ -10,16 +10,6 @@
   gap: var(--space-1);
 }
 
-.pricing-head__back {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.pricing-head__back:hover {
-  color: var(--color-text);
-}
-
 .pricing-detail-head {
   display: flex;
   align-items: flex-start;
