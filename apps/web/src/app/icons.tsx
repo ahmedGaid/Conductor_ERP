@@ -191,6 +191,61 @@ const PATHS: Record<string, ReactNode> = {
       <path d="m8.5 12 2.5 2.5 5-5.5" />
     </>
   ),
+  // Arrow back — return to list / parent. Points inline-start (mirrored in RTL via .backlink CSS).
+  arrowBack: (
+    <>
+      <path d="M19 12H5" />
+      <path d="M12 19l-7-7 7-7" />
+    </>
+  ),
+  // Check — confirmed / matched / done.
+  check: <path d="M5 12l4.5 4.5L19 7" />,
+  // Star — favourite / pinned. Outline only; active state is shown by accent colour, never a fill.
+  star: <path d="M12 3.6l2.5 5.1 5.6.8-4.05 3.95.96 5.55L12 16.9l-5.02 2.65.96-5.55L3.9 9.5l5.6-.8Z" />,
+  // Flag — items awaiting approval / flagged for attention.
+  flag: (
+    <>
+      <path d="M4 21V4" />
+      <path d="M4 4h13l-2 4 2 4H4" />
+    </>
+  ),
+  // Clock — time-sensitive / breached / overdue.
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  // Trend up — rising figure (incoming/receivable, growth).
+  trendUp: (
+    <>
+      <path d="M3 17l6-6 4 4 8-8" />
+      <path d="M21 11V7h-4" />
+    </>
+  ),
+  // Trend down — falling figure (outgoing/payable, decline).
+  trendDown: (
+    <>
+      <path d="M3 7l6 6 4-4 8 8" />
+      <path d="M21 13v4h-4" />
+    </>
+  ),
+  // Sun — switch to light theme.
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="M4.9 4.9l1.4 1.4" />
+      <path d="M17.7 17.7l1.4 1.4" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="M4.9 19.1l1.4-1.4" />
+      <path d="M17.7 6.3l1.4-1.4" />
+    </>
+  ),
+  // Moon — switch to dark theme (single-stroke crescent, same hand as the set).
+  moon: <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />,
   // Settings — gear.
   settings: (
     <>

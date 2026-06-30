@@ -59,6 +59,10 @@
   margin-inline-start: auto;
   color: var(--color-accent);
 }
+.popover__check .navicon {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+}
 
 /* Search box at the top of a value list. */
 .popover__search {

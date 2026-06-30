@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { BackLink } from "../../components/BackLink";
 
 import { getCampaign, setCampaignStatus, type Campaign, type CampaignStatus } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
@@ -8,6 +10,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { crmTone } from "../../lib/statusTone";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
@@ -49,7 +53,7 @@ export function CampaignDetailPage() {
   return (
     <section className="crm-page">
       <CrmNav />
-      <Link className="crm-link" to="/crm/campaigns">← {t("crm.campaign.backToList")}</Link>
+      <BackLink to="/crm/campaigns">{t("crm.campaign.backToList")}</BackLink>
 
       {loading && (
         <ListSkeleton rows={1} />
@@ -61,7 +65,7 @@ export function CampaignDetailPage() {
           <div className="crm-detail-head">
             <h2><Bdi>{campaign.code}</Bdi> — {campaign.name}</h2>
             <div className="crm-toolbar">
-              <span className={`crm-badge crm-badge--${campaign.status}`}>{t(`crm.campaign.statuses.${campaign.status}`)}</span>
+              <Badge tone={crmTone(campaign.status)}>{t(`crm.campaign.statuses.${campaign.status}`)}</Badge>
               {next && (
                 <button className="btn btn--sm btn--primary" onClick={() => changeStatus(next)}>
                   {t(`crm.campaign.markActions.${next}`)}

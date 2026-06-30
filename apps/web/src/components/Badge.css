@@ -1,0 +1,44 @@
+/* Status chip — the single base recipe for every status badge (was duplicated as
+   .sales-badge / .pur-badge / .crm-badge and the standalone .pill). Tones below map to
+   the shared status tokens. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-block: 0.125rem;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-ui);
+  white-space: nowrap;
+}
+
+.badge--pending {
+  color: var(--color-status-pending);
+  background-color: var(--color-status-pending-bg);
+}
+.badge--running {
+  color: var(--color-status-running);
+  background-color: var(--color-status-running-bg);
+}
+.badge--waiting {
+  color: var(--color-status-waiting);
+  background-color: var(--color-status-waiting-bg);
+}
+.badge--completed {
+  color: var(--color-status-completed);
+  background-color: var(--color-status-completed-bg);
+}
+.badge--failed {
+  color: var(--color-status-failed);
+  background-color: var(--color-status-failed-bg);
+}
+.badge--accent {
+  color: var(--color-accent);
+  background-color: var(--color-accent-subtle);
+}
+.badge--neutral {
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-alt);
+}

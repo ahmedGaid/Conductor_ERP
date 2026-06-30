@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { NavIcon } from "../app/icons";
 import { getMe, getOrgPreferences } from "../api/identity";
 import { getSetupStatus } from "../api/setup";
 import { listItems } from "../api/inventory";
@@ -78,7 +79,7 @@ export function GettingStarted() {
               to={s.to}
             >
               <span className="dash__start-check" aria-hidden="true">
-                {s.done ? "✓" : ""}
+                {s.done && <NavIcon name="check" />}
               </span>
               <span className="dash__start-text">
                 {t(`dashboard.gettingStarted.steps.${s.key}`)}

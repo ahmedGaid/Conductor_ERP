@@ -11,6 +11,7 @@ import {
 } from "../lib/filters";
 import { Popover } from "./Popover";
 import { Tooltip } from "./Tooltip";
+import { NavIcon } from "../app/icons";
 import "./FilterBar.css";
 
 interface FilterBarProps<T> {
@@ -177,7 +178,7 @@ function FilterChip<T>({
 
       <Tooltip label={t("filter.remove")} placement="top">
         <button type="button" className="filter-chip__remove" aria-label={t("filter.remove")} onClick={onRemove}>
-          <span aria-hidden="true">✕</span>
+          <NavIcon name="close" />
         </button>
       </Tooltip>
 
@@ -192,7 +193,7 @@ function FilterChip<T>({
               onClick={() => setOperator(op)}
             >
               {t(`filter.op.${op}`)}
-              {op === filter.operator && <span className="popover__check" aria-hidden="true">✓</span>}
+              {op === filter.operator && <span className="popover__check" aria-hidden="true"><NavIcon name="check" /></span>}
             </button>
           ))}
         </div>
@@ -222,7 +223,7 @@ function FilterChip<T>({
                   onClick={() => toggleOption(o.value)}
                 >
                   {o.label}
-                  {on && <span className="popover__check" aria-hidden="true">✓</span>}
+                  {on && <span className="popover__check" aria-hidden="true"><NavIcon name="check" /></span>}
                 </button>
               );
             })}

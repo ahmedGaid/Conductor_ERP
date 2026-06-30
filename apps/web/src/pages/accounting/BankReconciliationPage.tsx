@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+
+import { NavIcon } from "../../app/icons";
 import { Link, useNavigate } from "react-router-dom";
 
 import { createBankStatement, getBankStatement, listAccounts, listBankStatements } from "../../api/accounting";
@@ -10,6 +12,7 @@ import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
 import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -139,9 +142,9 @@ export function BankReconciliationPage() {
                     <input value={l.description} onChange={(e) => setLine(i, { description: e.target.value })} />
                   </td>
                   <td>
-                    <button type="button" className="btn btn--sm"
+                    <button type="button" className="btn btn--sm btn--icon"
                             onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))}
-                            disabled={lines.length <= 1} aria-label={t("common.delete")}>✕</button>
+                            disabled={lines.length <= 1} aria-label={t("common.delete")}><NavIcon name="close" /></button>
                   </td>
                 </tr>
               ))}
@@ -197,9 +200,9 @@ export function BankReconciliationPage() {
                   <td><Bdi>{s.statement_date}</Bdi></td>
                   <td className="acct-table__num"><Bdi>{formatMinor(s.closing_balance_minor)}</Bdi></td>
                   <td>
-                    <span className={`pill pill--${s.status === "reconciled" ? "completed" : "running"}`}>
+                    <Badge tone={s.status === "reconciled" ? "completed" : "running"}>
                       {t(`accounting.bankRec.statuses.${s.status}`)}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

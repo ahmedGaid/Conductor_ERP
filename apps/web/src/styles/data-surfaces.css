@@ -1,0 +1,247 @@
+/*
+ * Data surfaces — the ONE rhythm every module list/detail shares.
+ *
+ * Sales, Purchasing, Inventory, CRM and Accounting used to each re-declare an identical
+ * page / table / toolbar / field / nav / summary / meta / badge recipe under their own prefix
+ * (.sales-table, .pur-table, …). That was the "page-by-page spacing instead of one system" drift.
+ * The shared rules now live here once as grouped selectors, so a change to table density, header
+ * weight or chip shape happens in a single place and every module follows. Class names are
+ * unchanged, so no markup moved — this is a pure de-duplication.
+ *
+ * Module-specific rules (status modifiers, CRM priority/metrics, inventory segments, accounting
+ * statements, …) stay in each module's own .css.
+ */
+
+/* ---- Page shell ---- */
+.sales-page,
+.pur-page,
+.inv-page,
+.crm-page,
+.acct-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sales-page__head,
+.pur-page__head,
+.inv-page__head,
+.crm-page__head,
+.acct-page__head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Trailing-aligned row for page-level actions (e.g. Import) above the create form. */
+.sales-page-actions,
+.pur-page-actions,
+.inv-page-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.sales-explain,
+.pur-explain {
+  margin-block: calc(-1 * var(--space-2)) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ---- Module tab nav (underline tabs) ---- */
+.sales-nav,
+.pur-nav,
+.inv-nav,
+.crm-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-block-end: 1px solid var(--color-border);
+  margin-block-end: var(--space-4);
+}
+
+.sales-nav__tab,
+.pur-nav__tab,
+.inv-nav__tab,
+.crm-nav__tab {
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  color: var(--color-text-muted);
+  border-block-end: 2px solid transparent;
+  font-weight: var(--font-weight-medium);
+}
+.sales-nav__tab:hover,
+.pur-nav__tab:hover,
+.inv-nav__tab:hover,
+.crm-nav__tab:hover {
+  color: var(--color-text);
+}
+.sales-nav__tab--active,
+.pur-nav__tab--active,
+.inv-nav__tab--active,
+.crm-nav__tab--active {
+  color: var(--color-accent-strong);
+  border-block-end-color: var(--color-accent);
+}
+
+/* ---- Data table ---- */
+.sales-table-wrap,
+.pur-table-wrap,
+.inv-table-wrap,
+.crm-table-wrap,
+.acct-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.sales-table,
+.pur-table,
+.inv-table,
+.crm-table,
+.acct-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.sales-table th,
+.sales-table td,
+.pur-table th,
+.pur-table td,
+.inv-table th,
+.inv-table td,
+.crm-table th,
+.crm-table td,
+.acct-table th,
+.acct-table td {
+  text-align: start;
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--table-pad-block);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.sales-table th,
+.pur-table th,
+.inv-table th,
+.crm-table th,
+.acct-table th {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.sales-table__num,
+.pur-table__num,
+.inv-table__num,
+.crm-table__num,
+.acct-table__num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-table tbody tr:hover,
+.pur-table tbody tr:hover,
+.inv-table tbody tr:hover,
+.crm-table tbody tr:hover,
+.acct-table tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.sales-table tfoot td,
+.pur-table tfoot td,
+.inv-table tfoot td,
+.crm-table tfoot td,
+.acct-table tfoot td {
+  font-weight: var(--font-weight-bold);
+  border-block-start: 2px solid var(--color-border-strong);
+}
+
+/* ---- Toolbar + field ---- */
+.sales-toolbar,
+.pur-toolbar,
+.inv-toolbar,
+.crm-toolbar,
+.acct-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.sales-field,
+.pur-field,
+.inv-field,
+.crm-field,
+.acct-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.sales-actions,
+.pur-actions,
+.crm-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ---- Summary strip (KPI row above a table) ---- */
+.sales-summary,
+.pur-summary,
+.crm-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-4);
+}
+
+.sales-summary__item,
+.pur-summary__item,
+.crm-summary__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sales-summary__label,
+.pur-summary__label,
+.crm-summary__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.sales-summary__value,
+.pur-summary__value,
+.crm-summary__value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Secondary reference fields (progressive-disclosure section) ---- */
+.sales-meta,
+.pur-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.sales-meta__row,
+.pur-meta__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sales-meta dt,
+.pur-meta dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+.sales-meta dd,
+.pur-meta dd {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}

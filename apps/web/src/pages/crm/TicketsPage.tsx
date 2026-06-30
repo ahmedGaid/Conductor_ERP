@@ -13,6 +13,8 @@ import {
   type TicketPriority,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { Badge } from "../../components/Badge";
+import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
@@ -206,7 +208,7 @@ export function TicketsPage() {
                     <span className={`crm-prio crm-prio--${tk.priority}`}>{t(`crm.priority.${tk.priority}`)}</span>
                   </td>
                   <td>
-                    <span className={`crm-badge crm-badge--${tk.status}`}>{t(`crm.ticketStatus.${tk.status}`)}</span>
+                    <Badge tone={crmTone(tk.status)}>{t(`crm.ticketStatus.${tk.status}`)}</Badge>
                   </td>
                   <td>
                     {tk.is_breached ? (

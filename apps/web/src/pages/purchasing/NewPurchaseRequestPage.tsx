@@ -1,5 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+
+import { NavIcon } from "../../app/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { createRequest, listSuppliers, type NewPOLine } from "../../api/purchasing";
@@ -153,7 +155,7 @@ export function NewPurchaseRequestPage() {
                     </td>
                     <td className="pur-table__num"><Bdi>{formatMinor(lineTotal)}</Bdi></td>
                     <td>
-                      <button type="button" className="btn btn--sm" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}>✕</button>
+                      <button type="button" className="btn btn--sm btn--icon" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}><NavIcon name="close" /></button>
                     </td>
                   </tr>
                 );

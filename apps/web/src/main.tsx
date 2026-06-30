@@ -11,6 +11,7 @@ import "@fontsource/inter/700.css";
 
 import "./styles/tokens.css";
 import "./styles/global.css";
+import "./styles/data-surfaces.css";
 import "./styles/print.css";
 import "./styles/module-accents.css";
 import "./i18n";

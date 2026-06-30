@@ -10,6 +10,8 @@ import {
   type OppStage,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { Badge } from "../../components/Badge";
+import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
@@ -72,7 +74,7 @@ export function OpportunityDetailPage() {
                   {data.lead_code ? ` · ${data.lead_code}` : ""}
                 </p>
               </div>
-              <span className={`crm-badge crm-badge--${data.stage}`}>{t(`crm.stage.${data.stage}`)}</span>
+              <Badge tone={crmTone(data.stage)}>{t(`crm.stage.${data.stage}`)}</Badge>
             </div>
 
             <div className="crm-summary">

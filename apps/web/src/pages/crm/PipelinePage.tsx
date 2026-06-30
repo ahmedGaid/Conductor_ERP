@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+
+import { NavIcon } from "../../app/icons";
 import { Link } from "react-router-dom";
 
 import {
@@ -12,6 +14,8 @@ import {
 import { listCustomers } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { Badge } from "../../components/Badge";
+import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
@@ -158,7 +162,7 @@ export function PipelinePage() {
                     </td>
                     <td className="crm-table__num"><Bdi>{formatMinor(lineTotal)}</Bdi></td>
                     <td>
-                      <button type="button" className="btn btn--sm" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}>✕</button>
+                      <button type="button" className="btn btn--sm btn--icon" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}><NavIcon name="close" /></button>
                     </td>
                   </tr>
                 );
@@ -220,7 +224,7 @@ export function PipelinePage() {
                   </td>
                   <td>{o.name}</td>
                   <td>
-                    <span className={`crm-badge crm-badge--${o.stage}`}>{t(`crm.stage.${o.stage}`)}</span>
+                    <Badge tone={crmTone(o.stage)}>{t(`crm.stage.${o.stage}`)}</Badge>
                   </td>
                   <td className="crm-table__num"><Bdi>{formatMinor(o.amount_minor, o.currency)}</Bdi></td>
                   <td className="crm-table__num muted"><Bdi>{formatMinor(o.weighted_minor, o.currency)}</Bdi></td>

@@ -93,6 +93,10 @@
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
+.dash__attn-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
 
 .dash__attn-item--danger .dash__attn-icon {
   background-color: var(--color-danger-subtle);
@@ -173,6 +177,11 @@
   color: var(--color-surface);
   font-size: var(--font-size-xs);
   flex-shrink: 0;
+}
+
+.dash__start-check .navicon {
+  inline-size: 0.8rem;
+  block-size: 0.8rem;
 }
 
 .dash__start-item--done .dash__start-check {

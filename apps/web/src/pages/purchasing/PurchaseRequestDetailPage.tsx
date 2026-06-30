@@ -17,6 +17,8 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { purchasingTone } from "../../lib/statusTone";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader } from "../../components/DocumentHeader";
@@ -119,7 +121,7 @@ export function PurchaseRequestDetailPage() {
       <div className="card pur-page">
         <DocumentHeader
           number={data.number}
-          status={<span className={`pur-badge pur-badge--${data.status}`}>{t(`purchasing.requestStatus.${data.status}`)}</span>}
+          status={<Badge tone={purchasingTone(data.status)}>{t(`purchasing.requestStatus.${data.status}`)}</Badge>}
           primary={primaryAction()}
           menu={menu}
           menuLabel={t("document.moreActions")}

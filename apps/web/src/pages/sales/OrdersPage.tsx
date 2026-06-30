@@ -12,6 +12,8 @@ import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { salesTone } from "../../lib/statusTone";
 import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -170,9 +172,7 @@ export function OrdersPage() {
                   <td><PartyLink type="customer" code={o.customer_code}>{o.customer_name}</PartyLink></td>
                   <td className="latin muted">{o.order_date}</td>
                   <td>
-                    <span className={`sales-badge sales-badge--${o.status}`}>
-                      {t(`sales.status.${o.status}`)}
-                    </span>
+                    <Badge tone={salesTone(o.status)}>{t(`sales.status.${o.status}`)}</Badge>
                   </td>
                   <td className="sales-table__num"><Bdi>{formatMinor(o.subtotal_minor, o.currency)}</Bdi></td>
                   <td>

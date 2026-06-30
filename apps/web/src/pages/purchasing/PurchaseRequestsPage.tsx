@@ -10,6 +10,8 @@ import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { purchasingTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -126,9 +128,7 @@ export function PurchaseRequestsPage() {
                   <td>{r.supplier_name}</td>
                   <td className="latin muted">{r.request_date}</td>
                   <td>
-                    <span className={`pur-badge pur-badge--${r.status}`}>
-                      {t(`purchasing.requestStatus.${r.status}`)}
-                    </span>
+                    <Badge tone={purchasingTone(r.status)}>{t(`purchasing.requestStatus.${r.status}`)}</Badge>
                   </td>
                   <td className="pur-table__num"><Bdi>{formatMinor(r.subtotal_minor, r.currency)}</Bdi></td>
                 </tr>
