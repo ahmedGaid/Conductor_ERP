@@ -65,11 +65,20 @@
     "formCancel": "Cancel"
   },
   "command": {
-    "placeholder": "Search pages and actions…",
+    "placeholder": "Search records, pages and actions…",
     "empty": "No matches for",
     "groupCreate": "Create",
     "groupGo": "Go to",
     "groupRecent": "Recent",
+    "groupResults": "Records",
+    "type": {
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "item": "Item",
+      "sales_order": "Sales order",
+      "purchase_order": "Purchase order",
+      "journal": "Journal entry"
+    },
     "hintMove": "Move",
     "hintOpen": "Open",
     "hintClose": "Close",
