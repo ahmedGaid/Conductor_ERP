@@ -1189,3 +1189,28 @@ new order (smart defaults pre-fill customer/warehouse/tax, price prefilled from 
 **"Complete sale"** fast-path (one move: confirm→deliver→invoice) → **"Export PDF"** opens the on-brand
 invoice. The remaining "**record the real number**" is a human stopwatch run with a true cold stranger
 on a fresh DB — left as a manual checkpoint, not a code task.
+## Prompts2 reviewed → superseded by CONDUCTOR_CHARTER.md (2026-06-30)
+
+`Docs/Prompts2/*` (00–07) is a **greenfield build script** on a PostgreSQL/Oracle-stored-procedure +
+NestJS stack. It is **not the plan** and must not be executed as one — Conductor is a shipped release
+candidate on **Django modular-monolith + React/Vite, Arabic/RTL-first**, with every "golden rule"
+already implemented (`erp/sales|purchasing|inventory|accounting|einvoice|pricing|identity|workflow`,
+immutable `erp/audit.AuditEntry`).
+
+- **Kept** Prompts2's good ideas: precedence-ordered rules (lower number wins), typed money + frozen
+  FX, posted-immutable + linked successors, mutability-as-data, field security = absent-from-payload
+  (default-deny), AI-suggests/human-commits, every rule → runnable invariant.
+- **Rejected:** the greenfield premise (nothing to build — it exists); business logic in DB stored
+  procedures (our source of truth is the Django **service layer** — DB constraints are defense-in-depth
+  only; two sources of truth is the bug); re-scaffolding `conductor/db|api|web` + a psql Makefile
+  (real gates are `scripts/gates/_run.py` 00–13 + `check-i18n-parity.mjs` + `tsc -b` + `gate03.py`);
+  rebuilding Sales Order; bare English JSX + physical CSS (we are RTL-default).
+- **Added** what Prompts2 ignored entirely (Arabic/RTL/brand/craft — the actual niche differentiators):
+  native-Arabic+parity, logical-CSS/tokens/monochrome, designed states, a **speed budget** (1-second
+  answer test), keyboard-first `⌘K` command palette, one-skeleton/one-drawer/split-compare, and
+  self-host resilience (one-day setup, backup/restore, printable ETA/PDF proof).
+
+The rewrite — `Docs/Prompts2/CONDUCTOR_CHARTER.md` — is a **standing constitution for the shipped
+product** (review/onboarding lens), not a TODO. Each rule names where it lives in this codebase and the
+invariant that proves it. Treat it as authoritative; treat `Docs/Prompts2/00–07` as a rejected path
+kept only for context.
