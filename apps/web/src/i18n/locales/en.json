@@ -678,7 +678,11 @@
       "quoteRejected": "Quotation rejected",
       "orderCreated": "Order created",
       "quotationCreated": "Quotation created",
-      "cancelled": "Order cancelled"
+      "cancelled": "Order cancelled",
+      "bulkApproved": "{{count}} orders approved",
+      "bulkApprovedOne": "1 order approved",
+      "bulkConfirmed": "{{count}} orders confirmed",
+      "bulkConfirmedOne": "1 order confirmed"
     },
     "tabs": {
       "orders": "Orders",
@@ -1605,5 +1609,13 @@
     "completedOn": "All steps completed on {{date}}",
     "cancelConfirmTitle": "Cancel {{number}}?",
     "cancelConfirmBody": "This can’t be undone."
+  },
+  "bulk": {
+    "region": "Selected items",
+    "selected": "{{count}} selected",
+    "selectedOne": "1 selected",
+    "clear": "Clear selection",
+    "selectAll": "Select all",
+    "selectRow": "Select row"
   }
 }

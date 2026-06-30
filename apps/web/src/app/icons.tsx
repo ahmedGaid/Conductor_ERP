@@ -207,6 +207,8 @@ const PATHS: Record<string, ReactNode> = {
   ),
   // Check — confirmed / matched / done.
   check: <path d="M5 12l4.5 4.5L19 7" />,
+  // Minus — partial / indeterminate (select-all when only some rows are picked).
+  minus: <path d="M6 12h12" />,
   // Star — favourite / pinned. Outline only; active state is shown by accent colour, never a fill.
   star: <path d="M12 3.6l2.5 5.1 5.6.8-4.05 3.95.96 5.55L12 16.9l-5.02 2.65.96-5.55L3.9 9.5l5.6-.8Z" />,
   // Flag — items awaiting approval / flagged for attention.

@@ -678,7 +678,11 @@
       "quoteRejected": "تم رفض عرض السعر",
       "orderCreated": "تم إنشاء الطلب",
       "quotationCreated": "تم إنشاء عرض السعر",
-      "cancelled": "تم إلغاء الطلب"
+      "cancelled": "تم إلغاء الطلب",
+      "bulkApproved": "تمت الموافقة على {{count}} طلبات",
+      "bulkApprovedOne": "تمت الموافقة على طلب واحد",
+      "bulkConfirmed": "تم تأكيد {{count}} طلبات",
+      "bulkConfirmedOne": "تم تأكيد طلب واحد"
     },
     "tabs": {
       "orders": "الطلبات",
@@ -1605,5 +1609,13 @@
     "completedOn": "اكتملت كل الخطوات في {{date}}",
     "cancelConfirmTitle": "إلغاء {{number}}؟",
     "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء."
+  },
+  "bulk": {
+    "region": "العناصر المحددة",
+    "selected": "{{count}} عنصر محدد",
+    "selectedOne": "عنصر واحد محدد",
+    "clear": "إلغاء التحديد",
+    "selectAll": "تحديد الكل",
+    "selectRow": "تحديد الصف"
   }
 }
