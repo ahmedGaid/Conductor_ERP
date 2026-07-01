@@ -139,3 +139,20 @@ def test_orders_list_endpoint_is_branch_scoped():
     rows = client.get("/api/sales/orders").data["data"]
     assert len(rows) == 1  # only branch A's order
     assert rows[0]["number"] == order_a.number
+
+
+def test_order_detail_and_actions_404_outside_scope():
+    _catalog()
+    a = Branch.objects.create(code="BR-A", name="Alpha")
+    b = Branch.objects.create(code="BR-B", name="Beta")
+    mgr_a = _manager("mgr_a", a)
+    mgr_b = _manager("mgr_b", b)
+    order_a = _order(mgr_a)
+    order_b = _order(mgr_b)
+
+    client = APIClient()
+    client.force_authenticate(user=mgr_a)
+    assert client.get(f"/api/sales/orders/{order_a.id}").status_code == 200
+    # Out of scope reads as absent — 404, never 403 (existence must not leak).
+    assert client.get(f"/api/sales/orders/{order_b.id}").status_code == 404
+    assert client.post(f"/api/sales/orders/{order_b.id}/confirm").status_code == 404

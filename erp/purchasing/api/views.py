@@ -42,6 +42,14 @@ def _po_qs():
     return PurchaseOrder.objects.select_related("supplier").prefetch_related("lines")
 
 
+# List/detail and action fetches share the scoped queryset, so an out-of-scope PO 404s
+# (indistinguishable from absent) rather than leaking existence. Actions pass the bare model:
+# the prefetched `lines` cache would go stale once the service mutates them.
+def _scoped_pos(request: Request, base=None):
+    return scope_queryset(request.user, base if base is not None else _po_qs(),
+                          "purchasing.order.view")
+
+
 class SupplierListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
@@ -81,8 +89,7 @@ class POListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def get(self, request: Request) -> Response:
-        qs = _po_qs().order_by("-order_date", "-created_at")
-        qs = scope_queryset(request.user, qs, "purchasing.order.view")
+        qs = _scoped_pos(request).order_by("-order_date", "-created_at")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         if request.query_params.get("supplier"):
@@ -114,7 +121,7 @@ class PODetailView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def get(self, request: Request, order_id) -> Response:
-        return _envelope(POSerializer(get_object_or_404(_po_qs(), id=order_id)).data)
+        return _envelope(POSerializer(get_object_or_404(_scoped_pos(request), id=order_id)).data)
 
 
 # Audit action → workflow tracker stage key (see apps/web/src/lib/workflow.ts). Approval gates the
@@ -136,7 +143,7 @@ class POHistoryView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def get(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(PurchaseOrder, id=order_id)
+        order = get_object_or_404(_scoped_pos(request, PurchaseOrder.objects.all()), id=order_id)
         return _envelope(order_history("PurchaseOrder", order.number, _PO_STAGE))
 
 
@@ -145,7 +152,7 @@ class _POActionView(APIView):
     action = ""
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(PurchaseOrder, id=order_id)
+        order = get_object_or_404(_scoped_pos(request, PurchaseOrder.objects.all()), id=order_id)
         getattr(services, self.action)(order, actor=request.user)
         return _envelope(POSerializer(_po_qs().get(id=order.id)).data)
 
@@ -170,7 +177,7 @@ class POReceiveView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(PurchaseOrder, id=order_id)
+        order = get_object_or_404(_scoped_pos(request, PurchaseOrder.objects.all()), id=order_id)
         s = LinesActionSerializer(data=request.data or {})
         s.is_valid(raise_exception=True)
         services.receive_order(order, received=s.as_map(), actor=request.user)
@@ -181,7 +188,7 @@ class POReturnView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(PurchaseOrder, id=order_id)
+        order = get_object_or_404(_scoped_pos(request, PurchaseOrder.objects.all()), id=order_id)
         s = LinesActionSerializer(data=request.data or {})
         s.is_valid(raise_exception=True)
         services.return_order(order, returned=s.as_map(), actor=request.user)
@@ -192,7 +199,7 @@ class POPaymentView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(PurchaseOrder, id=order_id)
+        order = get_object_or_404(_scoped_pos(request, PurchaseOrder.objects.all()), id=order_id)
         s = PaymentSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.pay_order(order, s.validated_data["amount"], actor=request.user)
@@ -205,12 +212,16 @@ def _req_qs():
     return PurchaseRequest.objects.select_related("supplier").prefetch_related("lines")
 
 
+def _scoped_reqs(request: Request, base=None):
+    return scope_queryset(request.user, base if base is not None else _req_qs(),
+                          "purchasing.request.view")
+
+
 class RequestListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def get(self, request: Request) -> Response:
-        qs = _req_qs().order_by("-request_date", "-created_at")
-        qs = scope_queryset(request.user, qs, "purchasing.request.view")
+        qs = _scoped_reqs(request).order_by("-request_date", "-created_at")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         return _envelope(RequestSerializer(qs[:200], many=True).data)
@@ -240,7 +251,7 @@ class RequestDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def get(self, request: Request, req_id) -> Response:
-        return _envelope(RequestSerializer(get_object_or_404(_req_qs(), id=req_id)).data)
+        return _envelope(RequestSerializer(get_object_or_404(_scoped_reqs(request), id=req_id)).data)
 
 
 class _RequestActionView(APIView):
@@ -248,7 +259,7 @@ class _RequestActionView(APIView):
     action = ""
 
     def post(self, request: Request, req_id) -> Response:
-        req = get_object_or_404(PurchaseRequest, id=req_id)
+        req = get_object_or_404(_scoped_reqs(request, PurchaseRequest.objects.all()), id=req_id)
         getattr(services, self.action)(req, actor=request.user)
         return _envelope(RequestSerializer(_req_qs().get(id=req.id)).data)
 
@@ -265,7 +276,7 @@ class RequestRejectView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def post(self, request: Request, req_id) -> Response:
-        req = get_object_or_404(PurchaseRequest, id=req_id)
+        req = get_object_or_404(_scoped_reqs(request, PurchaseRequest.objects.all()), id=req_id)
         s = RejectSerializer(data=request.data or {})
         s.is_valid(raise_exception=True)
         services.reject_request(req, reason=s.validated_data.get("reason", ""), actor=request.user)
@@ -276,7 +287,7 @@ class RequestConvertView(APIView):
     permission_classes = [IsAuthenticated, _CanBuy]
 
     def post(self, request: Request, req_id) -> Response:
-        req = get_object_or_404(PurchaseRequest, id=req_id)
+        req = get_object_or_404(_scoped_reqs(request, PurchaseRequest.objects.all()), id=req_id)
         order = services.convert_request(req, actor=request.user)
         return _envelope(
             {"request": RequestSerializer(_req_qs().get(id=req.id)).data,

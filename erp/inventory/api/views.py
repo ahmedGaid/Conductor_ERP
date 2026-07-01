@@ -287,7 +287,11 @@ class StockCountDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
     def get(self, request: Request, count_id) -> Response:
-        count = get_object_or_404(StockCount.objects.select_related("warehouse"), id=count_id)
+        count = get_object_or_404(
+            scope_queryset(request.user, StockCount.objects.select_related("warehouse"),
+                           "inventory.stock_count.view"),
+            id=count_id,
+        )
         return _envelope(_count_dict(count, with_lines=True))
 
 
@@ -295,7 +299,13 @@ class StockCountLineSetView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
     def post(self, request: Request, line_id) -> Response:
-        line = get_object_or_404(StockCountLine.objects.select_related("count"), id=line_id)
+        line = get_object_or_404(
+            StockCountLine.objects.select_related("count").filter(
+                count__in=scope_queryset(request.user, StockCount.objects.all(),
+                                         "inventory.stock_count.view")
+            ),
+            id=line_id,
+        )
         s = CountLineSetSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.set_counted(line, s.validated_data["counted_quantity"])
@@ -306,7 +316,11 @@ class StockCountPostView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
     def post(self, request: Request, count_id) -> Response:
-        count = get_object_or_404(StockCount.objects.select_related("warehouse"), id=count_id)
+        count = get_object_or_404(
+            scope_queryset(request.user, StockCount.objects.select_related("warehouse"),
+                           "inventory.stock_count.view"),
+            id=count_id,
+        )
         services.post_count(count, actor=request.user)
         return _envelope(_count_dict(count, with_lines=True))
 
