@@ -206,6 +206,11 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 
 REDIS_URL = _redis_url
 
+# --- Workflow egress (SSRF guard) ---
+# Optional host-suffix allowlist for workflow REST/webhook nodes. Empty = any PUBLIC host (private/
+# loopback/link-local/metadata addresses are always blocked; see erp.workflow.adapters.egress).
+WORKFLOW_EGRESS_ALLOWLIST = env.list("WORKFLOW_EGRESS_ALLOWLIST", default=[])
+
 # --- CORS (frontend dev server) ---
 CORS_ALLOWED_ORIGINS = [
     f"http://localhost:{env('WEB_PORT', default='5173')}",
