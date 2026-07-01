@@ -187,6 +187,9 @@ def post_journal(data: JournalInput, actor=None) -> JournalEntry:
         posted_at=timezone.now(),
         posted_by=actor if getattr(actor, "is_authenticated", False) else None,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     JournalLine.objects.bulk_create(
         [

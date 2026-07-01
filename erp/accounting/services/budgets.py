@@ -31,6 +31,9 @@ def create_budget(*, name: str, fiscal_year_code: str, actor=None) -> Budget:
     return Budget.objects.create(
         name=name, fiscal_year_code=fiscal_year_code,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
 
 
