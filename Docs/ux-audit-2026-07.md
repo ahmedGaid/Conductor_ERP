@@ -39,7 +39,7 @@ Open systemic gaps (Phase 1):
 | ID | Gap | Evidence | Fix |
 |----|-----|----------|-----|
 | S1 | **No bulk actions** — zero row multi-select anywhere | no `type="checkbox"` in any list table | ✅ DONE primitive: `useRowSelection` + `<BulkActionBar>` + `<Checkbox>`; wired Sales Orders (approve/confirm). Fan-out to other lists pending. |
-| S2 | **Inline edit nearly absent** | `InlineEdit` used on 1 page | extend to status/qty/name/assignee cells |
+| S2 | **Inline edit nearly absent** | `InlineEdit` used on 1 page | ✅ Extended primitive with `display` prop (formatted read / raw edit); wired PriceListDetail line cells (price + min qty via `updateLine`, optimistic). Party/Item name inline-edit deferred — needs backend PATCH endpoints (out of polish scope). StockCount already inline (fast-tab input, left as-is). |
 | S3 | **List keyboard-nav half-wired** | `useListKeyboardNav` on 11 of ~22 list pages | ✅ DONE: +7 pages (Customers, Suppliers, Items, Warehouses, PriceLists, Users, Roles). Leads/Tickets/EInvoices excluded — no detail-open by design. |
 | S4 | **Form keys half-wired** | `useFormKeys` on 5 forms | Esc-cancel / ⌘↵-submit everywhere |
 | S5 | **Stray spacing values** | 22 non-token px/rem (mostly legit sub-px) | audit, tokenize the real ones |
@@ -178,3 +178,9 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
   persist) to 7 list pages — Customers, Suppliers, Items, Warehouses, PriceLists, Users, Roles. Leads/Tickets
   (unlinked by design) + EInvoices (action-oriented, no detail route) intentionally excluded. tsc -b + gate03
   GREEN. Live-verified Customers (j×2 → row 1).
+- 2026-07-01 — **Phase 1.2 DONE**: inline-edit fan-out. Extended `InlineEdit` with a `display` prop
+  (formatted read text over a raw editable value — e.g. money). Wired PriceListDetail line cells: unit
+  price (`minorToAmount`/`parseToMinor` bridge, formatted `display`) + min qty, both optimistic via
+  `updateLine`. Party/Item name inline-edit deferred (needs backend PATCH — out of polish scope);
+  StockCount left as its fast-tab input. tsc -b + parity (1283) + gate03 GREEN. Live-verified end-to-end
+  (7.00 → 9.50 EGP, persisted server-side `price_minor:950`, then restored).
