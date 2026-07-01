@@ -139,7 +139,7 @@ export function ReportBuilderPage() {
         </label>
         <button className="btn btn--primary" type="submit" disabled={busy}>{t("accounting.reportBuilder.save")}</button>
       </form>
-      <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("accounting.reportBuilder.scheduleHint")}</p>
+      <p className="hint">{t("accounting.reportBuilder.scheduleHint")}</p>
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (

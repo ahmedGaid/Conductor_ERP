@@ -107,7 +107,7 @@ export function CampaignsPage() {
           <span>{t("crm.campaign.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />
         </label>
-        <label className="crm-field" style={{ flex: 1 }}>
+        <label className="crm-field grow">
           <span>{t("crm.campaign.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>

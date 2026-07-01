@@ -53,63 +53,82 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
 ### Sales (high traffic — audit first in Phase 2)
 | Page | Status | Notes |
 |------|--------|-------|
-| OrdersPage | todo | list — KB✅ ; bulk❌ |
-| OrderDetailPage | todo | mockup-redesigned PR#19 |
-| QuotationsPage | todo | list — KB✅ |
-| QuotationDetailPage | todo | |
-| NewOrderPage | todo | form |
-| NewQuotationPage | todo | form |
-| CustomersPage | todo | list — KB❌ bulk❌ |
-| CustomerDetailPage | todo | PartyDetailView |
-| InvoiceDocumentPage | todo | print/PDF — monochrome |
+| OrdersPage | ✅ | bulk-select + KB (P1.1) |
+| OrderDetailPage | ✅ reviewed | mockup-redesigned PR#19; designed loading/error states, clean tokens — Linear-grade, no defect |
+| QuotationsPage | ✅ | bulk-select (submit/approve) + KB; live-verified |
+| QuotationDetailPage | ✅ reviewed | ListSkeleton + ErrorState present; clean — no defect |
+| NewOrderPage | ✅ reviewed | smart defaults + WorkflowTracker + form keys + price-source; Linear-grade — no defect |
+| NewQuotationPage | ✅ reviewed | mirrors NewOrder; form keys present — no defect |
+| CustomersPage | ✅ | KB + form-keys (P1.3/1.4) |
+| CustomerDetailPage | ✅ reviewed | PartyDetailView with loading/error/notFound states — no defect |
+| InvoiceDocumentPage | ✅ reviewed | monochrome print doc, org masthead, no colour on totals — on-brand |
 
-### Purchasing
+**Sales module verdict:** already Linear-grade + mechanically clean (no physical CSS, no raw hex, no
+hardcoded strings, all states designed). The one real gap was bulk-select on the two list pages — now
+closed (Orders P1.1, Quotations P2). No cosmetic churn forced (CLAUDE.md: enforce the system, don't reinvent).
+
+**Purchasing module verdict (Phase 2):** identical finding — Linear-grade + clean. Bulk-select fanned to
+both list pages: PurchaseOrders (approve/confirm) + PurchaseRequests (submit/approve), live-verified
+end-to-end (request Submitted→Approved, "1 request approved"). Detail/form/supplier pages: designed
+states, tokens-only, form keys present — no defect. No cosmetic churn.
+
+### Purchasing — ✅ reviewed (Phase 2). Verdict: already Linear-grade + clean; gap was list bulk-select, now closed.
 | Page | Status | Notes |
 |------|--------|-------|
-| PurchaseOrdersPage | todo | KB✅ |
-| PurchaseOrderDetailPage | todo | |
-| PurchaseRequestsPage | todo | KB✅ |
-| PurchaseRequestDetailPage | todo | |
-| NewPurchaseOrderPage | todo | form |
-| NewPurchaseRequestPage | todo | form |
-| SuppliersPage | todo | KB❌ |
-| SupplierDetailPage | todo | PartyDetailView |
+| PurchaseOrdersPage | ✅ | bulk-select (approve/confirm) + KB; live-verified |
+| PurchaseOrderDetailPage | ✅ reviewed | designed states, clean — no defect |
+| PurchaseRequestsPage | ✅ | bulk-select (submit/approve) + KB; live-verified |
+| PurchaseRequestDetailPage | ✅ reviewed | designed states, clean — no defect |
+| NewPurchaseOrderPage | ✅ reviewed | form keys present — no defect |
+| NewPurchaseRequestPage | ✅ reviewed | form keys present — no defect |
+| SuppliersPage | ✅ | KB + form-keys (P1.3/1.4) |
+| SupplierDetailPage | ✅ reviewed | PartyDetailView states — no defect |
 
-### Inventory
+### Inventory — ✅ reviewed (Phase 2). No clean list bulk (reference lists + counts post is a detail-only, destructive action needing line review). Inline-style defects fixed app-wide.
 | Page | Status | Notes |
 |------|--------|-------|
-| ItemsPage | todo | KB❌ |
-| ItemDetailPage | todo | |
-| WarehousesPage | todo | |
-| WarehouseDetailPage | todo | |
-| StockOnHandPage | todo | table-dense |
-| StockMovementPage | todo | |
-| MovementsTable | todo | shared table |
-| StockCountsPage | todo | KB✅ |
-| StockCountDetailPage | todo | |
-| BatchesPage | todo | |
+| ItemsPage | ✅ | KB + form-keys (P1) |
+| ItemDetailPage | ✅ reviewed | clean |
+| WarehousesPage | ✅ | KB + form-keys (P1) |
+| WarehouseDetailPage | ✅ reviewed | clean |
+| StockOnHandPage | ✅ reviewed | dense report — clean |
+| StockMovementPage | ✅ reviewed | clean |
+| MovementsTable | ✅ reviewed | shared table — clean |
+| StockCountsPage | ✅ reviewed | KB; bulk-post rejected (destructive, detail-only); inline hint → `.hint` |
+| StockCountDetailPage | ✅ reviewed | inline hint → `.hint`; fast-tab count input kept |
+| BatchesPage | ✅ reviewed | reference list — clean |
 
-### Accounting
+### Accounting — ✅ reviewed (Phase 2). No clean list bulk (journals are immutable posted GL entries; the rest are reports/reference/detail-driven). Inline-style defects fixed app-wide.
 | Page | Status | Notes |
 |------|--------|-------|
-| ChartOfAccountsPage | todo | tree |
-| JournalListPage | todo | KB✅ |
-| JournalDetailPage | todo | |
-| JournalEntryPage | todo | form — debit/credit grid |
-| GeneralLedgerPage | todo | |
-| TrialBalancePage | todo | report |
-| BalanceSheetPage | todo | report |
-| IncomeStatementPage | todo | report |
-| CashFlowStatementPage | todo | report |
-| VatReturnPage | todo | |
-| BudgetsPage | todo | KB✅ |
-| BudgetDetailPage | todo | |
-| CostCentersPage | todo | |
-| FixedAssetsPage | todo | KB✅ |
-| FixedAssetDetailPage | todo | |
-| BankReconciliationPage | todo | KB✅ |
-| BankStatementDetailPage | todo | |
-| ReportBuilderPage | todo | builder UX |
+| ChartOfAccountsPage | ✅ reviewed | tree — clean |
+| JournalListPage | ✅ reviewed | KB; journals immutable → no bulk |
+| JournalDetailPage | ✅ reviewed | clean |
+| JournalEntryPage | ✅ reviewed | inline `flex`/`marginBlock` → `.grow`/`.block-spaced` |
+| GeneralLedgerPage | ✅ reviewed | report — clean |
+| TrialBalancePage | ✅ reviewed | report — clean |
+| BalanceSheetPage | ✅ reviewed | report — clean |
+| IncomeStatementPage | ✅ reviewed | report — clean |
+| CashFlowStatementPage | ✅ reviewed | report — clean |
+| VatReturnPage | ✅ reviewed | clean |
+| BudgetsPage | ✅ reviewed | KB + form-keys; inline `flex` → `.grow` |
+| BudgetDetailPage | ✅ reviewed | inline hint → `.hint` |
+| CostCentersPage | ✅ reviewed | form-keys; inline `flex` → `.grow` |
+| FixedAssetsPage | ✅ reviewed | KB + form-keys — clean |
+| FixedAssetDetailPage | ✅ reviewed | clean |
+| BankReconciliationPage | ✅ reviewed | KB; inline hint/`marginBlock` → `.hint`/`.block-spaced` |
+| BankStatementDetailPage | ✅ reviewed | inline `flex` → `.grow` |
+| ReportBuilderPage | ✅ reviewed | inline hint → `.hint` |
+
+### CRM — ✅ reviewed (Phase 2). Leads bulk-qualify added; Campaigns (channel, no lifecycle) + Pipeline (kanban) + Tickets (multi-state) no clean list bulk. Inline-style defects fixed.
+| Page | Status | Notes |
+|------|--------|-------|
+| LeadsPage | ✅ | bulk qualify (new→qualified) + form-keys; live-verified render/gating |
+| PipelinePage | ✅ reviewed | kanban — not a table |
+| OpportunityDetailPage | ✅ reviewed | clean |
+| CampaignsPage | ✅ | KB + form-keys; inline `flex` → `.grow`; no lifecycle → no bulk |
+| CampaignDetailPage | ✅ reviewed | inline hint → `.hint` |
+| TicketsPage | ✅ | form-keys; inline hint → `.hint`; multi-state per-row actions kept (no clean bulk) |
 
 ### Pricing
 | Page | Status | Notes |
@@ -196,3 +215,19 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
   (CommandPalette, SegmentedControl, Sidebar, StatCard, help, settings, admin, pricing, Badge, einvoice,
   notifications). gate03 (build+CSS) GREEN; token resolves live. **Phase 1 systemic primitives all done.**
   Next: Phase 2 per-module pixel pass + bulk-select fan-out to remaining list tables.
+- 2026-07-01 — **Phase 2 Sales**: Quotations bulk-select (submit/approve). Sales module verdict recorded.
+- 2026-07-01 — **Phase 2 Purchasing**: bulk-select on PurchaseOrders (approve/confirm) + PurchaseRequests
+  (submit/approve). Purchasing verdict recorded. (1295 keys.)
+- 2026-07-01 — **Phase 2 Inventory + CRM + Accounting** + app-wide craft cleanup:
+  - **CRM Leads bulk-qualify** (new→qualified), live-verified render/gating. (1297 keys.)
+  - **Bulk-select verdict for the rest**: no clean list bulk where there's no lifecycle to mirror —
+    Inventory (reference lists; count-post is destructive + detail-only), Accounting (journals immutable;
+    rest are reports), CRM Campaigns (channel, no status) / Pipeline (kanban) / Tickets (multi-state).
+    Recorded, not forced.
+  - **App-wide inline-style cleanup** (real craft defect the impeccable hook flags): added `.hint`
+    (muted+sm), `.grow` (flex:1), `.block-spaced` (margin-block) utilities to global.css; replaced all
+    ~14 STATIC inline `style={{…}}` across 12 files (accounting ×8, crm ×4, inventory ×2) with them.
+    Dynamic inline styles (Dashboard bar widths, Popover/Tooltip coords) correctly kept. `.hint` verified
+    live (13px, muted). tsc -b + parity (1297) + gate03 GREEN.
+  - **Whole-app bulk-select status:** all 4 transaction lists (Sales Orders/Quotations, Purchase
+    Orders/Requests) + CRM Leads. No further clean candidates exist. Fan-out complete.

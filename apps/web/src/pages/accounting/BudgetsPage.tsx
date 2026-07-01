@@ -77,7 +77,7 @@ export function BudgetsPage() {
       <AccountingNav />
 
       <form ref={formRef} className="card acct-toolbar" onSubmit={onSubmit}>
-        <label className="acct-field" style={{ flex: 1 }}>
+        <label className="acct-field grow">
           <span>{t("accounting.budgets.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>

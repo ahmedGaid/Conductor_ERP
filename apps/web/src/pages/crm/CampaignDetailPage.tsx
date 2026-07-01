@@ -88,7 +88,7 @@ export function CampaignDetailPage() {
               </div>
             </dl>
           )}
-          <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("crm.campaign.linkHint")}</p>
+          <p className="hint">{t("crm.campaign.linkHint")}</p>
         </div>
       )}
     </section>

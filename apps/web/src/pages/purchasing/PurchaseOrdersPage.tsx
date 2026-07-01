@@ -6,6 +6,9 @@ import { listPurchaseOrders, getPurchaseOrder, approvePO, confirmPO, type Purcha
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { Checkbox } from "../../components/Checkbox";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
@@ -79,6 +82,34 @@ export function PurchaseOrdersPage() {
     getItemId: (o) => o.id,
   });
 
+  // Multi-select for bulk approve/confirm, mirroring the per-row gating below.
+  const selection = useRowSelection<PurchaseOrder>({
+    items: visible ?? [],
+    getItemId: (o) => o.id,
+    activeIndex: active,
+  });
+  const approvable = selection.selectedItems.filter((o) => o.status === "draft" && o.requires_approval && !o.approved);
+  const confirmable = selection.selectedItems.filter((o) => o.status === "draft" && (!o.requires_approval || o.approved));
+
+  // Run one verb across many rows in a single optimistic pass, then clear the selection.
+  function bulkAct(targets: PurchaseOrder[], apply: (o: PurchaseOrder) => PurchaseOrder, request: (id: string) => Promise<PurchaseOrder>, success: string) {
+    if (targets.length === 0) return;
+    const ids = new Set(targets.map((o) => o.id));
+    void runOptimistic<PurchaseOrder[], PurchaseOrder[]>({
+      current: data ?? [],
+      mutate,
+      optimistic: (rows) => rows.map((o) => (ids.has(o.id) ? apply(o) : o)),
+      request: () => Promise.all(targets.map((o) => request(o.id))),
+      settle: (rows, updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        return rows.map((o) => byId.get(o.id) ?? o);
+      },
+      toast,
+      success,
+    });
+    selection.clear();
+  }
+
   // One-click row actions mirror the PO-detail gating: approve a draft awaiting sign-off, then
   // confirm a draft that's ready. Heavier steps (receive/bill/payment) stay on the detail page.
   // Optimistic: patch the row in place, reconcile with the server's order, roll back + toast on
@@ -141,6 +172,14 @@ export function PurchaseOrdersPage() {
           <table className="pur-table">
             <thead>
               <tr>
+                <th className="pur-table__select">
+                  <Checkbox
+                    checked={selection.allSelected}
+                    indeterminate={selection.someSelected}
+                    onChange={() => selection.toggleAll()}
+                    label={t("bulk.selectAll")}
+                  />
+                </th>
                 <th>{t("purchasing.orders.number")}</th>
                 <th>{t("purchasing.orders.supplier")}</th>
                 <th>{t("common.date")}</th>
@@ -151,7 +190,19 @@ export function PurchaseOrdersPage() {
             </thead>
             <tbody>
               {visible.map((o, i) => (
-                <tr key={o.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={o.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(o.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(o.id) || i === active}
+                >
+                  <td className="pur-table__select">
+                    <Checkbox
+                      checked={selection.isSelected(o.id)}
+                      onChange={(_next, shiftKey) => selection.toggle(i, shiftKey)}
+                      label={t("bulk.selectRow")}
+                    />
+                  </td>
                   <td>
                     <Link
                       to={`/purchasing/orders/${o.id}`}
@@ -194,6 +245,39 @@ export function PurchaseOrdersPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        {approvable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                approvable,
+                (r) => ({ ...r, approved: true }),
+                (id) => approvePO(id),
+                t(approvable.length === 1 ? "purchasing.toast.bulkApprovedOne" : "purchasing.toast.bulkApproved", { count: approvable.length }),
+              )
+            }
+          >
+            {t("purchasing.detail.approve")}
+          </button>
+        )}
+        {confirmable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                confirmable,
+                (r) => ({ ...r, status: "confirmed" }),
+                (id) => confirmPO(id),
+                t(confirmable.length === 1 ? "purchasing.toast.bulkConfirmedOne" : "purchasing.toast.bulkConfirmed", { count: confirmable.length }),
+              )
+            }
+          >
+            {t("purchasing.detail.confirm")}
+          </button>
+        )}
+      </BulkActionBar>
     </section>
   );
 }

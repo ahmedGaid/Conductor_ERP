@@ -2,10 +2,15 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { listQuotations, getQuotation, type Quotation } from "../../api/sales";
+import { listQuotations, getQuotation, submitQuotation, approveQuotation, type Quotation } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { Checkbox } from "../../components/Checkbox";
+import { BulkActionBar } from "../../components/BulkActionBar";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -23,7 +28,8 @@ const QUOTATION_STATUSES = ["draft", "submitted", "approved", "rejected", "conve
 
 export function QuotationsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listQuotations(), [], "sales:quotations");
+  const toast = useToast();
+  const { data, loading, error, reload, mutate } = useAsync(() => listQuotations(), [], "sales:quotations");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -65,6 +71,34 @@ export function QuotationsPage() {
     getItemId: (q) => q.id,
   });
 
+  // Multi-select for bulk submit/approve. `x` toggles active row; ⌘A all; Esc clears.
+  const selection = useRowSelection<Quotation>({
+    items: visible ?? [],
+    getItemId: (q) => q.id,
+    activeIndex: active,
+  });
+  const submittable = selection.selectedItems.filter((q) => q.status === "draft");
+  const approvable = selection.selectedItems.filter((q) => q.status === "submitted");
+
+  // Run one lifecycle verb across many quotations in a single optimistic pass, then clear the selection.
+  function bulkAct(targets: Quotation[], status: Quotation["status"], request: (id: string) => Promise<Quotation>, success: string) {
+    if (targets.length === 0) return;
+    const ids = new Set(targets.map((q) => q.id));
+    void runOptimistic<Quotation[], Quotation[]>({
+      current: data ?? [],
+      mutate,
+      optimistic: (rows) => rows.map((q) => (ids.has(q.id) ? { ...q, status } : q)),
+      request: () => Promise.all(targets.map((q) => request(q.id))),
+      settle: (rows, updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        return rows.map((q) => byId.get(q.id) ?? q);
+      },
+      toast,
+      success,
+    });
+    selection.clear();
+  }
+
   return (
     <section className="sales-page">
       <SalesNav />
@@ -105,6 +139,14 @@ export function QuotationsPage() {
           <table className="sales-table">
             <thead>
               <tr>
+                <th className="sales-table__select">
+                  <Checkbox
+                    checked={selection.allSelected}
+                    indeterminate={selection.someSelected}
+                    onChange={() => selection.toggleAll()}
+                    label={t("bulk.selectAll")}
+                  />
+                </th>
                 <th>{t("sales.quotations.number")}</th>
                 <th>{t("sales.orders.customer")}</th>
                 <th>{t("common.date")}</th>
@@ -114,7 +156,19 @@ export function QuotationsPage() {
             </thead>
             <tbody>
               {visible.map((q, i) => (
-                <tr key={q.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={q.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(q.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(q.id) || i === active}
+                >
+                  <td className="sales-table__select">
+                    <Checkbox
+                      checked={selection.isSelected(q.id)}
+                      onChange={(_next, shiftKey) => selection.toggle(i, shiftKey)}
+                      label={t("bulk.selectRow")}
+                    />
+                  </td>
                   <td>
                     <Link
                       to={`/sales/quotations/${q.id}`}
@@ -137,6 +191,39 @@ export function QuotationsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        {submittable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                submittable,
+                "submitted",
+                (id) => submitQuotation(id),
+                t(submittable.length === 1 ? "sales.toast.bulkQuoteSubmittedOne" : "sales.toast.bulkQuoteSubmitted", { count: submittable.length }),
+              )
+            }
+          >
+            {t("sales.quotations.submit")}
+          </button>
+        )}
+        {approvable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                approvable,
+                "approved",
+                (id) => approveQuotation(id),
+                t(approvable.length === 1 ? "sales.toast.bulkQuoteApprovedOne" : "sales.toast.bulkQuoteApproved", { count: approvable.length }),
+              )
+            }
+          >
+            {t("sales.quotations.approve")}
+          </button>
+        )}
+      </BulkActionBar>
     </section>
   );
 }

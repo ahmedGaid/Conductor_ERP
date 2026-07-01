@@ -682,7 +682,11 @@
       "bulkApproved": "{{count}} orders approved",
       "bulkApprovedOne": "1 order approved",
       "bulkConfirmed": "{{count}} orders confirmed",
-      "bulkConfirmedOne": "1 order confirmed"
+      "bulkConfirmedOne": "1 order confirmed",
+      "bulkQuoteSubmitted": "{{count}} quotations submitted",
+      "bulkQuoteSubmittedOne": "1 quotation submitted",
+      "bulkQuoteApproved": "{{count}} quotations approved",
+      "bulkQuoteApprovedOne": "1 quotation approved"
     },
     "tabs": {
       "orders": "Orders",
@@ -911,7 +915,15 @@
       "supplierCreated": "Supplier added",
       "poCreated": "Order created",
       "prCreated": "Request created",
-      "cancelled": "Order cancelled"
+      "cancelled": "Order cancelled",
+      "bulkApproved": "{{count}} orders approved",
+      "bulkApprovedOne": "1 order approved",
+      "bulkConfirmed": "{{count}} orders confirmed",
+      "bulkConfirmedOne": "1 order confirmed",
+      "bulkReqSubmitted": "{{count}} requests submitted",
+      "bulkReqSubmittedOne": "1 request submitted",
+      "bulkReqApproved": "{{count}} requests approved",
+      "bulkReqApprovedOne": "1 request approved"
     }
   },
   "crm": {
@@ -931,7 +943,9 @@
       "oppLost": "Opportunity lost",
       "campaignActivated": "Campaign activated",
       "campaignCompleted": "Campaign completed",
-      "opportunityCreated": "Opportunity created"
+      "opportunityCreated": "Opportunity created",
+      "bulkLeadsQualified": "{{count}} leads qualified",
+      "bulkLeadsQualifiedOne": "1 lead qualified"
     },
     "tabs": {
       "pipeline": "Pipeline",
