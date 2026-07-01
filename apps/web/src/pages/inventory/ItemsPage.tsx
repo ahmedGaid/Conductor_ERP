@@ -1,10 +1,11 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -72,6 +73,10 @@ export function ItemsPage() {
   const [type, setType] = useState<ItemType>("stock");
   const [importOpen, setImportOpen] = useState(false);
 
+  // ⌘/Ctrl+Enter submits the add form from any field (incl. the type select).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
+
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [
       { name: "sku", label: t("inventory.item.sku"), required: true },
@@ -125,7 +130,7 @@ export function ItemsPage() {
         onCommitted={() => reload()}
       />
 
-      <form className="card inv-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.item.sku")}</span>
           <input className="latin" value={sku} onChange={(e) => setSku(e.target.value)} required />

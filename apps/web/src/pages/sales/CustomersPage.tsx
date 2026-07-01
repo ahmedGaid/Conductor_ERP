@@ -1,10 +1,11 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { createCustomer, listCustomers, type Customer } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -51,6 +52,10 @@ export function CustomersPage() {
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+
+  // ⌘/Ctrl+Enter submits the add form from any field (incl. the credit-limit input).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [
@@ -103,7 +108,7 @@ export function CustomersPage() {
         onCommitted={() => reload()}
       />
 
-      <form className="card sales-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card sales-toolbar" onSubmit={onSubmit}>
         <label className="sales-field">
           <span>{t("sales.customer.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />

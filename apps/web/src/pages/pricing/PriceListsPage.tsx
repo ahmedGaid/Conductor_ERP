@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { createPriceList, listPriceLists, type PriceList } from "../../api/pricing";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -33,6 +34,10 @@ export function PriceListsPage() {
   const [currency, setCurrency] = useState("EGP");
   const [taxInclusive, setTaxInclusive] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
+
+  // ⌘/Ctrl+Enter submits the add form from any field (incl. the checkboxes).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -68,7 +73,7 @@ export function PriceListsPage() {
 
       <PricingTabs active="lists" />
 
-      <form className="card pricing-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card pricing-toolbar" onSubmit={onSubmit}>
         <label className="pricing-field">
           <span>{t("pricing.list.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />

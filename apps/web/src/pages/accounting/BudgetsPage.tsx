@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { createBudget, getBudget, listBudgets } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
@@ -49,6 +50,10 @@ export function BudgetsPage() {
   const [name, setName] = useState("");
   const [fy, setFy] = useState(String(new Date().getFullYear()));
 
+  // ⌘/Ctrl+Enter submits the add form from any field.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
+
   // Optimistic create: show the new budget instantly and clear the name for the next entry; the
   // server row replaces the placeholder on settle, or it rolls back + toasts.
   function onSubmit(e: FormEvent) {
@@ -71,7 +76,7 @@ export function BudgetsPage() {
     <section className="acct-page">
       <AccountingNav />
 
-      <form className="card acct-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card acct-toolbar" onSubmit={onSubmit}>
         <label className="acct-field" style={{ flex: 1 }}>
           <span>{t("accounting.budgets.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />

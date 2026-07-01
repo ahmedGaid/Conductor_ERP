@@ -1,8 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NavIcon } from "../../app/icons";
 import { useParams } from "react-router-dom";
+import { useFormKeys } from "../../hooks/useFormKeys";
 
 import { BackLink } from "../../components/BackLink";
 
@@ -51,6 +52,10 @@ export function PriceListDetailPage() {
   const [validFrom, setValidFrom] = useState("");
   const [validTo, setValidTo] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+
+  // ⌘/Ctrl+Enter submits the add-line form from any field (item select, price, dates).
+  const addFormRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef: addFormRef });
 
   const importFields = useMemo<ImportFieldInfo[]>(() => [
     { name: "item_sku", label: t("pricing.detail.importField_item_sku"), required: true },
@@ -150,7 +155,7 @@ export function PriceListDetailPage() {
         </div>
       </div>
 
-      <form className="card pricing-toolbar" onSubmit={onAddLine}>
+      <form ref={addFormRef} className="card pricing-toolbar" onSubmit={onAddLine}>
         <label className="pricing-field">
           <span>{t("pricing.detail.item")}</span>
           <select value={sku} onChange={(e) => setSku(e.target.value)}>

@@ -1,10 +1,11 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -49,6 +50,10 @@ export function SuppliersPage() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+
+  // ⌘/Ctrl+Enter submits the add form from any field.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [
@@ -98,7 +103,7 @@ export function SuppliersPage() {
         onCommitted={() => reload()}
       />
 
-      <form className="card pur-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card pur-toolbar" onSubmit={onSubmit}>
         <label className="pur-field">
           <span>{t("purchasing.supplier.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />

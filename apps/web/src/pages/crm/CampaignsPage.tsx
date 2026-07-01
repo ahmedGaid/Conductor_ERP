@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { createCampaign, getCampaign, listCampaigns, type CampaignChannel } from
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
@@ -71,6 +72,10 @@ export function CampaignsPage() {
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [cost, setCost] = useState("");
 
+  // ⌘/Ctrl+Enter submits the add form from any field (incl. the channel select).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
+
   // Optimistic create: show the new campaign instantly and clear the form for the next entry. The row's
   // metrics columns are optional-chained, so an unmetered placeholder reads as zeros until the server
   // row settles in (or it rolls back + toasts on failure).
@@ -97,7 +102,7 @@ export function CampaignsPage() {
     <section className="crm-page">
       <CrmNav />
 
-      <form className="card crm-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card crm-toolbar" onSubmit={onSubmit}>
         <label className="crm-field">
           <span>{t("crm.campaign.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { acquireAsset, getAsset, listAssets, runDepreciation, type AssetStatus, 
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -74,7 +75,9 @@ export function FixedAssetsPage() {
     getItemId: (a) => a.code,
   });
 
-  // New-asset form
+  // New-asset form. ⌘/Ctrl+Enter submits it from any field (cost, dates, etc.).
+  const acquireFormRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef: acquireFormRef });
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [cost, setCost] = useState("");
@@ -142,7 +145,7 @@ export function FixedAssetsPage() {
       <AccountingNav />
 
       <div className="acct-asset-actions">
-        <form className="card acct-toolbar" onSubmit={onAcquire}>
+        <form ref={acquireFormRef} className="card acct-toolbar" onSubmit={onAcquire}>
           <label className="acct-field">
             <span>{t("accounting.assets.code")}</span>
             <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />

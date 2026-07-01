@@ -1,10 +1,11 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { createWarehouse, listWarehouses, type Warehouse } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -46,6 +47,10 @@ export function WarehousesPage() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
 
+  // ⌘/Ctrl+Enter submits the add form from any field.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
+
   // Optimistic create: show the new warehouse row instantly and clear the form for the next entry;
   // the server row replaces the placeholder on settle, or it rolls back + toasts.
   function onSubmit(e: FormEvent) {
@@ -69,7 +74,7 @@ export function WarehousesPage() {
     <section className="inv-page">
       <InventoryNav />
 
-      <form className="card inv-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.warehouse.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />
