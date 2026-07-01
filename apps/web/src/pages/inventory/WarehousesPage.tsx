@@ -1,8 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { createWarehouse, listWarehouses, type Warehouse } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -31,6 +33,15 @@ export function WarehousesPage() {
     () => (data ? data.filter((w) => matchesAllFilters(w, fields, filters)) : data),
     [data, fields, filters],
   );
+
+  // j/k move a row highlight, Enter/o opens the warehouse detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Warehouse>({
+    items: filtered ?? [],
+    onOpen: (w) => navigate(`/inventory/warehouses/${encodeURIComponent(w.code)}`),
+    persistKey: "inventory:warehouses",
+    getItemId: (w) => w.id,
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -100,8 +111,8 @@ export function WarehousesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((w) => (
-                <tr key={w.id}>
+              {filtered.map((w, i) => (
+                <tr key={w.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td><EntityLink type="warehouse" value={w.code} /></td>
                   <td>{w.name}</td>
                 </tr>

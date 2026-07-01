@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { createPriceList, listPriceLists, type PriceList } from "../../api/pricing";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -17,6 +18,15 @@ export function PriceListsPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { data, loading, error, reload, mutate } = useAsync(listPriceLists, [], "pricing:lists");
+
+  // j/k move a row highlight, Enter/o opens the price-list detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<PriceList>({
+    items: data ?? [],
+    onOpen: (pl) => navigate(`/pricing/${pl.id}`),
+    persistKey: "pricing:lists",
+    getItemId: (pl) => pl.id,
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -104,8 +114,8 @@ export function PriceListsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((pl) => (
-                <tr key={pl.id}>
+              {data.map((pl, i) => (
+                <tr key={pl.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <Link to={`/pricing/${pl.id}`} className="inv-link">
                       <Bdi>{pl.code}</Bdi>

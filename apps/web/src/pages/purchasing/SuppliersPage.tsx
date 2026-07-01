@@ -1,8 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -34,6 +36,15 @@ export function SuppliersPage() {
     () => (data ? data.filter((s) => matchesAllFilters(s, fields, filters)) : data),
     [data, fields, filters],
   );
+
+  // j/k move a row highlight, Enter/o opens the supplier's party page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Supplier>({
+    items: filtered ?? [],
+    onOpen: (s) => navigate(`/purchasing/suppliers/${encodeURIComponent(s.code)}`),
+    persistKey: "purchasing:suppliers",
+    getItemId: (s) => s.id,
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -129,8 +140,8 @@ export function SuppliersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s) => (
-                <tr key={s.id}>
+              {filtered.map((s, i) => (
+                <tr key={s.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <PartyLink type="supplier" code={s.code} className="latin">
                       <Bdi>{s.code}</Bdi>

@@ -40,7 +40,7 @@ Open systemic gaps (Phase 1):
 |----|-----|----------|-----|
 | S1 | **No bulk actions** — zero row multi-select anywhere | no `type="checkbox"` in any list table | ✅ DONE primitive: `useRowSelection` + `<BulkActionBar>` + `<Checkbox>`; wired Sales Orders (approve/confirm). Fan-out to other lists pending. |
 | S2 | **Inline edit nearly absent** | `InlineEdit` used on 1 page | extend to status/qty/name/assignee cells |
-| S3 | **List keyboard-nav half-wired** | `useListKeyboardNav` on 11 of ~22 list pages | finish fan-out |
+| S3 | **List keyboard-nav half-wired** | `useListKeyboardNav` on 11 of ~22 list pages | ✅ DONE: +7 pages (Customers, Suppliers, Items, Warehouses, PriceLists, Users, Roles). Leads/Tickets/EInvoices excluded — no detail-open by design. |
 | S4 | **Form keys half-wired** | `useFormKeys` on 5 forms | Esc-cancel / ⌘↵-submit everywhere |
 | S5 | **Stray spacing values** | 22 non-token px/rem (mostly legit sub-px) | audit, tokenize the real ones |
 
@@ -174,3 +174,7 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
   `.X-table__select` + `[data-selected]` CSS in data-surfaces.css; `bulk.*` i18n (1283 keys). Wired Sales
   OrdersPage (bulk approve/confirm, monochrome bar bg ink-900). Live-verified (9 rows, 2-select bar, select-all 9).
   tsc -b + parity + gate03 GREEN. Next: fan bulk-select to remaining list tables (Phase 2 per module).
+- 2026-07-01 — **Phase 1.3 DONE**: finished `useListKeyboardNav` fan-out (j/k highlight, Enter/o open, cursor
+  persist) to 7 list pages — Customers, Suppliers, Items, Warehouses, PriceLists, Users, Roles. Leads/Tickets
+  (unlinked by design) + EInvoices (action-oriented, no detail route) intentionally excluded. tsc -b + gate03
+  GREEN. Live-verified Customers (j×2 → row 1).

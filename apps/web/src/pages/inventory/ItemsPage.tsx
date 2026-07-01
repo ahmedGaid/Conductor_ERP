@@ -1,8 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -54,6 +56,15 @@ export function ItemsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((i) => i.type === tab)) : filtered),
     [filtered, tab],
   );
+
+  // j/k move a row highlight, Enter/o opens the item detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Item>({
+    items: visible ?? [],
+    onOpen: (it) => navigate(`/inventory/items/${encodeURIComponent(it.sku)}`),
+    persistKey: "inventory:items",
+    getItemId: (it) => it.id,
+  });
 
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
@@ -179,8 +190,8 @@ export function ItemsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((i) => (
-                <tr key={i.id}>
+              {visible.map((i, idx) => (
+                <tr key={i.id} data-kbd-active={idx === active ? "true" : undefined} aria-selected={idx === active}>
                   <td><EntityLink type="item" value={i.sku} /></td>
                   <td>{i.name}</td>
                   <td>{i.uom}</td>

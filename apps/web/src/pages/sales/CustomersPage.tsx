@@ -1,8 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { createCustomer, listCustomers, type Customer } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -35,6 +37,15 @@ export function CustomersPage() {
     () => (data ? data.filter((c) => matchesAllFilters(c, fields, filters)) : data),
     [data, fields, filters],
   );
+
+  // j/k move a row highlight, Enter/o opens the customer's party page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Customer>({
+    items: filtered ?? [],
+    onOpen: (c) => navigate(`/sales/customers/${encodeURIComponent(c.code)}`),
+    persistKey: "sales:customers",
+    getItemId: (c) => c.id,
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -139,8 +150,8 @@ export function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
-                <tr key={c.id}>
+              {filtered.map((c, i) => (
+                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
                     <PartyLink type="customer" code={c.code} className="latin">
                       <Bdi>{c.code}</Bdi>
