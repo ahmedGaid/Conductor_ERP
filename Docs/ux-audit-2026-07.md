@@ -42,7 +42,7 @@ Open systemic gaps (Phase 1):
 | S2 | **Inline edit nearly absent** | `InlineEdit` used on 1 page | ✅ Extended primitive with `display` prop (formatted read / raw edit); wired PriceListDetail line cells (price + min qty via `updateLine`, optimistic). Party/Item name inline-edit deferred — needs backend PATCH endpoints (out of polish scope). StockCount already inline (fast-tab input, left as-is). |
 | S3 | **List keyboard-nav half-wired** | `useListKeyboardNav` on 11 of ~22 list pages | ✅ DONE: +7 pages (Customers, Suppliers, Items, Warehouses, PriceLists, Users, Roles). Leads/Tickets/EInvoices excluded — no detail-open by design. |
 | S4 | **Form keys half-wired** | `useFormKeys` on 5 forms | ✅ DONE: ⌘↵-submit fanned to 12 create/entry forms (Customers, Suppliers, Items, Warehouses, PriceLists, PriceListDetail add-line, Leads, Campaigns, Tickets, CostCenters, Budgets, FixedAssets). No Esc on inline forms (would fight list-nav Esc). SetupWizard multi-step deferred to Phase 2. |
-| S5 | **Stray spacing values** | 22 non-token px/rem (mostly legit sub-px) | audit, tokenize the real ones |
+| S5 | **Stray spacing values** | 22 non-token px/rem (mostly legit sub-px) | ✅ DONE: audited — nearly all were component SIZES (icon/avatar/dialog widths, breakpoints), correctly not spacing tokens. Real finding: micro-gaps spelled two ways (`2px`/`0.125rem`). Added `--space-0-5` (2px, the step below `--space-1`); converted all ~13 gap/padding micro-values to it. Spacing system now fully token-driven. |
 
 ---
 
@@ -189,3 +189,10 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
   Tickets, accounting CostCenters/Budgets/FixedAssets. Esc-cancel intentionally omitted on inline
   list-page forms (collides with list-nav Esc); SetupWizard (multi-step) deferred. tsc -b + parity (1283)
   + gate03 GREEN. Live-verified Customers ⌘Enter (rows 5→6, form cleared).
+- 2026-07-01 — **Phase 1.5 DONE (Phase 1 COMPLETE)**: spacing/density token audit. Finding: the spacing
+  system was already coherent — the ~120 hardcoded px/rem are component *sizes* (icons, avatars, dialog
+  widths, media breakpoints), not spacing. Only real drift = sub-`--space-1` micro-gaps spelled two ways
+  (`2px` vs `0.125rem`). Added `--space-0-5` (2px) token; converted all ~13 gap/padding micro-values
+  (CommandPalette, SegmentedControl, Sidebar, StatCard, help, settings, admin, pricing, Badge, einvoice,
+  notifications). gate03 (build+CSS) GREEN; token resolves live. **Phase 1 systemic primitives all done.**
+  Next: Phase 2 per-module pixel pass + bulk-select fan-out to remaining list tables.

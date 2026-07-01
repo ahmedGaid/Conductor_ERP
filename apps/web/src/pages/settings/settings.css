@@ -78,7 +78,7 @@
 .switch {
   inline-size: 2.5rem;
   block-size: 1.5rem;
-  padding: 2px;
+  padding: var(--space-0-5);
   border: none;
   border-radius: var(--radius-full);
   background-color: var(--color-border-strong);

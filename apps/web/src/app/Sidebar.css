@@ -82,7 +82,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: var(--space-0-5);
 }
 
 .sidebar__group-label {
