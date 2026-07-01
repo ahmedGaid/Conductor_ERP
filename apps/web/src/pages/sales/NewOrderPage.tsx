@@ -141,8 +141,9 @@ export function NewOrderPage() {
       setLastUsed("sales:customer", customer);
       setLastUsed("warehouse", warehouse);
       setLastUsed("sales:tax", taxCode);
-      toast.show(t("sales.toast.orderCreated"), "success");
-      navigate(`/sales/orders/${order.id}`);
+      // The rich "created" receipt is fired on arrival by the order detail page (which owns the
+      // optimistic runners its recommended-next step needs). We just hand it the event.
+      navigate(`/sales/orders/${order.id}`, { state: { feedback: "created" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {

@@ -1379,7 +1379,11 @@
       "sidebar": "Sidebar",
       "sidebarDesc": "Expanded labels or compact icons.",
       "expanded": "Expanded",
-      "compactSidebar": "Compact"
+      "compactSidebar": "Compact",
+      "feedbackMode": "Action feedback",
+      "feedbackModeDesc": "How much detail the after-action panel shows when you complete a task.",
+      "feedbackSimple": "Simple",
+      "feedbackRich": "Detailed"
     },
     "a11y": {
       "largerText": "Larger text",
@@ -1631,5 +1635,303 @@
     "clear": "Clear selection",
     "selectAll": "Select all",
     "selectRow": "Select row"
+  },
+  "feedback": {
+    "relatedLabel": "Related records",
+    "fact": {
+      "amount": "Amount",
+      "items": "Items",
+      "status": "Status"
+    },
+    "related": {
+      "customer": "Customer",
+      "customers": "Customers",
+      "orders": "Sales orders",
+      "quotations": "Quotations",
+      "supplier": "Supplier",
+      "suppliers": "Suppliers",
+      "purchaseOrders": "Purchase orders",
+      "requests": "Purchase requests",
+      "item": "Item",
+      "onHand": "Stock on hand"
+    },
+    "action": {
+      "newOrder": "New order",
+      "newQuote": "New quotation",
+      "newOrderFor": "Create an order",
+      "newPO": "New purchase order",
+      "newRequest": "New request",
+      "newPOFor": "Create a purchase order"
+    },
+    "sales": {
+      "step": {
+        "approve": "Approve order",
+        "confirm": "Confirm order",
+        "deliver": "Deliver",
+        "invoice": "Create invoice",
+        "pay": "Record payment"
+      },
+      "quoteStep": {
+        "submit": "Submit quotation",
+        "approve": "Approve quotation",
+        "convert": "Convert to order"
+      },
+      "order": {
+        "created": {
+          "title": "Sales order {{number}} created",
+          "context": "It's ready to confirm — reservations start on confirm."
+        },
+        "approved": {
+          "title": "Sales order {{number}} approved",
+          "context": "Approved. Confirm it to proceed."
+        },
+        "confirmed": {
+          "title": "Sales order {{number}} confirmed",
+          "context": "Confirmed. Deliver the goods next."
+        },
+        "delivered": {
+          "title": "Sales order {{number}} delivered",
+          "context": "Delivered. Raise the invoice to bill the customer."
+        },
+        "invoiced": {
+          "title": "Sales order {{number}} invoiced",
+          "context": "Invoiced. Awaiting payment of {{amount}}."
+        },
+        "paid": {
+          "title": "Sales order {{number}} paid",
+          "context": "Paid in full. Nothing more to do."
+        },
+        "returned": {
+          "title": "Sales order {{number}} returned",
+          "context": "Return recorded. A credit note was issued."
+        },
+        "cancelled": {
+          "title": "Sales order {{number}} cancelled",
+          "context": "This order is now closed."
+        },
+        "completed": {
+          "title": "Sale {{number}} completed",
+          "context": "Confirmed, delivered, and invoiced. Awaiting payment of {{amount}}."
+        },
+        "converted": {
+          "title": "Sales order {{number}} created",
+          "context": "Created from a quotation. It's ready to confirm."
+        }
+      },
+      "quote": {
+        "created": {
+          "title": "Quotation {{number}} created",
+          "context": "It's ready to submit for approval."
+        },
+        "submitted": {
+          "title": "Quotation {{number}} submitted",
+          "context": "Submitted for approval."
+        },
+        "approved": {
+          "title": "Quotation {{number}} approved",
+          "context": "Approved. Convert it to a sales order."
+        },
+        "rejected": {
+          "title": "Quotation {{number}} rejected",
+          "context": "The quotation was rejected."
+        }
+      },
+      "customer": {
+        "created": {
+          "title": "Customer {{name}} added",
+          "context": "You can now sell to and invoice this customer."
+        }
+      },
+      "insight": {
+        "allInStock": "All items are in stock. This order can be fulfilled now.",
+        "creditOk": "Customer credit used: {{pct}}%."
+      },
+      "warn": {
+        "oneShort": "One item is short on stock.",
+        "someShort": "{{count}} items are short on stock.",
+        "creditHigh": "Customer credit used: {{pct}}% — near the limit.",
+        "creditExceeded": "Customer has exceeded the credit limit ({{pct}}%)."
+      },
+      "action": {
+        "retry": "Try again"
+      },
+      "fix": {
+        "receive": "Receive {{sku}} — need {{qty}} at {{warehouse}}"
+      },
+      "error": {
+        "approved": {
+          "title": "Couldn't approve {{number}}"
+        },
+        "confirmed": {
+          "title": "Couldn't confirm {{number}}"
+        },
+        "delivered": {
+          "title": "Couldn't deliver {{number}}",
+          "reason": "There isn't enough stock to deliver every item. Receive the short items, then try again."
+        },
+        "invoiced": {
+          "title": "Couldn't invoice {{number}}"
+        },
+        "paid": {
+          "title": "Couldn't record payment for {{number}}"
+        },
+        "returned": {
+          "title": "Couldn't record the return for {{number}}"
+        },
+        "cancelled": {
+          "title": "Couldn't cancel {{number}}"
+        },
+        "completed": {
+          "title": "Couldn't complete {{number}}"
+        }
+      }
+    },
+    "doc": {
+      "invoice": "Invoice {{no}}",
+      "creditNote": "Credit note {{no}}",
+      "order": "Sales order {{no}}",
+      "bill": "Bill {{no}}",
+      "debitNote": "Debit note {{no}}",
+      "purchaseOrder": "Purchase order {{no}}",
+      "journal": "Journal {{no}}"
+    },
+    "documentsLabel": "Produced records",
+    "resolutionsLabel": "How to fix",
+    "purchasing": {
+      "step": {
+        "approve": "Approve order",
+        "confirm": "Confirm order",
+        "receive": "Receive goods",
+        "bill": "Record bill",
+        "pay": "Record payment"
+      },
+      "reqStep": {
+        "submit": "Submit request",
+        "approve": "Approve request",
+        "convert": "Convert to order"
+      },
+      "action": {
+        "retry": "Try again"
+      },
+      "po": {
+        "created": {
+          "title": "Purchase order {{number}} created",
+          "context": "It's ready to confirm."
+        },
+        "approved": {
+          "title": "Purchase order {{number}} approved",
+          "context": "Approved. Confirm it to proceed."
+        },
+        "confirmed": {
+          "title": "Purchase order {{number}} confirmed",
+          "context": "Confirmed. Receive the goods next."
+        },
+        "received": {
+          "title": "Purchase order {{number}} received",
+          "context": "Goods received. Record the bill to owe the supplier."
+        },
+        "billed": {
+          "title": "Purchase order {{number}} billed",
+          "context": "Billed. {{amount}} outstanding to the supplier."
+        },
+        "paid": {
+          "title": "Purchase order {{number}} paid",
+          "context": "Paid in full. Nothing more to do."
+        },
+        "returned": {
+          "title": "Purchase order {{number}} returned",
+          "context": "Return recorded. A debit note was issued."
+        },
+        "cancelled": {
+          "title": "Purchase order {{number}} cancelled",
+          "context": "This order is now closed."
+        },
+        "converted": {
+          "title": "Purchase order {{number}} created",
+          "context": "Created from a request. It's ready to confirm."
+        }
+      },
+      "request": {
+        "created": {
+          "title": "Purchase request {{number}} created",
+          "context": "It's ready to submit for approval."
+        },
+        "submitted": {
+          "title": "Purchase request {{number}} submitted",
+          "context": "Submitted for approval."
+        },
+        "approved": {
+          "title": "Purchase request {{number}} approved",
+          "context": "Approved. Convert it to a purchase order."
+        },
+        "rejected": {
+          "title": "Purchase request {{number}} rejected",
+          "context": "The request was rejected."
+        }
+      },
+      "supplier": {
+        "created": {
+          "title": "Supplier {{name}} added",
+          "context": "You can now order from and pay this supplier."
+        }
+      },
+      "error": {
+        "approved": {
+          "title": "Couldn't approve {{number}}"
+        },
+        "confirmed": {
+          "title": "Couldn't confirm {{number}}"
+        },
+        "received": {
+          "title": "Couldn't receive {{number}}"
+        },
+        "billed": {
+          "title": "Couldn't bill {{number}}"
+        },
+        "paid": {
+          "title": "Couldn't record payment for {{number}}"
+        },
+        "returned": {
+          "title": "Couldn't record the return for {{number}}"
+        },
+        "cancelled": {
+          "title": "Couldn't cancel {{number}}"
+        }
+      }
+    },
+    "inventory": {
+      "receipt": {
+        "title": "Stock received ({{ref}})",
+        "context": "Received into stock. The journal entry is posted."
+      },
+      "issue": {
+        "title": "Stock issued ({{ref}})",
+        "context": "Issued from stock. The journal entry is posted."
+      },
+      "transfer": {
+        "title": "Stock transferred ({{ref}})",
+        "context": "Moved between warehouses."
+      },
+      "insight": {
+        "onHand": "On hand at {{warehouse}}: {{qty}}."
+      },
+      "warn": {
+        "belowReorder": "{{sku}} is below its reorder point."
+      },
+      "fix": {
+        "receive": "Receive {{sku}} at {{warehouse}}"
+      },
+      "error": {
+        "receipt": {
+          "title": "Couldn't receive stock"
+        },
+        "issue": {
+          "title": "Couldn't issue stock"
+        },
+        "transfer": {
+          "title": "Couldn't transfer stock"
+        }
+      }
+    }
   }
 }

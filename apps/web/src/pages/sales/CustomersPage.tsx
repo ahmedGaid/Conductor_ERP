@@ -8,6 +8,8 @@ import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showCustomerReceipt } from "../../lib/feedback/sales";
 import { optimisticCreate } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -24,6 +26,7 @@ import "./sales.css";
 export function CustomersPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const fb = useActionFeedback();
   const { data, loading, error, reload, mutate } = useAsync(listCustomers, [], "sales:customers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
@@ -81,7 +84,8 @@ export function CustomersPage() {
       placeholder: (id) => ({ id, code: c, name: n, credit_limit_minor: credit }) as Customer,
       request: () => createCustomer({ code: c, name: n, credit_limit_minor: credit }),
       toast,
-      success: t("sales.toast.customerCreated"),
+    }).then((created) => {
+      if (created) showCustomerReceipt(fb, t, created, { navigate });
     });
     setCode("");
     setName("");

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { usePreferences } from "../../preferences/PreferencesContext";
+import { useFeedbackMode, setFeedbackMode } from "../../lib/feedbackMode";
 import { ACCENTS } from "../../prefs";
 import { Tooltip } from "../../components/Tooltip";
 import { SettingsNav } from "./SettingsNav";
@@ -10,6 +11,7 @@ import { Segmented, SettingRow } from "./controls";
 export function AppearancePage() {
   const { t } = useTranslation();
   const { prefs, update } = usePreferences();
+  const feedbackMode = useFeedbackMode();
 
   if (!prefs) return <SettingsSkeleton />;
 
@@ -84,6 +86,21 @@ export function AppearancePage() {
             options={[
               { value: "expanded", label: t("settings.appearance.expanded") },
               { value: "compact", label: t("settings.appearance.compactSidebar") },
+            ]}
+          />
+        </SettingRow>
+
+        <SettingRow
+          title={t("settings.appearance.feedbackMode")}
+          desc={t("settings.appearance.feedbackModeDesc")}
+        >
+          <Segmented
+            ariaLabel={t("settings.appearance.feedbackMode")}
+            value={feedbackMode}
+            onChange={(v) => setFeedbackMode(v as typeof feedbackMode)}
+            options={[
+              { value: "simple", label: t("settings.appearance.feedbackSimple") },
+              { value: "rich", label: t("settings.appearance.feedbackRich") },
             ]}
           />
         </SettingRow>

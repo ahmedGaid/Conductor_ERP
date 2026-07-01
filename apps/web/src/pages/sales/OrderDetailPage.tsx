@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import {
   approveOrder,
@@ -20,6 +20,8 @@ import { useAsync } from "../../hooks/useAsync";
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showOrderReceipt, showOrderError, type OrderActionKey, type OrderEvent } from "../../lib/feedback/sales";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
@@ -71,16 +73,36 @@ export function OrderDetailPage() {
 
   useSetDocumentCrumb(data?.number);
 
+  const fb = useActionFeedback();
+  const location = useLocation();
+
+  // Duplicate / print — shared by the ⋯ menu and the receipt's quick actions.
+  const duplicate = () =>
+    navigate("/sales/orders/new", {
+      state: {
+        duplicate: {
+          customer_code: data!.customer_code,
+          warehouse_code: data!.warehouse_code,
+          tax_code: data!.tax_code,
+          lines: data!.lines.map((l) => ({
+            item_sku: l.item_sku,
+            description: l.description,
+            quantity: l.quantity,
+            unit_price: l.unit_price_minor,
+            discount: l.discount_minor,
+          })),
+        },
+      },
+    });
+  const print = () => printDocument(data!.number);
+
   // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer
   // and action set update instantly, then let the server's returned order reconcile the derived
-  // amounts (invoiced/outstanding/…). A failure rolls the whole order back and shows an error toast.
-  function act(
-    apply: (order: SalesOrder) => SalesOrder,
-    request: () => Promise<SalesOrder>,
-    success: string,
-    successFrom?: (updated: SalesOrder) => string,
-  ) {
+  // amounts (invoiced/outstanding/…). On success the event's rich receipt fires; a failure rolls
+  // the whole order back and shows an error toast (both handled by runOptimistic).
+  function act(apply: (order: SalesOrder) => SalesOrder, request: () => Promise<SalesOrder>, event: OrderEvent) {
     if (!data) return;
+    const snapshot = data;
     void runOptimistic<SalesOrder, SalesOrder>({
       current: data,
       mutate,
@@ -88,12 +110,41 @@ export function OrderDetailPage() {
       request,
       settle: (_predicted, updated) => updated,
       toast,
-      success,
-      successFrom,
+      // A blocked action becomes a rich error receipt with the way to fix it (e.g. receive short stock).
+      onError: (error) => showOrderError(fb, t, snapshot, event, error, { run: runAction }),
+    }).then((updated) => {
+      if (updated) showOrderReceipt(fb, t, updated, event, { run: runAction, navigate, duplicate, print });
     });
   }
 
   const setStatus = (status: OrderStatus) => (order: SalesOrder): SalesOrder => ({ ...order, status });
+
+  // Map a receipt's recommended-next key back to the matching optimistic action.
+  function runAction(key: OrderActionKey) {
+    if (!data) return;
+    const o = data;
+    switch (key) {
+      case "approve": act((x) => ({ ...x, approved: true }), () => approveOrder(o.id), "approved"); break;
+      case "confirm": act(setStatus("confirmed"), () => confirmOrder(o.id), "confirmed"); break;
+      case "deliver": act(setStatus("delivered"), () => deliverOrder(o.id), "delivered"); break;
+      case "invoice": act(setStatus("invoiced"), () => invoiceOrder(o.id), "invoiced"); break;
+      case "pay": act(setStatus("paid"), () => payOrder(o.id, o.outstanding_minor), "paid"); break;
+      case "return": act(setStatus("returned"), () => returnOrder(o.id), "returned"); break;
+    }
+  }
+
+  // A rich receipt handed off from creation / conversion fires once the order has loaded, then the
+  // marker is cleared from history state so it never re-fires on back/refresh.
+  const firedIntro = useRef(false);
+  useEffect(() => {
+    if (firedIntro.current || !data) return;
+    const intro = (location.state as { feedback?: OrderEvent } | null)?.feedback;
+    if (!intro) return;
+    firedIntro.current = true;
+    showOrderReceipt(fb, t, data, intro, { run: runAction, navigate, duplicate, print });
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   if (loading) {
     return (
@@ -115,25 +166,25 @@ export function OrderDetailPage() {
   function primaryAction(): Action {
     const o = data!;
     if (o.status === "draft" && o.requires_approval && !o.approved) {
-      return { label: t("sales.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approveOrder(o.id), t("sales.toast.approved")) };
+      return { label: t("sales.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approveOrder(o.id), "approved") };
     }
     if (o.status === "draft") {
-      return { label: t("sales.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmOrder(o.id), t("sales.toast.confirmed")) };
+      return { label: t("sales.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmOrder(o.id), "confirmed") };
     }
     if (o.status === "confirmed" || o.status === "partially_delivered") {
       return {
         label: o.status === "partially_delivered" ? t("sales.detail.deliverRemaining") : t("sales.detail.deliver"),
-        onClick: () => act(setStatus("delivered"), () => deliverOrder(o.id), t("sales.toast.delivered")),
+        onClick: () => act(setStatus("delivered"), () => deliverOrder(o.id), "delivered"),
       };
     }
     if (o.status === "delivered") {
-      return { label: t("sales.detail.invoice"), onClick: () => act(setStatus("invoiced"), () => invoiceOrder(o.id), t("sales.toast.invoiced"), (u) => t("sales.toast.invoicedDone", { no: u.invoice_number })) };
+      return { label: t("sales.detail.invoice"), onClick: () => act(setStatus("invoiced"), () => invoiceOrder(o.id), "invoiced") };
     }
     if (o.status === "invoiced") {
-      return { label: t("sales.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payOrder(o.id, o.outstanding_minor), t("sales.toast.paid")) };
+      return { label: t("sales.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payOrder(o.id, o.outstanding_minor), "paid") };
     }
     if (o.status === "paid") {
-      return { label: t("sales.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnOrder(o.id), t("sales.toast.returned"), (u) => t("sales.toast.returnedDone", { no: u.credit_note_number })) };
+      return { label: t("sales.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnOrder(o.id), "returned") };
     }
     return null;
   }
@@ -141,28 +192,7 @@ export function OrderDetailPage() {
   // --- ⋯ overflow menu. ---
   const cancellable = isCancellable(data.status, prefs?.order_cancel_until);
   const menu: DocMenuItem[] = [
-    {
-      key: "duplicate",
-      label: t("document.duplicate"),
-      icon: "duplicate",
-      onClick: () =>
-        navigate("/sales/orders/new", {
-          state: {
-            duplicate: {
-              customer_code: data.customer_code,
-              warehouse_code: data.warehouse_code,
-              tax_code: data.tax_code,
-              lines: data.lines.map((l) => ({
-                item_sku: l.item_sku,
-                description: l.description,
-                quantity: l.quantity,
-                unit_price: l.unit_price_minor,
-                discount: l.discount_minor,
-              })),
-            },
-          },
-        }),
-    },
+    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
     { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
     {
       key: "pdf",
@@ -194,13 +224,7 @@ export function OrderDetailPage() {
       key: "complete",
       label: t("sales.detail.completeSale"),
       icon: "checkCircle",
-      onClick: () =>
-        act(
-          setStatus("invoiced"),
-          () => completeSale(data.id),
-          t("sales.toast.completed"),
-          (u) => t("sales.toast.invoicedDone", { no: u.invoice_number }),
-        ),
+      onClick: () => act(setStatus("invoiced"), () => completeSale(data.id), "completed"),
     });
   }
   // Once invoiced, the e-invoice submit is reachable straight from the order (no context switch to
@@ -219,7 +243,7 @@ export function OrderDetailPage() {
       key: "return",
       label: t("sales.detail.return"),
       icon: "rotate",
-      onClick: () => act(setStatus("returned"), () => returnOrder(data.id), t("sales.toast.returned"), (u) => t("sales.toast.returnedDone", { no: u.credit_note_number })),
+      onClick: () => act(setStatus("returned"), () => returnOrder(data.id), "returned"),
     });
   }
   if (cancellable) {
@@ -352,7 +376,7 @@ export function OrderDetailPage() {
         body={t("document.cancelConfirmBody")}
         confirmLabel={t("document.cancelOrder")}
         danger
-        onConfirm={() => act(setStatus("cancelled"), () => cancelOrder(data.id), t("sales.toast.cancelled"))}
+        onConfirm={() => act(setStatus("cancelled"), () => cancelOrder(data.id), "cancelled")}
         onClose={() => setConfirmCancel(false)}
       />
     </section>
