@@ -682,7 +682,11 @@
       "bulkApproved": "{{count}} orders approved",
       "bulkApprovedOne": "1 order approved",
       "bulkConfirmed": "{{count}} orders confirmed",
-      "bulkConfirmedOne": "1 order confirmed"
+      "bulkConfirmedOne": "1 order confirmed",
+      "bulkQuoteSubmitted": "{{count}} quotations submitted",
+      "bulkQuoteSubmittedOne": "1 quotation submitted",
+      "bulkQuoteApproved": "{{count}} quotations approved",
+      "bulkQuoteApprovedOne": "1 quotation approved"
     },
     "tabs": {
       "orders": "Orders",

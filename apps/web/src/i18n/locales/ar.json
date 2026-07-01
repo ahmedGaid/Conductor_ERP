@@ -682,7 +682,11 @@
       "bulkApproved": "تمت الموافقة على {{count}} طلبات",
       "bulkApprovedOne": "تمت الموافقة على طلب واحد",
       "bulkConfirmed": "تم تأكيد {{count}} طلبات",
-      "bulkConfirmedOne": "تم تأكيد طلب واحد"
+      "bulkConfirmedOne": "تم تأكيد طلب واحد",
+      "bulkQuoteSubmitted": "تم إرسال {{count}} عروض أسعار",
+      "bulkQuoteSubmittedOne": "تم إرسال عرض سعر واحد",
+      "bulkQuoteApproved": "تمت الموافقة على {{count}} عروض أسعار",
+      "bulkQuoteApprovedOne": "تمت الموافقة على عرض سعر واحد"
     },
     "tabs": {
       "orders": "الطلبات",

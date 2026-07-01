@@ -55,7 +55,7 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
 |------|--------|-------|
 | OrdersPage | todo | list — KB✅ ; bulk❌ |
 | OrderDetailPage | todo | mockup-redesigned PR#19 |
-| QuotationsPage | todo | list — KB✅ |
+| QuotationsPage | ✅ | bulk-select (submit/approve) + KB; live-verified |
 | QuotationDetailPage | todo | |
 | NewOrderPage | todo | form |
 | NewQuotationPage | todo | form |
