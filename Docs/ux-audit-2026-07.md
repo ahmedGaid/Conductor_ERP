@@ -53,15 +53,19 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
 ### Sales (high traffic — audit first in Phase 2)
 | Page | Status | Notes |
 |------|--------|-------|
-| OrdersPage | todo | list — KB✅ ; bulk❌ |
-| OrderDetailPage | todo | mockup-redesigned PR#19 |
+| OrdersPage | ✅ | bulk-select + KB (P1.1) |
+| OrderDetailPage | ✅ reviewed | mockup-redesigned PR#19; designed loading/error states, clean tokens — Linear-grade, no defect |
 | QuotationsPage | ✅ | bulk-select (submit/approve) + KB; live-verified |
-| QuotationDetailPage | todo | |
-| NewOrderPage | todo | form |
-| NewQuotationPage | todo | form |
-| CustomersPage | todo | list — KB❌ bulk❌ |
-| CustomerDetailPage | todo | PartyDetailView |
-| InvoiceDocumentPage | todo | print/PDF — monochrome |
+| QuotationDetailPage | ✅ reviewed | ListSkeleton + ErrorState present; clean — no defect |
+| NewOrderPage | ✅ reviewed | smart defaults + WorkflowTracker + form keys + price-source; Linear-grade — no defect |
+| NewQuotationPage | ✅ reviewed | mirrors NewOrder; form keys present — no defect |
+| CustomersPage | ✅ | KB + form-keys (P1.3/1.4) |
+| CustomerDetailPage | ✅ reviewed | PartyDetailView with loading/error/notFound states — no defect |
+| InvoiceDocumentPage | ✅ reviewed | monochrome print doc, org masthead, no colour on totals — on-brand |
+
+**Sales module verdict:** already Linear-grade + mechanically clean (no physical CSS, no raw hex, no
+hardcoded strings, all states designed). The one real gap was bulk-select on the two list pages — now
+closed (Orders P1.1, Quotations P2). No cosmetic churn forced (CLAUDE.md: enforce the system, don't reinvent).
 
 ### Purchasing
 | Page | Status | Notes |
