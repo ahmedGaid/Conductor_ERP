@@ -1651,7 +1651,9 @@
       "supplier": "Supplier",
       "suppliers": "Suppliers",
       "purchaseOrders": "Purchase orders",
-      "requests": "Purchase requests"
+      "requests": "Purchase requests",
+      "item": "Item",
+      "onHand": "Stock on hand"
     },
     "action": {
       "newOrder": "New order",
@@ -1790,7 +1792,8 @@
       "order": "Sales order {{no}}",
       "bill": "Bill {{no}}",
       "debitNote": "Debit note {{no}}",
-      "purchaseOrder": "Purchase order {{no}}"
+      "purchaseOrder": "Purchase order {{no}}",
+      "journal": "Journal {{no}}"
     },
     "documentsLabel": "Produced records",
     "resolutionsLabel": "How to fix",
@@ -1893,6 +1896,40 @@
         },
         "cancelled": {
           "title": "Couldn't cancel {{number}}"
+        }
+      }
+    },
+    "inventory": {
+      "receipt": {
+        "title": "Stock received ({{ref}})",
+        "context": "Received into stock. The journal entry is posted."
+      },
+      "issue": {
+        "title": "Stock issued ({{ref}})",
+        "context": "Issued from stock. The journal entry is posted."
+      },
+      "transfer": {
+        "title": "Stock transferred ({{ref}})",
+        "context": "Moved between warehouses."
+      },
+      "insight": {
+        "onHand": "On hand at {{warehouse}}: {{qty}}."
+      },
+      "warn": {
+        "belowReorder": "{{sku}} is below its reorder point."
+      },
+      "fix": {
+        "receive": "Receive {{sku}} at {{warehouse}}"
+      },
+      "error": {
+        "receipt": {
+          "title": "Couldn't receive stock"
+        },
+        "issue": {
+          "title": "Couldn't issue stock"
+        },
+        "transfer": {
+          "title": "Couldn't transfer stock"
         }
       }
     }

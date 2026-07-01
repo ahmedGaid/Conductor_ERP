@@ -1651,7 +1651,9 @@
       "supplier": "المورد",
       "suppliers": "الموردون",
       "purchaseOrders": "أوامر الشراء",
-      "requests": "طلبات الشراء"
+      "requests": "طلبات الشراء",
+      "item": "الصنف",
+      "onHand": "الأرصدة"
     },
     "action": {
       "newOrder": "أمر جديد",
@@ -1790,7 +1792,8 @@
       "order": "أمر بيع {{no}}",
       "bill": "فاتورة مورد {{no}}",
       "debitNote": "إشعار مدين {{no}}",
-      "purchaseOrder": "أمر شراء {{no}}"
+      "purchaseOrder": "أمر شراء {{no}}",
+      "journal": "قيد {{no}}"
     },
     "documentsLabel": "السجلات الناتجة",
     "resolutionsLabel": "طريقة الحل",
@@ -1893,6 +1896,40 @@
         },
         "cancelled": {
           "title": "تعذّر إلغاء {{number}}"
+        }
+      }
+    },
+    "inventory": {
+      "receipt": {
+        "title": "تم الاستلام ({{ref}})",
+        "context": "تمت إضافته إلى المخزون. رُحّل القيد."
+      },
+      "issue": {
+        "title": "تم الصرف ({{ref}})",
+        "context": "صُرف من المخزون. رُحّل القيد."
+      },
+      "transfer": {
+        "title": "تم التحويل ({{ref}})",
+        "context": "نُقل بين المخازن."
+      },
+      "insight": {
+        "onHand": "الرصيد في {{warehouse}}: {{qty}}."
+      },
+      "warn": {
+        "belowReorder": "{{sku}} أقل من حد إعادة الطلب."
+      },
+      "fix": {
+        "receive": "استلام {{sku}} في {{warehouse}}"
+      },
+      "error": {
+        "receipt": {
+          "title": "تعذّر استلام المخزون"
+        },
+        "issue": {
+          "title": "تعذّر صرف المخزون"
+        },
+        "transfer": {
+          "title": "تعذّر تحويل المخزون"
         }
       }
     }

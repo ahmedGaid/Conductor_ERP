@@ -12,7 +12,8 @@ import {
   type MovementType,
 } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
-import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showMovementReceipt, showMovementError } from "../../lib/feedback/inventory";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
@@ -27,7 +28,7 @@ function today(): string {
 
 export function StockMovementPage() {
   const { t } = useTranslation();
-  const toast = useToast();
+  const fb = useActionFeedback();
   const { data: items } = useAsync(listItems, [], "inventory:items");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: movements, reload } = useAsync(() => listMovements(), [], "inventory:movements");
@@ -56,39 +57,42 @@ export function StockMovementPage() {
       setError(t("inventory.movement.fillRequired"));
       return;
     }
+    if (mode === "transfer" && !dest) {
+      setError(t("inventory.movement.fillRequired"));
+      return;
+    }
+    let cost = 0;
+    if (mode === "receipt") {
+      const parsed = parseToMinor(unitCost);
+      if (parsed === null) {
+        setError(t("inventory.movement.badCost"));
+        return;
+      }
+      cost = parsed;
+    }
     setBusy(true);
     try {
-      if (mode === "receipt") {
-        const cost = parseToMinor(unitCost);
-        if (cost === null) {
-          setError(t("inventory.movement.badCost"));
-          return;
-        }
-        const mv = await receiveStock({
-          item_sku: itemSku, warehouse_code: warehouse, quantity, unit_cost: cost, date: today(),
-          batch_no: batchNo || undefined, expiry_date: expiry || null,
-        });
-        toast.show(t("inventory.movement.posted", { ref: mv.journal_number || mv.id.slice(0, 8) }), "success");
-      } else if (mode === "issue") {
-        const mv = await issueStock({ item_sku: itemSku, warehouse_code: warehouse, quantity, date: today() });
-        toast.show(t("inventory.movement.posted", { ref: mv.journal_number || mv.id.slice(0, 8) }), "success");
-      } else {
-        if (!dest) {
-          setError(t("inventory.movement.fillRequired"));
-          return;
-        }
-        const mv = await transferStock({
-          item_sku: itemSku, source_code: warehouse, dest_code: dest, quantity, date: today(),
-        });
-        toast.show(t("inventory.movement.posted", { ref: mv.id.slice(0, 8) }), "success");
-      }
+      const mv =
+        mode === "receipt"
+          ? await receiveStock({
+              item_sku: itemSku, warehouse_code: warehouse, quantity, unit_cost: cost, date: today(),
+              batch_no: batchNo || undefined, expiry_date: expiry || null,
+            })
+          : mode === "issue"
+            ? await issueStock({ item_sku: itemSku, warehouse_code: warehouse, quantity, date: today() })
+            : await transferStock({ item_sku: itemSku, source_code: warehouse, dest_code: dest, quantity, date: today() });
+      // The posted movement floats a receipt (what moved + journal + resulting on-hand), replacing
+      // the old one-line toast.
+      showMovementReceipt(fb, t, mv, mode);
       setQuantity("");
       setUnitCost("");
       setBatchNo("");
       setExpiry("");
       reload();
     } catch (err) {
-      toast.show(err instanceof Error ? err.message : String(err), "error");
+      // A failed issue / transfer is almost always short stock — the error receipt offers a one-click
+      // receive of the same item + warehouse to clear it.
+      showMovementError(fb, t, { mode, itemSku, warehouse }, err);
     } finally {
       setBusy(false);
     }
