@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 import {
   issueStock,
@@ -31,11 +32,17 @@ export function StockMovementPage() {
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: movements, reload } = useAsync(() => listMovements(), [], "inventory:movements");
 
-  const [mode, setMode] = useState<MovementType>("receipt");
-  const [itemSku, setItemSku] = useState("");
-  const [warehouse, setWarehouse] = useState("");
+  // A deep link can prefill the form (e.g. an "insufficient stock" error receipt links here to
+  // receive the exact short item at the order's warehouse): ?mode=receipt&item=SKU&warehouse=WH.
+  const [params] = useSearchParams();
+  const paramMode = params.get("mode");
+  const initialMode: MovementType = MODES.includes(paramMode as MovementType) ? (paramMode as MovementType) : "receipt";
+
+  const [mode, setMode] = useState<MovementType>(initialMode);
+  const [itemSku, setItemSku] = useState(params.get("item") ?? "");
+  const [warehouse, setWarehouse] = useState(params.get("warehouse") ?? "");
   const [dest, setDest] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [quantity, setQuantity] = useState(params.get("qty") ?? "");
   const [unitCost, setUnitCost] = useState("");
   const [batchNo, setBatchNo] = useState("");
   const [expiry, setExpiry] = useState("");

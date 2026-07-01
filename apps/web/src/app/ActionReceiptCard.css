@@ -1,0 +1,169 @@
+/*
+ * ActionReceiptCard — the rich after-action panel. Monochrome chrome; colour only where it means
+ * something (the success check, a warning). All spacing/colour/motion from tokens. The host owns
+ * positioning (floating vs banner); this owns the card's own layout.
+ */
+.arc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  padding-inline: var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+}
+
+.arc .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* --- Head: glyph + result/context + dismiss --- */
+.arc__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.arc__glyph .navicon {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+/* Colour is the meaning: done / attention / note. Paired with the glyph, never colour alone. */
+.arc--success .arc__glyph {
+  color: var(--color-success);
+}
+.arc--error .arc__glyph {
+  color: var(--color-danger);
+}
+.arc--info .arc__glyph {
+  color: var(--color-accent);
+}
+.arc__headtext {
+  flex: 1;
+  min-inline-size: 0;
+}
+.arc__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+.arc__context {
+  margin: var(--space-0-5) 0 0;
+  color: var(--color-text-muted);
+}
+.arc__close {
+  flex-shrink: 0;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  display: grid;
+  place-items: center;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.arc__close:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+/* --- Documents: the records this action produced (number + one-click open) --- */
+.arc__docs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+.arc__doc-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+.arc__doc-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Facts: the numbers worth surfacing --- */
+.arc__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+.arc__fact {
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+}
+.arc__fact-label {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.arc__fact-value {
+  margin: var(--space-0-5) 0 0;
+  font-weight: var(--font-weight-medium);
+}
+
+/* --- Warnings: surfaced, never gating --- */
+.arc__warnings,
+.arc__insights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.arc__warning,
+.arc__insight {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.arc__warning {
+  color: var(--color-warning-strong);
+}
+.arc__warning-icon {
+  color: var(--color-warning);
+}
+.arc__insight {
+  color: var(--color-text-muted);
+}
+.arc__insight-icon {
+  color: var(--color-text-subtle);
+}
+
+/* --- Actions: recommended next (accented) + quick actions --- */
+.arc__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* --- Related: one-click drill-downs --- */
+.arc__related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-block-start: var(--space-1);
+}
+.arc__related-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+.arc__related-link:hover {
+  text-decoration: underline;
+}

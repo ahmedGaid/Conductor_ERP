@@ -34,10 +34,15 @@ export interface OptimisticConfig<T, R> {
   successFrom?: (result: R) => string;
   /** Map a thrown error to a user-facing message. Defaults to the error's own message. */
   errorMessage?: (error: unknown) => string;
+  /**
+   * Handle the failure yourself (after rollback) — e.g. show a rich error receipt with a way to fix
+   * the blocker. When provided, the default error toast is suppressed.
+   */
+  onError?: (error: unknown) => void;
 }
 
 export async function runOptimistic<T, R>(cfg: OptimisticConfig<T, R>): Promise<R | undefined> {
-  const { current, mutate, optimistic, request, settle, toast, success, successFrom, errorMessage } = cfg;
+  const { current, mutate, optimistic, request, settle, toast, success, successFrom, errorMessage, onError } = cfg;
   const predicted = optimistic(current);
   mutate(predicted);
   try {
@@ -48,6 +53,10 @@ export async function runOptimistic<T, R>(cfg: OptimisticConfig<T, R>): Promise<
     return result;
   } catch (error) {
     mutate(current); // roll back to the pre-action snapshot
+    if (onError) {
+      onError(error); // caller owns the failure (e.g. a rich error receipt) — no default toast
+      return undefined;
+    }
     const message = errorMessage
       ? errorMessage(error)
       : error instanceof Error
