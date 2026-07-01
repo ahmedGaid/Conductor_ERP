@@ -101,7 +101,7 @@ export function BudgetDetailPage() {
             </label>
             <button className="btn" type="submit" disabled={busy}>{t("accounting.budgets.setLine")}</button>
           </form>
-          <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("accounting.budgets.setHint")}</p>
+          <p className="hint">{t("accounting.budgets.setHint")}</p>
           {formError && <p className="error-text">{formError}</p>}
         </div>
       )}

@@ -87,7 +87,7 @@ export function StockCountDetailPage() {
               )}
             </div>
           </div>
-          {counting && <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("inventory.counts.enterHint")}</p>}
+          {counting && <p className="hint">{t("inventory.counts.enterHint")}</p>}
 
           <div className="card inv-table-wrap">
             <table className="inv-table">

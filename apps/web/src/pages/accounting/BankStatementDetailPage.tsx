@@ -232,7 +232,7 @@ export function BankStatementDetailPage() {
                   ))}
                 </select>
               </label>
-              <label className="acct-field" style={{ flex: 1 }}>
+              <label className="acct-field grow">
                 <span>{t("accounting.bankRec.memo")}</span>
                 <input value={adjMemo} onChange={(e) => setAdjMemo(e.target.value)} />
               </label>

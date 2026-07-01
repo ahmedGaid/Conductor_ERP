@@ -70,7 +70,7 @@ export function CostCentersPage() {
           <span>{t("accounting.costCenters.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />
         </label>
-        <label className="acct-field" style={{ flex: 1 }}>
+        <label className="acct-field grow">
           <span>{t("accounting.costCenters.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>

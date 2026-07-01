@@ -943,7 +943,9 @@
       "oppLost": "تم خسارة الفرصة",
       "campaignActivated": "تم تفعيل الحملة",
       "campaignCompleted": "تم إكمال الحملة",
-      "opportunityCreated": "تم إنشاء الفرصة"
+      "opportunityCreated": "تم إنشاء الفرصة",
+      "bulkLeadsQualified": "تم تأهيل {{count}} عملاء محتملين",
+      "bulkLeadsQualifiedOne": "تم تأهيل عميل محتمل واحد"
     },
     "tabs": {
       "pipeline": "خط الفرص",

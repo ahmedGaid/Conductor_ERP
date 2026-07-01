@@ -10,6 +10,9 @@ import {
   type Opportunity,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { Checkbox } from "../../components/Checkbox";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { Badge } from "../../components/Badge";
 import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
@@ -77,6 +80,32 @@ export function LeadsPage() {
   // ⌘/Ctrl+Enter submits the add-lead form from any field (incl. the source select).
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Multi-select for bulk qualify (mirrors the per-row "qualify" on a new lead).
+  const selection = useRowSelection<Lead>({
+    items: visible ?? [],
+    getItemId: (l) => l.id,
+  });
+  const qualifiable = selection.selectedItems.filter((l) => l.status === "new");
+
+  // Qualify many new leads in one optimistic pass, then clear the selection.
+  function bulkQualify() {
+    if (qualifiable.length === 0 || !data) return;
+    const ids = new Set(qualifiable.map((l) => l.id));
+    void runOptimistic<Lead[], Lead[]>({
+      current: data,
+      mutate,
+      optimistic: (rows) => rows.map((l) => (ids.has(l.id) ? { ...l, status: "qualified" } : l)),
+      request: () => Promise.all(qualifiable.map((l) => setLeadStatus(l.id, "qualified"))),
+      settle: (rows, updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        return rows.map((l) => byId.get(l.id) ?? l);
+      },
+      toast,
+      success: t(qualifiable.length === 1 ? "crm.toast.bulkLeadsQualifiedOne" : "crm.toast.bulkLeadsQualified", { count: qualifiable.length }),
+    });
+    selection.clear();
+  }
 
   // Optimistic create: show the new lead row instantly and clear the form for the next entry; the
   // server row (with its assigned code) replaces the placeholder on settle, or it rolls back + toasts.
@@ -192,6 +221,14 @@ export function LeadsPage() {
           <table className="crm-table">
             <thead>
               <tr>
+                <th className="crm-table__select">
+                  <Checkbox
+                    checked={selection.allSelected}
+                    indeterminate={selection.someSelected}
+                    onChange={() => selection.toggleAll()}
+                    label={t("bulk.selectAll")}
+                  />
+                </th>
                 <th>{t("crm.lead.code")}</th>
                 <th>{t("crm.lead.name")}</th>
                 <th>{t("crm.lead.company")}</th>
@@ -201,8 +238,15 @@ export function LeadsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((l: Lead) => (
-                <tr key={l.id}>
+              {visible.map((l: Lead, i) => (
+                <tr key={l.id} data-selected={selection.isSelected(l.id) ? "true" : undefined} aria-selected={selection.isSelected(l.id)}>
+                  <td className="crm-table__select">
+                    <Checkbox
+                      checked={selection.isSelected(l.id)}
+                      onChange={(_next, shiftKey) => selection.toggle(i, shiftKey)}
+                      label={t("bulk.selectRow")}
+                    />
+                  </td>
                   <td className="latin">{l.code}</td>
                   <td>{l.name}</td>
                   <td>{l.company || "—"}</td>
@@ -233,6 +277,14 @@ export function LeadsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        {qualifiable.length > 0 && (
+          <button className="btn btn--sm" onClick={bulkQualify}>
+            {t("crm.leadStatus.qualified")}
+          </button>
+        )}
+      </BulkActionBar>
     </section>
   );
 }

@@ -118,7 +118,7 @@ export function BankReconciliationPage() {
           </label>
         </div>
 
-        <div className="acct-table-wrap" style={{ marginBlock: "var(--space-4)" }}>
+        <div className="acct-table-wrap block-spaced">
           <table className="acct-table">
             <thead>
               <tr>
@@ -160,7 +160,7 @@ export function BankReconciliationPage() {
             {t("accounting.bankRec.create")}
           </button>
         </div>
-        <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("accounting.bankRec.amountHint")}</p>
+        <p className="hint">{t("accounting.bankRec.amountHint")}</p>
         {formError && <p className="error-text">{formError}</p>}
       </form>
 

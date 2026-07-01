@@ -118,7 +118,7 @@ export function StockCountsPage() {
           {t("inventory.counts.start")}
         </button>
       </form>
-      <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("inventory.counts.startHint")}</p>
+      <p className="hint">{t("inventory.counts.startHint")}</p>
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (

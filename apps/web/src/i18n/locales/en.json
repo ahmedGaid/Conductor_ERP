@@ -943,7 +943,9 @@
       "oppLost": "Opportunity lost",
       "campaignActivated": "Campaign activated",
       "campaignCompleted": "Campaign completed",
-      "opportunityCreated": "Opportunity created"
+      "opportunityCreated": "Opportunity created",
+      "bulkLeadsQualified": "{{count}} leads qualified",
+      "bulkLeadsQualifiedOne": "1 lead qualified"
     },
     "tabs": {
       "pipeline": "Pipeline",

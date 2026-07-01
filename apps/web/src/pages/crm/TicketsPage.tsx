@@ -160,7 +160,7 @@ export function TicketsPage() {
           <button className="btn btn--sm" onClick={onRunEscalations}>
             {t("crm.ticket.runEscalations")}
           </button>
-          <span className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("crm.ticket.runEscalationsHint")}</span>
+          <span className="hint">{t("crm.ticket.runEscalationsHint")}</span>
         </div>
       )}
 

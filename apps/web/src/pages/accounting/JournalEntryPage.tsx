@@ -102,13 +102,13 @@ export function JournalEntryPage() {
             <span>{t("accounting.entry.date")}</span>
             <input type="date" className="latin" value={date} onChange={(e) => setDate(e.target.value)} required />
           </label>
-          <label className="acct-field" style={{ flex: 1 }}>
+          <label className="acct-field grow">
             <span>{t("accounting.entry.memo")}</span>
             <input value={memo} onChange={(e) => setMemo(e.target.value)} />
           </label>
         </div>
 
-        <div className="acct-table-wrap" style={{ marginBlock: "var(--space-4)" }}>
+        <div className="acct-table-wrap block-spaced">
           <table className="acct-table">
             <thead>
               <tr>

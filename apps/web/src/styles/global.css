@@ -284,6 +284,21 @@ textarea:focus {
 .error-text {
   color: var(--color-danger-strong);
 }
+/* Small muted hint under a form/section (one voice: muted + secondary size). Replaces the
+   ad-hoc inline `style={{ fontSize: ... }}` that used to sit on a bare `.muted` node. */
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+/* A toolbar/form field that should grow to fill its row. Replaces inline `flex: 1`. */
+.grow {
+  flex: 1;
+}
+/* A block set apart from its neighbours by the standard section rhythm. Replaces inline
+   `marginBlock: var(--space-4)` (e.g. a lines table under an entry form). */
+.block-spaced {
+  margin-block: var(--space-4);
+}
 
 /* ---- Module header (title + one-line description above a module's tab bar) ----
    Rendered once per module by its *Nav component, so every page in the module opens
