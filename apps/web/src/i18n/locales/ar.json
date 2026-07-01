@@ -915,7 +915,15 @@
       "supplierCreated": "تمت إضافة المورد",
       "poCreated": "تم إنشاء أمر الشراء",
       "prCreated": "تم إنشاء طلب الشراء",
-      "cancelled": "تم إلغاء الطلب"
+      "cancelled": "تم إلغاء الطلب",
+      "bulkApproved": "تمت الموافقة على {{count}} طلبات",
+      "bulkApprovedOne": "تمت الموافقة على طلب واحد",
+      "bulkConfirmed": "تم تأكيد {{count}} طلبات",
+      "bulkConfirmedOne": "تم تأكيد طلب واحد",
+      "bulkReqSubmitted": "تم إرسال {{count}} طلبات شراء",
+      "bulkReqSubmittedOne": "تم إرسال طلب شراء واحد",
+      "bulkReqApproved": "تمت الموافقة على {{count}} طلبات شراء",
+      "bulkReqApprovedOne": "تمت الموافقة على طلب شراء واحد"
     }
   },
   "crm": {

@@ -67,17 +67,22 @@ Status legend per page: `todo` = not yet audited · `pass` = audited, Linear-gra
 hardcoded strings, all states designed). The one real gap was bulk-select on the two list pages — now
 closed (Orders P1.1, Quotations P2). No cosmetic churn forced (CLAUDE.md: enforce the system, don't reinvent).
 
-### Purchasing
+**Purchasing module verdict (Phase 2):** identical finding — Linear-grade + clean. Bulk-select fanned to
+both list pages: PurchaseOrders (approve/confirm) + PurchaseRequests (submit/approve), live-verified
+end-to-end (request Submitted→Approved, "1 request approved"). Detail/form/supplier pages: designed
+states, tokens-only, form keys present — no defect. No cosmetic churn.
+
+### Purchasing — ✅ reviewed (Phase 2). Verdict: already Linear-grade + clean; gap was list bulk-select, now closed.
 | Page | Status | Notes |
 |------|--------|-------|
-| PurchaseOrdersPage | todo | KB✅ |
-| PurchaseOrderDetailPage | todo | |
-| PurchaseRequestsPage | todo | KB✅ |
-| PurchaseRequestDetailPage | todo | |
-| NewPurchaseOrderPage | todo | form |
-| NewPurchaseRequestPage | todo | form |
-| SuppliersPage | todo | KB❌ |
-| SupplierDetailPage | todo | PartyDetailView |
+| PurchaseOrdersPage | ✅ | bulk-select (approve/confirm) + KB; live-verified |
+| PurchaseOrderDetailPage | ✅ reviewed | designed states, clean — no defect |
+| PurchaseRequestsPage | ✅ | bulk-select (submit/approve) + KB; live-verified |
+| PurchaseRequestDetailPage | ✅ reviewed | designed states, clean — no defect |
+| NewPurchaseOrderPage | ✅ reviewed | form keys present — no defect |
+| NewPurchaseRequestPage | ✅ reviewed | form keys present — no defect |
+| SuppliersPage | ✅ | KB + form-keys (P1.3/1.4) |
+| SupplierDetailPage | ✅ reviewed | PartyDetailView states — no defect |
 
 ### Inventory
 | Page | Status | Notes |

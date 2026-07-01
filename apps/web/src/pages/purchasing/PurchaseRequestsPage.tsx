@@ -2,10 +2,15 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { listRequests, getRequest, type PurchaseRequest } from "../../api/purchasing";
+import { listRequests, getRequest, submitRequest, approveRequest, type PurchaseRequest } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { Checkbox } from "../../components/Checkbox";
+import { BulkActionBar } from "../../components/BulkActionBar";
+import { useToast } from "../../app/ToastContext";
+import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -23,7 +28,8 @@ const PR_STATUSES = ["draft", "submitted", "approved", "rejected", "converted", 
 
 export function PurchaseRequestsPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(() => listRequests(), [], "purchasing:requests");
+  const toast = useToast();
+  const { data, loading, error, reload, mutate } = useAsync(() => listRequests(), [], "purchasing:requests");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -65,6 +71,34 @@ export function PurchaseRequestsPage() {
     getItemId: (r) => r.id,
   });
 
+  // Multi-select for bulk submit/approve, gated to the request lifecycle.
+  const selection = useRowSelection<PurchaseRequest>({
+    items: visible ?? [],
+    getItemId: (r) => r.id,
+    activeIndex: active,
+  });
+  const submittable = selection.selectedItems.filter((r) => r.status === "draft");
+  const approvable = selection.selectedItems.filter((r) => r.status === "submitted");
+
+  // Run one lifecycle verb across many requests in a single optimistic pass, then clear the selection.
+  function bulkAct(targets: PurchaseRequest[], status: PurchaseRequest["status"], request: (id: string) => Promise<PurchaseRequest>, success: string) {
+    if (targets.length === 0) return;
+    const ids = new Set(targets.map((r) => r.id));
+    void runOptimistic<PurchaseRequest[], PurchaseRequest[]>({
+      current: data ?? [],
+      mutate,
+      optimistic: (rows) => rows.map((r) => (ids.has(r.id) ? { ...r, status } : r)),
+      request: () => Promise.all(targets.map((r) => request(r.id))),
+      settle: (rows, updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        return rows.map((r) => byId.get(r.id) ?? r);
+      },
+      toast,
+      success,
+    });
+    selection.clear();
+  }
+
   return (
     <section className="pur-page">
       <PurchasingNav />
@@ -105,6 +139,14 @@ export function PurchaseRequestsPage() {
           <table className="pur-table">
             <thead>
               <tr>
+                <th className="pur-table__select">
+                  <Checkbox
+                    checked={selection.allSelected}
+                    indeterminate={selection.someSelected}
+                    onChange={() => selection.toggleAll()}
+                    label={t("bulk.selectAll")}
+                  />
+                </th>
                 <th>{t("purchasing.requests.number")}</th>
                 <th>{t("purchasing.orders.supplier")}</th>
                 <th>{t("common.date")}</th>
@@ -114,7 +156,19 @@ export function PurchaseRequestsPage() {
             </thead>
             <tbody>
               {visible.map((r, i) => (
-                <tr key={r.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={r.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(r.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(r.id) || i === active}
+                >
+                  <td className="pur-table__select">
+                    <Checkbox
+                      checked={selection.isSelected(r.id)}
+                      onChange={(_next, shiftKey) => selection.toggle(i, shiftKey)}
+                      label={t("bulk.selectRow")}
+                    />
+                  </td>
                   <td>
                     <Link
                       to={`/purchasing/requests/${r.id}`}
@@ -137,6 +191,39 @@ export function PurchaseRequestsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        {submittable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                submittable,
+                "submitted",
+                (id) => submitRequest(id),
+                t(submittable.length === 1 ? "purchasing.toast.bulkReqSubmittedOne" : "purchasing.toast.bulkReqSubmitted", { count: submittable.length }),
+              )
+            }
+          >
+            {t("purchasing.requests.submit")}
+          </button>
+        )}
+        {approvable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                approvable,
+                "approved",
+                (id) => approveRequest(id),
+                t(approvable.length === 1 ? "purchasing.toast.bulkReqApprovedOne" : "purchasing.toast.bulkReqApproved", { count: approvable.length }),
+              )
+            }
+          >
+            {t("purchasing.requests.approve")}
+          </button>
+        )}
+      </BulkActionBar>
     </section>
   );
 }

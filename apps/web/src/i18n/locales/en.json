@@ -915,7 +915,15 @@
       "supplierCreated": "Supplier added",
       "poCreated": "Order created",
       "prCreated": "Request created",
-      "cancelled": "Order cancelled"
+      "cancelled": "Order cancelled",
+      "bulkApproved": "{{count}} orders approved",
+      "bulkApprovedOne": "1 order approved",
+      "bulkConfirmed": "{{count}} orders confirmed",
+      "bulkConfirmedOne": "1 order confirmed",
+      "bulkReqSubmitted": "{{count}} requests submitted",
+      "bulkReqSubmittedOne": "1 request submitted",
+      "bulkReqApproved": "{{count}} requests approved",
+      "bulkReqApprovedOne": "1 request approved"
     }
   },
   "crm": {
