@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -22,6 +22,7 @@ import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import "./crm.css";
 
 const LEAD_STATUSES = ["new", "contacted", "qualified", "unqualified", "converted"] as const;
@@ -72,6 +73,10 @@ export function LeadsPage() {
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("web");
+
+  // ⌘/Ctrl+Enter submits the add-lead form from any field (incl. the source select).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   // Optimistic create: show the new lead row instantly and clear the form for the next entry; the
   // server row (with its assigned code) replaces the placeholder on settle, or it rolls back + toasts.
@@ -126,7 +131,7 @@ export function LeadsPage() {
     <section className="crm-page">
       <CrmNav />
 
-      <form className="card crm-page" onSubmit={onAdd}>
+      <form ref={formRef} className="card crm-page" onSubmit={onAdd}>
         <h2>{t("crm.lead.add")}</h2>
         <div className="crm-toolbar">
           <label className="crm-field">

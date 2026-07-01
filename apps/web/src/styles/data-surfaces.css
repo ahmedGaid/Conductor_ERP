@@ -149,6 +149,26 @@
   background-color: var(--color-surface-alt);
 }
 
+/* Leading selection column — just wide enough for the checkbox, vertically centred. */
+.sales-table__select,
+.pur-table__select,
+.inv-table__select,
+.crm-table__select,
+.acct-table__select {
+  inline-size: 1px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Selected rows read with a calm tint (chrome, not status); kept above the hover tint. */
+.sales-table tbody tr[data-selected="true"],
+.pur-table tbody tr[data-selected="true"],
+.inv-table tbody tr[data-selected="true"],
+.crm-table tbody tr[data-selected="true"],
+.acct-table tbody tr[data-selected="true"] {
+  background-color: var(--color-surface-alt);
+}
+
 .sales-table tfoot td,
 .pur-table tfoot td,
 .inv-table tfoot td,

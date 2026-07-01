@@ -6,6 +6,9 @@ import { listOrders, getOrder, approveOrder, confirmOrder, type SalesOrder } fro
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { Checkbox } from "../../components/Checkbox";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
@@ -91,6 +94,37 @@ export function OrdersPage() {
     getItemId: (o) => o.id,
   });
 
+  // Multi-select for bulk approve/confirm. `x` toggles the active row; ⌘A selects all; Esc clears.
+  const selection = useRowSelection<SalesOrder>({
+    items: visible ?? [],
+    getItemId: (o) => o.id,
+    activeIndex: active,
+  });
+
+  // Which selected drafts each bulk verb can act on, mirroring the per-row gating.
+  const approvable = selection.selectedItems.filter((o) => o.status === "draft" && o.requires_approval && !o.approved);
+  const confirmable = selection.selectedItems.filter((o) => o.status === "draft" && (!o.requires_approval || o.approved));
+
+  // Run one verb across many rows in a single optimistic pass: predict every target row, fire the
+  // requests together, reconcile each with its server row, then clear the selection.
+  function bulkAct(targets: SalesOrder[], apply: (o: SalesOrder) => SalesOrder, request: (id: string) => Promise<SalesOrder>, success: string) {
+    if (targets.length === 0) return;
+    const ids = new Set(targets.map((o) => o.id));
+    void runOptimistic<SalesOrder[], SalesOrder[]>({
+      current: data ?? [],
+      mutate,
+      optimistic: (rows) => rows.map((o) => (ids.has(o.id) ? apply(o) : o)),
+      request: () => Promise.all(targets.map((o) => request(o.id))),
+      settle: (rows, updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        return rows.map((o) => byId.get(o.id) ?? o);
+      },
+      toast,
+      success,
+    });
+    selection.clear();
+  }
+
   // One-click row actions mirror the order-detail gating: approve a draft awaiting sign-off, then
   // confirm a draft that's ready. Heavier steps (deliver/invoice/payment) stay on the detail page.
   //
@@ -148,6 +182,14 @@ export function OrdersPage() {
           <table className="sales-table">
             <thead>
               <tr>
+                <th className="sales-table__select">
+                  <Checkbox
+                    checked={selection.allSelected}
+                    indeterminate={selection.someSelected}
+                    onChange={() => selection.toggleAll()}
+                    label={t("bulk.selectAll")}
+                  />
+                </th>
                 <th>{t("sales.orders.number")}</th>
                 <th>{t("sales.orders.customer")}</th>
                 <th>{t("sales.orders.date")}</th>
@@ -158,7 +200,19 @@ export function OrdersPage() {
             </thead>
             <tbody>
               {visible.map((o, i) => (
-                <tr key={o.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={o.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(o.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(o.id) || i === active}
+                >
+                  <td className="sales-table__select">
+                    <Checkbox
+                      checked={selection.isSelected(o.id)}
+                      onChange={(_next, shiftKey) => selection.toggle(i, shiftKey)}
+                      label={t("bulk.selectRow")}
+                    />
+                  </td>
                   <td>
                     <Link
                       to={`/sales/orders/${o.id}`}
@@ -205,6 +259,39 @@ export function OrdersPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        {approvable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                approvable,
+                (r) => ({ ...r, approved: true }),
+                (id) => approveOrder(id),
+                t(approvable.length === 1 ? "sales.toast.bulkApprovedOne" : "sales.toast.bulkApproved", { count: approvable.length }),
+              )
+            }
+          >
+            {t("sales.detail.approve")}
+          </button>
+        )}
+        {confirmable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                confirmable,
+                (r) => ({ ...r, status: "confirmed" }),
+                (id) => confirmOrder(id),
+                t(confirmable.length === 1 ? "sales.toast.bulkConfirmedOne" : "sales.toast.bulkConfirmed", { count: confirmable.length }),
+              )
+            }
+          >
+            {t("sales.detail.confirm")}
+          </button>
+        )}
+      </BulkActionBar>
     </section>
   );
 }

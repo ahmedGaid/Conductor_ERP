@@ -4,8 +4,13 @@ import { useTranslation } from "react-i18next";
 import "./InlineEdit.css";
 
 interface InlineEditProps {
-  /** The current persisted value. */
+  /** The current persisted value — what the input edits and what onSave is diffed against. */
   value: string;
+  /**
+   * Optional read-mode text when it should differ from the raw editable value — e.g. a formatted
+   * money amount ("1,000.50 EGP") over an editable "1000.50". Falls back to `value`.
+   */
+  display?: string;
   /** Persist a new value. May be async (any result); the field exits edit mode once it settles. */
   onSave: (next: string) => Promise<unknown> | void;
   /** Accessible name for the trigger and the input (usually the field's label). */
@@ -23,7 +28,7 @@ interface InlineEditProps {
  * as the full-page forms. Editing an input is a typing target, so the global list/shortcut layers
  * stand down automatically (no key collisions). The caller's onSave owns persistence + optimism.
  */
-export function InlineEdit({ value, onSave, label, emptyText = "—", placeholder, inputClassName }: InlineEditProps) {
+export function InlineEdit({ value, display, onSave, label, emptyText = "—", placeholder, inputClassName }: InlineEditProps) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -94,7 +99,7 @@ export function InlineEdit({ value, onSave, label, emptyText = "—", placeholde
         aria-label={t("common.editField", { field: label })}
       >
         {value ? (
-          <span>{value}</span>
+          <span>{display ?? value}</span>
         ) : (
           <span className="inline-edit__placeholder">{placeholder ?? emptyText}</span>
         )}

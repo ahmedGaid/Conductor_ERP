@@ -1,8 +1,11 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -55,11 +58,24 @@ export function ItemsPage() {
     [filtered, tab],
   );
 
+  // j/k move a row highlight, Enter/o opens the item detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Item>({
+    items: visible ?? [],
+    onOpen: (it) => navigate(`/inventory/items/${encodeURIComponent(it.sku)}`),
+    persistKey: "inventory:items",
+    getItemId: (it) => it.id,
+  });
+
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [uom, setUom] = useState("unit");
   const [type, setType] = useState<ItemType>("stock");
   const [importOpen, setImportOpen] = useState(false);
+
+  // ⌘/Ctrl+Enter submits the add form from any field (incl. the type select).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [
@@ -114,7 +130,7 @@ export function ItemsPage() {
         onCommitted={() => reload()}
       />
 
-      <form className="card inv-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.item.sku")}</span>
           <input className="latin" value={sku} onChange={(e) => setSku(e.target.value)} required />
@@ -179,8 +195,8 @@ export function ItemsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((i) => (
-                <tr key={i.id}>
+              {visible.map((i, idx) => (
+                <tr key={i.id} data-kbd-active={idx === active ? "true" : undefined} aria-selected={idx === active}>
                   <td><EntityLink type="item" value={i.sku} /></td>
                   <td>{i.name}</td>
                   <td>{i.uom}</td>

@@ -5,7 +5,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding-block: 0.125rem;
+  padding-block: var(--space-0-5);
   padding-inline: var(--space-2);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);

@@ -128,7 +128,7 @@
 .cmdp__item-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5);
   min-inline-size: 0;
 }
 

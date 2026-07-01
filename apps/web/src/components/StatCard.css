@@ -59,7 +59,7 @@
 .statcard__delta {
   display: inline-flex;
   align-items: center;
-  gap: 0.125rem;
+  gap: var(--space-0-5);
   font-weight: var(--font-weight-semibold);
 }
 

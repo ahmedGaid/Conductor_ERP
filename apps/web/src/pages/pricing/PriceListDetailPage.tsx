@@ -1,8 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NavIcon } from "../../app/icons";
 import { useParams } from "react-router-dom";
+import { useFormKeys } from "../../hooks/useFormKeys";
 
 import { BackLink } from "../../components/BackLink";
 
@@ -11,6 +12,7 @@ import {
   deleteLine,
   getPriceList,
   listLines,
+  updateLine,
   updatePriceList,
   type PriceList,
   type PriceListLine,
@@ -22,9 +24,10 @@ import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
-import { formatMinor, parseToMinor } from "../../lib/money";
+import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
+import { InlineEdit } from "../../components/InlineEdit";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import "./pricing.css";
@@ -49,6 +52,10 @@ export function PriceListDetailPage() {
   const [validFrom, setValidFrom] = useState("");
   const [validTo, setValidTo] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+
+  // ⌘/Ctrl+Enter submits the add-line form from any field (item select, price, dates).
+  const addFormRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef: addFormRef });
 
   const importFields = useMemo<ImportFieldInfo[]>(() => [
     { name: "item_sku", label: t("pricing.detail.importField_item_sku"), required: true },
@@ -96,6 +103,20 @@ export function PriceListDetailPage() {
     setValidTo("");
   }
 
+  // Inline cell edit: patch one line in place (price / min qty), reconcile with the server line, roll
+  // back + toast on failure. Same optimistic contract as the detail-form fields.
+  function patchLine(line: PriceListLine, changes: Partial<PriceListLine>) {
+    void runOptimistic<PriceListLine[], PriceListLine>({
+      current: lines ?? [],
+      mutate,
+      optimistic: (cur) => cur.map((l) => (l.id === line.id ? { ...l, ...changes } : l)),
+      request: () => updateLine(line.id, changes),
+      settle: (predicted, updated) => predicted.map((l) => (l.id === updated.id ? updated : l)),
+      toast,
+      success: t("pricing.toast.updated"),
+    });
+  }
+
   function onDelete(line: PriceListLine) {
     void runOptimistic<PriceListLine[], void>({
       current: lines ?? [],
@@ -134,7 +155,7 @@ export function PriceListDetailPage() {
         </div>
       </div>
 
-      <form className="card pricing-toolbar" onSubmit={onAddLine}>
+      <form ref={addFormRef} className="card pricing-toolbar" onSubmit={onAddLine}>
         <label className="pricing-field">
           <span>{t("pricing.detail.item")}</span>
           <select value={sku} onChange={(e) => setSku(e.target.value)}>
@@ -199,8 +220,37 @@ export function PriceListDetailPage() {
               {lines.map((l) => (
                 <tr key={l.id}>
                   <td><EntityLink type="item" value={l.item_sku} /></td>
-                  <td className="pricing-table__num"><Bdi>{l.min_quantity}</Bdi></td>
-                  <td className="pricing-table__num"><Bdi>{formatMinor(l.unit_price_minor, pl?.currency)}</Bdi></td>
+                  <td className="pricing-table__num">
+                    <InlineEdit
+                      value={l.min_quantity}
+                      label={t("pricing.detail.minQty")}
+                      inputClassName="latin"
+                      onSave={(v) => {
+                        const q = v.trim();
+                        if (!/^\d+(\.\d+)?$/.test(q)) {
+                          toast.show(t("pricing.detail.badInput"), "error");
+                          return;
+                        }
+                        patchLine(l, { min_quantity: q });
+                      }}
+                    />
+                  </td>
+                  <td className="pricing-table__num">
+                    <InlineEdit
+                      value={minorToAmount(l.unit_price_minor)}
+                      display={formatMinor(l.unit_price_minor, pl?.currency)}
+                      label={t("pricing.detail.unitPrice")}
+                      inputClassName="latin"
+                      onSave={(v) => {
+                        const minor = parseToMinor(v);
+                        if (minor === null) {
+                          toast.show(t("pricing.detail.badInput"), "error");
+                          return;
+                        }
+                        patchLine(l, { unit_price_minor: minor });
+                      }}
+                    />
+                  </td>
                   <td>
                     <Bdi>
                       {!l.valid_from && !l.valid_to

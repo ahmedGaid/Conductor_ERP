@@ -1,8 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { createCostCenter, listCostCenters } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -37,6 +38,10 @@ export function CostCentersPage() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
 
+  // ⌘/Ctrl+Enter submits the add form from any field.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
+
   // Optimistic create: show the new cost center instantly and clear the form for the next entry; the
   // server row replaces the placeholder on settle, or it rolls back + toasts.
   function onSubmit(e: FormEvent) {
@@ -60,7 +65,7 @@ export function CostCentersPage() {
     <section className="acct-page">
       <AccountingNav />
 
-      <form className="card acct-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card acct-toolbar" onSubmit={onSubmit}>
         <label className="acct-field">
           <span>{t("accounting.costCenters.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />

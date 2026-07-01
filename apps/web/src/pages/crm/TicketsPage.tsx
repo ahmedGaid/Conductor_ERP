@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -25,6 +25,7 @@ import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import "./crm.css";
 
 const PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
@@ -74,6 +75,10 @@ export function TicketsPage() {
   const [subject, setSubject] = useState("");
   const [customer, setCustomer] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("medium");
+
+  // ⌘/Ctrl+Enter submits the add-ticket form from any field (incl. the priority select).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   // Optimistic create: open the new ticket row instantly and clear the form for the next entry; the
   // server row (with its number + SLA flags) replaces the placeholder on settle, or it rolls back + toasts.
@@ -125,7 +130,7 @@ export function TicketsPage() {
     <section className="crm-page">
       <CrmNav />
 
-      <form className="card crm-page" onSubmit={onAdd}>
+      <form ref={formRef} className="card crm-page" onSubmit={onAdd}>
         <h2>{t("crm.ticket.add")}</h2>
         <div className="crm-toolbar">
           <label className="crm-field">

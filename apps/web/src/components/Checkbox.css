@@ -1,0 +1,55 @@
+/*
+ * Selection checkbox — monochrome, used for row + bulk select across every list.
+ * The native input is visually hidden but keeps focus/keyboard/a11y; the .checkbox__box is the
+ * drawn square. Filled state is brand near-black (chrome, not an accent) with a white glyph.
+ */
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  /* A comfortable hit target without enlarging the visible box. */
+  padding: var(--space-1);
+  margin: calc(-1 * var(--space-1));
+}
+
+.checkbox__input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  margin: 0;
+}
+
+.checkbox__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text-on-brand);
+  transition: background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.checkbox__box svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+.checkbox:hover .checkbox__box {
+  border-color: var(--color-text-muted);
+}
+
+.checkbox__input:checked + .checkbox__box,
+.checkbox__input:indeterminate + .checkbox__box {
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+}
+
+.checkbox__input:focus-visible + .checkbox__box {
+  box-shadow: var(--focus-ring);
+}
