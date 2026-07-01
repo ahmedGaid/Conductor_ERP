@@ -33,6 +33,8 @@ class EInvoiceInput:
     net_minor: int = 0
     tax_minor: int = 0
     total_minor: int = 0
+    # Branch code of the source order (business key) — stamps the e-invoice's data scope.
+    branch_code: str = ""
 
 
 def _document(eta: ETAInvoice) -> dict:
@@ -54,12 +56,17 @@ def record_invoice(data: EInvoiceInput, actor=None) -> ETAInvoice:
     existing = ETAInvoice.objects.filter(invoice_number=data.invoice_number).first()
     if existing is not None:
         return existing
+    branch = None
+    if data.branch_code:
+        from erp.core.models import Branch
+
+        branch = Branch.objects.filter(code=data.branch_code).first()
     eta = ETAInvoice.objects.create(
         invoice_number=data.invoice_number, order_number=data.order_number,
         customer_code=data.customer_code, customer_name=data.customer_name,
         issue_date=data.issue_date, currency=data.currency, tax_code=data.tax_code,
         net_minor=data.net_minor, tax_minor=data.tax_minor, total_minor=data.total_minor,
-        status=ETAStatus.DRAFT,
+        status=ETAStatus.DRAFT, branch=branch,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
     )
     eta.document_hash = eta_adapter.document_hash(_document(eta))
