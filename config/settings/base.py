@@ -122,6 +122,8 @@ PASSWORD_HASHERS = [
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
 ]
 
 # --- i18n (Arabic-first; the UI defaults to ar/RTL) ---
@@ -155,6 +157,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("DRF_THROTTLE_ANON", default="60/min"),
         "user": env("DRF_THROTTLE_USER", default="1000/min"),
+        # Dedicated brute-force cap for the login endpoint (per-IP; sits under the anon rate).
+        "login": env("DRF_THROTTLE_LOGIN", default="5/min"),
     },
 }
 

@@ -1,15 +1,16 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { apiFetch, getToken, setToken } from "../api/client";
+import { apiFetch, getToken, refreshAccess, setToken } from "../api/client";
 
 interface LoginResult {
   access?: string;
-  refresh?: string;
   twofa_required?: boolean;
 }
 
 interface AuthState {
   isAuthenticated: boolean;
+  /** True while the boot-time session restore (refresh cookie → access token) is in flight. */
+  restoring: boolean;
   login: (username: string, password: string, otp?: string) => Promise<LoginResult>;
   logout: () => void;
 }
@@ -18,10 +19,28 @@ const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(getToken());
+  const [restoring, setRestoring] = useState(!getToken());
+
+  // The access token lives only in memory, so a reload starts signed out; the HttpOnly refresh
+  // cookie (set at login) silently restores the session before the router redirects to /login.
+  useEffect(() => {
+    if (!restoring) return;
+    let cancelled = false;
+    refreshAccess().then(() => {
+      if (cancelled) return;
+      setTokenState(getToken());
+      setRestoring(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const value = useMemo<AuthState>(
     () => ({
       isAuthenticated: Boolean(token),
+      restoring,
       async login(username, password, otp) {
         const result = await apiFetch<LoginResult>("/identity/login", {
           method: "POST",
@@ -34,11 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return result;
       },
       logout() {
+        // Blacklist the refresh token and clear its cookie server-side; local state drops now.
+        void apiFetch("/identity/logout", { method: "POST" }).catch(() => undefined);
         setToken(null);
         setTokenState(null);
       },
     }),
-    [token],
+    [token, restoring],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

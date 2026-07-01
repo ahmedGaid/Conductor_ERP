@@ -7,7 +7,17 @@
 import { invalidateForPath } from "../lib/cache";
 import i18n from "../i18n";
 
-const TOKEN_KEY = "erp.token";
+// The short-lived access token lives ONLY in memory (never storage — XSS cannot read it back).
+// Sessions survive reloads through the HttpOnly refresh cookie: `refreshAccess` trades it for a
+// new access token on boot and transparently after a 401.
+let accessToken: string | null = null;
+
+// One-time cleanup of the pre-hardening localStorage token.
+try {
+  localStorage.removeItem("erp.token");
+} catch {
+  /* storage unavailable (private mode) — nothing to clean */
+}
 
 // The active UI language, sent as Accept-Language so the server localizes its built-in (DRF)
 // validation messages to match what the user is reading. Falls back to Arabic (the app default).
@@ -16,12 +26,40 @@ function activeLanguage(): string {
 }
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return accessToken;
 }
 
 export function setToken(token: string | null): void {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  accessToken = token;
+}
+
+// Single-flight refresh: concurrent 401s share one round-trip. The refresh token itself never
+// reaches this code — the browser sends the HttpOnly cookie (scoped to /api/identity) by itself.
+let refreshing: Promise<boolean> | null = null;
+
+export function refreshAccess(): Promise<boolean> {
+  refreshing ??= (async () => {
+    try {
+      const res = await fetch("/api/identity/token/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      if (!res.ok) {
+        setToken(null);
+        return false;
+      }
+      const body = (await res.json()) as { access?: string };
+      setToken(body.access ?? null);
+      return Boolean(body.access);
+    } catch {
+      setToken(null);
+      return false;
+    } finally {
+      refreshing = null;
+    }
+  })();
+  return refreshing;
 }
 
 export class ApiError extends Error {
@@ -43,14 +81,24 @@ interface DataEnvelope<T> {
   data: T;
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function authedFetch(path: string, init: RequestInit, headers: Headers): Promise<Response> {
   const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  let res = await fetch(`/api${path}`, { ...init, headers });
+  // Expired access token: renew through the refresh cookie once and replay the request.
+  if (res.status === 401 && (await refreshAccess())) {
+    headers.set("Authorization", `Bearer ${getToken()}`);
+    res = await fetch(`/api${path}`, { ...init, headers });
+  }
+  return res;
+}
+
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
   headers.set("Accept-Language", activeLanguage());
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`/api${path}`, { ...init, headers });
+  const res = await authedFetch(path, init, headers);
 
   const method = (init.method ?? "GET").toUpperCase();
   const mutating = method !== "GET";
@@ -87,12 +135,10 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 // Multipart upload (e.g. CSV import). Posts FormData WITHOUT a Content-Type header so the browser
 // sets the multipart boundary itself; unwraps the {data}/{error} envelope like apiFetch.
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
-  const token = getToken();
   const headers = new Headers();
   headers.set("Accept-Language", activeLanguage());
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`/api${path}`, { method: "POST", headers, body: form });
+  const res = await authedFetch(path, { method: "POST", body: form }, headers);
 
   let body: unknown = null;
   const text = await res.text();
@@ -119,11 +165,9 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
 // Authenticated file download (CSV/XLSX report exports). Streams the response to a blob and
 // triggers a browser download, taking the filename from the Content-Disposition header.
 export async function downloadExport(path: string, fallbackName = "export"): Promise<void> {
-  const token = getToken();
   const headers = new Headers();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`/api${path}`, { headers });
+  const res = await authedFetch(path, {}, headers);
   if (!res.ok) {
     if (res.status === 401) setToken(null);
     throw new ApiError(`Export failed (${res.status})`, res.status);
