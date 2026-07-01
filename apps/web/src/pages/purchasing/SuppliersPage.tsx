@@ -8,6 +8,8 @@ import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showSupplierReceipt } from "../../lib/feedback/purchasing";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -23,6 +25,7 @@ import "./purchasing.css";
 export function SuppliersPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const fb = useActionFeedback();
   const { data, loading, error, reload, mutate } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
@@ -77,7 +80,8 @@ export function SuppliersPage() {
       placeholder: (id) => ({ id, code: c, name: n }) as Supplier,
       request: () => createSupplier({ code: c, name: n }),
       toast,
-      success: t("purchasing.toast.supplierCreated"),
+    }).then((created) => {
+      if (created) showSupplierReceipt(fb, t, created, { navigate });
     });
     setCode("");
     setName("");
