@@ -28,6 +28,7 @@ from .serializers import (
     OppCreateSerializer,
     OppLoseSerializer,
     OppStageSerializer,
+    OppUpdateSerializer,
     OppWinSerializer,
     OpportunitySerializer,
     TicketCreateSerializer,
@@ -187,6 +188,13 @@ class OppDetailView(APIView):
     def get(self, request: Request, opp_id) -> Response:
         return _envelope(OpportunitySerializer(
             get_object_or_404(_scoped(request, _opp_qs(), "opportunity"), id=opp_id)).data)
+
+    def patch(self, request: Request, opp_id) -> Response:
+        opp = get_object_or_404(Opportunity, id=opp_id)
+        s = OppUpdateSerializer(data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        services.update_opportunity(opp, actor=request.user, **s.validated_data)
+        return _envelope(OpportunitySerializer(_opp_qs().get(id=opp.id)).data)
 
 
 class OppStageView(APIView):

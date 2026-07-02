@@ -12,6 +12,8 @@ import {
   type PurchaseRequest,
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
@@ -41,6 +43,7 @@ export function PurchaseRequestDetailPage() {
     [id],
     `purchasing:request:${id}`,
   );
+  useRecentEntity(data?.number);
 
   const fb = useActionFeedback();
   const location = useLocation();
@@ -104,6 +107,30 @@ export function PurchaseRequestDetailPage() {
     navigate(location.pathname, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
+
+  // Lifecycle steps mirrored into the ⌘K "This page" group, gated by status exactly as the
+  // buttons are, so the palette never offers a step that isn't the real next move. Each runs the
+  // same optimistic `act`, so a palette step fires the identical rich receipt as its button.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft") {
+      pageActions.push({ id: "submit", label: t("purchasing.requests.submit"),
+        run: () => act("submitted", () => submitRequest(data.id), "submitted") });
+    }
+    if (s === "submitted") {
+      pageActions.push({ id: "approve", label: t("purchasing.requests.approve"),
+        run: () => act("approved", () => approveRequest(data.id), "approved") });
+    }
+    if (s === "approved") {
+      pageActions.push({ id: "convert", label: t("purchasing.requests.convert"), run: () => onConvert(data) });
+    }
+    if (s === "submitted" || s === "approved") {
+      pageActions.push({ id: "reject", label: t("purchasing.requests.reject"),
+        run: () => act("rejected", () => rejectRequest(data.id, ""), "rejected") });
+    }
+  }
+  usePaletteActions("pr-detail", pageActions);
 
   if (loading) {
     return (

@@ -201,6 +201,8 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Reconcile (settle) | تسوية | — |
 | Match (link transactions) | مطابقة | — (a *distinct* sub-action of reconcile — not drift) |
 | e-invoice | فاتورة إلكترونية | — |
+| Notes (free-text on a record) | ملاحظات | تعليقات (reserve for threaded comments, a different concept) |
+| Opportunity | فرصة | — |
 | Accounting module (name) | المالية | المحاسبة (the *module label* is **المالية**; "محاسبة/محاسبي" stays only for the bookkeeping discipline in prose, 2026-06-30) |
 | AI assistant (the product surface) | المساعد الذكي | الذكاء الاصطناعي / روبوت (the surface is always **المساعد الذكي**; "AI" alone never appears in Arabic copy, 2026-07-02) |
 
@@ -323,3 +325,6 @@ fast-and-rough (Brief §6, value 5).
   the highest-priority brand artifact), and a **brand-feel review checklist** that checks the promise
   where gate03 can only check syntax. No code/token change — this file describes the existing system
   and the surfaces around it.
+- **2026-06-26 — Lexicon §6.1 extended (CRM inline-edit).** Added **Notes → ملاحظات** (reserve
+  تعليقات for threaded comments) and **Opportunity → فرصة** as canonical terms, governed here before
+  shipping the opportunity detail inline-edit fields.

@@ -5,16 +5,20 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { searchEntities } from "../api/core";
 import { normalizeSearch } from "../lib/arabicSearch";
 import { getRecents, recordRecent } from "../lib/recents";
+import { usePaletteActionList } from "./PaletteActionsContext";
 import { NavIcon } from "./icons";
 import "./CommandPalette.css";
 
-type Group = "results" | "recent" | "create" | "go";
+type Group = "page" | "results" | "recent" | "create" | "go";
 
 interface Command {
   id: string;
   label: string;
-  to: string;
   group: Group;
+  /** Navigation target. Mutually exclusive with `run` (page actions run a callback instead). */
+  to?: string;
+  /** Contextual page action — invoked instead of navigating. */
+  run?: () => void;
   sublabel?: string; // secondary line (record code/number + localized type), live results only
 }
 
@@ -78,6 +82,14 @@ export function CommandPalette({
     [t, einvoiceEnabled],
   );
 
+  // Contextual actions the current page has registered ("Approve", "Confirm", …), surfaced as a
+  // "This page" group at the very top. They run a callback rather than navigating.
+  const pageActionList = usePaletteActionList();
+  const pageActions = useMemo<Command[]>(
+    () => pageActionList.map((a) => ({ id: `page:${a.id}`, label: a.label, group: "page", run: a.run })),
+    [pageActionList],
+  );
+
   // Track every visited page so the palette can offer a "jump back" list. The palette is always
   // mounted in the shell, so this effect sees all route changes.
   useEffect(() => {
@@ -114,14 +126,21 @@ export function CommandPalette({
     return () => clearTimeout(timer);
   }, [query, open, t]);
 
-  // Recently-visited pages, newest first — only those that map to a known destination, deduped and
-  // capped. Recomputed each time the palette opens (fresh localStorage) and hidden once you type.
+  // Recently-visited destinations, newest first — module/list pages resolve their label from the
+  // command list; specific entities (an order, an opportunity) carry their own stored label and
+  // become a synthetic go-to command. Deduped and capped. Recomputed when the palette opens (fresh
+  // localStorage) and hidden once you type.
   const recent = useMemo<Command[]>(() => {
     if (!open || query.trim()) return [];
     const out: Command[] = [];
     const seen = new Set<string>();
-    for (const path of getRecents()) {
-      const cmd = commands.find((c) => c.to === path);
+    for (const { path, label } of getRecents()) {
+      const known = commands.find((c) => c.to === path);
+      const cmd: Command | undefined = known
+        ? known
+        : label
+          ? { id: `recent:${path}`, label, to: path, group: "recent" }
+          : undefined;
       if (cmd && !seen.has(cmd.id)) {
         seen.add(cmd.id);
         out.push(cmd);
@@ -131,15 +150,21 @@ export function CommandPalette({
     return out;
   }, [commands, query, open]);
 
-  // The flat, ordered result list that drives arrow-key navigation: recents first (empty query),
-  // then the full set with recents removed; or the label-filtered set while typing.
+  // The flat, ordered result list that drives arrow-key navigation. Empty query: page actions, then
+  // recents, then the full set with recents removed. While typing: page actions + commands whose
+  // label matches (recents are just shortcuts to the same destinations, so they're dropped).
   const visible = useMemo(() => {
     const q = normalizeSearch(query.trim());
-    // Typing: server record hits first, then the static page/action commands that match the label.
-    if (q) return [...results, ...commands.filter((c) => normalizeSearch(c.label).includes(q))];
+    // Typing: matching page actions, then server record hits, then the static commands that match.
+    if (q)
+      return [
+        ...pageActions.filter((c) => normalizeSearch(c.label).includes(q)),
+        ...results,
+        ...commands.filter((c) => normalizeSearch(c.label).includes(q)),
+      ];
     const recentIds = new Set(recent.map((c) => c.id));
-    return [...recent, ...commands.filter((c) => !recentIds.has(c.id))];
-  }, [commands, query, recent, results]);
+    return [...pageActions, ...recent, ...commands.filter((c) => !recentIds.has(c.id))];
+  }, [commands, pageActions, query, recent, results]);
 
   // Keep the native dialog's open state in sync with the controlled `open` prop,
   // resetting the query and focusing the input each time it opens.
@@ -169,7 +194,8 @@ export function CommandPalette({
   function run(cmd: Command | undefined) {
     if (!cmd) return;
     onClose();
-    navigate(cmd.to);
+    if (cmd.run) cmd.run();
+    else if (cmd.to) navigate(cmd.to);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -191,7 +217,9 @@ export function CommandPalette({
   }
 
   const labelFor = (g: Group) =>
-    g === "results"
+    g === "page"
+      ? t("command.groupPage")
+      : g === "results"
       ? t("command.groupResults")
       : g === "recent"
         ? t("command.groupRecent")
@@ -199,10 +227,11 @@ export function CommandPalette({
           ? t("command.groupCreate")
           : t("command.groupGo");
 
-  // Render order: live results, then recents, then create, then go — matching the flat `visible`
+  // Render order: page actions, live results, recents, create, then go — matching the flat `visible`
   // sequence so arrow-key navigation flows top-to-bottom across the groups.
   const recentIds = new Set(recent.map((c) => c.id));
   const allSections: { key: Group; rows: Command[] }[] = [
+    { key: "page", rows: visible.filter((c) => c.group === "page") },
     { key: "results", rows: visible.filter((c) => c.group === "results") },
     { key: "recent", rows: recent },
     { key: "create", rows: visible.filter((c) => c.group === "create" && !recentIds.has(c.id)) },

@@ -56,6 +56,39 @@ def test_lead_convert_and_win_flow_via_api():
     assert oid  # the converted opportunity exists too
 
 
+def test_opportunity_inline_edit_updates_name_and_notes():
+    make_customer()
+    client = _admin_client()
+
+    created = client.post(
+        "/api/crm/opportunities",
+        {"name": "Draft name", "customer_code": "CUST1"},
+        format="json",
+    )
+    assert created.status_code == 201, created.data
+    oid = created.data["data"]["id"]
+
+    # Partial PATCH: name only.
+    patched = client.patch(
+        f"/api/crm/opportunities/{oid}",
+        {"name": "Renamed deal"},
+        format="json",
+    )
+    assert patched.status_code == 200, patched.data
+    assert patched.data["data"]["name"] == "Renamed deal"
+    assert patched.data["data"]["notes"] == ""
+
+    # And notes can be set independently, leaving the name as-is.
+    with_notes = client.patch(
+        f"/api/crm/opportunities/{oid}",
+        {"notes": "Decision by Q3"},
+        format="json",
+    )
+    assert with_notes.status_code == 200, with_notes.data
+    assert with_notes.data["data"]["name"] == "Renamed deal"
+    assert with_notes.data["data"]["notes"] == "Decision by Q3"
+
+
 def test_ticket_sla_flow_via_api():
     client = _admin_client()
     created = client.post(

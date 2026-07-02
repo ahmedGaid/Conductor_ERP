@@ -10,6 +10,7 @@ import { ShortcutsDialog } from "./ShortcutsDialog";
 import { ShortcutsProvider, useShortcuts } from "./ShortcutsContext";
 import { Toaster } from "./Toaster";
 import { ToastProvider } from "./ToastContext";
+import { PaletteActionsProvider } from "./PaletteActionsContext";
 import { ActionFeedbackProvider } from "./ActionFeedbackContext";
 import { ActionFeedbackHost } from "./ActionFeedbackHost";
 import { HelpCenter } from "../help/HelpCenter";
@@ -65,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <ToastProvider>
       <ActionFeedbackProvider>
       <HelpProvider>
+        <PaletteActionsProvider>
         <ShortcutsProvider>
           <div
             className={navOpen ? "appshell appshell--nav-open" : "appshell"}
@@ -98,6 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Toaster />
           </div>
         </ShortcutsProvider>
+        </PaletteActionsProvider>
       </HelpProvider>
       </ActionFeedbackProvider>
     </ToastProvider>

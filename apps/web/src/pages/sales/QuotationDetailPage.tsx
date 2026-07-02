@@ -12,6 +12,8 @@ import {
   type QuotationStatus,
 } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
@@ -41,6 +43,7 @@ export function QuotationDetailPage() {
     [id],
     `sales:quotation:${id}`,
   );
+  useRecentEntity(data?.number);
 
   useSetDocumentCrumb(data?.number);
 
@@ -104,6 +107,30 @@ export function QuotationDetailPage() {
     navigate(location.pathname, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
+
+  // Lifecycle steps mirrored into the ⌘K "This page" group, gated by status exactly as the
+  // buttons are, so the palette never offers a step that isn't the real next move. Each runs the
+  // same optimistic `act`, so a palette step fires the identical rich receipt as its button.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft") {
+      pageActions.push({ id: "submit", label: t("sales.quotations.submit"),
+        run: () => act("submitted", () => submitQuotation(data.id), "submitted") });
+    }
+    if (s === "submitted") {
+      pageActions.push({ id: "approve", label: t("sales.quotations.approve"),
+        run: () => act("approved", () => approveQuotation(data.id), "approved") });
+    }
+    if (s === "approved") {
+      pageActions.push({ id: "convert", label: t("sales.quotations.convert"), run: () => onConvert(data) });
+    }
+    if (s === "submitted" || s === "approved") {
+      pageActions.push({ id: "reject", label: t("sales.quotations.reject"),
+        run: () => act("rejected", () => rejectQuotation(data.id, ""), "rejected") });
+    }
+  }
+  usePaletteActions("quotation-detail", pageActions);
 
   if (loading) {
     return (

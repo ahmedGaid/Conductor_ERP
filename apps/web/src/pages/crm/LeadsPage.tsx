@@ -10,6 +10,7 @@ import {
   type Opportunity,
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
 import { Checkbox } from "../../components/Checkbox";
 import { BulkActionBar } from "../../components/BulkActionBar";
@@ -156,6 +157,18 @@ export function LeadsPage() {
     });
   }
 
+  // j/k move a row highlight; Enter/o converts the highlighted lead (its primary action) — these
+  // lists have no detail page, so the keyboard acts on the row in place. An already-converted lead
+  // has no next step, so Enter is a no-op there. Highlight + scroll restore on return.
+  const { active } = useListKeyboardNav<Lead>({
+    items: visible ?? [],
+    onOpen: (l) => {
+      if (l.status !== "converted") convert(l.id);
+    },
+    persistKey: "crm:leads",
+    getItemId: (l) => l.id,
+  });
+
   return (
     <section className="crm-page">
       <CrmNav />
@@ -239,7 +252,12 @@ export function LeadsPage() {
             </thead>
             <tbody>
               {visible.map((l: Lead, i) => (
-                <tr key={l.id} data-selected={selection.isSelected(l.id) ? "true" : undefined} aria-selected={selection.isSelected(l.id)}>
+                <tr
+                  key={l.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(l.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(l.id)}
+                >
                   <td className="crm-table__select">
                     <Checkbox
                       checked={selection.isSelected(l.id)}
