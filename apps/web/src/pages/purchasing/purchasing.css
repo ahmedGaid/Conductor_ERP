@@ -1,3 +1,196 @@
 /* Shared page/table/toolbar/summary/meta rules live in styles/data-surfaces.css; status chips are
-   the shared <Badge> primitive (components/Badge.tsx, tone via lib/statusTone.ts). No Purchasing-only
-   rules remain — this file is kept as the module's style entry point. */
+   the shared <Badge> primitive (components/Badge.tsx, tone via lib/statusTone.ts). The only
+   Purchasing-only rules are the AI invoice-import surface below (plan session 02). */
+
+/* --- Import invoice (المساعد الذكي) — upload / reading / unreadable / review states ----------- */
+
+.pur-import-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 3rem;
+  padding-inline: 2rem;
+  text-align: center;
+  border: 1px dashed var(--color-border-strong);
+}
+
+.pur-import-drop__icon {
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  color: var(--color-text-subtle);
+}
+
+.pur-import-drop__icon .navicon {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.pur-import-drop__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.pur-import-drop__hint,
+.pur-import-drop__note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Reading progress — a quiet, decelerating sweep; stands still under reduced motion. */
+.pur-import-progress {
+  inline-size: min(16rem, 60%);
+  block-size: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+  position: relative;
+}
+
+.pur-import-progress::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -40%;
+  inline-size: 40%;
+  border-radius: inherit;
+  background: var(--color-brand);
+  animation: pur-import-sweep 1.4s var(--ease-out) infinite;
+}
+
+@keyframes pur-import-sweep {
+  to {
+    inset-inline-start: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pur-import-progress::after {
+    animation: none;
+    inset-inline-start: 0;
+    inline-size: 100%;
+    opacity: 0.4;
+  }
+}
+
+.pur-import-review-head__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.pur-import-review-head__meta {
+  margin: 0.25rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.pur-import-review-head__meta .navicon,
+.pur-import-issues-card__title .navicon,
+.pur-import-mismatch .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+}
+
+/* What the model read vs. what the user picked — always visible, quiet. */
+.pur-import-extracted {
+  display: block;
+  margin-block-start: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Keep qty/cost inputs level with the item cell, which grows taller with the extracted line and
+   the inline "add" affordance below the select. */
+.pur-import-table td {
+  vertical-align: top;
+}
+
+/* "The assistant read something we don't have yet" → create it inline, prefilled. */
+.pur-import-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 0.35rem;
+}
+
+.pur-import-suggest__btn {
+  margin-block-start: 0.4rem;
+}
+
+/* A bare NavIcon has no intrinsic size — scope it here so the add-glyph matches the button text. */
+.pur-import-suggest .navicon,
+.pur-import-suggest__btn .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  flex: none;
+}
+
+.pur-import-create {
+  margin-block-start: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.pur-import-create__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.pur-import-create__fields .pur-field {
+  min-inline-size: 8rem;
+}
+
+.pur-import-create__uom {
+  max-inline-size: 6rem;
+}
+
+.pur-import-create__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-block-start: 0.6rem;
+}
+
+.pur-import-issues-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  padding-block: 0.6rem;
+  padding-inline: 0.9rem;
+}
+
+.pur-import-issues-card__title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.pur-import-issues {
+  margin: 0.35rem 0 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.pur-import-mismatch {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-warning-strong);
+}

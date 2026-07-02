@@ -1279,3 +1279,90 @@ budget deliberately (edit the constant + this entry), never silently.
   `Idempotency-Key` header makes stock **receive** at-most-once (no state machine protects it);
   replay returns the original movement (200, not 201). Order actions need no key — the status state
   machine already rejects/no-ops replays (`complete_sale` replay is a designed no-op).
+
+## AI 2026-07 — assistant architecture (session 02, part 1)
+
+The Claude-powered assistant is the headline feature, but it must never weaken the trust
+invariants. The standing pattern (free-text-to-SQL was considered and **rejected** — it cannot
+honour RBAC/scope and invents joins):
+
+- **Thin orchestration layer** `erp/assistant/` — it never touches other modules' ORM. Every read
+  or draft goes through the same **service functions** the API uses, executed **as the current
+  user** (`actor=request.user`), so RBAC, data scopes, approval limits, and audit hold
+  automatically. The AI is just another actor with the caller's permissions.
+- **Tool-use, not free text.** The model only ever sees typed tools / a strict JSON schema; its
+  output is validated server-side before anything maps to a service call.
+- **Human-in-the-loop for writes.** The model only *drafts* (structured proposals). Part 1 goes
+  further: the extraction endpoint is **read-only** — the confirm step in the UI posts through the
+  existing `POST /purchasing/orders` endpoint, so the AI layer contains zero write paths and the
+  draft PO is created by the *user's* click under the *user's* permissions. Never auto-post money.
+- **Optional + toggleable.** `ASSISTANT_ENABLED` (default: on only when `ANTHROPIC_API_KEY` is set
+  in env — never in code). A customer install without a key runs fully, with all AI UI hidden
+  (`GET /api/assistant/status`). Endpoints return 404 when disabled — indistinguishable from absent,
+  same posture as out-of-scope records.
+- **Cost control:** per-request `max_tokens` cap (`ASSISTANT_MAX_TOKENS`); per-tenant monthly caps
+  land with Session 07 billing.
+- **Model id** is env-tunable (`ASSISTANT_MODEL`, default `claude-opus-4-8`); SDK pinned
+  `anthropic>=0.92,<1.0` — the one new dependency this session (mandated by the plan file).
+- **Uploads** reuse the Session-00 posture: hard byte cap checked before reading the file,
+  content-type allowlist (JPEG/PNG/WebP/PDF).
+- **Tests** mock the Anthropic client at the module seam (`erp.assistant.client.get_client`);
+  gates never make live calls.
+
+### AI 2026-07 addendum — Gemini as the active provider (client request, 2026-07-02)
+
+The client supplied a Gemini API key instead of an Anthropic one, so the assistant now supports
+**two providers behind the one seam** (`erp/assistant/client.py`): Anthropic (Claude) and Google
+(Gemini, via the official `google-genai` SDK). `ASSISTANT_PROVIDER` env forces one; unset, the
+provider is auto-picked by whichever key is present (`ANTHROPIC_API_KEY` wins if both). The
+extraction contract is identical — same strict JSON schema (translated to Gemini's dialect:
+type-unions → `nullable`, `additionalProperties` stripped), same designed unreadable/failure
+states, same audit + upload guards. Frontend untouched — it never knew the provider. Default
+models: `claude-opus-4-8` / `gemini-2.5-flash` (env-tunable via `ASSISTANT_MODEL`). Keys stay in
+`.env` only. Tests pin `ASSISTANT_PROVIDER` per case and mock both client seams — still no live
+calls in gates.
+
+### AI 2026-07 addendum 2 — Groq as a third provider (client request, 2026-07-02)
+
+Added Groq (fast Llama-4 inference, OpenAI-compatible) as a third provider behind the same seam,
+selected by `ASSISTANT_PROVIDER=groq` or a `GROQ_API_KEY`. No new dependency — a thin `groq_chat`
+helper over `httpx` (already present) posts to `https://api.groq.com/openai/v1/chat/completions`.
+Default model `meta-llama/llama-4-scout-17b-16e-instruct` (multimodal). Notes:
+- **Image-only**: Llama-4 vision can't read PDF, so a PDF upload on Groq returns the designed
+  unreadable state ("pdf_unsupported_on_this_provider") — the user re-uploads a photo. Anthropic and
+  Gemini still take PDF.
+- JSON-object mode (no schema param), so the exact key list is spelled out in the prompt and
+  validated our side; 3-attempt backoff retry on transient errors, same as the Gemini path.
+- Verified live end-to-end (supplier + VAT + total + line items) against a real Groq key.
+Provider count is now 3 (Anthropic / Gemini / Groq); the frontend is untouched throughout.
+
+### AI 2026-07 — assistant architecture (session 02, part 2: natural-language ask)
+
+`POST /api/assistant/ask` answers plain-language questions over the caller's **scoped** data.
+
+- **Tool-use via a JSON-mode router, not native function-calling.** Two constrained `complete_json`
+  calls (`services/llm.py`, one seam across all three providers): (1) **route** — the model picks ONE
+  typed tool + args from a fixed catalog; (2) **answer** — we run that tool and hand the real result
+  back to phrase. Chosen over each provider's bespoke tool/function-calling dialect for portability
+  (works identically on Anthropic/Gemini/Groq) and testability (tests monkeypatch one seam, zero live
+  calls). Still tool-use, never free-text-to-SQL: the model only ever *chooses* a tool.
+- **Scope-as-actor.** Tools (`tools.py`) are thin wrappers over NEW scoped read-contract helpers
+  (`sales.sales_summary / top_customers / overdue_receivables / find_orders`, `inventory.low_stock`),
+  each narrowed with `scope_queryset(actor, …, "<perm>.view")` — the same enforcement every list
+  endpoint uses. `AskView` needs only `IsAuthenticated`; a Salesperson gets their branch's numbers
+  and nothing more (scope holds; no cross-branch leak).
+- **The model narrates, it never computes.** Money is formatted server-side and citations are built
+  from the real records in `tools.py`; the answer prompt forbids inventing figures and says to quote
+  the provided values verbatim — so numbers and links are always verifiable (each answer cites the
+  records it used; the UI links them via `EntityLink` / the order detail route).
+- **Read-only.** No tool in the catalog writes. Draft-write proposal tools (`draft_sales_order`, …
+  from the plan) are deferred: part 1's invoice→draft already ships the human-in-the-loop write
+  pattern, and reads are the acceptance-critical path here. New error `AI-002`
+  (`AssistantUnavailableError`, 502, blame-free retryable).
+- **Part 3 (safety/cost/offline):** prompt-injection posture holds (question is user-role data, tools
+  validate their own args, no free SQL); per-request guard = `MAX_QUESTION_CHARS` (1000) +
+  `ASSISTANT_MAX_TOKENS`; `ASSISTANT_ENABLED` gates the endpoint (404 when off) and hides the UI (the
+  gated sidebar entry + `/assistant` page). **Streaming and the per-tenant monthly cap are deferred**
+  — non-streaming is simpler/portable/testable, and the monthly cap belongs with Session 07 billing.
+- UI: a calm `/assistant` page (المساعد الذكي) — one input, suggested questions, an answer card with
+  cited click-through links. New lexicon reuse only; parity kept (1489 keys).

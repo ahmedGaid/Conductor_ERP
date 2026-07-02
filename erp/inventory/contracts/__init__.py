@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from ..events import STOCK_ISSUED, STOCK_RECEIVED, STOCK_TRANSFERRED
 from ..repositories import items as _items
 from ..repositories import warehouses as _warehouses
+from ..services import reports as _reports
 from ..services.stock import (
     issue_stock,
     receive_stock,
@@ -34,6 +35,26 @@ def find_item(sku: str) -> ItemInfo | None:
     if item is None:
         return None
     return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active)
+
+
+def list_items(item_type: str = "stock") -> list[ItemInfo]:
+    """Light snapshot of active items of one type (for cross-module lookups/matching)."""
+    return [
+        ItemInfo(sku=i.sku, name=i.name, type=i.type, is_active=i.is_active)
+        for i in _items.filter(type=item_type, is_active=True)
+    ]
+
+
+def low_stock(*, limit: int = 20) -> list[dict]:
+    """Items whose on-hand quantity is at/below their reorder point (the AI assistant's read tool).
+
+    Inventory balances are company-wide (not user-scoped), so this reads the on-hand report directly.
+    """
+    rows = [r for r in _reports.stock_on_hand().rows if r.below_reorder]
+    return [
+        {"sku": r.sku, "name": r.item_name, "warehouse_code": r.warehouse_code, "quantity": r.quantity}
+        for r in rows[: max(1, min(limit, 50))]
+    ]
 
 
 def _resolve(sku: str, warehouse_code: str):
@@ -89,6 +110,8 @@ def return_out(sku: str, warehouse_code: str, quantity, *, date=None, reference:
 __all__ = [
     "ItemInfo",
     "find_item",
+    "list_items",
+    "low_stock",
     "issue",
     "receive",
     "return_in",

@@ -17,6 +17,7 @@
     "crm": "إدارة العملاء",
     "reports": "التقارير",
     "einvoice": "الفوترة الإلكترونية",
+    "assistant": "المساعد الذكي",
     "notifications": "الإشعارات",
     "favorites": "المفضلة",
     "administration": "الإدارة",
@@ -25,6 +26,21 @@
     "rolesAdmin": "الأدوار",
     "collapseSidebar": "طيّ الشريط الجانبي",
     "expandSidebar": "توسيع الشريط الجانبي"
+  },
+  "assistant": {
+    "title": "المساعد الذكي",
+    "subtitle": "اسأل عن مبيعاتك وتحصيلاتك ومخزونك — والإجابات من واقع سجلاتك.",
+    "placeholder": "اطرح سؤالاً…",
+    "ask": "اسأل",
+    "thinking": "يفكّر…",
+    "tryLabel": "جرّب أن تسأل",
+    "sources": "من واقع سجلاتك",
+    "suggestions": {
+      "s1": "كم بعنا هذا الشهر؟",
+      "s2": "من أكبر عملائنا؟",
+      "s3": "أي عملاء ما زالوا مدينين لنا؟",
+      "s4": "ما الأصناف التي أوشكت على النفاد؟"
+    }
   },
   "moduleIntro": {
     "accounting": "شجرة الحسابات والقيود اليومية ودفاتر الأستاذ والقوائم المالية — دفاتر المنشأة.",
@@ -811,7 +827,47 @@
       "newOrder": "أمر شراء جديد",
       "suppliers": "الموردون",
       "requests": "طلبات الشراء",
-      "newRequest": "طلب شراء جديد"
+      "newRequest": "طلب شراء جديد",
+      "importInvoice": "استيراد فاتورة"
+    },
+    "importInvoice": {
+      "dropTitle": "صوّر الفاتورة، أو أفلت صورة أو ملف PDF هنا",
+      "dropHint": "‏JPG أو PNG أو WebP أو PDF — حتى ٥ ميجابايت",
+      "choose": "اختيار ملف",
+      "aiNote": "المساعد الذكي يقرأها — وأنت من يقرر ما يُرحَّل.",
+      "reading": "المساعد الذكي يقرأ الفاتورة…",
+      "readingHint": "عادةً يستغرق الأمر ثوانيَ قليلة.",
+      "unreadableTitle": "تعذّرت قراءة هذا المستند",
+      "unreadableHint": "هذا ما استطعنا تبيّنه — صورة أوضح بإضاءة أفضل تحل الأمر غالبًا.",
+      "tryAnother": "جرّب ملفًا آخر",
+      "reviewTitle": "راجع قبل إنشاء المسودة",
+      "confidence": "دقة القراءة",
+      "confidenceLevel": {
+        "high": "عالية",
+        "medium": "متوسطة",
+        "low": "منخفضة"
+      },
+      "invoiceNumber": "رقم الفاتورة",
+      "extractedSupplier": "كما ورد في الفاتورة",
+      "taxId": "الرقم الضريبي",
+      "noSupplierMatch": "لم نجد موردًا مطابقًا — اختر موردًا، أو أضفه من هنا مباشرةً.",
+      "createSupplier": "أضف المورد «{{name}}»",
+      "createItem": "أضف الصنف «{{name}}»",
+      "codeLabel": "الرمز",
+      "nameLabel": "الاسم",
+      "uomLabel": "الوحدة",
+      "confirmCreate": "إضافة",
+      "supplierCreated": "تمت إضافة المورد «{{name}}»",
+      "itemCreated": "تمت إضافة الصنف «{{name}}»",
+      "extractedLine": "كما ورد في الفاتورة",
+      "noItemMatch": "— غير مطابق —",
+      "vatOnInvoice": "الضريبة في الفاتورة",
+      "invoiceTotals": "الإجمالي في الفاتورة",
+      "totalsMismatch": "البنود أعلاه لا تساوي إجمالي الفاتورة — راجع الكميات والأسعار.",
+      "issuesTitle": "يستحق المراجعة",
+      "createDraft": "إنشاء مسودة أمر شراء",
+      "startOver": "البدء من جديد",
+      "noteRef": "فاتورة المورد"
     },
     "status": {
       "draft": "مسودة",

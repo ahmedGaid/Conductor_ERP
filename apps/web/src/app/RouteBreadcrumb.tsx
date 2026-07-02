@@ -44,6 +44,7 @@ const SECTIONS: Record<string, Record<string, string>> = {
   purchasing: {
     orders: "purchasing.tabs.orders",
     "orders/new": "purchasing.tabs.newOrder",
+    "orders/import": "purchasing.tabs.importInvoice",
     requests: "purchasing.tabs.requests",
     "requests/new": "purchasing.tabs.newRequest",
     suppliers: "purchasing.tabs.suppliers",

@@ -66,6 +66,32 @@ export const purchaseOrderDetailGuide: HelpGuide = {
   ],
 };
 
+export const importInvoiceGuide: HelpGuide = {
+  title: { en: "Import invoice", ar: "استيراد فاتورة" },
+  purpose: {
+    en: "Turn a photo or PDF of a supplier invoice into a draft purchase order — the assistant reads it, you review and decide.",
+    ar: "حوّل صورة أو PDF لفاتورة مورد إلى مسودة أمر شراء — المساعد الذكي يقرأها، وأنت تراجع وتقرر.",
+  },
+  howItWorks: {
+    en: "Upload the document. The assistant extracts the supplier, lines, and totals, and matches them to your records. Everything is editable; nothing posts until you create the draft, which then follows the normal confirm → receive → bill path.",
+    ar: "ارفع المستند. يستخرج المساعد الذكي المورد والبنود والإجماليات ويطابقها بسجلاتك. كل شيء قابل للتعديل؛ ولا يُرحَّل شيء حتى تنشئ المسودة، ثم تتبع المسار المعتاد: تأكيد ← استلام ← فوترة.",
+  },
+  tasks: [
+    {
+      name: { en: "From photo to draft PO", ar: "من صورة إلى مسودة أمر شراء" },
+      steps: [
+        { en: "Photograph the invoice or pick a PDF (up to 5 MB).", ar: "صوّر الفاتورة أو اختر ملف PDF (حتى ٥ ميجابايت)." },
+        { en: "Check the matched supplier and lines; fix anything the assistant flagged.", ar: "تحقق من المورد والبنود المطابقة؛ وصحّح ما أشار إليه المساعد الذكي." },
+        { en: "Create the draft — it opens as a normal purchase order.", ar: "أنشئ المسودة — تُفتح كأمر شراء عادي." },
+      ],
+    },
+  ],
+  related: [
+    { to: "/purchasing", label: { en: "Purchase orders", ar: "أوامر الشراء" } },
+    { to: "/purchasing/suppliers", label: { en: "Suppliers", ar: "الموردون" } },
+  ],
+};
+
 export const purchaseRequestsGuide: HelpGuide = {
   title: { en: "Purchase requests", ar: "طلبات الشراء" },
   purpose: {

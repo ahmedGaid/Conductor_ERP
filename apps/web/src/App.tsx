@@ -53,6 +53,8 @@ import { NewQuotationPage } from "./pages/sales/NewQuotationPage";
 import { QuotationDetailPage } from "./pages/sales/QuotationDetailPage";
 import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
 import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
+import { ImportInvoicePage } from "./pages/purchasing/ImportInvoicePage";
+import { AssistantPage } from "./pages/assistant/AssistantPage";
 import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
 import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
 import { SupplierDetailPage } from "./pages/purchasing/SupplierDetailPage";
@@ -220,6 +222,7 @@ function AppRoutes() {
           <Route path="/sales/customers/:code" element={<CustomerDetailPage />} />
           <Route path="/purchasing" element={<PurchaseOrdersPage />} />
           <Route path="/purchasing/orders/new" element={<NewPurchaseOrderPage />} />
+          <Route path="/purchasing/orders/import" element={<ImportInvoicePage />} />
           <Route path="/purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
           <Route path="/purchasing/requests" element={<PurchaseRequestsPage />} />
           <Route path="/purchasing/requests/new" element={<NewPurchaseRequestPage />} />
@@ -227,6 +230,7 @@ function AppRoutes() {
           <Route path="/purchasing/suppliers" element={<SuppliersPage />} />
           <Route path="/purchasing/suppliers/:code" element={<SupplierDetailPage />} />
           <Route path="/einvoice" element={<EInvoicesPage />} />
+          <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           {/* Universal entity links resolve a business number → its UUID detail route. */}
           <Route path="/go/:type/:key" element={<ResolveRedirect />} />

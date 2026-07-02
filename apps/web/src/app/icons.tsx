@@ -118,6 +118,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M18 6 6 18" />
     </>
   ),
+  // Plus — add / create a new record inline.
+  plus: (
+    <>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </>
+  ),
   // More — horizontal kebab (overflow menu trigger).
   more: (
     <>
@@ -255,6 +262,14 @@ const PATHS: Record<string, ReactNode> = {
   ),
   // Moon — switch to dark theme (single-stroke crescent, same hand as the set).
   moon: <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />,
+  // Sparkle — the AI assistant (المساعد الذكي). Single-stroke four-point spark, same hand as the set.
+  sparkle: (
+    <>
+      <path d="M12 4l1.9 5.1L19 11l-5.1 1.9L12 18l-1.9-5.1L5 11l5.1-1.9Z" />
+      <path d="M19 16.5v3" />
+      <path d="M17.5 18h3" />
+    </>
+  ),
   // Settings — gear.
   settings: (
     <>

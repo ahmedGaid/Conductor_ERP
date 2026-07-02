@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
 import { getMe } from "../api/identity";
+import { assistantStatus } from "../api/assistant";
 import { usePreferences } from "../preferences/PreferencesContext";
 import { useAsync } from "../hooks/useAsync";
 import { SYSTEM_ADMIN } from "../pages/settings/roles";
@@ -46,6 +47,7 @@ const SOON: { key: string }[] = [{ key: "reports" }];
 export function Sidebar() {
   const { t } = useTranslation();
   const { data: me } = useAsync(getMe, []);
+  const { data: aiStatus } = useAsync(assistantStatus, [], "assistant:status");
   const { prefs, update } = usePreferences();
   const favorites = prefs?.favorites ?? [];
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
@@ -105,6 +107,26 @@ export function Sidebar() {
             </li>
           ))}
         </ul>
+
+        {aiStatus?.enabled && (
+          <ul className="sidebar__list">
+            <li>
+              <Tooltip label={t("nav.assistant")} placement="inlineEnd">
+                <NavLink
+                  to="/assistant"
+                  className={({ isActive }) =>
+                    isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                  }
+                >
+                  <span className="sidebar__icon">
+                    <NavIcon name="sparkle" />
+                  </span>
+                  <span>{t("nav.assistant")}</span>
+                </NavLink>
+              </Tooltip>
+            </li>
+          </ul>
+        )}
 
         {favorites.length > 0 && (
           <>
