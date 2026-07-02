@@ -45,5 +45,14 @@ def get_client():
 
 def get_gemini_client():
     from google import genai  # deferred: package is only needed when this provider is active
+    from google.genai import types
 
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
+    # Disable the SDK's own retry: on a transient 429/503 its tenacity loop reuses an already-closed
+    # httpx client and raises a misleading "client has been closed" RuntimeError. We retry at the
+    # service layer with a fresh client instead (erp.assistant.services.extraction._extract_gemini).
+    http_options = None
+    try:
+        http_options = types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1))
+    except Exception:  # pragma: no cover - older SDK without retry_options
+        pass
+    return genai.Client(api_key=settings.GEMINI_API_KEY, http_options=http_options)

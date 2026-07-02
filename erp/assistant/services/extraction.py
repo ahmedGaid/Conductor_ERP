@@ -14,6 +14,7 @@ from __future__ import annotations
 import base64
 import json
 import re
+import time
 from difflib import SequenceMatcher
 
 from django.conf import settings
@@ -208,22 +209,44 @@ def _gemini_schema(node):
     return node
 
 
-def _extract_gemini(data: bytes, media_type: str) -> dict:
+def _gemini_config(types):
+    cfg = dict(
+        system_instruction=_SYSTEM,
+        response_mime_type="application/json",
+        response_schema=_gemini_schema(EXTRACTION_SCHEMA),
+        max_output_tokens=settings.ASSISTANT_MAX_TOKENS,
+    )
+    # 2.5-flash is a "thinking" model: reasoning tokens draw down max_output_tokens and can leave
+    # nothing for the answer on a dense invoice. Turn thinking off for this structured-extraction
+    # task so the whole budget goes to the JSON. (Older models reject the field — ignore then.)
     try:
-        from google.genai import types
+        cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+    except Exception:  # pragma: no cover - SDK/model without thinking support
+        pass
+    return types.GenerateContentConfig(**cfg)
 
-        response = get_gemini_client().models.generate_content(
-            model=model_id(),
-            contents=[types.Part.from_bytes(data=data, mime_type=media_type), _INSTRUCTION],
-            config=types.GenerateContentConfig(
-                system_instruction=_SYSTEM,
-                response_mime_type="application/json",
-                response_schema=_gemini_schema(EXTRACTION_SCHEMA),
-                max_output_tokens=settings.ASSISTANT_MAX_TOKENS,
-            ),
-        )
-    except Exception as exc:  # network/auth/rate-limit — blame-free, retryable
-        raise ExtractionFailedError(data={"reason": exc.__class__.__name__}) from exc
+
+def _extract_gemini(data: bytes, media_type: str) -> dict:
+    from google.genai import types
+
+    # The SDK's internal retry is disabled (see get_gemini_client) because it crashes on transient
+    # 429/503. We retry here with a FRESH client and a short backoff, which smooths the low
+    # per-minute limits on free-tier keys.
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        try:
+            response = get_gemini_client().models.generate_content(
+                model=model_id(),
+                contents=[types.Part.from_bytes(data=data, mime_type=media_type), _INSTRUCTION],
+                config=_gemini_config(types),
+            )
+            break
+        except Exception as exc:  # network/auth/rate-limit — blame-free, retryable
+            last_exc = exc
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+    else:
+        raise ExtractionFailedError(data={"reason": last_exc.__class__.__name__}) from last_exc
 
     text = getattr(response, "text", None)
     if not text:
