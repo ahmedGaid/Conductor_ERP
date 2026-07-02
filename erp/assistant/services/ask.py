@@ -65,9 +65,21 @@ _ANSWER_SCHEMA = {
 _ARG_FIELDS = ("period", "query", "limit")
 
 
-def answer_question(*, question: str, actor) -> dict:
-    """One question in → {answer, citations, used_tool} out. Read-only; audit-logged."""
+def answer_question(*, question: str, actor, conversation=None) -> dict:
+    """One question in → {answer, citations, used_tool} out. Read-only; audit-logged.
+
+    When ``conversation`` is given the exchange is persisted: the user message is appended
+    before the model runs, the assistant message (with citations/tool in ``meta``) after, and
+    an empty conversation is auto-titled from the first question. Without it, behaviour is
+    identical to before — the single-shot page keeps working.
+    """
     q = (question or "").strip()[:MAX_QUESTION_CHARS]
+
+    if conversation is not None:
+        conversation.messages.create(role="user", content=q)
+        if not conversation.title:
+            conversation.title = q[:60]
+        conversation.save()  # also touches updated_at
 
     route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text()), q, _ROUTER_SCHEMA)
     name = route.get("tool") or "none"
@@ -89,6 +101,13 @@ def answer_question(*, question: str, actor) -> dict:
         _ANSWER_SCHEMA,
     )
     answer = (answer_obj.get("answer") or "").strip()
+
+    if conversation is not None:
+        conversation.messages.create(
+            role="assistant", content=answer,
+            meta={"citations": citations, "used_tool": used},
+        )
+        conversation.save()  # touch updated_at after the reply lands
 
     audit.record(
         module="assistant", action="ask", entity_type="Question", entity_id=used or "none",

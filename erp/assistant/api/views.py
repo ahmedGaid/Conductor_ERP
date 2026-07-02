@@ -6,7 +6,9 @@ absent, the same posture as out-of-scope records — and the UI hides all AI sur
 """
 from __future__ import annotations
 
+from django.db.models import Q
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -18,6 +20,7 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from .. import client, services
+from ..models import Conversation
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
 
@@ -85,4 +88,99 @@ class AskView(APIView):
                 "That question is too long.",
                 data={"max_chars": MAX_QUESTION_CHARS, "length": len(question)},
             )
-        return _envelope(services.answer_question(question=question, actor=request.user))
+        conversation = None
+        conversation_id = request.data.get("conversation_id")
+        if conversation_id is not None:
+            # Owned by the caller, else indistinguishable from absent (404, not 403).
+            conversation = get_object_or_404(Conversation, pk=conversation_id, user=request.user)
+        return _envelope(services.answer_question(
+            question=question, actor=request.user, conversation=conversation,
+        ))
+
+
+def _first_line(conversation: Conversation) -> str:
+    first = conversation.messages.first()
+    return (first.content.splitlines()[0][:100] if first and first.content else "")
+
+
+def _summary(conversation: Conversation) -> dict:
+    return {
+        "id": conversation.id,
+        "title": conversation.title,
+        "pinned": conversation.pinned,
+        "archived": conversation.archived,
+        "updated_at": conversation.updated_at.isoformat(),
+        "preview": _first_line(conversation),
+    }
+
+
+def _detail(conversation: Conversation) -> dict:
+    return {
+        **_summary(conversation),
+        "created_at": conversation.created_at.isoformat(),
+        "messages": [
+            {
+                "id": m.id,
+                "role": m.role,
+                "content": m.content,
+                "meta": m.meta,
+                "created_at": m.created_at.isoformat(),
+            }
+            for m in conversation.messages.all()
+        ],
+    }
+
+
+class ConversationsView(APIView):
+    """List / create the caller's own conversations. Private per owner."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        qs = Conversation.objects.filter(user=request.user)
+        if request.query_params.get("archived") == "1":
+            qs = qs.filter(archived=True)
+        else:
+            qs = qs.filter(archived=False)
+        q = (request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(title__icontains=q) | Q(messages__content__icontains=q)
+            ).distinct()
+        return _envelope([_summary(c) for c in qs])
+
+    def post(self, request: Request) -> Response:
+        conversation = Conversation.objects.create(
+            user=request.user, title=(request.data.get("title") or "").strip()[:200],
+        )
+        return _envelope(_detail(conversation), status=201)
+
+
+class ConversationDetailView(APIView):
+    """Read / patch (title, pinned, archived) / delete one owned conversation."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _get(self, request: Request, pk: int) -> Conversation:
+        return get_object_or_404(Conversation, pk=pk, user=request.user)
+
+    def get(self, request: Request, pk: int) -> Response:
+        return _envelope(_detail(self._get(request, pk)))
+
+    def patch(self, request: Request, pk: int) -> Response:
+        conversation = self._get(request, pk)
+        fields: list[str] = []
+        if "title" in request.data:
+            conversation.title = (request.data.get("title") or "").strip()[:200]
+            fields.append("title")
+        for flag in ("pinned", "archived"):
+            if flag in request.data:
+                setattr(conversation, flag, bool(request.data.get(flag)))
+                fields.append(flag)
+        if fields:
+            conversation.save(update_fields=[*fields, "updated_at"])
+        return _envelope(_detail(conversation))
+
+    def delete(self, request: Request, pk: int) -> Response:
+        self._get(request, pk).delete()
+        return Response(status=204)
