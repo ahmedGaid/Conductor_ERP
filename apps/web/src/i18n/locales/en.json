@@ -811,7 +811,39 @@
       "newOrder": "New PO",
       "suppliers": "Suppliers",
       "requests": "Requests",
-      "newRequest": "New request"
+      "newRequest": "New request",
+      "importInvoice": "Import invoice"
+    },
+    "importInvoice": {
+      "dropTitle": "Photograph the invoice, or drop an image or PDF here",
+      "dropHint": "JPG, PNG, WebP or PDF — up to 5 MB",
+      "choose": "Choose a file",
+      "aiNote": "The assistant reads it — you decide what gets posted.",
+      "reading": "The assistant is reading the invoice…",
+      "readingHint": "This usually takes a few seconds.",
+      "unreadableTitle": "We couldn't read this document",
+      "unreadableHint": "Here's what we could make out — a sharper, well-lit photo usually does it.",
+      "tryAnother": "Try another file",
+      "reviewTitle": "Review before creating the draft",
+      "confidence": "Reading confidence",
+      "confidenceLevel": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "invoiceNumber": "Invoice no.",
+      "extractedSupplier": "On the invoice",
+      "taxId": "Tax ID",
+      "noSupplierMatch": "No matching supplier found — pick one, or add it under Suppliers first.",
+      "extractedLine": "On the invoice",
+      "noItemMatch": "— not matched —",
+      "vatOnInvoice": "VAT on the invoice",
+      "invoiceTotals": "Total on the invoice",
+      "totalsMismatch": "The lines above don't add up to the invoice total — check the quantities and prices.",
+      "issuesTitle": "Worth checking",
+      "createDraft": "Create draft PO",
+      "startOver": "Start over",
+      "noteRef": "Supplier invoice"
     },
     "status": {
       "draft": "Draft",

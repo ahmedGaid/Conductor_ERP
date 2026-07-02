@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "erp.einvoice",
     "erp.notifications",
     "erp.setup",
+    "erp.assistant",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -213,6 +214,14 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 
 REDIS_URL = _redis_url
+
+# --- AI assistant (plan session 02; optional layer — see DECISIONS.md "AI 2026-07") ---
+# Off unless an API key is present: a customer install with no key runs fully, AI UI hidden.
+# The key lives in env only, never in code or the DB.
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+ASSISTANT_ENABLED = env.bool("ASSISTANT_ENABLED", default=bool(ANTHROPIC_API_KEY))
+ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="claude-opus-4-8")
+ASSISTANT_MAX_TOKENS = env.int("ASSISTANT_MAX_TOKENS", default=4096)  # per-request cost cap
 
 # --- Workflow egress (SSRF guard) ---
 # Optional host-suffix allowlist for workflow REST/webhook nodes. Empty = any PUBLIC host (private/

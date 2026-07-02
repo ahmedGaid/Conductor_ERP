@@ -53,6 +53,7 @@ import { NewQuotationPage } from "./pages/sales/NewQuotationPage";
 import { QuotationDetailPage } from "./pages/sales/QuotationDetailPage";
 import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
 import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
+import { ImportInvoicePage } from "./pages/purchasing/ImportInvoicePage";
 import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
 import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
 import { SupplierDetailPage } from "./pages/purchasing/SupplierDetailPage";
@@ -220,6 +221,7 @@ function AppRoutes() {
           <Route path="/sales/customers/:code" element={<CustomerDetailPage />} />
           <Route path="/purchasing" element={<PurchaseOrdersPage />} />
           <Route path="/purchasing/orders/new" element={<NewPurchaseOrderPage />} />
+          <Route path="/purchasing/orders/import" element={<ImportInvoicePage />} />
           <Route path="/purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
           <Route path="/purchasing/requests" element={<PurchaseRequestsPage />} />
           <Route path="/purchasing/requests/new" element={<NewPurchaseRequestPage />} />

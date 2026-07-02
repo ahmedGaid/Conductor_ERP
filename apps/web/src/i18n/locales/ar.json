@@ -811,7 +811,39 @@
       "newOrder": "أمر شراء جديد",
       "suppliers": "الموردون",
       "requests": "طلبات الشراء",
-      "newRequest": "طلب شراء جديد"
+      "newRequest": "طلب شراء جديد",
+      "importInvoice": "استيراد فاتورة"
+    },
+    "importInvoice": {
+      "dropTitle": "صوّر الفاتورة، أو أفلت صورة أو ملف PDF هنا",
+      "dropHint": "‏JPG أو PNG أو WebP أو PDF — حتى ٥ ميجابايت",
+      "choose": "اختيار ملف",
+      "aiNote": "المساعد الذكي يقرأها — وأنت من يقرر ما يُرحَّل.",
+      "reading": "المساعد الذكي يقرأ الفاتورة…",
+      "readingHint": "عادةً يستغرق الأمر ثوانيَ قليلة.",
+      "unreadableTitle": "تعذّرت قراءة هذا المستند",
+      "unreadableHint": "هذا ما استطعنا تبيّنه — صورة أوضح بإضاءة أفضل تحل الأمر غالبًا.",
+      "tryAnother": "جرّب ملفًا آخر",
+      "reviewTitle": "راجع قبل إنشاء المسودة",
+      "confidence": "دقة القراءة",
+      "confidenceLevel": {
+        "high": "عالية",
+        "medium": "متوسطة",
+        "low": "منخفضة"
+      },
+      "invoiceNumber": "رقم الفاتورة",
+      "extractedSupplier": "كما ورد في الفاتورة",
+      "taxId": "الرقم الضريبي",
+      "noSupplierMatch": "لم نجد موردًا مطابقًا — اختر موردًا، أو أضفه أولًا من صفحة الموردين.",
+      "extractedLine": "كما ورد في الفاتورة",
+      "noItemMatch": "— غير مطابق —",
+      "vatOnInvoice": "الضريبة في الفاتورة",
+      "invoiceTotals": "الإجمالي في الفاتورة",
+      "totalsMismatch": "البنود أعلاه لا تساوي إجمالي الفاتورة — راجع الكميات والأسعار.",
+      "issuesTitle": "يستحق المراجعة",
+      "createDraft": "إنشاء مسودة أمر شراء",
+      "startOver": "البدء من جديد",
+      "noteRef": "فاتورة المورد"
     },
     "status": {
       "draft": "مسودة",

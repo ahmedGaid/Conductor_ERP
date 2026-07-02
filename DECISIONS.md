@@ -1279,3 +1279,32 @@ budget deliberately (edit the constant + this entry), never silently.
   `Idempotency-Key` header makes stock **receive** at-most-once (no state machine protects it);
   replay returns the original movement (200, not 201). Order actions need no key — the status state
   machine already rejects/no-ops replays (`complete_sale` replay is a designed no-op).
+
+## AI 2026-07 — assistant architecture (session 02, part 1)
+
+The Claude-powered assistant is the headline feature, but it must never weaken the trust
+invariants. The standing pattern (free-text-to-SQL was considered and **rejected** — it cannot
+honour RBAC/scope and invents joins):
+
+- **Thin orchestration layer** `erp/assistant/` — it never touches other modules' ORM. Every read
+  or draft goes through the same **service functions** the API uses, executed **as the current
+  user** (`actor=request.user`), so RBAC, data scopes, approval limits, and audit hold
+  automatically. The AI is just another actor with the caller's permissions.
+- **Tool-use, not free text.** The model only ever sees typed tools / a strict JSON schema; its
+  output is validated server-side before anything maps to a service call.
+- **Human-in-the-loop for writes.** The model only *drafts* (structured proposals). Part 1 goes
+  further: the extraction endpoint is **read-only** — the confirm step in the UI posts through the
+  existing `POST /purchasing/orders` endpoint, so the AI layer contains zero write paths and the
+  draft PO is created by the *user's* click under the *user's* permissions. Never auto-post money.
+- **Optional + toggleable.** `ASSISTANT_ENABLED` (default: on only when `ANTHROPIC_API_KEY` is set
+  in env — never in code). A customer install without a key runs fully, with all AI UI hidden
+  (`GET /api/assistant/status`). Endpoints return 404 when disabled — indistinguishable from absent,
+  same posture as out-of-scope records.
+- **Cost control:** per-request `max_tokens` cap (`ASSISTANT_MAX_TOKENS`); per-tenant monthly caps
+  land with Session 07 billing.
+- **Model id** is env-tunable (`ASSISTANT_MODEL`, default `claude-opus-4-8`); SDK pinned
+  `anthropic>=0.92,<1.0` — the one new dependency this session (mandated by the plan file).
+- **Uploads** reuse the Session-00 posture: hard byte cap checked before reading the file,
+  content-type allowlist (JPEG/PNG/WebP/PDF).
+- **Tests** mock the Anthropic client at the module seam (`erp.assistant.client.get_client`);
+  gates never make live calls.

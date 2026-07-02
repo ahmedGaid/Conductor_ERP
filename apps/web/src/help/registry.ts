@@ -61,6 +61,7 @@ import {
   quotationsGuide,
 } from "./content/sales";
 import {
+  importInvoiceGuide,
   newPurchaseOrderGuide,
   newPurchaseRequestGuide,
   purchaseOrderDetailGuide,
@@ -135,6 +136,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/sales/customers/:code": customerDetailGuide,
   "/purchasing": purchaseOrdersGuide,
   "/purchasing/orders/new": newPurchaseOrderGuide,
+  "/purchasing/orders/import": importInvoiceGuide,
   "/purchasing/orders/:id": purchaseOrderDetailGuide,
   "/purchasing/requests": purchaseRequestsGuide,
   "/purchasing/requests/new": newPurchaseRequestGuide,

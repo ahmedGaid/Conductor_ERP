@@ -36,6 +36,14 @@ def find_item(sku: str) -> ItemInfo | None:
     return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active)
 
 
+def list_items(item_type: str = "stock") -> list[ItemInfo]:
+    """Light snapshot of active items of one type (for cross-module lookups/matching)."""
+    return [
+        ItemInfo(sku=i.sku, name=i.name, type=i.type, is_active=i.is_active)
+        for i in _items.filter(type=item_type, is_active=True)
+    ]
+
+
 def _resolve(sku: str, warehouse_code: str):
     item = _items.by_sku(sku)
     if item is None:
@@ -89,6 +97,7 @@ def return_out(sku: str, warehouse_code: str, quantity, *, date=None, reference:
 __all__ = [
     "ItemInfo",
     "find_item",
+    "list_items",
     "issue",
     "receive",
     "return_in",
