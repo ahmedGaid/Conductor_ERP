@@ -81,7 +81,8 @@ import { CampaignDetailPage } from "./pages/crm/CampaignDetailPage";
 import type { ReactNode } from "react";
 
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, restoring } = useAuth();
+  if (restoring) return null; // boot-time cookie→token restore in flight — don't flash /login
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

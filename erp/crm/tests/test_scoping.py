@@ -44,3 +44,22 @@ def test_branch_scope_isolates_leads():
     seen = set(scope_queryset(mgr_a, Lead.objects.all(), VIEW).values_list("id", flat=True))
     assert seen == {lead_a.id, lead_null.id}
     assert lead_b.id not in seen
+
+
+def test_lead_actions_404_outside_scope():
+    from rest_framework.test import APIClient
+
+    a = Branch.objects.create(code="BR-A", name="Alpha")
+    b = Branch.objects.create(code="BR-B", name="Beta")
+    mgr_a = _manager("crm_a", a)
+    mgr_b = _manager("crm_b", b)
+    lead_a = services.create_lead(name="Lead A", actor=mgr_a)
+    lead_b = services.create_lead(name="Lead B", actor=mgr_b)
+
+    client = APIClient()
+    client.force_authenticate(user=mgr_a)
+    ok = client.post(f"/api/crm/leads/{lead_a.id}/status", {"status": "contacted"}, format="json")
+    assert ok.status_code == 200
+    # Out of scope reads as absent — 404, never 403 (existence must not leak).
+    denied = client.post(f"/api/crm/leads/{lead_b.id}/status", {"status": "contacted"}, format="json")
+    assert denied.status_code == 404

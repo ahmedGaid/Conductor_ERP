@@ -45,7 +45,10 @@ def test_login_success_returns_tokens_and_audits(client, accountant):
     resp = _login(client, "acct", "pw12345!")
     assert resp.status_code == 200
     data = resp.json()["data"]
-    assert "access" in data and "refresh" in data
+    # Access token in the body; the refresh token lives ONLY in an HttpOnly cookie (XSS-safe).
+    assert "access" in data
+    assert "refresh" not in data
+    assert resp.cookies["erp_refresh"]["httponly"]
     # An audit row was written for the login, carrying a correlation id.
     entry = AuditEntry.objects.filter(action="login", module="identity").latest("created_at")
     assert entry.result == "success"

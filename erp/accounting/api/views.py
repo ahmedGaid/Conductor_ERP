@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from erp.core.exports import EXPORT_FORMATS, export_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
+from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import (
@@ -66,6 +67,13 @@ _LINES_PREFETCH = Prefetch(
 
 def _envelope(data, status: int = 200) -> Response:
     return Response({"data": data}, status=status)
+
+
+# Transactional records (journals, statements, budgets, assets, report definitions) are scoped to
+# the requester; masters (accounts, periods, tax codes, cost centers) stay org-wide reference data.
+# List and detail share the scoped queryset, so an out-of-scope record 404s instead of leaking.
+def _scoped(request: Request, qs, entity: str):
+    return scope_queryset(request.user, qs, f"accounting.{entity}.view")
 
 
 class AccountListCreateView(APIView):
@@ -145,10 +153,12 @@ class JournalListPostView(APIView):
 
     def get(self, request: Request) -> Response:
         # Prefetch lines (+ their account) so serializing N entries stays O(1) queries, not O(N).
-        qs = (
+        qs = _scoped(
+            request,
             JournalEntry.objects.select_related("period")
             .prefetch_related(_LINES_PREFETCH)
-            .order_by("-date", "-number")
+            .order_by("-date", "-number"),
+            "journal",
         )
         period = request.query_params.get("period")
         if period:
@@ -189,7 +199,9 @@ class JournalDetailView(APIView):
 
     def get(self, request: Request, entry_id) -> Response:
         entry = get_object_or_404(
-            JournalEntry.objects.select_related("period").prefetch_related(_LINES_PREFETCH),
+            _scoped(request,
+                    JournalEntry.objects.select_related("period").prefetch_related(_LINES_PREFETCH),
+                    "journal"),
             id=entry_id,
         )
         return _envelope(JournalEntrySerializer(entry).data)
@@ -356,7 +368,7 @@ class BankStatementListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request) -> Response:
-        qs = BankStatement.objects.all().order_by("-statement_date")
+        qs = _scoped(request, BankStatement.objects.all().order_by("-statement_date"), "bank_statement")
         return _envelope([_statement_dict(s) for s in qs])
 
     def post(self, request: Request) -> Response:
@@ -383,7 +395,7 @@ class BankStatementDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request, statement_id) -> Response:
-        statement = get_object_or_404(BankStatement, id=statement_id)
+        statement = get_object_or_404(_scoped(request, BankStatement.objects.all(), "bank_statement"), id=statement_id)
         return _envelope(_statement_dict(statement, with_reconciliation=True))
 
 
@@ -391,7 +403,7 @@ class BankStatementAutoMatchView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def post(self, request: Request, statement_id) -> Response:
-        statement = get_object_or_404(BankStatement, id=statement_id)
+        statement = get_object_or_404(_scoped(request, BankStatement.objects.all(), "bank_statement"), id=statement_id)
         matched = services.auto_match(statement)
         data = _statement_dict(statement, with_reconciliation=True)
         data["matched"] = matched
@@ -402,7 +414,7 @@ class BankStatementAdjustmentView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def post(self, request: Request, statement_id) -> Response:
-        statement = get_object_or_404(BankStatement, id=statement_id)
+        statement = get_object_or_404(_scoped(request, BankStatement.objects.all(), "bank_statement"), id=statement_id)
         s = BankAdjustmentSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         v = s.validated_data
@@ -418,7 +430,7 @@ class BankStatementReconcileView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def post(self, request: Request, statement_id) -> Response:
-        statement = get_object_or_404(BankStatement, id=statement_id)
+        statement = get_object_or_404(_scoped(request, BankStatement.objects.all(), "bank_statement"), id=statement_id)
         services.mark_reconciled(statement)
         return _envelope(_statement_dict(statement, with_reconciliation=True))
 
@@ -430,7 +442,7 @@ class BankStatementCandidatesView(APIView):
     def get(self, request: Request, statement_id) -> Response:
         from ..services.bank_rec import _candidate_gl_lines
 
-        statement = get_object_or_404(BankStatement, id=statement_id)
+        statement = get_object_or_404(_scoped(request, BankStatement.objects.all(), "bank_statement"), id=statement_id)
         rows = _candidate_gl_lines(statement).order_by("entry__date", "entry__number", "line_no")
         return _envelope([
             {"id": gl.id, "date": gl.entry.date, "entry_number": gl.entry.number,
@@ -443,7 +455,12 @@ class BankLineMatchView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def post(self, request: Request, line_id) -> Response:
-        line = get_object_or_404(BankStatementLine, id=line_id)
+        line = get_object_or_404(
+            BankStatementLine.objects.filter(
+                statement__in=_scoped(request, BankStatement.objects.all(), "bank_statement")
+            ),
+            id=line_id,
+        )
         s = BankMatchSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         gl_line = get_object_or_404(JournalLine.objects.select_related("account"),
@@ -452,7 +469,12 @@ class BankLineMatchView(APIView):
         return _envelope(_statement_dict(line.statement, with_reconciliation=True))
 
     def delete(self, request: Request, line_id) -> Response:
-        line = get_object_or_404(BankStatementLine, id=line_id)
+        line = get_object_or_404(
+            BankStatementLine.objects.filter(
+                statement__in=_scoped(request, BankStatement.objects.all(), "bank_statement")
+            ),
+            id=line_id,
+        )
         services.unmatch_line(line)
         return _envelope(_statement_dict(line.statement, with_reconciliation=True))
 
@@ -461,7 +483,8 @@ class ReportDefinitionListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request) -> Response:
-        return _envelope(ReportDefinitionSerializer(ReportDefinition.objects.all(), many=True).data)
+        return _envelope(ReportDefinitionSerializer(
+            _scoped(request, ReportDefinition.objects.all(), "report"), many=True).data)
 
     def post(self, request: Request) -> Response:
         s = ReportDefinitionSerializer(data=request.data)
@@ -473,6 +496,9 @@ class ReportDefinitionListCreateView(APIView):
             date_to=v.get("date_to"), group_by=v.get("group_by", "account"),
             schedule=v.get("schedule", "none"),
             created_by=request.user if request.user.is_authenticated else None,
+            branch=request.user.branch if request.user.is_authenticated else None,
+            department=request.user.department if request.user.is_authenticated else None,
+            team=request.user.team if request.user.is_authenticated else None,
         )
         return _envelope(ReportDefinitionSerializer(defn).data, status=201)
 
@@ -481,10 +507,12 @@ class ReportDefinitionDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request, definition_id) -> Response:
-        return _envelope(ReportDefinitionSerializer(get_object_or_404(ReportDefinition, id=definition_id)).data)
+        return _envelope(ReportDefinitionSerializer(get_object_or_404(
+            _scoped(request, ReportDefinition.objects.all(), "report"), id=definition_id)).data)
 
     def delete(self, request: Request, definition_id) -> Response:
-        get_object_or_404(ReportDefinition, id=definition_id).delete()
+        get_object_or_404(_scoped(request, ReportDefinition.objects.all(), "report"),
+                          id=definition_id).delete()
         return _envelope({"deleted": True})
 
 
@@ -492,7 +520,8 @@ class ReportDefinitionRunView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request, definition_id) -> Response:
-        defn = get_object_or_404(ReportDefinition, id=definition_id)
+        defn = get_object_or_404(_scoped(request, ReportDefinition.objects.all(), "report"),
+                                 id=definition_id)
         built = services.run_definition(defn)
         fmt = request.query_params.get("export")
         if fmt in EXPORT_FORMATS:
@@ -515,7 +544,8 @@ class BudgetListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request) -> Response:
-        return _envelope(BudgetSerializer(Budget.objects.all(), many=True).data)
+        return _envelope(BudgetSerializer(_scoped(request, Budget.objects.all(), "budget"),
+                                          many=True).data)
 
     def post(self, request: Request) -> Response:
         s = BudgetSerializer(data=request.data)
@@ -531,7 +561,7 @@ class BudgetDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request, budget_id) -> Response:
-        budget = get_object_or_404(Budget, id=budget_id)
+        budget = get_object_or_404(_scoped(request, Budget.objects.all(), "budget"), id=budget_id)
         data = BudgetSerializer(budget).data
         data["lines"] = [
             {"account_code": ln.account_code, "period_code": ln.period_code,
@@ -545,7 +575,7 @@ class BudgetLineSetView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def post(self, request: Request, budget_id) -> Response:
-        budget = get_object_or_404(Budget, id=budget_id)
+        budget = get_object_or_404(_scoped(request, Budget.objects.all(), "budget"), id=budget_id)
         s = BudgetLineSetSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         v = s.validated_data
@@ -557,7 +587,7 @@ class BudgetVsActualView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request, budget_id) -> Response:
-        budget = get_object_or_404(Budget, id=budget_id)
+        budget = get_object_or_404(_scoped(request, Budget.objects.all(), "budget"), id=budget_id)
         bva = services.budget_vs_actual(budget, period_code=request.query_params.get("period") or None)
         fmt = request.query_params.get("export")
         if fmt in EXPORT_FORMATS:
@@ -615,7 +645,7 @@ class FixedAssetListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request) -> Response:
-        qs = FixedAsset.objects.all().order_by("code")
+        qs = _scoped(request, FixedAsset.objects.all().order_by("code"), "fixed_asset")
         status_filter = request.query_params.get("status")
         if status_filter:
             qs = qs.filter(status=status_filter)
@@ -646,7 +676,7 @@ class FixedAssetDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def get(self, request: Request, code: str) -> Response:
-        asset = get_object_or_404(FixedAsset, code=code)
+        asset = get_object_or_404(_scoped(request, FixedAsset.objects.all(), "fixed_asset"), code=code)
         return _envelope(FixedAssetSerializer(asset).data)
 
 
@@ -654,7 +684,7 @@ class FixedAssetDisposeView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
     def post(self, request: Request, code: str) -> Response:
-        asset = get_object_or_404(FixedAsset, code=code)
+        asset = get_object_or_404(_scoped(request, FixedAsset.objects.all(), "fixed_asset"), code=code)
         s = AssetDisposeSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         v = s.validated_data

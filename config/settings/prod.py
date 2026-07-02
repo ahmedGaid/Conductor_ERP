@@ -50,6 +50,18 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Content-Security-Policy for the Django-served SPA + admin. Everything is self-hosted (no CDN,
+# a hard brand rule), so 'self' covers scripts/fonts/styles; 'unsafe-inline' applies to STYLES
+# only (React style attributes), never scripts. Env-overridable per deployment; empty disables.
+CSP_POLICY = env(
+    "DJANGO_CSP_POLICY",
+    default=(
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; "
+        "base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    ),
+)
+
 # CSRF: trust the configured public origin(s) for unsafe requests (empty by default).
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 

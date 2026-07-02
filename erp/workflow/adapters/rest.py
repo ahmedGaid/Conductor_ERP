@@ -9,6 +9,7 @@ import json
 import urllib.error
 import urllib.request
 
+from .egress import EgressBlockedError, assert_public_url
 from .types import AdapterCall, AdapterResult
 
 DEFAULT_TIMEOUT = 10.0
@@ -21,6 +22,12 @@ class RestAdapter:
         cfg = call.config
         method = str(cfg.get("method", "GET")).upper()
         url = cfg["url"]
+        # SSRF guard: default-deny egress to loopback/private/metadata addresses. The webhook
+        # adapter delegates here, so this one check covers both. Fails as a node result, not a raise.
+        try:
+            assert_public_url(url)
+        except EgressBlockedError as exc:
+            return AdapterResult(ok=False, error=str(exc))
         headers = dict(cfg.get("headers") or {})
         body = cfg.get("body", call.payload)
 

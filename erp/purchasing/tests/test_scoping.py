@@ -59,3 +59,25 @@ def test_branch_scope_isolates_purchase_orders():
     seen = set(scope_queryset(mgr_a, PurchaseOrder.objects.all(), VIEW).values_list("id", flat=True))
     assert seen == {po_a.id, po_null.id}
     assert po_b.id not in seen
+
+
+def test_po_detail_and_actions_404_outside_scope():
+    from rest_framework.test import APIClient
+
+    make_books()
+    make_item()
+    make_warehouse()
+    supplier = make_supplier()
+    a = Branch.objects.create(code="BR-A", name="Alpha")
+    b = Branch.objects.create(code="BR-B", name="Beta")
+    mgr_a = _manager("buy_a", a)
+    mgr_b = _manager("buy_b", b)
+    po_a = _po(mgr_a, supplier)
+    po_b = _po(mgr_b, supplier)
+
+    client = APIClient()
+    client.force_authenticate(user=mgr_a)
+    assert client.get(f"/api/purchasing/orders/{po_a.id}").status_code == 200
+    # Out of scope reads as absent — 404, never 403 (existence must not leak).
+    assert client.get(f"/api/purchasing/orders/{po_b.id}").status_code == 404
+    assert client.post(f"/api/purchasing/orders/{po_b.id}/confirm").status_code == 404

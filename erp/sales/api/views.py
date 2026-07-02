@@ -43,6 +43,13 @@ def _order_qs():
     return SalesOrder.objects.select_related("customer").prefetch_related("lines")
 
 
+# List/detail and action fetches share the scoped queryset, so an out-of-scope order 404s
+# (indistinguishable from absent) rather than leaking existence. Actions pass the bare model:
+# the prefetched `lines` cache would go stale once the service mutates them.
+def _scoped_orders(request: Request, base=None):
+    return scope_queryset(request.user, base if base is not None else _order_qs(), "sales.order.view")
+
+
 class CustomerListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
@@ -89,8 +96,7 @@ class OrderListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def get(self, request: Request) -> Response:
-        qs = _order_qs().order_by("-order_date", "-created_at")
-        qs = scope_queryset(request.user, qs, "sales.order.view")
+        qs = _scoped_orders(request).order_by("-order_date", "-created_at")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         if request.query_params.get("customer"):
@@ -126,7 +132,7 @@ class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def get(self, request: Request, order_id) -> Response:
-        return _envelope(OrderSerializer(get_object_or_404(_order_qs(), id=order_id)).data)
+        return _envelope(OrderSerializer(get_object_or_404(_scoped_orders(request), id=order_id)).data)
 
 
 # Audit action → workflow tracker stage key (see apps/web/src/lib/workflow.ts). Approval gates the
@@ -148,7 +154,7 @@ class OrderHistoryView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def get(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(SalesOrder, id=order_id)
+        order = get_object_or_404(_scoped_orders(request, SalesOrder.objects.all()), id=order_id)
         return _envelope(order_history("SalesOrder", order.number, _SALES_STAGE))
 
 
@@ -157,7 +163,7 @@ class _OrderActionView(APIView):
     action = ""
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(SalesOrder, id=order_id)
+        order = get_object_or_404(_scoped_orders(request, SalesOrder.objects.all()), id=order_id)
         fn = getattr(services, self.action)
         fn(order, actor=request.user)
         return _envelope(OrderSerializer(_order_qs().get(id=order.id)).data)
@@ -189,7 +195,7 @@ class OrderDeliverView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(SalesOrder, id=order_id)
+        order = get_object_or_404(_scoped_orders(request, SalesOrder.objects.all()), id=order_id)
         s = LinesActionSerializer(data=request.data or {})
         s.is_valid(raise_exception=True)
         services.deliver_order(order, delivered=s.as_map(), actor=request.user)
@@ -200,7 +206,7 @@ class OrderReturnView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(SalesOrder, id=order_id)
+        order = get_object_or_404(_scoped_orders(request, SalesOrder.objects.all()), id=order_id)
         s = LinesActionSerializer(data=request.data or {})
         s.is_valid(raise_exception=True)
         services.return_order(order, returned=s.as_map(), actor=request.user)
@@ -211,7 +217,7 @@ class OrderPaymentView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def post(self, request: Request, order_id) -> Response:
-        order = get_object_or_404(SalesOrder, id=order_id)
+        order = get_object_or_404(_scoped_orders(request, SalesOrder.objects.all()), id=order_id)
         s = PaymentSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.receive_payment(order, s.validated_data["amount"], actor=request.user)
@@ -224,12 +230,16 @@ def _quote_qs():
     return Quotation.objects.select_related("customer").prefetch_related("lines")
 
 
+def _scoped_quotes(request: Request, base=None):
+    return scope_queryset(request.user, base if base is not None else _quote_qs(),
+                          "sales.quotation.view")
+
+
 class QuotationListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def get(self, request: Request) -> Response:
-        qs = _quote_qs().order_by("-quote_date", "-created_at")
-        qs = scope_queryset(request.user, qs, "sales.quotation.view")
+        qs = _scoped_quotes(request).order_by("-quote_date", "-created_at")
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         return _envelope(QuotationSerializer(qs[:200], many=True).data)
@@ -259,7 +269,7 @@ class QuotationDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def get(self, request: Request, quote_id) -> Response:
-        return _envelope(QuotationSerializer(get_object_or_404(_quote_qs(), id=quote_id)).data)
+        return _envelope(QuotationSerializer(get_object_or_404(_scoped_quotes(request), id=quote_id)).data)
 
 
 class _QuotationActionView(APIView):
@@ -267,7 +277,7 @@ class _QuotationActionView(APIView):
     action = ""
 
     def post(self, request: Request, quote_id) -> Response:
-        quote = get_object_or_404(Quotation, id=quote_id)
+        quote = get_object_or_404(_scoped_quotes(request, Quotation.objects.all()), id=quote_id)
         getattr(services, self.action)(quote, actor=request.user)
         return _envelope(QuotationSerializer(_quote_qs().get(id=quote.id)).data)
 
@@ -284,7 +294,7 @@ class QuotationRejectView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def post(self, request: Request, quote_id) -> Response:
-        quote = get_object_or_404(Quotation, id=quote_id)
+        quote = get_object_or_404(_scoped_quotes(request, Quotation.objects.all()), id=quote_id)
         s = RejectSerializer(data=request.data or {})
         s.is_valid(raise_exception=True)
         services.reject_quotation(quote, reason=s.validated_data.get("reason", ""), actor=request.user)
@@ -295,7 +305,7 @@ class QuotationConvertView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def post(self, request: Request, quote_id) -> Response:
-        quote = get_object_or_404(Quotation, id=quote_id)
+        quote = get_object_or_404(_scoped_quotes(request, Quotation.objects.all()), id=quote_id)
         order = services.convert_quotation(quote, actor=request.user)
         return _envelope(
             {"quotation": QuotationSerializer(_quote_qs().get(id=quote.id)).data,

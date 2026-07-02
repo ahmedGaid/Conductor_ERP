@@ -384,6 +384,9 @@ def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
         "customer_code": order.customer.code, "customer_name": order.customer.name,
         "date": dt.date.today().isoformat(), "currency": order.currency,
         "tax_code": order.tax_code, "net_minor": net, "tax_minor": vat, "total_minor": gross,
+        # Branch of the source order (a business key — subscribers never FK into sales) so the
+        # recorded e-invoice inherits the order's data scope.
+        "branch_code": order.branch.code if order.branch_id else "",
     })
     return order
 

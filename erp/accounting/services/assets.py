@@ -74,6 +74,9 @@ def acquire_asset(data: AssetInput, actor=None) -> FixedAsset:
         accumulated_account_code=data.accumulated_account_code,
         expense_account_code=data.expense_account_code,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     entry = post_journal(
         JournalInput(

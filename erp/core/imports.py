@@ -63,11 +63,15 @@ def read_table(raw: bytes) -> tuple[list[str], list[dict[str, str]]]:
     text = unicodedata.normalize("NFC", decode_csv(raw))
     sample = "\n".join(text.splitlines()[:10])
     reader = csv.DictReader(io.StringIO(text), delimiter=_sniff_delimiter(sample))
-    headers = [(h or "").strip() for h in (reader.fieldnames or [])]
-    rows: list[dict[str, str]] = []
-    for raw_row in reader:
-        # csv.DictReader puts overflow columns under the None key; ignore them.
-        rows.append({(k or "").strip(): (v or "").strip() for k, v in raw_row.items() if k is not None})
+    try:
+        headers = [(h or "").strip() for h in (reader.fieldnames or [])]
+        rows: list[dict[str, str]] = []
+        for raw_row in reader:
+            # csv.DictReader puts overflow columns under the None key; ignore them.
+            rows.append({(k or "").strip(): (v or "").strip() for k, v in raw_row.items() if k is not None})
+    except csv.Error as exc:
+        # Binary or mangled content (e.g. an image renamed .csv) — a whole-file problem, not a crash.
+        raise ImportError_("the file is not a readable CSV") from exc
     return headers, rows
 
 

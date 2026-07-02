@@ -48,3 +48,29 @@ def test_branch_scope_isolates_stock_movements():
     seen = set(scope_queryset(mgr_a, StockMovement.objects.all(), VIEW).values_list("id", flat=True))
     assert move_a.id in seen
     assert move_b.id not in seen
+
+
+def test_stock_count_detail_404_outside_scope():
+    from rest_framework.test import APIClient
+
+    make_gl()
+    item = make_item()
+    wh = make_warehouse()
+    a = Branch.objects.create(code="BR-A", name="Alpha")
+    b = Branch.objects.create(code="BR-B", name="Beta")
+    mgr_a = _manager("stock_a", a)
+    mgr_b = _manager("stock_b", b)
+    # The count list/detail are gated by the stock_count permission at branch scope too.
+    bm = Group.objects.get(name=BRANCH_MANAGER)
+    RolePermission.objects.update_or_create(
+        role=bm, code="inventory.stock_count.view", defaults={"scope": "branch"})
+    services.receive_stock(item=item, warehouse=wh, quantity=5, unit_cost_minor=100_00, actor=mgr_a)
+    count_a = services.create_count(warehouse=wh, actor=mgr_a)
+    count_b = services.create_count(warehouse=wh, actor=mgr_b)
+
+    client = APIClient()
+    client.force_authenticate(user=mgr_a)
+    assert client.get(f"/api/inventory/counts/{count_a.id}").status_code == 200
+    # Out of scope reads as absent — 404, never 403 (existence must not leak).
+    assert client.get(f"/api/inventory/counts/{count_b.id}").status_code == 404
+    assert client.post(f"/api/inventory/counts/{count_b.id}/post").status_code == 404
