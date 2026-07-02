@@ -12,6 +12,11 @@ from django.http import HttpResponse
 from .errors import ValidationError
 from .imports import ImportError_, ImportSpec, import_from_upload, result_payload, template_csv
 
+# Hard ceiling on the uploaded CSV itself (checked BEFORE reading the file into memory).
+# MAX_ROWS in imports.py caps the parsed rows; this caps the raw bytes so an oversized or
+# non-CSV blob can't exhaust memory first. 5 MB comfortably fits 5000 wide rows.
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
 
 def run_import_request(spec: ImportSpec, request) -> dict:
     """Parse a multipart import request, run preview/commit, and return the JSON payload.
@@ -22,6 +27,8 @@ def run_import_request(spec: ImportSpec, request) -> dict:
     upload = request.FILES.get("file")
     if upload is None:
         raise ValidationError("No file was uploaded.")
+    if upload.size and upload.size > MAX_UPLOAD_BYTES:
+        raise ValidationError("The file is too large. The limit is 5 MB per import.")
 
     mapping = None
     raw_mapping = request.data.get("mapping")

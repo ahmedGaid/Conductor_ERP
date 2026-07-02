@@ -132,6 +132,24 @@ def test_over_length_code_is_a_row_error():
     assert Customer.objects.count() == 0
 
 
+def test_oversized_upload_rejected_before_read():
+    client = _client()
+    # One byte over the 5 MB cap — refused up front, nothing parsed, nothing written.
+    raw = b"code,name\n" + b"x" * (5 * 1024 * 1024)
+    resp = _post(client, raw, commit="true")
+    assert resp.status_code == 400
+    assert "large" in resp.json()["error"]["message"].lower()
+    assert Customer.objects.count() == 0
+
+
+def test_binary_garbage_is_a_clean_400():
+    client = _client()
+    # Not CSV at all (PNG magic bytes + noise) — a designed 400, never a 500.
+    resp = _post(client, b"\x89PNG\r\n\x1a\n" + bytes(range(256)))
+    assert resp.status_code == 400
+    assert "error" in resp.json()
+
+
 def test_missing_file_is_a_clean_400():
     client = _client()
     resp = client.post(IMPORT_URL, {"commit": "true"}, format="multipart")
