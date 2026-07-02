@@ -10,3 +10,11 @@ class ExtractionFailedError(AppError):
     code = "AI-001"
     status_code = 502
     message = "The assistant could not process this document right now"
+
+
+class AssistantUnavailableError(AppError):
+    """The natural-language assistant could not reach the model or parse its reply — retryable."""
+
+    code = "AI-002"
+    status_code = 502
+    message = "The assistant is unavailable right now"

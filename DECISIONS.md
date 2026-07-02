@@ -1335,3 +1335,34 @@ Default model `meta-llama/llama-4-scout-17b-16e-instruct` (multimodal). Notes:
   validated our side; 3-attempt backoff retry on transient errors, same as the Gemini path.
 - Verified live end-to-end (supplier + VAT + total + line items) against a real Groq key.
 Provider count is now 3 (Anthropic / Gemini / Groq); the frontend is untouched throughout.
+
+### AI 2026-07 — assistant architecture (session 02, part 2: natural-language ask)
+
+`POST /api/assistant/ask` answers plain-language questions over the caller's **scoped** data.
+
+- **Tool-use via a JSON-mode router, not native function-calling.** Two constrained `complete_json`
+  calls (`services/llm.py`, one seam across all three providers): (1) **route** — the model picks ONE
+  typed tool + args from a fixed catalog; (2) **answer** — we run that tool and hand the real result
+  back to phrase. Chosen over each provider's bespoke tool/function-calling dialect for portability
+  (works identically on Anthropic/Gemini/Groq) and testability (tests monkeypatch one seam, zero live
+  calls). Still tool-use, never free-text-to-SQL: the model only ever *chooses* a tool.
+- **Scope-as-actor.** Tools (`tools.py`) are thin wrappers over NEW scoped read-contract helpers
+  (`sales.sales_summary / top_customers / overdue_receivables / find_orders`, `inventory.low_stock`),
+  each narrowed with `scope_queryset(actor, …, "<perm>.view")` — the same enforcement every list
+  endpoint uses. `AskView` needs only `IsAuthenticated`; a Salesperson gets their branch's numbers
+  and nothing more (scope holds; no cross-branch leak).
+- **The model narrates, it never computes.** Money is formatted server-side and citations are built
+  from the real records in `tools.py`; the answer prompt forbids inventing figures and says to quote
+  the provided values verbatim — so numbers and links are always verifiable (each answer cites the
+  records it used; the UI links them via `EntityLink` / the order detail route).
+- **Read-only.** No tool in the catalog writes. Draft-write proposal tools (`draft_sales_order`, …
+  from the plan) are deferred: part 1's invoice→draft already ships the human-in-the-loop write
+  pattern, and reads are the acceptance-critical path here. New error `AI-002`
+  (`AssistantUnavailableError`, 502, blame-free retryable).
+- **Part 3 (safety/cost/offline):** prompt-injection posture holds (question is user-role data, tools
+  validate their own args, no free SQL); per-request guard = `MAX_QUESTION_CHARS` (1000) +
+  `ASSISTANT_MAX_TOKENS`; `ASSISTANT_ENABLED` gates the endpoint (404 when off) and hides the UI (the
+  gated sidebar entry + `/assistant` page). **Streaming and the per-tenant monthly cap are deferred**
+  — non-streaming is simpler/portable/testable, and the monthly cap belongs with Session 07 billing.
+- UI: a calm `/assistant` page (المساعد الذكي) — one input, suggested questions, an answer card with
+  cited click-through links. New lexicon reuse only; parity kept (1489 keys).

@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { extractDocument, type ExtractProposal } from "../../api/assistant";
-import { createPurchaseOrder, listSuppliers, type NewPOLine } from "../../api/purchasing";
-import { listItems, listWarehouses } from "../../api/inventory";
+import { createPurchaseOrder, createSupplier, listSuppliers, type NewPOLine } from "../../api/purchasing";
+import { createItem, listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
 import { NavIcon } from "../../app/icons";
 import { useToast } from "../../app/ToastContext";
@@ -40,9 +40,9 @@ export function ImportInvoicePage() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
+  const { data: suppliers, mutate: mutateSuppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
-  const { data: items } = useAsync(listItems, [], "inventory:items");
+  const { data: items, mutate: mutateItems } = useAsync(listItems, [], "inventory:items");
   const { data: taxCodes } = useAsync(listTaxCodes, [], "accounting:tax-codes");
 
   const [reading, setReading] = useState(false);
@@ -53,6 +53,11 @@ export function ImportInvoicePage() {
   const [lines, setLines] = useState<ReviewLine[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Inline "the assistant read something we don't have yet" → create it here, prefilled, without
+  // leaving the review: the new record is added to the list and selected in place.
+  const [newSupplier, setNewSupplier] = useState<{ code: string; name: string } | null>(null);
+  const [newItem, setNewItem] = useState<{ line: number; sku: string; name: string; uom: string } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function readFile(file: File) {
     setReading(true);
@@ -86,10 +91,61 @@ export function ImportInvoicePage() {
     setLines([]);
     setSupplier("");
     setError(null);
+    setNewSupplier(null);
+    setNewItem(null);
   }
 
   function setLine(i: number, patch: Partial<ReviewLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  }
+
+  // Suggest an editable, unique-ish code from the current count — the user can override before saving.
+  const suggestCode = (prefix: string, count: number) => `${prefix}-${String(count + 1).padStart(3, "0")}`;
+
+  function openNewSupplier() {
+    setNewSupplier({ code: suggestCode("SUP", (suppliers ?? []).length), name: proposal?.supplier.name ?? "" });
+  }
+
+  async function saveNewSupplier() {
+    if (!newSupplier) return;
+    const code = newSupplier.code.trim();
+    const name = newSupplier.name.trim();
+    if (!code || !name) return;
+    setSaving(true);
+    try {
+      const created = await createSupplier({ code, name });
+      mutateSuppliers([...(suppliers ?? []), created]);
+      setSupplier(created.code);
+      setNewSupplier(null);
+      toast.show(t("purchasing.importInvoice.supplierCreated", { name: created.name }), "success");
+    } catch (err) {
+      toast.show(err instanceof Error ? err.message : String(err), "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openNewItem(i: number) {
+    setNewItem({ line: i, sku: suggestCode("ITM", (items ?? []).length), name: lines[i].extracted, uom: "unit" });
+  }
+
+  async function saveNewItem() {
+    if (!newItem) return;
+    const sku = newItem.sku.trim();
+    const name = newItem.name.trim();
+    if (!sku || !name) return;
+    setSaving(true);
+    try {
+      const created = await createItem({ sku, name, uom: newItem.uom.trim() || "unit", type: "stock" });
+      mutateItems([...(items ?? []), created]);
+      setLine(newItem.line, { item_sku: created.sku });
+      setNewItem(null);
+      toast.show(t("purchasing.importInvoice.itemCreated", { name: created.name }), "success");
+    } catch (err) {
+      toast.show(err instanceof Error ? err.message : String(err), "error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const subtotal = lines.reduce((s, l) => {
@@ -256,8 +312,45 @@ export function ImportInvoicePage() {
                   )}
                 </span>
               )}
-              {!proposal.supplier.matched_code && (
-                <span className="pur-import-extracted">{t("purchasing.importInvoice.noSupplierMatch")}</span>
+              {!supplier && !newSupplier && (
+                <div className="pur-import-suggest">
+                  <span className="pur-import-extracted">{t("purchasing.importInvoice.noSupplierMatch")}</span>
+                  {proposal.supplier.name && (
+                    <button type="button" className="btn btn--sm" onClick={openNewSupplier}>
+                      <NavIcon name="plus" />{" "}
+                      {t("purchasing.importInvoice.createSupplier", { name: proposal.supplier.name })}
+                    </button>
+                  )}
+                </div>
+              )}
+              {newSupplier && (
+                <div className="pur-import-create">
+                  <div className="pur-import-create__fields">
+                    <label className="pur-field">
+                      <span>{t("purchasing.importInvoice.codeLabel")}</span>
+                      <input
+                        className="latin"
+                        value={newSupplier.code}
+                        onChange={(e) => setNewSupplier({ ...newSupplier, code: e.target.value })}
+                      />
+                    </label>
+                    <label className="pur-field">
+                      <span>{t("purchasing.importInvoice.nameLabel")}</span>
+                      <input
+                        value={newSupplier.name}
+                        onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
+                      />
+                    </label>
+                  </div>
+                  <div className="pur-import-create__actions">
+                    <button type="button" className="btn btn--sm" onClick={() => setNewSupplier(null)}>
+                      {t("common.cancel")}
+                    </button>
+                    <button type="button" className="btn btn--sm btn--primary" onClick={saveNewSupplier} disabled={saving}>
+                      {t("purchasing.importInvoice.confirmCreate")}
+                    </button>
+                  </div>
+                </div>
               )}
             </label>
             <label className="pur-field">
@@ -286,7 +379,7 @@ export function ImportInvoicePage() {
           </div>
 
           <div className="pur-table-wrap">
-            <table className="pur-table">
+            <table className="pur-table pur-import-table">
               <thead>
                 <tr>
                   <th>{t("sales.newOrder.item")}</th>
@@ -312,6 +405,47 @@ export function ImportInvoicePage() {
                           <span className="pur-import-extracted">
                             {t("purchasing.importInvoice.extractedLine")}: <Bdi>{l.extracted}</Bdi>
                           </span>
+                        )}
+                        {!l.item_sku && l.extracted && newItem?.line !== i && (
+                          <button type="button" className="btn btn--sm pur-import-suggest__btn" onClick={() => openNewItem(i)}>
+                            <NavIcon name="plus" /> {t("purchasing.importInvoice.createItem", { name: l.extracted })}
+                          </button>
+                        )}
+                        {newItem?.line === i && (
+                          <div className="pur-import-create">
+                            <div className="pur-import-create__fields">
+                              <label className="pur-field">
+                                <span>{t("purchasing.importInvoice.codeLabel")}</span>
+                                <input
+                                  className="latin"
+                                  value={newItem.sku}
+                                  onChange={(e) => setNewItem({ ...newItem, sku: e.target.value })}
+                                />
+                              </label>
+                              <label className="pur-field">
+                                <span>{t("purchasing.importInvoice.nameLabel")}</span>
+                                <input
+                                  value={newItem.name}
+                                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                />
+                              </label>
+                              <label className="pur-field pur-import-create__uom">
+                                <span>{t("purchasing.importInvoice.uomLabel")}</span>
+                                <input
+                                  value={newItem.uom}
+                                  onChange={(e) => setNewItem({ ...newItem, uom: e.target.value })}
+                                />
+                              </label>
+                            </div>
+                            <div className="pur-import-create__actions">
+                              <button type="button" className="btn btn--sm" onClick={() => setNewItem(null)}>
+                                {t("common.cancel")}
+                              </button>
+                              <button type="button" className="btn btn--sm btn--primary" onClick={saveNewItem} disabled={saving}>
+                                {t("purchasing.importInvoice.confirmCreate")}
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </td>
                       <td className="pur-table__num">

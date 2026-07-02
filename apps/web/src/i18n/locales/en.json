@@ -17,6 +17,7 @@
     "crm": "CRM",
     "reports": "Reports",
     "einvoice": "E-Invoicing",
+    "assistant": "Assistant",
     "notifications": "Notifications",
     "favorites": "Favorites",
     "administration": "Administration",
@@ -25,6 +26,21 @@
     "rolesAdmin": "Roles",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar"
+  },
+  "assistant": {
+    "title": "Assistant",
+    "subtitle": "Ask about your sales, receivables and stock — answers come from your own records.",
+    "placeholder": "Ask a question…",
+    "ask": "Ask",
+    "thinking": "Thinking…",
+    "tryLabel": "Try asking",
+    "sources": "From your records",
+    "suggestions": {
+      "s1": "How much did we sell this month?",
+      "s2": "Who are our top customers?",
+      "s3": "Which customers still owe us money?",
+      "s4": "What's running low in stock?"
+    }
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",
@@ -834,7 +850,15 @@
       "invoiceNumber": "Invoice no.",
       "extractedSupplier": "On the invoice",
       "taxId": "Tax ID",
-      "noSupplierMatch": "No matching supplier found — pick one, or add it under Suppliers first.",
+      "noSupplierMatch": "No matching supplier found — pick one, or add it right here.",
+      "createSupplier": "Add supplier “{{name}}”",
+      "createItem": "Add item “{{name}}”",
+      "codeLabel": "Code",
+      "nameLabel": "Name",
+      "uomLabel": "Unit",
+      "confirmCreate": "Add",
+      "supplierCreated": "Supplier “{{name}}” added",
+      "itemCreated": "Item “{{name}}” added",
       "extractedLine": "On the invoice",
       "noItemMatch": "— not matched —",
       "vatOnInvoice": "VAT on the invoice",

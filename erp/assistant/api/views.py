@@ -18,6 +18,7 @@ from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from .. import client, services
+from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
 
 _CanBuy = HasAnyRole.require(BRANCH_MANAGER)
@@ -62,3 +63,26 @@ class ExtractDocumentView(APIView):
             actor=request.user,
         )
         return _envelope(proposal)
+
+
+class AskView(APIView):
+    """Natural-language questions over the caller's scoped data.
+
+    Only ``IsAuthenticated`` — the answer is built from tools that filter to the user's own scope,
+    so a Salesperson gets their branch's numbers and nothing more (no extra role needed to *ask*).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        if not client.enabled():
+            raise Http404
+        question = (request.data.get("question") or "").strip()
+        if not question:
+            raise ValidationError("Ask a question first.")
+        if len(question) > MAX_QUESTION_CHARS:
+            raise ValidationError(
+                "That question is too long.",
+                data={"max_chars": MAX_QUESTION_CHARS, "length": len(question)},
+            )
+        return _envelope(services.answer_question(question=question, actor=request.user))

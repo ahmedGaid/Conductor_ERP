@@ -106,6 +106,62 @@
   color: var(--color-text-muted);
 }
 
+/* Keep qty/cost inputs level with the item cell, which grows taller with the extracted line and
+   the inline "add" affordance below the select. */
+.pur-import-table td {
+  vertical-align: top;
+}
+
+/* "The assistant read something we don't have yet" → create it inline, prefilled. */
+.pur-import-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 0.35rem;
+}
+
+.pur-import-suggest__btn {
+  margin-block-start: 0.4rem;
+}
+
+/* A bare NavIcon has no intrinsic size — scope it here so the add-glyph matches the button text. */
+.pur-import-suggest .navicon,
+.pur-import-suggest__btn .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  flex: none;
+}
+
+.pur-import-create {
+  margin-block-start: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.pur-import-create__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.pur-import-create__fields .pur-field {
+  min-inline-size: 8rem;
+}
+
+.pur-import-create__uom {
+  max-inline-size: 6rem;
+}
+
+.pur-import-create__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-block-start: 0.6rem;
+}
+
 .pur-import-issues-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);

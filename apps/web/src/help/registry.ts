@@ -10,6 +10,7 @@ import { matchPath } from "react-router-dom";
 
 import type { HelpGuide } from "./types";
 import {
+  assistantGuide,
   dashboardGuide,
   einvoiceGuide,
   entityLinkGuide,
@@ -144,6 +145,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/purchasing/suppliers": suppliersGuide,
   "/purchasing/suppliers/:code": supplierDetailGuide,
   "/einvoice": einvoiceGuide,
+  "/assistant": assistantGuide,
   "/notifications": notificationsGuide,
   "/go/:type/:key": entityLinkGuide,
   "/crm": pipelineGuide,

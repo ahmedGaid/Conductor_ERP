@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from ..events import STOCK_ISSUED, STOCK_RECEIVED, STOCK_TRANSFERRED
 from ..repositories import items as _items
 from ..repositories import warehouses as _warehouses
+from ..services import reports as _reports
 from ..services.stock import (
     issue_stock,
     receive_stock,
@@ -41,6 +42,18 @@ def list_items(item_type: str = "stock") -> list[ItemInfo]:
     return [
         ItemInfo(sku=i.sku, name=i.name, type=i.type, is_active=i.is_active)
         for i in _items.filter(type=item_type, is_active=True)
+    ]
+
+
+def low_stock(*, limit: int = 20) -> list[dict]:
+    """Items whose on-hand quantity is at/below their reorder point (the AI assistant's read tool).
+
+    Inventory balances are company-wide (not user-scoped), so this reads the on-hand report directly.
+    """
+    rows = [r for r in _reports.stock_on_hand().rows if r.below_reorder]
+    return [
+        {"sku": r.sku, "name": r.item_name, "warehouse_code": r.warehouse_code, "quantity": r.quantity}
+        for r in rows[: max(1, min(limit, 50))]
     ]
 
 
@@ -98,6 +111,7 @@ __all__ = [
     "ItemInfo",
     "find_item",
     "list_items",
+    "low_stock",
     "issue",
     "receive",
     "return_in",

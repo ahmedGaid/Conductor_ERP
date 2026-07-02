@@ -118,6 +118,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M18 6 6 18" />
     </>
   ),
+  // Plus — add / create a new record inline.
+  plus: (
+    <>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </>
+  ),
   // More — horizontal kebab (overflow menu trigger).
   more: (
     <>

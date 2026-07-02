@@ -58,3 +58,25 @@ export function extractDocument(file: File): Promise<ExtractProposal> {
   form.append("file", file);
   return apiUpload<ExtractProposal>("/assistant/extract-document", form);
 }
+
+// --- Natural-language assistant (part 2) -------------------------------------------------------
+
+export interface AskCitation {
+  // A real record the answer is built from — click-through so every number is verifiable.
+  type: "order" | "customer" | "item";
+  value: string;
+  label: string;
+}
+
+export interface AskAnswer {
+  answer: string;
+  citations: AskCitation[];
+  used_tool: string | null;
+}
+
+export function askAssistant(question: string): Promise<AskAnswer> {
+  return apiFetch<AskAnswer>("/assistant/ask", {
+    method: "POST",
+    body: JSON.stringify({ question }),
+  });
+}
