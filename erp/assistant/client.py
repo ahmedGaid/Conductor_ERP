@@ -14,7 +14,10 @@ from django.conf import settings
 DEFAULT_MODELS = {
     "anthropic": "claude-opus-4-8",
     "gemini": "gemini-2.5-flash",
+    "groq": "meta-llama/llama-4-scout-17b-16e-instruct",  # multimodal (image) on Groq
 }
+
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 
 def enabled() -> bool:
@@ -29,6 +32,8 @@ def provider() -> str:
         return "anthropic"
     if settings.GEMINI_API_KEY:
         return "gemini"
+    if settings.GROQ_API_KEY:
+        return "groq"
     # Flag forced on with no key (tests, dry setups): keep a deterministic path.
     return "anthropic"
 
@@ -56,3 +61,24 @@ def get_gemini_client():
     except Exception:  # pragma: no cover - older SDK without retry_options
         pass
     return genai.Client(api_key=settings.GEMINI_API_KEY, http_options=http_options)
+
+
+def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True) -> dict:
+    """One OpenAI-compatible chat completion against Groq. Returns the parsed JSON response.
+
+    A thin function (not an SDK) so there's no extra dependency and tests can monkeypatch this
+    single seam. Raises on any non-2xx (the caller maps it to the blame-free retryable error).
+    """
+    import httpx
+
+    payload = {"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": 0}
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+    resp = httpx.post(
+        f"{GROQ_BASE_URL}/chat/completions",
+        headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+        json=payload,
+        timeout=60.0,
+    )
+    resp.raise_for_status()
+    return resp.json()

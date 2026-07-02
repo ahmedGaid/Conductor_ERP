@@ -1321,3 +1321,17 @@ states, same audit + upload guards. Frontend untouched — it never knew the pro
 models: `claude-opus-4-8` / `gemini-2.5-flash` (env-tunable via `ASSISTANT_MODEL`). Keys stay in
 `.env` only. Tests pin `ASSISTANT_PROVIDER` per case and mock both client seams — still no live
 calls in gates.
+
+### AI 2026-07 addendum 2 — Groq as a third provider (client request, 2026-07-02)
+
+Added Groq (fast Llama-4 inference, OpenAI-compatible) as a third provider behind the same seam,
+selected by `ASSISTANT_PROVIDER=groq` or a `GROQ_API_KEY`. No new dependency — a thin `groq_chat`
+helper over `httpx` (already present) posts to `https://api.groq.com/openai/v1/chat/completions`.
+Default model `meta-llama/llama-4-scout-17b-16e-instruct` (multimodal). Notes:
+- **Image-only**: Llama-4 vision can't read PDF, so a PDF upload on Groq returns the designed
+  unreadable state ("pdf_unsupported_on_this_provider") — the user re-uploads a photo. Anthropic and
+  Gemini still take PDF.
+- JSON-object mode (no schema param), so the exact key list is spelled out in the prompt and
+  validated our side; 3-attempt backoff retry on transient errors, same as the Gemini path.
+- Verified live end-to-end (supplier + VAT + total + line items) against a real Groq key.
+Provider count is now 3 (Anthropic / Gemini / Groq); the frontend is untouched throughout.

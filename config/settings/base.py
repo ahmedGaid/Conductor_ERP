@@ -222,9 +222,10 @@ REDIS_URL = _redis_url
 # or forced with ASSISTANT_PROVIDER=anthropic|gemini.
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
+GROQ_API_KEY = env("GROQ_API_KEY", default="")  # Groq inference (OpenAI-compatible; Llama-4 vision)
 ASSISTANT_PROVIDER = env("ASSISTANT_PROVIDER", default="")  # "" = auto by key
 ASSISTANT_ENABLED = env.bool(
-    "ASSISTANT_ENABLED", default=bool(ANTHROPIC_API_KEY or GEMINI_API_KEY)
+    "ASSISTANT_ENABLED", default=bool(ANTHROPIC_API_KEY or GEMINI_API_KEY or GROQ_API_KEY)
 )
 ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="")  # "" = the provider's default model
 ASSISTANT_MAX_TOKENS = env.int("ASSISTANT_MAX_TOKENS", default=4096)  # per-request cost cap

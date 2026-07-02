@@ -246,6 +246,64 @@ def test_gemini_upstream_failure_is_502(monkeypatch):
         raise RuntimeError("connection reset")
 
     monkeypatch.setattr(extraction, "get_gemini_client", _raise)
+    monkeypatch.setattr(extraction.time, "sleep", lambda *_: None)  # no real backoff in tests
+    resp = _post(_client())
+    assert resp.status_code == 502
+    assert resp.json()["error"]["code"] == "AI-001"
+
+
+# --- Groq provider path (OpenAI-compatible, Llama-4 vision) --------------------------------------
+
+
+def _groq_reply(payload: dict) -> dict:
+    return {"choices": [{"message": {"content": json.dumps(payload)}}]}
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="groq")
+def test_groq_extracts_and_sends_image_url(monkeypatch):
+    Supplier.objects.create(code="S-1", name="Delta Mills")
+    calls = []
+
+    def fake_groq_chat(messages, **kwargs):
+        calls.append((messages, kwargs))
+        return _groq_reply(EXTRACTED)
+
+    monkeypatch.setattr(extraction, "groq_chat", fake_groq_chat)
+
+    resp = _post(_client())
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["supplier"]["matched_code"] == "S-1"
+    assert data["invoice"]["total_minor"] == 28614
+
+    (messages, kwargs), = calls
+    # Image goes as an OpenAI-style data-URL image_url block; JSON mode requested.
+    user_parts = messages[1]["content"]
+    assert any(p["type"] == "image_url" and p["image_url"]["url"].startswith("data:image/jpeg;base64,")
+               for p in user_parts)
+    assert kwargs["max_tokens"] > 0
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="groq")
+def test_groq_pdf_is_a_designed_unsupported_state(monkeypatch):
+    def _boom(*a, **k):
+        raise AssertionError("PDF must not reach the image-only Groq model")
+
+    monkeypatch.setattr(extraction, "groq_chat", _boom)
+    resp = _post(_client(), name="bill.pdf", content_type="application/pdf")
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["readable"] is False
+    assert "pdf_unsupported_on_this_provider" in data["issues"]
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="groq")
+def test_groq_upstream_failure_is_502(monkeypatch):
+    def _raise(*a, **k):
+        raise RuntimeError("connection reset")
+
+    monkeypatch.setattr(extraction, "groq_chat", _raise)
+    monkeypatch.setattr(extraction.time, "sleep", lambda *_: None)  # no real backoff in tests
     resp = _post(_client())
     assert resp.status_code == 502
     assert resp.json()["error"]["code"] == "AI-001"

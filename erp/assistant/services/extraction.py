@@ -23,7 +23,7 @@ from erp.audit import services as audit
 from erp.inventory import contracts as inventory
 from erp.purchasing import contracts as purchasing
 
-from ..client import get_client, get_gemini_client, model_id, provider
+from ..client import get_client, get_gemini_client, groq_chat, model_id, provider
 from ..errors import ExtractionFailedError
 
 # Media types the endpoint accepts (mirrors the Session-00 import posture: allowlist, no sniffing).
@@ -157,8 +157,11 @@ _UNREADABLE = {"readable": False, "lines": [], "confidence": "low",
 
 def extract_document(*, data: bytes, media_type: str, filename: str, actor) -> dict:
     """One document in → one reviewed-draft proposal out. Read-only; audit-logged."""
-    if provider() == "gemini":
+    prov = provider()
+    if prov == "gemini":
         extracted = _extract_gemini(data, media_type)
+    elif prov == "groq":
+        extracted = _extract_groq(data, media_type)
     else:
         extracted = _extract_anthropic(data, media_type)
     return _proposal(extracted, filename, actor)
@@ -251,6 +254,56 @@ def _extract_gemini(data: bytes, media_type: str) -> dict:
     text = getattr(response, "text", None)
     if not text:
         # safety-blocked / empty candidate — treat as an unreadable document, never a 500
+        return dict(_UNREADABLE)
+    try:
+        return json.loads(text)
+    except ValueError as exc:
+        raise ExtractionFailedError(data={"reason": "unparseable_model_output"}) from exc
+
+
+# Groq's Llama-4 vision is image-only (no native PDF) and JSON-object mode (no schema param), so we
+# spell the shape out in the prompt and validate on our side.
+_GROQ_SCHEMA_HINT = (
+    " Respond with a single JSON object, no prose, with exactly these keys: "
+    "readable (bool), supplier_name (str|null), supplier_tax_id (str|null), invoice_number "
+    "(str|null), invoice_date (str|null, YYYY-MM-DD), currency (str|null), lines (array of "
+    "{description:str, quantity:str, unit_price_minor:int}), subtotal_minor (int|null), vat_minor "
+    "(int|null), total_minor (int|null), confidence ('high'|'medium'|'low'), issues (array of str)."
+)
+
+
+def _extract_groq(data: bytes, media_type: str) -> dict:
+    if media_type == PDF_TYPE:
+        # Llama-4 vision can't read PDF — ask for a photo instead (designed, blame-free).
+        return {**_UNREADABLE, "issues": ["pdf_unsupported_on_this_provider"]}
+
+    b64 = base64.standard_b64encode(data).decode("ascii")
+    messages = [
+        {"role": "system", "content": _SYSTEM + _GROQ_SCHEMA_HINT},
+        {"role": "user", "content": [
+            {"type": "text", "text": _INSTRUCTION},
+            {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{b64}"}},
+        ]},
+    ]
+
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        try:
+            body = groq_chat(messages, model=model_id(),
+                             max_tokens=settings.ASSISTANT_MAX_TOKENS)
+            break
+        except Exception as exc:  # network/auth/rate-limit — blame-free, retryable
+            last_exc = exc
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+    else:
+        raise ExtractionFailedError(data={"reason": last_exc.__class__.__name__}) from last_exc
+
+    try:
+        text = body["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        return dict(_UNREADABLE)
+    if not text:
         return dict(_UNREADABLE)
     try:
         return json.loads(text)
