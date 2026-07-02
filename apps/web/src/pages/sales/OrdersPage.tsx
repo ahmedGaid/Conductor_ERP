@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { listOrders, getOrder, approveOrder, confirmOrder, type SalesOrder } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
@@ -13,7 +13,7 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
-import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
+import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
 import { salesTone } from "../../lib/statusTone";
@@ -42,8 +42,7 @@ export function OrdersPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { data, loading, error, reload, mutate } = useAsync(() => listOrders(), [], "sales:orders");
-  const [filters, setFilters] = useState<ActiveFilter[]>([]);
-  const [tab, setTab] = useState<string>(ALL_TAB);
+  const [searchParams] = useSearchParams();
 
   const fields = useMemo<FilterField<SalesOrder>[]>(
     () => [
@@ -69,6 +68,11 @@ export function OrdersPage() {
     ],
     [t],
   );
+
+  // Seed the filter chips from the URL once, so a drill-in link (a customer row → `/sales?customer=…`)
+  // opens this list pre-filtered; the chip is then freely editable like any other.
+  const [filters, setFilters] = useState<ActiveFilter[]>(() => filtersFromParams(searchParams, fields));
+  const [tab, setTab] = useState<string>(ALL_TAB);
 
   const filtered = useMemo(
     () => (data ? data.filter((o) => matchesAllFilters(o, fields, filters)) : data),

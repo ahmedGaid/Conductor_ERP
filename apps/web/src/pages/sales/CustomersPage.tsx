@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { createCustomer, listCustomers, type Customer } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
@@ -17,6 +17,7 @@ import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { RowActions } from "../../components/RowActions";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import { SalesNav } from "./SalesNav";
@@ -156,6 +157,7 @@ export function CustomersPage() {
                 <th>{t("sales.customer.code")}</th>
                 <th>{t("sales.customer.name")}</th>
                 <th className="sales-table__num">{t("sales.customer.creditLimit")}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -171,6 +173,13 @@ export function CustomersPage() {
                   </td>
                   <td className="sales-table__num">
                     <Bdi>{c.credit_limit_minor ? formatMinor(c.credit_limit_minor) : t("sales.customer.unlimited")}</Bdi>
+                  </td>
+                  <td>
+                    <RowActions label={t("common.actions")}>
+                      <Link className="btn btn--sm" to={`/sales?customer=${encodeURIComponent(c.name)}`}>
+                        {t("sales.customer.viewOrders")}
+                      </Link>
+                    </RowActions>
                   </td>
                 </tr>
               ))}

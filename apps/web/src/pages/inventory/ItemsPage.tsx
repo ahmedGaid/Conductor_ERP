@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
@@ -13,6 +13,7 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { RowActions } from "../../components/RowActions";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -192,6 +193,7 @@ export function ItemsPage() {
                 <th>{t("inventory.item.name")}</th>
                 <th>{t("inventory.item.uom")}</th>
                 <th>{t("inventory.item.type")}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -201,6 +203,15 @@ export function ItemsPage() {
                   <td>{i.name}</td>
                   <td>{i.uom}</td>
                   <td>{t(`inventory.types.${i.type}`)}</td>
+                  <td>
+                    {i.type === "stock" && (
+                      <RowActions label={t("common.actions")}>
+                        <Link className="btn btn--sm" to={`/inventory?sku=${encodeURIComponent(i.sku)}`}>
+                          {t("inventory.item.viewStock")}
+                        </Link>
+                      </RowActions>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

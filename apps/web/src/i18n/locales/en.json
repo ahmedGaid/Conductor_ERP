@@ -568,6 +568,7 @@
       "reorderPoint": "Reorder point",
       "active": "Active",
       "add": "Add item",
+      "viewStock": "View stock",
       "empty": "No items yet.",
       "emptyHint": "Add your first item using the form above."
     },
@@ -739,6 +740,7 @@
       "active": "Active",
       "add": "Add customer",
       "unlimited": "Unlimited",
+      "viewOrders": "View orders",
       "empty": "No customers yet.",
       "emptyHint": "Add your first customer using the form above."
     },
@@ -895,6 +897,7 @@
       "name": "Name",
       "active": "Active",
       "add": "Add supplier",
+      "viewOrders": "View orders",
       "empty": "No suppliers yet.",
       "emptyHint": "Add your first supplier using the form above."
     },
