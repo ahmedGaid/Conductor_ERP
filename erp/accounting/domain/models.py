@@ -359,6 +359,8 @@ class JournalEntry(AuditedModel):
             models.Index(fields=["status"]),
             models.Index(fields=["period"]),
             models.Index(fields=["party_type", "party_code"]),
+            # Matches the list ordering so the default listing walks the index, not a sort.
+            models.Index(fields=["-date", "number"]),
         ]
 
     def __str__(self) -> str:  # pragma: no cover

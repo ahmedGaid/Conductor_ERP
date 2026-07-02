@@ -65,7 +65,12 @@ class SalesOrder(AuditedModel):
     class Meta:
         db_table = "sales_order"
         ordering = ["-order_date", "-created_at"]
-        indexes = [models.Index(fields=["status"]), models.Index(fields=["customer"])]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["customer"]),
+            # Matches the list ordering so the default listing walks the index, not a sort.
+            models.Index(fields=["-order_date", "-created_at"]),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return self.number
@@ -128,7 +133,11 @@ class Quotation(AuditedModel):
     class Meta:
         db_table = "sales_quotation"
         ordering = ["-quote_date", "-created_at"]
-        indexes = [models.Index(fields=["status"]), models.Index(fields=["customer"])]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["customer"]),
+            models.Index(fields=["-quote_date", "-created_at"]),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return self.number

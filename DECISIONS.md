@@ -1244,3 +1244,38 @@ Executed `Docs/plan/00-security-hardening.md` on branch `feat/sec-hardening`. Th
 - **`check --deploy` clean** against `config.settings.prod` (given a real `DJANGO_SECRET_KEY`), and a
   **Content-Security-Policy** header ships in prod (`CSP_POLICY`, env-overridable; `'self'`-everything,
   inline allowed for styles only — everything is self-hosted, so no CDN carve-outs).
+
+## Perf budgets 2026-07 — session 01 of the master plan (2026-07-02)
+
+Speed and correctness are brand promises, so they are now **enforced budgets**, not vibes. Raise a
+budget deliberately (edit the constant + this entry), never silently.
+
+- **Backend query budget:** every hot list endpoint serializes N rows in **≤ 8 queries** (no N+1)
+  and **p95 < 150 ms** on seed-sized data — enforced by `erp/monitoring/tests/test_security_perf.py`
+  (`LIST_QUERY_BUDGET`, `LIST_P95_MS`) over sales orders, inventory movements, stock-on-hand, and GL
+  journals (journals budget tightened from 12).
+- **N+1 root cause fixed:** five line-serializers chained `.order_by("line_no")` onto prefetched
+  `lines`, cloning the queryset past the prefetch cache (a query per row × up to 200 rows). Dropped —
+  the line models' `Meta.ordering` already ends in `line_no`. (sales orders/quotations, purchasing
+  POs/requests, CRM opportunities.)
+- **Indexes to match list orderings:** composite `(-date, -created_at)`-style indexes added on
+  SalesOrder, Quotation, PurchaseOrder, PurchaseRequest, StockMovement (+ `reference`), JournalEntry
+  (`-date, number`), Opportunity (`-created_at`). Verified with EXPLAIN (index scan, no sort).
+- **Frontend bundle budget:** main JS chunk **≤ 230 kB gzip**, enforced by
+  `apps/web/scripts/check-bundle-size.mjs` running as `postbuild` (so every gate build enforces it).
+  Route-split via `React.lazy`: workflow canvas (owns React Flow, 189 kB chunk), report builder,
+  setup wizard, invoice document, all settings + admin pages. Main chunk 284 → 207 kB gzip. Lazy
+  routes fall back to the shared `ListSkeleton` inside the intact shell (designed beat, no spinner).
+- **Prefetch coverage:** `EntityLink` now warms the destination cache on hover/focus for
+  item/warehouse (detail keys) and customer/supplier (shared master list); price lists prefetch
+  their lines. UUID-resolved links (orders, journals) can't prefetch — the id is unknown until the
+  resolver runs.
+- **Trust invariants** (`erp/monitoring/tests/test_trust_invariants.py`, property-style over real
+  service flows): debits == credits on every posted journal (checked in the DB); net + tax == total
+  on every invoice; on-hand never negative under random movement sequences (over-issues must raise);
+  audited actions carry actor + correlation id (bus subscribers act as system — correlation id is
+  their trace).
+- **Idempotency:** new `erp.core.idempotency.run_once` + `core_idempotency_key` table. A client
+  `Idempotency-Key` header makes stock **receive** at-most-once (no state machine protects it);
+  replay returns the original movement (200, not 201). Order actions need no key — the status state
+  machine already rejects/no-ops replays (`complete_sale` replay is a designed no-op).

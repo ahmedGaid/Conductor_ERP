@@ -13,6 +13,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.idempotency import run_once
 from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
@@ -162,13 +163,23 @@ class ReceiveView(APIView):
         v = s.validated_data
         item = get_object_or_404(Item, sku=v["item_sku"])
         warehouse = get_object_or_404(Warehouse, code=v["warehouse_code"])
-        movement = services.receive_stock(
-            item=item, warehouse=warehouse, quantity=v["quantity"],
-            unit_cost_minor=v["unit_cost"], date=v.get("date"),
-            reference=v.get("reference", ""), memo=v.get("memo", ""),
-            batch_no=v.get("batch_no", ""), expiry_date=v.get("expiry_date"), actor=request.user,
+        # A receipt has no state machine to reject a replay (unlike order actions), so a retried
+        # request would double the stock — honour the client's Idempotency-Key.
+        movement_id, created = run_once(
+            key=(request.headers.get("Idempotency-Key") or "").strip(),
+            endpoint="inventory.receive",
+            create=lambda: services.receive_stock(
+                item=item, warehouse=warehouse, quantity=v["quantity"],
+                unit_cost_minor=v["unit_cost"], date=v.get("date"),
+                reference=v.get("reference", ""), memo=v.get("memo", ""),
+                batch_no=v.get("batch_no", ""), expiry_date=v.get("expiry_date"), actor=request.user,
+            ),
         )
-        return _envelope(MovementSerializer(movement).data, status=201)
+        movement = get_object_or_404(
+            StockMovement.objects.select_related("item", "warehouse", "dest_warehouse"),
+            id=movement_id,
+        )
+        return _envelope(MovementSerializer(movement).data, status=201 if created else 200)
 
 
 class IssueView(APIView):

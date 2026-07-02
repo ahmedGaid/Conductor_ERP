@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { AppShell } from "./app/AppShell";
@@ -5,22 +6,10 @@ import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { PreferencesProvider, usePreferences } from "./preferences/PreferencesContext";
 import { getSetupStatus } from "./api/setup";
 import { useAsync } from "./hooks/useAsync";
+import { ListSkeleton } from "./components/ListSkeleton";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
-import { SetupWizardPage } from "./pages/SetupWizardPage";
-import { ProfilePage } from "./pages/settings/ProfilePage";
-import { AppearancePage } from "./pages/settings/AppearancePage";
-import { DashboardSettingsPage } from "./pages/settings/DashboardSettingsPage";
-import { NavigationSettingsPage } from "./pages/settings/NavigationSettingsPage";
-import { NotificationsSettingsPage } from "./pages/settings/NotificationsSettingsPage";
-import { AccessibilityPage } from "./pages/settings/AccessibilityPage";
-import { OrganizationPage } from "./pages/settings/OrganizationPage";
-import { UsersPage } from "./pages/admin/UsersPage";
-import { UserDetailPage } from "./pages/admin/UserDetailPage";
-import { RolesPage } from "./pages/admin/RolesPage";
-import { RoleDetailPage } from "./pages/admin/RoleDetailPage";
 import { WorkflowListPage } from "./pages/WorkflowListPage";
-import { WorkflowCanvasPage } from "./pages/WorkflowCanvasPage";
 import { ExecutionViewerPage } from "./pages/ExecutionViewerPage";
 import { ChartOfAccountsPage } from "./pages/accounting/ChartOfAccountsPage";
 import { JournalListPage } from "./pages/accounting/JournalListPage";
@@ -39,7 +28,6 @@ import { BankReconciliationPage } from "./pages/accounting/BankReconciliationPag
 import { BankStatementDetailPage } from "./pages/accounting/BankStatementDetailPage";
 import { BudgetsPage } from "./pages/accounting/BudgetsPage";
 import { BudgetDetailPage } from "./pages/accounting/BudgetDetailPage";
-import { ReportBuilderPage } from "./pages/accounting/ReportBuilderPage";
 import { EInvoicesPage } from "./pages/einvoice/EInvoicesPage";
 import { NotificationsPage } from "./pages/notifications/NotificationsPage";
 import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
@@ -58,7 +46,6 @@ import { BatchesPage } from "./pages/inventory/BatchesPage";
 import { OrdersPage } from "./pages/sales/OrdersPage";
 import { NewOrderPage } from "./pages/sales/NewOrderPage";
 import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
-import { InvoiceDocumentPage } from "./pages/sales/InvoiceDocumentPage";
 import { CustomersPage } from "./pages/sales/CustomersPage";
 import { CustomerDetailPage } from "./pages/sales/CustomerDetailPage";
 import { QuotationsPage } from "./pages/sales/QuotationsPage";
@@ -79,6 +66,36 @@ import { TicketsPage } from "./pages/crm/TicketsPage";
 import { CampaignsPage } from "./pages/crm/CampaignsPage";
 import { CampaignDetailPage } from "./pages/crm/CampaignDetailPage";
 import type { ReactNode } from "react";
+
+// Heavy or rarely-visited screens load on demand so the main chunk stays inside the bundle
+// budget (scripts/check-bundle-size.mjs): the workflow canvas carries React Flow, the report
+// builder and setup wizard are big one-offs, and settings/admin are visited far less often
+// than the transactional pages. Each lazy route falls back to the shared route skeleton.
+const lazyPage = <T extends Record<string, any>>(load: () => Promise<T>, name: keyof T) =>
+  lazy(() => load().then((m) => ({ default: m[name] })));
+
+const SetupWizardPage = lazyPage(() => import("./pages/SetupWizardPage"), "SetupWizardPage");
+const WorkflowCanvasPage = lazyPage(() => import("./pages/WorkflowCanvasPage"), "WorkflowCanvasPage");
+const ReportBuilderPage = lazyPage(
+  () => import("./pages/accounting/ReportBuilderPage"), "ReportBuilderPage");
+const InvoiceDocumentPage = lazyPage(
+  () => import("./pages/sales/InvoiceDocumentPage"), "InvoiceDocumentPage");
+const ProfilePage = lazyPage(() => import("./pages/settings/ProfilePage"), "ProfilePage");
+const AppearancePage = lazyPage(() => import("./pages/settings/AppearancePage"), "AppearancePage");
+const DashboardSettingsPage = lazyPage(
+  () => import("./pages/settings/DashboardSettingsPage"), "DashboardSettingsPage");
+const NavigationSettingsPage = lazyPage(
+  () => import("./pages/settings/NavigationSettingsPage"), "NavigationSettingsPage");
+const NotificationsSettingsPage = lazyPage(
+  () => import("./pages/settings/NotificationsSettingsPage"), "NotificationsSettingsPage");
+const AccessibilityPage = lazyPage(
+  () => import("./pages/settings/AccessibilityPage"), "AccessibilityPage");
+const OrganizationPage = lazyPage(
+  () => import("./pages/settings/OrganizationPage"), "OrganizationPage");
+const UsersPage = lazyPage(() => import("./pages/admin/UsersPage"), "UsersPage");
+const UserDetailPage = lazyPage(() => import("./pages/admin/UserDetailPage"), "UserDetailPage");
+const RolesPage = lazyPage(() => import("./pages/admin/RolesPage"), "RolesPage");
+const RoleDetailPage = lazyPage(() => import("./pages/admin/RoleDetailPage"), "RoleDetailPage");
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, restoring } = useAuth();
@@ -122,14 +139,16 @@ function SetupGate() {
   if (data.is_setup_complete && onSetup) return <Navigate to="/" replace />;
   if (onSetup) {
     return (
-      <SetupWizardPage
-        status={data}
-        onCompleted={async () => {
-          // Pull fresh org flags (e.g. e-invoicing) before entering the app so the nav is correct.
-          await refresh();
-          mutate({ ...data, is_setup_complete: true });
-        }}
-      />
+      <Suspense fallback={<ListSkeleton rows={6} />}>
+        <SetupWizardPage
+          status={data}
+          onCompleted={async () => {
+            // Pull fresh org flags (e.g. e-invoicing) before entering the app so the nav is correct.
+            await refresh();
+            mutate({ ...data, is_setup_complete: true });
+          }}
+        />
+      </Suspense>
     );
   }
   return <AppRoutes />;
@@ -138,6 +157,9 @@ function SetupGate() {
 function AppRoutes() {
   return (
       <AppShell>
+        {/* Lazy routes paint the shared list skeleton inside the intact shell while their chunk
+            loads — the same designed beat as a data load, never a blank screen or spinner. */}
+        <Suspense fallback={<ListSkeleton rows={6} />}>
         <Routes>
           <Route path="/" element={<LandingRedirect />} />
           <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
@@ -217,6 +239,7 @@ function AppRoutes() {
           <Route path="/crm/campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AppShell>
   );
 }

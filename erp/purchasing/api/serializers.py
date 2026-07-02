@@ -101,7 +101,9 @@ class POSerializer(serializers.Serializer):
         return order_requires_approval(obj.subtotal_minor)
 
     def get_lines(self, obj) -> list:
-        return POLineSerializer(obj.lines.all().order_by("line_no"), many=True).data
+        # No .order_by() here: it would clone the queryset and bypass the list view's prefetch
+        # cache (a query per row). Meta.ordering on the line model already yields line_no order.
+        return POLineSerializer(obj.lines.all(), many=True).data
 
 
 class RequestLineInputSerializer(serializers.Serializer):
@@ -161,4 +163,5 @@ class RequestSerializer(serializers.Serializer):
         return requires_approval(obj.subtotal_minor)
 
     def get_lines(self, obj) -> list:
-        return RequestLineSerializer(obj.lines.all().order_by("line_no"), many=True).data
+        # Prefetch-cache friendly — see POSerializer.get_lines.
+        return RequestLineSerializer(obj.lines.all(), many=True).data

@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 
+import { getItem, getWarehouse } from "../api/inventory";
+import { listCustomers } from "../api/sales";
+import { listSuppliers } from "../api/purchasing";
+import { prefetch } from "../lib/prefetch";
 import { Bdi } from "./Bdi";
 
 // A business entity (order, item, warehouse, party, journal) rendered as a link to its detail page,
@@ -37,6 +41,17 @@ function pathFor(type: EntityType, value: string): string {
   return `/go/${RESOLVE_SLUG[type]}/${encodeURIComponent(value)}`;
 }
 
+// Hover/focus warms the destination's cache key (lib/prefetch) so the detail paints from cache.
+// Item/warehouse details fetch by the business key itself; customer/supplier details read the
+// shared master list. UUID-resolved types (orders, journals) prefetch nothing — their id isn't
+// known until the resolver redirect runs.
+const PREFETCH: Partial<Record<EntityType, (value: string) => void>> = {
+  item: (sku) => prefetch(`inventory:item:${sku}`, () => getItem(sku)),
+  warehouse: (code) => prefetch(`inventory:warehouse:${code}`, () => getWarehouse(code)),
+  customer: () => prefetch("sales:customers", listCustomers),
+  supplier: () => prefetch("purchasing:suppliers", listSuppliers),
+};
+
 export function EntityLink({
   type,
   value,
@@ -50,8 +65,14 @@ export function EntityLink({
   className?: string;
 }) {
   if (!value) return <>{children ?? null}</>;
+  const warm = PREFETCH[type];
   return (
-    <Link to={pathFor(type, value)} className={className}>
+    <Link
+      to={pathFor(type, value)}
+      className={className}
+      onMouseEnter={warm && (() => warm(value))}
+      onFocus={warm && (() => warm(value))}
+    >
       {children ?? <Bdi>{value}</Bdi>}
     </Link>
   );
