@@ -1,11 +1,16 @@
-"""Phase 10 hardening — DRF rate limiting + query-count budgets on heavy list endpoints.
+"""Phase 10 hardening — DRF rate limiting + query/latency budgets on hot list endpoints.
 
 Throttling is disabled in dev/test settings (so the rest of the suite isn't rate-limited); the last
-test re-enables a tiny rate via override_settings to prove the mechanism actually blocks abuse. The
-query-count test runs first (before any throttle override) and asserts the heaviest list endpoint
-serializes N rows in a constant number of queries (no N+1).
+test re-enables a tiny rate via override_settings to prove the mechanism actually blocks abuse.
+
+Perf budgets (session 01, recorded in DECISIONS.md "Perf budgets 2026-07"): every hot list endpoint
+serializes N rows in a **constant** number of queries (≤ LIST_QUERY_BUDGET, no N+1) and answers in
+p95 < LIST_P95_MS on seed-sized data. Budget tests run before any throttle override.
 """
 from __future__ import annotations
+
+import time
+from decimal import Decimal
 
 import pytest
 from django.conf import settings
@@ -19,6 +24,12 @@ from rest_framework.views import APIView
 from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
+
+# Hot list endpoints must serialize N rows in a constant number of queries: auth/scope lookups +
+# the main query + one query per prefetch — never a query per row.
+LIST_QUERY_BUDGET = 8
+# p95 wall-clock budget per list call on seed-sized data (test client, local DB).
+LIST_P95_MS = 150.0
 
 
 def _admin_client() -> APIClient:
@@ -100,10 +111,88 @@ def test_journals_list_query_count_is_bounded(django_assert_max_num_queries):
     client = _admin_client()
     _bootstrap(client)
     _post_journals(client, 6)
-    with django_assert_max_num_queries(12):
+    with django_assert_max_num_queries(LIST_QUERY_BUDGET):
         res = client.get("/api/accounting/journals")
     assert res.status_code == 200
     assert len(res.data["data"]) == 6
+
+
+def _seed_orders(n: int) -> None:
+    from erp.sales.domain.models import Customer, SalesOrder, SalesOrderLine
+
+    customer = Customer.objects.create(code="C-PERF", name="Perf customer")
+    for i in range(n):
+        order = SalesOrder.objects.create(
+            number=f"SO-PERF-{i:04d}", customer=customer, order_date="2026-06-15",
+            warehouse_code="WH-1", subtotal_minor=15_000,
+        )
+        for ln in range(1, 4):
+            SalesOrderLine.objects.create(
+                order=order, line_no=ln, item_sku=f"SKU-{ln}", quantity=Decimal("1"),
+                unit_price_minor=5_000, line_total_minor=5_000,
+            )
+
+
+def _seed_movements(n: int) -> None:
+    from erp.inventory.domain.models import Item, MovementType, StockBalance, StockMovement, Warehouse
+
+    item = Item.objects.create(sku="SKU-PERF", name="Perf item")
+    warehouse = Warehouse.objects.create(code="WH-PERF", name="Perf warehouse")
+    for i in range(n):
+        StockMovement.objects.create(
+            item=item, warehouse=warehouse, type=MovementType.RECEIPT, date="2026-06-15",
+            quantity=Decimal("1"), unit_cost_minor=1_000, value_minor=1_000, reference=f"REF-{i}",
+        )
+    StockBalance.objects.create(item=item, warehouse=warehouse, quantity=Decimal(n), value_minor=n * 1_000)
+
+
+def test_orders_list_query_count_is_bounded(django_assert_max_num_queries):
+    """Serializing N orders (+ their lines) must stay O(1) queries — guards the lines prefetch.
+
+    A stray .order_by()/.filter() on the prefetched lines would clone the queryset, bypass the
+    prefetch cache, and reintroduce a query per row — this budget catches that.
+    """
+    client = _admin_client()
+    _seed_orders(6)
+    with django_assert_max_num_queries(LIST_QUERY_BUDGET):
+        res = client.get("/api/sales/orders")
+    assert res.status_code == 200
+    assert len(res.data["data"]) == 6
+    assert all(len(row["lines"]) == 3 for row in res.data["data"])
+
+
+def test_movements_list_query_count_is_bounded(django_assert_max_num_queries):
+    client = _admin_client()
+    _seed_movements(6)
+    with django_assert_max_num_queries(LIST_QUERY_BUDGET):
+        res = client.get("/api/inventory/movements")
+    assert res.status_code == 200
+    assert len(res.data["data"]) == 6
+
+
+def test_stock_on_hand_query_count_is_bounded(django_assert_max_num_queries):
+    client = _admin_client()
+    _seed_movements(6)
+    with django_assert_max_num_queries(LIST_QUERY_BUDGET):
+        res = client.get("/api/inventory/reports/stock-on-hand")
+    assert res.status_code == 200
+    assert len(res.data["data"]["rows"]) == 1
+
+
+def test_orders_list_p95_latency_under_budget():
+    """p95 of 20 list calls must beat the latency budget — catches gross slowdowns, not jitter."""
+    client = _admin_client()
+    _seed_orders(6)
+    client.get("/api/sales/orders")  # warm-up: first call pays connection/auth setup
+    samples: list[float] = []
+    for _ in range(20):
+        t0 = time.perf_counter()
+        res = client.get("/api/sales/orders")
+        samples.append((time.perf_counter() - t0) * 1000)
+        assert res.status_code == 200
+    samples.sort()
+    p95 = samples[int(len(samples) * 0.95) - 1]
+    assert p95 < LIST_P95_MS, f"orders list p95 {p95:.1f}ms exceeds {LIST_P95_MS}ms budget"
 
 
 def test_user_rate_throttle_returns_429_when_exceeded():

@@ -63,7 +63,12 @@ class PurchaseOrder(AuditedModel):
     class Meta:
         db_table = "purchasing_order"
         ordering = ["-order_date", "-created_at"]
-        indexes = [models.Index(fields=["status"]), models.Index(fields=["supplier"])]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["supplier"]),
+            # Matches the list ordering so the default listing walks the index, not a sort.
+            models.Index(fields=["-order_date", "-created_at"]),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return self.number
@@ -125,7 +130,11 @@ class PurchaseRequest(AuditedModel):
     class Meta:
         db_table = "purchasing_request"
         ordering = ["-request_date", "-created_at"]
-        indexes = [models.Index(fields=["status"]), models.Index(fields=["supplier"])]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["supplier"]),
+            models.Index(fields=["-request_date", "-created_at"]),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return self.number

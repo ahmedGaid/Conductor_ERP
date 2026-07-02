@@ -89,3 +89,20 @@ class AuditedModel(TimeStampedModel):
 
     class Meta:
         abstract = True
+
+
+class IdempotencyKey(TimeStampedModel):
+    """At-most-once guard for replay-sensitive API writes.
+
+    A client that may retry (double-click, network replay) sends an ``Idempotency-Key`` header;
+    the first request records the created object's id here and replays get that object back
+    instead of a second side-effect. See ``erp.core.idempotency.run_once``.
+    """
+
+    endpoint = models.CharField(max_length=64)
+    key = models.CharField(max_length=128)
+    object_id = models.CharField(max_length=64, blank=True, default="")
+
+    class Meta:
+        db_table = "core_idempotency_key"
+        unique_together = [("endpoint", "key")]

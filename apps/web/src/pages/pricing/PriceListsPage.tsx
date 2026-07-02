@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
-import { createPriceList, listPriceLists, type PriceList } from "../../api/pricing";
+import { createPriceList, listLines, listPriceLists, type PriceList } from "../../api/pricing";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useFormKeys } from "../../hooks/useFormKeys";
@@ -11,6 +11,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
+import { prefetch } from "../../lib/prefetch";
 import { Bdi } from "../../components/Bdi";
 import { PricingTabs } from "./PricingTabs";
 import "./pricing.css";
@@ -122,7 +123,12 @@ export function PriceListsPage() {
               {data.map((pl, i) => (
                 <tr key={pl.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
                   <td>
-                    <Link to={`/pricing/${pl.id}`} className="inv-link">
+                    <Link
+                      to={`/pricing/${pl.id}`}
+                      className="inv-link"
+                      onMouseEnter={() => prefetch(`pricing:lines:${pl.id}`, () => listLines(pl.id))}
+                      onFocus={() => prefetch(`pricing:lines:${pl.id}`, () => listLines(pl.id))}
+                    >
                       <Bdi>{pl.code}</Bdi>
                     </Link>
                   </td>
