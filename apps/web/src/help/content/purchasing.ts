@@ -35,7 +35,7 @@ export const newPurchaseOrderGuide: HelpGuide = {
   },
   howItWorks: {
     en: "Pick the supplier and destination warehouse, then add lines (item + quantity + cost). Choose a tax code if the purchase carries recoverable VAT.",
-    ar: "اختر المورد ومستودع الوجهة، ثم أضف السطور (صنف + كمية + تكلفة). اختر رمزاً ضريبياً إن كانت المشتريات تحمل ضريبة قابلة للاسترداد.",
+    ar: "اختر المورد ومخزن الوجهة، ثم أضف السطور (صنف + كمية + تكلفة). اختر رمزاً ضريبياً إن كانت المشتريات تحمل ضريبة قابلة للاسترداد.",
   },
   related: [
     { to: "/purchasing", label: { en: "All purchase orders", ar: "كل أوامر الشراء" } },
@@ -63,6 +63,32 @@ export const purchaseOrderDetailGuide: HelpGuide = {
   ],
   related: [
     { to: "/purchasing", label: { en: "All purchase orders", ar: "كل أوامر الشراء" } },
+  ],
+};
+
+export const importInvoiceGuide: HelpGuide = {
+  title: { en: "Import invoice", ar: "استيراد فاتورة" },
+  purpose: {
+    en: "Turn a photo or PDF of a supplier invoice into a draft purchase order — the assistant reads it, you review and decide.",
+    ar: "حوّل صورة أو PDF لفاتورة مورد إلى مسودة أمر شراء — المساعد الذكي يقرأها، وأنت تراجع وتقرر.",
+  },
+  howItWorks: {
+    en: "Upload the document. The assistant extracts the supplier, lines, and totals, and matches them to your records. Everything is editable; nothing posts until you create the draft, which then follows the normal confirm → receive → bill path.",
+    ar: "ارفع المستند. يستخرج المساعد الذكي المورد والبنود والإجماليات ويطابقها بسجلاتك. كل شيء قابل للتعديل؛ ولا يُرحَّل شيء حتى تنشئ المسودة، ثم تتبع المسار المعتاد: تأكيد ← استلام ← فوترة.",
+  },
+  tasks: [
+    {
+      name: { en: "From photo to draft PO", ar: "من صورة إلى مسودة أمر شراء" },
+      steps: [
+        { en: "Photograph the invoice or pick a PDF (up to 5 MB).", ar: "صوّر الفاتورة أو اختر ملف PDF (حتى ٥ ميجابايت)." },
+        { en: "Check the matched supplier and lines; fix anything the assistant flagged.", ar: "تحقق من المورد والبنود المطابقة؛ وصحّح ما أشار إليه المساعد الذكي." },
+        { en: "Create the draft — it opens as a normal purchase order.", ar: "أنشئ المسودة — تُفتح كأمر شراء عادي." },
+      ],
+    },
+  ],
+  related: [
+    { to: "/purchasing", label: { en: "Purchase orders", ar: "أوامر الشراء" } },
+    { to: "/purchasing/suppliers", label: { en: "Suppliers", ar: "الموردون" } },
   ],
 };
 
@@ -124,5 +150,20 @@ export const suppliersGuide: HelpGuide = {
   },
   related: [
     { to: "/purchasing", label: { en: "Purchase orders", ar: "أوامر الشراء" } },
+  ],
+};
+
+export const supplierDetailGuide: HelpGuide = {
+  title: { en: "Supplier", ar: "المورّد" },
+  purpose: {
+    en: "View and edit a supplier's details and see their order history.",
+    ar: "اعرض بيانات المورّد وعدّلها وتابع سجل طلباتهم.",
+  },
+  howItWorks: {
+    en: "Edit the supplier's name, code, or contact details directly on this page.",
+    ar: "عدّل اسم المورّد أو كوده أو بيانات التواصل مباشرة من هذه الصفحة.",
+  },
+  related: [
+    { to: "/purchasing/suppliers", label: { en: "All suppliers", ar: "جميع الموردين" } },
   ],
 };

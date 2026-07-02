@@ -46,8 +46,12 @@
 }
 
 .cmdp__search-icon {
+  display: inline-flex;
   color: var(--color-text-muted);
-  font-size: var(--font-size-lg);
+}
+.cmdp__search-icon .navicon {
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
 }
 
 .cmdp__input {
@@ -117,6 +121,29 @@
 
 .cmdp__item--active {
   background-color: var(--color-surface-alt);
+}
+
+/* Two-line cell for live record hits: name/number over a muted code + type. Static commands carry
+   no sublabel, so they render as a single line unchanged. */
+.cmdp__item-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-inline-size: 0;
+}
+
+.cmdp__item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmdp__item-sub {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cmdp__item-go {

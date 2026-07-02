@@ -10,6 +10,8 @@ import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -116,7 +118,7 @@ export function StockCountsPage() {
           {t("inventory.counts.start")}
         </button>
       </form>
-      <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("inventory.counts.startHint")}</p>
+      <p className="hint">{t("inventory.counts.startHint")}</p>
       {formError && <p className="error-text">{formError}</p>}
 
       {loading && (
@@ -168,15 +170,15 @@ export function StockCountsPage() {
                       onMouseEnter={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
                       onFocus={() => prefetch(`inventory:count:${c.id}`, () => getStockCount(c.id))}
                     >
-                      <Bdi>{c.warehouse_code}</Bdi>
+                      <EntityLink type="warehouse" value={c.warehouse_code} />
                     </Link>
                   </td>
                   <td><Bdi>{c.count_date}</Bdi></td>
                   <td className="inv-table__num"><Bdi>{c.line_count}</Bdi></td>
                   <td>
-                    <span className={`pill pill--${c.status === "posted" ? "completed" : c.status === "cancelled" ? "failed" : "running"}`}>
+                    <Badge tone={c.status === "posted" ? "completed" : c.status === "cancelled" ? "failed" : "running"}>
                       {t(`inventory.counts.statuses.${c.status}`)}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

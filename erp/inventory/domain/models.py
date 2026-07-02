@@ -113,7 +113,10 @@ class StockMovement(AuditedModel):
         db_table = "inventory_stock_movement"
         ordering = ["-date", "-created_at"]
         indexes = [models.Index(fields=["item"]), models.Index(fields=["type"]),
-                   models.Index(fields=["batch_no"])]
+                   models.Index(fields=["batch_no"]),
+                   # The movements list orders by these and filters by reference.
+                   models.Index(fields=["-date", "-created_at"]),
+                   models.Index(fields=["reference"])]
 
 
 class CountStatus(models.TextChoices):

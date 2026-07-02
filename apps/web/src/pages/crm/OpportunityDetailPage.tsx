@@ -13,12 +13,15 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
+import { Badge } from "../../components/Badge";
+import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { InlineEdit } from "../../components/InlineEdit";
+import { EntityLink } from "../../components/EntityLink";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
@@ -118,7 +121,7 @@ export function OpportunityDetailPage() {
                   </p>
                 )}
               </div>
-              <span className={`crm-badge crm-badge--${data.stage}`}>{t(`crm.stage.${data.stage}`)}</span>
+              <Badge tone={crmTone(data.stage)}>{t(`crm.stage.${data.stage}`)}</Badge>
             </div>
 
             <div className="crm-summary">
@@ -195,7 +198,7 @@ export function OpportunityDetailPage() {
                 <tbody>
                   {data.lines.map((l) => (
                     <tr key={l.line_no}>
-                      <td><Bdi>{l.item_sku}</Bdi>{l.description ? ` · ${l.description}` : ""}</td>
+                      <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
                       <td className="crm-table__num"><Bdi>{l.quantity}</Bdi></td>
                       <td className="crm-table__num"><Bdi>{formatMinor(l.unit_price_minor)}</Bdi></td>
                       <td className="crm-table__num"><Bdi>{formatMinor(l.line_total_minor)}</Bdi></td>

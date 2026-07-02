@@ -7,7 +7,7 @@
   "nav": {
     "dashboard": "الرئيسية",
     "workflows": "مسارات العمل",
-    "accounting": "المحاسبة",
+    "accounting": "المالية",
     "forms": "النماذج",
     "settings": "الإعدادات",
     "modulesSoon": "وحدات قادمة",
@@ -17,13 +17,30 @@
     "crm": "إدارة العملاء",
     "reports": "التقارير",
     "einvoice": "الفوترة الإلكترونية",
+    "assistant": "المساعد الذكي",
     "notifications": "الإشعارات",
     "favorites": "المفضلة",
     "administration": "الإدارة",
+    "pricing": "التسعير",
     "usersAdmin": "المستخدمون",
     "rolesAdmin": "الأدوار",
     "collapseSidebar": "طيّ الشريط الجانبي",
     "expandSidebar": "توسيع الشريط الجانبي"
+  },
+  "assistant": {
+    "title": "المساعد الذكي",
+    "subtitle": "اسأل عن مبيعاتك وتحصيلاتك ومخزونك — والإجابات من واقع سجلاتك.",
+    "placeholder": "اطرح سؤالاً…",
+    "ask": "اسأل",
+    "thinking": "يفكّر…",
+    "tryLabel": "جرّب أن تسأل",
+    "sources": "من واقع سجلاتك",
+    "suggestions": {
+      "s1": "كم بعنا هذا الشهر؟",
+      "s2": "من أكبر عملائنا؟",
+      "s3": "أي عملاء ما زالوا مدينين لنا؟",
+      "s4": "ما الأصناف التي أوشكت على النفاد؟"
+    }
   },
   "moduleIntro": {
     "accounting": "شجرة الحسابات والقيود اليومية ودفاتر الأستاذ والقوائم المالية — دفاتر المنشأة.",
@@ -43,7 +60,8 @@
     "skipToContent": "تخطٍّ إلى المحتوى",
     "logout": "تسجيل الخروج",
     "notifications": "الإشعارات",
-    "help": "المساعدة"
+    "help": "المساعدة",
+    "menu": "القائمة"
   },
   "shortcuts": {
     "title": "اختصارات لوحة المفاتيح",
@@ -63,12 +81,21 @@
     "formCancel": "إلغاء"
   },
   "command": {
-    "placeholder": "ابحث في الصفحات والإجراءات…",
+    "placeholder": "ابحث في السجلات والصفحات والإجراءات…",
     "empty": "لا نتائج لـ",
     "groupCreate": "إنشاء",
     "groupGo": "الانتقال إلى",
     "groupPage": "هذه الصفحة",
     "groupRecent": "الأخيرة",
+    "groupResults": "السجلات",
+    "type": {
+      "customer": "عميل",
+      "supplier": "مورّد",
+      "item": "صنف",
+      "sales_order": "طلب بيع",
+      "purchase_order": "أمر شراء",
+      "journal": "قيد يومية"
+    },
     "hintMove": "تنقّل",
     "hintOpen": "فتح",
     "hintClose": "إغلاق",
@@ -104,6 +131,38 @@
     "otpRequired": "أدخل رمز التحقق بخطوتين",
     "submit": "تسجيل الدخول"
   },
+  "setup": {
+    "title": "جهّز شركتك",
+    "lede": "خطوات قليلة وتصبح Conductor جاهزة للعمل — الحسابات والضريبة والفريق. ثم أرسل أول فاتورة اليوم.",
+    "finish": "إنهاء الإعداد",
+    "adminOnly": "يحتاج أحد المسؤولين إلى إنهاء إعداد الشركة قبل أن تتمكن من البدء.",
+    "profile": {
+      "title": "بيانات الشركة",
+      "lede": "الأساسيات التي تظهر على فواتيرك ومستنداتك. يمكنك تغيير أي شيء لاحقًا من الإعدادات.",
+      "companyPlaceholder": "الاسم القانوني لشركتك",
+      "vatPlaceholder": "مثال: ٣٠٠-٢٠٠-١٠٠"
+    },
+    "coa": {
+      "title": "دليل الحسابات",
+      "lede": "ابدأ من دليل جاهز لمنشأة صغيرة في مصر — الحسابات وأكواد الضريبة وفترات هذا العام. يمكنك تعديل أي شيء لاحقًا.",
+      "action": "إنشاء دليل الحسابات",
+      "seeding": "جارٍ الإنشاء…",
+      "ready": "جاهز — {{n}} حسابًا"
+    },
+    "tax": {
+      "title": "الضريبة والفوترة الإلكترونية",
+      "lede": "نسبة ضريبة القيمة المضافة القياسية، وهل تستخدم الفوترة الإلكترونية المصرية (ETA).",
+      "vatRate": "نسبة ضريبة القيمة المضافة القياسية",
+      "einvoice": "الفوترة الإلكترونية المصرية (ETA)",
+      "einvoiceHint": "أوقفها لإخفاء الفوترة الإلكترونية من التطبيق."
+    },
+    "invite": {
+      "title": "ادعُ فريقك",
+      "lede": "أضِف من سيعملون معك واختر ما يمكن لكلٍّ منهم فعله. اختياري — يمكنك ذلك في أي وقت من الإعدادات.",
+      "tempPassword": "كلمة المرور المؤقتة",
+      "pendingHint": "سنضيفهم عند الإنهاء."
+    }
+  },
   "dashboard": {
     "heading": "الرئيسية",
     "greeting": {
@@ -112,6 +171,18 @@
       "evening": "مساء الخير، {{name}}"
     },
     "subtitle": "إليك ما يجري في أعمالك اليوم.",
+    "gettingStarted": {
+      "title": "ابدأ من هنا",
+      "progress": "أنجزت {{done}} من {{total}} — خطوات قليلة حتى أول فاتورة.",
+      "dismiss": "إخفاء",
+      "steps": {
+        "profile": "أضِف بيانات شركتك",
+        "accounts": "جهّز دليل الحسابات",
+        "customer": "أضِف أول عميل",
+        "item": "أضِف أول صنف",
+        "invoice": "أنشئ أول طلب"
+      }
+    },
     "attention": {
       "title": "يحتاج انتباهك اليوم",
       "allClear": "كل شيء على ما يرام — لا يوجد ما يحتاج انتباهك الآن.",
@@ -151,6 +222,25 @@
     "byStatus": "التنفيذات حسب الحالة"
   },
   "workflow": {
+    "label": "مسار المعاملة",
+    "sales": {
+      "create": "إنشاء",
+      "confirm": "تأكيد",
+      "deliver": "تسليم",
+      "invoice": "فاتورة",
+      "payment": "تحصيل",
+      "returned": "مرتجع",
+      "cancelled": "ملغي"
+    },
+    "purchasing": {
+      "create": "إنشاء",
+      "confirm": "تأكيد",
+      "receive": "استلام",
+      "bill": "فاتورة المورد",
+      "payment": "سداد",
+      "returned": "مرتجع",
+      "cancelled": "ملغي"
+    },
     "create": "مسار جديد",
     "untitled": "مسار بدون عنوان",
     "name": "الاسم",
@@ -162,7 +252,21 @@
     "statusValue": {
       "active": "نشط",
       "archived": "مؤرشف"
+    },
+    "stage": {
+      "byWhen": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    },
+    "snap": {
+      "status": "الحالة",
+      "date": "التاريخ",
+      "movements": "حركات المخزون"
     }
+  },
+  "resolve": {
+    "notFoundTitle": "تعذّر العثور على المطلوب",
+    "notFound": "لا يوجد ما يطابق ”{{key}}“.",
+    "backHome": "العودة إلى لوحة المعلومات"
   },
   "status": {
     "pending": "قيد الانتظار",
@@ -397,6 +501,7 @@
       "debit": "مدين",
       "credit": "دائن",
       "lineMemo": "بيان السطر",
+      "sourceDoc": "المستند المصدر",
       "costCenter": "مركز التكلفة",
       "totals": "الإجماليات",
       "balanced": "متوازن",
@@ -422,7 +527,11 @@
       "asOf": "حتى تاريخ",
       "all": "الكل",
       "from": "من",
-      "to": "إلى"
+      "to": "إلى",
+      "party": "العميل / المورد",
+      "allParties": "الكل",
+      "customers": "العملاء",
+      "suppliers": "الموردون"
     },
     "vat": {
       "output": "ضريبة المخرجات (مبيعات)",
@@ -456,11 +565,15 @@
       "name": "الاسم",
       "uom": "الوحدة",
       "type": "النوع",
+      "category": "الفئة",
+      "reorderPoint": "حد إعادة الطلب",
+      "active": "نشط",
       "add": "إضافة صنف",
       "empty": "لا توجد أصناف بعد.",
       "emptyHint": "أضف أول صنف باستخدام النموذج أعلاه."
     },
     "warehouse": {
+      "label": "المخزن",
       "code": "رمز المخزن",
       "name": "اسم المخزن",
       "add": "إضافة مخزن",
@@ -525,6 +638,44 @@
       "expiry": "أقرب انتهاء",
       "empty": "لا توجد دفعات مسجلة بعد.",
       "hint": "استلم مخزونًا بدفعة وتاريخ انتهاء لتتبعه هنا."
+    },
+    "detail": {
+      "backToItems": "العودة إلى الأصناف",
+      "backToWarehouses": "العودة إلى المخازن",
+      "onHandValue": "قيمة المخزون المتاح",
+      "stockByWarehouse": "المخزون حسب المخزن",
+      "stockByItem": "المخزون حسب الصنف",
+      "movements": "أحدث الحركات",
+      "noStock": "لا يوجد مخزون متاح.",
+      "noMovements": "لا توجد حركات بعد",
+      "noMovementsHint": "ستظهر هنا عمليات الاستلام والصرف والتحويل.",
+      "reference": "المرجع",
+      "status": "الحالة",
+      "active": "نشط",
+      "inactive": "غير نشط"
+    }
+  },
+  "party": {
+    "customer": "العميل",
+    "supplier": "المورد",
+    "backToCustomers": "العودة إلى العملاء",
+    "backToSuppliers": "العودة إلى الموردين",
+    "ordersTitle": "الطلبات",
+    "noOrders": "لا توجد طلبات بعد.",
+    "statementTitle": "كشف الحساب",
+    "ordersCount": "الطلبات",
+    "totalInvoiced": "إجمالي الفواتير",
+    "totalBilled": "إجمالي المشتريات",
+    "balance": "الرصيد",
+    "openParty": "فتح الصفحة",
+    "notFound": "غير موجود",
+    "notFoundHint": "لا يوجد عميل أو مورد بهذا الرمز.",
+    "col": {
+      "number": "الرقم",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "total": "الإجمالي",
+      "outstanding": "المتبقي"
     }
   },
   "sales": {
@@ -534,13 +685,25 @@
       "confirmed": "تم تأكيد الأمر",
       "delivered": "تم تسليم الأمر",
       "invoiced": "تم إصدار الفاتورة",
+      "invoicedDone": "تم إصدار الفاتورة — {{no}}",
+      "completed": "تم إتمام البيع",
       "paid": "تم تسجيل الدفعة",
       "returned": "تم تسجيل المرتجع",
+      "returnedDone": "تم تسجيل المرتجع — {{no}}",
       "quoteSubmitted": "تم إرسال عرض السعر",
       "quoteApproved": "تمت الموافقة على عرض السعر",
       "quoteRejected": "تم رفض عرض السعر",
       "orderCreated": "تم إنشاء الطلب",
-      "quotationCreated": "تم إنشاء عرض السعر"
+      "quotationCreated": "تم إنشاء عرض السعر",
+      "cancelled": "تم إلغاء الطلب",
+      "bulkApproved": "تمت الموافقة على {{count}} طلبات",
+      "bulkApprovedOne": "تمت الموافقة على طلب واحد",
+      "bulkConfirmed": "تم تأكيد {{count}} طلبات",
+      "bulkConfirmedOne": "تم تأكيد طلب واحد",
+      "bulkQuoteSubmitted": "تم إرسال {{count}} عروض أسعار",
+      "bulkQuoteSubmittedOne": "تم إرسال عرض سعر واحد",
+      "bulkQuoteApproved": "تمت الموافقة على {{count}} عروض أسعار",
+      "bulkQuoteApprovedOne": "تمت الموافقة على عرض سعر واحد"
     },
     "tabs": {
       "orders": "الطلبات",
@@ -574,6 +737,7 @@
       "code": "رمز العميل",
       "name": "الاسم",
       "creditLimit": "حد الائتمان",
+      "active": "نشط",
       "add": "إضافة عميل",
       "unlimited": "غير محدود",
       "empty": "لا يوجد عملاء بعد.",
@@ -600,6 +764,18 @@
       "noTax": "بدون ضريبة",
       "subtotal": "الإجمالي الفرعي"
     },
+    "invoice": {
+      "title": "فاتورة",
+      "org": "شركتك",
+      "billTo": "فاتورة إلى",
+      "issueDate": "تاريخ الإصدار",
+      "orderNo": "رقم الأمر",
+      "taxNumber": "الرقم الضريبي",
+      "country": "الدولة",
+      "backToOrder": "العودة إلى الأمر",
+      "notIssued": "لا توجد فاتورة لهذا الأمر بعد",
+      "notIssuedHint": "أصدر الفاتورة من الأمر، وستظهر هنا للطباعة."
+    },
     "detail": {
       "invoiced": "المفوتر",
       "outstanding": "المتبقي",
@@ -608,6 +784,8 @@
       "deliver": "تسليم",
       "invoice": "إصدار فاتورة",
       "recordPayment": "تسجيل دفعة",
+      "completeSale": "إتمام البيع",
+      "sendEinvoice": "إرسال كفاتورة إلكترونية",
       "creditNoteNo": "رقم إشعار الدائن",
       "returned": "مُرتجع",
       "deliverRemaining": "تسليم المتبقي",
@@ -618,7 +796,8 @@
       "approval": "الموافقة",
       "approved": "مُوافَق عليه",
       "pendingApproval": "بانتظار الموافقة",
-      "vat": "ضريبة القيمة المضافة"
+      "vat": "ضريبة القيمة المضافة",
+      "orderDetails": "تفاصيل الطلب"
     },
     "quotations": {
       "number": "رقم العرض",
@@ -649,7 +828,47 @@
       "newOrder": "أمر شراء جديد",
       "suppliers": "الموردون",
       "requests": "طلبات الشراء",
-      "newRequest": "طلب شراء جديد"
+      "newRequest": "طلب شراء جديد",
+      "importInvoice": "استيراد فاتورة"
+    },
+    "importInvoice": {
+      "dropTitle": "صوّر الفاتورة، أو أفلت صورة أو ملف PDF هنا",
+      "dropHint": "‏JPG أو PNG أو WebP أو PDF — حتى ٥ ميجابايت",
+      "choose": "اختيار ملف",
+      "aiNote": "المساعد الذكي يقرأها — وأنت من يقرر ما يُرحَّل.",
+      "reading": "المساعد الذكي يقرأ الفاتورة…",
+      "readingHint": "عادةً يستغرق الأمر ثوانيَ قليلة.",
+      "unreadableTitle": "تعذّرت قراءة هذا المستند",
+      "unreadableHint": "هذا ما استطعنا تبيّنه — صورة أوضح بإضاءة أفضل تحل الأمر غالبًا.",
+      "tryAnother": "جرّب ملفًا آخر",
+      "reviewTitle": "راجع قبل إنشاء المسودة",
+      "confidence": "دقة القراءة",
+      "confidenceLevel": {
+        "high": "عالية",
+        "medium": "متوسطة",
+        "low": "منخفضة"
+      },
+      "invoiceNumber": "رقم الفاتورة",
+      "extractedSupplier": "كما ورد في الفاتورة",
+      "taxId": "الرقم الضريبي",
+      "noSupplierMatch": "لم نجد موردًا مطابقًا — اختر موردًا، أو أضفه من هنا مباشرةً.",
+      "createSupplier": "أضف المورد «{{name}}»",
+      "createItem": "أضف الصنف «{{name}}»",
+      "codeLabel": "الرمز",
+      "nameLabel": "الاسم",
+      "uomLabel": "الوحدة",
+      "confirmCreate": "إضافة",
+      "supplierCreated": "تمت إضافة المورد «{{name}}»",
+      "itemCreated": "تمت إضافة الصنف «{{name}}»",
+      "extractedLine": "كما ورد في الفاتورة",
+      "noItemMatch": "— غير مطابق —",
+      "vatOnInvoice": "الضريبة في الفاتورة",
+      "invoiceTotals": "الإجمالي في الفاتورة",
+      "totalsMismatch": "البنود أعلاه لا تساوي إجمالي الفاتورة — راجع الكميات والأسعار.",
+      "issuesTitle": "يستحق المراجعة",
+      "createDraft": "إنشاء مسودة أمر شراء",
+      "startOver": "البدء من جديد",
+      "noteRef": "فاتورة المورد"
     },
     "status": {
       "draft": "مسودة",
@@ -675,6 +894,7 @@
     "supplier": {
       "code": "رمز المورد",
       "name": "الاسم",
+      "active": "نشط",
       "add": "إضافة مورد",
       "empty": "لا يوجد موردون بعد.",
       "emptyHint": "أضف أول مورد باستخدام النموذج أعلاه."
@@ -712,7 +932,8 @@
       "approval": "الموافقة",
       "approved": "مُوافَق عليه",
       "pendingApproval": "بانتظار الموافقة",
-      "vat": "ضريبة القيمة المضافة"
+      "vat": "ضريبة القيمة المضافة",
+      "orderDetails": "تفاصيل الطلب"
     },
     "requests": {
       "number": "رقم الطلب",
@@ -741,14 +962,25 @@
       "confirmed": "تم تأكيد أمر الشراء",
       "received": "تم استلام البضائع",
       "billed": "تم تسجيل الفاتورة",
+      "billedDone": "تم تسجيل فاتورة المورد — {{no}}",
       "paid": "تم تسجيل الدفعة",
       "returned": "تم تسجيل المرتجع",
+      "returnedDone": "تم تسجيل المرتجع — {{no}}",
       "reqSubmitted": "تم إرسال طلب الشراء",
       "reqApproved": "تمت الموافقة على طلب الشراء",
       "reqRejected": "تم رفض طلب الشراء",
       "supplierCreated": "تمت إضافة المورد",
       "poCreated": "تم إنشاء أمر الشراء",
-      "prCreated": "تم إنشاء طلب الشراء"
+      "prCreated": "تم إنشاء طلب الشراء",
+      "cancelled": "تم إلغاء الطلب",
+      "bulkApproved": "تمت الموافقة على {{count}} طلبات",
+      "bulkApprovedOne": "تمت الموافقة على طلب واحد",
+      "bulkConfirmed": "تم تأكيد {{count}} طلبات",
+      "bulkConfirmedOne": "تم تأكيد طلب واحد",
+      "bulkReqSubmitted": "تم إرسال {{count}} طلبات شراء",
+      "bulkReqSubmittedOne": "تم إرسال طلب شراء واحد",
+      "bulkReqApproved": "تمت الموافقة على {{count}} طلبات شراء",
+      "bulkReqApprovedOne": "تمت الموافقة على طلب شراء واحد"
     }
   },
   "crm": {
@@ -768,7 +1000,9 @@
       "oppLost": "تم خسارة الفرصة",
       "campaignActivated": "تم تفعيل الحملة",
       "campaignCompleted": "تم إكمال الحملة",
-      "opportunityCreated": "تم إنشاء الفرصة"
+      "opportunityCreated": "تم إنشاء الفرصة",
+      "bulkLeadsQualified": "تم تأهيل {{count}} عملاء محتملين",
+      "bulkLeadsQualifiedOne": "تم تأهيل عميل محتمل واحد"
     },
     "tabs": {
       "pipeline": "خط الفرص",
@@ -901,7 +1135,82 @@
       }
     }
   },
+  "pricing": {
+    "title": "التسعير",
+    "subtitle": "قوائم الأسعار لعملائك وأصنافك.",
+    "tabs": {
+      "aria": "عرض التسعير",
+      "lists": "قوائم الأسعار",
+      "customers": "تسعير العملاء"
+    },
+    "customers": {
+      "subtitle": "اربط العملاء بقوائم الأسعار وحدِّد الأسعار المتفاوَض عليها.",
+      "customer": "العميل",
+      "priceList": "قائمة الأسعار",
+      "assignTitle": "قائمة الأسعار حسب العميل",
+      "assignHint": "لكل عميل قائمة أسعار افتراضية واحدة. إعادة الربط تنقله إليها.",
+      "assign": "ربط",
+      "assignEmpty": "لا عملاء مرتبطون بعد",
+      "assignEmptyHint": "اربط عميلًا بقائمة أسعار لتجاوز القائمة الافتراضية.",
+      "overrideTitle": "الأسعار المتفاوَض عليها",
+      "overrideHint": "سعر لعميل وصنف واحد — يسبق أي قائمة أسعار.",
+      "addOverride": "إضافة سعر",
+      "overrideEmpty": "لا أسعار متفاوَض عليها بعد",
+      "overrideEmptyHint": "حدِّد سعرًا خاصًا لعميل للبدء.",
+      "taxInclusive": "السعر شامل الضريبة",
+      "validFrom": "من تاريخ",
+      "validTo": "إلى تاريخ",
+      "valid": "السريان",
+      "always": "دائمًا",
+      "badInput": "اختر عميلًا وصنفًا وأدخل سعرًا صالحًا."
+    },
+    "list": {
+      "code": "الرمز",
+      "name": "الاسم",
+      "currency": "العملة",
+      "default": "افتراضية",
+      "taxInclusive": "شاملة الضريبة",
+      "inactive": "غير نشطة",
+      "lines": "الأسعار",
+      "add": "إضافة قائمة أسعار",
+      "empty": "لا توجد قوائم أسعار بعد",
+      "emptyHint": "أنشئ أول قائمة أسعار لتحديد ما تتقاضاه."
+    },
+    "detail": {
+      "back": "كل قوائم الأسعار",
+      "item": "الصنف",
+      "unitPrice": "سعر الوحدة",
+      "minQty": "ابتداءً من كمية",
+      "addLine": "إضافة سعر",
+      "empty": "لا أسعار في هذه القائمة",
+      "emptyHint": "أضف صنفًا وسعره للبدء.",
+      "defaultBadge": "افتراضية",
+      "taxInclusiveLabel": "الأسعار شاملة الضريبة",
+      "activeLabel": "نشطة",
+      "badInput": "أدخل صنفًا وسعرًا صالحًا.",
+      "importBtn": "استيراد الأسعار",
+      "importField_item_sku": "رمز الصنف",
+      "importField_unit_price": "سعر الوحدة",
+      "importField_min_quantity": "الحد الأدنى للكمية",
+      "importField_uom": "الوحدة"
+    },
+    "toast": {
+      "listCreated": "تم إنشاء قائمة الأسعار",
+      "priceAdded": "تمت إضافة السعر",
+      "priceRemoved": "تم حذف السعر",
+      "updated": "تم الحفظ",
+      "assigned": "تم ربط العميل",
+      "assignmentRemoved": "تم إلغاء الربط",
+      "overrideAdded": "تمت إضافة السعر",
+      "overrideRemoved": "تم حذف السعر"
+    },
+    "source": {
+      "fromList": "السعر من {{list}}",
+      "negotiated": "سعر متفاوَض عليه"
+    }
+  },
   "common": {
+    "breadcrumb": "مسار التنقل",
     "loading": "جارٍ التحميل…",
     "retry": "إعادة المحاولة",
     "error": {
@@ -923,7 +1232,65 @@
     "on": "مُفعّل",
     "off": "مُعطّل",
     "all": "الكل",
-    "actions": "إجراءات"
+    "actions": "إجراءات",
+    "close": "إغلاق",
+    "notFound": "تعذّر العثور على هذا السجل."
+  },
+  "import": {
+    "action": "استيراد CSV",
+    "changeFile": "اختيار ملف آخر",
+    "confirm": "استيراد {{count}} صف",
+    "confirmOne": "استيراد صف واحد",
+    "confirmNone": "لا شيء للاستيراد",
+    "customers": {
+      "title": "استيراد العملاء"
+    },
+    "suppliers": {
+      "title": "استيراد الموردين"
+    },
+    "items": {
+      "title": "استيراد الأصناف"
+    },
+    "upload": {
+      "lede": "استورد عملاءك من ملف CSV — خاصية «حفظ باسم CSV» في إكسل تكفي. ستعاين كل شيء قبل الحفظ.",
+      "choose": "اختيار ملف",
+      "template": "تنزيل النموذج"
+    },
+    "map": {
+      "title": "طابِق الأعمدة",
+      "hint": "من {{file}}. طابقناها تلقائيًّا — عدِّلها إذا لزم.",
+      "ignore": "بدون استيراد",
+      "missingRequired": "اختر عمودًا لـ: {{fields}}"
+    },
+    "mode": {
+      "title": "إذا كان الصف موجودًا",
+      "create": "تخطّيه",
+      "upsert": "تحديثه"
+    },
+    "preview": {
+      "title": "معاينة"
+    },
+    "outcome": {
+      "created": "للإضافة",
+      "updated": "للتحديث",
+      "skipped": "موجود بالفعل",
+      "failed": "به مشكلات"
+    },
+    "error": {
+      "row": "الصف",
+      "field": "العمود",
+      "message": "المشكلة",
+      "more": "و{{count}} صفوف أخرى بها مشكلات",
+      "moreOne": "وصف واحد آخر به مشكلات"
+    },
+    "toast": {
+      "done": "تم استيراد {{count}} صف",
+      "doneOne": "تم استيراد صف واحد"
+    },
+    "pricingLines": {
+      "title": "استيراد الأسعار",
+      "lede": "ارفع ملف CSV يحتوي على رموز الأصناف وأسعارها. يمكنك تضمين شرائح الكمية."
+    }
   },
   "toast": {
     "region": "الإشعارات",
@@ -1072,7 +1439,11 @@
       "sidebar": "الشريط الجانبي",
       "sidebarDesc": "تسميات موسّعة أو أيقونات مضغوطة.",
       "expanded": "موسّع",
-      "compactSidebar": "مضغوط"
+      "compactSidebar": "مضغوط",
+      "feedbackMode": "تنبيهات الإجراءات",
+      "feedbackModeDesc": "مقدار التفاصيل التي تظهر في لوحة ما بعد الإجراء عند إتمام مهمة.",
+      "feedbackSimple": "مبسّط",
+      "feedbackRich": "مفصّل"
     },
     "a11y": {
       "largerText": "نص أكبر",
@@ -1107,7 +1478,7 @@
         "sales": "المبيعات",
         "purchasing": "المشتريات",
         "inventory": "المخزون",
-        "accounting": "المحاسبة",
+        "accounting": "المالية",
         "crm": "إدارة العملاء",
         "workflows": "مسارات العمل"
       },
@@ -1134,6 +1505,13 @@
       "adminOnly": "يمكن لمسؤول النظام فقط تغيير إعدادات المؤسسة.",
       "lead": "إعدادات تُطبّق على الجميع في المؤسسة. ويمكن لكل مستخدم تجاوزها في إعداداته.",
       "companyName": "اسم الشركة",
+      "country": "الدولة",
+      "vatNumber": "رقم التسجيل الضريبي",
+      "vatNumberDesc": "يظهر على فواتيرك وفي الفواتير الإلكترونية.",
+      "baseCurrency": "العملة الأساسية",
+      "baseCurrencyDesc": "العملة التي تُمسك بها دفاترك.",
+      "einvoice": "الفوترة الإلكترونية المصرية (ETA)",
+      "einvoiceDesc": "عند إيقافها، تُخفى الفوترة الإلكترونية من التطبيق.",
       "language": "اللغة الافتراضية",
       "languageDesc": "اللغة التي يبدأ بها المستخدمون الجدد.",
       "theme": "السمة الافتراضية",
@@ -1141,7 +1519,14 @@
       "accent": "اللون الافتراضي",
       "accentDesc": "اللون المميّز الذي يبدأ به المستخدمون الجدد.",
       "landing": "الصفحة الأولى الافتراضية",
-      "landingDesc": "الصفحة التي يراها المستخدمون أولاً بعد تسجيل الدخول."
+      "landingDesc": "الصفحة التي يراها المستخدمون أولاً بعد تسجيل الدخول.",
+      "orderCancel": "إلغاء الطلبات",
+      "orderCancelDesc": "إلى أي مرحلة يظل بالإمكان إلغاء طلب البيع أو الشراء. بعد التسليم استخدم المرتجع بدلاً من ذلك.",
+      "orderCancelOptions": {
+        "disabled": "أبدًا",
+        "draft": "المسودات فقط",
+        "confirmed": "حتى التأكيد"
+      }
     }
   },
   "admin": {
@@ -1267,7 +1652,7 @@
         "approve": "موافقة"
       },
       "mod": {
-        "accounting": "المحاسبة",
+        "accounting": "المالية",
         "inventory": "المخزون",
         "sales": "المبيعات",
         "purchasing": "المشتريات",
@@ -1287,6 +1672,325 @@
         "discount": "خصم",
         "return": "مرتجع",
         "journal": "قيد يومية"
+      }
+    }
+  },
+  "document": {
+    "moreActions": "إجراءات أخرى",
+    "duplicate": "تكرار",
+    "print": "طباعة",
+    "exportPdf": "تصدير PDF",
+    "share": "مشاركة",
+    "cancelOrder": "إلغاء الطلب",
+    "linkCopied": "تم نسخ الرابط",
+    "linkCopyFailed": "تعذّر نسخ الرابط",
+    "completedOn": "اكتملت كل الخطوات في {{date}}",
+    "cancelConfirmTitle": "إلغاء {{number}}؟",
+    "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء."
+  },
+  "bulk": {
+    "region": "العناصر المحددة",
+    "selected": "{{count}} عنصر محدد",
+    "selectedOne": "عنصر واحد محدد",
+    "clear": "إلغاء التحديد",
+    "selectAll": "تحديد الكل",
+    "selectRow": "تحديد الصف"
+  },
+  "feedback": {
+    "relatedLabel": "سجلات ذات صلة",
+    "fact": {
+      "amount": "المبلغ",
+      "items": "الأصناف",
+      "status": "الحالة"
+    },
+    "related": {
+      "customer": "العميل",
+      "customers": "العملاء",
+      "orders": "أوامر البيع",
+      "quotations": "عروض الأسعار",
+      "supplier": "المورد",
+      "suppliers": "الموردون",
+      "purchaseOrders": "أوامر الشراء",
+      "requests": "طلبات الشراء",
+      "item": "الصنف",
+      "onHand": "الأرصدة"
+    },
+    "action": {
+      "newOrder": "أمر جديد",
+      "newQuote": "عرض سعر جديد",
+      "newOrderFor": "إنشاء أمر",
+      "newPO": "أمر شراء جديد",
+      "newRequest": "طلب جديد",
+      "newPOFor": "إنشاء أمر شراء"
+    },
+    "sales": {
+      "step": {
+        "approve": "الموافقة على الأمر",
+        "confirm": "تأكيد الأمر",
+        "deliver": "تسليم",
+        "invoice": "إصدار فاتورة",
+        "pay": "تسجيل دفعة"
+      },
+      "quoteStep": {
+        "submit": "إرسال العرض",
+        "approve": "الموافقة على العرض",
+        "convert": "تحويل إلى أمر بيع"
+      },
+      "order": {
+        "created": {
+          "title": "تم إنشاء أمر البيع {{number}}",
+          "context": "جاهز للتأكيد — يبدأ الحجز عند التأكيد."
+        },
+        "approved": {
+          "title": "تمت الموافقة على أمر البيع {{number}}",
+          "context": "تمت الموافقة. أكّده للمتابعة."
+        },
+        "confirmed": {
+          "title": "تم تأكيد أمر البيع {{number}}",
+          "context": "مؤكد. قم بتسليم البضاعة."
+        },
+        "delivered": {
+          "title": "تم تسليم أمر البيع {{number}}",
+          "context": "تم التسليم. أصدر الفاتورة لمطالبة العميل."
+        },
+        "invoiced": {
+          "title": "تمت فوترة أمر البيع {{number}}",
+          "context": "تمت الفوترة. بانتظار سداد {{amount}}."
+        },
+        "paid": {
+          "title": "تم سداد أمر البيع {{number}}",
+          "context": "مدفوع بالكامل. لا يوجد إجراء آخر."
+        },
+        "returned": {
+          "title": "تم تسجيل مرتجع أمر البيع {{number}}",
+          "context": "تم تسجيل المرتجع. صدر إشعار دائن."
+        },
+        "cancelled": {
+          "title": "تم إلغاء أمر البيع {{number}}",
+          "context": "هذا الأمر مغلق الآن."
+        },
+        "completed": {
+          "title": "تمت عملية البيع {{number}}",
+          "context": "تم التأكيد والتسليم والفوترة. بانتظار سداد {{amount}}."
+        },
+        "converted": {
+          "title": "تم إنشاء أمر البيع {{number}}",
+          "context": "أُنشئ من عرض سعر. جاهز للتأكيد."
+        }
+      },
+      "quote": {
+        "created": {
+          "title": "تم إنشاء عرض السعر {{number}}",
+          "context": "جاهز للإرسال للموافقة."
+        },
+        "submitted": {
+          "title": "تم إرسال عرض السعر {{number}}",
+          "context": "أُرسل للموافقة."
+        },
+        "approved": {
+          "title": "تمت الموافقة على عرض السعر {{number}}",
+          "context": "تمت الموافقة. حوّله إلى أمر بيع."
+        },
+        "rejected": {
+          "title": "تم رفض عرض السعر {{number}}",
+          "context": "تم رفض عرض السعر."
+        }
+      },
+      "customer": {
+        "created": {
+          "title": "تمت إضافة العميل {{name}}",
+          "context": "يمكنك الآن البيع لهذا العميل وإصدار فواتيره."
+        }
+      },
+      "insight": {
+        "allInStock": "كل الأصناف متوفرة في المخزون. يمكن تنفيذ هذا الأمر الآن.",
+        "creditOk": "الحد الائتماني المستخدم للعميل: {{pct}}%."
+      },
+      "warn": {
+        "oneShort": "صنف واحد ناقص في المخزون.",
+        "someShort": "{{count}} أصناف ناقصة في المخزون.",
+        "creditHigh": "الحد الائتماني المستخدم للعميل: {{pct}}% — قارب على الحد.",
+        "creditExceeded": "تجاوز العميل الحد الائتماني ({{pct}}%)."
+      },
+      "action": {
+        "retry": "أعد المحاولة"
+      },
+      "fix": {
+        "receive": "استلام {{sku}} — المطلوب {{qty}} في {{warehouse}}"
+      },
+      "error": {
+        "approved": {
+          "title": "تعذّرت الموافقة على {{number}}"
+        },
+        "confirmed": {
+          "title": "تعذّر تأكيد {{number}}"
+        },
+        "delivered": {
+          "title": "تعذّر تسليم {{number}}",
+          "reason": "المخزون غير كافٍ لتسليم جميع الأصناف. استلم الأصناف الناقصة ثم أعد المحاولة."
+        },
+        "invoiced": {
+          "title": "تعذّرت فوترة {{number}}"
+        },
+        "paid": {
+          "title": "تعذّر تسجيل دفعة {{number}}"
+        },
+        "returned": {
+          "title": "تعذّر تسجيل مرتجع {{number}}"
+        },
+        "cancelled": {
+          "title": "تعذّر إلغاء {{number}}"
+        },
+        "completed": {
+          "title": "تعذّر إتمام {{number}}"
+        }
+      }
+    },
+    "doc": {
+      "invoice": "فاتورة {{no}}",
+      "creditNote": "إشعار دائن {{no}}",
+      "order": "أمر بيع {{no}}",
+      "bill": "فاتورة مورد {{no}}",
+      "debitNote": "إشعار مدين {{no}}",
+      "purchaseOrder": "أمر شراء {{no}}",
+      "journal": "قيد {{no}}"
+    },
+    "documentsLabel": "السجلات الناتجة",
+    "resolutionsLabel": "طريقة الحل",
+    "purchasing": {
+      "step": {
+        "approve": "اعتماد الأمر",
+        "confirm": "تأكيد الأمر",
+        "receive": "استلام البضاعة",
+        "bill": "تسجيل الفاتورة",
+        "pay": "تسجيل الدفعة"
+      },
+      "reqStep": {
+        "submit": "إرسال الطلب",
+        "approve": "اعتماد الطلب",
+        "convert": "تحويل إلى أمر شراء"
+      },
+      "action": {
+        "retry": "أعد المحاولة"
+      },
+      "po": {
+        "created": {
+          "title": "تم إنشاء أمر الشراء {{number}}",
+          "context": "جاهز للتأكيد."
+        },
+        "approved": {
+          "title": "تم اعتماد أمر الشراء {{number}}",
+          "context": "تم الاعتماد. أكّده للمتابعة."
+        },
+        "confirmed": {
+          "title": "تم تأكيد أمر الشراء {{number}}",
+          "context": "تم التأكيد. استلم البضاعة تاليًا."
+        },
+        "received": {
+          "title": "تم استلام أمر الشراء {{number}}",
+          "context": "تم استلام البضاعة. سجّل الفاتورة لإثبات المستحق للمورد."
+        },
+        "billed": {
+          "title": "تمت فوترة أمر الشراء {{number}}",
+          "context": "تمت الفوترة. مستحق للمورد {{amount}}."
+        },
+        "paid": {
+          "title": "تم سداد أمر الشراء {{number}}",
+          "context": "مدفوع بالكامل. لا شيء آخر."
+        },
+        "returned": {
+          "title": "تم إرجاع أمر الشراء {{number}}",
+          "context": "تم تسجيل المرتجع. صدر إشعار مدين."
+        },
+        "cancelled": {
+          "title": "تم إلغاء أمر الشراء {{number}}",
+          "context": "أصبح هذا الأمر مغلقًا."
+        },
+        "converted": {
+          "title": "تم إنشاء أمر الشراء {{number}}",
+          "context": "أُنشئ من طلب شراء. جاهز للتأكيد."
+        }
+      },
+      "request": {
+        "created": {
+          "title": "تم إنشاء طلب الشراء {{number}}",
+          "context": "جاهز للإرسال للموافقة."
+        },
+        "submitted": {
+          "title": "تم إرسال طلب الشراء {{number}}",
+          "context": "أُرسل للموافقة."
+        },
+        "approved": {
+          "title": "تم اعتماد طلب الشراء {{number}}",
+          "context": "تم الاعتماد. حوّله إلى أمر شراء."
+        },
+        "rejected": {
+          "title": "تم رفض طلب الشراء {{number}}",
+          "context": "تم رفض الطلب."
+        }
+      },
+      "supplier": {
+        "created": {
+          "title": "تمت إضافة المورد {{name}}",
+          "context": "يمكنك الآن الشراء من هذا المورد وسداد مستحقاته."
+        }
+      },
+      "error": {
+        "approved": {
+          "title": "تعذّر اعتماد {{number}}"
+        },
+        "confirmed": {
+          "title": "تعذّر تأكيد {{number}}"
+        },
+        "received": {
+          "title": "تعذّر استلام {{number}}"
+        },
+        "billed": {
+          "title": "تعذّرت فوترة {{number}}"
+        },
+        "paid": {
+          "title": "تعذّر تسجيل دفعة {{number}}"
+        },
+        "returned": {
+          "title": "تعذّر تسجيل مرتجع {{number}}"
+        },
+        "cancelled": {
+          "title": "تعذّر إلغاء {{number}}"
+        }
+      }
+    },
+    "inventory": {
+      "receipt": {
+        "title": "تم الاستلام ({{ref}})",
+        "context": "تمت إضافته إلى المخزون. رُحّل القيد."
+      },
+      "issue": {
+        "title": "تم الصرف ({{ref}})",
+        "context": "صُرف من المخزون. رُحّل القيد."
+      },
+      "transfer": {
+        "title": "تم التحويل ({{ref}})",
+        "context": "نُقل بين المخازن."
+      },
+      "insight": {
+        "onHand": "الرصيد في {{warehouse}}: {{qty}}."
+      },
+      "warn": {
+        "belowReorder": "{{sku}} أقل من حد إعادة الطلب."
+      },
+      "fix": {
+        "receive": "استلام {{sku}} في {{warehouse}}"
+      },
+      "error": {
+        "receipt": {
+          "title": "تعذّر استلام المخزون"
+        },
+        "issue": {
+          "title": "تعذّر صرف المخزون"
+        },
+        "transfer": {
+          "title": "تعذّر تحويل المخزون"
+        }
       }
     }
   }

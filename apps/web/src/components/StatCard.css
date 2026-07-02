@@ -37,6 +37,10 @@
   background-color: var(--color-surface-alt);
   color: var(--color-text-muted);
 }
+.statcard__icon .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
 
 .statcard__value {
   font-size: var(--font-size-2xl);
@@ -55,7 +59,7 @@
 .statcard__delta {
   display: inline-flex;
   align-items: center;
-  gap: 0.125rem;
+  gap: var(--space-0-5);
   font-weight: var(--font-weight-semibold);
 }
 

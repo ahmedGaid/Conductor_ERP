@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Tooltip } from "../components/Tooltip";
+import { NavIcon } from "./icons";
 import { getTheme, setTheme, type Theme } from "../theme";
 
 // Light/dark toggle for the app chrome. Reuses the ghost icon-button styling already in the command
@@ -28,7 +29,7 @@ export function ThemeToggle() {
         aria-label={label}
         onClick={toggle}
       >
-        <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+        <NavIcon name={theme === "dark" ? "sun" : "moon"} />
       </button>
     </Tooltip>
   );

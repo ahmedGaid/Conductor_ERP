@@ -221,6 +221,12 @@ h3 {
   border-radius: var(--radius-md);
   line-height: 1;
 }
+/* NavIcon has no intrinsic size; give one consistent glyph size to every icon-button
+   (theme toggle, etc.) so the chrome's icons match the sidebar/topbar hand. */
+.btn--icon .navicon {
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
+}
 
 /* ---- Form fields ---- */
 input,
@@ -278,6 +284,21 @@ textarea:focus {
 .error-text {
   color: var(--color-danger-strong);
 }
+/* Small muted hint under a form/section (one voice: muted + secondary size). Replaces the
+   ad-hoc inline `style={{ fontSize: ... }}` that used to sit on a bare `.muted` node. */
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+/* A toolbar/form field that should grow to fill its row. Replaces inline `flex: 1`. */
+.grow {
+  flex: 1;
+}
+/* A block set apart from its neighbours by the standard section rhythm. Replaces inline
+   `marginBlock: var(--space-4)` (e.g. a lines table under an entry form). */
+.block-spaced {
+  margin-block: var(--space-4);
+}
 
 /* ---- Module header (title + one-line description above a module's tab bar) ----
    Rendered once per module by its *Nav component, so every page in the module opens
@@ -285,11 +306,11 @@ textarea:focus {
 .module-head {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 .module-head__title {
   margin: 0;
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   letter-spacing: -0.01em;
 }
@@ -316,6 +337,30 @@ textarea:focus {
 .page-subtitle {
   color: var(--color-text-muted);
   margin-block: var(--space-1) 0;
+}
+
+/* ---- Back link (one app-wide back affordance) ----
+   Quiet muted link + single-stroke arrow. The arrow points inline-start and is mirrored in RTL,
+   so "back" reads correctly in the Arabic default (replaces the old hardcoded "←" glyph). */
+.backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: start;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+.backlink:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.backlink .navicon {
+  inline-size: 1.05em;
+  block-size: 1.05em;
+}
+[dir="rtl"] .backlink .navicon {
+  transform: scaleX(-1);
 }
 
 /* ---- Keyboard-navigated list row (j/k/Enter) ---- */

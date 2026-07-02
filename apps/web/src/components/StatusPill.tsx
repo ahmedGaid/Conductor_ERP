@@ -1,13 +1,11 @@
 import { useTranslation } from "react-i18next";
 
 import type { InstanceStatus } from "../api/types";
-import "./StatusPill.css";
+import { Badge } from "./Badge";
 
+// Workflow instance status chip. InstanceStatus is a subset of the Badge tones, so the
+// status doubles as the tone.
 export function StatusPill({ status }: { status: InstanceStatus }) {
   const { t } = useTranslation();
-  return (
-    <span className={`pill pill--${status}`} data-status={status}>
-      {t(`status.${status}`)}
-    </span>
-  );
+  return <Badge tone={status}>{t(`status.${status}`)}</Badge>;
 }

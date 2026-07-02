@@ -28,6 +28,7 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 APP_VERSION = env("APP_VERSION", default="0.0.0")
 IP_WHITELIST = env("DJANGO_IP_WHITELIST")  # empty list => allow all (dev)
+CSP_POLICY = ""  # off by default; prod sets a real policy (see settings/prod.py)
 
 # --- Applications ---
 DJANGO_APPS = [
@@ -53,11 +54,14 @@ LOCAL_APPS = [
     "erp.forms",
     "erp.accounting",
     "erp.inventory",
+    "erp.pricing",
     "erp.sales",
     "erp.purchasing",
     "erp.crm",
     "erp.einvoice",
     "erp.notifications",
+    "erp.setup",
+    "erp.assistant",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -66,8 +70,15 @@ MIDDLEWARE = [
     # Correlation ID must wrap everything so every log/error/audit row carries it.
     "erp.core.middleware.CorrelationIdMiddleware",
     "erp.core.middleware.IpWhitelistMiddleware",
+    # Adds Content-Security-Policy when settings.CSP_POLICY is non-empty (prod sets it; dev leaves
+    # it off because the SPA is served by Vite, not Django, during development).
+    "erp.core.middleware.ContentSecurityPolicyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Activate the request's language from Accept-Language (sent by the web client to match the UI),
+    # so DRF's built-in validation messages (e.g. an invalid choice) come back in the user's language
+    # instead of always the LANGUAGE_CODE default. Must sit after Session and before Common.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -116,6 +127,8 @@ PASSWORD_HASHERS = [
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
 ]
 
 # --- i18n (Arabic-first; the UI defaults to ar/RTL) ---
@@ -149,6 +162,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("DRF_THROTTLE_ANON", default="60/min"),
         "user": env("DRF_THROTTLE_USER", default="1000/min"),
+        # Dedicated brute-force cap for the login endpoint (per-IP; sits under the anon rate).
+        "login": env("DRF_THROTTLE_LOGIN", default="5/min"),
     },
 }
 
@@ -199,6 +214,26 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 
 REDIS_URL = _redis_url
+
+# --- AI assistant (plan session 02; optional layer — see DECISIONS.md "AI 2026-07") ---
+# Off unless an API key is present: a customer install with no key runs fully, AI UI hidden.
+# Keys live in env only, never in code or the DB. Two providers behind one seam
+# (erp.assistant.client): Anthropic (Claude) or Google (Gemini) — auto-picked by which key is set,
+# or forced with ASSISTANT_PROVIDER=anthropic|gemini.
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
+GROQ_API_KEY = env("GROQ_API_KEY", default="")  # Groq inference (OpenAI-compatible; Llama-4 vision)
+ASSISTANT_PROVIDER = env("ASSISTANT_PROVIDER", default="")  # "" = auto by key
+ASSISTANT_ENABLED = env.bool(
+    "ASSISTANT_ENABLED", default=bool(ANTHROPIC_API_KEY or GEMINI_API_KEY or GROQ_API_KEY)
+)
+ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="")  # "" = the provider's default model
+ASSISTANT_MAX_TOKENS = env.int("ASSISTANT_MAX_TOKENS", default=4096)  # per-request cost cap
+
+# --- Workflow egress (SSRF guard) ---
+# Optional host-suffix allowlist for workflow REST/webhook nodes. Empty = any PUBLIC host (private/
+# loopback/link-local/metadata addresses are always blocked; see erp.workflow.adapters.egress).
+WORKFLOW_EGRESS_ALLOWLIST = env.list("WORKFLOW_EGRESS_ALLOWLIST", default=[])
 
 # --- CORS (frontend dev server) ---
 CORS_ALLOWED_ORIGINS = [

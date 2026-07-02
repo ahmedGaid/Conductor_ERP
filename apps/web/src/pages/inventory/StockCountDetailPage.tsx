@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { BackLink } from "../../components/BackLink";
 
 import { getStockCount, postStockCount, setCountLine, type StockCount } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
@@ -8,6 +10,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
+import { EntityLink } from "../../components/EntityLink";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
@@ -61,7 +65,7 @@ export function StockCountDetailPage() {
   return (
     <section className="inv-page">
       <InventoryNav />
-      <Link className="inv-link" to="/inventory/counts">← {t("inventory.counts.backToList")}</Link>
+      <BackLink to="/inventory/counts">{t("inventory.counts.backToList")}</BackLink>
 
       {loading && (
         <ListSkeleton rows={2} />
@@ -71,11 +75,11 @@ export function StockCountDetailPage() {
       {count && (
         <>
           <div className="inv-detail-head">
-            <h2><Bdi>{count.warehouse_code}</Bdi> · <Bdi>{count.count_date}</Bdi></h2>
+            <h2><EntityLink type="warehouse" value={count.warehouse_code} /> · <Bdi>{count.count_date}</Bdi></h2>
             <div className="inv-toolbar">
-              <span className={`pill pill--${posted ? "completed" : count.status === "cancelled" ? "failed" : "running"}`}>
+              <Badge tone={posted ? "completed" : count.status === "cancelled" ? "failed" : "running"}>
                 {t(`inventory.counts.statuses.${count.status}`)}
-              </span>
+              </Badge>
               {counting && (
                 <button className="btn btn--primary" onClick={onPost}>
                   {t("inventory.counts.post")}
@@ -83,7 +87,7 @@ export function StockCountDetailPage() {
               )}
             </div>
           </div>
-          {counting && <p className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("inventory.counts.enterHint")}</p>}
+          {counting && <p className="hint">{t("inventory.counts.enterHint")}</p>}
 
           <div className="card inv-table-wrap">
             <table className="inv-table">
@@ -99,7 +103,7 @@ export function StockCountDetailPage() {
               <tbody>
                 {(count.lines ?? []).map((ln) => (
                   <tr key={ln.id}>
-                    <td><Bdi>{ln.item_sku}</Bdi> · {ln.item_name}</td>
+                    <td><EntityLink type="item" value={ln.item_sku} /> · {ln.item_name}</td>
                     <td className="inv-table__num"><Bdi>{ln.system_quantity}</Bdi></td>
                     <td className="inv-table__num">
                       {counting ? (

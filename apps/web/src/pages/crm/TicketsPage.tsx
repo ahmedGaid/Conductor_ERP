@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -14,6 +14,8 @@ import {
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { Badge } from "../../components/Badge";
+import { crmTone, crmPriorityTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
@@ -24,6 +26,7 @@ import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import "./crm.css";
 
 const PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
@@ -73,6 +76,10 @@ export function TicketsPage() {
   const [subject, setSubject] = useState("");
   const [customer, setCustomer] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("medium");
+
+  // ⌘/Ctrl+Enter submits the add-ticket form from any field (incl. the priority select).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   // Optimistic create: open the new ticket row instantly and clear the form for the next entry; the
   // server row (with its number + SLA flags) replaces the placeholder on settle, or it rolls back + toasts.
@@ -140,7 +147,7 @@ export function TicketsPage() {
     <section className="crm-page">
       <CrmNav />
 
-      <form className="card crm-page" onSubmit={onAdd}>
+      <form ref={formRef} className="card crm-page" onSubmit={onAdd}>
         <h2>{t("crm.ticket.add")}</h2>
         <div className="crm-toolbar">
           <label className="crm-field">
@@ -170,7 +177,7 @@ export function TicketsPage() {
           <button className="btn btn--sm" onClick={onRunEscalations}>
             {t("crm.ticket.runEscalations")}
           </button>
-          <span className="muted" style={{ fontSize: "var(--font-size-sm)" }}>{t("crm.ticket.runEscalationsHint")}</span>
+          <span className="hint">{t("crm.ticket.runEscalationsHint")}</span>
         </div>
       )}
 
@@ -220,10 +227,10 @@ export function TicketsPage() {
                   <td className="latin">{tk.number}</td>
                   <td>{tk.subject}</td>
                   <td>
-                    <span className={`crm-prio crm-prio--${tk.priority}`}>{t(`crm.priority.${tk.priority}`)}</span>
+                    <Badge tone={crmPriorityTone(tk.priority)}>{t(`crm.priority.${tk.priority}`)}</Badge>
                   </td>
                   <td>
-                    <span className={`crm-badge crm-badge--${tk.status}`}>{t(`crm.ticketStatus.${tk.status}`)}</span>
+                    <Badge tone={crmTone(tk.status)}>{t(`crm.ticketStatus.${tk.status}`)}</Badge>
                   </td>
                   <td>
                     {tk.is_breached ? (

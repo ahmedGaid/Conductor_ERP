@@ -6,18 +6,22 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.idempotency import run_once
+from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import Category, Item, StockCount, StockCountLine, StockMovement, Warehouse
+from ..imports import ITEM_IMPORT
 from ..repositories import items as item_repo
 from ..repositories import warehouses as warehouse_repo
 from .serializers import (
@@ -61,6 +65,65 @@ class ItemListCreateView(APIView):
         return _envelope(ItemSerializer(item).data, status=201)
 
 
+def _movements_for(**filters) -> list:
+    qs = (
+        StockMovement.objects.select_related("item", "warehouse", "dest_warehouse")
+        .filter(**filters)
+        .order_by("-date", "-created_at")
+    )
+    return MovementSerializer(qs[:200], many=True).data
+
+
+def _stock_dict(report) -> dict:
+    return {"rows": [asdict(r) for r in report.rows], "total_value_minor": report.total_value_minor}
+
+
+class ItemDetailView(APIView):
+    """One item: master record + its on-hand balance per warehouse + recent movements."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request, sku) -> Response:
+        item = get_object_or_404(Item.objects.select_related("category"), sku=sku)
+        return _envelope({
+            "item": ItemSerializer(item).data,
+            "stock": _stock_dict(services.stock_on_hand(item_sku=sku)),
+            "movements": _movements_for(item=item),
+        })
+
+
+class WarehouseDetailView(APIView):
+    """One warehouse: master record + its on-hand balance per item + recent movements."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request, code) -> Response:
+        warehouse = get_object_or_404(Warehouse, code=code)
+        return _envelope({
+            "warehouse": WarehouseSerializer(warehouse).data,
+            "stock": _stock_dict(services.stock_on_hand(warehouse_code=code)),
+            "movements": _movements_for(warehouse=warehouse),
+        })
+
+
+class ItemImportView(APIView):
+    """CSV import for items — upload to preview, re-post with commit=true to apply."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def post(self, request: Request) -> Response:
+        return _envelope(run_import_request(ITEM_IMPORT, request))
+
+
+class ItemImportTemplateView(APIView):
+    """Download a CSV template (canonical headers + one example row) so columns are obvious."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request) -> HttpResponse:
+        return template_response(ITEM_IMPORT, "items-template.csv")
+
+
 class CategoryListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
@@ -100,13 +163,23 @@ class ReceiveView(APIView):
         v = s.validated_data
         item = get_object_or_404(Item, sku=v["item_sku"])
         warehouse = get_object_or_404(Warehouse, code=v["warehouse_code"])
-        movement = services.receive_stock(
-            item=item, warehouse=warehouse, quantity=v["quantity"],
-            unit_cost_minor=v["unit_cost"], date=v.get("date"),
-            reference=v.get("reference", ""), memo=v.get("memo", ""),
-            batch_no=v.get("batch_no", ""), expiry_date=v.get("expiry_date"), actor=request.user,
+        # A receipt has no state machine to reject a replay (unlike order actions), so a retried
+        # request would double the stock — honour the client's Idempotency-Key.
+        movement_id, created = run_once(
+            key=(request.headers.get("Idempotency-Key") or "").strip(),
+            endpoint="inventory.receive",
+            create=lambda: services.receive_stock(
+                item=item, warehouse=warehouse, quantity=v["quantity"],
+                unit_cost_minor=v["unit_cost"], date=v.get("date"),
+                reference=v.get("reference", ""), memo=v.get("memo", ""),
+                batch_no=v.get("batch_no", ""), expiry_date=v.get("expiry_date"), actor=request.user,
+            ),
         )
-        return _envelope(MovementSerializer(movement).data, status=201)
+        movement = get_object_or_404(
+            StockMovement.objects.select_related("item", "warehouse", "dest_warehouse"),
+            id=movement_id,
+        )
+        return _envelope(MovementSerializer(movement).data, status=201 if created else 200)
 
 
 class IssueView(APIView):
@@ -153,6 +226,8 @@ class MovementListView(APIView):
         qs = scope_queryset(request.user, qs, "inventory.stock_movement.view")
         if request.query_params.get("item"):
             qs = qs.filter(item__sku=request.query_params["item"])
+        if request.query_params.get("reference"):
+            qs = qs.filter(reference=request.query_params["reference"])
         return _envelope(MovementSerializer(qs[:200], many=True).data)
 
 
@@ -223,7 +298,11 @@ class StockCountDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
     def get(self, request: Request, count_id) -> Response:
-        count = get_object_or_404(StockCount.objects.select_related("warehouse"), id=count_id)
+        count = get_object_or_404(
+            scope_queryset(request.user, StockCount.objects.select_related("warehouse"),
+                           "inventory.stock_count.view"),
+            id=count_id,
+        )
         return _envelope(_count_dict(count, with_lines=True))
 
 
@@ -231,7 +310,13 @@ class StockCountLineSetView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
     def post(self, request: Request, line_id) -> Response:
-        line = get_object_or_404(StockCountLine.objects.select_related("count"), id=line_id)
+        line = get_object_or_404(
+            StockCountLine.objects.select_related("count").filter(
+                count__in=scope_queryset(request.user, StockCount.objects.all(),
+                                         "inventory.stock_count.view")
+            ),
+            id=line_id,
+        )
         s = CountLineSetSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.set_counted(line, s.validated_data["counted_quantity"])
@@ -242,7 +327,11 @@ class StockCountPostView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
     def post(self, request: Request, count_id) -> Response:
-        count = get_object_or_404(StockCount.objects.select_related("warehouse"), id=count_id)
+        count = get_object_or_404(
+            scope_queryset(request.user, StockCount.objects.select_related("warehouse"),
+                           "inventory.stock_count.view"),
+            id=count_id,
+        )
         services.post_count(count, actor=request.user)
         return _envelope(_count_dict(count, with_lines=True))
 

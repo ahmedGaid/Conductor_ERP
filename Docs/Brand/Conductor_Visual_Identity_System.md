@@ -203,6 +203,8 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | e-invoice | فاتورة إلكترونية | — |
 | Notes (free-text on a record) | ملاحظات | تعليقات (reserve for threaded comments, a different concept) |
 | Opportunity | فرصة | — |
+| Accounting module (name) | المالية | المحاسبة (the *module label* is **المالية**; "محاسبة/محاسبي" stays only for the bookkeeping discipline in prose, 2026-06-30) |
+| AI assistant (the product surface) | المساعد الذكي | الذكاء الاصطناعي / روبوت (the surface is always **المساعد الذكي**; "AI" alone never appears in Arabic copy, 2026-07-02) |
 
 ### 6.2 Status & action voice (Arabic)
 Human-language statuses (Directive — "Waiting for Finance approval") must read as **natural Egyptian

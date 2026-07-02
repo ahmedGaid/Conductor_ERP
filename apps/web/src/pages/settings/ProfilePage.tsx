@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getMe } from "../../api/identity";
@@ -17,6 +18,20 @@ export function ProfilePage() {
   const { t } = useTranslation();
   const { prefs, update } = usePreferences();
   const { data: me } = useAsync(getMe, []);
+
+  // Text fields edit a local draft and persist on blur. Saving on every keystroke round-trips the
+  // server's trimmed value back into the field, which eats spaces as you type.
+  const [draft, setDraft] = useState({ display_name: "", job_title: "", phone: "", time_zone: "" });
+  useEffect(() => {
+    if (prefs) {
+      setDraft({
+        display_name: prefs.display_name,
+        job_title: prefs.job_title,
+        phone: prefs.phone,
+        time_zone: prefs.time_zone,
+      });
+    }
+  }, [prefs?.display_name, prefs?.job_title, prefs?.phone, prefs?.time_zone]);
 
   if (!prefs) return <SettingsSkeleton />;
   const shownName = prefs.display_name || me?.username || "?";
@@ -39,8 +54,9 @@ export function ProfilePage() {
           <input
             id="pf-name"
             type="text"
-            value={prefs.display_name}
-            onChange={(e) => update({ display_name: e.target.value })}
+            value={draft.display_name}
+            onChange={(e) => setDraft((d) => ({ ...d, display_name: e.target.value }))}
+            onBlur={(e) => update({ display_name: e.target.value })}
             placeholder={me?.username ?? ""}
           />
         </SettingRow>
@@ -48,8 +64,9 @@ export function ProfilePage() {
           <input
             id="pf-job"
             type="text"
-            value={prefs.job_title}
-            onChange={(e) => update({ job_title: e.target.value })}
+            value={draft.job_title}
+            onChange={(e) => setDraft((d) => ({ ...d, job_title: e.target.value }))}
+            onBlur={(e) => update({ job_title: e.target.value })}
           />
         </SettingRow>
         <SettingRow title={t("settings.profile.phone")} htmlFor="pf-phone">
@@ -57,8 +74,9 @@ export function ProfilePage() {
             id="pf-phone"
             type="tel"
             className="latin"
-            value={prefs.phone}
-            onChange={(e) => update({ phone: e.target.value })}
+            value={draft.phone}
+            onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
+            onBlur={(e) => update({ phone: e.target.value })}
           />
         </SettingRow>
 
@@ -79,8 +97,9 @@ export function ProfilePage() {
             id="pf-tz"
             type="text"
             className="latin"
-            value={prefs.time_zone}
-            onChange={(e) => update({ time_zone: e.target.value })}
+            value={draft.time_zone}
+            onChange={(e) => setDraft((d) => ({ ...d, time_zone: e.target.value }))}
+            onBlur={(e) => update({ time_zone: e.target.value })}
           />
         </SettingRow>
         <SettingRow title={t("settings.profile.dateFormat")}>

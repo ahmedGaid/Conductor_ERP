@@ -78,6 +78,7 @@ def trial_balance(*, period_code: str | None = None, as_of=None) -> TrialBalance
 class LedgerLine:
     date: str
     entry_number: str
+    entry_id: str  # the journal entry's id, so the ledger row can link to the entry
     memo: str
     debit: int
     credit: int
@@ -92,6 +93,8 @@ class GeneralLedger:
     opening_balance: int
     lines: list[LedgerLine]
     closing_balance: int
+    party_type: str = ""  # echo of the party filter applied (blank ⇒ unfiltered)
+    party_code: str = ""
 
 
 @dataclass
@@ -148,8 +151,14 @@ def vat_return(start_date, end_date) -> VatReturn:
     )
 
 
-def general_ledger(account_code: str, *, period_code: str | None = None) -> GeneralLedger:
-    """Posted activity for one account with a running, normal-direction balance."""
+def general_ledger(account_code: str, *, period_code: str | None = None,
+                   party_type: str | None = None, party_code: str | None = None) -> GeneralLedger:
+    """Posted activity for one account with a running, normal-direction balance.
+
+    Optionally narrowed to a single customer/supplier (``party_code`` + ``party_type``) — the
+    account's per-party statement of account. The running balance is computed over the filtered
+    lines, so it reflects that party's activity only.
+    """
     account = Account.objects.get(code=account_code)
     qs = (
         _posted_lines(period_code=period_code)
@@ -157,6 +166,10 @@ def general_ledger(account_code: str, *, period_code: str | None = None) -> Gene
         .select_related("entry")
         .order_by("entry__date", "entry__number", "line_no")
     )
+    if party_code:
+        qs = qs.filter(entry__party_code=party_code)
+        if party_type:
+            qs = qs.filter(entry__party_type=party_type)
     running = 0
     lines: list[LedgerLine] = []
     for line in qs:
@@ -165,6 +178,7 @@ def general_ledger(account_code: str, *, period_code: str | None = None) -> Gene
             LedgerLine(
                 date=str(line.entry.date),
                 entry_number=line.entry.number,
+                entry_id=str(line.entry.id),
                 memo=line.memo or line.entry.memo,
                 debit=line.debit,
                 credit=line.credit,
@@ -178,4 +192,6 @@ def general_ledger(account_code: str, *, period_code: str | None = None) -> Gene
         opening_balance=0,
         lines=lines,
         closing_balance=running,
+        party_type=party_type or "",
+        party_code=party_code or "",
     )

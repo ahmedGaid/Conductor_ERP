@@ -1,0 +1,38 @@
+/* Document title row (see ModuleHeader.tsx). Logical properties; RTL-safe. */
+.modhead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.modhead__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The single drop of module colour: a thin accent bar beside the document number.
+   Colour comes from the inherited --module-bar token (set per module on the shell);
+   falls back to a neutral border on pages with no module accent. */
+.modhead__bar {
+  inline-size: 4px;
+  block-size: 1.5rem;
+  flex: none;
+  border-radius: 2px;
+  background: var(--module-bar, var(--color-border-strong));
+}
+
+.modhead__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Push the status badge to the far inline-end of the row. */
+.modhead__status {
+  margin-inline-start: auto;
+}
+
+.modhead__subtitle {
+  margin: 0;
+}

@@ -1,5 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+
+import { NavIcon } from "../../app/icons";
 import { useNavigate } from "react-router-dom";
 
 import { listAccounts, listCostCenters, postJournal, type JournalLineInput } from "../../api/accounting";
@@ -100,13 +102,13 @@ export function JournalEntryPage() {
             <span>{t("accounting.entry.date")}</span>
             <input type="date" className="latin" value={date} onChange={(e) => setDate(e.target.value)} required />
           </label>
-          <label className="acct-field" style={{ flex: 1 }}>
+          <label className="acct-field grow">
             <span>{t("accounting.entry.memo")}</span>
             <input value={memo} onChange={(e) => setMemo(e.target.value)} />
           </label>
         </div>
 
-        <div className="acct-table-wrap" style={{ marginBlock: "var(--space-4)" }}>
+        <div className="acct-table-wrap block-spaced">
           <table className="acct-table">
             <thead>
               <tr>
@@ -169,12 +171,12 @@ export function JournalEntryPage() {
                   <td>
                     <button
                       type="button"
-                      className="btn btn--sm"
+                      className="btn btn--sm btn--icon"
                       onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))}
                       disabled={lines.length <= 2}
                       aria-label={t("common.delete")}
                     >
-                      ✕
+                      <NavIcon name="close" />
                     </button>
                   </td>
                 </tr>

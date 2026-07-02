@@ -1,0 +1,45 @@
+/* Confirmation modal (see ConfirmDialog.tsx). Centered card over a dimmed backdrop; settled fade.
+   Logical properties throughout so it reads identically in RTL and LTR. */
+.confirm {
+  margin: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-inline-size: min(26rem, calc(100vw - 2rem));
+}
+.confirm::backdrop {
+  background: var(--color-backdrop, rgba(0, 0, 0, 0.45));
+  animation: confirm-fade var(--dur-fast) var(--ease-out);
+}
+.confirm__panel {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: confirm-rise var(--dur-fast) var(--ease-out);
+}
+.confirm__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.confirm__body {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
+.confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-block-start: var(--space-5);
+}
+
+@keyframes confirm-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes confirm-rise {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: none; }
+}

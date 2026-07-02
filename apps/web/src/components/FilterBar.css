@@ -70,6 +70,10 @@
   background-color: var(--color-danger-subtle);
   color: var(--color-danger-strong);
 }
+.filter-chip__remove .navicon {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+}
 
 /* Add + clear buttons sit inline with the chips. */
 .filterbar__add svg {

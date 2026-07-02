@@ -133,7 +133,9 @@ class OpportunitySerializer(serializers.Serializer):
         return obj.lead.code if obj.lead_id else ""
 
     def get_lines(self, obj) -> list:
-        return OppLineSerializer(obj.lines.all().order_by("line_no"), many=True).data
+        # No .order_by() here: it would clone the queryset and bypass the list view's prefetch
+        # cache (a query per row). Meta.ordering on the line model already yields line_no order.
+        return OppLineSerializer(obj.lines.all(), many=True).data
 
 
 # --- Activities ------------------------------------------------------------

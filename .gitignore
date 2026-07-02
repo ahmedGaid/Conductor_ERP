@@ -21,6 +21,8 @@ env/
 !.env.example
 # prod env TEMPLATE (no secrets) — must be tracked
 !deploy/.env.prod.example
+# Docker env TEMPLATE (no secrets) — must be tracked
+!.env.docker.example
 
 # Deployment runtime artifacts (Phase 11)
 deploy/logs/
@@ -44,3 +46,10 @@ Thumbs.db
 # Build artifacts / specs archive
 files.zip
 temp/
+
+# Local working artifacts (not project source)
+project_context.md
+erp_questionnaire_v4.html
+
+# CodeGraph index cache (local tooling)
+.codegraph/

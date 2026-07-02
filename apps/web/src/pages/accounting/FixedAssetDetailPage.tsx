@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
+import { BackLink } from "../../components/BackLink";
 
 import { disposeAsset, getAsset, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
@@ -9,6 +11,7 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -49,7 +52,7 @@ export function FixedAssetDetailPage() {
     <section className="acct-page">
       <AccountingNav />
 
-      <Link className="acct-link" to="/accounting/assets">← {t("accounting.assets.backToList")}</Link>
+      <BackLink to="/accounting/assets">{t("accounting.assets.backToList")}</BackLink>
 
       {loading && (
         <ListSkeleton rows={2} />
@@ -62,9 +65,9 @@ export function FixedAssetDetailPage() {
             <header className="acct-detail__head">
               <div>
                 <h2><Bdi>{asset.code}</Bdi> — {asset.name}</h2>
-                <span className={`pill pill--${asset.status === "active" ? "running" : "completed"}`}>
+                <Badge tone={asset.status === "active" ? "running" : "completed"}>
                   {t(`accounting.assets.statuses.${asset.status}`)}
-                </span>
+                </Badge>
               </div>
             </header>
 

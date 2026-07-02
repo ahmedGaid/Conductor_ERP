@@ -55,6 +55,9 @@ def create_statement(*, account_code: str, statement_date, closing_balance_minor
         closing_balance_minor=closing_balance_minor,
         reference=reference,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
     )
     for i, line in enumerate(lines or [], start=1):
         BankStatementLine.objects.create(

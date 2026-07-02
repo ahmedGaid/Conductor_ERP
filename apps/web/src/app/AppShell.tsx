@@ -3,17 +3,34 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
+import { RouteBreadcrumb } from "./RouteBreadcrumb";
+import { DocumentCrumbProvider } from "./DocumentCrumb";
 import { CommandBar } from "./CommandBar";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { ShortcutsProvider, useShortcuts } from "./ShortcutsContext";
 import { Toaster } from "./Toaster";
 import { ToastProvider } from "./ToastContext";
 import { PaletteActionsProvider } from "./PaletteActionsContext";
+import { ActionFeedbackProvider } from "./ActionFeedbackContext";
+import { ActionFeedbackHost } from "./ActionFeedbackHost";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
+import { usePreferences } from "../preferences/PreferencesContext";
 import "./AppShell.css";
+
+// First path segment names the active module; exposed as data-module on the shell so
+// the per-module accent (tokens.css) cascades to the page (links, tabs, bars). Only the
+// modules with a defined accent qualify; everything else stays the global accent.
+const MODULE_SET = new Set(["sales", "purchasing", "inventory", "accounting", "crm"]);
+function moduleFromPath(pathname: string): string | undefined {
+  const seg = pathname.split("/")[1];
+  return MODULE_SET.has(seg) ? seg : undefined;
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const location = useLocation();
+  const activeModule = moduleFromPath(location.pathname);
   // On narrow widths the sidebar is an off-canvas drawer; on wide it's always shown
   // and this flag is inert (CSS only reacts to it under the breakpoint).
   const [navOpen, setNavOpen] = useState(false);
@@ -47,33 +64,59 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ToastProvider>
+      <ActionFeedbackProvider>
       <HelpProvider>
         <PaletteActionsProvider>
-        <div className={navOpen ? "appshell appshell--nav-open" : "appshell"}>
-        <a className="appshell__skip" href="#main">
-          {t("shell.skipToContent")}
-        </a>
-        <Sidebar />
-        <button
-          type="button"
-          className="appshell__overlay"
-          aria-label={t("shell.closeMenu")}
-          tabIndex={navOpen ? 0 : -1}
-          onClick={() => setNavOpen(false)}
-        />
-        <CommandBar onMenu={() => setNavOpen((v) => !v)} />
-        <main id="main" className="appshell__main" ref={mainRef}>
-          {/* Re-keying on the path replays the enter animation each navigation,
-              so pages glide in instead of snapping. */}
-          <div key={location.pathname} className="appshell__content page-enter">
-            {children}
+        <ShortcutsProvider>
+          <div
+            className={navOpen ? "appshell appshell--nav-open" : "appshell"}
+            data-module={activeModule}
+          >
+            <a className="appshell__skip" href="#main">
+              {t("shell.skipToContent")}
+            </a>
+            <Sidebar />
+            <button
+              type="button"
+              className="appshell__overlay"
+              aria-label={t("shell.closeMenu")}
+              tabIndex={navOpen ? 0 : -1}
+              onClick={() => setNavOpen(false)}
+            />
+            <CommandBar onMenu={() => setNavOpen((v) => !v)} />
+            <main id="main" className="appshell__main" ref={mainRef}>
+              {/* Re-keying on the path replays the enter animation each navigation,
+                  so pages glide in instead of snapping. */}
+              <DocumentCrumbProvider key={location.pathname}>
+                <div className="appshell__content page-enter">
+                  <ActionFeedbackHost />
+                  <RouteBreadcrumb />
+                  {children}
+                </div>
+              </DocumentCrumbProvider>
+            </main>
+            <HelpCenter />
+            <ShortcutsHost />
+            <Toaster />
           </div>
-        </main>
-        <HelpCenter />
-        <Toaster />
-      </div>
+        </ShortcutsProvider>
         </PaletteActionsProvider>
       </HelpProvider>
+      </ActionFeedbackProvider>
     </ToastProvider>
+  );
+}
+
+// One mounted cheat-sheet, driven by the shared context so the `?` key and the product menu both
+// open the same dialog. Reads the e-invoicing flag so the shortcut list matches the live nav.
+function ShortcutsHost() {
+  const { open, closeShortcuts } = useShortcuts();
+  const { prefs } = usePreferences();
+  return (
+    <ShortcutsDialog
+      open={open}
+      onClose={closeShortcuts}
+      einvoiceEnabled={prefs?.einvoice_enabled !== false}
+    />
   );
 }

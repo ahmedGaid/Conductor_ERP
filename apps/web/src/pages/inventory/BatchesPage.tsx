@@ -6,6 +6,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
@@ -70,8 +71,8 @@ export function BatchesPage() {
               {filtered.map((b, i) => (
                 <tr key={`${b.batch_no}-${b.sku}-${b.warehouse_code}-${i}`}>
                   <td><Bdi>{b.batch_no}</Bdi></td>
-                  <td><Bdi>{b.sku}</Bdi> · {b.item_name}</td>
-                  <td><Bdi>{b.warehouse_code}</Bdi></td>
+                  <td><EntityLink type="item" value={b.sku} /> · {b.item_name}</td>
+                  <td><EntityLink type="warehouse" value={b.warehouse_code} /></td>
                   <td className="inv-table__num"><Bdi>{b.received_quantity}</Bdi></td>
                   <td>{b.earliest_expiry ? <Bdi>{b.earliest_expiry}</Bdi> : "—"}</td>
                 </tr>

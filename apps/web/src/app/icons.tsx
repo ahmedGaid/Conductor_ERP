@@ -53,6 +53,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M3 21h18" />
     </>
   ),
+  // Pricing — price tag.
+  pricing: (
+    <>
+      <path d="M3 7.5V4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 .7.3l11 11a1 1 0 0 1 0 1.4l-3.5 3.5a1 1 0 0 1-1.4 0l-11-11a1 1 0 0 1-.3-.7Z" />
+      <circle cx="7" cy="7" r="1.1" />
+    </>
+  ),
   // E-invoicing — document with lines.
   einvoice: (
     <>
@@ -102,6 +109,165 @@ const PATHS: Record<string, ReactNode> = {
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="M9 4v16" />
+    </>
+  ),
+  // Close — X.
+  close: (
+    <>
+      <path d="M6 6 18 18" />
+      <path d="M18 6 6 18" />
+    </>
+  ),
+  // Plus — add / create a new record inline.
+  plus: (
+    <>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </>
+  ),
+  // More — horizontal kebab (overflow menu trigger).
+  more: (
+    <>
+      <circle cx="5" cy="12" r="1.1" />
+      <circle cx="12" cy="12" r="1.1" />
+      <circle cx="19" cy="12" r="1.1" />
+    </>
+  ),
+  // Search — magnifying glass (command bar + palette).
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m16.2 16.2 4.3 4.3" />
+    </>
+  ),
+  // Duplicate — overlapping sheets (copy).
+  duplicate: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </>
+  ),
+  // Print — printer.
+  print: (
+    <>
+      <path d="M6 9V3h12v6" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" rx="1" />
+    </>
+  ),
+  // Download — export (arrow into tray).
+  download: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M7 10l5 5 5-5" />
+      <path d="M12 15V3" />
+    </>
+  ),
+  // Share — connected nodes.
+  share: (
+    <>
+      <circle cx="18" cy="5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="19" r="2.5" />
+      <path d="M8.2 10.8 15.8 6.2" />
+      <path d="M8.2 13.2 15.8 17.8" />
+    </>
+  ),
+  // Trash — delete / cancel.
+  trash: (
+    <>
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </>
+  ),
+  // Rotate — undo / record return (counter-clockwise arrow).
+  rotate: (
+    <>
+      <path d="M3 3v5h5" />
+      <path d="M3.5 8a8.5 8.5 0 1 1-1.5 4.8" />
+    </>
+  ),
+  // Info — circled i (in-progress / informational note).
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </>
+  ),
+  // Check-circle — completed / success state.
+  checkCircle: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.5 2.5 5-5.5" />
+    </>
+  ),
+  // Arrow back — return to list / parent. Points inline-start (mirrored in RTL via .backlink CSS).
+  arrowBack: (
+    <>
+      <path d="M19 12H5" />
+      <path d="M12 19l-7-7 7-7" />
+    </>
+  ),
+  // Check — confirmed / matched / done.
+  check: <path d="M5 12l4.5 4.5L19 7" />,
+  // Minus — partial / indeterminate (select-all when only some rows are picked).
+  minus: <path d="M6 12h12" />,
+  // Star — favourite / pinned. Outline only; active state is shown by accent colour, never a fill.
+  star: <path d="M12 3.6l2.5 5.1 5.6.8-4.05 3.95.96 5.55L12 16.9l-5.02 2.65.96-5.55L3.9 9.5l5.6-.8Z" />,
+  // Flag — items awaiting approval / flagged for attention.
+  flag: (
+    <>
+      <path d="M4 21V4" />
+      <path d="M4 4h13l-2 4 2 4H4" />
+    </>
+  ),
+  // Clock — time-sensitive / breached / overdue.
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  // Trend up — rising figure (incoming/receivable, growth).
+  trendUp: (
+    <>
+      <path d="M3 17l6-6 4 4 8-8" />
+      <path d="M21 11V7h-4" />
+    </>
+  ),
+  // Trend down — falling figure (outgoing/payable, decline).
+  trendDown: (
+    <>
+      <path d="M3 7l6 6 4-4 8 8" />
+      <path d="M21 13v4h-4" />
+    </>
+  ),
+  // Sun — switch to light theme.
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="M4.9 4.9l1.4 1.4" />
+      <path d="M17.7 17.7l1.4 1.4" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="M4.9 19.1l1.4-1.4" />
+      <path d="M17.7 6.3l1.4-1.4" />
+    </>
+  ),
+  // Moon — switch to dark theme (single-stroke crescent, same hand as the set).
+  moon: <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />,
+  // Sparkle — the AI assistant (المساعد الذكي). Single-stroke four-point spark, same hand as the set.
+  sparkle: (
+    <>
+      <path d="M12 4l1.9 5.1L19 11l-5.1 1.9L12 18l-1.9-5.1L5 11l5.1-1.9Z" />
+      <path d="M19 16.5v3" />
+      <path d="M17.5 18h3" />
     </>
   ),
   // Settings — gear.

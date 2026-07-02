@@ -1,6 +1,8 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+
+import { NavIcon } from "../../app/icons";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { createPurchaseOrder, listSuppliers, type NewPOLine } from "../../api/purchasing";
 import { listItems, listWarehouses } from "../../api/inventory";
@@ -8,9 +10,11 @@ import { listTaxCodes } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
-import { formatMinor, parseToMinor } from "../../lib/money";
+import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PurchasingNav } from "./PurchasingNav";
+import { WorkflowTracker } from "../../components/WorkflowTracker";
+import { workflowFor } from "../../lib/workflow";
 import "./purchasing.css";
 
 interface DraftLine {
@@ -21,19 +25,32 @@ interface DraftLine {
 
 const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_cost: "" });
 
+// Prefill carried by the Duplicate action on an existing purchase order (see PurchaseOrderDetailPage).
+interface DuplicateInit {
+  supplier_code: string;
+  warehouse_code: string;
+  tax_code: string;
+  lines: { item_sku: string; quantity: string; unit_cost: number }[];
+}
+
 export function NewPurchaseOrderPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
+  const dup = (useLocation().state as { duplicate?: DuplicateInit } | null)?.duplicate;
   const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: items } = useAsync(listItems, [], "inventory:items");
   const { data: taxCodes } = useAsync(listTaxCodes, [], "accounting:tax-codes");
 
-  const [supplier, setSupplier] = useState("");
-  const [warehouse, setWarehouse] = useState("");
-  const [taxCode, setTaxCode] = useState("");
-  const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
+  const [supplier, setSupplier] = useState(dup?.supplier_code ?? "");
+  const [warehouse, setWarehouse] = useState(dup?.warehouse_code ?? "");
+  const [taxCode, setTaxCode] = useState(dup?.tax_code ?? "");
+  const [lines, setLines] = useState<DraftLine[]>(
+    dup?.lines?.length
+      ? dup.lines.map((l) => ({ item_sku: l.item_sku, quantity: l.quantity, unit_cost: minorToAmount(l.unit_cost) }))
+      : [emptyLine()],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,8 +94,9 @@ export function NewPurchaseOrderPage() {
     setBusy(true);
     try {
       const order = await createPurchaseOrder({ supplier_code: supplier, warehouse_code: warehouse, tax_code: taxCode, lines: payloadLines });
-      toast.show(t("purchasing.toast.poCreated"), "success");
-      navigate(`/purchasing/orders/${order.id}`);
+      // The rich "created" receipt is fired on arrival by the order detail page (which owns the
+      // optimistic runners its recommended-next step needs). We just hand it the event.
+      navigate(`/purchasing/orders/${order.id}`, { state: { feedback: "created" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
@@ -93,6 +111,7 @@ export function NewPurchaseOrderPage() {
       <PurchasingNav />
 
       <form ref={formRef} className="card pur-page" onSubmit={onSubmit}>
+        <WorkflowTracker kind="purchasing" steps={workflowFor("purchasing", "new")} />
         <div className="pur-toolbar">
           <label className="pur-field">
             <span>{t("purchasing.orders.supplier")}</span>
@@ -104,7 +123,7 @@ export function NewPurchaseOrderPage() {
             </select>
           </label>
           <label className="pur-field">
-            <span>{t("inventory.warehouse.code")}</span>
+            <span>{t("inventory.warehouse.label")}</span>
             <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
               <option value="">—</option>
               {(warehouses ?? []).map((w) => (
@@ -155,7 +174,7 @@ export function NewPurchaseOrderPage() {
                     </td>
                     <td className="pur-table__num"><Bdi>{formatMinor(lineTotal)}</Bdi></td>
                     <td>
-                      <button type="button" className="btn btn--sm" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}>✕</button>
+                      <button type="button" className="btn btn--sm btn--icon" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}><NavIcon name="close" /></button>
                     </td>
                   </tr>
                 );

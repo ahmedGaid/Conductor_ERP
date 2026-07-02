@@ -4,9 +4,13 @@ from __future__ import annotations
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenRefreshView  # noqa: F401 (re-exported in urls)
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
@@ -40,8 +44,32 @@ def _envelope(data) -> Response:
     return Response({"data": data})
 
 
+# --- Refresh-token cookie ------------------------------------------------------------------------
+# The refresh token never reaches page JavaScript: login sets it in an HttpOnly cookie scoped to
+# /api/identity, the refresh endpoint reads it back from there, and only the short-lived access
+# token is returned in the body (the web client keeps it in memory). This kills XSS token theft.
+
+REFRESH_COOKIE = "erp_refresh"
+_REFRESH_COOKIE_PATH = "/api/identity"
+
+
+def _set_refresh_cookie(response: Response, refresh: str) -> None:
+    response.set_cookie(
+        REFRESH_COOKIE,
+        refresh,
+        max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()),
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="Strict",
+        path=_REFRESH_COOKIE_PATH,
+    )
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    # Dedicated per-IP brute-force cap (rate "login" in DEFAULT_THROTTLE_RATES; env-tunable).
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
     def post(self, request: Request) -> Response:
         s = LoginSerializer(data=request.data)
@@ -51,7 +79,49 @@ class LoginView(APIView):
             s.validated_data["password"],
             s.validated_data.get("otp_code") or None,
         )
-        return _envelope(result)
+        refresh = result.pop("refresh", None)
+        response = _envelope(result)
+        if refresh:
+            _set_refresh_cookie(response, refresh)
+        return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Token refresh that reads the HttpOnly cookie (body `refresh` kept for API clients).
+
+    On rotation the new refresh token goes back into the cookie, never the body.
+    """
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        raw = request.data.get("refresh") or request.COOKIES.get(REFRESH_COOKIE, "")
+        serializer = self.get_serializer(data={"refresh": raw})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as exc:
+            raise InvalidToken(exc.args[0])
+        payload = dict(serializer.validated_data)
+        new_refresh = payload.pop("refresh", None)
+        response = Response(payload)
+        if new_refresh:
+            _set_refresh_cookie(response, new_refresh)
+        return response
+
+
+class LogoutView(APIView):
+    """Blacklist the session's refresh token and clear its cookie. Safe on an expired session."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request: Request) -> Response:
+        raw = request.COOKIES.get(REFRESH_COOKIE) or request.data.get("refresh")
+        if raw:
+            try:
+                RefreshToken(raw).blacklist()
+            except TokenError:
+                pass  # already expired/blacklisted — logout is idempotent
+        response = _envelope({"ok": True})
+        response.delete_cookie(REFRESH_COOKIE, path=_REFRESH_COOKIE_PATH)
+        return response
 
 
 class MeView(APIView):
