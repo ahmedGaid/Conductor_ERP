@@ -1308,3 +1308,16 @@ honour RBAC/scope and invents joins):
   content-type allowlist (JPEG/PNG/WebP/PDF).
 - **Tests** mock the Anthropic client at the module seam (`erp.assistant.client.get_client`);
   gates never make live calls.
+
+### AI 2026-07 addendum — Gemini as the active provider (client request, 2026-07-02)
+
+The client supplied a Gemini API key instead of an Anthropic one, so the assistant now supports
+**two providers behind the one seam** (`erp/assistant/client.py`): Anthropic (Claude) and Google
+(Gemini, via the official `google-genai` SDK). `ASSISTANT_PROVIDER` env forces one; unset, the
+provider is auto-picked by whichever key is present (`ANTHROPIC_API_KEY` wins if both). The
+extraction contract is identical — same strict JSON schema (translated to Gemini's dialect:
+type-unions → `nullable`, `additionalProperties` stripped), same designed unreadable/failure
+states, same audit + upload guards. Frontend untouched — it never knew the provider. Default
+models: `claude-opus-4-8` / `gemini-2.5-flash` (env-tunable via `ASSISTANT_MODEL`). Keys stay in
+`.env` only. Tests pin `ASSISTANT_PROVIDER` per case and mock both client seams — still no live
+calls in gates.

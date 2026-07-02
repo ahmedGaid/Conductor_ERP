@@ -22,7 +22,7 @@ from erp.audit import services as audit
 from erp.inventory import contracts as inventory
 from erp.purchasing import contracts as purchasing
 
-from ..client import get_client
+from ..client import get_client, get_gemini_client, model_id, provider
 from ..errors import ExtractionFailedError
 
 # Media types the endpoint accepts (mirrors the Session-00 import posture: allowlist, no sniffing).
@@ -150,11 +150,23 @@ def _match_line(description: str, items: list) -> dict:
 # --- the service --------------------------------------------------------------------------------
 
 
+_UNREADABLE = {"readable": False, "lines": [], "confidence": "low",
+               "issues": ["truncated_or_refused"]}
+
+
 def extract_document(*, data: bytes, media_type: str, filename: str, actor) -> dict:
     """One document in → one reviewed-draft proposal out. Read-only; audit-logged."""
+    if provider() == "gemini":
+        extracted = _extract_gemini(data, media_type)
+    else:
+        extracted = _extract_anthropic(data, media_type)
+    return _proposal(extracted, filename, actor)
+
+
+def _extract_anthropic(data: bytes, media_type: str) -> dict:
     try:
         response = get_client().messages.create(
-            model=settings.ASSISTANT_MODEL,
+            model=model_id(),
             max_tokens=settings.ASSISTANT_MAX_TOKENS,
             system=_SYSTEM,
             output_config={"format": {"type": "json_schema", "schema": EXTRACTION_SCHEMA}},
@@ -168,16 +180,59 @@ def extract_document(*, data: bytes, media_type: str, filename: str, actor) -> d
 
     if getattr(response, "stop_reason", None) not in ("end_turn", None):
         # refusal / max_tokens — treat as an unreadable document, never a 500
-        return _proposal({"readable": False, "lines": [], "confidence": "low",
-                          "issues": ["truncated_or_refused"]}, filename, actor)
+        return dict(_UNREADABLE)
 
     try:
         text = next(b.text for b in response.content if b.type == "text")
-        extracted = json.loads(text)
+        return json.loads(text)
     except (StopIteration, ValueError) as exc:
         raise ExtractionFailedError(data={"reason": "unparseable_model_output"}) from exc
 
-    return _proposal(extracted, filename, actor)
+
+def _gemini_schema(node):
+    """Translate our strict JSON schema to Gemini's response_schema dialect: no type unions
+    (``["string","null"]`` → ``nullable: true``) and no ``additionalProperties``."""
+    if isinstance(node, dict):
+        out = {}
+        for key, value in node.items():
+            if key == "additionalProperties":
+                continue
+            if key == "type" and isinstance(value, list):
+                out["type"] = next(t for t in value if t != "null")
+                out["nullable"] = True
+                continue
+            out[key] = _gemini_schema(value)
+        return out
+    if isinstance(node, list):
+        return [_gemini_schema(item) for item in node]
+    return node
+
+
+def _extract_gemini(data: bytes, media_type: str) -> dict:
+    try:
+        from google.genai import types
+
+        response = get_gemini_client().models.generate_content(
+            model=model_id(),
+            contents=[types.Part.from_bytes(data=data, mime_type=media_type), _INSTRUCTION],
+            config=types.GenerateContentConfig(
+                system_instruction=_SYSTEM,
+                response_mime_type="application/json",
+                response_schema=_gemini_schema(EXTRACTION_SCHEMA),
+                max_output_tokens=settings.ASSISTANT_MAX_TOKENS,
+            ),
+        )
+    except Exception as exc:  # network/auth/rate-limit — blame-free, retryable
+        raise ExtractionFailedError(data={"reason": exc.__class__.__name__}) from exc
+
+    text = getattr(response, "text", None)
+    if not text:
+        # safety-blocked / empty candidate — treat as an unreadable document, never a 500
+        return dict(_UNREADABLE)
+    try:
+        return json.loads(text)
+    except ValueError as exc:
+        raise ExtractionFailedError(data={"reason": "unparseable_model_output"}) from exc
 
 
 def _proposal(extracted: dict, filename: str, actor) -> dict:

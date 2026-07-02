@@ -1,8 +1,9 @@
-"""Assistant document extraction — mocked Anthropic client, no live calls in gates.
+"""Assistant document extraction — mocked AI clients, no live calls in gates.
 
 Covers: feature flag (status endpoint + 404 when off), upload guards (size/type, checked before
 any AI call), the happy path (extract → fuzzy match supplier + items → proposal), the designed
-unreadable state (200, never a 500), upstream failure (502 AI-001), and the audit record.
+unreadable state (200, never a 500), upstream failure (502 AI-001), the audit record, and the
+Gemini provider path (schema translation + parsing).
 """
 from __future__ import annotations
 
@@ -66,6 +67,19 @@ class _FakeClient:
         )
 
 
+class _FakeGemini:
+    """Stands in for google.genai.Client — records the request, returns a canned payload."""
+
+    def __init__(self, payload: dict | None = None):
+        self.calls: list[dict] = []
+        self._text = None if payload is None else json.dumps(payload)
+        self.models = SimpleNamespace(generate_content=self._generate)
+
+    def _generate(self, **kwargs):
+        self.calls.append(kwargs)
+        return SimpleNamespace(text=self._text)
+
+
 def _client() -> APIClient:
     user = User.objects.create_user(username="ai_admin", password="Dev12345!")
     user.is_superuser = True
@@ -84,6 +98,7 @@ def _post(client: APIClient, data: bytes = b"fake-image-bytes", name: str = "inv
     )
 
 
+@override_settings(ASSISTANT_ENABLED=False)
 def test_status_reflects_flag():
     client = _client()
     assert client.get(STATUS_URL).json()["data"] == {"enabled": False}
@@ -91,11 +106,12 @@ def test_status_reflects_flag():
         assert client.get(STATUS_URL).json()["data"] == {"enabled": True}
 
 
+@override_settings(ASSISTANT_ENABLED=False)
 def test_disabled_endpoint_is_404():
     assert _post(_client()).status_code == 404
 
 
-@override_settings(ASSISTANT_ENABLED=True)
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_upload_guards_run_before_any_ai_call(monkeypatch):
     def _boom():
         raise AssertionError("client must not be constructed for rejected uploads")
@@ -116,7 +132,7 @@ def test_upload_guards_run_before_any_ai_call(monkeypatch):
     assert client.post(EXTRACT_URL, {}, format="multipart").status_code == 400
 
 
-@override_settings(ASSISTANT_ENABLED=True)
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_extract_matches_supplier_and_items(monkeypatch):
     Supplier.objects.create(code="S-1", name="Delta Mills")
     Supplier.objects.create(code="S-2", name="Cairo Supply")
@@ -150,7 +166,7 @@ def test_extract_matches_supplier_and_items(monkeypatch):
     assert entry.actor is not None
 
 
-@override_settings(ASSISTANT_ENABLED=True)
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_pdf_goes_as_document_block(monkeypatch):
     fake = _FakeClient({**EXTRACTED, "lines": []})
     monkeypatch.setattr(extraction, "get_client", lambda: fake)
@@ -158,7 +174,7 @@ def test_pdf_goes_as_document_block(monkeypatch):
     assert fake.calls[0]["messages"][0]["content"][0]["type"] == "document"
 
 
-@override_settings(ASSISTANT_ENABLED=True)
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_unreadable_document_is_a_designed_state_not_a_500(monkeypatch):
     unreadable = {**EXTRACTED, "readable": False, "lines": [], "confidence": "low",
                   "supplier_name": None, "issues": ["photo too blurry to read the totals"]}
@@ -172,7 +188,7 @@ def test_unreadable_document_is_a_designed_state_not_a_500(monkeypatch):
     assert data["supplier"]["matched_code"] is None
 
 
-@override_settings(ASSISTANT_ENABLED=True)
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_truncated_or_refused_response_degrades_gracefully(monkeypatch):
     monkeypatch.setattr(
         extraction, "get_client", lambda: _FakeClient(EXTRACTED, stop_reason="max_tokens")
@@ -182,11 +198,54 @@ def test_truncated_or_refused_response_degrades_gracefully(monkeypatch):
     assert resp.json()["data"]["readable"] is False
 
 
-@override_settings(ASSISTANT_ENABLED=True)
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_upstream_failure_is_502_with_catalog_code(monkeypatch):
     monkeypatch.setattr(
         extraction, "get_client", lambda: _FakeClient(error=RuntimeError("connection reset"))
     )
+    resp = _post(_client())
+    assert resp.status_code == 502
+    assert resp.json()["error"]["code"] == "AI-001"
+
+
+# --- Gemini provider path ------------------------------------------------------------------------
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="gemini")
+def test_gemini_extracts_with_translated_schema(monkeypatch):
+    Supplier.objects.create(code="S-1", name="Delta Mills")
+
+    fake = _FakeGemini(EXTRACTED)
+    monkeypatch.setattr(extraction, "get_gemini_client", lambda: fake)
+
+    resp = _post(_client())
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["supplier"]["matched_code"] == "S-1"
+    assert data["invoice"]["total_minor"] == 28614
+
+    (call,) = fake.calls
+    schema = call["config"].response_schema
+    # Gemini dialect: type unions become nullable, additionalProperties is stripped.
+    assert schema["properties"]["supplier_name"] == {"type": "string", "nullable": True}
+    assert "additionalProperties" not in schema
+    assert call["config"].response_mime_type == "application/json"
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="gemini")
+def test_gemini_blocked_response_degrades_gracefully(monkeypatch):
+    monkeypatch.setattr(extraction, "get_gemini_client", lambda: _FakeGemini(None))
+    resp = _post(_client())
+    assert resp.status_code == 200
+    assert resp.json()["data"]["readable"] is False
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="gemini")
+def test_gemini_upstream_failure_is_502(monkeypatch):
+    def _raise():
+        raise RuntimeError("connection reset")
+
+    monkeypatch.setattr(extraction, "get_gemini_client", _raise)
     resp = _post(_client())
     assert resp.status_code == 502
     assert resp.json()["error"]["code"] == "AI-001"
