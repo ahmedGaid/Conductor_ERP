@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import socket
 
 import pytest
 from django.db import connection
@@ -49,6 +50,14 @@ def test_sql_on_conflict_dedupes_same_key():
         assert cur.fetchone()[0] == 1
 
 
+def _fake_public_dns(monkeypatch):
+    """Pretend every host resolves to a public address so the egress guard passes offline."""
+    monkeypatch.setattr(
+        "erp.workflow.adapters.egress.socket.getaddrinfo",
+        lambda host, *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))],
+    )
+
+
 class _FakeResp:
     def __init__(self, status, body):
         self.status = status
@@ -73,6 +82,7 @@ def test_rest_forwards_idempotency_key_and_maps_status(monkeypatch):
         return _FakeResp(201, '{"ok": true}')
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    _fake_public_dns(monkeypatch)
     res = RestAdapter().call(
         AdapterCall(
             config={"method": "POST", "url": "http://x/po", "body": {"a": 1}},
@@ -90,5 +100,6 @@ def test_rest_maps_5xx_to_not_ok(monkeypatch):
         return _FakeResp(500, "boom")
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    _fake_public_dns(monkeypatch)
     res = RestAdapter().call(AdapterCall(config={"method": "GET", "url": "http://x"}))
     assert res.ok is False and res.status == 500

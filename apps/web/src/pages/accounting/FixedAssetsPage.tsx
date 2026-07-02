@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -6,11 +6,13 @@ import { acquireAsset, getAsset, listAssets, runDepreciation, type AssetStatus, 
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge } from "../../components/Badge";
 import { ExportButtons } from "../../components/ExportButtons";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -73,7 +75,9 @@ export function FixedAssetsPage() {
     getItemId: (a) => a.code,
   });
 
-  // New-asset form
+  // New-asset form. ⌘/Ctrl+Enter submits it from any field (cost, dates, etc.).
+  const acquireFormRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef: acquireFormRef });
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [cost, setCost] = useState("");
@@ -141,7 +145,7 @@ export function FixedAssetsPage() {
       <AccountingNav />
 
       <div className="acct-asset-actions">
-        <form className="card acct-toolbar" onSubmit={onAcquire}>
+        <form ref={acquireFormRef} className="card acct-toolbar" onSubmit={onAcquire}>
           <label className="acct-field">
             <span>{t("accounting.assets.code")}</span>
             <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />
@@ -246,9 +250,9 @@ export function FixedAssetsPage() {
                     <td className="acct-table__num"><Bdi>{formatMinor(a.accumulated_depreciation_minor)}</Bdi></td>
                     <td className="acct-table__num"><Bdi>{formatMinor(a.net_book_value_minor)}</Bdi></td>
                     <td>
-                      <span className={`pill pill--${a.status === "active" ? "running" : "completed"}`}>
+                      <Badge tone={a.status === "active" ? "running" : "completed"}>
                         {t(`accounting.assets.statuses.${a.status}`)}
-                      </span>
+                      </Badge>
                     </td>
                   </tr>
                 ))}

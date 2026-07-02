@@ -6,9 +6,19 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink, type PartyType } from "../../components/PartyLink";
+import { EntityLink, type EntityType } from "../../components/EntityLink";
+import { ModuleHeader } from "../../components/ModuleHeader";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
+
+// A journal's source module tells us which document its reference points to (so the GL can drill
+// back to the order that posted it). Other sources (manual, etc.) leave the reference as plain text.
+const SOURCE_ENTITY: Record<string, EntityType> = {
+  sales: "salesOrder",
+  purchasing: "purchaseOrder",
+};
 
 export function JournalDetailPage() {
   const { t } = useTranslation();
@@ -26,13 +36,27 @@ export function JournalDetailPage() {
 
       {data && (
         <div className="card acct-page">
-          <div className="acct-page__head">
-            <h2 className="latin">{data.number}</h2>
-            <span className="latin muted">
-              {data.date} · {data.period_code} · {data.status}
-            </span>
-          </div>
-          {data.memo && <p className="muted">{data.memo}</p>}
+          <ModuleHeader
+            title={data.number}
+            subtitle={<span className="latin">{data.date} · {data.period_code} · {data.status}</span>}
+          />
+          {data.memo && (
+            <p className="muted">
+              {data.party_code ? (
+                <PartyLink type={data.party_type as PartyType} code={data.party_code}>
+                  {data.memo}
+                </PartyLink>
+              ) : (
+                data.memo
+              )}
+            </p>
+          )}
+          {data.reference && SOURCE_ENTITY[data.source] && (
+            <p className="muted">
+              {t("accounting.entry.sourceDoc")}:{" "}
+              <EntityLink type={SOURCE_ENTITY[data.source]} value={data.reference} />
+            </p>
+          )}
 
           <div className="acct-table-wrap">
             <table className="acct-table">

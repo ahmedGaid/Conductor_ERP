@@ -9,6 +9,8 @@ interface PreferencesState {
   loading: boolean;
   /** Optimistically apply + persist a partial change to the signed-in user's preferences. */
   update: (changes: Partial<Preferences>) => Promise<void>;
+  /** Re-pull effective preferences from the server (e.g. after the setup wizard changes org flags). */
+  refresh: () => Promise<void>;
 }
 
 const PreferencesContext = createContext<PreferencesState | null>(null);
@@ -41,6 +43,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  async function refresh() {
+    const fresh = await getEffectivePreferences().catch(() => null);
+    if (fresh) {
+      setPrefs(fresh);
+      applyPreferences(fresh);
+      if (fresh.preferred_language && fresh.preferred_language !== i18n.resolvedLanguage) {
+        i18n.changeLanguage(fresh.preferred_language);
+      }
+    }
+  }
+
   async function update(changes: Partial<Preferences>) {
     // Optimistic: reflect immediately, then persist. On failure, reload truth from the server.
     setPrefs((cur) => (cur ? { ...cur, ...changes } : cur));
@@ -59,7 +72,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <PreferencesContext.Provider value={{ prefs, loading, update }}>
+    <PreferencesContext.Provider value={{ prefs, loading, update, refresh }}>
       {children}
     </PreferencesContext.Provider>
   );

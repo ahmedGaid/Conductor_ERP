@@ -128,7 +128,11 @@ class Opportunity(AuditedModel):
     class Meta:
         db_table = "crm_opportunity"
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["stage"]), models.Index(fields=["customer_code"])]
+        indexes = [
+            models.Index(fields=["stage"]),
+            models.Index(fields=["customer_code"]),
+            models.Index(fields=["-created_at"]),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return self.number

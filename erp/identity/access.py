@@ -13,6 +13,28 @@ from .rbac import DataScope, broadest, module_of
 from .roles import SYSTEM_ADMIN
 
 
+# Order cancellation policy (org-wide). Cancellation is only safe before stock/GL side-effects, so it
+# is offered only for the draft/confirmed states; the org setting picks how far it is allowed.
+_CANCEL_ALLOW_RANK = {"disabled": 0, "draft": 1, "confirmed": 2}
+_ORDER_STATUS_RANK = {"draft": 1, "confirmed": 2}
+
+
+def order_cancel_until() -> str:
+    """The org's cancellation cutoff (``disabled`` | ``draft`` | ``confirmed``)."""
+    from .models import OrgPreferences
+
+    org, _ = OrgPreferences.objects.get_or_create(pk=1)
+    return org.order_cancel_until
+
+
+def order_cancellable(status: str) -> bool:
+    """Whether an order in ``status`` may be cancelled under the org's policy. Only pre-side-effect
+    states (draft, confirmed) are ever cancellable; the setting picks the cutoff among them."""
+    allow = _CANCEL_ALLOW_RANK.get(order_cancel_until(), 2)
+    need = _ORDER_STATUS_RANK.get(status, 99)
+    return need <= allow
+
+
 def is_superadmin(user) -> bool:
     if not user or not user.is_authenticated:
         return False

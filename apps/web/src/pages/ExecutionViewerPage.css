@@ -15,10 +15,6 @@
   margin-block-end: var(--space-1);
 }
 
-.viewer__back {
-  font-size: var(--font-size-sm);
-}
-
 .viewer__decision {
   display: flex;
   align-items: center;

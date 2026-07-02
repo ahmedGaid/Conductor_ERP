@@ -1,0 +1,19 @@
+{
+  "name": "Conductor ERP",
+  "short_name": "Conductor",
+  "description": "Conductor ERP",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "/branding/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/branding/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/branding/android/maskable-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/branding/android/maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/branding/android/monochrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" }
+  ]
+}

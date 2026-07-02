@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+
+import { BackLink } from "../../components/BackLink";
 
 import {
   deleteRole,
@@ -70,7 +72,7 @@ export function RoleDetailPage() {
 
   return (
     <section className="page-enter">
-      <Link className="admin-back" to="/admin/roles">← {t("admin.roles.back")}</Link>
+      <BackLink to="/admin/roles">{t("admin.roles.back")}</BackLink>
 
       <header className="admin-detail__head">
         <div className="admin-detail__id">

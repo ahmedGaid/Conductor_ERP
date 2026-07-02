@@ -1,0 +1,103 @@
+# Conductor ERP — single-tenant stack (one deployment per customer).
+#
+# Same image, four roles:
+#   web    — Django API + Django/DRF static + the built React SPA (Waitress, :8000)
+#   db     — PostgreSQL 16 (persistent volume = the customer's ERP data)
+#   redis  — Celery broker + result backend
+#   worker — Celery worker (reports / notifications / workflow side-effects)
+#   beat   — Celery beat (hourly scheduled-report sweep)
+#
+# Cloud VPS or on-prem hardware run the *same* file; only .env changes.
+# Copy .env.docker.example → .env and fill it in before `docker compose up`.
+
+x-app: &app-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: conductor-erp:latest
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  web:
+    <<: *app-base
+    environment:
+      # Only the web role owns the schema + collected static (see entrypoint.sh).
+      RUN_MIGRATIONS: "true"
+      CONDUCTOR_HOST: "0.0.0.0"
+      CONDUCTOR_PORT: "8000"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      # Customer documents + scheduled-report exports (STORAGE_ROOT=/app/storage).
+      - storage_data:/app/storage
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  worker:
+    <<: *app-base
+    command: ["celery", "-A", "config", "worker", "-l", "info"]
+    volumes:
+      - storage_data:/app/storage
+    healthcheck:
+      test: ["CMD", "celery", "-A", "config", "inspect", "ping", "-d", "celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  beat:
+    <<: *app-base
+    command: ["celery", "-A", "config", "beat", "-l", "info"]
+    # beat keeps its schedule file on a small named volume so a restart doesn't
+    # re-fire the same periodic slot.
+    volumes:
+      - beat_data:/app/celerybeat
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-erp}"
+      POSTGRES_USER: "${POSTGRES_USER:-erp}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-erp} -d ${POSTGRES_DB:-erp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    # Not published to the host by default — only the app containers reach it on
+    # the internal network. Uncomment to inspect from the host.
+    # ports:
+    #   - "5432:5432"
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pg_data:      # PostgreSQL 16 data — the system of record
+  redis_data:   # Redis AOF
+  storage_data: # documents + report exports (STORAGE_ROOT)
+  beat_data:    # Celery beat schedule state

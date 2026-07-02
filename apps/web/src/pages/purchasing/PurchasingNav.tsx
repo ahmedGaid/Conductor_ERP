@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
+import { assistantStatus } from "../../api/assistant";
+import { useAsync } from "../../hooks/useAsync";
 import "./purchasing.css";
 
 const TABS: { key: string; to: string; end?: boolean }[] = [
@@ -10,14 +12,19 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "suppliers", to: "/purchasing/suppliers" },
 ];
 
+// The AI tab only exists when the assistant is enabled on this install (no key ⇒ no AI surfaces).
+const IMPORT_TAB: (typeof TABS)[number] = { key: "importInvoice", to: "/purchasing/orders/import" };
+
 export function PurchasingNav() {
   const { t } = useTranslation();
+  const { data: assistant } = useAsync(assistantStatus, [], "assistant:status");
+  const tabs = assistant?.enabled ? [...TABS, IMPORT_TAB] : TABS;
   return (
     <header className="module-head">
       <h1 className="module-head__title">{t("nav.purchasing")}</h1>
       <p className="module-head__desc">{t("moduleIntro.purchasing")}</p>
       <nav className="pur-nav" aria-label={t("nav.purchasing")}>
-      {TABS.map(({ key, to, end }) => (
+      {tabs.map(({ key, to, end }) => (
         <NavLink
           key={key}
           to={to}

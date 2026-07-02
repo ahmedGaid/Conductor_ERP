@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { createRole, listRoles, type RoleRow } from "../../api/roles";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -38,6 +39,14 @@ export function RolesPage() {
     () => (roles ? roles.filter((r) => matchesAllFilters(r, fields, filters)) : roles),
     [roles, fields, filters],
   );
+
+  // j/k move a row highlight, Enter/o opens the role detail page (rows are already click-to-open).
+  const { active } = useListKeyboardNav<RoleRow>({
+    items: filtered ?? [],
+    onOpen: (r) => navigate(`/admin/roles/${encodeURIComponent(r.name)}`),
+    persistKey: "admin:roles",
+    getItemId: (r) => r.name,
+  });
 
   return (
     <section className="page-enter">
@@ -78,8 +87,14 @@ export function RolesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.name} className="admin-row" onClick={() => navigate(`/admin/roles/${encodeURIComponent(r.name)}`)}>
+              {filtered.map((r, i) => (
+                <tr
+                  key={r.name}
+                  className="admin-row"
+                  data-kbd-active={i === active ? "true" : undefined}
+                  aria-selected={i === active}
+                  onClick={() => navigate(`/admin/roles/${encodeURIComponent(r.name)}`)}
+                >
                   <td><span className="admin-id__name">{r.name}</span></td>
                   <td>
                     <span className={`upill ${r.protected ? "upill--invited" : "upill--active"}`}>

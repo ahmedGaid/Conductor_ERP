@@ -1,0 +1,208 @@
+/* CSV import dialog — built on the command-palette <dialog> shell (.cmdp / .cmdp__panel).
+   Chrome stays monochrome; colour appears only inside the work (the preview outcome chips),
+   always paired with a word. Logical properties throughout for RTL. */
+
+.cmdp__panel.import {
+  inline-size: min(40rem, 92vw);
+  max-block-size: 88vh;
+  display: flex;
+  flex-direction: column;
+  text-align: start;
+}
+
+.import__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.import__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.import__body {
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+/* ---- Upload step ---- */
+.import__upload {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.import__lede {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.import__file {
+  display: none;
+}
+
+.import__template-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+}
+
+/* ---- Map + preview ---- */
+.import__section {
+  margin-block-end: var(--space-5);
+}
+.import__section:last-child {
+  margin-block-end: 0;
+}
+
+.import__section-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.import__hint {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.import__map {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.import__map-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.import__map-label {
+  font-size: var(--font-size-sm);
+}
+
+.import__req {
+  color: var(--color-danger);
+}
+
+.import__map-select {
+  inline-size: 100%;
+}
+
+.import__warn {
+  margin: var(--space-2) 0 0;
+  color: var(--color-warning-strong);
+  font-size: var(--font-size-sm);
+}
+
+.import__mode {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.import__radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+/* ---- Preview outcome chips (colour earns its place: paired with a word, meaningful) ---- */
+.import__summary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.import__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  padding-block: var(--space-1);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-alt);
+  font-size: var(--font-size-sm);
+}
+
+.import__chip-n {
+  font-weight: var(--font-weight-semibold);
+}
+
+.import__chip--ok .import__chip-n {
+  color: var(--color-success);
+}
+.import__chip--bad .import__chip-n {
+  color: var(--color-danger);
+}
+.import__chip--muted .import__chip-label,
+.import__chip--muted .import__chip-n {
+  color: var(--color-text-muted);
+}
+
+.import__errors {
+  margin-block-start: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.import__error-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.import__error-table th,
+.import__error-table td {
+  text-align: start;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.import__error-table th {
+  background-color: var(--color-surface-alt);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.import__error-table tr:last-child td {
+  border-block-end: none;
+}
+
+.import__error-banner {
+  margin: var(--space-3) 0 0;
+  color: var(--color-danger-strong);
+  font-size: var(--font-size-sm);
+}
+
+.import__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-block-start: 1px solid var(--color-border);
+}

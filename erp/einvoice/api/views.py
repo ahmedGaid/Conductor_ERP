@@ -13,12 +13,19 @@ from rest_framework.views import APIView
 from erp.core.exports import EXPORT_FORMATS, Column, ReportTable, export_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
+from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import ETAInvoice
 from .serializers import ETAInvoiceSerializer
 
 _CanFile = HasAnyRole.require(ACCOUNTANT, BRANCH_MANAGER)
+
+
+def _scoped(request: Request):
+    """Base queryset narrowed to the requester's data scope — list and detail share it, so an
+    out-of-scope e-invoice 404s (indistinguishable from absent) rather than leaking existence."""
+    return scope_queryset(request.user, ETAInvoice.objects.all(), "einvoice.invoice.view")
 
 
 def _envelope(data, status: int = 200) -> Response:
@@ -51,7 +58,7 @@ class ETAInvoiceListView(APIView):
     permission_classes = [IsAuthenticated, _CanFile]
 
     def get(self, request: Request) -> Response:
-        qs = ETAInvoice.objects.all()
+        qs = _scoped(request)
         if request.query_params.get("status"):
             qs = qs.filter(status=request.query_params["status"])
         qs = qs[:200]
@@ -66,7 +73,7 @@ class ETAInvoiceDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanFile]
 
     def get(self, request: Request, eta_id) -> Response:
-        return _envelope(ETAInvoiceSerializer(get_object_or_404(ETAInvoice, id=eta_id)).data)
+        return _envelope(ETAInvoiceSerializer(get_object_or_404(_scoped(request), id=eta_id)).data)
 
 
 class _ETAActionView(APIView):
@@ -74,7 +81,7 @@ class _ETAActionView(APIView):
     action = ""
 
     def post(self, request: Request, eta_id) -> Response:
-        eta = get_object_or_404(ETAInvoice, id=eta_id)
+        eta = get_object_or_404(_scoped(request), id=eta_id)
         getattr(services, self.action)(eta, actor=request.user)
         eta.refresh_from_db()
         return _envelope(ETAInvoiceSerializer(eta).data)

@@ -46,6 +46,12 @@ def _opp_qs():
     return Opportunity.objects.select_related("lead").prefetch_related("lines")
 
 
+# List and detail/action fetches share the scoped queryset, so an out-of-scope record 404s
+# (indistinguishable from absent) rather than leaking existence.
+def _scoped(request: Request, qs, entity: str):
+    return scope_queryset(request.user, qs, f"crm.{entity}.view")
+
+
 # --- Campaigns -------------------------------------------------------------
 
 def _campaign_dict(campaign: Campaign, with_metrics: bool = False) -> dict:
@@ -87,14 +93,14 @@ class CampaignDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def get(self, request: Request, campaign_id) -> Response:
-        return _envelope(_campaign_dict(get_object_or_404(Campaign, id=campaign_id), with_metrics=True))
+        return _envelope(_campaign_dict(get_object_or_404(_scoped(request, Campaign.objects.all(), "campaign"), id=campaign_id), with_metrics=True))
 
 
 class CampaignStatusView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, campaign_id) -> Response:
-        campaign = get_object_or_404(Campaign, id=campaign_id)
+        campaign = get_object_or_404(_scoped(request, Campaign.objects.all(), "campaign"), id=campaign_id)
         s = CampaignStatusSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.set_campaign_status(campaign, s.validated_data["status"], actor=request.user)
@@ -123,7 +129,7 @@ class LeadStatusView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, lead_id) -> Response:
-        lead = get_object_or_404(Lead, id=lead_id)
+        lead = get_object_or_404(_scoped(request, Lead.objects.all(), "lead"), id=lead_id)
         s = LeadStatusSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.set_lead_status(lead, s.validated_data["status"], actor=request.user)
@@ -134,7 +140,7 @@ class LeadConvertView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, lead_id) -> Response:
-        lead = get_object_or_404(Lead, id=lead_id)
+        lead = get_object_or_404(_scoped(request, Lead.objects.all(), "lead"), id=lead_id)
         s = LeadConvertSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         opp = services.convert_lead(lead, actor=request.user, **s.validated_data)
@@ -179,14 +185,15 @@ class OppDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def get(self, request: Request, opp_id) -> Response:
-        return _envelope(OpportunitySerializer(get_object_or_404(_opp_qs(), id=opp_id)).data)
+        return _envelope(OpportunitySerializer(
+            get_object_or_404(_scoped(request, _opp_qs(), "opportunity"), id=opp_id)).data)
 
 
 class OppStageView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, opp_id) -> Response:
-        opp = get_object_or_404(Opportunity, id=opp_id)
+        opp = get_object_or_404(_scoped(request, Opportunity.objects.all(), "opportunity"), id=opp_id)
         s = OppStageSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.advance_stage(opp, s.validated_data["stage"], actor=request.user)
@@ -197,7 +204,7 @@ class OppWinView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, opp_id) -> Response:
-        opp = get_object_or_404(Opportunity, id=opp_id)
+        opp = get_object_or_404(_scoped(request, Opportunity.objects.all(), "opportunity"), id=opp_id)
         s = OppWinSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.win_opportunity(
@@ -210,7 +217,7 @@ class OppLoseView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, opp_id) -> Response:
-        opp = get_object_or_404(Opportunity, id=opp_id)
+        opp = get_object_or_404(_scoped(request, Opportunity.objects.all(), "opportunity"), id=opp_id)
         s = OppLoseSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.lose_opportunity(opp, reason=s.validated_data["reason"], actor=request.user)
@@ -223,7 +230,7 @@ class ActivityListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def get(self, request: Request) -> Response:
-        qs = Activity.objects.all()
+        qs = _scoped(request, Activity.objects.all(), "activity")
         if request.query_params.get("related_type"):
             qs = qs.filter(related_type=request.query_params["related_type"])
         if request.query_params.get("related_ref"):
@@ -241,7 +248,7 @@ class ActivityCompleteView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, activity_id) -> Response:
-        activity = get_object_or_404(Activity, id=activity_id)
+        activity = get_object_or_404(_scoped(request, Activity.objects.all(), "activity"), id=activity_id)
         services.complete_activity(activity, actor=request.user)
         return _envelope(ActivitySerializer(Activity.objects.get(id=activity.id)).data)
 
@@ -270,14 +277,15 @@ class TicketDetailView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def get(self, request: Request, ticket_id) -> Response:
-        return _envelope(TicketSerializer(get_object_or_404(Ticket, id=ticket_id)).data)
+        return _envelope(TicketSerializer(
+            get_object_or_404(_scoped(request, Ticket.objects.all(), "ticket"), id=ticket_id)).data)
 
 
 class TicketStartView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, ticket_id) -> Response:
-        ticket = get_object_or_404(Ticket, id=ticket_id)
+        ticket = get_object_or_404(_scoped(request, Ticket.objects.all(), "ticket"), id=ticket_id)
         services.start_ticket(ticket, actor=request.user)
         return _envelope(TicketSerializer(Ticket.objects.get(id=ticket.id)).data)
 
@@ -286,7 +294,7 @@ class TicketResolveView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, ticket_id) -> Response:
-        ticket = get_object_or_404(Ticket, id=ticket_id)
+        ticket = get_object_or_404(_scoped(request, Ticket.objects.all(), "ticket"), id=ticket_id)
         s = TicketResolveSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         services.resolve_ticket(ticket, resolution=s.validated_data["resolution"], actor=request.user)
@@ -297,7 +305,7 @@ class TicketCloseView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, ticket_id) -> Response:
-        ticket = get_object_or_404(Ticket, id=ticket_id)
+        ticket = get_object_or_404(_scoped(request, Ticket.objects.all(), "ticket"), id=ticket_id)
         services.close_ticket(ticket, actor=request.user)
         return _envelope(TicketSerializer(Ticket.objects.get(id=ticket.id)).data)
 
@@ -306,7 +314,7 @@ class TicketEscalateView(APIView):
     permission_classes = [IsAuthenticated, _CanCRM]
 
     def post(self, request: Request, ticket_id) -> Response:
-        ticket = get_object_or_404(Ticket, id=ticket_id)
+        ticket = get_object_or_404(_scoped(request, Ticket.objects.all(), "ticket"), id=ticket_id)
         services.escalate_ticket(ticket, actor=request.user)
         return _envelope(TicketSerializer(Ticket.objects.get(id=ticket.id)).data)
 

@@ -73,7 +73,7 @@
   display: inline-flex;
   align-items: center;
   padding-inline: var(--space-2);
-  padding-block: 0.125rem;
+  padding-block: var(--space-0-5);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -87,7 +87,7 @@
   display: inline-flex;
   align-items: center;
   padding-inline: var(--space-2);
-  padding-block: 0.125rem;
+  padding-block: var(--space-0-5);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);

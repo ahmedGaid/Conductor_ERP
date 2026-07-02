@@ -35,13 +35,13 @@ export const newOrderGuide: HelpGuide = {
   },
   howItWorks: {
     en: "Pick the customer and a warehouse, then add lines (item + quantity + price). The form totals the order live, including VAT if you choose a tax code and any line discounts.",
-    ar: "اختر العميل ومستودعاً، ثم أضف السطور (صنف + كمية + سعر). يجمع النموذج الطلب مباشرة، متضمناً الضريبة إن اخترت رمزاً ضريبياً وأي خصومات على السطور.",
+    ar: "اختر العميل ومخزناً، ثم أضف السطور (صنف + كمية + سعر). يجمع النموذج الطلب مباشرة، متضمناً الضريبة إن اخترت رمزاً ضريبياً وأي خصومات على السطور.",
   },
   sections: [
     {
       heading: { en: "Fields", ar: "الحقول" },
       items: [
-        { term: { en: "Warehouse", ar: "المستودع" }, desc: { en: "Where the goods ship from — must have stock to deliver.", ar: "من أين تُشحن البضاعة — يجب أن يتوفر مخزون للتسليم." } },
+        { term: { en: "Warehouse", ar: "المخزن" }, desc: { en: "Where the goods ship from — must have stock to deliver.", ar: "من أين تُشحن البضاعة — يجب أن يتوفر مخزون للتسليم." } },
         { term: { en: "Tax code", ar: "الرمز الضريبي" }, desc: { en: "Optional. Leave blank for no VAT; pick VAT14 to add 14%.", ar: "اختياري. اتركه فارغاً بلا ضريبة؛ اختر VAT14 لإضافة 14%." } },
         { term: { en: "Discount", ar: "الخصم" }, desc: { en: "Per-line amount off the gross.", ar: "مبلغ خصم لكل سطر من الإجمالي." } },
       ],
@@ -77,6 +77,24 @@ export const orderDetailGuide: HelpGuide = {
   ],
   related: [
     { to: "/sales", label: { en: "All orders", ar: "كل الطلبات" } },
+  ],
+};
+
+export const invoiceDocumentGuide: HelpGuide = {
+  title: { en: "Invoice document", ar: "مستند الفاتورة" },
+  purpose: {
+    en: "The clean, printable invoice your customer receives — ready to print or save as PDF.",
+    ar: "الفاتورة النظيفة القابلة للطباعة التي يستلمها عميلك — جاهزة للطباعة أو الحفظ كـ PDF.",
+  },
+  howItWorks: {
+    en: "It shows once an order is invoiced, with your company details, the customer, the lines, and the totals. Click Print and choose 'Save as PDF' to keep a copy — no extra tools needed.",
+    ar: "تظهر بعد فوترة الطلب، وتعرض بيانات شركتك والعميل والسطور والمجاميع. انقر طباعة واختر 'حفظ كـ PDF' للاحتفاظ بنسخة — دون أي أدوات إضافية.",
+  },
+  mistakes: [
+    { en: "Your company name and tax number come from Settings → Organization — fill them in so they appear here.", ar: "يأتي اسم شركتك ورقمك الضريبي من الإعدادات ← المؤسسة — أكملهما ليظهرا هنا." },
+  ],
+  related: [
+    { to: "/settings/organization", label: { en: "Organization settings", ar: "إعدادات المؤسسة" } },
   ],
 };
 
@@ -147,5 +165,20 @@ export const customersGuide: HelpGuide = {
   },
   related: [
     { to: "/sales", label: { en: "Sales orders", ar: "طلبات المبيعات" } },
+  ],
+};
+
+export const customerDetailGuide: HelpGuide = {
+  title: { en: "Customer", ar: "العميل" },
+  purpose: {
+    en: "View and edit a customer's details and see their order history.",
+    ar: "اعرض بيانات العميل وعدّلها وتابع سجل طلباتهم.",
+  },
+  howItWorks: {
+    en: "Edit the customer's name, code, or contact details directly on this page.",
+    ar: "عدّل اسم العميل أو كوده أو بيانات التواصل مباشرة من هذه الصفحة.",
+  },
+  related: [
+    { to: "/sales/customers", label: { en: "All customers", ar: "جميع العملاء" } },
   ],
 };

@@ -40,12 +40,18 @@ export function Popover({ open, onClose, anchorRef, children, className, ariaLab
     if (!anchor || !panel) return;
     const a = anchor.getBoundingClientRect();
     const w = panel.offsetWidth;
+    const h = panel.offsetHeight;
     const rtl = getComputedStyle(anchor).direction === "rtl";
     // Align the panel's inline-start edge with the trigger's inline-start edge.
     let left = rtl ? a.right - w : a.left;
     // Clamp into the viewport with an 8px margin.
     left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
-    const top = a.bottom + 4;
+    // Open below the trigger, but flip above when the panel would overflow the viewport bottom and
+    // there is room above (e.g. a menu anchored to a control at the foot of the sidebar).
+    let top = a.bottom + 4;
+    if (top + h > window.innerHeight - 8 && a.top - h - 4 >= 8) {
+      top = a.top - h - 4;
+    }
     setCoords({ left, top });
   }, [anchorRef]);
 

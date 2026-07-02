@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { NavIcon } from "../../app/icons";
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { Tooltip } from "../../components/Tooltip";
 import { SettingsNav } from "./SettingsNav";
@@ -45,7 +46,7 @@ export function NavigationSettingsPage() {
                       aria-label={t(on ? "settings.nav.unpin" : "settings.nav.pin")}
                       onClick={() => toggle(label, to)}
                     >
-                      <span aria-hidden="true">{on ? "★" : "☆"}</span>
+                      <NavIcon name="star" />
                     </button>
                   </Tooltip>
                 </li>

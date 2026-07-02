@@ -5,8 +5,8 @@
  */
 .segmented {
   display: inline-flex;
-  gap: 2px;
-  padding: 3px;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
   background-color: var(--color-surface-alt);
   border-radius: var(--radius-md);
 }

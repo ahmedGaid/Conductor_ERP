@@ -39,7 +39,8 @@ class OrgPreferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrgPreferences
         exclude = ["id"]
-        read_only_fields = ["updated_at"]
+        # is_setup_complete is flipped only by the setup service; base_currency is EGP-only for now.
+        read_only_fields = ["updated_at", "is_setup_complete", "base_currency"]
 
 
 # --- User management (Increment 3) ---

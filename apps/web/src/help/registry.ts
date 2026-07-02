@@ -10,8 +10,10 @@ import { matchPath } from "react-router-dom";
 
 import type { HelpGuide } from "./types";
 import {
+  assistantGuide,
   dashboardGuide,
   einvoiceGuide,
+  entityLinkGuide,
   executionViewerGuide,
   notificationsGuide,
   workflowCanvasGuide,
@@ -39,15 +41,19 @@ import {
 } from "./content/accounting";
 import {
   batchesGuide,
+  itemDetailGuide,
   itemsGuide,
   stockCountDetailGuide,
   stockCountsGuide,
   stockMovementGuide,
   stockOnHandGuide,
+  warehouseDetailGuide,
   warehousesGuide,
 } from "./content/inventory";
 import {
+  customerDetailGuide,
   customersGuide,
+  invoiceDocumentGuide,
   newOrderGuide,
   newQuotationGuide,
   orderDetailGuide,
@@ -56,12 +62,14 @@ import {
   quotationsGuide,
 } from "./content/sales";
 import {
+  importInvoiceGuide,
   newPurchaseOrderGuide,
   newPurchaseRequestGuide,
   purchaseOrderDetailGuide,
   purchaseOrdersGuide,
   purchaseRequestDetailGuide,
   purchaseRequestsGuide,
+  supplierDetailGuide,
   suppliersGuide,
 } from "./content/purchasing";
 import {
@@ -82,6 +90,7 @@ import {
   settingsProfileGuide,
 } from "./content/settings";
 import { roleDetailGuide, rolesGuide, userDetailGuide, usersGuide } from "./content/admin";
+import { customerPricingGuide, priceListDetailGuide, priceListsGuide } from "./content/pricing";
 
 export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/": dashboardGuide,
@@ -109,7 +118,9 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/accounting/report-builder": reportBuilderGuide,
   "/inventory": stockOnHandGuide,
   "/inventory/items": itemsGuide,
+  "/inventory/items/:sku": itemDetailGuide,
   "/inventory/warehouses": warehousesGuide,
+  "/inventory/warehouses/:code": warehouseDetailGuide,
   "/inventory/movements": stockMovementGuide,
   "/inventory/stock-on-hand": stockOnHandGuide,
   "/inventory/counts": stockCountsGuide,
@@ -118,19 +129,25 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/sales": ordersGuide,
   "/sales/orders/new": newOrderGuide,
   "/sales/orders/:id": orderDetailGuide,
+  "/sales/orders/:id/invoice": invoiceDocumentGuide,
   "/sales/quotations": quotationsGuide,
   "/sales/quotations/new": newQuotationGuide,
   "/sales/quotations/:id": quotationDetailGuide,
   "/sales/customers": customersGuide,
+  "/sales/customers/:code": customerDetailGuide,
   "/purchasing": purchaseOrdersGuide,
   "/purchasing/orders/new": newPurchaseOrderGuide,
+  "/purchasing/orders/import": importInvoiceGuide,
   "/purchasing/orders/:id": purchaseOrderDetailGuide,
   "/purchasing/requests": purchaseRequestsGuide,
   "/purchasing/requests/new": newPurchaseRequestGuide,
   "/purchasing/requests/:id": purchaseRequestDetailGuide,
   "/purchasing/suppliers": suppliersGuide,
+  "/purchasing/suppliers/:code": supplierDetailGuide,
   "/einvoice": einvoiceGuide,
+  "/assistant": assistantGuide,
   "/notifications": notificationsGuide,
+  "/go/:type/:key": entityLinkGuide,
   "/crm": pipelineGuide,
   "/crm/pipeline": pipelineGuide,
   "/crm/opportunities/:id": opportunityDetailGuide,
@@ -150,6 +167,9 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/admin/users/:id": userDetailGuide,
   "/admin/roles": rolesGuide,
   "/admin/roles/:name": roleDetailGuide,
+  "/pricing": priceListsGuide,
+  "/pricing/customers": customerPricingGuide,
+  "/pricing/:id": priceListDetailGuide,
 };
 
 // Pre-sort patterns most-specific first: deeper paths first, and within the same depth, patterns

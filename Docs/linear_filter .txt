@@ -1,0 +1,1826 @@
+You are tasked with integrating an existing React component bundle into the codebase.
+
+The codebase should support:
+- React with TypeScript
+- Tailwind CSS (v3 or v4)
+- Modern build tools (Vite/Next.js)
+
+If your project doesn't support these, provide instructions on how to set them up.
+
+IMPORTANT: The App.tsx file is a showcase/example demonstrating the component usage. You should:
+1. Analyze the App component to understand how all the pieces work together
+2. Review the supporting components and utilities 
+3. Integrate the relevant parts into your project structure
+4. Adapt the implementation to match your project's patterns and requirements
+
+## Installation
+
+```bash
+npm install framer-motion lucide-react clsx tailwind-merge @radix-ui/react-checkbox cmdk @radix-ui/react-dropdown-menu @radix-ui/react-popover @radix-ui/react-avatar @radix-ui/react-slot class-variance-authority @radix-ui/react-dialog
+```
+
+## Styles
+
+### index.css
+
+```css
+/* This is Tailwind 4 CSS file */
+/* Extending Tailwind configuration */
+/* Use shadcn/ui format to extend the configuration */
+/* Add only the styles that your component needs */
+
+/* Base imports */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Custom dark variant for targeting dark mode elements */
+@custom-variant dark (&:is(.dark *));
+
+/* CSS variables and theme definitions */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Light theme variables */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* Dark theme variables */
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Tailwind base styles */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+```
+
+
+## Component Files
+
+### lib/utils.ts
+
+```tsx
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+```
+
+### components/ui/checkbox.tsx
+
+```tsx
+"use client"
+
+import * as React from "react"
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+import { CheckIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+function Checkbox({
+  className,
+  ...props
+}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
+  return (
+    <CheckboxPrimitive.Root
+      data-slot="checkbox"
+      className={cn(
+        "peer border-input dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      <CheckboxPrimitive.Indicator
+        data-slot="checkbox-indicator"
+        className="flex items-center justify-center text-current transition-none"
+      >
+        <CheckIcon className="size-3.5" />
+      </CheckboxPrimitive.Indicator>
+    </CheckboxPrimitive.Root>
+  )
+}
+
+export { Checkbox }
+
+```
+
+### components/ui/dialog.tsx
+
+```tsx
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { XIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+function Dialog({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+}
+
+function DialogTrigger({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+}
+
+function DialogPortal({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+}
+
+function DialogClose({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  return (
+    <DialogPrimitive.Overlay
+      data-slot="dialog-overlay"
+      className={cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  return (
+    <DialogPortal data-slot="dialog-portal">
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+          <XIcon />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+}
+
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-lg leading-none font-semibold", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}
+
+```
+
+### components/ui/command.tsx
+
+```tsx
+"use client"
+
+import * as React from "react"
+import { Command as CommandPrimitive } from "cmdk"
+import { SearchIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+
+function Command({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive>) {
+  return (
+    <CommandPrimitive
+      data-slot="command"
+      className={cn(
+        "bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-md",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CommandDialog({
+  title = "Command Palette",
+  description = "Search for a command to run...",
+  children,
+  ...props
+}: React.ComponentProps<typeof Dialog> & {
+  title?: string
+  description?: string
+}) {
+  return (
+    <Dialog {...props}>
+      <DialogHeader className="sr-only">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
+      <DialogContent className="overflow-hidden p-0">
+        <Command className="[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+          {children}
+        </Command>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CommandInput({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+  return (
+    <div
+      data-slot="command-input-wrapper"
+      className="flex h-9 items-center gap-2 border-b px-3"
+    >
+      <SearchIcon className="size-4 shrink-0 opacity-50" />
+      <CommandPrimitive.Input
+        data-slot="command-input"
+        className={cn(
+          "placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        {...props}
+      />
+    </div>
+  )
+}
+
+function CommandList({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.List>) {
+  return (
+    <CommandPrimitive.List
+      data-slot="command-list"
+      className={cn(
+        "max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CommandEmpty({
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+  return (
+    <CommandPrimitive.Empty
+      data-slot="command-empty"
+      className="py-6 text-center text-sm"
+      {...props}
+    />
+  )
+}
+
+function CommandGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Group>) {
+  return (
+    <CommandPrimitive.Group
+      data-slot="command-group"
+      className={cn(
+        "text-foreground [&_[cmdk-group-heading]]:text-muted-foreground overflow-hidden p-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CommandSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Separator>) {
+  return (
+    <CommandPrimitive.Separator
+      data-slot="command-separator"
+      className={cn("bg-border -mx-1 h-px", className)}
+      {...props}
+    />
+  )
+}
+
+function CommandItem({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Item>) {
+  return (
+    <CommandPrimitive.Item
+      data-slot="command-item"
+      className={cn(
+        "data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CommandShortcut({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      data-slot="command-shortcut"
+      className={cn(
+        "text-muted-foreground ml-auto text-xs tracking-widest",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandShortcut,
+  CommandSeparator,
+}
+
+```
+
+### components/ui/dropdown-menu.tsx
+
+```tsx
+"use client"
+
+import * as React from "react"
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+function DropdownMenu({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+}
+
+function DropdownMenuPortal({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
+  return (
+    <DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
+  )
+}
+
+function DropdownMenuTrigger({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  return (
+    <DropdownMenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuContent({
+  className,
+  sideOffset = 4,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        data-slot="dropdown-menu-content"
+        sideOffset={sideOffset}
+        className={cn(
+          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md",
+          className
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  )
+}
+
+function DropdownMenuGroup({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {
+  return (
+    <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+  )
+}
+
+function DropdownMenuItem({
+  className,
+  inset,
+  variant = "default",
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
+  inset?: boolean
+  variant?: "default" | "destructive"
+}) {
+  return (
+    <DropdownMenuPrimitive.Item
+      data-slot="dropdown-menu-item"
+      data-inset={inset}
+      data-variant={variant}
+      className={cn(
+        "focus:bg-accent focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuCheckboxItem({
+  className,
+  children,
+  checked,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>) {
+  return (
+    <DropdownMenuPrimitive.CheckboxItem
+      data-slot="dropdown-menu-checkbox-item"
+      className={cn(
+        "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      checked={checked}
+      {...props}
+    >
+      <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
+        <DropdownMenuPrimitive.ItemIndicator>
+          <CheckIcon className="size-4" />
+        </DropdownMenuPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </DropdownMenuPrimitive.CheckboxItem>
+  )
+}
+
+function DropdownMenuRadioGroup({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>) {
+  return (
+    <DropdownMenuPrimitive.RadioGroup
+      data-slot="dropdown-menu-radio-group"
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuRadioItem({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem>) {
+  return (
+    <DropdownMenuPrimitive.RadioItem
+      data-slot="dropdown-menu-radio-item"
+      className={cn(
+        "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
+        <DropdownMenuPrimitive.ItemIndicator>
+          <CircleIcon className="size-2 fill-current" />
+        </DropdownMenuPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </DropdownMenuPrimitive.RadioItem>
+  )
+}
+
+function DropdownMenuLabel({
+  className,
+  inset,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.Label
+      data-slot="dropdown-menu-label"
+      data-inset={inset}
+      className={cn(
+        "px-2 py-1.5 text-sm font-medium data-[inset]:pl-8",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+  return (
+    <DropdownMenuPrimitive.Separator
+      data-slot="dropdown-menu-separator"
+      className={cn("bg-border -mx-1 my-1 h-px", className)}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuShortcut({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      data-slot="dropdown-menu-shortcut"
+      className={cn(
+        "text-muted-foreground ml-auto text-xs tracking-widest",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuSub({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
+  return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />
+}
+
+function DropdownMenuSubTrigger({
+  className,
+  inset,
+  children,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.SubTrigger
+      data-slot="dropdown-menu-sub-trigger"
+      data-inset={inset}
+      className={cn(
+        "focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[inset]:pl-8",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRightIcon className="ml-auto size-4" />
+    </DropdownMenuPrimitive.SubTrigger>
+  )
+}
+
+function DropdownMenuSubContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+  return (
+    <DropdownMenuPrimitive.SubContent
+      data-slot="dropdown-menu-sub-content"
+      className={cn(
+        "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border p-1 shadow-lg",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  DropdownMenu,
+  DropdownMenuPortal,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+}
+
+```
+
+### components/ui/popover.tsx
+
+```tsx
+"use client"
+
+import * as React from "react"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
+
+import { cn } from "@/lib/utils"
+
+function Popover({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
+  return <PopoverPrimitive.Root data-slot="popover" {...props} />
+}
+
+function PopoverTrigger({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+}
+
+function PopoverContent({
+  className,
+  align = "center",
+  sideOffset = 4,
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  return (
+    <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Content
+        data-slot="popover-content"
+        align={align}
+        sideOffset={sideOffset}
+        className={cn(
+          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden",
+          className
+        )}
+        {...props}
+      />
+    </PopoverPrimitive.Portal>
+  )
+}
+
+function PopoverAnchor({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
+  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
+}
+
+export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }
+
+```
+
+### components/ui/avatar.tsx
+
+```tsx
+"use client"
+
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
+
+import { cn } from "@/lib/utils"
+
+function Avatar({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+  return (
+    <AvatarPrimitive.Root
+      data-slot="avatar"
+      className={cn(
+        "relative flex size-8 shrink-0 overflow-hidden rounded-full",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AvatarImage({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  return (
+    <AvatarPrimitive.Image
+      data-slot="avatar-image"
+      className={cn("aspect-square size-full", className)}
+      {...props}
+    />
+  )
+}
+
+function AvatarFallback({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+  return (
+    <AvatarPrimitive.Fallback
+      data-slot="avatar-fallback"
+      className={cn(
+        "bg-muted flex size-full items-center justify-center rounded-full",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Avatar, AvatarImage, AvatarFallback }
+
+```
+
+### components/ui/button.tsx
+
+```tsx
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        outline:
+          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost:
+          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function Button({
+  className,
+  variant,
+  size,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+  }) {
+  const Comp = asChild ? Slot : "button"
+
+  return (
+    <Comp
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  )
+}
+
+export { Button, buttonVariants }
+
+```
+
+### App.tsx
+
+```tsx
+"use client";
+
+import React, { useRef, useState, useEffect, Dispatch, SetStateAction } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Calendar,
+  CalendarPlus,
+  CalendarSync,
+  Check,
+  Circle,
+  CircleAlert,
+  CircleCheck,
+  CircleDashed,
+  CircleDotDashed,
+  CircleEllipsis,
+  CircleX,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+  Tag,
+  UserCircle,
+  X,
+  ListFilter,
+} from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+
+interface AnimateChangeInHeightProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const AnimateChangeInHeight: React.FC<AnimateChangeInHeightProps> = ({
+  children,
+  className,
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [height, setHeight] = useState<number | "auto">("auto");
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const resizeObserver = new ResizeObserver((entries) => {
+        const observedHeight = entries[0].contentRect.height;
+        setHeight(observedHeight);
+      });
+
+      resizeObserver.observe(containerRef.current);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, []);
+
+  return (
+    <motion.div
+      className={cn(className, "overflow-hidden")}
+      style={{ height }}
+      animate={{ height }}
+      transition={{ duration: 0.1, dampping: 0.2, ease: "easeIn" }}
+    >
+      <div ref={containerRef}>{children}</div>
+    </motion.div>
+  );
+};
+
+enum FilterType {
+  STATUS = "Status",
+  ASSIGNEE = "Assignee",
+  LABELS = "Labels",
+  PRIORITY = "Priority",
+  DUE_DATE = "Due date",
+  CREATED_DATE = "Created date",
+  UPDATED_DATE = "Updated date",
+}
+
+enum FilterOperator {
+  IS = "is",
+  IS_NOT = "is not",
+  IS_ANY_OF = "is any of",
+  INCLUDE = "include",
+  DO_NOT_INCLUDE = "do not include",
+  INCLUDE_ALL_OF = "include all of",
+  INCLUDE_ANY_OF = "include any of",
+  EXCLUDE_ALL_OF = "exclude all of",
+  EXCLUDE_IF_ANY_OF = "exclude if any of",
+  BEFORE = "before",
+  AFTER = "after",
+}
+
+enum Status {
+  BACKLOG = "Backlog",
+  TODO = "Todo",
+  IN_PROGRESS = "In Progress",
+  IN_REVIEW = "In Review",
+  DONE = "Done",
+  CANCELLED = "Cancelled",
+}
+
+enum Assignee {
+  ANDREW_LUO = "Andrew Luo",
+  NO_ASSIGNEE = "No assignee",
+}
+
+enum Labels {
+  BUG = "Bug",
+  FEATURE = "Feature",
+  HOTFIX = "Hotfix",
+  RELEASE = "Release",
+}
+
+enum Priority {
+  URGENT = "Urgent",
+  HIGH = "High",
+  MEDIUM = "Medium",
+  LOW = "Low",
+}
+
+enum DueDate {
+  IN_THE_PAST = "in the past",
+  IN_24_HOURS = "24 hours from now",
+  IN_3_DAYS = "3 days from now",
+  IN_1_WEEK = "1 week from now",
+  IN_1_MONTH = "1 month from now",
+  IN_3_MONTHS = "3 months from now",
+}
+
+type FilterOption = {
+  name: FilterType | Status | Assignee | Labels | Priority | DueDate;
+  icon: React.ReactNode | undefined;
+  label?: string;
+};
+
+type Filter = {
+  id: string;
+  type: FilterType;
+  operator: FilterOperator;
+  value: string[];
+};
+
+const FilterIcon = ({
+  type,
+}: {
+  type: FilterType | Status | Assignee | Labels | Priority;
+}) => {
+  switch (type) {
+    case Assignee.ANDREW_LUO:
+      return (
+        <Avatar className="size-3.5 rounded-full text-[9px] text-white">
+          <AvatarFallback className="bg-orange-300">AL</AvatarFallback>
+        </Avatar>
+      );
+    case Assignee.NO_ASSIGNEE:
+      return <UserCircle className="size-3.5" />;
+    case FilterType.STATUS:
+      return <CircleDashed className="size-3.5" />;
+    case FilterType.ASSIGNEE:
+      return <UserCircle className="size-3.5" />;
+    case FilterType.LABELS:
+      return <Tag className="size-3.5" />;
+    case FilterType.PRIORITY:
+      return <SignalHigh className="size-3.5" />;
+    case FilterType.DUE_DATE:
+      return <Calendar className="size-3.5" />;
+    case FilterType.CREATED_DATE:
+      return <CalendarPlus className="size-3.5" />;
+    case FilterType.UPDATED_DATE:
+      return <CalendarSync className="size-3.5" />;
+    case Status.BACKLOG:
+      return <CircleDashed className="size-3.5 text-muted-foreground" />;
+    case Status.TODO:
+      return <Circle className="size-3.5 text-primary" />;
+    case Status.IN_PROGRESS:
+      return <CircleDotDashed className="size-3.5 text-yellow-400" />;
+    case Status.IN_REVIEW:
+      return <CircleEllipsis className="size-3.5 text-green-400" />;
+    case Status.DONE:
+      return <CircleCheck className="size-3.5 text-blue-400" />;
+    case Status.CANCELLED:
+      return <CircleX className="size-3.5 text-muted-foreground" />;
+    case Priority.URGENT:
+      return <CircleAlert className="size-3.5" />;
+    case Priority.HIGH:
+      return <SignalHigh className="size-3.5" />;
+    case Priority.MEDIUM:
+      return <SignalMedium className="size-3.5" />;
+    case Priority.LOW:
+      return <SignalLow className="size-3.5" />;
+    case Labels.BUG:
+      return <div className="bg-red-400 rounded-full size-2.5" />;
+    case Labels.FEATURE:
+      return <div className="bg-blue-400 rounded-full size-2.5" />;
+    case Labels.HOTFIX:
+      return <div className="bg-amber-400 rounded-full size-2.5" />;
+    case Labels.RELEASE:
+      return <div className="bg-green-400 rounded-full size-2.5" />;
+  }
+};
+
+const filterViewOptions: FilterOption[][] = [
+  [
+    {
+      name: FilterType.STATUS,
+      icon: <FilterIcon type={FilterType.STATUS} />,
+    },
+    {
+      name: FilterType.ASSIGNEE,
+      icon: <FilterIcon type={FilterType.ASSIGNEE} />,
+    },
+    {
+      name: FilterType.LABELS,
+      icon: <FilterIcon type={FilterType.LABELS} />,
+    },
+    {
+      name: FilterType.PRIORITY,
+      icon: <FilterIcon type={FilterType.PRIORITY} />,
+    },
+  ],
+  [
+    {
+      name: FilterType.DUE_DATE,
+      icon: <FilterIcon type={FilterType.DUE_DATE} />,
+    },
+    {
+      name: FilterType.CREATED_DATE,
+      icon: <FilterIcon type={FilterType.CREATED_DATE} />,
+    },
+    {
+      name: FilterType.UPDATED_DATE,
+      icon: <FilterIcon type={FilterType.UPDATED_DATE} />,
+    },
+  ],
+];
+
+const statusFilterOptions: FilterOption[] = Object.values(Status).map(
+  (status) => ({
+    name: status,
+    icon: <FilterIcon type={status} />,
+  })
+);
+
+const assigneeFilterOptions: FilterOption[] = Object.values(Assignee).map(
+  (assignee) => ({
+    name: assignee,
+    icon: <FilterIcon type={assignee} />,
+  })
+);
+
+const labelFilterOptions: FilterOption[] = Object.values(Labels).map(
+  (label) => ({
+    name: label,
+    icon: <FilterIcon type={label} />,
+  })
+);
+
+const priorityFilterOptions: FilterOption[] = Object.values(Priority).map(
+  (priority) => ({
+    name: priority,
+    icon: <FilterIcon type={priority} />,
+  })
+);
+
+const dateFilterOptions: FilterOption[] = Object.values(DueDate).map(
+  (date) => ({
+    name: date,
+    icon: undefined,
+  })
+);
+
+const filterViewToFilterOptions: Record<FilterType, FilterOption[]> = {
+  [FilterType.STATUS]: statusFilterOptions,
+  [FilterType.ASSIGNEE]: assigneeFilterOptions,
+  [FilterType.LABELS]: labelFilterOptions,
+  [FilterType.PRIORITY]: priorityFilterOptions,
+  [FilterType.DUE_DATE]: dateFilterOptions,
+  [FilterType.CREATED_DATE]: dateFilterOptions,
+  [FilterType.UPDATED_DATE]: dateFilterOptions,
+};
+
+const filterOperators = ({
+  filterType,
+  filterValues,
+}: {
+  filterType: FilterType;
+  filterValues: string[];
+}) => {
+  switch (filterType) {
+    case FilterType.STATUS:
+    case FilterType.ASSIGNEE:
+    case FilterType.PRIORITY:
+      if (Array.isArray(filterValues) && filterValues.length > 1) {
+        return [FilterOperator.IS_ANY_OF, FilterOperator.IS_NOT];
+      } else {
+        return [FilterOperator.IS, FilterOperator.IS_NOT];
+      }
+    case FilterType.LABELS:
+      if (Array.isArray(filterValues) && filterValues.length > 1) {
+        return [
+          FilterOperator.INCLUDE_ANY_OF,
+          FilterOperator.INCLUDE_ALL_OF,
+          FilterOperator.EXCLUDE_ALL_OF,
+          FilterOperator.EXCLUDE_IF_ANY_OF,
+        ];
+      } else {
+        return [FilterOperator.INCLUDE, FilterOperator.DO_NOT_INCLUDE];
+      }
+    case FilterType.DUE_DATE:
+    case FilterType.CREATED_DATE:
+    case FilterType.UPDATED_DATE:
+      if (filterValues?.includes(DueDate.IN_THE_PAST)) {
+        return [FilterOperator.IS, FilterOperator.IS_NOT];
+      } else {
+        return [FilterOperator.BEFORE, FilterOperator.AFTER];
+      }
+    default:
+      return [];
+  }
+};
+
+const FilterOperatorDropdown = ({
+  filterType,
+  operator,
+  filterValues,
+  setOperator,
+}: {
+  filterType: FilterType;
+  operator: FilterOperator;
+  filterValues: string[];
+  setOperator: (operator: FilterOperator) => void;
+}) => {
+  const operators = filterOperators({ filterType, filterValues });
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="bg-muted hover:bg-muted/50 px-1.5 py-1 text-muted-foreground hover:text-primary transition shrink-0">
+        {operator}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-fit min-w-fit">
+        {operators.map((operator) => (
+          <DropdownMenuItem
+            key={operator}
+            onClick={() => setOperator(operator)}
+          >
+            {operator}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const FilterValueCombobox = ({
+  filterType,
+  filterValues,
+  setFilterValues,
+}: {
+  filterType: FilterType;
+  filterValues: string[];
+  setFilterValues: (filterValues: string[]) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [commandInput, setCommandInput] = useState("");
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  const nonSelectedFilterValues = filterViewToFilterOptions[filterType]?.filter(
+    (filter) => !filterValues.includes(filter.name)
+  );
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
+        if (!open) {
+          setTimeout(() => {
+            setCommandInput("");
+          }, 200);
+        }
+      }}
+    >
+      <PopoverTrigger
+        className="rounded-none px-1.5 py-1 bg-muted hover:bg-muted/50 transition
+  text-muted-foreground hover:text-primary shrink-0"
+      >
+        <div className="flex gap-1.5 items-center">
+          {filterType !== FilterType.PRIORITY && (
+            <div
+              className={cn(
+                "flex items-center flex-row",
+                filterType === FilterType.LABELS ? "-space-x-1" : "-space-x-1.5"
+              )}
+            >
+              <AnimatePresence mode="popLayout">
+                {filterValues?.slice(0, 3).map((value) => (
+                  <motion.div
+                    key={value}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FilterIcon type={value as FilterType} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+          {filterValues?.length === 1
+            ? filterValues?.[0]
+            : `${filterValues?.length} selected`}
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0">
+        <AnimateChangeInHeight>
+          <Command>
+            <CommandInput
+              placeholder={filterType}
+              className="h-9"
+              value={commandInput}
+              onInputCapture={(e) => {
+                setCommandInput(e.currentTarget.value);
+              }}
+              ref={commandInputRef}
+            />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup>
+                {filterValues.map((value) => (
+                  <CommandItem
+                    key={value}
+                    className="group flex gap-2 items-center"
+                    onSelect={() => {
+                      setFilterValues(filterValues.filter((v) => v !== value));
+                      setTimeout(() => {
+                        setCommandInput("");
+                      }, 200);
+                      setOpen(false);
+                    }}
+                  >
+                    <Checkbox checked={true} />
+                    <FilterIcon type={value as FilterType} />
+                    {value}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              {nonSelectedFilterValues?.length > 0 && (
+                <>
+                  <CommandSeparator />
+                  <CommandGroup>
+                    {nonSelectedFilterValues.map((filter: FilterOption) => (
+                      <CommandItem
+                        className="group flex gap-2 items-center"
+                        key={filter.name}
+                        value={filter.name}
+                        onSelect={(currentValue: string) => {
+                          setFilterValues([...filterValues, currentValue]);
+                          setTimeout(() => {
+                            setCommandInput("");
+                          }, 200);
+                          setOpen(false);
+                        }}
+                      >
+                        <Checkbox
+                          checked={false}
+                          className="opacity-0 group-data-[selected=true]:opacity-100"
+                        />
+                        {filter.icon}
+                        <span className="text-accent-foreground">
+                          {filter.name}
+                        </span>
+                        {filter.label && (
+                          <span className="text-muted-foreground text-xs ml-auto">
+                            {filter.label}
+                          </span>
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </>
+              )}
+            </CommandList>
+          </Command>
+        </AnimateChangeInHeight>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const FilterValueDateCombobox = ({
+  filterType,
+  filterValues,
+  setFilterValues,
+}: {
+  filterType: FilterType;
+  filterValues: string[];
+  setFilterValues: (filterValues: string[]) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [commandInput, setCommandInput] = useState("");
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
+        if (!open) {
+          setTimeout(() => {
+            setCommandInput("");
+          }, 200);
+        }
+      }}
+    >
+      <PopoverTrigger
+        className="rounded-none px-1.5 py-1 bg-muted hover:bg-muted/50 transition
+  text-muted-foreground hover:text-primary shrink-0"
+      >
+        {filterValues?.[0]}
+      </PopoverTrigger>
+      <PopoverContent className="w-fit p-0">
+        <AnimateChangeInHeight>
+          <Command>
+            <CommandInput
+              placeholder={filterType}
+              className="h-9"
+              value={commandInput}
+              onInputCapture={(e) => {
+                setCommandInput(e.currentTarget.value);
+              }}
+              ref={commandInputRef}
+            />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup>
+                {filterViewToFilterOptions[filterType].map(
+                  (filter: FilterOption) => (
+                    <CommandItem
+                      className="group flex gap-2 items-center"
+                      key={filter.name}
+                      value={filter.name}
+                      onSelect={(currentValue: string) => {
+                        setFilterValues([currentValue]);
+                        setTimeout(() => {
+                          setCommandInput("");
+                        }, 200);
+                        setOpen(false);
+                      }}
+                    >
+                      <span className="text-accent-foreground">
+                        {filter.name}
+                      </span>
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          filterValues.includes(filter.name)
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  )
+                )}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </AnimateChangeInHeight>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const Filters = ({
+  filters,
+  setFilters,
+}: {
+  filters: Filter[];
+  setFilters: Dispatch<SetStateAction<Filter[]>>;
+}) => {
+  return (
+    <div className="flex gap-2">
+      {filters
+        .filter((filter) => filter.value?.length > 0)
+        .map((filter) => (
+          <div key={filter.id} className="flex gap-[1px] items-center text-xs">
+            <div className="flex gap-1.5 shrink-0 rounded-l bg-muted px-1.5 py-1 items-center">
+              <FilterIcon type={filter.type} />
+              {filter.type}
+            </div>
+            <FilterOperatorDropdown
+              filterType={filter.type}
+              operator={filter.operator}
+              filterValues={filter.value}
+              setOperator={(operator) => {
+                setFilters((prev) =>
+                  prev.map((f) => (f.id === filter.id ? { ...f, operator } : f))
+                );
+              }}
+            />
+            {filter.type === FilterType.CREATED_DATE ||
+            filter.type === FilterType.UPDATED_DATE ||
+            filter.type === FilterType.DUE_DATE ? (
+              <FilterValueDateCombobox
+                filterType={filter.type}
+                filterValues={filter.value}
+                setFilterValues={(filterValues) => {
+                  setFilters((prev) =>
+                    prev.map((f) =>
+                      f.id === filter.id ? { ...f, value: filterValues } : f
+                    )
+                  );
+                }}
+              />
+            ) : (
+              <FilterValueCombobox
+                filterType={filter.type}
+                filterValues={filter.value}
+                setFilterValues={(filterValues) => {
+                  setFilters((prev) =>
+                    prev.map((f) =>
+                      f.id === filter.id ? { ...f, value: filterValues } : f
+                    )
+                  );
+                }}
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setFilters((prev) => prev.filter((f) => f.id !== filter.id));
+              }}
+              className="bg-muted rounded-l-none rounded-r-sm h-6 w-6 text-muted-foreground hover:text-primary hover:bg-muted/50 transition shrink-0"
+            >
+              <X className="size-3" />
+            </Button>
+          </div>
+        ))}
+    </div>
+  );
+};
+
+const generateId = () => Math.random().toString(36).substring(2, 11);
+
+const LinearFiltersDemo = () => {
+  const [open, setOpen] = useState(false);
+  const [selectedView, setSelectedView] = useState<FilterType | null>(null);
+  const [commandInput, setCommandInput] = useState("");
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  const [filters, setFilters] = useState<Filter[]>([]);
+
+  return (
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Linear Filters</h1>
+          <p className="text-muted-foreground">
+            A Linear-inspired component to add and edit filters
+          </p>
+        </div>
+        
+        <div className="flex gap-2 flex-wrap">
+          <Filters filters={filters} setFilters={setFilters} />
+          {filters.filter((filter) => filter.value?.length > 0).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="transition group h-6 text-xs items-center rounded-sm"
+              onClick={() => setFilters([])}
+            >
+              Clear
+            </Button>
+          )}
+          <Popover
+            open={open}
+            onOpenChange={(open) => {
+              setOpen(open);
+              if (!open) {
+                setTimeout(() => {
+                  setSelectedView(null);
+                  setCommandInput("");
+                }, 200);
+              }
+            }}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                role="combobox"
+                aria-expanded={open}
+                size="sm"
+                className={cn(
+                  "transition group h-6 text-xs items-center rounded-sm flex gap-1.5 items-center",
+                  filters.length > 0 && "w-6"
+                )}
+              >
+                <ListFilter className="size-3 shrink-0 transition-all text-muted-foreground group-hover:text-primary" />
+                {!filters.length && "Filter"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0">
+              <AnimateChangeInHeight>
+                <Command>
+                  <CommandInput
+                    placeholder={selectedView ? selectedView : "Filter..."}
+                    className="h-9"
+                    value={commandInput}
+                    onInputCapture={(e) => {
+                      setCommandInput(e.currentTarget.value);
+                    }}
+                    ref={commandInputRef}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No results found.</CommandEmpty>
+                    {selectedView ? (
+                      <CommandGroup>
+                        {filterViewToFilterOptions[selectedView].map(
+                          (filter: FilterOption) => (
+                            <CommandItem
+                              className="group text-muted-foreground flex gap-2 items-center"
+                              key={filter.name}
+                              value={filter.name}
+                              onSelect={(currentValue) => {
+                                setFilters((prev) => [
+                                  ...prev,
+                                  {
+                                    id: generateId(),
+                                    type: selectedView,
+                                    operator:
+                                      selectedView === FilterType.DUE_DATE &&
+                                      currentValue !== DueDate.IN_THE_PAST
+                                        ? FilterOperator.BEFORE
+                                        : FilterOperator.IS,
+                                    value: [currentValue],
+                                  },
+                                ]);
+                                setTimeout(() => {
+                                  setSelectedView(null);
+                                  setCommandInput("");
+                                }, 200);
+                                setOpen(false);
+                              }}
+                            >
+                              {filter.icon}
+                              <span className="text-accent-foreground">
+                                {filter.name}
+                              </span>
+                              {filter.label && (
+                                <span className="text-muted-foreground text-xs ml-auto">
+                                  {filter.label}
+                                </span>
+                              )}
+                            </CommandItem>
+                          )
+                        )}
+                      </CommandGroup>
+                    ) : (
+                      filterViewOptions.map(
+                        (group: FilterOption[], index: number) => (
+                          <React.Fragment key={index}>
+                            <CommandGroup>
+                              {group.map((filter: FilterOption) => (
+                                <CommandItem
+                                  className="group text-muted-foreground flex gap-2 items-center"
+                                  key={filter.name}
+                                  value={filter.name}
+                                  onSelect={(currentValue) => {
+                                    setSelectedView(currentValue as FilterType);
+                                    setCommandInput("");
+                                    commandInputRef.current?.focus();
+                                  }}
+                                >
+                                  {filter.icon}
+                                  <span className="text-accent-foreground">
+                                    {filter.name}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                            {index < filterViewOptions.length - 1 && (
+                              <CommandSeparator />
+                            )}
+                          </React.Fragment>
+                        )
+                      )
+                    )}
+                  </CommandList>
+                </Command>
+              </AnimateChangeInHeight>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LinearFiltersDemo;
+
+```
+
+
+## Tailwind Configuration
+
+Add the following global styles:
+
+```css
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+```
+
+Custom colors detected: muted-foreground, accent-foreground, primary-foreground, popover-foreground, secondary-foreground, offset-background
+Make sure these are defined in your Tailwind configuration.
+
+
+## Integration Instructions
+
+1. Review the App.tsx component to understand the complete implementation
+2. Identify which components and utilities you need for your use case
+3. Analyze the Tailwind v4 styles in index.css - integrate custom styles that differ from integrating Codebase
+4. Install the required NPM dependencies listed above
+5. Integrate the components into your project, adapting them to fit your architecture
+
+Focus on:
+- Understanding projects structure, adding above components into it
+- Understanding the component composition
+- Identifying reusable utilities and helpers
+- Adapting the styling to match your design system

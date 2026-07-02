@@ -1,17 +1,24 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showSupplierReceipt } from "../../lib/feedback/purchasing";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { RowActions } from "../../components/RowActions";
+import { ImportDialog } from "../../components/ImportDialog";
+import type { ImportFieldInfo } from "../../api/imports";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./purchasing.css";
@@ -19,6 +26,7 @@ import "./purchasing.css";
 export function SuppliersPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const fb = useActionFeedback();
   const { data, loading, error, reload, mutate } = useAsync(listSuppliers, [], "purchasing:suppliers");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
@@ -34,8 +42,31 @@ export function SuppliersPage() {
     [data, fields, filters],
   );
 
+  // j/k move a row highlight, Enter/o opens the supplier's party page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Supplier>({
+    items: filtered ?? [],
+    onOpen: (s) => navigate(`/purchasing/suppliers/${encodeURIComponent(s.code)}`),
+    persistKey: "purchasing:suppliers",
+    getItemId: (s) => s.id,
+  });
+
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+
+  // ⌘/Ctrl+Enter submits the add form from any field.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
+
+  const importFields = useMemo<ImportFieldInfo[]>(
+    () => [
+      { name: "code", label: t("purchasing.supplier.code"), required: true },
+      { name: "name", label: t("purchasing.supplier.name"), required: true },
+      { name: "is_active", label: t("purchasing.supplier.active") },
+    ],
+    [t],
+  );
 
   // Optimistic create: show the new supplier row at once and clear the form so the next one can be
   // typed without waiting; the server row replaces the placeholder on settle, or it rolls back + toasts.
@@ -50,7 +81,8 @@ export function SuppliersPage() {
       placeholder: (id) => ({ id, code: c, name: n }) as Supplier,
       request: () => createSupplier({ code: c, name: n }),
       toast,
-      success: t("purchasing.toast.supplierCreated"),
+    }).then((created) => {
+      if (created) showSupplierReceipt(fb, t, created, { navigate });
     });
     setCode("");
     setName("");
@@ -60,7 +92,23 @@ export function SuppliersPage() {
     <section className="pur-page">
       <PurchasingNav />
 
-      <form className="card pur-toolbar" onSubmit={onSubmit}>
+      <div className="pur-page-actions">
+        <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
+          {t("import.action")}
+        </button>
+      </div>
+
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        basePath="/purchasing/suppliers"
+        title={t("import.suppliers.title")}
+        templateName="suppliers-template.csv"
+        fields={importFields}
+        onCommitted={() => reload()}
+      />
+
+      <form ref={formRef} className="card pur-toolbar" onSubmit={onSubmit}>
         <label className="pur-field">
           <span>{t("purchasing.supplier.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />
@@ -103,10 +151,16 @@ export function SuppliersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s) => (
-                <tr key={s.id}>
-                  <td><Bdi>{s.code}</Bdi></td>
-                  <td>{s.name}</td>
+              {filtered.map((s, i) => (
+                <tr key={s.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                  <td>
+                    <PartyLink type="supplier" code={s.code} className="latin">
+                      <Bdi>{s.code}</Bdi>
+                    </PartyLink>
+                  </td>
+                  <td>
+                    <PartyLink type="supplier" code={s.code}>{s.name}</PartyLink>
+                  </td>
                   <td>
                     <RowActions label={t("common.actions")}>
                       <Link className="btn btn--sm" to={`/purchasing?supplier=${encodeURIComponent(s.name)}`}>

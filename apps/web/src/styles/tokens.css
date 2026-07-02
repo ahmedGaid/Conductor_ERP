@@ -46,6 +46,10 @@
   --color-surface: var(--palette-white);
   --color-surface-alt: var(--palette-ink-100);
   --color-surface-hover: var(--palette-ink-050);
+  /* A recessed surface with more presence than -alt: darker than the page in light mode, lighter in
+     dark mode (see the dark block). Used for the workspace/company chip. */
+  --color-surface-sunken: var(--palette-ink-200);
+  --color-surface-sunken-hover: var(--palette-ink-300);
   --color-border: var(--palette-ink-200);
   --color-border-strong: var(--palette-ink-300);
   --color-text: var(--palette-ink-900);
@@ -93,6 +97,7 @@
   --color-status-completed-bg: var(--palette-success-100);
 
   /* ---- Spacing scale ---- */
+  --space-0-5: 0.125rem; /* 2px — hairline micro-gap (icon↔label, tab inner); the step below --space-1 */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -112,12 +117,14 @@
   --font-arabic: "IBM Plex Sans Arabic", system-ui, sans-serif;
   --font-latin: "Inter", system-ui, sans-serif;
   --font-ui: var(--font-arabic), var(--font-latin);
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.1875rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 1.875rem;
+  /* Dense, Linear/Telegram-grade scale: content reads at 14px (md), chrome matches it, and
+     hierarchy comes from weight + a tight step up. (Base 16px → rem.) */
+  --font-size-xs: 0.6875rem; /* 11 — micro: section labels, badges */
+  --font-size-sm: 0.8125rem; /* 13 — secondary / muted */
+  --font-size-md: 0.875rem; /* 14 — body & primary reading size */
+  --font-size-lg: 1rem; /* 16 — h2 / section heads */
+  --font-size-xl: 1.3125rem; /* 21 — page title (h1) */
+  --font-size-2xl: 1.625rem; /* 26 — hero stats */
   --line-height-ui: 1.5;
   /* Headings sit tighter than body copy so titles read crisp, not airy (kept safe for Arabic
      ascenders/diacritics). Body keeps the generous --line-height-ui for long-workday readability. */
@@ -157,7 +164,7 @@
   --focus-ring: 0 0 0 3px var(--color-brand-subtle);
 
   /* ---- Layout ---- */
-  --sidebar-size: 16rem;
+  --sidebar-size: 14.5rem;
   --topbar-size: 4rem;
   --content-max: 90rem;
 
@@ -184,6 +191,8 @@
   --color-surface: #0d0d0d;
   --color-surface-alt: #1a1a1a;
   --color-surface-hover: #1a1a1a;
+  --color-surface-sunken: #242424;
+  --color-surface-sunken-hover: #2e2e2e;
   --color-border: #262626;
   --color-border-strong: #383838;
   --color-text: #f5f5f5;
@@ -288,6 +297,76 @@
   --color-accent-subtle: var(--palette-ink-100);
 }
 
+/* ── Per-module accent ──────────────────────────────────────────────────────
+ * Each module owns one clean colour. data-module is set on the AppShell wrapper
+ * (from the route), so these remap the in-page --color-accent* family + a light
+ * --module-bar for the document bar — cascading to links, active tab underlines
+ * and the workflow tracker inside that module. Chrome stays monochrome. Light,
+ * clear hues; the bar is a lighter tint of the same accent.
+ */
+[data-module="sales"] {
+  --color-accent: #0d6efd;
+  --color-accent-strong: #0a53c4;
+  --color-accent-subtle: #e6f0ff;
+  --module-bar: #2f86ff;
+}
+[data-module="purchasing"] {
+  --color-accent: #0f9d51;
+  --color-accent-strong: #0a763c;
+  --color-accent-subtle: #e2f6ea;
+  --module-bar: #1fc274;
+}
+[data-module="inventory"] {
+  --color-accent: #d97706;
+  --color-accent-strong: #aa5c04;
+  --color-accent-subtle: #fdeed6;
+  --module-bar: #f59e0b;
+}
+[data-module="accounting"] {
+  --color-accent: #7c3aed;
+  --color-accent-strong: #6022cc;
+  --color-accent-subtle: #efe6fd;
+  --module-bar: #9d6cf2;
+}
+[data-module="crm"] {
+  --color-accent: #3b4fe0;
+  --color-accent-strong: #2a3ac0;
+  --color-accent-subtle: #e6e9fc;
+  --module-bar: #5d70f5;
+}
+
+/* Dark-mode per-module accent: luminous text + translucent subtle, lighter bar. */
+:root[data-theme="dark"] [data-module="sales"] {
+  --color-accent: #4d9bff;
+  --color-accent-strong: #84bdff;
+  --color-accent-subtle: rgba(13, 110, 253, 0.26);
+  --module-bar: #4d9bff;
+}
+:root[data-theme="dark"] [data-module="purchasing"] {
+  --color-accent: #3ecb83;
+  --color-accent-strong: #7ee0aa;
+  --color-accent-subtle: rgba(15, 157, 81, 0.26);
+  --module-bar: #3ecb83;
+}
+:root[data-theme="dark"] [data-module="inventory"] {
+  --color-accent: #f7a73a;
+  --color-accent-strong: #fac478;
+  --color-accent-subtle: rgba(217, 119, 6, 0.26);
+  --module-bar: #f7a73a;
+}
+:root[data-theme="dark"] [data-module="accounting"] {
+  --color-accent: #a47cf3;
+  --color-accent-strong: #c6aef8;
+  --color-accent-subtle: rgba(124, 58, 237, 0.26);
+  --module-bar: #a47cf3;
+}
+:root[data-theme="dark"] [data-module="crm"] {
+  --color-accent: #6f81f5;
+  --color-accent-strong: #9da9f8;
+  --color-accent-subtle: rgba(59, 79, 224, 0.26);
+  --module-bar: #6f81f5;
+}
+
 /* Dark-mode accent variants: luminous text + translucent fills so they read on near-black. */
 :root[data-theme="dark"][data-accent="green"] {
   --color-accent: #4ade80;
@@ -354,4 +433,21 @@
   --dur-fast: 0.01ms;
   --dur: 0.01ms;
   --dur-slow: 0.01ms;
+}
+
+/* Per-module accent bars — the single drop of colour beside a document number. */
+:root {
+  --module-sales-bar: #6b9bd1;
+  --module-purchasing-bar: #72a869;
+  --module-inventory-bar: #d4964e;
+  --module-accounting-bar: #9b85d4;
+  --module-crm-bar: #6680bc;
+}
+
+:root[data-theme="dark"] {
+  --module-sales-bar: #a7c7e7;
+  --module-purchasing-bar: #a8c5a0;
+  --module-inventory-bar: #e8c49a;
+  --module-accounting-bar: #c3b4e8;
+  --module-crm-bar: #9baed4;
 }

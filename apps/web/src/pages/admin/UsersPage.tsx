@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { bulkUsers, createUser, getOrgUnits, getUser, listUsers } from "../../api/users";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
@@ -39,6 +40,14 @@ export function UsersPage() {
       return true;
     });
   }, [users, search, role, status, department]);
+
+  // j/k move a row highlight, Enter/o opens the user detail page (rows are already click-to-open).
+  const { active } = useListKeyboardNav({
+    items: filtered,
+    onOpen: (u) => navigate(`/admin/users/${u.id}`),
+    persistKey: "admin:users",
+    getItemId: (u) => String(u.id),
+  });
 
   function toggle(id: number) {
     setSelected((cur) => {
@@ -125,10 +134,12 @@ export function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
+              {filtered.map((u, i) => (
                 <tr
                   key={u.id}
                   className="admin-row"
+                  data-kbd-active={i === active ? "true" : undefined}
+                  aria-selected={i === active}
                   onClick={() => navigate(`/admin/users/${u.id}`)}
                   onMouseEnter={() => prefetch(`admin:user:${u.id}`, () => getUser(u.id))}
                 >

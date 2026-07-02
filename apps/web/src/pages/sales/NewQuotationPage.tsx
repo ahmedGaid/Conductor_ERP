@@ -1,13 +1,18 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+
+import { NavIcon } from "../../app/icons";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { createQuotation, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
+import { resolvePrice, type PriceResolution } from "../../api/pricing";
 import { useAsync } from "../../hooks/useAsync";
 import { useFormKeys } from "../../hooks/useFormKeys";
+import { useSmartDefault } from "../../hooks/useSmartDefault";
 import { useToast } from "../../app/ToastContext";
-import { formatMinor, parseToMinor } from "../../lib/money";
+import { setLastUsed } from "../../lib/lastUsed";
+import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
@@ -16,23 +21,41 @@ interface DraftLine {
   item_sku: string;
   quantity: string;
   unit_price: string;
+  priceSource?: string;
 }
 
-const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: "" });
+const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "1", unit_price: "" });
+
+// Prefill carried by the Duplicate action on an existing quotation (see QuotationDetailPage).
+interface DuplicateInit {
+  customer_code: string;
+  warehouse_code: string;
+  lines: { item_sku: string; quantity: string; unit_price: number }[];
+}
 
 export function NewQuotationPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
+  const dup = (useLocation().state as { duplicate?: DuplicateInit } | null)?.duplicate;
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: items } = useAsync(listItems, [], "inventory:items");
 
-  const [customer, setCustomer] = useState("");
-  const [warehouse, setWarehouse] = useState("");
-  const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
+  const [customer, setCustomer] = useState(dup?.customer_code ?? "");
+  const [warehouse, setWarehouse] = useState(dup?.warehouse_code ?? "");
+  const [lines, setLines] = useState<DraftLine[]>(
+    dup?.lines?.length
+      ? dup.lines.map((l) => ({ item_sku: l.item_sku, quantity: l.quantity, unit_price: minorToAmount(l.unit_price) }))
+      : [emptyLine()],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Smart defaults: pre-fill the customer/warehouse the user picked last time (or the only
+  // warehouse when there's just one) — shares the memory with the new-order form.
+  useSmartDefault(customers, "sales:customer", customer, setCustomer, { single: false });
+  useSmartDefault(warehouses, "warehouse", warehouse, setWarehouse);
 
   // ⌘/Ctrl+Enter submits, Esc cancels back to the quotations list.
   const formRef = useRef<HTMLFormElement>(null);
@@ -40,6 +63,24 @@ export function NewQuotationPage() {
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  }
+
+  function sourceLabel(res: PriceResolution): string {
+    return res.source === "customer_item"
+      ? t("pricing.source.negotiated")
+      : t("pricing.source.fromList", { list: res.price_list_code ?? "" });
+  }
+
+  // Pick an item, then pre-fill its price for this customer from the price lists (best-effort).
+  async function onPickItem(i: number, sku: string) {
+    setLine(i, { item_sku: sku, priceSource: undefined });
+    if (!sku || !customer) return;
+    try {
+      const res = await resolvePrice({ customer, sku, qty: lines[i]?.quantity || undefined });
+      if (res) setLine(i, { unit_price: minorToAmount(res.unit_price_minor), priceSource: sourceLabel(res) });
+    } catch {
+      /* prefill is a convenience — never block entry on a pricing lookup failure */
+    }
   }
 
   const subtotal = lines.reduce((s, l) => {
@@ -72,8 +113,10 @@ export function NewQuotationPage() {
     setBusy(true);
     try {
       const quote = await createQuotation({ customer_code: customer, warehouse_code: warehouse, lines: payloadLines });
-      toast.show(t("sales.toast.quotationCreated"), "success");
-      navigate(`/sales/quotations/${quote.id}`);
+      setLastUsed("sales:customer", customer);
+      setLastUsed("warehouse", warehouse);
+      // The quotation detail page fires the rich "created" receipt on arrival.
+      navigate(`/sales/quotations/${quote.id}`, { state: { feedback: "created" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
@@ -99,7 +142,7 @@ export function NewQuotationPage() {
             </select>
           </label>
           <label className="sales-field">
-            <span>{t("inventory.warehouse.code")}</span>
+            <span>{t("inventory.warehouse.label")}</span>
             <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
               <option value="">—</option>
               {(warehouses ?? []).map((w) => (
@@ -126,7 +169,7 @@ export function NewQuotationPage() {
                 return (
                   <tr key={i}>
                     <td>
-                      <select value={l.item_sku} onChange={(e) => setLine(i, { item_sku: e.target.value })}>
+                      <select value={l.item_sku} onChange={(e) => void onPickItem(i, e.target.value)}>
                         <option value="">—</option>
                         {stockItems.map((it) => (
                           <option key={it.sku} value={it.sku}>{it.sku} · {it.name}</option>
@@ -137,11 +180,12 @@ export function NewQuotationPage() {
                       <input className="latin" inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} />
                     </td>
                     <td className="sales-table__num">
-                      <input className="latin" inputMode="decimal" value={l.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value })} placeholder="0.00" />
+                      <input className="latin" inputMode="decimal" value={l.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value, priceSource: undefined })} placeholder="0.00" />
+                      {l.priceSource && <span className="sales-price-source">{l.priceSource}</span>}
                     </td>
                     <td className="sales-table__num"><Bdi>{formatMinor(lineTotal)}</Bdi></td>
                     <td>
-                      <button type="button" className="btn btn--sm" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}>✕</button>
+                      <button type="button" className="btn btn--sm btn--icon" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} disabled={lines.length <= 1} aria-label={t("common.delete")}><NavIcon name="close" /></button>
                     </td>
                   </tr>
                 );

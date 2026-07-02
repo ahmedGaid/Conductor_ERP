@@ -1,7 +1,7 @@
 /*
  * Arabic-aware search folding.
  *
- * Display text stays in full, correct Arabic orthography (أمر، فاتورة، مستودع…). But users
+ * Display text stays in full, correct Arabic orthography (أمر، فاتورة، مخزن…). But users
  * type quickly and inconsistently — without hamzas, with ه for ة, with either yaa form. So for
  * *matching only* (never for display) we fold both the query and the candidate text to one
  * canonical shape, so either spelling finds the other:

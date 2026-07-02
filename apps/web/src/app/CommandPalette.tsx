@@ -2,17 +2,20 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { searchEntities } from "../api/core";
 import { normalizeSearch } from "../lib/arabicSearch";
 import { getRecents, recordRecent } from "../lib/recents";
+import { NavIcon } from "./icons";
 import "./CommandPalette.css";
 
-type Group = "recent" | "create" | "go";
+type Group = "results" | "recent" | "create" | "go";
 
 interface Command {
   id: string;
   label: string;
   to: string;
   group: Group;
+  sublabel?: string; // secondary line (record code/number + localized type), live results only
 }
 
 /**
@@ -22,7 +25,15 @@ interface Command {
  * free. Direction-agnostic (logical CSS) and bilingual — it filters on the
  * translated label, so it matches whatever language the user is reading.
  */
-export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CommandPalette({
+  open,
+  onClose,
+  einvoiceEnabled = true,
+}: {
+  open: boolean;
+  onClose: () => void;
+  einvoiceEnabled?: boolean;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,9 +42,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const activeItemRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
+  // Live entity hits (customers, items, orders…) from the server, Arabic-tolerant. Static page
+  // commands below still match instantly client-side; these add records to the same list.
+  const [results, setResults] = useState<Command[]>([]);
+  const searchSeq = useRef(0);
 
   const commands = useMemo<Command[]>(
-    () => [
+    () => ([
       // Create — the common "new document" actions.
       { id: "new-order", label: t("command.newOrder"), to: "/sales/orders/new", group: "create" },
       { id: "new-quotation", label: t("command.newQuotation"), to: "/sales/quotations/new", group: "create" },
@@ -59,8 +74,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: "go-general-ledger", label: t("command.generalLedger"), to: "/accounting/general-ledger", group: "go" },
       { id: "go-income", label: t("command.incomeStatement"), to: "/accounting/income-statement", group: "go" },
       { id: "go-balance", label: t("command.balanceSheet"), to: "/accounting/balance-sheet", group: "go" },
-    ],
-    [t],
+    ] as Command[]).filter((cmd) => einvoiceEnabled || cmd.id !== "go-einvoice"),
+    [t, einvoiceEnabled],
   );
 
   // Track every visited page so the palette can offer a "jump back" list. The palette is always
@@ -68,6 +83,36 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   useEffect(() => {
     recordRecent(location.pathname);
   }, [location.pathname]);
+
+  // Live entity search: debounce the query, then ask the server for matching records. A monotonic
+  // sequence guards against out-of-order responses, and the closed/empty states clear the list.
+  useEffect(() => {
+    const q = query.trim();
+    if (!open || q.length < 2) {
+      setResults([]);
+      return;
+    }
+    const seq = ++searchSeq.current;
+    const timer = setTimeout(() => {
+      searchEntities(q)
+        .then((hits) => {
+          if (seq !== searchSeq.current) return; // a newer keystroke already fired
+          setResults(
+            hits.map((h, i) => ({
+              id: `hit-${h.type}-${i}`,
+              label: h.label,
+              to: h.to,
+              group: "results" as const,
+              sublabel: [h.sublabel, t(`command.type.${h.type}`)].filter(Boolean).join(" · "),
+            })),
+          );
+        })
+        .catch(() => {
+          if (seq === searchSeq.current) setResults([]);
+        });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [query, open, t]);
 
   // Recently-visited pages, newest first — only those that map to a known destination, deduped and
   // capped. Recomputed each time the palette opens (fresh localStorage) and hidden once you type.
@@ -90,10 +135,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // then the full set with recents removed; or the label-filtered set while typing.
   const visible = useMemo(() => {
     const q = normalizeSearch(query.trim());
-    if (q) return commands.filter((c) => normalizeSearch(c.label).includes(q));
+    // Typing: server record hits first, then the static page/action commands that match the label.
+    if (q) return [...results, ...commands.filter((c) => normalizeSearch(c.label).includes(q))];
     const recentIds = new Set(recent.map((c) => c.id));
     return [...recent, ...commands.filter((c) => !recentIds.has(c.id))];
-  }, [commands, query, recent]);
+  }, [commands, query, recent, results]);
 
   // Keep the native dialog's open state in sync with the controlled `open` prop,
   // resetting the query and focusing the input each time it opens.
@@ -145,12 +191,19 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   }
 
   const labelFor = (g: Group) =>
-    g === "recent" ? t("command.groupRecent") : g === "create" ? t("command.groupCreate") : t("command.groupGo");
+    g === "results"
+      ? t("command.groupResults")
+      : g === "recent"
+        ? t("command.groupRecent")
+        : g === "create"
+          ? t("command.groupCreate")
+          : t("command.groupGo");
 
-  // Render order: recents, then create, then go — matching the flat `visible` sequence so
-  // arrow-key navigation flows top-to-bottom across the groups.
+  // Render order: live results, then recents, then create, then go — matching the flat `visible`
+  // sequence so arrow-key navigation flows top-to-bottom across the groups.
   const recentIds = new Set(recent.map((c) => c.id));
   const allSections: { key: Group; rows: Command[] }[] = [
+    { key: "results", rows: visible.filter((c) => c.group === "results") },
     { key: "recent", rows: recent },
     { key: "create", rows: visible.filter((c) => c.group === "create" && !recentIds.has(c.id)) },
     { key: "go", rows: visible.filter((c) => c.group === "go" && !recentIds.has(c.id)) },
@@ -168,7 +221,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     >
       <div className="cmdp__panel">
         <div className="cmdp__search">
-          <span className="cmdp__search-icon" aria-hidden="true">⌕</span>
+          <span className="cmdp__search-icon" aria-hidden="true"><NavIcon name="search" /></span>
           <input
             ref={inputRef}
             type="text"
@@ -210,7 +263,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                           onMouseMove={() => setActive(idx)}
                           onClick={() => run(cmd)}
                         >
-                          <span>{cmd.label}</span>
+                          <span className="cmdp__item-text">
+                            <span className="cmdp__item-label">{cmd.label}</span>
+                            {cmd.sublabel && <span className="cmdp__item-sub">{cmd.sublabel}</span>}
+                          </span>
                           <span className="cmdp__item-go" aria-hidden="true">↵</span>
                         </button>
                       </li>

@@ -17,13 +17,30 @@
     "crm": "CRM",
     "reports": "Reports",
     "einvoice": "E-Invoicing",
+    "assistant": "Assistant",
     "notifications": "Notifications",
     "favorites": "Favorites",
     "administration": "Administration",
+    "pricing": "Pricing",
     "usersAdmin": "Users",
     "rolesAdmin": "Roles",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar"
+  },
+  "assistant": {
+    "title": "Assistant",
+    "subtitle": "Ask about your sales, receivables and stock — answers come from your own records.",
+    "placeholder": "Ask a question…",
+    "ask": "Ask",
+    "thinking": "Thinking…",
+    "tryLabel": "Try asking",
+    "sources": "From your records",
+    "suggestions": {
+      "s1": "How much did we sell this month?",
+      "s2": "Who are our top customers?",
+      "s3": "Which customers still owe us money?",
+      "s4": "What's running low in stock?"
+    }
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",
@@ -43,7 +60,8 @@
     "skipToContent": "Skip to content",
     "logout": "Sign out",
     "notifications": "Notifications",
-    "help": "Help"
+    "help": "Help",
+    "menu": "Menu"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -63,11 +81,20 @@
     "formCancel": "Cancel"
   },
   "command": {
-    "placeholder": "Search pages and actions…",
+    "placeholder": "Search records, pages and actions…",
     "empty": "No matches for",
     "groupCreate": "Create",
     "groupGo": "Go to",
     "groupRecent": "Recent",
+    "groupResults": "Records",
+    "type": {
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "item": "Item",
+      "sales_order": "Sales order",
+      "purchase_order": "Purchase order",
+      "journal": "Journal entry"
+    },
     "hintMove": "Move",
     "hintOpen": "Open",
     "hintClose": "Close",
@@ -103,6 +130,38 @@
     "otpRequired": "Enter your two-factor code",
     "submit": "Sign in"
   },
+  "setup": {
+    "title": "Set up your company",
+    "lede": "A few quick steps and Conductor is ready for work — your accounts, tax, and team. Then send your first invoice today.",
+    "finish": "Finish setup",
+    "adminOnly": "An administrator needs to finish setting up your company before you can start.",
+    "profile": {
+      "title": "Company details",
+      "lede": "The basics that appear on your invoices and documents. You can change any of it later in Settings.",
+      "companyPlaceholder": "Your company's legal name",
+      "vatPlaceholder": "e.g. 100-200-300"
+    },
+    "coa": {
+      "title": "Chart of accounts",
+      "lede": "Start from a ready Egyptian small-business chart — accounts, VAT codes and this year's periods. You can edit any of it later.",
+      "action": "Create chart of accounts",
+      "seeding": "Creating…",
+      "ready": "Ready — {{n}} accounts"
+    },
+    "tax": {
+      "title": "Tax & e-invoicing",
+      "lede": "Your standard VAT rate, and whether you use Egyptian e-invoicing (ETA).",
+      "vatRate": "Standard VAT rate",
+      "einvoice": "Egyptian e-invoicing (ETA)",
+      "einvoiceHint": "Turn off to hide e-invoicing across the app."
+    },
+    "invite": {
+      "title": "Invite your team",
+      "lede": "Add the people who'll work with you and pick what each one can do. Optional — you can do this anytime in Settings.",
+      "tempPassword": "Temporary password",
+      "pendingHint": "We'll add them when you finish."
+    }
+  },
   "dashboard": {
     "heading": "Home",
     "greeting": {
@@ -111,6 +170,18 @@
       "evening": "Good evening, {{name}}"
     },
     "subtitle": "Here's what's happening with your business today.",
+    "gettingStarted": {
+      "title": "Get started",
+      "progress": "{{done}} of {{total}} done — a few steps to your first invoice.",
+      "dismiss": "Dismiss",
+      "steps": {
+        "profile": "Add your company details",
+        "accounts": "Set up your chart of accounts",
+        "customer": "Add your first customer",
+        "item": "Add your first product",
+        "invoice": "Create your first order"
+      }
+    },
     "attention": {
       "title": "Needs attention today",
       "allClear": "You're all caught up — nothing needs your attention right now.",
@@ -150,6 +221,25 @@
     "byStatus": "Instances by status"
   },
   "workflow": {
+    "label": "Workflow",
+    "sales": {
+      "create": "Create",
+      "confirm": "Confirm",
+      "deliver": "Deliver",
+      "invoice": "Invoice",
+      "payment": "Payment",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
+    "purchasing": {
+      "create": "Create",
+      "confirm": "Confirm",
+      "receive": "Receive",
+      "bill": "Bill",
+      "payment": "Payment",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
     "create": "New workflow",
     "untitled": "Untitled workflow",
     "name": "Name",
@@ -161,7 +251,21 @@
     "statusValue": {
       "active": "Active",
       "archived": "Archived"
+    },
+    "stage": {
+      "byWhen": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    },
+    "snap": {
+      "status": "Status",
+      "date": "Date",
+      "movements": "Stock movements"
     }
+  },
+  "resolve": {
+    "notFoundTitle": "We couldn't find that",
+    "notFound": "Nothing matches “{{key}}”.",
+    "backHome": "Back to dashboard"
   },
   "status": {
     "pending": "Pending",
@@ -396,6 +500,7 @@
       "debit": "Debit",
       "credit": "Credit",
       "lineMemo": "Line memo",
+      "sourceDoc": "Source document",
       "costCenter": "Cost center",
       "totals": "Totals",
       "balanced": "Balanced",
@@ -421,7 +526,11 @@
       "asOf": "As of",
       "all": "All",
       "from": "From",
-      "to": "To"
+      "to": "To",
+      "party": "Customer / Supplier",
+      "allParties": "All",
+      "customers": "Customers",
+      "suppliers": "Suppliers"
     },
     "vat": {
       "output": "Output VAT (sales)",
@@ -455,12 +564,16 @@
       "name": "Name",
       "uom": "Unit",
       "type": "Type",
+      "category": "Category",
+      "reorderPoint": "Reorder point",
+      "active": "Active",
       "add": "Add item",
       "viewStock": "View stock",
       "empty": "No items yet.",
       "emptyHint": "Add your first item using the form above."
     },
     "warehouse": {
+      "label": "Warehouse",
       "code": "Warehouse code",
       "name": "Warehouse name",
       "add": "Add warehouse",
@@ -525,6 +638,44 @@
       "expiry": "Earliest expiry",
       "empty": "No batches recorded yet.",
       "hint": "Receive stock with a batch/lot and expiry to see it traced here."
+    },
+    "detail": {
+      "backToItems": "Back to items",
+      "backToWarehouses": "Back to warehouses",
+      "onHandValue": "On-hand value",
+      "stockByWarehouse": "Stock by warehouse",
+      "stockByItem": "Stock by item",
+      "movements": "Recent movements",
+      "noStock": "No stock on hand.",
+      "noMovements": "No movements yet",
+      "noMovementsHint": "Receipts, issues and transfers will show up here.",
+      "reference": "Reference",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "party": {
+    "customer": "Customer",
+    "supplier": "Supplier",
+    "backToCustomers": "Back to customers",
+    "backToSuppliers": "Back to suppliers",
+    "ordersTitle": "Orders",
+    "noOrders": "No orders yet.",
+    "statementTitle": "Account statement",
+    "ordersCount": "Orders",
+    "totalInvoiced": "Total invoiced",
+    "totalBilled": "Total billed",
+    "balance": "Balance",
+    "openParty": "Open page",
+    "notFound": "Not found",
+    "notFoundHint": "No customer or supplier with this code.",
+    "col": {
+      "number": "Number",
+      "date": "Date",
+      "status": "Status",
+      "total": "Total",
+      "outstanding": "Outstanding"
     }
   },
   "sales": {
@@ -534,13 +685,25 @@
       "confirmed": "Order confirmed",
       "delivered": "Order delivered",
       "invoiced": "Invoice issued",
+      "invoicedDone": "Invoice issued — {{no}}",
+      "completed": "Sale completed",
       "paid": "Payment recorded",
       "returned": "Return recorded",
+      "returnedDone": "Return recorded — {{no}}",
       "quoteSubmitted": "Quotation submitted",
       "quoteApproved": "Quotation approved",
       "quoteRejected": "Quotation rejected",
       "orderCreated": "Order created",
-      "quotationCreated": "Quotation created"
+      "quotationCreated": "Quotation created",
+      "cancelled": "Order cancelled",
+      "bulkApproved": "{{count}} orders approved",
+      "bulkApprovedOne": "1 order approved",
+      "bulkConfirmed": "{{count}} orders confirmed",
+      "bulkConfirmedOne": "1 order confirmed",
+      "bulkQuoteSubmitted": "{{count}} quotations submitted",
+      "bulkQuoteSubmittedOne": "1 quotation submitted",
+      "bulkQuoteApproved": "{{count}} quotations approved",
+      "bulkQuoteApprovedOne": "1 quotation approved"
     },
     "tabs": {
       "orders": "Orders",
@@ -574,6 +737,7 @@
       "code": "Customer code",
       "name": "Name",
       "creditLimit": "Credit limit",
+      "active": "Active",
       "add": "Add customer",
       "unlimited": "Unlimited",
       "viewOrders": "View orders",
@@ -601,6 +765,18 @@
       "noTax": "No tax",
       "subtotal": "Subtotal"
     },
+    "invoice": {
+      "title": "Invoice",
+      "org": "Your company",
+      "billTo": "Bill to",
+      "issueDate": "Issue date",
+      "orderNo": "Order no.",
+      "taxNumber": "Tax reg. no.",
+      "country": "Country",
+      "backToOrder": "Back to order",
+      "notIssued": "No invoice for this order yet",
+      "notIssuedHint": "Issue the invoice from the order, then it'll print here."
+    },
     "detail": {
       "invoiced": "Invoiced",
       "outstanding": "Outstanding",
@@ -609,6 +785,8 @@
       "deliver": "Deliver",
       "invoice": "Issue invoice",
       "recordPayment": "Record payment",
+      "completeSale": "Complete sale",
+      "sendEinvoice": "Send as e-invoice",
       "creditNoteNo": "Credit note no.",
       "returned": "Returned",
       "deliverRemaining": "Deliver remaining",
@@ -619,7 +797,8 @@
       "approval": "Approval",
       "approved": "Approved",
       "pendingApproval": "Pending approval",
-      "vat": "VAT"
+      "vat": "VAT",
+      "orderDetails": "Order details"
     },
     "quotations": {
       "number": "Quotation no.",
@@ -650,7 +829,47 @@
       "newOrder": "New PO",
       "suppliers": "Suppliers",
       "requests": "Requests",
-      "newRequest": "New request"
+      "newRequest": "New request",
+      "importInvoice": "Import invoice"
+    },
+    "importInvoice": {
+      "dropTitle": "Photograph the invoice, or drop an image or PDF here",
+      "dropHint": "JPG, PNG, WebP or PDF — up to 5 MB",
+      "choose": "Choose a file",
+      "aiNote": "The assistant reads it — you decide what gets posted.",
+      "reading": "The assistant is reading the invoice…",
+      "readingHint": "This usually takes a few seconds.",
+      "unreadableTitle": "We couldn't read this document",
+      "unreadableHint": "Here's what we could make out — a sharper, well-lit photo usually does it.",
+      "tryAnother": "Try another file",
+      "reviewTitle": "Review before creating the draft",
+      "confidence": "Reading confidence",
+      "confidenceLevel": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "invoiceNumber": "Invoice no.",
+      "extractedSupplier": "On the invoice",
+      "taxId": "Tax ID",
+      "noSupplierMatch": "No matching supplier found — pick one, or add it right here.",
+      "createSupplier": "Add supplier “{{name}}”",
+      "createItem": "Add item “{{name}}”",
+      "codeLabel": "Code",
+      "nameLabel": "Name",
+      "uomLabel": "Unit",
+      "confirmCreate": "Add",
+      "supplierCreated": "Supplier “{{name}}” added",
+      "itemCreated": "Item “{{name}}” added",
+      "extractedLine": "On the invoice",
+      "noItemMatch": "— not matched —",
+      "vatOnInvoice": "VAT on the invoice",
+      "invoiceTotals": "Total on the invoice",
+      "totalsMismatch": "The lines above don't add up to the invoice total — check the quantities and prices.",
+      "issuesTitle": "Worth checking",
+      "createDraft": "Create draft PO",
+      "startOver": "Start over",
+      "noteRef": "Supplier invoice"
     },
     "status": {
       "draft": "Draft",
@@ -676,6 +895,7 @@
     "supplier": {
       "code": "Supplier code",
       "name": "Name",
+      "active": "Active",
       "add": "Add supplier",
       "viewOrders": "View orders",
       "empty": "No suppliers yet.",
@@ -714,7 +934,8 @@
       "approval": "Approval",
       "approved": "Approved",
       "pendingApproval": "Pending approval",
-      "vat": "VAT"
+      "vat": "VAT",
+      "orderDetails": "Order details"
     },
     "requests": {
       "number": "Request no.",
@@ -743,14 +964,25 @@
       "confirmed": "Order confirmed",
       "received": "Goods received",
       "billed": "Bill recorded",
+      "billedDone": "Bill recorded — {{no}}",
       "paid": "Payment recorded",
       "returned": "Return recorded",
+      "returnedDone": "Return recorded — {{no}}",
       "reqSubmitted": "Request submitted",
       "reqApproved": "Request approved",
       "reqRejected": "Request rejected",
       "supplierCreated": "Supplier added",
       "poCreated": "Order created",
-      "prCreated": "Request created"
+      "prCreated": "Request created",
+      "cancelled": "Order cancelled",
+      "bulkApproved": "{{count}} orders approved",
+      "bulkApprovedOne": "1 order approved",
+      "bulkConfirmed": "{{count}} orders confirmed",
+      "bulkConfirmedOne": "1 order confirmed",
+      "bulkReqSubmitted": "{{count}} requests submitted",
+      "bulkReqSubmittedOne": "1 request submitted",
+      "bulkReqApproved": "{{count}} requests approved",
+      "bulkReqApprovedOne": "1 request approved"
     }
   },
   "crm": {
@@ -770,7 +1002,9 @@
       "oppLost": "Opportunity lost",
       "campaignActivated": "Campaign activated",
       "campaignCompleted": "Campaign completed",
-      "opportunityCreated": "Opportunity created"
+      "opportunityCreated": "Opportunity created",
+      "bulkLeadsQualified": "{{count}} leads qualified",
+      "bulkLeadsQualifiedOne": "1 lead qualified"
     },
     "tabs": {
       "pipeline": "Pipeline",
@@ -900,7 +1134,82 @@
       }
     }
   },
+  "pricing": {
+    "title": "Pricing",
+    "subtitle": "Price lists for your customers and items.",
+    "tabs": {
+      "aria": "Pricing view",
+      "lists": "Price lists",
+      "customers": "Customer pricing"
+    },
+    "customers": {
+      "subtitle": "Assign customers to price lists and set negotiated prices.",
+      "customer": "Customer",
+      "priceList": "Price list",
+      "assignTitle": "Price list by customer",
+      "assignHint": "Each customer can have one default price list. Re-assigning moves them.",
+      "assign": "Assign",
+      "assignEmpty": "No customers assigned yet",
+      "assignEmptyHint": "Assign a customer to a price list to override the default.",
+      "overrideTitle": "Negotiated prices",
+      "overrideHint": "A price for one customer and item — it wins over any price list.",
+      "addOverride": "Add price",
+      "overrideEmpty": "No negotiated prices yet",
+      "overrideEmptyHint": "Set a special price for a customer to start.",
+      "taxInclusive": "Price includes tax",
+      "validFrom": "From date",
+      "validTo": "To date",
+      "valid": "Valid",
+      "always": "Always",
+      "badInput": "Choose a customer and item, and enter a valid price."
+    },
+    "list": {
+      "code": "Code",
+      "name": "Name",
+      "currency": "Currency",
+      "default": "Default",
+      "taxInclusive": "Tax-inclusive",
+      "inactive": "Inactive",
+      "lines": "Prices",
+      "add": "Add price list",
+      "empty": "No price lists yet",
+      "emptyHint": "Create your first price list to set what you charge."
+    },
+    "detail": {
+      "back": "All price lists",
+      "item": "Item",
+      "unitPrice": "Unit price",
+      "minQty": "From quantity",
+      "addLine": "Add price",
+      "empty": "No prices on this list",
+      "emptyHint": "Add an item and its price to start.",
+      "defaultBadge": "Default",
+      "taxInclusiveLabel": "Prices include tax",
+      "activeLabel": "Active",
+      "badInput": "Enter an item and a valid price.",
+      "importBtn": "Import prices",
+      "importField_item_sku": "SKU",
+      "importField_unit_price": "Unit price",
+      "importField_min_quantity": "Min qty",
+      "importField_uom": "Unit"
+    },
+    "toast": {
+      "listCreated": "Price list created",
+      "priceAdded": "Price added",
+      "priceRemoved": "Price removed",
+      "updated": "Saved",
+      "assigned": "Customer assigned",
+      "assignmentRemoved": "Assignment removed",
+      "overrideAdded": "Price added",
+      "overrideRemoved": "Price removed"
+    },
+    "source": {
+      "fromList": "Price from {{list}}",
+      "negotiated": "Negotiated price"
+    }
+  },
   "common": {
+    "breadcrumb": "Breadcrumb",
     "loading": "Loading…",
     "retry": "Try again",
     "error": {
@@ -922,7 +1231,65 @@
     "on": "On",
     "off": "Off",
     "all": "All",
-    "actions": "Actions"
+    "actions": "Actions",
+    "close": "Close",
+    "notFound": "We couldn’t find that record."
+  },
+  "import": {
+    "action": "Import CSV",
+    "changeFile": "Choose a different file",
+    "confirm": "Import {{count}} rows",
+    "confirmOne": "Import {{count}} row",
+    "confirmNone": "Nothing to import",
+    "customers": {
+      "title": "Import customers"
+    },
+    "suppliers": {
+      "title": "Import suppliers"
+    },
+    "items": {
+      "title": "Import items"
+    },
+    "upload": {
+      "lede": "Bring your customers in from a CSV — Excel's \"Save As CSV\" works. You'll preview before anything is saved.",
+      "choose": "Choose a file",
+      "template": "Download the template"
+    },
+    "map": {
+      "title": "Match your columns",
+      "hint": "From {{file}}. We matched these automatically — adjust if needed.",
+      "ignore": "Don't import",
+      "missingRequired": "Match a column for: {{fields}}"
+    },
+    "mode": {
+      "title": "If a row already exists",
+      "create": "Skip it",
+      "upsert": "Update it"
+    },
+    "preview": {
+      "title": "Preview"
+    },
+    "outcome": {
+      "created": "to add",
+      "updated": "to update",
+      "skipped": "already there",
+      "failed": "with problems"
+    },
+    "error": {
+      "row": "Row",
+      "field": "Column",
+      "message": "Problem",
+      "more": "and {{count}} more rows with problems",
+      "moreOne": "and {{count}} more row with problems"
+    },
+    "toast": {
+      "done": "Imported {{count}} rows",
+      "doneOne": "Imported {{count}} row"
+    },
+    "pricingLines": {
+      "title": "Import prices",
+      "lede": "Upload a CSV with item SKUs and their prices. You can include quantity breaks."
+    }
   },
   "toast": {
     "region": "Notifications",
@@ -1071,7 +1438,11 @@
       "sidebar": "Sidebar",
       "sidebarDesc": "Expanded labels or compact icons.",
       "expanded": "Expanded",
-      "compactSidebar": "Compact"
+      "compactSidebar": "Compact",
+      "feedbackMode": "Action feedback",
+      "feedbackModeDesc": "How much detail the after-action panel shows when you complete a task.",
+      "feedbackSimple": "Simple",
+      "feedbackRich": "Detailed"
     },
     "a11y": {
       "largerText": "Larger text",
@@ -1133,6 +1504,13 @@
       "adminOnly": "Only a System Admin can change organization defaults.",
       "lead": "Defaults applied to everyone in the organization. Each user can still override these in their own settings.",
       "companyName": "Company name",
+      "country": "Country",
+      "vatNumber": "VAT registration number",
+      "vatNumberDesc": "Shown on your invoices and e-invoice submissions.",
+      "baseCurrency": "Base currency",
+      "baseCurrencyDesc": "The currency your books are kept in.",
+      "einvoice": "Egyptian e-invoicing (ETA)",
+      "einvoiceDesc": "When off, e-invoicing is hidden across the app.",
       "language": "Default language",
       "languageDesc": "The language new users start with.",
       "theme": "Default theme",
@@ -1140,7 +1518,14 @@
       "accent": "Default accent",
       "accentDesc": "The accent colour new users start with.",
       "landing": "Default landing page",
-      "landingDesc": "The page users see first after signing in."
+      "landingDesc": "The page users see first after signing in.",
+      "orderCancel": "Order cancellation",
+      "orderCancelDesc": "How far a sales or purchase order may still be cancelled. After delivery, use a return instead.",
+      "orderCancelOptions": {
+        "disabled": "Never",
+        "draft": "Drafts only",
+        "confirmed": "Until confirmed"
+      }
     }
   },
   "admin": {
@@ -1286,6 +1671,325 @@
         "discount": "Discount",
         "return": "Return",
         "journal": "Journal entry"
+      }
+    }
+  },
+  "document": {
+    "moreActions": "More actions",
+    "duplicate": "Duplicate",
+    "print": "Print",
+    "exportPdf": "Export PDF",
+    "share": "Share",
+    "cancelOrder": "Cancel Order",
+    "linkCopied": "Link copied",
+    "linkCopyFailed": "Couldn’t copy link",
+    "completedOn": "All steps completed on {{date}}",
+    "cancelConfirmTitle": "Cancel {{number}}?",
+    "cancelConfirmBody": "This can’t be undone."
+  },
+  "bulk": {
+    "region": "Selected items",
+    "selected": "{{count}} selected",
+    "selectedOne": "1 selected",
+    "clear": "Clear selection",
+    "selectAll": "Select all",
+    "selectRow": "Select row"
+  },
+  "feedback": {
+    "relatedLabel": "Related records",
+    "fact": {
+      "amount": "Amount",
+      "items": "Items",
+      "status": "Status"
+    },
+    "related": {
+      "customer": "Customer",
+      "customers": "Customers",
+      "orders": "Sales orders",
+      "quotations": "Quotations",
+      "supplier": "Supplier",
+      "suppliers": "Suppliers",
+      "purchaseOrders": "Purchase orders",
+      "requests": "Purchase requests",
+      "item": "Item",
+      "onHand": "Stock on hand"
+    },
+    "action": {
+      "newOrder": "New order",
+      "newQuote": "New quotation",
+      "newOrderFor": "Create an order",
+      "newPO": "New purchase order",
+      "newRequest": "New request",
+      "newPOFor": "Create a purchase order"
+    },
+    "sales": {
+      "step": {
+        "approve": "Approve order",
+        "confirm": "Confirm order",
+        "deliver": "Deliver",
+        "invoice": "Create invoice",
+        "pay": "Record payment"
+      },
+      "quoteStep": {
+        "submit": "Submit quotation",
+        "approve": "Approve quotation",
+        "convert": "Convert to order"
+      },
+      "order": {
+        "created": {
+          "title": "Sales order {{number}} created",
+          "context": "It's ready to confirm — reservations start on confirm."
+        },
+        "approved": {
+          "title": "Sales order {{number}} approved",
+          "context": "Approved. Confirm it to proceed."
+        },
+        "confirmed": {
+          "title": "Sales order {{number}} confirmed",
+          "context": "Confirmed. Deliver the goods next."
+        },
+        "delivered": {
+          "title": "Sales order {{number}} delivered",
+          "context": "Delivered. Raise the invoice to bill the customer."
+        },
+        "invoiced": {
+          "title": "Sales order {{number}} invoiced",
+          "context": "Invoiced. Awaiting payment of {{amount}}."
+        },
+        "paid": {
+          "title": "Sales order {{number}} paid",
+          "context": "Paid in full. Nothing more to do."
+        },
+        "returned": {
+          "title": "Sales order {{number}} returned",
+          "context": "Return recorded. A credit note was issued."
+        },
+        "cancelled": {
+          "title": "Sales order {{number}} cancelled",
+          "context": "This order is now closed."
+        },
+        "completed": {
+          "title": "Sale {{number}} completed",
+          "context": "Confirmed, delivered, and invoiced. Awaiting payment of {{amount}}."
+        },
+        "converted": {
+          "title": "Sales order {{number}} created",
+          "context": "Created from a quotation. It's ready to confirm."
+        }
+      },
+      "quote": {
+        "created": {
+          "title": "Quotation {{number}} created",
+          "context": "It's ready to submit for approval."
+        },
+        "submitted": {
+          "title": "Quotation {{number}} submitted",
+          "context": "Submitted for approval."
+        },
+        "approved": {
+          "title": "Quotation {{number}} approved",
+          "context": "Approved. Convert it to a sales order."
+        },
+        "rejected": {
+          "title": "Quotation {{number}} rejected",
+          "context": "The quotation was rejected."
+        }
+      },
+      "customer": {
+        "created": {
+          "title": "Customer {{name}} added",
+          "context": "You can now sell to and invoice this customer."
+        }
+      },
+      "insight": {
+        "allInStock": "All items are in stock. This order can be fulfilled now.",
+        "creditOk": "Customer credit used: {{pct}}%."
+      },
+      "warn": {
+        "oneShort": "One item is short on stock.",
+        "someShort": "{{count}} items are short on stock.",
+        "creditHigh": "Customer credit used: {{pct}}% — near the limit.",
+        "creditExceeded": "Customer has exceeded the credit limit ({{pct}}%)."
+      },
+      "action": {
+        "retry": "Try again"
+      },
+      "fix": {
+        "receive": "Receive {{sku}} — need {{qty}} at {{warehouse}}"
+      },
+      "error": {
+        "approved": {
+          "title": "Couldn't approve {{number}}"
+        },
+        "confirmed": {
+          "title": "Couldn't confirm {{number}}"
+        },
+        "delivered": {
+          "title": "Couldn't deliver {{number}}",
+          "reason": "There isn't enough stock to deliver every item. Receive the short items, then try again."
+        },
+        "invoiced": {
+          "title": "Couldn't invoice {{number}}"
+        },
+        "paid": {
+          "title": "Couldn't record payment for {{number}}"
+        },
+        "returned": {
+          "title": "Couldn't record the return for {{number}}"
+        },
+        "cancelled": {
+          "title": "Couldn't cancel {{number}}"
+        },
+        "completed": {
+          "title": "Couldn't complete {{number}}"
+        }
+      }
+    },
+    "doc": {
+      "invoice": "Invoice {{no}}",
+      "creditNote": "Credit note {{no}}",
+      "order": "Sales order {{no}}",
+      "bill": "Bill {{no}}",
+      "debitNote": "Debit note {{no}}",
+      "purchaseOrder": "Purchase order {{no}}",
+      "journal": "Journal {{no}}"
+    },
+    "documentsLabel": "Produced records",
+    "resolutionsLabel": "How to fix",
+    "purchasing": {
+      "step": {
+        "approve": "Approve order",
+        "confirm": "Confirm order",
+        "receive": "Receive goods",
+        "bill": "Record bill",
+        "pay": "Record payment"
+      },
+      "reqStep": {
+        "submit": "Submit request",
+        "approve": "Approve request",
+        "convert": "Convert to order"
+      },
+      "action": {
+        "retry": "Try again"
+      },
+      "po": {
+        "created": {
+          "title": "Purchase order {{number}} created",
+          "context": "It's ready to confirm."
+        },
+        "approved": {
+          "title": "Purchase order {{number}} approved",
+          "context": "Approved. Confirm it to proceed."
+        },
+        "confirmed": {
+          "title": "Purchase order {{number}} confirmed",
+          "context": "Confirmed. Receive the goods next."
+        },
+        "received": {
+          "title": "Purchase order {{number}} received",
+          "context": "Goods received. Record the bill to owe the supplier."
+        },
+        "billed": {
+          "title": "Purchase order {{number}} billed",
+          "context": "Billed. {{amount}} outstanding to the supplier."
+        },
+        "paid": {
+          "title": "Purchase order {{number}} paid",
+          "context": "Paid in full. Nothing more to do."
+        },
+        "returned": {
+          "title": "Purchase order {{number}} returned",
+          "context": "Return recorded. A debit note was issued."
+        },
+        "cancelled": {
+          "title": "Purchase order {{number}} cancelled",
+          "context": "This order is now closed."
+        },
+        "converted": {
+          "title": "Purchase order {{number}} created",
+          "context": "Created from a request. It's ready to confirm."
+        }
+      },
+      "request": {
+        "created": {
+          "title": "Purchase request {{number}} created",
+          "context": "It's ready to submit for approval."
+        },
+        "submitted": {
+          "title": "Purchase request {{number}} submitted",
+          "context": "Submitted for approval."
+        },
+        "approved": {
+          "title": "Purchase request {{number}} approved",
+          "context": "Approved. Convert it to a purchase order."
+        },
+        "rejected": {
+          "title": "Purchase request {{number}} rejected",
+          "context": "The request was rejected."
+        }
+      },
+      "supplier": {
+        "created": {
+          "title": "Supplier {{name}} added",
+          "context": "You can now order from and pay this supplier."
+        }
+      },
+      "error": {
+        "approved": {
+          "title": "Couldn't approve {{number}}"
+        },
+        "confirmed": {
+          "title": "Couldn't confirm {{number}}"
+        },
+        "received": {
+          "title": "Couldn't receive {{number}}"
+        },
+        "billed": {
+          "title": "Couldn't bill {{number}}"
+        },
+        "paid": {
+          "title": "Couldn't record payment for {{number}}"
+        },
+        "returned": {
+          "title": "Couldn't record the return for {{number}}"
+        },
+        "cancelled": {
+          "title": "Couldn't cancel {{number}}"
+        }
+      }
+    },
+    "inventory": {
+      "receipt": {
+        "title": "Stock received ({{ref}})",
+        "context": "Received into stock. The journal entry is posted."
+      },
+      "issue": {
+        "title": "Stock issued ({{ref}})",
+        "context": "Issued from stock. The journal entry is posted."
+      },
+      "transfer": {
+        "title": "Stock transferred ({{ref}})",
+        "context": "Moved between warehouses."
+      },
+      "insight": {
+        "onHand": "On hand at {{warehouse}}: {{qty}}."
+      },
+      "warn": {
+        "belowReorder": "{{sku}} is below its reorder point."
+      },
+      "fix": {
+        "receive": "Receive {{sku}} at {{warehouse}}"
+      },
+      "error": {
+        "receipt": {
+          "title": "Couldn't receive stock"
+        },
+        "issue": {
+          "title": "Couldn't issue stock"
+        },
+        "transfer": {
+          "title": "Couldn't transfer stock"
+        }
       }
     }
   }

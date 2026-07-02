@@ -1,177 +1,196 @@
-.pur-page {
+/* Shared page/table/toolbar/summary/meta rules live in styles/data-surfaces.css; status chips are
+   the shared <Badge> primitive (components/Badge.tsx, tone via lib/statusTone.ts). The only
+   Purchasing-only rules are the AI invoice-import surface below (plan session 02). */
+
+/* --- Import invoice (المساعد الذكي) — upload / reading / unreadable / review states ----------- */
+
+.pur-import-drop {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-}
-
-.pur-page__head {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-block: 3rem;
+  padding-inline: 2rem;
+  text-align: center;
+  border: 1px dashed var(--color-border-strong);
 }
 
-.pur-explain {
-  margin-block: calc(-1 * var(--space-2)) 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+.pur-import-drop__icon {
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  color: var(--color-text-subtle);
 }
 
-.pur-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  border-block-end: 1px solid var(--color-border);
-  margin-block-end: var(--space-4);
-}
-
-.pur-nav__tab {
-  padding-inline: var(--space-3);
-  padding-block: var(--space-2);
-  color: var(--color-text-muted);
-  border-block-end: 2px solid transparent;
-  font-weight: var(--font-weight-medium);
-}
-.pur-nav__tab:hover {
-  color: var(--color-text);
-}
-.pur-nav__tab--active {
-  color: var(--color-brand-strong);
-  border-block-end-color: var(--color-brand);
-}
-
-.pur-table-wrap {
-  padding: 0;
-  overflow-x: auto;
-}
-
-.pur-table {
+.pur-import-drop__icon .navicon {
   inline-size: 100%;
-  border-collapse: collapse;
+  block-size: 100%;
 }
 
-.pur-table th,
-.pur-table td {
-  text-align: start;
-  padding-inline: var(--table-pad-inline);
-  padding-block: var(--table-pad-block);
-  border-block-end: 1px solid var(--color-border);
-}
-
-.pur-table th {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-medium);
-}
-
-.pur-table__num {
-  text-align: end;
-  font-variant-numeric: tabular-nums;
-}
-
-.pur-table tbody tr:hover {
-  background-color: var(--color-surface-alt);
-}
-
-.pur-table tfoot td {
-  font-weight: var(--font-weight-bold);
-  border-block-start: 2px solid var(--color-border-strong);
-}
-
-.pur-toolbar {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.pur-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-}
-
-.pur-actions {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.pur-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: var(--space-4);
-}
-
-.pur-summary__item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.pur-summary__label {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.pur-summary__value {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Secondary reference fields, shown inside a progressive-disclosure section. */
-.pur-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: var(--space-3);
+.pur-import-drop__title {
   margin: 0;
-}
-.pur-meta__row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-.pur-meta dt {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-.pur-meta dd {
-  margin: 0;
-  font-weight: var(--font-weight-medium);
+  font-size: 1.05rem;
+  font-weight: 500;
 }
 
-.pur-badge {
-  display: inline-flex;
-  align-items: center;
-  padding-inline: var(--space-2);
-  padding-block: 0.125rem;
+.pur-import-drop__hint,
+.pur-import-drop__note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Reading progress — a quiet, decelerating sweep; stands still under reduced motion. */
+.pur-import-progress {
+  inline-size: min(16rem, 60%);
+  block-size: 3px;
   border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-  color: var(--color-status-pending);
-  background-color: var(--color-status-pending-bg);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+  position: relative;
 }
-.pur-badge--confirmed {
-  color: var(--color-status-running);
-  background-color: var(--color-status-running-bg);
+
+.pur-import-progress::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -40%;
+  inline-size: 40%;
+  border-radius: inherit;
+  background: var(--color-brand);
+  animation: pur-import-sweep 1.4s var(--ease-out) infinite;
 }
-.pur-badge--received {
-  color: var(--color-status-waiting);
-  background-color: var(--color-status-waiting-bg);
+
+@keyframes pur-import-sweep {
+  to {
+    inset-inline-start: 100%;
+  }
 }
-.pur-badge--billed {
-  color: var(--color-accent);
-  background-color: var(--color-accent-subtle);
+
+@media (prefers-reduced-motion: reduce) {
+  .pur-import-progress::after {
+    animation: none;
+    inset-inline-start: 0;
+    inline-size: 100%;
+    opacity: 0.4;
+  }
 }
-.pur-badge--paid {
-  color: var(--color-status-completed);
-  background-color: var(--color-status-completed-bg);
+
+.pur-import-review-head__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 500;
 }
-.pur-badge--cancelled {
-  color: var(--color-status-failed);
-  background-color: var(--color-status-failed-bg);
+
+.pur-import-review-head__meta {
+  margin: 0.25rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.pur-import-review-head__meta .navicon,
+.pur-import-issues-card__title .navicon,
+.pur-import-mismatch .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+}
+
+/* What the model read vs. what the user picked — always visible, quiet. */
+.pur-import-extracted {
+  display: block;
+  margin-block-start: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Keep qty/cost inputs level with the item cell, which grows taller with the extracted line and
+   the inline "add" affordance below the select. */
+.pur-import-table td {
+  vertical-align: top;
+}
+
+/* "The assistant read something we don't have yet" → create it inline, prefilled. */
+.pur-import-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 0.35rem;
+}
+
+.pur-import-suggest__btn {
+  margin-block-start: 0.4rem;
+}
+
+/* A bare NavIcon has no intrinsic size — scope it here so the add-glyph matches the button text. */
+.pur-import-suggest .navicon,
+.pur-import-suggest__btn .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  flex: none;
+}
+
+.pur-import-create {
+  margin-block-start: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.pur-import-create__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.pur-import-create__fields .pur-field {
+  min-inline-size: 8rem;
+}
+
+.pur-import-create__uom {
+  max-inline-size: 6rem;
+}
+
+.pur-import-create__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-block-start: 0.6rem;
+}
+
+.pur-import-issues-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  padding-block: 0.6rem;
+  padding-inline: 0.9rem;
+}
+
+.pur-import-issues-card__title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.pur-import-issues {
+  margin: 0.35rem 0 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.pur-import-mismatch {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-warning-strong);
 }

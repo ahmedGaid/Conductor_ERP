@@ -1,0 +1,21 @@
+/* ⋯ overflow menu for a document detail page (see DocumentMenu.tsx). Builds on the shared popover
+   menu styles; here we just size the leading icon and give the one destructive item its colour. */
+.doc-menu {
+  min-inline-size: 12rem;
+}
+.doc-menu__item .navicon {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  color: var(--color-text-muted);
+}
+.doc-menu__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.doc-menu__item--danger,
+.doc-menu__item--danger .navicon {
+  color: var(--color-danger);
+}
+.doc-menu__item--danger:hover {
+  background-color: var(--color-danger-subtle);
+}

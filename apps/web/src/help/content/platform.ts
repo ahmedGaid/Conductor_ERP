@@ -1,5 +1,42 @@
 import type { HelpGuide } from "../types";
 
+export const assistantGuide: HelpGuide = {
+  title: { en: "Assistant", ar: "المساعد الذكي" },
+  purpose: {
+    en: "Ask about your business in plain language — sales, receivables, stock — and get a short answer with links to the records it used.",
+    ar: "اسأل عن عملك بلغتك — المبيعات، التحصيل، المخزون — واحصل على إجابة موجزة مع روابط للسجلات التي استندت إليها.",
+  },
+  howItWorks: {
+    en: "The assistant only reads data you're allowed to see (your branch and scope) and answers from real records — it never invents a number, and every figure links back to its source. It reads; it doesn't change anything.",
+    ar: "يقرأ المساعد الذكي البيانات المسموح لك برؤيتها فقط (فرعك ونطاقك) ويجيب من سجلات حقيقية — لا يختلق رقماً أبداً، وكل قيمة ترتبط بمصدرها. إنه يقرأ فقط ولا يغيّر شيئاً.",
+  },
+  tasks: [
+    {
+      name: { en: "Ask a question", ar: "اطرح سؤالاً" },
+      steps: [
+        { en: "Type a question, or pick one of the suggestions.", ar: "اكتب سؤالاً، أو اختر أحد الاقتراحات." },
+        { en: "Read the answer and open any linked record to verify it.", ar: "اقرأ الإجابة وافتح أي سجلّ مرتبط للتحقق منه." },
+      ],
+    },
+  ],
+  related: [
+    { to: "/sales", label: { en: "Sales orders", ar: "أوامر البيع" } },
+    { to: "/inventory/stock-on-hand", label: { en: "Stock on hand", ar: "الرصيد المتاح" } },
+  ],
+};
+
+export const entityLinkGuide: HelpGuide = {
+  title: { en: "Opening a linked record", ar: "فتح سجلّ مرتبط" },
+  purpose: {
+    en: "A brief stop while the app opens the record you clicked — an order, a journal entry, or another document referenced by its number.",
+    ar: "محطة قصيرة بينما يفتح التطبيق السجلّ الذي نقرت عليه — طلب أو قيد أو مستند آخر مُشار إليه برقمه.",
+  },
+  howItWorks: {
+    en: "Codes and numbers throughout the app (item SKUs, warehouses, order and journal numbers) are clickable. When you click one, the app looks up the record and takes you straight to its page. If nothing matches, you'll see a short note and a way back.",
+    ar: "الرموز والأرقام في كل أنحاء التطبيق (أكواد الأصناف، المخازن، أرقام الطلبات والقيود) قابلة للنقر. عند النقر، يبحث التطبيق عن السجلّ وينقلك مباشرة إلى صفحته. وإن لم يوجد ما يطابقه، تظهر لك ملاحظة قصيرة وطريقة للعودة.",
+  },
+};
+
 export const dashboardGuide: HelpGuide = {
   title: { en: "Home dashboard", ar: "لوحة البداية" },
   purpose: {
@@ -52,7 +89,7 @@ export const dashboardGuide: HelpGuide = {
     { en: "Don't treat the dashboard as a place to edit — it only reflects data entered elsewhere.", ar: "لا تعامل اللوحة كمكان للتعديل — هي تعكس فقط بيانات أُدخلت في صفحات أخرى." },
   ],
   related: [
-    { to: "/accounting", label: { en: "Accounting", ar: "المحاسبة" } },
+    { to: "/accounting", label: { en: "Accounting", ar: "المالية" } },
     { to: "/sales", label: { en: "Sales", ar: "المبيعات" } },
   ],
 };

@@ -109,7 +109,9 @@ class OrderSerializer(serializers.Serializer):
         return order_requires_approval(obj.subtotal_minor)
 
     def get_lines(self, obj) -> list:
-        return OrderLineSerializer(obj.lines.all().order_by("line_no"), many=True).data
+        # No .order_by() here: it would clone the queryset and bypass the list view's prefetch
+        # cache (a query per row). Meta.ordering on the line model already yields line_no order.
+        return OrderLineSerializer(obj.lines.all(), many=True).data
 
 
 class QuoteLineInputSerializer(serializers.Serializer):
@@ -169,4 +171,5 @@ class QuotationSerializer(serializers.Serializer):
         return requires_approval(obj.subtotal_minor)
 
     def get_lines(self, obj) -> list:
-        return QuotationLineSerializer(obj.lines.all().order_by("line_no"), many=True).data
+        # Prefetch-cache friendly — see OrderSerializer.get_lines.
+        return QuotationLineSerializer(obj.lines.all(), many=True).data

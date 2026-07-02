@@ -1,13 +1,16 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { createWarehouse, listWarehouses, type Warehouse } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
+import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
-import { Bdi } from "../../components/Bdi";
+import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { InventoryNav } from "./InventoryNav";
@@ -32,8 +35,21 @@ export function WarehousesPage() {
     [data, fields, filters],
   );
 
+  // j/k move a row highlight, Enter/o opens the warehouse detail page.
+  const navigate = useNavigate();
+  const { active } = useListKeyboardNav<Warehouse>({
+    items: filtered ?? [],
+    onOpen: (w) => navigate(`/inventory/warehouses/${encodeURIComponent(w.code)}`),
+    persistKey: "inventory:warehouses",
+    getItemId: (w) => w.id,
+  });
+
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+
+  // ⌘/Ctrl+Enter submits the add form from any field.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeys({ formRef });
 
   // Optimistic create: show the new warehouse row instantly and clear the form for the next entry;
   // the server row replaces the placeholder on settle, or it rolls back + toasts.
@@ -58,7 +74,7 @@ export function WarehousesPage() {
     <section className="inv-page">
       <InventoryNav />
 
-      <form className="card inv-toolbar" onSubmit={onSubmit}>
+      <form ref={formRef} className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.warehouse.code")}</span>
           <input className="latin" value={code} onChange={(e) => setCode(e.target.value)} required />
@@ -100,9 +116,9 @@ export function WarehousesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((w) => (
-                <tr key={w.id}>
-                  <td><Bdi>{w.code}</Bdi></td>
+              {filtered.map((w, i) => (
+                <tr key={w.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                  <td><EntityLink type="warehouse" value={w.code} /></td>
                   <td>{w.name}</td>
                 </tr>
               ))}

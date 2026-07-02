@@ -964,3 +964,405 @@ Sixth completion-plan increment, completing Track B (operational depth).
   dynamic root view owns `/`. The view 503s with a build-hint (never 500) when `dist` is absent.
 - **gate13** owns packaging coherence (WhiteNoise wired, SPA served, deploy/backup kit + runbook
   present); it deliberately does NOT re-run `check --deploy` — that is gate12's job (security posture).
+
+## Phase 2.0 — CSV import friction decisions (2026-06-27)
+> "Decisions before code" for Growth Phase 2 (`GROWTH_PLAN.md`). CSV import makes one-day setup real
+> for a company that already has its customers/suppliers/products in Excel. These rulings are made
+> *before* the importer is built (2.1) so the engine is designed against the real-world messiness, not
+> a happy path. Grounded in the actual master-data shape: **Customer** (`code` ≤32 unique, `name` ≤200,
+> `credit_limit_minor`, `is_active`), **Supplier** (`code` ≤32 unique, `name` ≤200, `is_active`),
+> **Item** (`sku` ≤64 unique, `name` ≤200, `category_code` FK-by-code, `uom`, `type`∈ItemType,
+> `reorder_point`, `is_active`). The unique **business key is `code` / `sku`** and today it is enforced
+> *only by the DB constraint* — the single-create serializers do not check it (a duplicate currently
+> reaches `Model.objects.create` and would `IntegrityError`). The importer must own existence
+> resolution; it does not get it for free.
+
+- **Validation reuses the existing DRF serializers — one source of truth.** Per-row field validation
+  goes through `CustomerSerializer` / `SupplierSerializer` / `ItemSerializer` (the same code the
+  single-create endpoints use), NOT a parallel validator that can drift. The importer is a thin batch
+  layer that adds only what single-create lacks: encoding normalization, header mapping, business-key
+  existence resolution, and a row-level outcome report.
+
+- **Encoding: detect and normalize on the server, never trust the bytes.** Egyptian SMBs "Save As CSV"
+  from Arabic Excel, which writes **Windows-1256** (legacy code page), while "CSV UTF-8" prepends a
+  **UTF-8 BOM**. Decode order: **utf-8-sig** (strips the BOM) → **cp1256** → utf-8 with replacement as a
+  last resort; if the result still looks broken (replacement chars in a sampled column), **reject the
+  file** with a plain message ("re-save as CSV UTF-8") rather than importing mojibake. Sniff the
+  delimiter (Arabic/European Excel uses **`;`**, not `,`). Normalize text to **NFC**. This is decided
+  server-side because the browser cannot reliably re-decode a cp1256 file.
+
+- **Numbers: normalize digits and separators for parsing only.** Accept **Arabic-Indic (٠–٩)** and
+  Eastern-Arabic digits and Arabic/European decimal+thousands separators in numeric columns, folding
+  them to ASCII before parsing — mirrors the `lib/arabicSearch.ts` ruling (simplify for *machine
+  reading*, never mutate what the user sees). Name/text fields keep their original full orthography.
+
+- **Money columns are MAJOR units, converted at the edge.** A human types `1,000.50` (pounds) in the
+  CSV, not `100050` minor units. The importer parses major → integer **minor** units at the import edge,
+  consistent with the standing money rule (minor units on the wire; format/parse only at the edge). The
+  template header names the unit. A non-numeric money cell is a **row error**, never coerced to 0.
+
+- **Duplicates: business key wins, two kinds, never a silent overwrite.** (a) *Within the file* — the
+  same `code`/`sku` twice: the first row imports, each later one is reported as `duplicate-in-file` and
+  skipped (last-wins would silently drop data). (b) *Against the database* — default mode is
+  **create-only**: an existing business key is reported `already-exists, skipped` (an outcome, not an
+  error). An explicit **"update existing"** toggle turns the run into an upsert-by-business-key for
+  re-imports. The importer always resolves existence by business key *before* writing, so it never
+  relies on catching the DB `IntegrityError`.
+
+- **Partial success is the default, not all-or-nothing.** Each row is validated and saved
+  independently inside its **own savepoint** (`transaction.atomic` per row) so one bad row cannot
+  poison the batch. The run returns a **summary** — `created N / skipped M / failed K` — plus a
+  per-row error report (row number + field + human message), downloadable. All-or-nothing is rejected:
+  a 5 000-row file failing on row 4 999 must not throw away the 4 998 good rows.
+
+- **Truthful preview before commit (two-phase).** Flow is **upload → map → preview → confirm**. Phase 1
+  parses + validates + resolves existence and returns the exact would-be outcome counts and row errors
+  **without writing**; phase 2 commits precisely what the preview showed. Preview and commit run the
+  same code path so the preview can never lie. (Server-side staging mechanism for the confirmed batch
+  is a 2.1 implementation detail; the *contract* — preview == commit — is decided here.)
+
+- **Re-upload is idempotent by construction.** Because dedup is by business key and create-only skips
+  existing, re-running the same file yields `created 0 / skipped all`. With "update existing" on, a
+  re-run is a stable upsert (same end state every time). The **business key is the idempotency key** —
+  v1 does NOT hash the file or track import batches for dedup; that is unnecessary complexity.
+
+- **FK resolution is strict — a missing reference is a row error, not a silent null.** Item
+  `category_code` must match an existing Category; a typo today silently nulls the category in the
+  single-create view, which would quietly lose categorization at scale. The importer instead **fails the
+  row** with "category 'X' not found". v1 does **not** auto-create referenced masters (categories,
+  warehouses) from an import — keeping the master data clean; "create missing categories" is a possible
+  later opt-in. `type` is validated against `ItemType`; unknown → row error; blank `uom` → default `unit`.
+
+- **Over-length is a row error, never a silent truncation.** A `code` >32, `sku` >64, or `name` >200
+  is reported with the limit named. Silent truncation would forge wrong/duplicate business keys.
+
+- **v1 scope (deliberately small, to keep 2.1 shippable).** One entity per file (no multi-sheet/
+  multi-entity). Master rows only — no relationships, opening balances, or contacts in v1. Synchronous
+  with a sane row cap (a few thousand); larger files get documented chunking later, not a v1 async
+  pipeline. Per-list **download-a-template** button (canonical headers + the unit/format notes) ships
+  with the importer so the expected columns are obvious and mapping friction is low.
+
+## Phase 3.0 — Daily money loop friction list (2026-06-27)
+> Growth Phase 3 (`GROWTH_PLAN.md`) = make the everyday flow flawless: **Quotation → Sales Order →
+> Invoice → (e-invoice) → mark paid.** This is the friction list from walking that loop as a real
+> user in the running app (admin, demo data), source-verified against `NewQuotationPage`/`NewOrderPage`/
+> `OrderDetailPage`/`EInvoicesPage`. Ordered by daily-pain weight. 3.1–3.3 will fix these; this entry
+> is the "list before code" deliverable, nothing is changed yet.
+
+**A. Missing smart defaults (every new quote/order pays this tax).** *(→ 3.1)*
+- **Customer** starts at `—` on both new-quote and new-order. No "last-used customer" memory. A shop
+  that bills the same handful of customers re-picks every time.
+- **Warehouse** starts at `—`. A single-warehouse org (the common SMB case) must pick `MAIN` on every
+  document. With exactly one warehouse it should be preselected; with a remembered default, that.
+- **Tax code** starts blank on new-order, so VAT is opt-in per order even though Egypt's default is a
+  single 14% rate. Should default to the org's configured VAT code.
+- **Unit price is hand-typed for every line.** Picking an item does **not** prefill its price — the
+  salesperson re-keys a number the system already knows (item has a price). Biggest per-line friction.
+- **Quantity has no default** (empty, not `1`). Most lines are qty ≥ 1; defaulting to 1 saves a keystroke.
+
+**B. Step count / one-obvious-action down the lifecycle.** *(→ 3.2)*
+- Draft → paid is up to **five sequential single-button page actions** (Approve → Confirm → Deliver →
+  Invoice → Record payment), each its own click+reload. The buttons are already correctly "one primary
+  per state" (#6 craft pass), but there's no fast-path for the trivial cash-sale case (e.g.
+  confirm-deliver-invoice in one move for a same-day counter sale). Keep the granular path; **add** a
+  shortcut, don't replace.
+
+**C. Payment is too thin for real bookkeeping.** *(→ 3.1/3.2)*
+- **Record payment always pays the full outstanding** (`payOrder(id, outstanding_minor)`) — no partial
+  payment, common for SMB installments.
+- **No payment date or method** (cash/bank) is captured; it just flips status. Real cash-loop posting
+  wants both.
+
+**D. E-invoice is a context switch, not part of the loop.** *(→ 3.2)*
+- After "Invoice", there is **no link from the order to send it as an ETA e-invoice**. The user must
+  leave the order, open the E-Invoicing section, find the invoice in a list, then Submit/Poll. For the
+  "send your first real invoice before lunch" pitch, the e-invoice submit should be reachable **from the
+  order** once invoiced.
+
+**E. The invoice document itself is missing.** *(→ 3.3)*
+- There is **no per-invoice printable/PDF** anywhere (`print.css` is generic page-print; `ExportButtons`
+  is report CSV/Excel). The invoice number hides inside a "More details" disclosure. The artifact the
+  customer's customer actually sees does not exist yet — this is the whole of 3.3.
+
+**F. Small label/copy snags found en route.** *(→ fold into 3.2)*
+- New-quote warehouse field is labelled **"Warehouse code"** (`inventory.warehouse.code`) — exposes the
+  *code* concept where a human wants just "Warehouse" (mismatched with the new-order "Warehouse" label).
+- (Carried from 2.x verification, same loop surfaces) DRF **choice-field error returns Arabic text in EN
+  mode**; **"Import 1 rows"** isn't singularized — fix when touching shared validation/i18n copy.
+
+## Pricing engine — Oracle-EBS-core model (Growth 3.1b, design before code, 2026-06-27)
+> Phase 3.1's unit-price prefill exposed that **`Item` carries no price at all**. Rather than bolt a
+> single number onto Item, the decision (user, 2026-06-27) is to build a small **pricing module** modelled
+> on **Oracle EBS pricing — core/basics only**: price lists, per-customer assignment + overrides, effective
+> dating, and a tax-inclusive option, resolved by a precedence engine. This entry fixes the model *before*
+> code so the schema is right the first time (the costly thing to get wrong). New module `erp/pricing/`
+> (registered in `config/settings/base.py` LOCAL_APPS), strict per-module layout, **cross-module by
+> business-key string only** (customer `code`, item `sku`, tax `code`) — pricing imports no other module's
+> ORM, mirroring how sales references warehouse/tax/SKU.
+
+- **Scope = EBS *price lists* + light *qualifiers/modifiers*, NOT the full engine.** In: price-list
+  headers + lines, quantity breaks (basic tiers), effective dates, currency, tax-inclusive, customer→list
+  assignment, customer-specific item overrides. **Out (deliberately, "core only"):** formula-based prices,
+  promotional modifier stacking, GSA/agreement pricing, attribute pricing, pricing phases/buckets. These
+  can layer on later without reshaping the core.
+
+- **Four models (`erp/pricing/domain/models.py`).**
+  - **`PriceList`** (header): `code` ≤32 unique, `name` ≤200, `currency`(3, default EGP), `tax_inclusive`
+    (bool — do this list's prices already include VAT?), `is_default` (bool — the fallback list; the
+    service enforces exactly one active default), `is_active`.
+  - **`PriceListLine`**: `price_list` FK, `item_sku` ≤64 (inventory by string, boundary-clean), `uom` ≤16
+    (default "unit"), `unit_price_minor` (BigInt, in the list's currency), `min_quantity` (Decimal,
+    default 0 — qty-break tier: the highest break ≤ ordered qty wins), `valid_from`/`valid_to` (Date,
+    nullable — open-ended when null). Overlaps are allowed; the resolver picks the best match
+    deterministically (see precedence).
+  - **`CustomerPriceList`** (qualifier-lite): `customer_code` ≤32 **unique**, `price_list` FK. One default
+    list per customer. Kept pricing-side (not a column on sales' Customer) so the module stays
+    self-contained and boundary-clean.
+  - **`CustomerItemPrice`** (per-customer override / modifier-lite): `customer_code` ≤32, `item_sku` ≤64,
+    `uom`, `unit_price_minor`, `tax_inclusive` (bool), `min_quantity`, `valid_from`/`valid_to`. Highest
+    precedence — a negotiated price for one client.
+
+- **Resolution precedence (`erp/pricing/services/resolve.py`).**
+  `resolve_unit_price(customer_code, item_sku, *, on=today, quantity=None, currency="EGP")` returns
+  `PriceResolution(unit_price_minor, tax_inclusive, source, price_list_code)` or `None`. Order:
+  **(1)** `CustomerItemPrice` for (customer, item) → **(2)** the customer's assigned `PriceList` line →
+  **(3)** the active default `PriceList` line → **(4)** `None` (caller leaves the line blank, today's
+  behaviour). Within a tier, filter to: currency match, effective on `on` (valid_from ≤ on ≤ valid_to,
+  nulls = open), `min_quantity` ≤ `quantity`; then pick **highest `min_quantity`**, tie-broken by latest
+  `valid_from`, then lowest price. Pure/deterministic (no `random`, gate-safe).
+
+- **Tax-inclusive stays out of storage; the order line remains tax-*exclusive*.** Sales computes VAT on
+  top of a net line (unchanged). So a tax-inclusive resolved price must be **backed out** to net before it
+  reaches a line: `net = round(gross * 10000 / (10000 + rate_bps))`. The **resolver is tax-agnostic**
+  (returns the stored price + the `tax_inclusive` flag); the back-out happens in the thin **pricing API**
+  `GET /pricing/resolve?customer&sku&qty&date&tax_code`, which reads the rate via `accounting.contracts`
+  and returns a ready-to-drop **net `unit_price_minor`** plus `source` for display ("from Wholesale").
+  Pricing depends on accounting only through its public contract, never its ORM.
+
+- **Pricing only *suggests*; it never rewrites posted documents.** The order/quotation line still stores an
+  explicit `unit_price` the user can edit. Pricing prefills it; invoicing, GL posting, and e-invoice are
+  untouched. This de-risks the whole feature — a wrong price list can't corrupt the ledger, and the engine
+  can ship incrementally behind the existing manual entry.
+
+- **Phase plan (each a small, gate-green PR).**
+  - **P1 — module foundation (backend):** scaffold `erp/pricing/`, the 4 models + migration, repositories,
+    `resolve_unit_price` with full precedence, unit tests (precedence, effective dates, qty breaks,
+    currency, default fallback). No API/UI. *Done = tests + `gate:all` green.*
+  - **P2 — API + management UI:** DRF CRUD for price lists/lines, customer assignment, overrides;
+    `GET /pricing/resolve` (with tax back-out); a **Pricing** section in the web app to manage lists;
+    `seed_accounting`/seed gains a default list. i18n parity.
+  - **P3 — wire the loop:** new order/quotation calls `/pricing/resolve` on (customer+item) to prefill the
+    net unit price and show its source — *this finally delivers finding A's price-prefill, via the engine.*
+  - **P4 — CSV import + demo:** price-list-line importer (reuse `erp/core/imports.py`) + template; demo seed
+    ships a default list so prefill is visible out of the box.
+  - **P5 — polish:** per-customer override + effective-dated scheduling UI; tax-inclusive entry affordance.
+
+## Phase 4 — leave the AI door open (GROWTH_PLAN.md, 2026-06-29)
+
+**4.0 — API-coverage audit (every action has a clean endpoint; gaps listed).**
+The app is architecturally assistant-ready *by construction*: the React frontend can only mutate through
+`apps/web/src/api/client.ts` (`apiFetch`), and there are **17 typed API modules** (sales, purchasing,
+inventory, accounting, einvoice, crm, pricing, notifications, workflows, users, roles, identity, setup,
+imports, core, …) over **~127 DRF routes**. Every business mutation is a thin DRF view → service call,
+so there is **no UI action that bypasses an endpoint**. An assistant authenticates the same way the UI
+does (`POST /api/identity/login` → JWT bearer) and calls the identical routes.
+- **No assistant-readiness gaps found** for business operations. The only UI actions *without* a
+  dedicated endpoint are pure client-side presentation helpers that intentionally need none: Print /
+  "Save as PDF" (`window.print` + `print.css`/`invoice.css`), copy-share-link, Duplicate (seeds a form,
+  doesn't write), the e-invoice deep-link (navigation), and report CSV/Excel export (already a
+  `GET …` export path on `ExportButtons`). None of these mutate state.
+- **Data is already structured + labelled for an assistant:** money is integer **minor units on the
+  wire** (formatted only at the edge via `lib/money.ts`); cross-module references are stable business
+  keys (customer `code`, item `sku`, tax `code`); every record carries an audit trail.
+- **Minor follow-ups (not blockers):** a machine-readable API index (OpenAPI/schema dump) would let an
+  assistant discover routes without reading `api/*.ts`; consider generating one when AI is un-postponed.
+
+**4.1 — Decision: AI postponed; APIs kept assistant-ready.**
+Per the Growth strategy (2026-06-26), AI is deliberately postponed to win first on **speed + one-day
+self-serve setup**. We are **not building AI now**, but we are **not blocking it**: the clean per-action
+DRF endpoint surface (4.0), integer-minor money, business-key cross-references, and the immutable audit
+trail are kept exactly as-is so an assistant layer can be added later with no re-architecture.
+
+**3.4 — cold-start path (signup → first invoice).** The path is now end-to-end self-serve and was
+exercised live (2026-06-29): Setup Wizard (COA template + company profile + tax) → create a customer →
+new order (smart defaults pre-fill customer/warehouse/tax, price prefilled from the price list) →
+**"Complete sale"** fast-path (one move: confirm→deliver→invoice) → **"Export PDF"** opens the on-brand
+invoice. The remaining "**record the real number**" is a human stopwatch run with a true cold stranger
+on a fresh DB — left as a manual checkpoint, not a code task.
+## Prompts2 reviewed → superseded by CONDUCTOR_CHARTER.md (2026-06-30)
+
+`Docs/Prompts2/*` (00–07) is a **greenfield build script** on a PostgreSQL/Oracle-stored-procedure +
+NestJS stack. It is **not the plan** and must not be executed as one — Conductor is a shipped release
+candidate on **Django modular-monolith + React/Vite, Arabic/RTL-first**, with every "golden rule"
+already implemented (`erp/sales|purchasing|inventory|accounting|einvoice|pricing|identity|workflow`,
+immutable `erp/audit.AuditEntry`).
+
+- **Kept** Prompts2's good ideas: precedence-ordered rules (lower number wins), typed money + frozen
+  FX, posted-immutable + linked successors, mutability-as-data, field security = absent-from-payload
+  (default-deny), AI-suggests/human-commits, every rule → runnable invariant.
+- **Rejected:** the greenfield premise (nothing to build — it exists); business logic in DB stored
+  procedures (our source of truth is the Django **service layer** — DB constraints are defense-in-depth
+  only; two sources of truth is the bug); re-scaffolding `conductor/db|api|web` + a psql Makefile
+  (real gates are `scripts/gates/_run.py` 00–13 + `check-i18n-parity.mjs` + `tsc -b` + `gate03.py`);
+  rebuilding Sales Order; bare English JSX + physical CSS (we are RTL-default).
+- **Added** what Prompts2 ignored entirely (Arabic/RTL/brand/craft — the actual niche differentiators):
+  native-Arabic+parity, logical-CSS/tokens/monochrome, designed states, a **speed budget** (1-second
+  answer test), keyboard-first `⌘K` command palette, one-skeleton/one-drawer/split-compare, and
+  self-host resilience (one-day setup, backup/restore, printable ETA/PDF proof).
+
+The rewrite — `Docs/Prompts2/CONDUCTOR_CHARTER.md` — is a **standing constitution for the shipped
+product** (review/onboarding lens), not a TODO. Each rule names where it lives in this codebase and the
+invariant that proves it. Treat it as authoritative; treat `Docs/Prompts2/00–07` as a rejected path
+kept only for context.
+
+## Security hardening — session 00 of the master plan (2026-07-02)
+
+Executed `Docs/plan/00-security-hardening.md` on branch `feat/sec-hardening`. The stance shift:
+**data scope is now enforced, not advisory.**
+
+- **Scope enforcement everywhere reads happen.** `scope_queryset` (identity/scoping.py) now guards
+  every transactional list, detail, AND action fetch across sales/purchasing/inventory/crm/accounting/
+  einvoice — an out-of-scope record 404s (existence must not leak; never 403). Accounting documents
+  (journals, bank statements, budgets, fixed assets, report definitions) and ETA invoices gained the
+  audit dimensions (branch/department/team) at create; the e-invoice inherits its branch from the
+  `ORDER_INVOICED` payload's `branch_code` — a business key, since einvoice never FKs into sales.
+- **Masters stay org-wide by design** (accounts, periods, tax codes, cost centers, customers,
+  suppliers, items, warehouses, price lists — and the whole pricing module): reference data every
+  branch prices/posts against. Scoping them would break cross-branch documents; RBAC action
+  permissions still gate who may edit them.
+- **Workflow egress is default-deny SSRF-guarded** (`workflow/adapters/egress.py`): http(s) only, every
+  resolved IP must be public (no private/loopback/link-local/metadata), optional
+  `WORKFLOW_EGRESS_ALLOWLIST` host-suffix pin. A blocked call returns a failed `AdapterResult`, not a 500.
+- **JWT refresh moved out of JS reach:** refresh token now lives ONLY in an HttpOnly SameSite=Strict
+  cookie scoped to `/api/identity`; the access token lives only in frontend memory (localStorage token
+  removed + one-time cleanup). Rotation + blacklist on; `/identity/logout` blacklists the cookie.
+  Login is throttled (`login` scope, 5/min default). Password validators extended.
+- **Imports capped:** 5 MB byte cap before the file is read (`core/import_api.py`) on top of the
+  existing 5000-row cap; malformed/binary uploads now raise the designed 400 (a real 500 was found
+  and fixed in `read_table`). Backup/restore scripts audited — parameterized `pg_restore`, scratch-DB
+  default, `--force` guard — no changes needed.
+- **`check --deploy` clean** against `config.settings.prod` (given a real `DJANGO_SECRET_KEY`), and a
+  **Content-Security-Policy** header ships in prod (`CSP_POLICY`, env-overridable; `'self'`-everything,
+  inline allowed for styles only — everything is self-hosted, so no CDN carve-outs).
+
+## Perf budgets 2026-07 — session 01 of the master plan (2026-07-02)
+
+Speed and correctness are brand promises, so they are now **enforced budgets**, not vibes. Raise a
+budget deliberately (edit the constant + this entry), never silently.
+
+- **Backend query budget:** every hot list endpoint serializes N rows in **≤ 8 queries** (no N+1)
+  and **p95 < 150 ms** on seed-sized data — enforced by `erp/monitoring/tests/test_security_perf.py`
+  (`LIST_QUERY_BUDGET`, `LIST_P95_MS`) over sales orders, inventory movements, stock-on-hand, and GL
+  journals (journals budget tightened from 12).
+- **N+1 root cause fixed:** five line-serializers chained `.order_by("line_no")` onto prefetched
+  `lines`, cloning the queryset past the prefetch cache (a query per row × up to 200 rows). Dropped —
+  the line models' `Meta.ordering` already ends in `line_no`. (sales orders/quotations, purchasing
+  POs/requests, CRM opportunities.)
+- **Indexes to match list orderings:** composite `(-date, -created_at)`-style indexes added on
+  SalesOrder, Quotation, PurchaseOrder, PurchaseRequest, StockMovement (+ `reference`), JournalEntry
+  (`-date, number`), Opportunity (`-created_at`). Verified with EXPLAIN (index scan, no sort).
+- **Frontend bundle budget:** main JS chunk **≤ 230 kB gzip**, enforced by
+  `apps/web/scripts/check-bundle-size.mjs` running as `postbuild` (so every gate build enforces it).
+  Route-split via `React.lazy`: workflow canvas (owns React Flow, 189 kB chunk), report builder,
+  setup wizard, invoice document, all settings + admin pages. Main chunk 284 → 207 kB gzip. Lazy
+  routes fall back to the shared `ListSkeleton` inside the intact shell (designed beat, no spinner).
+- **Prefetch coverage:** `EntityLink` now warms the destination cache on hover/focus for
+  item/warehouse (detail keys) and customer/supplier (shared master list); price lists prefetch
+  their lines. UUID-resolved links (orders, journals) can't prefetch — the id is unknown until the
+  resolver runs.
+- **Trust invariants** (`erp/monitoring/tests/test_trust_invariants.py`, property-style over real
+  service flows): debits == credits on every posted journal (checked in the DB); net + tax == total
+  on every invoice; on-hand never negative under random movement sequences (over-issues must raise);
+  audited actions carry actor + correlation id (bus subscribers act as system — correlation id is
+  their trace).
+- **Idempotency:** new `erp.core.idempotency.run_once` + `core_idempotency_key` table. A client
+  `Idempotency-Key` header makes stock **receive** at-most-once (no state machine protects it);
+  replay returns the original movement (200, not 201). Order actions need no key — the status state
+  machine already rejects/no-ops replays (`complete_sale` replay is a designed no-op).
+
+## AI 2026-07 — assistant architecture (session 02, part 1)
+
+The Claude-powered assistant is the headline feature, but it must never weaken the trust
+invariants. The standing pattern (free-text-to-SQL was considered and **rejected** — it cannot
+honour RBAC/scope and invents joins):
+
+- **Thin orchestration layer** `erp/assistant/` — it never touches other modules' ORM. Every read
+  or draft goes through the same **service functions** the API uses, executed **as the current
+  user** (`actor=request.user`), so RBAC, data scopes, approval limits, and audit hold
+  automatically. The AI is just another actor with the caller's permissions.
+- **Tool-use, not free text.** The model only ever sees typed tools / a strict JSON schema; its
+  output is validated server-side before anything maps to a service call.
+- **Human-in-the-loop for writes.** The model only *drafts* (structured proposals). Part 1 goes
+  further: the extraction endpoint is **read-only** — the confirm step in the UI posts through the
+  existing `POST /purchasing/orders` endpoint, so the AI layer contains zero write paths and the
+  draft PO is created by the *user's* click under the *user's* permissions. Never auto-post money.
+- **Optional + toggleable.** `ASSISTANT_ENABLED` (default: on only when `ANTHROPIC_API_KEY` is set
+  in env — never in code). A customer install without a key runs fully, with all AI UI hidden
+  (`GET /api/assistant/status`). Endpoints return 404 when disabled — indistinguishable from absent,
+  same posture as out-of-scope records.
+- **Cost control:** per-request `max_tokens` cap (`ASSISTANT_MAX_TOKENS`); per-tenant monthly caps
+  land with Session 07 billing.
+- **Model id** is env-tunable (`ASSISTANT_MODEL`, default `claude-opus-4-8`); SDK pinned
+  `anthropic>=0.92,<1.0` — the one new dependency this session (mandated by the plan file).
+- **Uploads** reuse the Session-00 posture: hard byte cap checked before reading the file,
+  content-type allowlist (JPEG/PNG/WebP/PDF).
+- **Tests** mock the Anthropic client at the module seam (`erp.assistant.client.get_client`);
+  gates never make live calls.
+
+### AI 2026-07 addendum — Gemini as the active provider (client request, 2026-07-02)
+
+The client supplied a Gemini API key instead of an Anthropic one, so the assistant now supports
+**two providers behind the one seam** (`erp/assistant/client.py`): Anthropic (Claude) and Google
+(Gemini, via the official `google-genai` SDK). `ASSISTANT_PROVIDER` env forces one; unset, the
+provider is auto-picked by whichever key is present (`ANTHROPIC_API_KEY` wins if both). The
+extraction contract is identical — same strict JSON schema (translated to Gemini's dialect:
+type-unions → `nullable`, `additionalProperties` stripped), same designed unreadable/failure
+states, same audit + upload guards. Frontend untouched — it never knew the provider. Default
+models: `claude-opus-4-8` / `gemini-2.5-flash` (env-tunable via `ASSISTANT_MODEL`). Keys stay in
+`.env` only. Tests pin `ASSISTANT_PROVIDER` per case and mock both client seams — still no live
+calls in gates.
+
+### AI 2026-07 addendum 2 — Groq as a third provider (client request, 2026-07-02)
+
+Added Groq (fast Llama-4 inference, OpenAI-compatible) as a third provider behind the same seam,
+selected by `ASSISTANT_PROVIDER=groq` or a `GROQ_API_KEY`. No new dependency — a thin `groq_chat`
+helper over `httpx` (already present) posts to `https://api.groq.com/openai/v1/chat/completions`.
+Default model `meta-llama/llama-4-scout-17b-16e-instruct` (multimodal). Notes:
+- **Image-only**: Llama-4 vision can't read PDF, so a PDF upload on Groq returns the designed
+  unreadable state ("pdf_unsupported_on_this_provider") — the user re-uploads a photo. Anthropic and
+  Gemini still take PDF.
+- JSON-object mode (no schema param), so the exact key list is spelled out in the prompt and
+  validated our side; 3-attempt backoff retry on transient errors, same as the Gemini path.
+- Verified live end-to-end (supplier + VAT + total + line items) against a real Groq key.
+Provider count is now 3 (Anthropic / Gemini / Groq); the frontend is untouched throughout.
+
+### AI 2026-07 — assistant architecture (session 02, part 2: natural-language ask)
+
+`POST /api/assistant/ask` answers plain-language questions over the caller's **scoped** data.
+
+- **Tool-use via a JSON-mode router, not native function-calling.** Two constrained `complete_json`
+  calls (`services/llm.py`, one seam across all three providers): (1) **route** — the model picks ONE
+  typed tool + args from a fixed catalog; (2) **answer** — we run that tool and hand the real result
+  back to phrase. Chosen over each provider's bespoke tool/function-calling dialect for portability
+  (works identically on Anthropic/Gemini/Groq) and testability (tests monkeypatch one seam, zero live
+  calls). Still tool-use, never free-text-to-SQL: the model only ever *chooses* a tool.
+- **Scope-as-actor.** Tools (`tools.py`) are thin wrappers over NEW scoped read-contract helpers
+  (`sales.sales_summary / top_customers / overdue_receivables / find_orders`, `inventory.low_stock`),
+  each narrowed with `scope_queryset(actor, …, "<perm>.view")` — the same enforcement every list
+  endpoint uses. `AskView` needs only `IsAuthenticated`; a Salesperson gets their branch's numbers
+  and nothing more (scope holds; no cross-branch leak).
+- **The model narrates, it never computes.** Money is formatted server-side and citations are built
+  from the real records in `tools.py`; the answer prompt forbids inventing figures and says to quote
+  the provided values verbatim — so numbers and links are always verifiable (each answer cites the
+  records it used; the UI links them via `EntityLink` / the order detail route).
+- **Read-only.** No tool in the catalog writes. Draft-write proposal tools (`draft_sales_order`, …
+  from the plan) are deferred: part 1's invoice→draft already ships the human-in-the-loop write
+  pattern, and reads are the acceptance-critical path here. New error `AI-002`
+  (`AssistantUnavailableError`, 502, blame-free retryable).
+- **Part 3 (safety/cost/offline):** prompt-injection posture holds (question is user-role data, tools
+  validate their own args, no free SQL); per-request guard = `MAX_QUESTION_CHARS` (1000) +
+  `ASSISTANT_MAX_TOKENS`; `ASSISTANT_ENABLED` gates the endpoint (404 when off) and hides the UI (the
+  gated sidebar entry + `/assistant` page). **Streaming and the per-tenant monthly cap are deferred**
+  — non-streaming is simpler/portable/testable, and the monthly cap belongs with Session 07 billing.
+- UI: a calm `/assistant` page (المساعد الذكي) — one input, suggested questions, an answer card with
+  cited click-through links. New lexicon reuse only; parity kept (1489 keys).

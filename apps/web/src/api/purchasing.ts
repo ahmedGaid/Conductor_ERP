@@ -1,5 +1,6 @@
 // Typed wrappers for the purchasing API (/api/purchasing/*). Costs/values are integer minor units.
 import { apiFetch } from "./client";
+import type { StageHistoryEntry } from "../lib/workflow";
 
 export type POStatus =
   | "draft"
@@ -71,6 +72,10 @@ export function getPurchaseOrder(id: string): Promise<PurchaseOrder> {
   return apiFetch<PurchaseOrder>(`/purchasing/orders/${id}`);
 }
 
+export function getPurchaseOrderHistory(id: string): Promise<StageHistoryEntry[]> {
+  return apiFetch<StageHistoryEntry[]>(`/purchasing/orders/${id}/history`);
+}
+
 export interface NewPOLine {
   item_sku: string;
   quantity: string;
@@ -97,6 +102,7 @@ export const confirmPO = (id: string) => action(id, "confirm");
 export const receivePO = (id: string) => action(id, "receive");
 export const billPO = (id: string) => action(id, "bill");
 export const returnPO = (id: string) => action(id, "return");
+export const cancelPO = (id: string) => action(id, "cancel");
 
 export function payPO(id: string, amount: number): Promise<PurchaseOrder> {
   return apiFetch<PurchaseOrder>(`/purchasing/orders/${id}/payment`, {
