@@ -1214,3 +1214,33 @@ The rewrite — `Docs/Prompts2/CONDUCTOR_CHARTER.md` — is a **standing constit
 product** (review/onboarding lens), not a TODO. Each rule names where it lives in this codebase and the
 invariant that proves it. Treat it as authoritative; treat `Docs/Prompts2/00–07` as a rejected path
 kept only for context.
+
+## Security hardening — session 00 of the master plan (2026-07-02)
+
+Executed `Docs/plan/00-security-hardening.md` on branch `feat/sec-hardening`. The stance shift:
+**data scope is now enforced, not advisory.**
+
+- **Scope enforcement everywhere reads happen.** `scope_queryset` (identity/scoping.py) now guards
+  every transactional list, detail, AND action fetch across sales/purchasing/inventory/crm/accounting/
+  einvoice — an out-of-scope record 404s (existence must not leak; never 403). Accounting documents
+  (journals, bank statements, budgets, fixed assets, report definitions) and ETA invoices gained the
+  audit dimensions (branch/department/team) at create; the e-invoice inherits its branch from the
+  `ORDER_INVOICED` payload's `branch_code` — a business key, since einvoice never FKs into sales.
+- **Masters stay org-wide by design** (accounts, periods, tax codes, cost centers, customers,
+  suppliers, items, warehouses, price lists — and the whole pricing module): reference data every
+  branch prices/posts against. Scoping them would break cross-branch documents; RBAC action
+  permissions still gate who may edit them.
+- **Workflow egress is default-deny SSRF-guarded** (`workflow/adapters/egress.py`): http(s) only, every
+  resolved IP must be public (no private/loopback/link-local/metadata), optional
+  `WORKFLOW_EGRESS_ALLOWLIST` host-suffix pin. A blocked call returns a failed `AdapterResult`, not a 500.
+- **JWT refresh moved out of JS reach:** refresh token now lives ONLY in an HttpOnly SameSite=Strict
+  cookie scoped to `/api/identity`; the access token lives only in frontend memory (localStorage token
+  removed + one-time cleanup). Rotation + blacklist on; `/identity/logout` blacklists the cookie.
+  Login is throttled (`login` scope, 5/min default). Password validators extended.
+- **Imports capped:** 5 MB byte cap before the file is read (`core/import_api.py`) on top of the
+  existing 5000-row cap; malformed/binary uploads now raise the designed 400 (a real 500 was found
+  and fixed in `read_table`). Backup/restore scripts audited — parameterized `pg_restore`, scratch-DB
+  default, `--force` guard — no changes needed.
+- **`check --deploy` clean** against `config.settings.prod` (given a real `DJANGO_SECRET_KEY`), and a
+  **Content-Security-Policy** header ships in prod (`CSP_POLICY`, env-overridable; `'self'`-everything,
+  inline allowed for styles only — everything is self-hosted, so no CDN carve-outs).

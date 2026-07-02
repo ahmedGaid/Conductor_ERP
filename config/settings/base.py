@@ -28,6 +28,7 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 APP_VERSION = env("APP_VERSION", default="0.0.0")
 IP_WHITELIST = env("DJANGO_IP_WHITELIST")  # empty list => allow all (dev)
+CSP_POLICY = ""  # off by default; prod sets a real policy (see settings/prod.py)
 
 # --- Applications ---
 DJANGO_APPS = [
@@ -68,6 +69,9 @@ MIDDLEWARE = [
     # Correlation ID must wrap everything so every log/error/audit row carries it.
     "erp.core.middleware.CorrelationIdMiddleware",
     "erp.core.middleware.IpWhitelistMiddleware",
+    # Adds Content-Security-Policy when settings.CSP_POLICY is non-empty (prod sets it; dev leaves
+    # it off because the SPA is served by Vite, not Django, during development).
+    "erp.core.middleware.ContentSecurityPolicyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     # Activate the request's language from Accept-Language (sent by the web client to match the UI),

@@ -1,4 +1,4 @@
-"""Request middleware: correlation IDs and IP whitelisting."""
+"""Request middleware: correlation IDs, IP whitelisting, and the CSP header."""
 from __future__ import annotations
 
 import ipaddress
@@ -23,6 +23,26 @@ class CorrelationIdMiddleware:
         request.correlation_id = cid  # type: ignore[attr-defined]
         response = self.get_response(request)
         response[HEADER_NAME] = cid
+        return response
+
+
+class ContentSecurityPolicyMiddleware:
+    """Attach Content-Security-Policy from settings.CSP_POLICY (empty string disables).
+
+    The policy is a plain header string so an installer can tune it per deployment via env;
+    a response that already set its own CSP (e.g. a sandboxed download) is left alone.
+    """
+
+    HEADER = "Content-Security-Policy"
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+        self._policy = (getattr(settings, "CSP_POLICY", "") or "").strip()
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        if self._policy and self.HEADER not in response:
+            response[self.HEADER] = self._policy
         return response
 
 
