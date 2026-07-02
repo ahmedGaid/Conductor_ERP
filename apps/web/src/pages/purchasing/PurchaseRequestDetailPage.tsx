@@ -1,5 +1,6 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import {
   approveRequest,
@@ -13,6 +14,8 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showRequestReceipt, type RequestEvent } from "../../lib/feedback/purchasing";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
@@ -39,9 +42,25 @@ export function PurchaseRequestDetailPage() {
     `purchasing:request:${id}`,
   );
 
+  const fb = useActionFeedback();
+  const location = useLocation();
+
   useSetDocumentCrumb(data?.number);
 
-  function act(nextStatus: PRStatus, request: () => Promise<PurchaseRequest>, success: string) {
+  const duplicate = () =>
+    navigate("/purchasing/requests/new", {
+      state: {
+        duplicate: {
+          supplier_code: data!.supplier_code,
+          warehouse_code: data!.warehouse_code,
+          lines: data!.lines.map((l) => ({ item_sku: l.item_sku, description: l.description, quantity: l.quantity, unit_cost: l.unit_cost_minor })),
+        },
+      },
+    });
+
+  // Optimistic state transition: flip the status instantly, reconcile with the server's request,
+  // fire the event's rich receipt on success (roll back + error toast on failure).
+  function act(nextStatus: PRStatus, request: () => Promise<PurchaseRequest>, event: RequestEvent) {
     if (!data) return;
     void runOptimistic<PurchaseRequest, PurchaseRequest>({
       current: data,
@@ -50,18 +69,41 @@ export function PurchaseRequestDetailPage() {
       request,
       settle: (_predicted, updated) => updated,
       toast,
-      success,
+    }).then((updated) => {
+      if (updated) showRequestReceipt(fb, t, updated, event, { run: runRequest, navigate, duplicate });
     });
   }
 
+  // The receipt's recommended-next step, dispatched by current status.
+  function runRequest() {
+    if (!data) return;
+    const r = data;
+    if (r.status === "draft") act("submitted", () => submitRequest(r.id), "submitted");
+    else if (r.status === "submitted") act("approved", () => approveRequest(r.id), "approved");
+    else if (r.status === "approved") void onConvert(r);
+  }
+
+  // Convert navigates away to the spawned order, whose detail page fires the "converted" receipt.
   async function onConvert(r: PurchaseRequest) {
     try {
       const res = await convertRequest(r.id);
-      navigate(`/purchasing/orders/${res.order_id}`);
+      navigate(`/purchasing/orders/${res.order_id}`, { state: { feedback: "converted" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     }
   }
+
+  // A "created" receipt handed off from the new-request page fires once loaded, then clears.
+  const firedIntro = useRef(false);
+  useEffect(() => {
+    if (firedIntro.current || !data) return;
+    const intro = (location.state as { feedback?: RequestEvent } | null)?.feedback;
+    if (!intro) return;
+    firedIntro.current = true;
+    showRequestReceipt(fb, t, data, intro, { run: runRequest, navigate, duplicate });
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   if (loading) {
     return (
@@ -81,28 +123,14 @@ export function PurchaseRequestDetailPage() {
   type Action = { label: string; icon?: string; onClick: () => void } | null;
   function primaryAction(): Action {
     const r = data!;
-    if (r.status === "draft") return { label: t("purchasing.requests.submit"), onClick: () => act("submitted", () => submitRequest(r.id), t("purchasing.toast.reqSubmitted")) };
-    if (r.status === "submitted") return { label: t("purchasing.requests.approve"), onClick: () => act("approved", () => approveRequest(r.id), t("purchasing.toast.reqApproved")) };
+    if (r.status === "draft") return { label: t("purchasing.requests.submit"), onClick: () => act("submitted", () => submitRequest(r.id), "submitted") };
+    if (r.status === "submitted") return { label: t("purchasing.requests.approve"), onClick: () => act("approved", () => approveRequest(r.id), "approved") };
     if (r.status === "approved") return { label: t("purchasing.requests.convert"), onClick: () => onConvert(r) };
     return null;
   }
 
   const menu: DocMenuItem[] = [
-    {
-      key: "duplicate",
-      label: t("document.duplicate"),
-      icon: "duplicate",
-      onClick: () =>
-        navigate("/purchasing/requests/new", {
-          state: {
-            duplicate: {
-              supplier_code: data.supplier_code,
-              warehouse_code: data.warehouse_code,
-              lines: data.lines.map((l) => ({ item_sku: l.item_sku, description: l.description, quantity: l.quantity, unit_cost: l.unit_cost_minor })),
-            },
-          },
-        }),
-    },
+    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
     { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
     { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
     {
@@ -113,7 +141,7 @@ export function PurchaseRequestDetailPage() {
     },
   ];
   if (data.status === "submitted" || data.status === "approved") {
-    menu.push({ key: "reject", label: t("purchasing.requests.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectRequest(data.id, ""), t("purchasing.toast.reqRejected")) });
+    menu.push({ key: "reject", label: t("purchasing.requests.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectRequest(data.id, ""), "rejected") });
   }
 
   return (

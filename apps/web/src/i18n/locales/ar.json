@@ -1379,7 +1379,11 @@
       "sidebar": "الشريط الجانبي",
       "sidebarDesc": "تسميات موسّعة أو أيقونات مضغوطة.",
       "expanded": "موسّع",
-      "compactSidebar": "مضغوط"
+      "compactSidebar": "مضغوط",
+      "feedbackMode": "تنبيهات الإجراءات",
+      "feedbackModeDesc": "مقدار التفاصيل التي تظهر في لوحة ما بعد الإجراء عند إتمام مهمة.",
+      "feedbackSimple": "مبسّط",
+      "feedbackRich": "مفصّل"
     },
     "a11y": {
       "largerText": "نص أكبر",
@@ -1631,5 +1635,303 @@
     "clear": "إلغاء التحديد",
     "selectAll": "تحديد الكل",
     "selectRow": "تحديد الصف"
+  },
+  "feedback": {
+    "relatedLabel": "سجلات ذات صلة",
+    "fact": {
+      "amount": "المبلغ",
+      "items": "الأصناف",
+      "status": "الحالة"
+    },
+    "related": {
+      "customer": "العميل",
+      "customers": "العملاء",
+      "orders": "أوامر البيع",
+      "quotations": "عروض الأسعار",
+      "supplier": "المورد",
+      "suppliers": "الموردون",
+      "purchaseOrders": "أوامر الشراء",
+      "requests": "طلبات الشراء",
+      "item": "الصنف",
+      "onHand": "الأرصدة"
+    },
+    "action": {
+      "newOrder": "أمر جديد",
+      "newQuote": "عرض سعر جديد",
+      "newOrderFor": "إنشاء أمر",
+      "newPO": "أمر شراء جديد",
+      "newRequest": "طلب جديد",
+      "newPOFor": "إنشاء أمر شراء"
+    },
+    "sales": {
+      "step": {
+        "approve": "الموافقة على الأمر",
+        "confirm": "تأكيد الأمر",
+        "deliver": "تسليم",
+        "invoice": "إصدار فاتورة",
+        "pay": "تسجيل دفعة"
+      },
+      "quoteStep": {
+        "submit": "إرسال العرض",
+        "approve": "الموافقة على العرض",
+        "convert": "تحويل إلى أمر بيع"
+      },
+      "order": {
+        "created": {
+          "title": "تم إنشاء أمر البيع {{number}}",
+          "context": "جاهز للتأكيد — يبدأ الحجز عند التأكيد."
+        },
+        "approved": {
+          "title": "تمت الموافقة على أمر البيع {{number}}",
+          "context": "تمت الموافقة. أكّده للمتابعة."
+        },
+        "confirmed": {
+          "title": "تم تأكيد أمر البيع {{number}}",
+          "context": "مؤكد. قم بتسليم البضاعة."
+        },
+        "delivered": {
+          "title": "تم تسليم أمر البيع {{number}}",
+          "context": "تم التسليم. أصدر الفاتورة لمطالبة العميل."
+        },
+        "invoiced": {
+          "title": "تمت فوترة أمر البيع {{number}}",
+          "context": "تمت الفوترة. بانتظار سداد {{amount}}."
+        },
+        "paid": {
+          "title": "تم سداد أمر البيع {{number}}",
+          "context": "مدفوع بالكامل. لا يوجد إجراء آخر."
+        },
+        "returned": {
+          "title": "تم تسجيل مرتجع أمر البيع {{number}}",
+          "context": "تم تسجيل المرتجع. صدر إشعار دائن."
+        },
+        "cancelled": {
+          "title": "تم إلغاء أمر البيع {{number}}",
+          "context": "هذا الأمر مغلق الآن."
+        },
+        "completed": {
+          "title": "تمت عملية البيع {{number}}",
+          "context": "تم التأكيد والتسليم والفوترة. بانتظار سداد {{amount}}."
+        },
+        "converted": {
+          "title": "تم إنشاء أمر البيع {{number}}",
+          "context": "أُنشئ من عرض سعر. جاهز للتأكيد."
+        }
+      },
+      "quote": {
+        "created": {
+          "title": "تم إنشاء عرض السعر {{number}}",
+          "context": "جاهز للإرسال للموافقة."
+        },
+        "submitted": {
+          "title": "تم إرسال عرض السعر {{number}}",
+          "context": "أُرسل للموافقة."
+        },
+        "approved": {
+          "title": "تمت الموافقة على عرض السعر {{number}}",
+          "context": "تمت الموافقة. حوّله إلى أمر بيع."
+        },
+        "rejected": {
+          "title": "تم رفض عرض السعر {{number}}",
+          "context": "تم رفض عرض السعر."
+        }
+      },
+      "customer": {
+        "created": {
+          "title": "تمت إضافة العميل {{name}}",
+          "context": "يمكنك الآن البيع لهذا العميل وإصدار فواتيره."
+        }
+      },
+      "insight": {
+        "allInStock": "كل الأصناف متوفرة في المخزون. يمكن تنفيذ هذا الأمر الآن.",
+        "creditOk": "الحد الائتماني المستخدم للعميل: {{pct}}%."
+      },
+      "warn": {
+        "oneShort": "صنف واحد ناقص في المخزون.",
+        "someShort": "{{count}} أصناف ناقصة في المخزون.",
+        "creditHigh": "الحد الائتماني المستخدم للعميل: {{pct}}% — قارب على الحد.",
+        "creditExceeded": "تجاوز العميل الحد الائتماني ({{pct}}%)."
+      },
+      "action": {
+        "retry": "أعد المحاولة"
+      },
+      "fix": {
+        "receive": "استلام {{sku}} — المطلوب {{qty}} في {{warehouse}}"
+      },
+      "error": {
+        "approved": {
+          "title": "تعذّرت الموافقة على {{number}}"
+        },
+        "confirmed": {
+          "title": "تعذّر تأكيد {{number}}"
+        },
+        "delivered": {
+          "title": "تعذّر تسليم {{number}}",
+          "reason": "المخزون غير كافٍ لتسليم جميع الأصناف. استلم الأصناف الناقصة ثم أعد المحاولة."
+        },
+        "invoiced": {
+          "title": "تعذّرت فوترة {{number}}"
+        },
+        "paid": {
+          "title": "تعذّر تسجيل دفعة {{number}}"
+        },
+        "returned": {
+          "title": "تعذّر تسجيل مرتجع {{number}}"
+        },
+        "cancelled": {
+          "title": "تعذّر إلغاء {{number}}"
+        },
+        "completed": {
+          "title": "تعذّر إتمام {{number}}"
+        }
+      }
+    },
+    "doc": {
+      "invoice": "فاتورة {{no}}",
+      "creditNote": "إشعار دائن {{no}}",
+      "order": "أمر بيع {{no}}",
+      "bill": "فاتورة مورد {{no}}",
+      "debitNote": "إشعار مدين {{no}}",
+      "purchaseOrder": "أمر شراء {{no}}",
+      "journal": "قيد {{no}}"
+    },
+    "documentsLabel": "السجلات الناتجة",
+    "resolutionsLabel": "طريقة الحل",
+    "purchasing": {
+      "step": {
+        "approve": "اعتماد الأمر",
+        "confirm": "تأكيد الأمر",
+        "receive": "استلام البضاعة",
+        "bill": "تسجيل الفاتورة",
+        "pay": "تسجيل الدفعة"
+      },
+      "reqStep": {
+        "submit": "إرسال الطلب",
+        "approve": "اعتماد الطلب",
+        "convert": "تحويل إلى أمر شراء"
+      },
+      "action": {
+        "retry": "أعد المحاولة"
+      },
+      "po": {
+        "created": {
+          "title": "تم إنشاء أمر الشراء {{number}}",
+          "context": "جاهز للتأكيد."
+        },
+        "approved": {
+          "title": "تم اعتماد أمر الشراء {{number}}",
+          "context": "تم الاعتماد. أكّده للمتابعة."
+        },
+        "confirmed": {
+          "title": "تم تأكيد أمر الشراء {{number}}",
+          "context": "تم التأكيد. استلم البضاعة تاليًا."
+        },
+        "received": {
+          "title": "تم استلام أمر الشراء {{number}}",
+          "context": "تم استلام البضاعة. سجّل الفاتورة لإثبات المستحق للمورد."
+        },
+        "billed": {
+          "title": "تمت فوترة أمر الشراء {{number}}",
+          "context": "تمت الفوترة. مستحق للمورد {{amount}}."
+        },
+        "paid": {
+          "title": "تم سداد أمر الشراء {{number}}",
+          "context": "مدفوع بالكامل. لا شيء آخر."
+        },
+        "returned": {
+          "title": "تم إرجاع أمر الشراء {{number}}",
+          "context": "تم تسجيل المرتجع. صدر إشعار مدين."
+        },
+        "cancelled": {
+          "title": "تم إلغاء أمر الشراء {{number}}",
+          "context": "أصبح هذا الأمر مغلقًا."
+        },
+        "converted": {
+          "title": "تم إنشاء أمر الشراء {{number}}",
+          "context": "أُنشئ من طلب شراء. جاهز للتأكيد."
+        }
+      },
+      "request": {
+        "created": {
+          "title": "تم إنشاء طلب الشراء {{number}}",
+          "context": "جاهز للإرسال للموافقة."
+        },
+        "submitted": {
+          "title": "تم إرسال طلب الشراء {{number}}",
+          "context": "أُرسل للموافقة."
+        },
+        "approved": {
+          "title": "تم اعتماد طلب الشراء {{number}}",
+          "context": "تم الاعتماد. حوّله إلى أمر شراء."
+        },
+        "rejected": {
+          "title": "تم رفض طلب الشراء {{number}}",
+          "context": "تم رفض الطلب."
+        }
+      },
+      "supplier": {
+        "created": {
+          "title": "تمت إضافة المورد {{name}}",
+          "context": "يمكنك الآن الشراء من هذا المورد وسداد مستحقاته."
+        }
+      },
+      "error": {
+        "approved": {
+          "title": "تعذّر اعتماد {{number}}"
+        },
+        "confirmed": {
+          "title": "تعذّر تأكيد {{number}}"
+        },
+        "received": {
+          "title": "تعذّر استلام {{number}}"
+        },
+        "billed": {
+          "title": "تعذّرت فوترة {{number}}"
+        },
+        "paid": {
+          "title": "تعذّر تسجيل دفعة {{number}}"
+        },
+        "returned": {
+          "title": "تعذّر تسجيل مرتجع {{number}}"
+        },
+        "cancelled": {
+          "title": "تعذّر إلغاء {{number}}"
+        }
+      }
+    },
+    "inventory": {
+      "receipt": {
+        "title": "تم الاستلام ({{ref}})",
+        "context": "تمت إضافته إلى المخزون. رُحّل القيد."
+      },
+      "issue": {
+        "title": "تم الصرف ({{ref}})",
+        "context": "صُرف من المخزون. رُحّل القيد."
+      },
+      "transfer": {
+        "title": "تم التحويل ({{ref}})",
+        "context": "نُقل بين المخازن."
+      },
+      "insight": {
+        "onHand": "الرصيد في {{warehouse}}: {{qty}}."
+      },
+      "warn": {
+        "belowReorder": "{{sku}} أقل من حد إعادة الطلب."
+      },
+      "fix": {
+        "receive": "استلام {{sku}} في {{warehouse}}"
+      },
+      "error": {
+        "receipt": {
+          "title": "تعذّر استلام المخزون"
+        },
+        "issue": {
+          "title": "تعذّر صرف المخزون"
+        },
+        "transfer": {
+          "title": "تعذّر تحويل المخزون"
+        }
+      }
+    }
   }
 }

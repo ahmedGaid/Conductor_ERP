@@ -94,8 +94,9 @@ export function NewPurchaseOrderPage() {
     setBusy(true);
     try {
       const order = await createPurchaseOrder({ supplier_code: supplier, warehouse_code: warehouse, tax_code: taxCode, lines: payloadLines });
-      toast.show(t("purchasing.toast.poCreated"), "success");
-      navigate(`/purchasing/orders/${order.id}`);
+      // The rich "created" receipt is fired on arrival by the order detail page (which owns the
+      // optimistic runners its recommended-next step needs). We just hand it the event.
+      navigate(`/purchasing/orders/${order.id}`, { state: { feedback: "created" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {

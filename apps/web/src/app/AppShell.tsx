@@ -10,6 +10,8 @@ import { ShortcutsDialog } from "./ShortcutsDialog";
 import { ShortcutsProvider, useShortcuts } from "./ShortcutsContext";
 import { Toaster } from "./Toaster";
 import { ToastProvider } from "./ToastContext";
+import { ActionFeedbackProvider } from "./ActionFeedbackContext";
+import { ActionFeedbackHost } from "./ActionFeedbackHost";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
 import { usePreferences } from "../preferences/PreferencesContext";
@@ -61,6 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ToastProvider>
+      <ActionFeedbackProvider>
       <HelpProvider>
         <ShortcutsProvider>
           <div
@@ -84,6 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   so pages glide in instead of snapping. */}
               <DocumentCrumbProvider key={location.pathname}>
                 <div className="appshell__content page-enter">
+                  <ActionFeedbackHost />
                   <RouteBreadcrumb />
                   {children}
                 </div>
@@ -95,6 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </ShortcutsProvider>
       </HelpProvider>
+      </ActionFeedbackProvider>
     </ToastProvider>
   );
 }

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import {
   approvePO,
@@ -19,6 +19,8 @@ import { useAsync } from "../../hooks/useAsync";
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showPurchaseOrderReceipt, showPurchaseOrderError, type POActionKey, type POEvent } from "../../lib/feedback/purchasing";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
@@ -66,16 +68,37 @@ export function PurchaseOrderDetailPage() {
     `purchasing:order:${id}:history`,
   );
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const fb = useActionFeedback();
+  const location = useLocation();
 
   useSetDocumentCrumb(data?.number);
 
-  function act(
-    apply: (order: PurchaseOrder) => PurchaseOrder,
-    request: () => Promise<PurchaseOrder>,
-    success: string,
-    successFrom?: (updated: PurchaseOrder) => string,
-  ) {
+  // Duplicate / print — shared by the ⋯ menu and the receipt's quick actions.
+  const duplicate = () =>
+    navigate("/purchasing/orders/new", {
+      state: {
+        duplicate: {
+          supplier_code: data!.supplier_code,
+          warehouse_code: data!.warehouse_code,
+          tax_code: data!.tax_code,
+          lines: data!.lines.map((l) => ({
+            item_sku: l.item_sku,
+            description: l.description,
+            quantity: l.quantity,
+            unit_cost: l.unit_cost_minor,
+          })),
+        },
+      },
+    });
+  const print = () => printDocument(data!.number);
+
+  // Optimistic: apply the predicted change (status flip, approval flag) so the badge, explainer and
+  // action set update instantly, then let the server's returned order reconcile the derived amounts
+  // (billed/outstanding/…). On success the event's rich receipt fires; a failure rolls the whole
+  // order back and shows a rich error receipt (both handled via runOptimistic).
+  function act(apply: (order: PurchaseOrder) => PurchaseOrder, request: () => Promise<PurchaseOrder>, event: POEvent) {
     if (!data) return;
+    const snapshot = data;
     void runOptimistic<PurchaseOrder, PurchaseOrder>({
       current: data,
       mutate,
@@ -83,12 +106,40 @@ export function PurchaseOrderDetailPage() {
       request,
       settle: (_predicted, updated) => updated,
       toast,
-      success,
-      successFrom,
+      onError: (error) => showPurchaseOrderError(fb, t, snapshot, event, error, { run: runAction }),
+    }).then((updated) => {
+      if (updated) showPurchaseOrderReceipt(fb, t, updated, event, { run: runAction, navigate, duplicate, print });
     });
   }
 
   const setStatus = (status: POStatus) => (order: PurchaseOrder): PurchaseOrder => ({ ...order, status });
+
+  // Map a receipt's recommended-next key back to the matching optimistic action.
+  function runAction(key: POActionKey) {
+    if (!data) return;
+    const o = data;
+    switch (key) {
+      case "approve": act((x) => ({ ...x, approved: true }), () => approvePO(o.id), "approved"); break;
+      case "confirm": act(setStatus("confirmed"), () => confirmPO(o.id), "confirmed"); break;
+      case "receive": act(setStatus("received"), () => receivePO(o.id), "received"); break;
+      case "bill": act(setStatus("billed"), () => billPO(o.id), "billed"); break;
+      case "pay": act(setStatus("paid"), () => payPO(o.id, o.outstanding_minor), "paid"); break;
+      case "return": act(setStatus("returned"), () => returnPO(o.id), "returned"); break;
+    }
+  }
+
+  // A rich receipt handed off from creation / conversion fires once the order has loaded, then the
+  // marker is cleared from history state so it never re-fires on back/refresh.
+  const firedIntro = useRef(false);
+  useEffect(() => {
+    if (firedIntro.current || !data) return;
+    const intro = (location.state as { feedback?: POEvent } | null)?.feedback;
+    if (!intro) return;
+    firedIntro.current = true;
+    showPurchaseOrderReceipt(fb, t, data, intro, { run: runAction, navigate, duplicate, print });
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   if (loading) {
     return (
@@ -109,52 +160,32 @@ export function PurchaseOrderDetailPage() {
   function primaryAction(): Action {
     const o = data!;
     if (o.status === "draft" && o.requires_approval && !o.approved) {
-      return { label: t("purchasing.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approvePO(o.id), t("purchasing.toast.approved")) };
+      return { label: t("purchasing.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approvePO(o.id), "approved") };
     }
     if (o.status === "draft") {
-      return { label: t("purchasing.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmPO(o.id), t("purchasing.toast.confirmed")) };
+      return { label: t("purchasing.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmPO(o.id), "confirmed") };
     }
     if (o.status === "confirmed" || o.status === "partially_received") {
       return {
         label: o.status === "partially_received" ? t("purchasing.detail.receiveRemaining") : t("purchasing.detail.receive"),
-        onClick: () => act(setStatus("received"), () => receivePO(o.id), t("purchasing.toast.received")),
+        onClick: () => act(setStatus("received"), () => receivePO(o.id), "received"),
       };
     }
     if (o.status === "received") {
-      return { label: t("purchasing.detail.bill"), onClick: () => act(setStatus("billed"), () => billPO(o.id), t("purchasing.toast.billed"), (u) => t("purchasing.toast.billedDone", { no: u.bill_number })) };
+      return { label: t("purchasing.detail.bill"), onClick: () => act(setStatus("billed"), () => billPO(o.id), "billed") };
     }
     if (o.status === "billed") {
-      return { label: t("purchasing.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payPO(o.id, o.outstanding_minor), t("purchasing.toast.paid")) };
+      return { label: t("purchasing.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payPO(o.id, o.outstanding_minor), "paid") };
     }
     if (o.status === "paid") {
-      return { label: t("purchasing.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnPO(o.id), t("purchasing.toast.returned"), (u) => t("purchasing.toast.returnedDone", { no: u.debit_note_number })) };
+      return { label: t("purchasing.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnPO(o.id), "returned") };
     }
     return null;
   }
 
   const cancellable = isCancellable(data.status, prefs?.order_cancel_until);
   const menu: DocMenuItem[] = [
-    {
-      key: "duplicate",
-      label: t("document.duplicate"),
-      icon: "duplicate",
-      onClick: () =>
-        navigate("/purchasing/orders/new", {
-          state: {
-            duplicate: {
-              supplier_code: data.supplier_code,
-              warehouse_code: data.warehouse_code,
-              tax_code: data.tax_code,
-              lines: data.lines.map((l) => ({
-                item_sku: l.item_sku,
-                description: l.description,
-                quantity: l.quantity,
-                unit_cost: l.unit_cost_minor,
-              })),
-            },
-          },
-        }),
-    },
+    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
     { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
     { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
     {
@@ -172,7 +203,7 @@ export function PurchaseOrderDetailPage() {
       key: "return",
       label: t("purchasing.detail.return"),
       icon: "rotate",
-      onClick: () => act(setStatus("returned"), () => returnPO(data.id), t("purchasing.toast.returned"), (u) => t("purchasing.toast.returnedDone", { no: u.debit_note_number })),
+      onClick: () => act(setStatus("returned"), () => returnPO(data.id), "returned"),
     });
   }
   if (cancellable) {
@@ -302,7 +333,7 @@ export function PurchaseOrderDetailPage() {
         body={t("document.cancelConfirmBody")}
         confirmLabel={t("document.cancelOrder")}
         danger
-        onConfirm={() => act(setStatus("cancelled"), () => cancelPO(data.id), t("purchasing.toast.cancelled"))}
+        onConfirm={() => act(setStatus("cancelled"), () => cancelPO(data.id), "cancelled")}
         onClose={() => setConfirmCancel(false)}
       />
     </section>

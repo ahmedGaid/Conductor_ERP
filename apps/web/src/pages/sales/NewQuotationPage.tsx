@@ -115,8 +115,8 @@ export function NewQuotationPage() {
       const quote = await createQuotation({ customer_code: customer, warehouse_code: warehouse, lines: payloadLines });
       setLastUsed("sales:customer", customer);
       setLastUsed("warehouse", warehouse);
-      toast.show(t("sales.toast.quotationCreated"), "success");
-      navigate(`/sales/quotations/${quote.id}`);
+      // The quotation detail page fires the rich "created" receipt on arrival.
+      navigate(`/sales/quotations/${quote.id}`, { state: { feedback: "created" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {

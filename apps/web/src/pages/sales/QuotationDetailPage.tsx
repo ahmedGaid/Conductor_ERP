@@ -1,5 +1,6 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import {
   approveQuotation,
@@ -13,6 +14,8 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useActionFeedback } from "../../app/ActionFeedbackContext";
+import { showQuotationReceipt, type QuoteEvent } from "../../lib/feedback/sales";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
@@ -41,9 +44,23 @@ export function QuotationDetailPage() {
 
   useSetDocumentCrumb(data?.number);
 
+  const fb = useActionFeedback();
+  const location = useLocation();
+
+  const duplicate = () =>
+    navigate("/sales/quotations/new", {
+      state: {
+        duplicate: {
+          customer_code: data!.customer_code,
+          warehouse_code: data!.warehouse_code,
+          lines: data!.lines.map((l) => ({ item_sku: l.item_sku, description: l.description, quantity: l.quantity, unit_price: l.unit_price_minor })),
+        },
+      },
+    });
+
   // Optimistic state transition: flip the status instantly, reconcile with the server's quotation,
-  // roll back + toast on failure.
-  function act(nextStatus: QuotationStatus, request: () => Promise<Quotation>, success: string) {
+  // fire the event's rich receipt on success (roll back + error toast on failure).
+  function act(nextStatus: QuotationStatus, request: () => Promise<Quotation>, event: QuoteEvent) {
     if (!data) return;
     void runOptimistic<Quotation, Quotation>({
       current: data,
@@ -52,19 +69,41 @@ export function QuotationDetailPage() {
       request,
       settle: (_predicted, updated) => updated,
       toast,
-      success,
+    }).then((updated) => {
+      if (updated) showQuotationReceipt(fb, t, updated, event, { run: runQuote, navigate, duplicate });
     });
   }
 
-  // Convert navigates away to the spawned order, so there's no view left to be optimistic about.
+  // The receipt's recommended-next step, dispatched by current status.
+  function runQuote() {
+    if (!data) return;
+    const q = data;
+    if (q.status === "draft") act("submitted", () => submitQuotation(q.id), "submitted");
+    else if (q.status === "submitted") act("approved", () => approveQuotation(q.id), "approved");
+    else if (q.status === "approved") void onConvert(q);
+  }
+
+  // Convert navigates away to the spawned order, whose detail page fires the "converted" receipt.
   async function onConvert(q: Quotation) {
     try {
       const res = await convertQuotation(q.id);
-      navigate(`/sales/orders/${res.order_id}`);
+      navigate(`/sales/orders/${res.order_id}`, { state: { feedback: "converted" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     }
   }
+
+  // A "created" receipt handed off from the new-quotation page fires once loaded, then clears.
+  const firedIntro = useRef(false);
+  useEffect(() => {
+    if (firedIntro.current || !data) return;
+    const intro = (location.state as { feedback?: QuoteEvent } | null)?.feedback;
+    if (!intro) return;
+    firedIntro.current = true;
+    showQuotationReceipt(fb, t, data, intro, { run: runQuote, navigate, duplicate });
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   if (loading) {
     return (
@@ -84,28 +123,14 @@ export function QuotationDetailPage() {
   type Action = { label: string; icon?: string; onClick: () => void } | null;
   function primaryAction(): Action {
     const q = data!;
-    if (q.status === "draft") return { label: t("sales.quotations.submit"), onClick: () => act("submitted", () => submitQuotation(q.id), t("sales.toast.quoteSubmitted")) };
-    if (q.status === "submitted") return { label: t("sales.quotations.approve"), onClick: () => act("approved", () => approveQuotation(q.id), t("sales.toast.quoteApproved")) };
+    if (q.status === "draft") return { label: t("sales.quotations.submit"), onClick: () => act("submitted", () => submitQuotation(q.id), "submitted") };
+    if (q.status === "submitted") return { label: t("sales.quotations.approve"), onClick: () => act("approved", () => approveQuotation(q.id), "approved") };
     if (q.status === "approved") return { label: t("sales.quotations.convert"), onClick: () => onConvert(q) };
     return null;
   }
 
   const menu: DocMenuItem[] = [
-    {
-      key: "duplicate",
-      label: t("document.duplicate"),
-      icon: "duplicate",
-      onClick: () =>
-        navigate("/sales/quotations/new", {
-          state: {
-            duplicate: {
-              customer_code: data.customer_code,
-              warehouse_code: data.warehouse_code,
-              lines: data.lines.map((l) => ({ item_sku: l.item_sku, description: l.description, quantity: l.quantity, unit_price: l.unit_price_minor })),
-            },
-          },
-        }),
-    },
+    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
     { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
     { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
     {
@@ -116,7 +141,7 @@ export function QuotationDetailPage() {
     },
   ];
   if (data.status === "submitted" || data.status === "approved") {
-    menu.push({ key: "reject", label: t("sales.quotations.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectQuotation(data.id, ""), t("sales.toast.quoteRejected")) });
+    menu.push({ key: "reject", label: t("sales.quotations.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectQuotation(data.id, ""), "rejected") });
   }
 
   return (

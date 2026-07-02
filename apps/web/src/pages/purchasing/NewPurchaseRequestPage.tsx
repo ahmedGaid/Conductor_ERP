@@ -86,8 +86,8 @@ export function NewPurchaseRequestPage() {
     setBusy(true);
     try {
       const req = await createRequest({ supplier_code: supplier, warehouse_code: warehouse, lines: payloadLines });
-      toast.show(t("purchasing.toast.prCreated"), "success");
-      navigate(`/purchasing/requests/${req.id}`);
+      // The request detail page fires the rich "created" receipt on arrival.
+      navigate(`/purchasing/requests/${req.id}`, { state: { feedback: "created" } });
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {
