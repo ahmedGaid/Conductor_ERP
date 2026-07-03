@@ -20,7 +20,7 @@ from erp.audit import services as audit
 
 from ..client import complete_stream
 from ..tools import TOOLS, catalog_text
-from . import context
+from . import context, files
 from .llm import complete_json
 
 # Longest question we will send to the model — a cheap per-request guard (Part 3 cost control).
@@ -143,7 +143,8 @@ def _route_and_run(question: str, actor):
     return result, tool.cite(result), name
 
 
-def stream_answer(*, question: str, actor, conversation, page: dict | None = None):
+def stream_answer(*, question: str, actor, conversation, page: dict | None = None,
+                  regenerate: bool = False, attachment_ids=None):
     """Generator over the SSE chat pipeline — same route→run→answer as ``answer_question``, but the
     final answer streams token-by-token (plain prose, not JSON) so the UI renders as it arrives.
 
@@ -151,13 +152,42 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
     before the model runs; the assistant message + audit land in a ``finally`` so a client
     disconnect mid-stream still saves whatever prose was produced (cancel costs nothing). Read-only.
     ``page`` is the optional client context envelope folded into the answer's system prompt.
-    """
-    q = (question or "").strip()[:MAX_QUESTION_CHARS]
 
-    conversation.messages.create(role="user", content=q)
-    if not conversation.title:
-        conversation.title = q[:60]
-    conversation.save()  # also touches updated_at
+    ``regenerate`` re-answers the conversation's last user message without adding a new user turn:
+    any assistant message after it (the previous answer, or an empty one left by an error) is dropped
+    first, so retry/regenerate never duplicate the question. The view guarantees a prior user message.
+
+    ``attachment_ids`` are claimed onto the new user message; each file's ``describe_for_model``
+    output rides along to the model — tabular/text files as extra question text, images/PDF via the
+    vision path. On regenerate the last message's own attachments are re-fed, so it stays faithful.
+    """
+    if regenerate:
+        user_msg = conversation.messages.filter(role="user").last()
+        q = (user_msg.content if user_msg else "").strip()[:MAX_QUESTION_CHARS]
+        if user_msg is not None:
+            conversation.messages.filter(role="assistant", id__gt=user_msg.id).delete()
+    else:
+        q = (question or "").strip()[:MAX_QUESTION_CHARS]
+        user_msg = conversation.messages.create(role="user", content=q)
+        if attachment_ids:
+            claimed = files.claim_attachments(attachment_ids, user=actor, message=user_msg)
+            user_msg.meta = {"attachments": files.attachment_chips(claimed)}
+            user_msg.save(update_fields=["meta"])
+        if not conversation.title:
+            conversation.title = q[:60]
+        conversation.save()  # also touches updated_at
+
+    # Fold any attached files into the model call: text tables/dumps extend the question, images/PDF
+    # go to the provider's vision path.
+    media: list[dict] = []
+    file_notes: list[str] = []
+    if user_msg is not None:
+        for att in user_msg.attachments.all():
+            described = files.describe_for_model(att)
+            if described.get("media"):
+                media.append(described["media"])
+            elif described.get("text"):
+                file_notes.append(described["text"])
 
     result, citations, used = _route_and_run(q, actor)
 
@@ -183,11 +213,16 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
 
     try:
         user = json.dumps({"question": q, "data": result}, ensure_ascii=False)
-        for chunk in complete_stream([{"role": "user", "content": user}], system=_answer_system(actor, page)):
+        if file_notes:
+            user += "\n\nAttached files:\n" + "\n\n".join(file_notes)
+        for chunk in complete_stream(
+            [{"role": "user", "content": user}], system=_answer_system(actor, page), media=media,
+        ):
             parts.append(chunk)
             yield {"type": "token", "text": chunk}
         yield {"type": "citations", "citations": citations}
         msg = _persist()
-        yield {"type": "done", "message_id": msg.id}
+        # ``used_tool`` lets the client offer curated follow-up questions for that tool (session 06).
+        yield {"type": "done", "message_id": msg.id, "used_tool": used}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer

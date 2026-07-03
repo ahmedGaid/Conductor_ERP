@@ -61,6 +61,41 @@ export function extractDocument(file: File): Promise<ExtractProposal> {
   return apiUpload<ExtractProposal>("/assistant/extract-document", form);
 }
 
+// --- Chat attachments (plan session 07) --------------------------------------------------------
+// A file uploads on its own first (chip shows while it transfers); the next send claims it. Mirrors
+// the server allowlist + 5 MB cap so bad files are rejected instantly, before any upload.
+
+export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+
+export const ALLOWED_ATTACHMENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+  "text/csv",
+  "application/csv",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/json",
+  "text/json",
+  "application/xml",
+  "text/xml",
+  "text/plain",
+]);
+
+export interface AttachmentInfo {
+  id: number;
+  name: string;
+  content_type: string;
+  size: number;
+}
+
+export function uploadAttachment(file: File): Promise<AttachmentInfo> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiUpload<AttachmentInfo>("/assistant/attachments", form);
+}
+
 // --- Natural-language assistant (part 2) -------------------------------------------------------
 
 export interface AskCitation {
@@ -83,6 +118,80 @@ export function askAssistant(question: string, context?: PageContext): Promise<A
   });
 }
 
+// --- Conversations (plan session 01 API, wired for the threads UI in session 05) ---------------
+// Each conversation is private to its owner (the server filters to request.user and 404s a foreign
+// id). The list is the workspace's thread history; a conversation opens to its messages.
+
+export interface ConversationSummary {
+  id: number;
+  title: string;
+  pinned: boolean;
+  archived: boolean;
+  updated_at: string;
+  preview: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  // Server-attached extras (the answer's citations, the turn's attachments); read-only to the client.
+  meta: { citations?: AskCitation[]; attachments?: AttachmentInfo[] } & Record<string, unknown>;
+  created_at: string;
+}
+
+// The server returns a flat detail object; keep the wire type internal and expose the split the UI
+// wants (summary + messages).
+interface ConversationDetail extends ConversationSummary {
+  created_at: string;
+  messages: ChatMessage[];
+}
+
+export function listConversations(q?: string, archived?: boolean): Promise<ConversationSummary[]> {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (archived) params.set("archived", "1");
+  const qs = params.toString();
+  return apiFetch<ConversationSummary[]>(`/assistant/conversations${qs ? `?${qs}` : ""}`);
+}
+
+export function createConversation(): Promise<ConversationSummary> {
+  return apiFetch<ConversationSummary>("/assistant/conversations", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export function getConversation(
+  id: number,
+): Promise<{ conversation: ConversationSummary; messages: ChatMessage[] }> {
+  return apiFetch<ConversationDetail>(`/assistant/conversations/${id}`).then((d) => ({
+    conversation: {
+      id: d.id,
+      title: d.title,
+      pinned: d.pinned,
+      archived: d.archived,
+      updated_at: d.updated_at,
+      preview: d.preview,
+    },
+    messages: d.messages,
+  }));
+}
+
+export function updateConversation(
+  id: number,
+  patch: Partial<Pick<ConversationSummary, "title" | "pinned" | "archived">>,
+): Promise<ConversationSummary> {
+  return apiFetch<ConversationSummary>(`/assistant/conversations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export function deleteConversation(id: number): Promise<void> {
+  return apiFetch<void>(`/assistant/conversations/${id}`, { method: "DELETE" });
+}
+
 // --- Streaming chat (plan session 02) ----------------------------------------------------------
 // The chat endpoint answers over an SSE stream so the reply renders as the model writes. One
 // `data:` JSON per event; sessions 09/10 add more event types to the same union.
@@ -92,6 +201,8 @@ export interface ChatEvent {
   text?: string;
   citations?: AskCitation[];
   message_id?: number;
+  // Which data tool answered — the client maps it to curated follow-up questions (session 06).
+  used_tool?: string | null;
   message?: string;
 }
 
@@ -107,7 +218,15 @@ function streamHeaders(): Record<string, string> {
 }
 
 export async function chatStream(
-  body: { conversation_id: number; message: string; context?: PageContext },
+  body: {
+    conversation_id: number;
+    message?: string;
+    context?: PageContext;
+    // Re-answer the conversation's last question in place (retry / regenerate); no new user turn.
+    regenerate?: boolean;
+    // Ids of already-uploaded attachments to claim onto this turn (session 07).
+    attachment_ids?: number[];
+  },
   onEvent: (e: ChatEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {

@@ -118,11 +118,42 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M18 6 6 18" />
     </>
   ),
+  // Expand — open to the full page (corner arrows out).
+  expand: (
+    <>
+      <path d="M9 4H5a1 1 0 0 0-1 1v4" />
+      <path d="M15 4h4a1 1 0 0 1 1 1v4" />
+      <path d="M15 20h4a1 1 0 0 0 1-1v-4" />
+      <path d="M9 20H5a1 1 0 0 1-1-1v-4" />
+    </>
+  ),
   // Plus — add / create a new record inline.
   plus: (
     <>
       <path d="M12 5v14" />
       <path d="M5 12h14" />
+    </>
+  ),
+  // Edit — pencil (inline rename).
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </>
+  ),
+  // Pin — thumbtack (keep a conversation at the top).
+  pin: (
+    <>
+      <path d="M9 4h6l-1 6 3 3H7l3-3-1-6Z" />
+      <path d="M12 16v5" />
+    </>
+  ),
+  // Archive — lidded box with a slot (move out of the default list).
+  archive: (
+    <>
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+      <path d="M10 12h4" />
     </>
   ),
   // More — horizontal kebab (overflow menu trigger).
@@ -269,6 +300,10 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M19 16.5v3" />
       <path d="M17.5 18h3" />
     </>
+  ),
+  // Paperclip — attach a file to a chat turn. Single-stroke, same hand as the set.
+  paperclip: (
+    <path d="M21.4 11.05l-8.49 8.49a5 5 0 0 1-7.07-7.07l8.49-8.49a3.33 3.33 0 0 1 4.71 4.71l-8.5 8.49a1.67 1.67 0 0 1-2.36-2.36l7.79-7.78" />
   ),
   // Settings — gear.
   settings: (

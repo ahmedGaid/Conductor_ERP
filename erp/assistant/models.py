@@ -36,3 +36,25 @@ class Message(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+
+
+class Attachment(models.Model):
+    """A file the user attached to a chat turn (image/PDF/CSV/XLSX/JSON/XML/TXT).
+
+    Uploaded on its own first (so the composer shows a chip while the file transfers), then *claimed*
+    by the send that references it — ``message`` stays null until then. Private to its uploader; a
+    claim only ever links the uploader's own still-unclaimed attachments.
+    """
+
+    message = models.ForeignKey(
+        Message, on_delete=models.CASCADE, related_name="attachments", null=True, blank=True,
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    file = models.FileField(upload_to="assistant/%Y/%m/")
+    name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]

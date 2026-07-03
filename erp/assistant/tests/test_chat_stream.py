@@ -115,6 +115,36 @@ def test_blank_and_overlong_messages_are_rejected(monkeypatch):
     ).status_code == 400
 
 
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_regenerate_replaces_answer_without_new_user_turn(monkeypatch):
+    client = _client()
+    cid = _conversation(client)
+    _route_none(monkeypatch)
+    _stream(monkeypatch, "first")
+    _events(client.post(CHAT_URL, {"conversation_id": cid, "message": "hi"}, format="json"))
+
+    _stream(monkeypatch, "second")
+    resp = client.post(CHAT_URL, {"conversation_id": cid, "regenerate": True}, format="json")
+    assert resp.status_code == 200
+    events = _events(resp)
+    assert events[-1]["type"] == "done"
+
+    # No duplicate question; the old answer is gone, replaced by the fresh one.
+    conversation = Conversation.objects.get(pk=cid)
+    roles = list(conversation.messages.values_list("role", "content"))
+    assert roles == [("user", "hi"), ("assistant", "second")]
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_regenerate_without_prior_question_is_400(monkeypatch):
+    client = _client()
+    cid = _conversation(client)
+    _route_none(monkeypatch)
+    _stream(monkeypatch, "x")
+    resp = client.post(CHAT_URL, {"conversation_id": cid, "regenerate": True}, format="json")
+    assert resp.status_code == 400
+
+
 @override_settings(ASSISTANT_ENABLED=False)
 def test_disabled_endpoint_is_404():
     client = _client()

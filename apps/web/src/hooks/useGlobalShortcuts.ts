@@ -27,11 +27,14 @@ export function useGlobalShortcuts({
   openPalette,
   openShortcuts,
   einvoiceEnabled = true,
+  toggleAssistant,
 }: {
   openPalette: () => void;
   openShortcuts: () => void;
   /** When false, the `g e` → e-invoicing chord is inert (the feature is hidden). */
   einvoiceEnabled?: boolean;
+  /** ⌘J / Ctrl+J toggles the AI panel; omitted while the assistant is off (feature hidden). */
+  toggleAssistant?: () => void;
 }) {
   const navigate = useNavigate();
   const goPending = useRef(false);
@@ -43,6 +46,14 @@ export function useGlobalShortcuts({
       if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
         e.preventDefault();
         openPalette();
+        return;
+      }
+      // ⌘J / Ctrl+J toggles the AI panel — but stands down while typing (unlike ⌘K, which pierces).
+      if ((e.metaKey || e.ctrlKey) && (e.key === "j" || e.key === "J")) {
+        if (toggleAssistant && !isTypingTarget(e.target)) {
+          e.preventDefault();
+          toggleAssistant();
+        }
         return;
       }
       // Bare shortcuts: ignore modified chords, typing, and open modals.
@@ -84,5 +95,5 @@ export function useGlobalShortcuts({
       window.removeEventListener("keydown", onKey);
       window.clearTimeout(goTimer.current);
     };
-  }, [navigate, openPalette, openShortcuts, einvoiceEnabled]);
+  }, [navigate, openPalette, openShortcuts, einvoiceEnabled, toggleAssistant]);
 }
