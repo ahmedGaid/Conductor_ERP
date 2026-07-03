@@ -18,6 +18,7 @@ import json
 
 from erp.audit import services as audit
 
+from ..client import complete_stream
 from ..tools import TOOLS, catalog_text
 from .llm import complete_json
 
@@ -114,3 +115,68 @@ def answer_question(*, question: str, actor, conversation=None) -> dict:
         actor=actor, after={"tool": used, "citations": len(citations)},
     )
     return {"answer": answer, "citations": citations, "used_tool": used}
+
+
+def _route_and_run(question: str, actor):
+    """Shared front half of the pipeline: route → run the scoped tool → build citations.
+
+    Returns ``(result, citations, used_tool)``. Same logic as ``answer_question`` up to the
+    answer step, factored out so the streaming path can reuse it verbatim.
+    """
+    route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text()), question, _ROUTER_SCHEMA)
+    name = route.get("tool") or "none"
+    tool = TOOLS.get(name)
+    if tool is None:
+        return {}, [], None
+    kwargs = {k: route[k] for k in _ARG_FIELDS if route.get(k) is not None and k in tool.args}
+    result = tool.run(actor, **kwargs)
+    return result, tool.cite(result), name
+
+
+def stream_answer(*, question: str, actor, conversation):
+    """Generator over the SSE chat pipeline — same route→run→answer as ``answer_question``, but the
+    final answer streams token-by-token (plain prose, not JSON) so the UI renders as it arrives.
+
+    Yields event dicts: ``{"type": "token"|"citations"|"done", ...}``. The user message is persisted
+    before the model runs; the assistant message + audit land in a ``finally`` so a client
+    disconnect mid-stream still saves whatever prose was produced (cancel costs nothing). Read-only.
+    """
+    q = (question or "").strip()[:MAX_QUESTION_CHARS]
+
+    conversation.messages.create(role="user", content=q)
+    if not conversation.title:
+        conversation.title = q[:60]
+    conversation.save()  # also touches updated_at
+
+    result, citations, used = _route_and_run(q, actor)
+
+    parts: list[str] = []
+    saved = False
+
+    def _persist():
+        nonlocal saved
+        if saved:
+            return None
+        saved = True
+        answer = "".join(parts).strip()
+        msg = conversation.messages.create(
+            role="assistant", content=answer,
+            meta={"citations": citations, "used_tool": used},
+        )
+        conversation.save()  # touch updated_at after the reply lands
+        audit.record(
+            module="assistant", action="ask", entity_type="Question", entity_id=used or "none",
+            actor=actor, after={"tool": used, "citations": len(citations)},
+        )
+        return msg
+
+    try:
+        user = json.dumps({"question": q, "data": result}, ensure_ascii=False)
+        for chunk in complete_stream([{"role": "user", "content": user}], system=_ANSWER_SYSTEM):
+            parts.append(chunk)
+            yield {"type": "token", "text": chunk}
+        yield {"type": "citations", "citations": citations}
+        msg = _persist()
+        yield {"type": "done", "message_id": msg.id}
+    finally:
+        _persist()  # disconnect / error mid-stream still saves the partial answer

@@ -82,3 +82,79 @@ def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = 
     )
     resp.raise_for_status()
     return resp.json()
+
+
+# --- Streaming (plan session 02) ---------------------------------------------------------------
+# The natural-language answer step can stream its prose token-by-token so the chat UI renders as
+# the model writes. Same key/config plumbing as the JSON path; only the transport differs. Any
+# provider without a real streaming path falls back to one yield of the whole completion, so the
+# SSE contract above (``complete_stream``) is identical for callers regardless of provider.
+
+
+def _stream_anthropic(messages: list, system: str | None):
+    kwargs = dict(model=model_id(), max_tokens=settings.ASSISTANT_MAX_TOKENS, messages=messages)
+    if system:
+        kwargs["system"] = system
+    with get_client().messages.stream(**kwargs) as stream:
+        for text in stream.text_stream:
+            if text:
+                yield text
+
+
+def _stream_gemini(messages: list, system: str | None):
+    from google.genai import types
+
+    cfg = dict(max_output_tokens=settings.ASSISTANT_MAX_TOKENS)
+    if system:
+        cfg["system_instruction"] = system
+    try:  # thinking off — whole budget to the answer (mirrors services.llm._gemini)
+        cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+    except Exception:  # pragma: no cover - older SDK/model without thinking support
+        pass
+    contents = [m["content"] for m in messages]
+    for chunk in get_gemini_client().models.generate_content_stream(
+        model=model_id(), contents=contents, config=types.GenerateContentConfig(**cfg)
+    ):
+        text = getattr(chunk, "text", "") or ""
+        if text:
+            yield text
+
+
+def _stream_groq(messages: list, system: str | None):
+    import json as _json
+
+    import httpx
+
+    msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
+    payload = {
+        "model": model_id(), "messages": msgs,
+        "max_tokens": settings.ASSISTANT_MAX_TOKENS, "temperature": 0, "stream": True,
+    }
+    with httpx.stream(
+        "POST", f"{GROQ_BASE_URL}/chat/completions",
+        headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+        json=payload, timeout=60.0,
+    ) as resp:
+        resp.raise_for_status()
+        for line in resp.iter_lines():
+            if not line or not line.startswith("data:"):
+                continue
+            data = line[len("data:"):].strip()
+            if data == "[DONE]":
+                break
+            try:
+                delta = _json.loads(data)["choices"][0]["delta"].get("content")
+            except (KeyError, IndexError, ValueError, TypeError):
+                continue
+            if delta:
+                yield delta
+
+
+def complete_stream(messages: list, *, system: str | None = None):
+    """Yield answer text chunks from the active provider.
+
+    Falls back to a single yield of the full completion for any provider without a
+    streaming path yet — callers never need to know the difference.
+    """
+    runner = {"gemini": _stream_gemini, "groq": _stream_groq}.get(provider(), _stream_anthropic)
+    yield from runner(messages, system)

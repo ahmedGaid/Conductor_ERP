@@ -6,23 +6,29 @@ absent, the same posture as out-of-scope records — and the UI hides all AI sur
 """
 from __future__ import annotations
 
+import json
+import logging
+
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from erp.core.errors import ValidationError
+from erp.core.errors import AppError, ValidationError
 from erp.core.import_api import MAX_UPLOAD_BYTES
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from .. import client, services
+from ..errors import AssistantUnavailableError
 from ..models import Conversation
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
+
+logger = logging.getLogger(__name__)
 
 _CanBuy = HasAnyRole.require(BRANCH_MANAGER)
 
@@ -96,6 +102,59 @@ class AskView(APIView):
         return _envelope(services.answer_question(
             question=question, actor=request.user, conversation=conversation,
         ))
+
+
+def _sse(event: dict) -> str:
+    """One SSE frame: a single ``data:`` line carrying the event as JSON, blank-line terminated."""
+    return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+
+class ChatView(APIView):
+    """Streaming chat over the caller's scoped data (SSE). Same auth posture as ``AskView`` — the
+    answer is built from scope-filtered tools, so no extra role is needed to ask.
+
+    Body: ``{"conversation_id": int, "message": str}``. Emits ``token`` / ``citations`` / ``done``
+    events; on failure a single blame-free ``error`` event (never a stack trace). A client
+    disconnect aborts quietly and keeps whatever prose was already produced (see ``stream_answer``).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request):
+        if not client.enabled():
+            raise Http404
+        message = (request.data.get("message") or "").strip()
+        if not message:
+            raise ValidationError("Ask a question first.")
+        if len(message) > MAX_QUESTION_CHARS:
+            raise ValidationError(
+                "That question is too long.",
+                data={"max_chars": MAX_QUESTION_CHARS, "length": len(message)},
+            )
+        # Resolve (and own-check) the conversation BEFORE streaming, so a bad id is a plain 404 with
+        # no half-open stream. ``conversation_id`` absent ⇒ pk=None ⇒ 404, same as an unknown id.
+        conversation = get_object_or_404(
+            Conversation, pk=request.data.get("conversation_id"), user=request.user,
+        )
+
+        def _events():
+            try:
+                for event in services.stream_answer(
+                    question=message, actor=request.user, conversation=conversation,
+                ):
+                    yield _sse(event)
+            except (BrokenPipeError, ConnectionResetError, GeneratorExit):
+                raise  # client cancelled — partial text already persisted; exit quietly
+            except AppError as exc:
+                yield _sse({"type": "error", "message": exc.message})
+            except Exception:  # pragma: no cover - unexpected; never leak a trace to the client
+                logger.exception("assistant chat stream failed")
+                yield _sse({"type": "error", "message": AssistantUnavailableError.message})
+
+        response = StreamingHttpResponse(_events(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 def _first_line(conversation: Conversation) -> str:
