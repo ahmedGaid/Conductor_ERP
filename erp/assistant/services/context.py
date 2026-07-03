@@ -43,8 +43,11 @@ def _user_block(actor) -> str:
         f"User: {actor.get_username()} ({display_name or actor.get_username()}).",
         f"Roles: {', '.join(actor.roles) or 'none'}.",
         f"Accessible modules: {module_list}.",
-        "Never reveal or act beyond these permissions. If a question reaches into a module not "
-        "listed above, say plainly and calmly that it is outside the user's access.",
+        "Never reveal or act beyond these permissions. Only say a question is outside the user's "
+        "access when it is about a module NOT in the list above. If the module IS in the list but "
+        "DATA is empty because no report exists for that exact question yet, that is NOT a "
+        "permission issue — say plainly that Conductor does not have that specific report yet, "
+        "never blame access.",
     ]
     return "\n".join(lines)
 
