@@ -301,6 +301,10 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M17.5 18h3" />
     </>
   ),
+  // Paperclip — attach a file to a chat turn. Single-stroke, same hand as the set.
+  paperclip: (
+    <path d="M21.4 11.05l-8.49 8.49a5 5 0 0 1-7.07-7.07l8.49-8.49a3.33 3.33 0 0 1 4.71 4.71l-8.5 8.49a1.67 1.67 0 0 1-2.36-2.36l7.79-7.78" />
+  ),
   // Settings — gear.
   settings: (
     <>

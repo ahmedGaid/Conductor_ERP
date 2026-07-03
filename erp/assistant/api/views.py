@@ -24,7 +24,8 @@ from erp.identity.roles import BRANCH_MANAGER
 
 from .. import client, services
 from ..errors import AssistantUnavailableError
-from ..models import Conversation
+from ..models import Attachment, Conversation
+from ..services import files
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
 
@@ -72,6 +73,44 @@ class ExtractDocumentView(APIView):
             actor=request.user,
         )
         return _envelope(proposal)
+
+
+class AttachmentsView(APIView):
+    """Upload a file to attach to a chat turn. Stored unclaimed; the next send claims it.
+
+    Only ``IsAuthenticated`` — attachments are private to their uploader and are only ever read back
+    into that user's own conversation. Same size/allowlist posture as document extraction.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        if not client.enabled():
+            raise Http404
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ValidationError("No file was uploaded.")
+        if upload.size and upload.size > MAX_UPLOAD_BYTES:
+            raise ValidationError(
+                "File is too large.",
+                data={"max_bytes": MAX_UPLOAD_BYTES, "size": upload.size},
+            )
+        media_type = (upload.content_type or "").lower()
+        if media_type not in files.ALLOWED_ATTACHMENT_TYPES:
+            raise ValidationError(
+                "Unsupported file type.",
+                data={"content_type": media_type,
+                      "allowed": sorted(files.ALLOWED_ATTACHMENT_TYPES)},
+            )
+        attachment = Attachment.objects.create(
+            user=request.user, file=upload, name=(upload.name or "file")[:255],
+            content_type=media_type, size=upload.size or 0,
+        )
+        return _envelope(
+            {"id": attachment.id, "name": attachment.name,
+             "content_type": attachment.content_type, "size": attachment.size},
+            status=201,
+        )
 
 
 class AskView(APIView):
@@ -142,12 +181,18 @@ class ChatView(APIView):
         if regenerate and not conversation.messages.filter(role="user").exists():
             raise ValidationError("Nothing to regenerate yet.")
         page = request.data.get("context") or None
+        # Validate any attachment references BEFORE the stream opens, so a bad id is a clean 404
+        # (not a mid-stream error). The real claim — linking each to the new user message — happens
+        # inside stream_answer once that message exists.
+        attachment_ids = request.data.get("attachment_ids") or []
+        if attachment_ids and not regenerate:
+            files.fetch_unclaimed(attachment_ids, user=request.user)
 
         def _events():
             try:
                 for event in services.stream_answer(
                     question=message, actor=request.user, conversation=conversation,
-                    page=page, regenerate=regenerate,
+                    page=page, regenerate=regenerate, attachment_ids=attachment_ids,
                 ):
                     yield _sse(event)
             except (BrokenPipeError, ConnectionResetError, GeneratorExit):

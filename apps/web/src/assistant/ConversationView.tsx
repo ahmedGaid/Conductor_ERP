@@ -1,18 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
   chatStream,
   createConversation,
   getConversation,
+  uploadAttachment,
+  ALLOWED_ATTACHMENT_TYPES,
+  MAX_ATTACHMENT_BYTES,
   type AskCitation,
+  type AttachmentInfo,
   type ChatMessage,
 } from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
 import { collectContext } from "./context";
 import { useAssistant } from "./AssistantProvider";
-import { Composer } from "./Composer";
+import { Composer, type PendingAttachment } from "./Composer";
 import { MessageList } from "./MessageList";
 import { firstRunSuggestions } from "./suggestions";
 import "./assistant-panel.css";
@@ -35,8 +39,11 @@ export function ConversationView() {
   const [streaming, setStreaming] = useState(false);
   const [streamText, setStreamText] = useState("");
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const [dragging, setDragging] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const dragDepth = useRef(0);
 
   // Load (or clear) the thread when the selection changes.
   useEffect(() => {
@@ -62,6 +69,68 @@ export function ConversationView() {
   // Cancel any in-flight stream on unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // --- attachments -----------------------------------------------------------------------------
+  const uploading = attachments.some((a) => a.status === "uploading");
+
+  function addFiles(files: FileList | File[]) {
+    for (const file of Array.from(files)) {
+      const localId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+      const base: PendingAttachment = {
+        localId, name: file.name, size: file.size, contentType: file.type,
+        status: "uploading", previewUrl, file,
+      };
+      const tooBig = file.size > MAX_ATTACHMENT_BYTES;
+      const badType = !ALLOWED_ATTACHMENT_TYPES.has(file.type);
+      if (tooBig || badType) {
+        setAttachments((a) => [
+          ...a,
+          { ...base, status: "error", error: t(tooBig ? "assistant.fileTooLarge" : "assistant.fileType") },
+        ]);
+        continue;
+      }
+      setAttachments((a) => [...a, base]);
+      void uploadOne(localId, file);
+    }
+  }
+
+  async function uploadOne(localId: string, file: File) {
+    try {
+      const info = await uploadAttachment(file);
+      setAttachments((a) =>
+        a.map((x) => (x.localId === localId ? { ...x, status: "done", serverId: info.id } : x)),
+      );
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : t("assistant.uploadFailed");
+      setAttachments((a) =>
+        a.map((x) => (x.localId === localId ? { ...x, status: "error", error: reason } : x)),
+      );
+    }
+  }
+
+  function removeAttachment(localId: string) {
+    setAttachments((a) => {
+      const found = a.find((x) => x.localId === localId);
+      if (found?.previewUrl) URL.revokeObjectURL(found.previewUrl);
+      return a.filter((x) => x.localId !== localId);
+    });
+  }
+
+  function retryAttachment(localId: string) {
+    const found = attachments.find((x) => x.localId === localId);
+    if (!found?.file) return;
+    setAttachments((a) =>
+      a.map((x) => (x.localId === localId ? { ...x, status: "uploading", error: undefined } : x)),
+    );
+    void uploadOne(localId, found.file);
+  }
+
+  function clearAttachments() {
+    attachments.forEach((a) => a.previewUrl && URL.revokeObjectURL(a.previewUrl));
+    setAttachments([]);
+  }
+
+  // --- streaming -------------------------------------------------------------------------------
   async function ensureConversation(): Promise<number | null> {
     if (conversationId != null) return conversationId;
     try {
@@ -76,9 +145,10 @@ export function ConversationView() {
     }
   }
 
-  // The streaming half — shared by a fresh send, a retry and a regenerate. `opts` carries either a
-  // new `message` or the `regenerate` flag (re-answer the last question in place).
-  async function runStream(convId: number, opts: { message?: string; regenerate?: boolean }) {
+  async function runStream(
+    convId: number,
+    opts: { message?: string; regenerate?: boolean; attachment_ids?: number[] },
+  ) {
     setStreaming(true);
     setStreamText("");
     setStreamError(null);
@@ -128,32 +198,35 @@ export function ConversationView() {
       setStreaming(false);
       setStreamText("");
       abortRef.current = null;
-      // Title / preview / order changed server-side — refresh the list everywhere.
       refreshConversations();
     }
   }
 
   async function send(text: string) {
     const q = text.trim();
-    if (!q || streaming) return;
+    if (!q || streaming || uploading) return;
+    const ready = attachments.filter((a) => a.status === "done" && a.serverId != null);
     const convId = await ensureConversation();
     if (convId == null) return;
-    // Optimistic user turn (a negative temp id never collides with a server id).
+    const chips: AttachmentInfo[] = ready.map((a) => ({
+      id: a.serverId as number, name: a.name, content_type: a.contentType, size: a.size,
+    }));
     const userMsg: ChatMessage = {
       id: -Date.now(),
       role: "user",
       content: q,
-      meta: {},
+      meta: chips.length ? { attachments: chips } : {},
       created_at: new Date().toISOString(),
     };
     setMessages((m) => [...(m ?? []), userMsg]);
     setDraft("");
-    await runStream(convId, { message: q });
+    clearAttachments();
+    const ids = ready.map((a) => a.serverId as number);
+    await runStream(convId, { message: q, ...(ids.length ? { attachment_ids: ids } : {}) });
   }
 
   async function regenerate() {
     if (streaming || conversationId == null) return;
-    // Drop the last answer locally; the server drops it too before re-answering.
     setMessages((m) => {
       if (!m) return m;
       const idx = m.map((x) => x.role).lastIndexOf("assistant");
@@ -179,16 +252,50 @@ export function ConversationView() {
     requestAnimationFrame(() => el.setSelectionRange(text.length, text.length));
   }
 
-  // Internal citations/links navigate — a floating panel gets out of the way; docked/page stay.
   function onNavigate() {
     if (open && mode === "floating") closePanel();
   }
+
+  // --- drag-and-drop (whole surface) -----------------------------------------------------------
+  const hasFiles = (e: DragEvent) => e.dataTransfer?.types?.includes("Files");
 
   const showEmpty =
     !loading && !streaming && !streamError && (messages == null || messages.length === 0);
 
   return (
-    <div className="conversation">
+    <div
+      className="conversation"
+      onDragEnter={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth.current += 1;
+        setDragging(true);
+      }}
+      onDragOver={(e) => {
+        if (hasFiles(e)) e.preventDefault();
+      }}
+      onDragLeave={() => {
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDragging(false);
+      }}
+      onDrop={(e) => {
+        if (e.dataTransfer?.files?.length) {
+          e.preventDefault();
+          addFiles(e.dataTransfer.files);
+        }
+        dragDepth.current = 0;
+        setDragging(false);
+      }}
+    >
+      {dragging && (
+        <div className="conversation__drop" aria-hidden="true">
+          <span className="conversation__drop-hint">
+            <NavIcon name="paperclip" />
+            {t("assistant.dropHint")}
+          </span>
+        </div>
+      )}
+
       {loading ? (
         <div className="conversation__scroll">
           <p className="conversation__hint">{t("common.loading")}</p>
@@ -236,6 +343,11 @@ export function ConversationView() {
         onSend={() => void send(draft)}
         streaming={streaming}
         onStop={stop}
+        attachments={attachments}
+        onFiles={addFiles}
+        onRemoveAttachment={removeAttachment}
+        onRetryAttachment={retryAttachment}
+        uploading={uploading}
       />
     </div>
   );

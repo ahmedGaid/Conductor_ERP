@@ -391,6 +391,7 @@
 /* --- Conversation surface ---------------------------------------------------------------------
    A streaming transcript above a composer pinned to the bottom. Shared by the panel and the page. */
 .conversation {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -795,4 +796,209 @@
 
 .conversation__send {
   flex: none;
+}
+
+/* --- Attachments (plan session 07) ------------------------------------------------------------- */
+/* Composer stacks its attachment chips above the input row. */
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.composer__attach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  flex: none;
+  align-self: flex-end;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.composer__attach:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+}
+.composer__attach:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.composer__attach .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+
+.composer__attachments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Upload chip: thumbnail/icon + name/size + status (spinner → check, or error + retry). */
+.attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-inline-size: 15rem;
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.attach-chip--error {
+  border-color: var(--color-danger);
+}
+.attach-chip__thumb {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex: none;
+}
+.attach-chip__icon {
+  display: inline-flex;
+  color: var(--color-text-muted);
+  flex: none;
+}
+.attach-chip__icon .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+.attach-chip__meta {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.3;
+}
+.attach-chip__name {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.attach-chip__sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.attach-chip--error .attach-chip__sub {
+  color: var(--color-danger);
+}
+.attach-chip__ok {
+  display: inline-flex;
+  color: var(--color-text-muted);
+  flex: none;
+}
+.attach-chip__ok .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+.attach-chip__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.attach-chip__act:hover {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+}
+.attach-chip__act .navicon {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+}
+.attach-chip__spin {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  flex: none;
+  border: 2px solid var(--color-border);
+  border-block-start-color: var(--color-text-muted);
+  border-radius: 50%;
+  animation: attach-spin 0.7s linear infinite;
+}
+@keyframes attach-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .attach-chip__spin {
+    animation-duration: 2s;
+  }
+}
+
+/* Drop veil — dashed target over the whole surface while dragging files in. */
+.conversation__drop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  opacity: 0.94;
+  pointer-events: none;
+}
+.conversation__drop-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+.conversation__drop-hint .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+
+/* Attachment chips shown on a sent message bubble. */
+.msg-attach {
+  list-style: none;
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.msg-attach__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-inline-size: 13rem;
+  padding-inline: var(--space-2);
+  padding-block: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.msg-attach__chip .navicon {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  flex: none;
+}
+.msg-attach__name {
+  min-inline-size: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

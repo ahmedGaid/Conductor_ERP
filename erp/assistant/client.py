@@ -9,6 +9,8 @@ Two providers behind the same extraction contract: Anthropic (Claude) and Google
 """
 from __future__ import annotations
 
+import base64
+
 from django.conf import settings
 
 DEFAULT_MODELS = {
@@ -91,7 +93,39 @@ def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = 
 # SSE contract above (``complete_stream``) is identical for callers regardless of provider.
 
 
-def _stream_anthropic(messages: list, system: str | None):
+# --- attached files (plan session 07) ---------------------------------------------------------
+# Chat can carry images/PDF to a vision-capable provider. Each media item is normalized to
+# ``{"media_type", "data": bytes}`` (see services.files) and injected into the single user message
+# per the active provider's content shape. Text/tabular files are already folded into the prompt
+# text upstream, so they never reach here.
+
+
+def _b64(data: bytes) -> str:
+    return base64.standard_b64encode(data).decode("ascii")
+
+
+def _anthropic_media_block(m: dict) -> dict:
+    b64 = _b64(m["data"])
+    if m["media_type"] == "application/pdf":
+        return {"type": "document",
+                "source": {"type": "base64", "media_type": "application/pdf", "data": b64}}
+    return {"type": "image",
+            "source": {"type": "base64", "media_type": m["media_type"], "data": b64}}
+
+
+def _inject_blocks(messages: list, media: list, block_for) -> list:
+    """Rebuild the last user message so its text is preceded by the media content blocks."""
+    msgs = [dict(m) for m in messages]
+    last = msgs[-1]
+    text = last["content"] if isinstance(last["content"], str) else ""
+    blocks = [b for b in (block_for(m) for m in media) if b is not None]
+    last["content"] = [*blocks, {"type": "text", "text": text}]
+    return msgs
+
+
+def _stream_anthropic(messages: list, system: str | None, media: list | None = None):
+    if media:
+        messages = _inject_blocks(messages, media, _anthropic_media_block)
     kwargs = dict(model=model_id(), max_tokens=settings.ASSISTANT_MAX_TOKENS, messages=messages)
     if system:
         kwargs["system"] = system
@@ -101,7 +135,7 @@ def _stream_anthropic(messages: list, system: str | None):
                 yield text
 
 
-def _stream_gemini(messages: list, system: str | None):
+def _stream_gemini(messages: list, system: str | None, media: list | None = None):
     from google.genai import types
 
     cfg = dict(max_output_tokens=settings.ASSISTANT_MAX_TOKENS)
@@ -111,7 +145,12 @@ def _stream_gemini(messages: list, system: str | None):
         cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
     except Exception:  # pragma: no cover - older SDK/model without thinking support
         pass
-    contents = [m["content"] for m in messages]
+    if media:
+        text = "\n".join(m["content"] for m in messages if isinstance(m["content"], str))
+        contents = [types.Part.from_bytes(data=m["data"], mime_type=m["media_type"]) for m in media]
+        contents.append(text)
+    else:
+        contents = [m["content"] for m in messages]
     for chunk in get_gemini_client().models.generate_content_stream(
         model=model_id(), contents=contents, config=types.GenerateContentConfig(**cfg)
     ):
@@ -120,11 +159,25 @@ def _stream_gemini(messages: list, system: str | None):
             yield text
 
 
-def _stream_groq(messages: list, system: str | None):
+def _groq_media_block(m: dict):
+    if m["media_type"] == "application/pdf":
+        return None  # Llama-4 vision can't read PDF; the file simply isn't shown
+    return {"type": "image_url",
+            "image_url": {"url": f'data:{m["media_type"]};base64,{_b64(m["data"])}'}}
+
+
+def _stream_groq(messages: list, system: str | None, media: list | None = None):
     import json as _json
 
     import httpx
 
+    if media:
+        msgs_in = [dict(m) for m in messages]
+        last = msgs_in[-1]
+        text = last["content"] if isinstance(last["content"], str) else ""
+        blocks = [b for b in (_groq_media_block(m) for m in media) if b is not None]
+        last["content"] = [{"type": "text", "text": text}, *blocks]
+        messages = msgs_in
     msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
     payload = {
         "model": model_id(), "messages": msgs,
@@ -150,11 +203,13 @@ def _stream_groq(messages: list, system: str | None):
                 yield delta
 
 
-def complete_stream(messages: list, *, system: str | None = None):
+def complete_stream(messages: list, *, system: str | None = None, media: list | None = None):
     """Yield answer text chunks from the active provider.
 
-    Falls back to a single yield of the full completion for any provider without a
-    streaming path yet — callers never need to know the difference.
+    ``media`` (optional) is a list of ``{"media_type", "data": bytes}`` — images/PDF injected into
+    the user turn for a vision-capable provider (see services.files). Falls back to a single yield of
+    the full completion for any provider without a streaming path yet — callers never need to know
+    the difference.
     """
     runner = {"gemini": _stream_gemini, "groq": _stream_groq}.get(provider(), _stream_anthropic)
-    yield from runner(messages, system)
+    yield from runner(messages, system, media)

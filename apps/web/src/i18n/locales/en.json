@@ -48,6 +48,13 @@
     "editPrompt": "Edit question",
     "jumpNew": "New reply",
     "errorLine": "Something went wrong. Please try again.",
+    "attach": "Attach files",
+    "dropHint": "Drop files to attach",
+    "uploading": "Uploading…",
+    "uploadFailed": "Upload failed",
+    "remove": "Remove",
+    "fileTooLarge": "File is too large (max 5 MB)",
+    "fileType": "File type not supported",
     "suggestions": {
       "s1": "How much did we sell this month?",
       "s2": "Who are our top customers?",

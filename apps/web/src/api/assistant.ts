@@ -61,6 +61,41 @@ export function extractDocument(file: File): Promise<ExtractProposal> {
   return apiUpload<ExtractProposal>("/assistant/extract-document", form);
 }
 
+// --- Chat attachments (plan session 07) --------------------------------------------------------
+// A file uploads on its own first (chip shows while it transfers); the next send claims it. Mirrors
+// the server allowlist + 5 MB cap so bad files are rejected instantly, before any upload.
+
+export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+
+export const ALLOWED_ATTACHMENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+  "text/csv",
+  "application/csv",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/json",
+  "text/json",
+  "application/xml",
+  "text/xml",
+  "text/plain",
+]);
+
+export interface AttachmentInfo {
+  id: number;
+  name: string;
+  content_type: string;
+  size: number;
+}
+
+export function uploadAttachment(file: File): Promise<AttachmentInfo> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiUpload<AttachmentInfo>("/assistant/attachments", form);
+}
+
 // --- Natural-language assistant (part 2) -------------------------------------------------------
 
 export interface AskCitation {
@@ -100,8 +135,8 @@ export interface ChatMessage {
   id: number;
   role: "user" | "assistant";
   content: string;
-  // Server-attached extras (e.g. the answer's citations); read-only to the client.
-  meta: { citations?: AskCitation[] } & Record<string, unknown>;
+  // Server-attached extras (the answer's citations, the turn's attachments); read-only to the client.
+  meta: { citations?: AskCitation[]; attachments?: AttachmentInfo[] } & Record<string, unknown>;
   created_at: string;
 }
 
@@ -189,6 +224,8 @@ export async function chatStream(
     context?: PageContext;
     // Re-answer the conversation's last question in place (retry / regenerate); no new user turn.
     regenerate?: boolean;
+    // Ids of already-uploaded attachments to claim onto this turn (session 07).
+    attachment_ids?: number[];
   },
   onEvent: (e: ChatEvent) => void,
   signal?: AbortSignal,

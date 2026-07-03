@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import type { AskCitation, ChatMessage } from "../api/assistant";
+import type { AskCitation, AttachmentInfo, ChatMessage } from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
 import { Bdi } from "../components/Bdi";
@@ -102,9 +102,20 @@ export function MessageList({
         <ul className="conversation__messages">
           {messages.map((m) => {
             const cites = (m.meta?.citations as AskCitation[] | undefined) ?? [];
+            const atts = (m.meta?.attachments as AttachmentInfo[] | undefined) ?? [];
             if (m.role === "user") {
               return (
                 <li key={m.id} className="msg msg--user">
+                  {atts.length > 0 && (
+                    <ul className="msg-attach">
+                      {atts.map((a) => (
+                        <li key={a.id} className="msg-attach__chip">
+                          <NavIcon name="reports" />
+                          <span className="msg-attach__name" dir="auto">{a.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <p className="msg__text" dir="auto">{m.content}</p>
                   <div className="msg__actions">
                     <Tooltip label={t("assistant.editPrompt")} placement="bottom">
