@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { NavIcon } from "../app/icons";
 import { Tooltip } from "../components/Tooltip";
-import { AskView } from "./AskView";
+import { ConversationView } from "./ConversationView";
+import { ThreadList } from "./ThreadList";
 import { useAssistant } from "./AssistantProvider";
 import "./assistant-panel.css";
 
@@ -20,6 +21,8 @@ export function AssistantPanel() {
   const { enabled, open, mode, closePanel, setMode } = useAssistant();
   const panelRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
+  // The panel body shows either the active conversation or the thread history (no room for two columns).
+  const [view, setView] = useState<"chat" | "threads">("chat");
 
   // Esc closes; on open, focus moves into the panel and returns to the trigger on close.
   useEffect(() => {
@@ -72,6 +75,20 @@ export function AssistantPanel() {
           <span className="assistant-panel__title">{t("assistant.title")}</span>
         </span>
         <div className="assistant-panel__tools">
+          <Tooltip
+            label={t(view === "threads" ? "assistant.threads.backToChat" : "assistant.threads.title")}
+            placement="bottom"
+          >
+            <button
+              type="button"
+              className="assistant-panel__tool"
+              aria-label={t(view === "threads" ? "assistant.threads.backToChat" : "assistant.threads.title")}
+              aria-pressed={view === "threads"}
+              onClick={() => setView((v) => (v === "threads" ? "chat" : "threads"))}
+            >
+              <NavIcon name="clock" />
+            </button>
+          </Tooltip>
           <Tooltip label={t(docked ? "assistant.float" : "assistant.dock")} placement="bottom">
             <button
               type="button"
@@ -106,7 +123,7 @@ export function AssistantPanel() {
       </header>
 
       <div className="assistant-panel__body">
-        <AskView />
+        {view === "threads" ? <ThreadList onPick={() => setView("chat")} /> : <ConversationView />}
       </div>
     </aside>
   );

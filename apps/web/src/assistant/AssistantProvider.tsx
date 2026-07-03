@@ -27,11 +27,14 @@ interface AssistantState {
   mode: AssistantMode;
   conversationId: number | null;
   enabled: boolean;
+  /** Bumps whenever the thread list changes; every ThreadList reloads off it (one source of truth). */
+  conversationsNonce: number;
   openPanel(): void;
   closePanel(): void;
   toggle(): void;
   setMode(m: AssistantMode): void;
   setConversationId(id: number | null): void;
+  refreshConversations(): void;
 }
 
 const KEY_OPEN = "assistant.open";
@@ -56,6 +59,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState<boolean>(() => localStorage.getItem(KEY_OPEN) === "1");
   const [mode, setModeState] = useState<AssistantMode>(readMode);
   const [conversationId, setConversationState] = useState<number | null>(readConversation);
+  const [conversationsNonce, setConversationsNonce] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -80,6 +84,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const toggle = useCallback(() => setOpen((v) => !v), []);
   const setMode = useCallback((m: AssistantMode) => setModeState(m), []);
   const setConversationId = useCallback((id: number | null) => setConversationState(id), []);
+  const refreshConversations = useCallback(() => setConversationsNonce((n) => n + 1), []);
 
   const value = useMemo<AssistantState>(
     () => ({
@@ -88,13 +93,27 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       mode,
       conversationId,
       enabled: enabled === true,
+      conversationsNonce,
       openPanel,
       closePanel,
       toggle,
       setMode,
       setConversationId,
+      refreshConversations,
     }),
-    [enabled, open, mode, conversationId, openPanel, closePanel, toggle, setMode, setConversationId],
+    [
+      enabled,
+      open,
+      mode,
+      conversationId,
+      conversationsNonce,
+      openPanel,
+      closePanel,
+      toggle,
+      setMode,
+      setConversationId,
+      refreshConversations,
+    ],
   );
 
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;

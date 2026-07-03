@@ -137,3 +137,333 @@
     transition: none;
   }
 }
+
+/* --- Thread list ------------------------------------------------------------------------------
+   Shared by the panel's history view and the fullscreen rail. Fills its container; the row list
+   scrolls between a fixed search header and the archived toggle. */
+.thread-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-block-size: 0;
+  gap: var(--space-3);
+}
+
+.thread-list__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.thread-list__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-inline-size: 0;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+.thread-list__search:focus-within {
+  border-color: var(--color-border-strong);
+}
+.thread-list__search .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+}
+
+.thread-list__search-input {
+  flex: 1;
+  min-inline-size: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding-block: var(--space-2);
+}
+.thread-list__search-input:focus {
+  outline: none;
+}
+
+.thread-list__new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  flex: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.thread-list__new:hover {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+}
+.thread-list__new .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+
+.thread-list__body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.thread-list__group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.thread-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius-md);
+}
+.thread-row:hover,
+.thread-row:focus-within,
+.thread-row[data-kbd-active="true"] {
+  background: var(--color-surface-alt);
+}
+.thread-row[data-active] {
+  background: var(--color-surface-alt);
+}
+/* Active marker on the inline-start edge — logical, so it mirrors correctly in RTL/LTR. */
+.thread-row[data-active]::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--space-1);
+  inset-inline-start: 0;
+  inline-size: 2px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-text);
+}
+
+.thread-row__main {
+  flex: 1;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.thread-row__main:focus-visible {
+  outline: none;
+}
+
+.thread-row__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thread-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.thread-row__time {
+  flex: none;
+}
+.thread-row__preview {
+  min-inline-size: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Actions stay quiet until the row is hovered or holds focus (calm, low-noise). */
+.thread-row__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding-inline-end: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.thread-row:hover .thread-row__actions,
+.thread-row:focus-within .thread-row__actions,
+.thread-row[data-kbd-active="true"] .thread-row__actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .thread-row__actions {
+    opacity: 1;
+  }
+}
+
+.thread-row__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.thread-row__action:hover {
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.thread-row__action--danger:hover {
+  color: var(--color-danger);
+}
+.thread-row__action .navicon {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+}
+
+.thread-row__rename {
+  flex: 1;
+  min-inline-size: 0;
+  margin-inline: var(--space-2);
+  margin-block: var(--space-1);
+  padding-inline: var(--space-2);
+  padding-block: var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+.thread-row__rename:focus {
+  outline: none;
+}
+
+.thread-list__archived-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  align-self: flex-start;
+  padding: var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.thread-list__archived-toggle:hover {
+  color: var(--color-text);
+}
+.thread-list__archived-toggle .navicon {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+}
+
+/* --- Conversation surface ---------------------------------------------------------------------
+   Read-only message history above a composer pinned to the bottom. */
+.conversation {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-block-size: 0;
+  gap: var(--space-3);
+}
+
+.conversation__scroll {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+}
+
+.conversation__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.conversation__messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.msg {
+  max-inline-size: 88%;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border-radius: var(--radius-md);
+}
+.msg--user {
+  align-self: flex-end;
+  background: var(--color-surface-alt);
+}
+.msg--assistant {
+  align-self: flex-start;
+}
+
+.msg__text {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-size: var(--font-size-sm);
+}
+
+.msg__cites {
+  margin-block-start: var(--space-2);
+}
+
+.conversation__composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.conversation__input {
+  flex: 1;
+  min-inline-size: 0;
+  resize: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.conversation__input:focus {
+  outline: none;
+  border-color: var(--color-border-strong);
+}

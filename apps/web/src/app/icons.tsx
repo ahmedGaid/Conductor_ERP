@@ -134,6 +134,28 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M5 12h14" />
     </>
   ),
+  // Edit — pencil (inline rename).
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </>
+  ),
+  // Pin — thumbtack (keep a conversation at the top).
+  pin: (
+    <>
+      <path d="M9 4h6l-1 6 3 3H7l3-3-1-6Z" />
+      <path d="M12 16v5" />
+    </>
+  ),
+  // Archive — lidded box with a slot (move out of the default list).
+  archive: (
+    <>
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+      <path d="M10 12h4" />
+    </>
+  ),
   // More — horizontal kebab (overflow menu trigger).
   more: (
     <>

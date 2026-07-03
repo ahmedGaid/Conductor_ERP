@@ -45,6 +45,26 @@
       "s2": "Who are our top customers?",
       "s3": "Which customers still owe us money?",
       "s4": "What's running low in stock?"
+    },
+    "threads": {
+      "title": "Conversations",
+      "backToChat": "Back to conversation",
+      "new": "New conversation",
+      "search": "Search conversations…",
+      "empty": "Your conversations will live here",
+      "emptyHint": "Ask a question to start your first one.",
+      "startHint": "Ask anything about your work to begin.",
+      "untitled": "New conversation",
+      "rename": "Rename",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "archive": "Archive",
+      "unarchive": "Restore",
+      "showArchived": "Show archived",
+      "hideArchived": "Hide archived",
+      "delete": "Delete",
+      "deleteConfirm": "This conversation and its messages will be removed. This can't be undone.",
+      "saveFailed": "That change didn't save. Please try again."
     }
   },
   "moduleIntro": {

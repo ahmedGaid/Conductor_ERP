@@ -83,6 +83,80 @@ export function askAssistant(question: string, context?: PageContext): Promise<A
   });
 }
 
+// --- Conversations (plan session 01 API, wired for the threads UI in session 05) ---------------
+// Each conversation is private to its owner (the server filters to request.user and 404s a foreign
+// id). The list is the workspace's thread history; a conversation opens to its messages.
+
+export interface ConversationSummary {
+  id: number;
+  title: string;
+  pinned: boolean;
+  archived: boolean;
+  updated_at: string;
+  preview: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  // Server-attached extras (e.g. the answer's citations); read-only to the client.
+  meta: { citations?: AskCitation[] } & Record<string, unknown>;
+  created_at: string;
+}
+
+// The server returns a flat detail object; keep the wire type internal and expose the split the UI
+// wants (summary + messages).
+interface ConversationDetail extends ConversationSummary {
+  created_at: string;
+  messages: ChatMessage[];
+}
+
+export function listConversations(q?: string, archived?: boolean): Promise<ConversationSummary[]> {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (archived) params.set("archived", "1");
+  const qs = params.toString();
+  return apiFetch<ConversationSummary[]>(`/assistant/conversations${qs ? `?${qs}` : ""}`);
+}
+
+export function createConversation(): Promise<ConversationSummary> {
+  return apiFetch<ConversationSummary>("/assistant/conversations", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export function getConversation(
+  id: number,
+): Promise<{ conversation: ConversationSummary; messages: ChatMessage[] }> {
+  return apiFetch<ConversationDetail>(`/assistant/conversations/${id}`).then((d) => ({
+    conversation: {
+      id: d.id,
+      title: d.title,
+      pinned: d.pinned,
+      archived: d.archived,
+      updated_at: d.updated_at,
+      preview: d.preview,
+    },
+    messages: d.messages,
+  }));
+}
+
+export function updateConversation(
+  id: number,
+  patch: Partial<Pick<ConversationSummary, "title" | "pinned" | "archived">>,
+): Promise<ConversationSummary> {
+  return apiFetch<ConversationSummary>(`/assistant/conversations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export function deleteConversation(id: number): Promise<void> {
+  return apiFetch<void>(`/assistant/conversations/${id}`, { method: "DELETE" });
+}
+
 // --- Streaming chat (plan session 02) ----------------------------------------------------------
 // The chat endpoint answers over an SSE stream so the reply renders as the model writes. One
 // `data:` JSON per event; sessions 09/10 add more event types to the same union.
