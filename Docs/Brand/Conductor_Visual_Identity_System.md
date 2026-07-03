@@ -205,6 +205,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Opportunity | فرصة | — |
 | Accounting module (name) | المالية | المحاسبة (the *module label* is **المالية**; "محاسبة/محاسبي" stays only for the bookkeeping discipline in prose, 2026-06-30) |
 | AI assistant (the product surface) | المساعد الذكي | الذكاء الاصطناعي / روبوت (the surface is always **المساعد الذكي**; "AI" alone never appears in Arabic copy, 2026-07-02) |
+| ARP (the category — Agentic Resource Planning) | الإدارة الذكية للموارد (acronym stays Latin **ARP**, like ERP before it) | تخطيط الموارد الوكيلي (stiff, textbook); marketing signature is «نظام يدير معك، لا يُدار فقط» — usable only after the claims gate opens (`Docs/ARP_STRATEGY.md` §2, 2026-07-02) |
 
 ### 6.2 Status & action voice (Arabic)
 Human-language statuses (Directive — "Waiting for Finance approval") must read as **natural Egyptian
@@ -313,6 +314,9 @@ fast-and-rough (Brief §6, value 5).
 
 ## 11. Change log
 
+- **2026-07-02 — ARP category term added to the lexicon (§6.1).** Canonical Arabic category phrase
+  **الإدارة الذكية للموارد**; the acronym stays Latin **ARP** in both languages. Public use gated by
+  `Docs/ARP_STRATEGY.md` §2. No visual/token change.
 - **2026-06-23 — Identity system created.** Established the third brand pillar (assets + surfaces)
   alongside the Brief (words) and Directive (in-app behaviour). Grounded every value in the live
   `tokens.css` and `icons.tsx` rather than inventing: confirmed **IBM Plex Sans Arabic + Inter**

@@ -18,8 +18,10 @@ For Egyptian small and medium businesses outgrowing spreadsheets and tired of he
 ERP, **Conductor** is the calm, Arabic-first ERP that's genuinely simple to run — so every part
 of the business plays in harmony, with the books correct by construction.
 
-**Category:** Customer-hosted, single-tenant ERP (Accounting · Inventory · Sales · Purchasing ·
-CRM · e-invoicing · workflows).
+**Category:** **ARP — Agentic Resource Planning** (adopted 2026-07-02, *internal until the claims
+gate opens* — see `Docs/ARP_STRATEGY.md` §2). Until then, public copy says: Arabic-first ERP
+(Accounting · Inventory · Sales · Purchasing · CRM · e-invoicing · workflows). Deployment
+(customer-hosted / cloud) is an option, not the category.
 
 **The one thing to remember:** *Simplicity.* Everything else is proof of it.
 
@@ -221,6 +223,10 @@ Conductor does **not** compete on feature count. It competes on **experience**:
 **Positioning line:** *Not more ERP — better ERP.* Win the conversation on usability, onboarding
 speed, learning curve, regional fit, performance, and overall experience — never on a feature grid.
 
+**Category successor line (gated — usable only after the ARP claims gate opens, STRATEGY §2):**
+*Not more ERP — a new category.* **ERP was software you operate. ARP is software that operates
+with you.** Conductor — the first ARP. · **كوندكتور — أول نظام يدير معك، لا يُدار فقط.**
+
 ---
 
 ## 14. North-star metric
@@ -256,6 +262,11 @@ opening Conductor.* If a campaign, page, or onboarding step works against this, 
 
 ## 17. Change log
 
+- **2026-07-02 — ARP category adopted (internal).** Category set to **ARP — Agentic Resource
+  Planning** with signature lines (§1, §13); public use gated on a live flagship agentic demo per
+  `Docs/ARP_STRATEGY.md` §2 (claims discipline §12 unchanged — nothing marketed before it ships).
+  Customer-hosted demoted from category definition to deployment option (build/remove scope and
+  team rules live in the strategy doc; execution order in `Docs/plan/arp-roadmap.md`).
 - **2026-06-22 — Brief created.** Established the narrative layer (story, promise, values with a
   priority order, audience, messaging, bilingual taglines, voice, competitive positioning) as a
   companion to the Directive. Set the craft north-star order: **Linear first, then Telegram-of-ERP.**

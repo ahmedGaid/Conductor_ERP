@@ -1,2 +1,2 @@
-from .ask import answer_question  # noqa: F401
+from .ask import answer_question, stream_answer  # noqa: F401
 from .extraction import extract_document  # noqa: F401

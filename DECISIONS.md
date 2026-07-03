@@ -1366,3 +1366,50 @@ Provider count is now 3 (Anthropic / Gemini / Groq); the frontend is untouched t
   — non-streaming is simpler/portable/testable, and the monthly cap belongs with Session 07 billing.
 - UI: a calm `/assistant` page (المساعد الذكي) — one input, suggested questions, an answer card with
   cited click-through links. New lexicon reuse only; parity kept (1489 keys).
+
+### Strategy 2026-07 — ARP category + scope discipline
+
+**Category adopted: ARP — Agentic Resource Planning** (Arabic: الإدارة الذكية للموارد; acronym stays
+Latin). Positioning: "ERP was software you operate; ARP is software that operates with you" —
+Conductor as the first ARP. **Claims gate:** no public use of the term until a flagship agentic
+flow runs live for a real customer (PO detour-and-resume or autonomous month-close). Full strategy,
+build/remove list, and the binding team-rules charter: `Docs/ARP_STRATEGY.md`; execution order:
+`Docs/plan/arp-roadmap.md`.
+
+Decisions folded in (rationale in the strategy doc):
+- **Cloud multi-tenant becomes the default direction; customer-hosted demoted** from lead value
+  prop (Brief §8.5) to a deployment option — venture-scale distribution requires it. Revised
+  publicly when roadmap Phase F lands.
+- **Scope freeze:** no HR / manufacturing / projects modules until the money loop
+  (sales → inventory → accounting → VAT) is unbeatable and paying customers demand them. Reversal
+  requires a new entry here.
+- **Rejected:** "write SQL when needed" (reaffirmed — tool-use only per "AI 2026-07");
+  feature-grid competition; settings sprawl (each new setting must justify itself against an
+  opinionated default); dashboard theater (every chart names the decision it informs).
+- Brand docs updated same day: Brief §1/§13/§17 (category + gated successor line), Identity
+  System §6.1 (lexicon row) + §11 log.
+
+### AI 2026-07 part 3 — bounded structured-query tool (user-approved, 2026-07-03)
+
+**Goal (user words):** the assistant should "read and analyze my data like ChatGPT reads the web" —
+answer *any* question about the data, not just the ones with a hand-written tool. The current
+one-tool-per-question router leaves gaps (live bug: "how many items do we have" had no tool → the
+model wrongly said "outside your access"; fixed in commit `7279cd1` by tightening the envelope
+wording, but the real gap is coverage).
+
+**Decision:** keep the hand-written typed-tool catalog (FILE_08 Tasks A–D) **and add one bounded
+`query_data` tool** (FILE_08 Task E) — a fixed grammar the model fills in: whitelisted `entity` +
+`filters` (fixed op set) + `group_by` + `aggregate` (count/sum/avg/min/max). The **server**
+validates every field against a registry (`erp/assistant/query_registry.py`), builds the queryset
+through the module contract, runs it via `scope_queryset` **as the actor**, and formats money at the
+edge. This is the router's fallback when no specific tool fits.
+
+**Still NOT free-text-to-SQL** (the "AI 2026-07" ban holds): no raw SQL, no `eval`, no arbitrary
+fields — only the registered entity+field grammar, so RBAC + branch-scope + audit stay intact. The
+structured grammar *is* the safety boundary; do not reopen the SQL ban to "simplify" this.
+**Rejected again:** letting the model write queries directly (fragile scope enforcement, weak audit,
+injection/leak surface — contradicts the trust bar).
+
+**Where it lands:** FILE_08 (Phase 3 of the ai-workspace plan). The multi-step agent loop (FILE_09)
+then *composes* `query_data` with the specific tools, which is what delivers the full
+ChatGPT-over-your-data feel.
