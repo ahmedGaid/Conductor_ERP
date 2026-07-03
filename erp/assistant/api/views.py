@@ -99,8 +99,9 @@ class AskView(APIView):
         if conversation_id is not None:
             # Owned by the caller, else indistinguishable from absent (404, not 403).
             conversation = get_object_or_404(Conversation, pk=conversation_id, user=request.user)
+        page = request.data.get("context") or None
         return _envelope(services.answer_question(
-            question=question, actor=request.user, conversation=conversation,
+            question=question, actor=request.user, conversation=conversation, page=page,
         ))
 
 
@@ -136,11 +137,12 @@ class ChatView(APIView):
         conversation = get_object_or_404(
             Conversation, pk=request.data.get("conversation_id"), user=request.user,
         )
+        page = request.data.get("context") or None
 
         def _events():
             try:
                 for event in services.stream_answer(
-                    question=message, actor=request.user, conversation=conversation,
+                    question=message, actor=request.user, conversation=conversation, page=page,
                 ):
                     yield _sse(event)
             except (BrokenPipeError, ConnectionResetError, GeneratorExit):

@@ -15,13 +15,14 @@ import { ActionFeedbackHost } from "./ActionFeedbackHost";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
 import { usePreferences } from "../preferences/PreferencesContext";
+import { pushRecentPage } from "../assistant/context";
 import "./AppShell.css";
 
 // First path segment names the active module; exposed as data-module on the shell so
 // the per-module accent (tokens.css) cascades to the page (links, tabs, bars). Only the
 // modules with a defined accent qualify; everything else stays the global accent.
 const MODULE_SET = new Set(["sales", "purchasing", "inventory", "accounting", "crm"]);
-function moduleFromPath(pathname: string): string | undefined {
+export function moduleFromPath(pathname: string): string | undefined {
   const seg = pathname.split("/")[1];
   return MODULE_SET.has(seg) ? seg : undefined;
 }
@@ -38,6 +39,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Close the drawer whenever we navigate, so picking a destination dismisses it.
   useEffect(() => setNavOpen(false), [location.pathname]);
+
+  // Track the last few module pages the user visited — the assistant's context envelope reads this
+  // (sessionStorage, not state) so it can say "you were just looking at X" without an API call.
+  useEffect(() => {
+    if (activeModule) pushRecentPage(location.pathname, activeModule);
+  }, [location.pathname, activeModule]);
 
   // On navigation, move focus to the top of the new page (its heading, or the main
   // region as a fallback) so keyboard and screen-reader users land on the fresh

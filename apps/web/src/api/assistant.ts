@@ -4,6 +4,7 @@
 // purchasing endpoint, so no money ever moves through this API.
 import { ApiError, apiFetch, apiUpload, getToken, refreshAccess } from "./client";
 import i18n from "../i18n";
+import type { PageContext } from "../assistant/context";
 
 export interface AssistantStatus {
   enabled: boolean;
@@ -75,10 +76,10 @@ export interface AskAnswer {
   used_tool: string | null;
 }
 
-export function askAssistant(question: string): Promise<AskAnswer> {
+export function askAssistant(question: string, context?: PageContext): Promise<AskAnswer> {
   return apiFetch<AskAnswer>("/assistant/ask", {
     method: "POST",
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, context }),
   });
 }
 
@@ -106,7 +107,7 @@ function streamHeaders(): Record<string, string> {
 }
 
 export async function chatStream(
-  body: { conversation_id: number; message: string },
+  body: { conversation_id: number; message: string; context?: PageContext },
   onEvent: (e: ChatEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {

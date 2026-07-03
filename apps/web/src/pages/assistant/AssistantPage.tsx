@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { askAssistant, type AskAnswer, type AskCitation } from "../../api/assistant";
+import { collectContext } from "../../assistant/context";
 import { NavIcon } from "../../app/icons";
 import { useToast } from "../../app/ToastContext";
 import { Bdi } from "../../components/Bdi";
@@ -40,7 +41,7 @@ export function AssistantPage() {
     if (!text || busy) return;
     setBusy(true);
     try {
-      setAnswer(await askAssistant(text));
+      setAnswer(await askAssistant(text, collectContext()));
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     } finally {

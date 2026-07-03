@@ -20,6 +20,7 @@ from erp.audit import services as audit
 
 from ..client import complete_stream
 from ..tools import TOOLS, catalog_text
+from . import context
 from .llm import complete_json
 
 # Longest question we will send to the model — a cheap per-request guard (Part 3 cost control).
@@ -45,15 +46,20 @@ _ROUTER_SCHEMA = {
     "additionalProperties": False,
 }
 
-_ANSWER_SYSTEM = (
-    "You are المساعد الذكي, the assistant inside a calm Egyptian-Arabic ERP. Answer in the user's "
-    "language (Arabic by default), briefly and plainly, like a trusted colleague. Use ONLY the "
-    "numbers and facts in DATA — never invent, estimate, or add figures that are not there. Money "
-    "values in DATA are already formatted (e.g. '1,250.00 EGP') — quote them verbatim. DATA is "
-    "already limited to what this user is permitted to see (their branch and scope); if the question "
-    "reaches beyond it, say plainly that you can only report on their own scope. Never mention tools, "
-    "JSON, schemas, or that you are an AI."
+# Appended after the context envelope (identity/user/page/company/persona) — the data-answering
+# constraints that never change per request.
+_ANSWER_TONE = (
+    "Answer briefly and plainly, like a trusted colleague. Use ONLY the numbers and facts in DATA — "
+    "never invent, estimate, or add figures that are not there. Money values in DATA are already "
+    "formatted (e.g. '1,250.00 EGP') — quote them verbatim. DATA is already limited to what this "
+    "user is permitted to see (their branch and scope); if the question reaches beyond it, say "
+    "plainly that you can only report on their own scope. Never mention tools, JSON, schemas, or "
+    "that you are an AI."
 )
+
+
+def _answer_system(actor, page: dict | None) -> str:
+    return context.build_system_prompt(actor, page) + "\n\n" + _ANSWER_TONE
 
 _ANSWER_SCHEMA = {
     "type": "object",
@@ -66,13 +72,14 @@ _ANSWER_SCHEMA = {
 _ARG_FIELDS = ("period", "query", "limit")
 
 
-def answer_question(*, question: str, actor, conversation=None) -> dict:
+def answer_question(*, question: str, actor, conversation=None, page: dict | None = None) -> dict:
     """One question in → {answer, citations, used_tool} out. Read-only; audit-logged.
 
     When ``conversation`` is given the exchange is persisted: the user message is appended
     before the model runs, the assistant message (with citations/tool in ``meta``) after, and
     an empty conversation is auto-titled from the first question. Without it, behaviour is
-    identical to before — the single-shot page keeps working.
+    identical to before — the single-shot page keeps working. ``page`` is the optional client
+    context envelope (current module/route/record) folded into the answer's system prompt.
     """
     q = (question or "").strip()[:MAX_QUESTION_CHARS]
 
@@ -97,7 +104,7 @@ def answer_question(*, question: str, actor, conversation=None) -> dict:
         used = name
 
     answer_obj = complete_json(
-        _ANSWER_SYSTEM,
+        _answer_system(actor, page),
         json.dumps({"question": q, "data": result}, ensure_ascii=False),
         _ANSWER_SCHEMA,
     )
@@ -133,13 +140,14 @@ def _route_and_run(question: str, actor):
     return result, tool.cite(result), name
 
 
-def stream_answer(*, question: str, actor, conversation):
+def stream_answer(*, question: str, actor, conversation, page: dict | None = None):
     """Generator over the SSE chat pipeline — same route→run→answer as ``answer_question``, but the
     final answer streams token-by-token (plain prose, not JSON) so the UI renders as it arrives.
 
     Yields event dicts: ``{"type": "token"|"citations"|"done", ...}``. The user message is persisted
     before the model runs; the assistant message + audit land in a ``finally`` so a client
     disconnect mid-stream still saves whatever prose was produced (cancel costs nothing). Read-only.
+    ``page`` is the optional client context envelope folded into the answer's system prompt.
     """
     q = (question or "").strip()[:MAX_QUESTION_CHARS]
 
@@ -172,7 +180,7 @@ def stream_answer(*, question: str, actor, conversation):
 
     try:
         user = json.dumps({"question": q, "data": result}, ensure_ascii=False)
-        for chunk in complete_stream([{"role": "user", "content": user}], system=_ANSWER_SYSTEM):
+        for chunk in complete_stream([{"role": "user", "content": user}], system=_answer_system(actor, page)):
             parts.append(chunk)
             yield {"type": "token", "text": chunk}
         yield {"type": "citations", "citations": citations}
