@@ -166,6 +166,8 @@ export interface ChatEvent {
   text?: string;
   citations?: AskCitation[];
   message_id?: number;
+  // Which data tool answered — the client maps it to curated follow-up questions (session 06).
+  used_tool?: string | null;
   message?: string;
 }
 
@@ -181,7 +183,13 @@ function streamHeaders(): Record<string, string> {
 }
 
 export async function chatStream(
-  body: { conversation_id: number; message: string; context?: PageContext },
+  body: {
+    conversation_id: number;
+    message?: string;
+    context?: PageContext;
+    // Re-answer the conversation's last question in place (retry / regenerate); no new user turn.
+    regenerate?: boolean;
+  },
   onEvent: (e: ChatEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {

@@ -57,12 +57,15 @@ export function EntityLink({
   value,
   children,
   className,
+  onClick,
 }: {
   type: EntityType;
   /** The business key (code / sku / order number). Empty ⇒ render children as plain text. */
   value: string;
   children?: ReactNode;
   className?: string;
+  /** Fired on navigation — e.g. to close a floating panel the link was clicked from. */
+  onClick?: () => void;
 }) {
   if (!value) return <>{children ?? null}</>;
   const warm = PREFETCH[type];
@@ -72,6 +75,7 @@ export function EntityLink({
       className={className}
       onMouseEnter={warm && (() => warm(value))}
       onFocus={warm && (() => warm(value))}
+      onClick={onClick}
     >
       {children ?? <Bdi>{value}</Bdi>}
     </Link>

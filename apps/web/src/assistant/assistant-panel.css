@@ -389,13 +389,21 @@
 }
 
 /* --- Conversation surface ---------------------------------------------------------------------
-   Read-only message history above a composer pinned to the bottom. */
+   A streaming transcript above a composer pinned to the bottom. Shared by the panel and the page. */
 .conversation {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-block-size: 0;
   gap: var(--space-3);
+}
+
+/* Wraps the scroller so the "new reply" chip can float over it. */
+.conversation__stream {
+  position: relative;
+  flex: 1;
+  min-block-size: 0;
+  display: flex;
 }
 
 .conversation__scroll {
@@ -410,6 +418,39 @@
   font-size: var(--font-size-sm);
 }
 
+/* First-run empty state — a warm line and the four starter questions. */
+.conversation__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-block: var(--space-5) var(--space-3);
+}
+.conversation__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+.conversation__empty-icon .navicon {
+  inline-size: 1.35rem;
+  block-size: 1.35rem;
+}
+.conversation__empty-lead {
+  margin: 0;
+  line-height: 1.6;
+  font-size: var(--font-size-md);
+}
+.conversation__empty-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 .conversation__messages {
   list-style: none;
   margin: 0;
@@ -420,7 +461,8 @@
 }
 
 .msg {
-  max-inline-size: 88%;
+  position: relative;
+  max-inline-size: 92%;
   padding-inline: var(--space-3);
   padding-block: var(--space-2);
   border-radius: var(--radius-md);
@@ -430,7 +472,9 @@
   background: var(--color-surface-alt);
 }
 .msg--assistant {
-  align-self: flex-start;
+  align-self: stretch;
+  max-inline-size: 100%;
+  padding-inline: 0;
 }
 
 .msg__text {
@@ -444,6 +488,285 @@
   margin-block-start: var(--space-2);
 }
 
+/* Hover actions — quiet until the message is hovered or holds focus (calm, low-noise). */
+.msg__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  margin-block-start: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.msg:hover .msg__actions,
+.msg:focus-within .msg__actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .msg__actions {
+    opacity: 1;
+  }
+}
+.msg__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.msg__action:hover {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+}
+.msg__action .navicon {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+}
+
+/* Streaming: the live answer plus a soft blinking caret. */
+.msg__streaming {
+  display: inline;
+}
+.msg__caret {
+  display: inline-block;
+  inline-size: 0.5rem;
+  block-size: 1rem;
+  margin-inline-start: 2px;
+  vertical-align: text-bottom;
+  background: var(--color-text-muted);
+  border-radius: 1px;
+  animation: assistant-caret 1s steps(2, start) infinite;
+}
+@keyframes assistant-caret {
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg__caret {
+    animation: none;
+  }
+}
+
+/* Blame-free inline error with a retry. */
+.msg__error {
+  margin: 0;
+  line-height: 1.6;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.msg__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-block-start: var(--space-2);
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+.msg__retry:hover {
+  background: var(--color-surface-alt);
+}
+.msg__retry .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
+/* Suggested follow-ups after an answer. */
+.msg-followups {
+  align-self: stretch;
+}
+.msg-followups__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.msg-followups__chip {
+  padding-block: var(--space-1);
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.msg-followups__chip:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-strong);
+}
+
+/* "New reply" jump chip — floats at the block end while the reader is scrolled up. */
+.conversation__jump {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: fit-content;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+.conversation__jump:hover {
+  background: var(--color-surface-alt);
+}
+
+/* --- Citations (real records under an answer) -------------------------------------------------- */
+.assistant-cites {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.assistant-cite {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.assistant-cite:hover {
+  background: var(--color-surface-alt);
+}
+.assistant-cite .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+/* --- Markdown-lite answer body ----------------------------------------------------------------- */
+.assistant-md {
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+}
+.assistant-md__p {
+  margin: 0 0 var(--space-2);
+}
+.assistant-md > :last-child {
+  margin-block-end: 0;
+}
+.assistant-md__h {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+.assistant-md__list {
+  margin: 0 0 var(--space-2);
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.assistant-md__li--nested {
+  margin-inline-start: var(--space-4);
+}
+.assistant-md__link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.assistant-md code {
+  font-size: 0.9em;
+  padding-inline: 0.3em;
+  padding-block: 0.1em;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+}
+.assistant-md__table-wrap {
+  overflow-x: auto;
+  margin-block-end: var(--space-2);
+}
+.assistant-md__table {
+  border-collapse: collapse;
+  inline-size: 100%;
+  font-size: var(--font-size-sm);
+}
+.assistant-md__table th,
+.assistant-md__table td {
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  border: 1px solid var(--color-border);
+  text-align: start;
+}
+.assistant-md__table th {
+  font-weight: var(--font-weight-medium);
+  background: var(--color-surface-alt);
+}
+
+/* Fenced code block — always LTR/latin, with a copy button in the block-start inline-end corner. */
+.assistant-code-block {
+  position: relative;
+  margin-block-end: var(--space-2);
+}
+.assistant-code {
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+.assistant-code-block__copy {
+  position: absolute;
+  inset-block-start: var(--space-1);
+  inset-inline-end: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.assistant-code-block:hover .assistant-code-block__copy {
+  opacity: 1;
+}
+.assistant-code-block__copy:hover {
+  color: var(--color-text);
+}
+.assistant-code-block__copy .navicon {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+}
+
 .conversation__composer {
   display: flex;
   align-items: flex-end;
@@ -454,9 +777,11 @@
 .conversation__input {
   flex: 1;
   min-inline-size: 0;
+  min-block-size: 2.5rem;
   resize: none;
   font: inherit;
   font-size: var(--font-size-sm);
+  line-height: 1.5;
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -466,4 +791,8 @@
 .conversation__input:focus {
   outline: none;
   border-color: var(--color-border-strong);
+}
+
+.conversation__send {
+  flex: none;
 }

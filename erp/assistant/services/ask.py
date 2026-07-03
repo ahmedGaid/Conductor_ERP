@@ -143,7 +143,7 @@ def _route_and_run(question: str, actor):
     return result, tool.cite(result), name
 
 
-def stream_answer(*, question: str, actor, conversation, page: dict | None = None):
+def stream_answer(*, question: str, actor, conversation, page: dict | None = None, regenerate: bool = False):
     """Generator over the SSE chat pipeline — same route→run→answer as ``answer_question``, but the
     final answer streams token-by-token (plain prose, not JSON) so the UI renders as it arrives.
 
@@ -151,13 +151,22 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
     before the model runs; the assistant message + audit land in a ``finally`` so a client
     disconnect mid-stream still saves whatever prose was produced (cancel costs nothing). Read-only.
     ``page`` is the optional client context envelope folded into the answer's system prompt.
-    """
-    q = (question or "").strip()[:MAX_QUESTION_CHARS]
 
-    conversation.messages.create(role="user", content=q)
-    if not conversation.title:
-        conversation.title = q[:60]
-    conversation.save()  # also touches updated_at
+    ``regenerate`` re-answers the conversation's last user message without adding a new user turn:
+    any assistant message after it (the previous answer, or an empty one left by an error) is dropped
+    first, so retry/regenerate never duplicate the question. The view guarantees a prior user message.
+    """
+    if regenerate:
+        last_user = conversation.messages.filter(role="user").last()
+        q = (last_user.content if last_user else "").strip()[:MAX_QUESTION_CHARS]
+        if last_user is not None:
+            conversation.messages.filter(role="assistant", id__gt=last_user.id).delete()
+    else:
+        q = (question or "").strip()[:MAX_QUESTION_CHARS]
+        conversation.messages.create(role="user", content=q)
+        if not conversation.title:
+            conversation.title = q[:60]
+        conversation.save()  # also touches updated_at
 
     result, citations, used = _route_and_run(q, actor)
 
@@ -188,6 +197,7 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
             yield {"type": "token", "text": chunk}
         yield {"type": "citations", "citations": citations}
         msg = _persist()
-        yield {"type": "done", "message_id": msg.id}
+        # ``used_tool`` lets the client offer curated follow-up questions for that tool (session 06).
+        yield {"type": "done", "message_id": msg.id, "used_tool": used}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer

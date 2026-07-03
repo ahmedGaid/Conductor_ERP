@@ -124,8 +124,9 @@ class ChatView(APIView):
     def post(self, request: Request):
         if not client.enabled():
             raise Http404
+        regenerate = bool(request.data.get("regenerate"))
         message = (request.data.get("message") or "").strip()
-        if not message:
+        if not message and not regenerate:
             raise ValidationError("Ask a question first.")
         if len(message) > MAX_QUESTION_CHARS:
             raise ValidationError(
@@ -137,12 +138,16 @@ class ChatView(APIView):
         conversation = get_object_or_404(
             Conversation, pk=request.data.get("conversation_id"), user=request.user,
         )
+        # Regenerate re-answers the existing last question — there must be one to re-answer.
+        if regenerate and not conversation.messages.filter(role="user").exists():
+            raise ValidationError("Nothing to regenerate yet.")
         page = request.data.get("context") or None
 
         def _events():
             try:
                 for event in services.stream_answer(
-                    question=message, actor=request.user, conversation=conversation, page=page,
+                    question=message, actor=request.user, conversation=conversation,
+                    page=page, regenerate=regenerate,
                 ):
                     yield _sse(event)
             except (BrokenPipeError, ConnectionResetError, GeneratorExit):
