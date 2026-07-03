@@ -1,7 +1,8 @@
 # Conductor ERP — working agreement
 
-General ERP for Egyptian SMBs. Django modular-monolith (`apps/`) + React 18/TS/Vite web
-(`apps/web`), **Arabic/RTL-first**, customer-hosted single-tenant. Quality bar: **Linear's craft,
+**ARP — Agentic Resource Planning** — for Egyptian SMBs (category adopted 2026-07-02, internal
+until the claims gate opens; publicly still "Arabic-first ERP"). Django modular-monolith (`apps/`)
++ React 18/TS/Vite web (`apps/web`), **Arabic/RTL-first**. Quality bar: **Linear's craft,
 Telegram's calm.** Brand personality: **quiet, precise, trustworthy.**
 
 This file is deliberately short. The real rules live in **skills** — recall them; don't reinvent.
@@ -18,6 +19,8 @@ This file is deliberately short. The real rules live in **skills** — recall th
 If a task touches both UI behaviour and brand, recall **both** `conductor-brand` and `erp-frontend`.
 
 ## Source-of-truth map (open the file — don't answer from memory)
+- **Category, scope (build/remove), team rules → `Docs/ARP_STRATEGY.md`** — read before scoping,
+  planning, or marketing anything; execution order → `Docs/plan/arp-roadmap.md`
 - Live status / next steps → recall the **`erp-status`** skill (via `/erp-resume`)
 - Decisions & rejected paths → `DECISIONS.md`
 - Build spec & phases → `files/ERP_BuildSpec.md`, `files/PHASE_*.md`
