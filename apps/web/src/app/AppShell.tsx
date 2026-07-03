@@ -16,6 +16,8 @@ import { ActionFeedbackHost } from "./ActionFeedbackHost";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
 import { usePreferences } from "../preferences/PreferencesContext";
+import { AssistantProvider } from "../assistant/AssistantProvider";
+import { AssistantPanel } from "../assistant/AssistantPanel";
 import { pushRecentPage } from "../assistant/context";
 import "./AppShell.css";
 
@@ -72,6 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <ActionFeedbackProvider>
+      <AssistantProvider>
       <HelpProvider>
         <PaletteActionsProvider>
         <ShortcutsProvider>
@@ -103,12 +106,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DocumentCrumbProvider>
             </main>
             <HelpCenter />
+            <AssistantPanel />
             <ShortcutsHost />
             <Toaster />
           </div>
         </ShortcutsProvider>
         </PaletteActionsProvider>
       </HelpProvider>
+      </AssistantProvider>
       </ActionFeedbackProvider>
     </ToastProvider>
   );

@@ -118,6 +118,15 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M18 6 6 18" />
     </>
   ),
+  // Expand — open to the full page (corner arrows out).
+  expand: (
+    <>
+      <path d="M9 4H5a1 1 0 0 0-1 1v4" />
+      <path d="M15 4h4a1 1 0 0 1 1 1v4" />
+      <path d="M15 20h4a1 1 0 0 0 1-1v-4" />
+      <path d="M9 20H5a1 1 0 0 1-1-1v-4" />
+    </>
+  ),
   // Plus — add / create a new record inline.
   plus: (
     <>

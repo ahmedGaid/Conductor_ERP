@@ -37,6 +37,7 @@ export function ShortcutsDialog({
     { keys: ["⌘", "K"], label: t("shortcuts.palette") },
     { keys: ["/"], label: t("shortcuts.search") },
     { keys: ["C"], label: t("shortcuts.create") },
+    { keys: ["⌘", "J"], label: t("shortcuts.assistant") },
     { keys: ["?"], label: t("shortcuts.help") },
   ];
   const lists: Shortcut[] = [

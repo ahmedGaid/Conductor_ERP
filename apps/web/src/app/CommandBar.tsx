@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { usePreferences } from "../preferences/PreferencesContext";
 import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
+import { useAssistant } from "../assistant/AssistantProvider";
 import { Tooltip } from "../components/Tooltip";
 import { AppMenu } from "./AppMenu";
 import { CommandPalette } from "./CommandPalette";
@@ -16,6 +17,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
   const { t } = useTranslation();
   const { prefs } = usePreferences();
   const { openShortcuts } = useShortcuts();
+  const { enabled: assistantEnabled, toggle: toggleAssistant } = useAssistant();
   const navigate = useNavigate();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -26,7 +28,13 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
   // App-wide keyboard layer: ⌘K / `/` / `c` open the palette, `g`+key navigates,
   // `?` opens the cheat-sheet (mounted in the shell). Stable callback so the listener isn't re-bound.
   const openPalette = useCallback(() => setPaletteOpen(true), []);
-  useGlobalShortcuts({ openPalette, openShortcuts, einvoiceEnabled });
+  useGlobalShortcuts({
+    openPalette,
+    openShortcuts,
+    einvoiceEnabled,
+    // ⌘J is inert while the assistant is off/unknown (the feature is hidden everywhere).
+    toggleAssistant: assistantEnabled ? toggleAssistant : undefined,
+  });
 
   return (
     <header className="commandbar">
@@ -75,6 +83,18 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
             +
           </button>
         </Tooltip>
+        {assistantEnabled && (
+          <Tooltip label={t("assistant.open")} placement="bottom" shortcut={["⌘", "J"]}>
+            <button
+              type="button"
+              className="btn btn--ghost btn--icon"
+              aria-label={t("assistant.open")}
+              onClick={toggleAssistant}
+            >
+              <NavIcon name="sparkle" />
+            </button>
+          </Tooltip>
+        )}
         <UserMenu />
         <Tooltip label={t("shell.notifications")} placement="bottom">
           <button
