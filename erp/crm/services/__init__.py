@@ -13,6 +13,7 @@ from .pipeline import (
     advance_stage,
     create_opportunity,
     lose_opportunity,
+    update_opportunity,
     win_opportunity,
 )
 from .support import (
@@ -37,6 +38,7 @@ __all__ = [
     "OppLineInput",
     "create_opportunity",
     "advance_stage",
+    "update_opportunity",
     "win_opportunity",
     "lose_opportunity",
     "create_ticket",

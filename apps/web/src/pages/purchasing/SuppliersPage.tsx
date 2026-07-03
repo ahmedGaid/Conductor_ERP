@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
@@ -16,6 +16,7 @@ import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { RowActions } from "../../components/RowActions";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import { PurchasingNav } from "./PurchasingNav";
@@ -146,6 +147,7 @@ export function SuppliersPage() {
               <tr>
                 <th>{t("purchasing.supplier.code")}</th>
                 <th>{t("purchasing.supplier.name")}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -158,6 +160,13 @@ export function SuppliersPage() {
                   </td>
                   <td>
                     <PartyLink type="supplier" code={s.code}>{s.name}</PartyLink>
+                  </td>
+                  <td>
+                    <RowActions label={t("common.actions")}>
+                      <Link className="btn btn--sm" to={`/purchasing?supplier=${encodeURIComponent(s.name)}`}>
+                        {t("purchasing.supplier.viewOrders")}
+                      </Link>
+                    </RowActions>
                   </td>
                 </tr>
               ))}

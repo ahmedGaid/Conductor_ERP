@@ -20,6 +20,8 @@ import { useAsync } from "../../hooks/useAsync";
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showOrderReceipt, showOrderError, type OrderActionKey, type OrderEvent } from "../../lib/feedback/sales";
 import { runOptimistic } from "../../lib/optimistic";
@@ -119,6 +121,9 @@ export function OrderDetailPage() {
 
   const setStatus = (status: OrderStatus) => (order: SalesOrder): SalesOrder => ({ ...order, status });
 
+  // Surface this order in the ⌘K "Recent" list under its number once it has loaded.
+  useRecentEntity(data?.number);
+
   // Map a receipt's recommended-next key back to the matching optimistic action.
   function runAction(key: OrderActionKey) {
     if (!data) return;
@@ -132,6 +137,36 @@ export function OrderDetailPage() {
       case "return": act(setStatus("returned"), () => returnOrder(o.id), "returned"); break;
     }
   }
+
+  // The same lifecycle steps the page shows as buttons, mirrored into the palette's "This page"
+  // group so they're reachable from the keyboard. Availability tracks the status exactly as the
+  // buttons do, so the palette never offers a step that isn't the real next move. Each runs through
+  // the same optimistic `act`, so a palette step fires the identical rich receipt as its button.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft" && data.requires_approval && !data.approved) {
+      pageActions.push({ id: "approve", label: t("sales.detail.approve"), run: () => runAction("approve") });
+    }
+    if (s === "draft" && (!data.requires_approval || data.approved)) {
+      pageActions.push({ id: "confirm", label: t("sales.detail.confirm"), run: () => runAction("confirm") });
+    }
+    if (s === "confirmed" || s === "partially_delivered") {
+      pageActions.push({ id: "deliver",
+        label: s === "partially_delivered" ? t("sales.detail.deliverRemaining") : t("sales.detail.deliver"),
+        run: () => runAction("deliver") });
+    }
+    if (s === "delivered") {
+      pageActions.push({ id: "invoice", label: t("sales.detail.invoice"), run: () => runAction("invoice") });
+    }
+    if (s === "invoiced") {
+      pageActions.push({ id: "pay", label: t("sales.detail.recordPayment"), run: () => runAction("pay") });
+    }
+    if (s === "invoiced" || s === "paid") {
+      pageActions.push({ id: "return", label: t("sales.detail.return"), run: () => runAction("return") });
+    }
+  }
+  usePaletteActions("order-detail", pageActions);
 
   // A rich receipt handed off from creation / conversion fires once the order has loaded, then the
   // marker is cleared from history state so it never re-fires on back/refresh.

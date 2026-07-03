@@ -90,6 +90,26 @@ def create_opportunity(
 
 
 @transaction.atomic
+def update_opportunity(opp: Opportunity, *, name: str | None = None, notes: str | None = None,
+                       actor=None) -> Opportunity:
+    """Edit an opportunity's free-text metadata (its title / notes). Stage-agnostic — these are
+    labels, not lifecycle, so they stay editable whatever the stage. Only the fields passed are
+    touched; everything else is left as-is."""
+    changed: dict[str, str] = {}
+    if name is not None and name != opp.name:
+        opp.name = name
+        changed["name"] = name
+    if notes is not None and notes != opp.notes:
+        opp.notes = notes
+        changed["notes"] = notes
+    if changed:
+        opp.save(update_fields=[*changed.keys(), "updated_at"])
+        audit.record(module="crm", action="update_opportunity", entity_type="Opportunity",
+                     entity_id=opp.number, actor=actor, after=changed)
+    return opp
+
+
+@transaction.atomic
 def advance_stage(opp: Opportunity, stage: str, actor=None) -> Opportunity:
     """Move an open opportunity to another **open** stage (won/lost go through their own services)."""
     if opp.stage not in OPEN_STAGES:

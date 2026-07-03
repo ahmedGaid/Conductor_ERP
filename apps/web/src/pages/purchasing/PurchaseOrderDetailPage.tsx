@@ -16,6 +16,8 @@ import {
   type PurchaseOrder,
 } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
+import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
@@ -62,6 +64,7 @@ export function PurchaseOrderDetailPage() {
     [id],
     `purchasing:order:${id}`,
   );
+  useRecentEntity(data?.number);
   const { data: history } = useAsync(
     () => getPurchaseOrderHistory(id as string),
     [id],
@@ -127,6 +130,35 @@ export function PurchaseOrderDetailPage() {
       case "return": act(setStatus("returned"), () => returnPO(o.id), "returned"); break;
     }
   }
+
+  // Lifecycle steps mirrored into the ⌘K "This page" group, gated by status exactly as the
+  // buttons are, so the palette never offers a step that isn't the real next move. Each runs the
+  // same optimistic `act`, so a palette step fires the identical rich receipt as its button.
+  const pageActions: PaletteAction[] = [];
+  if (data) {
+    const s = data.status;
+    if (s === "draft" && data.requires_approval && !data.approved) {
+      pageActions.push({ id: "approve", label: t("purchasing.detail.approve"), run: () => runAction("approve") });
+    }
+    if (s === "draft" && (!data.requires_approval || data.approved)) {
+      pageActions.push({ id: "confirm", label: t("purchasing.detail.confirm"), run: () => runAction("confirm") });
+    }
+    if (s === "confirmed" || s === "partially_received") {
+      pageActions.push({ id: "receive",
+        label: s === "partially_received" ? t("purchasing.detail.receiveRemaining") : t("purchasing.detail.receive"),
+        run: () => runAction("receive") });
+    }
+    if (s === "received") {
+      pageActions.push({ id: "bill", label: t("purchasing.detail.bill"), run: () => runAction("bill") });
+    }
+    if (s === "billed") {
+      pageActions.push({ id: "pay", label: t("purchasing.detail.recordPayment"), run: () => runAction("pay") });
+    }
+    if (s === "billed" || s === "paid") {
+      pageActions.push({ id: "return", label: t("purchasing.detail.return"), run: () => runAction("return") });
+    }
+  }
+  usePaletteActions("po-detail", pageActions);
 
   // A rich receipt handed off from creation / conversion fires once the order has loaded, then the
   // marker is cleared from history state so it never re-fires on back/refresh.
