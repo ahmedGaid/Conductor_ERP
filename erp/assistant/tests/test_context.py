@@ -1,12 +1,22 @@
-"""System-prompt envelope (plan session 03) — identity/user/page/company sections."""
+"""System-prompt envelope (plan session 03) — identity/user/page/company sections.
+
+Session 08 extends it: page filters/dirty-form-warning, company branch/warehouse/fiscal-period
+facts, and a recent-AI-actions block sourced from the conversation's proposal messages.
+"""
 from __future__ import annotations
+
+import datetime
 
 import pytest
 from django.contrib.auth.models import Group
 
+from erp.accounting.domain.models import FiscalYear, Period, PeriodStatus
+from erp.assistant.models import Conversation, Message
 from erp.assistant.services import context
+from erp.core.models import Branch
 from erp.identity import services as identity_services
 from erp.identity.models import RolePermission, User
+from erp.inventory.domain.models import Warehouse
 
 pytestmark = pytest.mark.django_db
 
@@ -102,3 +112,78 @@ def test_prompt_carries_arabic_provenance_phrase():
     prompt = context.build_system_prompt(user, page=None)
 
     assert "من مستندات الشركة" in prompt
+
+
+def test_filters_rendered_and_capped():
+    user = _user()
+    page = {"module": "sales", "path": "/sales/orders", "record": None, "language": "ar",
+             "recent": [], "filters": {f"k{i}": str(i) for i in range(12)}}
+
+    prompt = context.build_system_prompt(user, page=page)
+
+    assert "Active list filters:" in prompt
+    rendered = prompt.split("Active list filters:")[1].split(".")[0]
+    assert rendered.count("=") == 10
+
+
+def test_dirty_flag_warns_about_unsaved_changes():
+    user = _user()
+    page = {"module": "sales", "path": "/sales/orders/new", "record": None, "language": "ar",
+             "recent": [], "dirty": True}
+
+    prompt = context.build_system_prompt(user, page=page)
+
+    assert "UNSAVED form changes" in prompt
+
+
+def test_company_block_includes_branch_warehouse_and_fiscal_period():
+    branch = Branch.objects.create(code="CAI", name="Cairo Branch")
+    user = _user()
+    user.branch = branch
+    user.save(update_fields=["branch"])
+    Warehouse.objects.create(code="WH-MAIN", name="Main Warehouse")
+    today = datetime.date.today()
+    year = FiscalYear.objects.create(
+        code=str(today.year), start_date=today.replace(month=1, day=1),
+        end_date=today.replace(month=12, day=31),
+    )
+    Period.objects.create(
+        fiscal_year=year, code=f"{today.year}-{today.month:02d}",
+        start_date=today.replace(day=1), end_date=today.replace(day=28),
+        status=PeriodStatus.OPEN,
+    )
+
+    prompt = context.build_system_prompt(user, page=None)
+
+    assert "Cairo Branch" in prompt
+    assert "Default warehouse: WH-MAIN" in prompt
+    assert f"Current accounting period: {today.year}-{today.month:02d}" in prompt
+
+
+def test_recent_actions_block_lists_proposals():
+    user = _user()
+    conversation = Conversation.objects.create(user=user)
+    Message.objects.create(conversation=conversation, role="user", content="add a customer")
+    Message.objects.create(
+        conversation=conversation, role="assistant", content="Here is a draft.",
+        meta={"proposal": {"action": "create_customer", "status": "pending"}},
+    )
+    Message.objects.create(
+        conversation=conversation, role="assistant", content="Done.",
+        meta={"proposal": {"action": "create_sales_order_draft", "status": "confirmed"}},
+    )
+
+    prompt = context.build_system_prompt(user, page=None, conversation=conversation)
+
+    assert "create_customer (pending)" in prompt
+    assert "create_sales_order_draft (confirmed)" in prompt
+
+
+def test_prompt_without_conversation_unchanged():
+    user = _user()
+
+    with_none = context.build_system_prompt(user, page=None, conversation=None)
+    without_kwarg = context.build_system_prompt(user, page=None)
+
+    assert with_none == without_kwarg
+    assert "Previous AI actions" not in with_none

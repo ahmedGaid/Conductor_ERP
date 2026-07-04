@@ -5,7 +5,9 @@ request (never cached stale) so a permission or page change is reflected immedia
 """
 from __future__ import annotations
 
+from erp.accounting import contracts as accounting
 from erp.identity import access, services as identity_services
+from erp.inventory import contracts as inventory
 
 _IDENTITY = (
     "You are Conductor AI, part of Conductor ERP for Egyptian SMBs. Be calm, precise, and "
@@ -78,26 +80,69 @@ def _page_block(page: dict | None) -> str | None:
     recent = page.get("recent") or []
     if recent:
         lines.append(f"- Recently visited: {', '.join(recent)}.")
+    filters = page.get("filters") or {}
+    if filters:
+        rendered = ", ".join(f"{k}={v}" for k, v in list(filters.items())[:10])
+        lines.append(f"- Active list filters: {rendered}.")
+    if page.get("dirty"):
+        lines.append("- The user has UNSAVED form changes on this page: never suggest "
+                     "navigation that would lose them without saying so.")
     return "\n".join(lines) if len(lines) > 1 else None
 
 
-def _company_block() -> str:
+def _company_block(actor) -> str:
     org = identity_services.get_org_preferences()
     name = org.company_name or "the company"
-    return (
+    lines = [
         f"Company: {name}, based in {org.country or 'Egypt'}. Base currency is "
         f"{org.base_currency} (integer minor units on the wire; format only when phrasing the "
         "answer). VAT-registered accounting applies."
-    )
+    ]
+    branch = getattr(actor, "branch", None)
+    if branch is not None:
+        lines.append(f"The user's branch is {branch.name}.")
+    warehouse_code = inventory.default_warehouse_code()
+    if warehouse_code:
+        lines.append(f"Default warehouse: {warehouse_code}.")
+    fiscal = accounting.current_fiscal_period()
+    if fiscal and fiscal.get("period_code"):
+        lines.append(
+            f"Current accounting period: {fiscal['period_code']} "
+            f"(fiscal year {fiscal.get('fiscal_year_code') or 'unset'}, "
+            f"{fiscal.get('period_status') or 'unknown'})."
+        )
+    return " ".join(lines)
 
 
-def build_system_prompt(actor, page: dict | None = None) -> str:
+def _recent_actions_block(conversation) -> str | None:
+    if conversation is None:
+        return None
+    proposals = []
+    for message in conversation.messages.filter(role="assistant").order_by("-created_at")[:20]:
+        proposal = (message.meta or {}).get("proposal")
+        if proposal:
+            proposals.append(proposal)
+        if len(proposals) == 5:
+            break
+    if not proposals:
+        return None
+    lines = ["Previous AI actions:"]
+    for proposal in reversed(proposals):
+        lines.append(f"- Recently proposed/executed: {proposal.get('action')} "
+                     f"({proposal.get('status')}).")
+    return "\n".join(lines)
+
+
+def build_system_prompt(actor, page: dict | None = None, conversation=None) -> str:
     """Assemble the envelope: identity, user, page (optional), company, personas."""
     sections = [_IDENTITY, _user_block(actor)]
     page_section = _page_block(page)
     if page_section:
         sections.append(page_section)
-    sections.append(_company_block())
+    sections.append(_company_block(actor))
+    recent_actions = _recent_actions_block(conversation)
+    if recent_actions:
+        sections.append(recent_actions)
     sections.append(_PERSONA)
     sections.append(_SOURCES)
     return "\n\n".join(sections)

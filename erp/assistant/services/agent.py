@@ -111,10 +111,10 @@ _LOOP_SCHEMA = {
 }
 
 
-def _answer_system(actor, page: dict | None) -> str:
+def _answer_system(actor, page: dict | None, conversation=None) -> str:
     # Same envelope + data-answering constraints as the single-shot path; DATA now holds every
     # round's result rather than one.
-    return context.build_system_prompt(actor, page) + "\n\n" + _ANSWER_TONE
+    return context.build_system_prompt(actor, page, conversation) + "\n\n" + _ANSWER_TONE
 
 
 def _recent_turns(conversation, exclude_id: int | None) -> list[dict]:
@@ -296,7 +296,8 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                          "will create and mention they can confirm or dismiss it below; do NOT claim "
                          "it was created or posted.")
             for chunk in complete_stream(
-                [{"role": "user", "content": user}], system=_answer_system(actor, page), media=media,
+                [{"role": "user", "content": user}],
+                system=_answer_system(actor, page, conversation), media=media,
             ):
                 parts.append(chunk)
                 yield {"type": "token", "text": chunk}

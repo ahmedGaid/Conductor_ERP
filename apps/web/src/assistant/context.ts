@@ -10,10 +10,30 @@ export interface PageContext {
   record: { type: string; id: string; label: string } | null; // from DocumentCrumb
   language: "ar" | "en";
   recent: string[]; // last 5 visited module paths
+  filters: Record<string, string>; // current route's query params, capped
+  dirty: boolean; // true when the current page has unsaved form changes
 }
 
 const RECENT_KEY = "assistant.recentPages";
 const RECENT_MAX = 5;
+const FILTERS_MAX = 10;
+const FILTER_VALUE_MAX = 80;
+
+// A tiny module-level flag a form sets while it has unsaved changes; read fresh on every send.
+let dirtyFlag = false;
+export function markFormDirty(v: boolean): void {
+  dirtyFlag = v;
+}
+
+function currentFilters(): Record<string, string> {
+  const params = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+  const filters: Record<string, string> = {};
+  for (const [key, value] of params) {
+    if (Object.keys(filters).length >= FILTERS_MAX) break;
+    filters[key] = value.slice(0, FILTER_VALUE_MAX);
+  }
+  return filters;
+}
 
 /** Called from AppShell on every navigation to a module page; ignored elsewhere. */
 export function pushRecentPage(path: string, module: string | undefined): void {
@@ -51,5 +71,7 @@ export function collectContext(): PageContext {
     record: currentRecord(path),
     language: (i18n.resolvedLanguage || i18n.language || "ar").startsWith("ar") ? "ar" : "en",
     recent: recentPages(),
+    filters: currentFilters(),
+    dirty: dirtyFlag,
   };
 }

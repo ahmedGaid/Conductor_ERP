@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from erp.identity.scoping import scope_queryset
 
-from ..domain.models import Account, JournalEntry
+from ..domain.models import Account, FiscalYear, JournalEntry, Period
 from ..events import JOURNAL_POSTED, PERIOD_CLOSED
 from ..services import reports as _reports
 from ..services import statements as _statements
@@ -115,12 +115,27 @@ def account_balance(*, query: str) -> dict:
         "entry_count": len(gl.lines),
     }
 
+def current_fiscal_period() -> dict | None:
+    """The fiscal year + period covering today, or None if neither is set up yet."""
+    today = datetime.date.today()
+    year = FiscalYear.objects.filter(start_date__lte=today, end_date__gte=today).first()
+    period = Period.objects.filter(start_date__lte=today, end_date__gte=today).first()
+    if year is None and period is None:
+        return None
+    return {
+        "fiscal_year_code": year.code if year else None,
+        "period_code": period.code if period else None,
+        "period_status": period.status if period else None,
+    }
+
+
 __all__ = [
     "trial_balance_summary",
     "income_statement_summary",
     "vat_return_status",
     "find_journal",
     "account_balance",
+    "current_fiscal_period",
     "Money",
     "DEFAULT_CURRENCY",
     "JournalInput",

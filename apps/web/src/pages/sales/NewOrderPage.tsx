@@ -1,9 +1,10 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NavIcon } from "../../app/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { markFormDirty } from "../../assistant/context";
 import { createOrder, listCustomers, type NewOrderLine } from "../../api/sales";
 import { listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
@@ -74,6 +75,14 @@ export function NewOrderPage() {
   // ⌘/Ctrl+Enter submits, Esc cancels back to the orders list.
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef, onCancel: () => navigate("/sales") });
+
+  // The AI assistant's page envelope warns about unsaved changes before suggesting navigation.
+  useEffect(() => {
+    const isDirty = Boolean(customer || warehouse || taxCode)
+      || lines.some((l) => l.item_sku || l.unit_price || l.discount);
+    markFormDirty(isDirty);
+    return () => markFormDirty(false);
+  }, [customer, warehouse, taxCode, lines]);
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
