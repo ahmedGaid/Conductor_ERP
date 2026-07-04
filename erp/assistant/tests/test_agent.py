@@ -174,6 +174,61 @@ def test_loop_runs_search_documents_and_cites(monkeypatch):
     assert cites_event["citations"][0]["value"] == "Refund Policy"
 
 
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_document_intent_without_search_is_forced_to_search(monkeypatch):
+    """Deterministic grounding guard (FILE_11 follow-up): the planner classifies the question as
+    document-shaped but tries to answer without ever calling search_documents — the loop must
+    force one real search before the final answer, so the answer is grounded either way."""
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    knowledge.ingest_document(
+        data=b"Refund policy: customers can return items within 14 days.",
+        media_type="text/plain", filename="refunds.txt", title="Refund Policy", actor=user,
+    )
+    _script(monkeypatch, [{"action": "answer", "intent": "document_search"}])
+    _stream(monkeypatch, "Refunds allowed within 14 days.")
+
+    events = _run(user, conv, question="what is the refund policy?")
+
+    steps = [e for e in events if e["type"] == "step"]
+    assert [(s["tool"], s["state"]) for s in steps] == [
+        ("search_documents", "running"), ("search_documents", "done"),
+    ]
+    cites_event = next(e for e in events if e["type"] == "citations")
+    assert cites_event["citations"][0]["value"] == "Refund Policy"
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_guard_skips_when_search_already_ran(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "search_documents", "why": "Checking", "query": "x",
+         "intent": "document_search"},
+        {"action": "answer"},
+    ])
+    _stream(monkeypatch, "No document covers this.")
+
+    events = _run(user, conv, question="policy on x?")
+
+    steps = [e for e in events if e["type"] == "step"]
+    assert [(s["tool"], s["state"]) for s in steps] == [
+        ("search_documents", "running"), ("search_documents", "done"),
+    ]
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_guard_does_not_fire_for_non_document_intent(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [{"action": "answer", "intent": "explain"}])
+    _stream(monkeypatch, "FIFO means first-in first-out.")
+
+    events = _run(user, conv, question="what does FIFO mean?")
+
+    assert [e for e in events if e["type"] == "step"] == []
+
+
 def test_loop_system_contains_source_routing():
     assert "search_documents" in agent._LOOP_SYSTEM
     assert "never" in agent._LOOP_SYSTEM.lower()

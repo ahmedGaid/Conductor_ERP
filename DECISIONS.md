@@ -1478,3 +1478,39 @@ of `linear-polish-plan` if judged trust-critical before more UI polish.
 grounding failures are known, reproducible, and explicitly deferred per user decision above — not a
 silent gap. This plan (rag-knowledge FILE_01–11) is complete and closes here; queue advances to
 `linear-polish-plan`.
+
+**Addendum, same day — fixed, not deferred after all.** The user independently hit the document-
+grounding half of this gap live minutes after sign-off (asked the assistant about the return policy,
+got "no document found, want me to search?" despite two real policy documents existing). Re-approved
+scope: fix now rather than wait for a future session.
+
+**Fix (`erp/assistant/services/agent.py::run`):** a deterministic guard, not another prompt-wording
+attempt. After the plan/tool loop ends, if the turn is about to answer (no clarify, no propose) and
+the planner's own `intent` classification is `document_search`/`mixed` and `search_documents` was
+never actually called this turn, force one real `search_documents` call with the user's question as
+the query before the final answer is generated. The forced call's result (hits or the honest
+"nothing found" note) feeds the same answer-synthesis step as any planner-chosen call, so the model
+answers from real data either way — it can no longer reach "answer" on a document-shaped question
+ungrounded. Scoped narrowly: only fires for document-shaped intents (never for `explain`/
+`conversation`/live-data intents, where forcing a search would be wrong), and only once (skips if a
+search already happened, however it happened). 3 new tests (`test_agent.py`: forces exactly one
+search when the planner tries to skip it, does not double-search when one already ran, does not
+fire for a non-document intent). `pytest erp/assistant` 138 green (135 + 3).
+
+**Live re-verification against Groq** (3 questions that previously failed): all three now show a
+real `search_documents` step and citations tied to actual document content — no invented titles, no
+false negatives. One finding surfaced by this re-test: the pre-existing seeded doc titled
+`return-policy` (id 1) turned out to contain **Arabic** body text despite its English-looking title
+(a labelling leftover from an earlier session, not a bug) — the acceptance session's assumption that
+it was the "English catalog/SOP" seed was wrong. Added a genuine English document
+(`Return Policy (English)`, id 6) so English-language grounding is actually exercised; re-verified
+against it — correct citation, correct content (14 days / original invoice / original packaging /
+perishable-custom excluded / 7-business-day refund), matching the source exactly.
+
+**Not fixed by this guard (separate, larger problem, still deferred):** the live-data half — a
+lookup/report-intent question answered with a fabricated number and zero tool-call steps. Forcing a
+specific data tool the way this guard forces `search_documents` isn't safe (there are ~20 data tools;
+picking the wrong one could itself surface out-of-scope data). Remains filed as a backlog item for a
+dedicated future session — candidate shape: a post-answer check for unbacked specific-number claims,
+or a stricter planner constraint that a `lookup`/`report` intent may not reach "answer" with zero
+tool calls when `results` is empty.

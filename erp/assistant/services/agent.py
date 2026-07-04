@@ -271,6 +271,25 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             citations.extend(tool.cite(data) if tool else [])
         yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": ok}
 
+    # Deterministic grounding guard (2026-07-04, rag-knowledge FILE_11 follow-up): the planner
+    # sometimes classifies a question as document-shaped (intent) yet reaches answer without ever
+    # calling search_documents — reproduced live both as a false "no document found" and, worse,
+    # as an invented document name/content. Prompt wording alone has been hardened twice already
+    # with no durable effect (see DECISIONS.md), so force one real search here rather than trust
+    # the model to remember. This only fires for document-shaped intents and only once.
+    if (clarify_text is None and proposal is None and intent in ("document_search", "mixed")
+            and not any(r["tool"] == "search_documents" for r in results)):
+        name = "search_documents"
+        why = "Checking company documents"
+        yield {"type": "step", "tool": name, "label": why, "state": "running"}
+        data, ok = _run_tool(actor, {"tool": name, "query": q})
+        results.append({"tool": name, "why": why, "data": data})
+        steps.append({"tool": name, "why": why, "ok": ok})
+        if ok:
+            tool = TOOLS.get(name)
+            citations.extend(tool.cite(data) if tool else [])
+        yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": ok}
+
     citations = _dedup(citations)
     # ``used_tool`` = the last tool that succeeded — keeps session-06's per-tool follow-up chips
     # working (client reads it from ``done`` and from the reloaded message meta).
