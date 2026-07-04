@@ -30,6 +30,8 @@ from erp.purchasing import contracts as purchasing
 from erp.sales import contracts as sales
 from erp.workflow import services as workflow
 
+from .query_registry import run_query as _run_query
+
 
 def _egp(minor: int | None) -> str:
     """Integer minor units → a human EGP string with Western digits (money formats at the edge)."""
@@ -231,6 +233,22 @@ def _document_history(actor, *, entity_type: str = "", entity_id: str = "", limi
     ]}
 
 
+# --- Analytics tool — the bounded structured-query escape hatch (session 08 Task E) --------------
+
+def _query_data(actor, *, entity: str = None, filters=None, group_by=None, aggregate: str = None,
+                metric: str = None, limit: int = 20, **_) -> dict:
+    """Flexible count/total across a whitelisted data set when no specific tool fits.
+
+    Delegates to ``query_registry.run_query``, which validates every part of the grammar against the
+    registry and runs it AS the actor (permission gate + ``scope_queryset``). Not free-text SQL — the
+    registry is the boundary. Returns the calm refusal dict on anything off-registry or unpermitted.
+    """
+    return _run_query(
+        actor, entity=entity, filters=filters, group_by=group_by,
+        aggregate=aggregate, metric=metric, limit=int(limit or 20),
+    )
+
+
 # --- citation builders (real records → click-through links, never model-invented) ---------------
 
 def _cite_customers(result: dict) -> list[dict]:
@@ -381,6 +399,19 @@ TOOLS: dict[str, Tool] = {t.name: t for t in [
          {"entity_type": "the record type, e.g. SalesOrder / PurchaseOrder / JournalEntry",
           "entity_id": "the record's id or number", "limit": "how many entries (default 10)"},
          _document_history, lambda _r: [], "Audit"),
+    # Analytics — the fallback when no specific tool fits (count/total over a whitelisted data set)
+    Tool("query_data",
+         "Count or total a data set when no specific tool fits — e.g. 'how many items do we have', "
+         "'total sales by status', 'orders per customer'. Pick a data set, optional filters, up to "
+         "two group-by fields, and one aggregate. See the query_data data sets listed below.",
+         {"entity": "which data set (one of the data sets listed under query_data below)",
+          "filters": "optional list of {field, op, value}; op is one of "
+                     "eq/gt/lt/gte/lte/contains/between; value as text (for between pass 'low,high')",
+          "group_by": "optional 0–2 fields to break the total down by",
+          "aggregate": "count | sum | avg | min | max (default count)",
+          "metric": "the field to total, required for sum/avg/min/max",
+          "limit": "max rows when grouped (default 20)"},
+         _query_data, lambda r: r.get("citations", []), "Analytics"),
 ]}
 
 
