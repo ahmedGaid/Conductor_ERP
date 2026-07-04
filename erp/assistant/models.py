@@ -6,6 +6,8 @@ Messages are append-only; edits create new messages so the transcript stays hone
 from __future__ import annotations
 
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 
 
@@ -58,3 +60,55 @@ class Attachment(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+
+
+class KnowledgeDocument(models.Model):
+    """One uploaded company document (SOP, policy, catalog, manual) in the knowledge base.
+
+    Ingestion is synchronous and bounded; a failure lands on the row (status=failed +
+    error_text) blame-free, never as an exception to the uploader.
+    """
+
+    STATUS_CHOICES = [("processing", "processing"), ("ready", "ready"), ("failed", "failed")]
+
+    title = models.CharField(max_length=200)
+    filename = models.CharField(max_length=255)
+    media_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default="processing")
+    error_text = models.CharField(max_length=255, blank=True, default="")
+    chunk_count = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="knowledge_documents",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class KnowledgeChunk(models.Model):
+    """One searchable slice of a document. ``search`` is a maintained tsvector (config
+    "simple" — language-neutral, works for Arabic + English); ``embedding`` is filled only
+    when ASSISTANT_RAG_EMBEDDINGS is on (session 03)."""
+
+    document = models.ForeignKey(KnowledgeDocument, on_delete=models.CASCADE, related_name="chunks")
+    seq = models.PositiveIntegerField()
+    text = models.TextField()
+    search = SearchVectorField(null=True)
+    embedding = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["document_id", "seq"]
+        indexes = [GinIndex(fields=["search"])]
+        constraints = [
+            models.UniqueConstraint(fields=["document", "seq"], name="uniq_chunk_per_doc_seq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.document_id}#{self.seq}"
