@@ -60,6 +60,27 @@ def test_page_section_renders_record_line_when_given():
     assert "sales" in prompt
 
 
+def test_page_language_instructs_english_when_ui_is_english():
+    user = _user()
+    page = {"module": "sales", "path": "/sales/orders", "record": None, "language": "en",
+            "recent": []}
+
+    prompt = context.build_system_prompt(user, page=page)
+
+    assert "interface is currently set to English" in prompt
+    assert "answer in English" in prompt
+
+
+def test_page_language_instructs_arabic_when_ui_is_arabic():
+    user = _user()
+    page = {"module": "sales", "path": "/sales/orders", "record": None, "language": "ar",
+            "recent": []}
+
+    prompt = context.build_system_prompt(user, page=page)
+
+    assert "interface is currently set to Arabic" in prompt
+
+
 def test_page_section_absent_when_no_page():
     user = _user()
 

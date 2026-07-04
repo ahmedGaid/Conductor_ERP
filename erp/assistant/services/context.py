@@ -71,6 +71,11 @@ def _page_block(page: dict | None) -> str | None:
     if not page:
         return None
     lines = ["Page:"]
+    language = page.get("language")
+    if language:
+        label = "Arabic" if language == "ar" else "English"
+        lines.append(f"- The interface is currently set to {label} — answer in {label} unless "
+                     "the user writes their question in a different language.")
     module = page.get("module")
     if module:
         lines.append(f"- The user is currently in the {module} module, at route {page.get('path', '')}.")
