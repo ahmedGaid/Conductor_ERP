@@ -554,6 +554,76 @@
   }
 }
 
+/* Agent reasoning (session 09): the live tool-call stack while streaming, and the collapsed
+   "Checked N sources" summary on a finished answer. Monochrome and quiet — a clock while a step
+   runs, a check when it lands; colour never enters the chrome. */
+.msg-steps {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.msg-steps__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.msg-steps__icon {
+  display: inline-flex;
+  flex: none;
+}
+.msg-steps__icon .navicon {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+}
+.msg-steps__item--running {
+  color: var(--color-text);
+}
+.msg-steps__item--running .msg-steps__icon {
+  animation: assistant-step-pulse 1.4s ease-in-out infinite;
+}
+@keyframes assistant-step-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg-steps__item--running .msg-steps__icon {
+    animation: none;
+  }
+}
+
+.msg-steps-summary {
+  margin-block-end: var(--space-2);
+}
+.msg-steps-summary__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+.msg-steps-summary__toggle:hover {
+  color: var(--color-text);
+}
+.msg-steps-summary__toggle .navicon {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+}
+.msg-steps-summary .msg-steps {
+  margin-block-start: var(--space-1);
+  margin-inline-start: var(--space-3);
+}
+
 /* Blame-free inline error with a retry. */
 .msg__error {
   margin: 0;

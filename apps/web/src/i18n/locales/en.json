@@ -55,6 +55,8 @@
     "remove": "Remove",
     "fileTooLarge": "File is too large (max 5 MB)",
     "fileType": "File type not supported",
+    "stepsLabel": "Steps",
+    "stepsSummary": "Checked {{count}} sources",
     "suggestions": {
       "s1": "How much did we sell this month?",
       "s2": "Who are our top customers?",

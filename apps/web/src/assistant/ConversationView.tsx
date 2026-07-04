@@ -11,6 +11,7 @@ import {
   type AskCitation,
   type AttachmentInfo,
   type ChatMessage,
+  type ChatStep,
 } from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
@@ -38,6 +39,7 @@ export function ConversationView() {
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [streamText, setStreamText] = useState("");
+  const [streamSteps, setStreamSteps] = useState<ChatStep[]>([]);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -151,10 +153,12 @@ export function ConversationView() {
   ) {
     setStreaming(true);
     setStreamText("");
+    setStreamSteps([]);
     setStreamError(null);
     const ac = new AbortController();
     abortRef.current = ac;
     let acc = "";
+    let steps: ChatStep[] = [];
     let citations: AskCitation[] = [];
     let usedTool: string | null = null;
     let errMsg: string | null = null;
@@ -162,7 +166,17 @@ export function ConversationView() {
       await chatStream(
         { conversation_id: convId, context: collectContext(), ...opts },
         (e) => {
-          if (e.type === "token" && e.text) {
+          if (e.type === "step" && e.tool) {
+            // Steps arrive strictly running-then-done; a `done` closes the last open line.
+            if (e.state === "running") {
+              steps = [...steps, { tool: e.tool, label: e.label ?? "", state: "running" }];
+            } else {
+              steps = steps.map((s, i) =>
+                i === steps.length - 1 ? { ...s, state: "done", ok: e.ok } : s,
+              );
+            }
+            setStreamSteps(steps);
+          } else if (e.type === "token" && e.text) {
             acc += e.text;
             setStreamText(acc);
           } else if (e.type === "citations" && e.citations) {
@@ -187,6 +201,7 @@ export function ConversationView() {
           meta: {
             ...(citations.length ? { citations } : {}),
             ...(usedTool ? { used_tool: usedTool } : {}),
+            ...(steps.length ? { steps } : {}),
           },
           created_at: new Date().toISOString(),
         };
@@ -197,6 +212,7 @@ export function ConversationView() {
       }
       setStreaming(false);
       setStreamText("");
+      setStreamSteps([]);
       abortRef.current = null;
       refreshConversations();
     }
@@ -327,6 +343,7 @@ export function ConversationView() {
           messages={messages ?? []}
           streaming={streaming}
           streamText={streamText}
+          streamSteps={streamSteps}
           error={streamError}
           onRegenerate={() => void regenerate()}
           onEdit={editPrompt}

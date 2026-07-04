@@ -153,9 +153,10 @@ class ChatView(APIView):
     """Streaming chat over the caller's scoped data (SSE). Same auth posture as ``AskView`` — the
     answer is built from scope-filtered tools, so no extra role is needed to ask.
 
-    Body: ``{"conversation_id": int, "message": str}``. Emits ``token`` / ``citations`` / ``done``
-    events; on failure a single blame-free ``error`` event (never a stack trace). A client
-    disconnect aborts quietly and keeps whatever prose was already produced (see ``stream_answer``).
+    Body: ``{"conversation_id": int, "message": str}``. Runs the agentic loop (``services.run_agent``)
+    and emits ``step`` (per tool call) / ``token`` / ``citations`` / ``done`` events; on failure a
+    single blame-free ``error`` event (never a stack trace). A client disconnect aborts quietly and
+    keeps whatever prose was already produced.
     """
 
     permission_classes = [IsAuthenticated]
@@ -190,7 +191,7 @@ class ChatView(APIView):
 
         def _events():
             try:
-                for event in services.stream_answer(
+                for event in services.run_agent(
                     question=message, actor=request.user, conversation=conversation,
                     page=page, regenerate=regenerate, attachment_ids=attachment_ids,
                 ):

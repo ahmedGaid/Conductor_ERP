@@ -13,7 +13,7 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from erp.assistant.models import Conversation, Message
-from erp.assistant.services import ask
+from erp.assistant.services import agent, ask
 from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
@@ -36,16 +36,14 @@ def _conversation(client: APIClient) -> int:
     return client.post("/api/assistant/conversations", {}, format="json").json()["data"]["id"]
 
 
-def _route_none(monkeypatch):
-    """Route to no tool so the pipeline reaches the (mocked) streaming answer with empty data."""
-    monkeypatch.setattr(
-        ask, "complete_json",
-        lambda system, user, schema, **_: {"tool": "none", "period": None, "query": None, "limit": None},
-    )
+def _answer_now(monkeypatch):
+    """Make the agent's planner answer on the first round (no tool call) so the pipeline reaches the
+    (mocked) streaming answer with empty data — chat runs through the agent loop as of session 09."""
+    monkeypatch.setattr(agent, "complete_json", lambda system, user, schema, **_: {"action": "answer"})
 
 
 def _stream(monkeypatch, *chunks: str):
-    monkeypatch.setattr(ask, "complete_stream", lambda messages, **_: iter(chunks))
+    monkeypatch.setattr(agent, "complete_stream", lambda messages, **_: iter(chunks))
 
 
 def _events(resp) -> list[dict]:
@@ -62,7 +60,7 @@ def _events(resp) -> list[dict]:
 def test_stream_emits_tokens_then_done_and_persists_both_messages(monkeypatch):
     client = _client()
     cid = _conversation(client)
-    _route_none(monkeypatch)
+    _answer_now(monkeypatch)
     _stream(monkeypatch, "Hel", "lo ", "world")
 
     resp = client.post(CHAT_URL, {"conversation_id": cid, "message": "hi"}, format="json")
@@ -83,7 +81,7 @@ def test_stream_emits_tokens_then_done_and_persists_both_messages(monkeypatch):
 @override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_unknown_conversation_id_is_404_before_streaming(monkeypatch):
     client = _client()
-    _route_none(monkeypatch)
+    _answer_now(monkeypatch)
     _stream(monkeypatch, "x")
 
     resp = client.post(CHAT_URL, {"conversation_id": 999999, "message": "hi"}, format="json")
@@ -96,7 +94,7 @@ def test_unknown_conversation_id_is_404_before_streaming(monkeypatch):
 def test_foreign_conversation_is_404(monkeypatch):
     owner = _client("owner_chat")
     cid = _conversation(owner)
-    _route_none(monkeypatch)
+    _answer_now(monkeypatch)
     _stream(monkeypatch, "x")
 
     intruder = _client("intruder_chat")
@@ -119,7 +117,7 @@ def test_blank_and_overlong_messages_are_rejected(monkeypatch):
 def test_regenerate_replaces_answer_without_new_user_turn(monkeypatch):
     client = _client()
     cid = _conversation(client)
-    _route_none(monkeypatch)
+    _answer_now(monkeypatch)
     _stream(monkeypatch, "first")
     _events(client.post(CHAT_URL, {"conversation_id": cid, "message": "hi"}, format="json"))
 
@@ -139,7 +137,7 @@ def test_regenerate_replaces_answer_without_new_user_turn(monkeypatch):
 def test_regenerate_without_prior_question_is_400(monkeypatch):
     client = _client()
     cid = _conversation(client)
-    _route_none(monkeypatch)
+    _answer_now(monkeypatch)
     _stream(monkeypatch, "x")
     resp = client.post(CHAT_URL, {"conversation_id": cid, "regenerate": True}, format="json")
     assert resp.status_code == 400

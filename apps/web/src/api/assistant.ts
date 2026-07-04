@@ -133,12 +133,29 @@ export interface ConversationSummary {
   preview: string;
 }
 
+// One step the agent took to answer (session 09): a tool call the model chose, with a human label
+// ("why") and whether it succeeded. Streamed live as `step` events, then persisted in the answer's
+// meta so a reloaded thread still shows the "Checked N sources" reasoning summary.
+export interface ChatStep {
+  tool: string;
+  // `label` while streaming (the live `why`); `why` when read back from a persisted message.
+  label?: string;
+  why?: string;
+  ok?: boolean;
+  state?: "running" | "done";
+}
+
 export interface ChatMessage {
   id: number;
   role: "user" | "assistant";
   content: string;
-  // Server-attached extras (the answer's citations, the turn's attachments); read-only to the client.
-  meta: { citations?: AskCitation[]; attachments?: AttachmentInfo[] } & Record<string, unknown>;
+  // Server-attached extras (the answer's citations, the turn's attachments, the agent's steps);
+  // read-only to the client.
+  meta: {
+    citations?: AskCitation[];
+    attachments?: AttachmentInfo[];
+    steps?: ChatStep[];
+  } & Record<string, unknown>;
   created_at: string;
 }
 
@@ -199,13 +216,18 @@ export function deleteConversation(id: number): Promise<void> {
 // `data:` JSON per event; sessions 09/10 add more event types to the same union.
 
 export interface ChatEvent {
-  type: "token" | "citations" | "done" | "error";
+  type: "step" | "token" | "citations" | "done" | "error";
   text?: string;
   citations?: AskCitation[];
   message_id?: number;
   // Which data tool answered — the client maps it to curated follow-up questions (session 06).
   used_tool?: string | null;
   message?: string;
+  // `step` events (session 09): one tool call the agent is running / has finished.
+  tool?: string;
+  label?: string;
+  state?: "running" | "done";
+  ok?: boolean;
 }
 
 // Same auth headers apiFetch sends (bearer + Accept-Language). Kept local because a raw stream

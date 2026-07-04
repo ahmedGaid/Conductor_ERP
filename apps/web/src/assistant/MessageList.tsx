@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import type { AskCitation, AttachmentInfo, ChatMessage } from "../api/assistant";
+import type { AskCitation, AttachmentInfo, ChatMessage, ChatStep } from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
 import { Bdi } from "../components/Bdi";
@@ -45,10 +45,55 @@ function CitationLink({ c, onNavigate }: { c: AskCitation; onNavigate?: () => vo
   );
 }
 
+// The agent's reasoning surface (session 09). While streaming, each tool call renders as a quiet
+// line — a clock while running, a check when done (a cross if the tool refused) — no spinner
+// carnival. After the answer lands it collapses to one "Checked N sources" line that expands on
+// click: calm by default, the full trail one tap away.
+function StepIcon({ step }: { step: ChatStep }) {
+  if (step.state === "running") return <NavIcon name="clock" />;
+  return <NavIcon name={step.ok === false ? "close" : "check"} />;
+}
+
+function StepStack({ steps }: { steps: ChatStep[] }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="msg-steps" aria-label={t("assistant.stepsLabel")}>
+      {steps.map((s, i) => (
+        <li key={i} className={`msg-steps__item msg-steps__item--${s.state ?? "done"}`}>
+          <span className="msg-steps__icon" aria-hidden="true">
+            <StepIcon step={s} />
+          </span>
+          <span className="msg-steps__label" dir="auto">{s.label ?? s.why ?? s.tool}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function StepsSummary({ steps }: { steps: ChatStep[] }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="msg-steps-summary">
+      <button
+        type="button"
+        className="msg-steps-summary__toggle"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+      >
+        <NavIcon name="check" />
+        {t("assistant.stepsSummary", { count: steps.length })}
+      </button>
+      {open && <StepStack steps={steps} />}
+    </div>
+  );
+}
+
 interface MessageListProps {
   messages: ChatMessage[];
   streaming: boolean;
   streamText: string;
+  streamSteps: ChatStep[];
   error: string | null;
   onRegenerate: () => void;
   onEdit: (text: string) => void;
@@ -67,6 +112,7 @@ export function MessageList({
   messages,
   streaming,
   streamText,
+  streamSteps,
   error,
   onRegenerate,
   onEdit,
@@ -118,6 +164,7 @@ export function MessageList({
           {messages.map((m) => {
             const cites = (m.meta?.citations as AskCitation[] | undefined) ?? [];
             const atts = (m.meta?.attachments as AttachmentInfo[] | undefined) ?? [];
+            const steps = (m.meta?.steps as ChatStep[] | undefined) ?? [];
             if (m.role === "user") {
               return (
                 <li key={m.id} className="msg msg--user">
@@ -149,6 +196,7 @@ export function MessageList({
             }
             return (
               <li key={m.id} className="msg msg--assistant">
+                {steps.length > 0 && <StepsSummary steps={steps} />}
                 <Markdown text={m.content} onNavigate={onNavigate} />
                 {cites.length > 0 && (
                   <ul className="assistant-cites msg__cites">
@@ -189,14 +237,15 @@ export function MessageList({
 
           {streaming && (
             <li className="msg msg--assistant">
+              {streamSteps.length > 0 && <StepStack steps={streamSteps} />}
               {streamText ? (
                 <div className="msg__streaming">
                   <Markdown text={streamText} onNavigate={onNavigate} />
                   <span className="msg__caret" aria-hidden="true" />
                 </div>
-              ) : (
+              ) : streamSteps.length === 0 ? (
                 <p className="conversation__hint">{t("assistant.thinking")}</p>
-              )}
+              ) : null}
             </li>
           )}
 
