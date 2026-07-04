@@ -13,6 +13,20 @@ import { followupsFor, type SuggestionKey } from "./suggestions";
 
 // A citation under an assistant message — a real record the answer is built from, click-through so
 // every number is verifiable. Internal navigation closes a floating panel via `onNavigate`.
+// Citation type → (EntityLink type, the nav icon of its home module). "order" is handled apart
+// because a sales-order citation carries the record id (a direct /sales/orders/:id link), while
+// the rest resolve through EntityLink by their business code/number.
+const CITE_ENTITY: Record<
+  Exclude<AskCitation["type"], "order">,
+  { type: "customer" | "item" | "supplier" | "purchaseOrder" | "journal"; icon: string }
+> = {
+  customer: { type: "customer", icon: "crm" },
+  item: { type: "item", icon: "inventory" },
+  supplier: { type: "supplier", icon: "purchasing" },
+  purchaseOrder: { type: "purchaseOrder", icon: "purchasing" },
+  journal: { type: "journal", icon: "accounting" },
+};
+
 function CitationLink({ c, onNavigate }: { c: AskCitation; onNavigate?: () => void }) {
   if (c.type === "order") {
     return (
@@ -22,9 +36,10 @@ function CitationLink({ c, onNavigate }: { c: AskCitation; onNavigate?: () => vo
       </Link>
     );
   }
+  const e = CITE_ENTITY[c.type];
   return (
-    <EntityLink className="assistant-cite" type={c.type} value={c.value} onClick={onNavigate}>
-      <NavIcon name={c.type === "customer" ? "crm" : "inventory"} />
+    <EntityLink className="assistant-cite" type={e.type} value={c.value} onClick={onNavigate}>
+      <NavIcon name={e.icon} />
       <Bdi>{c.label}</Bdi>
     </EntityLink>
   );

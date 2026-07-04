@@ -12,7 +12,7 @@ from django.db.models import Count, Q, Sum
 
 from erp.identity.scoping import scope_queryset
 
-from ..domain.models import SalesOrder
+from ..domain.models import Customer, SalesOrder
 from ..events import ORDER_CONFIRMED, ORDER_DELIVERED, ORDER_INVOICED, PAYMENT_RECEIVED
 from ..repositories import customers as _customers
 from ..services.orders import (
@@ -139,6 +139,49 @@ def find_orders(actor, *, query: str, limit: int = 8) -> list[dict]:
     ]
 
 
+def _scoped_customers(actor):
+    return scope_queryset(actor, Customer.objects.all(), "sales.customer.view")
+
+
+def find_customers(actor, *, query: str, limit: int = 10) -> list[dict]:
+    """Find customers by code or name — scoped to the actor."""
+    q = (query or "").strip()
+    qs = _scoped_customers(actor)
+    if q:
+        qs = qs.filter(Q(code__icontains=q) | Q(name__icontains=q))
+    return [{"code": c.code, "name": c.name, "is_active": c.is_active} for c in qs[: max(1, min(limit, 20))]]
+
+
+def customer_profile(actor, *, query: str) -> dict:
+    """One customer's snapshot: balance owed + recent orders — scoped to the actor.
+
+    ``query`` matches a customer code exactly first, else the first name/code match. Both the
+    customer and their orders run through the actor's scope, so a user who cannot see the customer
+    gets an empty profile (the tool layer turns "no permission" into a calm refusal separately).
+    """
+    q = (query or "").strip()
+    base = _scoped_customers(actor)
+    customer = base.filter(code=q).first() or base.filter(
+        Q(code__icontains=q) | Q(name__icontains=q)
+    ).order_by("code").first()
+    if customer is None:
+        return {"customer": None}
+
+    orders = _scoped_orders(actor).filter(customer=customer).exclude(status="cancelled")
+    agg = orders.aggregate(inv=Sum("invoiced_minor"), paid=Sum("paid_minor"), n=Count("id"))
+    recent = [
+        {"id": str(o.id), "number": o.number, "status": o.status,
+         "order_date": str(o.order_date), "total_minor": o.subtotal_minor}
+        for o in orders.order_by("-order_date")[:5]
+    ]
+    return {
+        "customer": {"code": customer.code, "name": customer.name},
+        "order_count": agg["n"] or 0,
+        "outstanding_minor": (agg["inv"] or 0) - (agg["paid"] or 0),
+        "recent_orders": recent,
+    }
+
+
 __all__ = [
     "OrderLineInput",
     "CustomerInfo",
@@ -147,6 +190,8 @@ __all__ = [
     "top_customers",
     "overdue_receivables",
     "find_orders",
+    "find_customers",
+    "customer_profile",
     "place_order",
     "create_order",
     "confirm_order",

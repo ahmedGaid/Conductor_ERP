@@ -100,7 +100,9 @@ export function uploadAttachment(file: File): Promise<AttachmentInfo> {
 
 export interface AskCitation {
   // A real record the answer is built from — click-through so every number is verifiable.
-  type: "order" | "customer" | "item";
+  // "order" is a sales order (value = id); "purchaseOrder"/"journal" resolve by number,
+  // "supplier"/"customer"/"item" by their business code/SKU.
+  type: "order" | "customer" | "item" | "supplier" | "purchaseOrder" | "journal";
   value: string;
   label: string;
 }

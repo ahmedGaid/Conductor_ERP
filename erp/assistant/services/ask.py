@@ -28,8 +28,9 @@ MAX_QUESTION_CHARS = 1000
 
 _ROUTER_SYSTEM = (
     "You route a user's question to exactly ONE data tool for an Egyptian business ERP.\n"
-    "Available tools:\n{catalog}\n"
+    "Available tools, grouped by area:\n{catalog}\n"
     "Choose the single best tool and fill only the arguments it needs; leave the others null. "
+    "If several tools could help, pick the single most specific one for the question. "
     "If no tool fits (a greeting, or something these tools cannot answer), set tool to \"none\". "
     "Do not answer the question here or invent data — only choose the tool."
 )
@@ -39,10 +40,17 @@ _ROUTER_SCHEMA = {
     "properties": {
         "tool": {"type": "string", "enum": [*TOOLS.keys(), "none"]},
         "period": {"type": ["string", "null"], "description": "this_month | last_month | this_year"},
-        "query": {"type": ["string", "null"]},
+        "query": {"type": ["string", "null"], "description": "free-text lookup (code, name, number)"},
         "limit": {"type": ["integer", "null"]},
+        "status": {"type": ["string", "null"], "description": "an exact record status to filter by"},
+        "supplier": {"type": ["string", "null"], "description": "supplier code or name to filter by"},
+        "warehouse": {"type": ["string", "null"], "description": "warehouse code to limit to"},
+        "days": {"type": ["integer", "null"], "description": "a day horizon (e.g. expiry window)"},
+        "entity_type": {"type": ["string", "null"], "description": "a record type, e.g. SalesOrder"},
+        "entity_id": {"type": ["string", "null"], "description": "a record id or number"},
     },
-    "required": ["tool", "period", "query", "limit"],
+    "required": ["tool", "period", "query", "limit", "status", "supplier", "warehouse", "days",
+                 "entity_type", "entity_id"],
     "additionalProperties": False,
 }
 
@@ -71,8 +79,9 @@ _ANSWER_SCHEMA = {
     "additionalProperties": False,
 }
 
-# Which router field feeds which tool argument.
-_ARG_FIELDS = ("period", "query", "limit")
+# Which router fields can feed a tool argument (each tool only receives the args it declares).
+_ARG_FIELDS = ("period", "query", "limit", "status", "supplier", "warehouse", "days",
+               "entity_type", "entity_id")
 
 
 def answer_question(*, question: str, actor, conversation=None, page: dict | None = None) -> dict:

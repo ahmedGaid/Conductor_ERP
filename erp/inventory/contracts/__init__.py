@@ -8,6 +8,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import datetime
+
+from django.db import models
+
+from ..domain.models import StockMovement
 from ..events import STOCK_ISSUED, STOCK_RECEIVED, STOCK_TRANSFERRED
 from ..repositories import items as _items
 from ..repositories import warehouses as _warehouses
@@ -55,6 +60,78 @@ def low_stock(*, limit: int = 20) -> list[dict]:
         {"sku": r.sku, "name": r.item_name, "warehouse_code": r.warehouse_code, "quantity": r.quantity}
         for r in rows[: max(1, min(limit, 50))]
     ]
+
+
+def _match_sku(query: str) -> str | None:
+    """Resolve a free-text query to a single SKU: exact SKU wins, else first name/SKU match."""
+    q = (query or "").strip()
+    if not q:
+        return None
+    exact = _items.by_sku(q)
+    if exact is not None:
+        return exact.sku
+    from ..domain.models import Item
+
+    hit = Item.objects.filter(models.Q(sku__icontains=q) | models.Q(name__icontains=q)).order_by("sku").first()
+    return hit.sku if hit is not None else None
+
+
+def stock_on_hand(*, query: str | None = None, warehouse: str | None = None,
+                  limit: int = 20) -> dict:
+    """On-hand balances for an item (resolved from ``query``) across warehouses (the AI read tool).
+
+    Inventory balances are company-wide (not user-scoped), matching ``low_stock``.
+    """
+    sku = _match_sku(query) if query else None
+    if query and sku is None:
+        return {"item": None, "rows": []}
+    report = _reports.stock_on_hand(item_sku=sku, warehouse_code=(warehouse or None))
+    rows = report.rows[: max(1, min(limit, 50))]
+    return {
+        "item": sku,
+        "total_value_minor": report.total_value_minor,
+        "rows": [
+            {"sku": r.sku, "name": r.item_name, "warehouse_code": r.warehouse_code,
+             "quantity": r.quantity, "value_minor": r.value_minor, "below_reorder": r.below_reorder}
+            for r in rows
+        ],
+    }
+
+
+def stock_movements(*, query: str, limit: int = 15) -> dict:
+    """Recent stock movements (receipts/issues/transfers) for one item, newest first."""
+    sku = _match_sku(query)
+    if sku is None:
+        return {"item": None, "movements": []}
+    qs = (StockMovement.objects.filter(item__sku=sku).select_related("item", "warehouse")
+          .order_by("-date", "-created_at")[: max(1, min(limit, 30))])
+    return {
+        "item": sku,
+        "movements": [
+            {"sku": m.item.sku, "name": m.item.name, "type": m.type,
+             "date": str(m.date), "quantity": str(m.quantity),
+             "warehouse_code": m.warehouse.code, "reference": m.reference}
+            for m in qs
+        ],
+    }
+
+
+def expiring_batches(*, days: int = 30) -> dict:
+    """Received batches whose earliest expiry falls within ``days`` from today (soonest first)."""
+    horizon = datetime.date.today() + datetime.timedelta(days=max(1, min(days, 3650)))
+    rows = [
+        b for b in _reports.batches()
+        if b.earliest_expiry and b.earliest_expiry <= str(horizon)
+    ]
+    return {
+        "within_days": days,
+        "batches": [
+            {"batch_no": b.batch_no, "sku": b.sku, "name": b.item_name,
+             "warehouse_code": b.warehouse_code, "quantity": b.received_quantity,
+             "expiry_date": b.earliest_expiry}
+            for b in rows
+        ],
+    }
 
 
 def _resolve(sku: str, warehouse_code: str):
@@ -112,6 +189,9 @@ __all__ = [
     "find_item",
     "list_items",
     "low_stock",
+    "stock_on_hand",
+    "stock_movements",
+    "expiring_batches",
     "issue",
     "receive",
     "return_in",
