@@ -1,0 +1,63 @@
+/* Knowledge-base management (assistant admin surface). Token-driven + logical CSS only. */
+
+.knowledge-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.knowledge-upload__title {
+  flex: 1 1 16rem;
+}
+.knowledge-upload__input {
+  display: none;
+}
+
+.knowledge-table-wrap {
+  overflow-x: auto;
+}
+.knowledge-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.knowledge-table th,
+.knowledge-table td {
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--table-pad-block);
+  text-align: start;
+  border-block-end: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.knowledge-table th {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+.knowledge-row__delete {
+  color: var(--color-text-muted);
+}
+.knowledge-row__delete:hover {
+  color: var(--color-danger);
+}
+.knowledge-row__error-row td {
+  border-block-end: 1px solid var(--color-border);
+}
+.knowledge-row__error {
+  white-space: normal;
+  padding-block-start: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+/* Status pill */
+.kpill {
+  display: inline-block;
+  padding-inline: var(--space-2);
+  padding-block: var(--space-0-5);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+.kpill--processing { background-color: var(--color-info-subtle); color: var(--color-info); }
+.kpill--ready { background-color: var(--color-success-subtle); color: var(--color-success-strong); }
+.kpill--failed { background-color: var(--color-danger-subtle); color: var(--color-danger-strong); }

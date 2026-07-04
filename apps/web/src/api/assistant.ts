@@ -347,3 +347,47 @@ export async function chatStream(
     reader.releaseLock();
   }
 }
+
+// --- Knowledge base (plan session 06) ------------------------------------------------------------
+// Admin-managed documents the assistant can search and quote (search_documents tool, session 04).
+// Ingestion is synchronous server-side; a row lands as "ready" or "failed" (with error_text), never
+// as a thrown error to the uploader.
+
+// Mirrors the server allowlist (erp/assistant/api/views.py ALLOWED_TYPES | KNOWLEDGE_TEXT_TYPES) so
+// bad files are rejected instantly, before any upload.
+export const ALLOWED_KNOWLEDGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+
+export interface KnowledgeDoc {
+  id: number;
+  title: string;
+  filename: string;
+  status: "processing" | "ready" | "failed";
+  error_text: string;
+  chunk_count: number;
+  size: number;
+  updated_at: string;
+}
+
+export function listKnowledge(): Promise<KnowledgeDoc[]> {
+  return apiFetch<KnowledgeDoc[]>("/assistant/knowledge");
+}
+
+export function uploadKnowledge(file: File, title: string): Promise<KnowledgeDoc> {
+  const form = new FormData();
+  form.append("file", file);
+  if (title) form.append("title", title);
+  return apiUpload<KnowledgeDoc>("/assistant/knowledge", form);
+}
+
+export function deleteKnowledge(id: number): Promise<void> {
+  return apiFetch<void>(`/assistant/knowledge/${id}`, { method: "DELETE" });
+}

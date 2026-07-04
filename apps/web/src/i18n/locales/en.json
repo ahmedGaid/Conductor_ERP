@@ -24,6 +24,7 @@
     "pricing": "Pricing",
     "usersAdmin": "Users",
     "rolesAdmin": "Roles",
+    "knowledgeAdmin": "Knowledge base",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar"
   },
@@ -98,6 +99,33 @@
       "deleteConfirm": "This conversation and its messages will be removed. This can't be undone.",
       "saveFailed": "That change didn't save. Please try again."
     }
+  },
+  "knowledge": {
+    "title": "Knowledge base",
+    "subtitle": "Documents the assistant can search and quote from — upload policies, procedures, price lists, or catalogs.",
+    "upload": "Upload document",
+    "docTitle": "Title",
+    "docTitlePlaceholder": "Optional — defaults to the filename",
+    "filename": "File",
+    "size": "Size",
+    "statusCol": "Status",
+    "chunks": "Sections",
+    "updated": "Updated",
+    "status": {
+      "processing": "Processing",
+      "ready": "Ready",
+      "failed": "Failed"
+    },
+    "empty": {
+      "title": "No documents yet",
+      "body": "Upload a policy, procedure, price list, or catalog and the assistant will search and quote it when answering questions."
+    },
+    "delete": "Delete",
+    "deleteConfirm": "This document and its indexed sections will be removed. This can't be undone.",
+    "deleteFailed": "That didn't delete. Please try again.",
+    "uploadFailed": "Upload failed. Please try again.",
+    "fileTooLarge": "File is too large (max 5 MB)",
+    "fileType": "File type not supported"
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",

@@ -305,6 +305,13 @@ const PATHS: Record<string, ReactNode> = {
   paperclip: (
     <path d="M21.4 11.05l-8.49 8.49a5 5 0 0 1-7.07-7.07l8.49-8.49a3.33 3.33 0 0 1 4.71 4.71l-8.5 8.49a1.67 1.67 0 0 1-2.36-2.36l7.79-7.78" />
   ),
+  // Knowledge base — open book. Single-stroke, same hand as the set.
+  knowledge: (
+    <>
+      <path d="M12 6.5c-1.6-1.1-4-1.6-7-1.6v13c3 0 5.4.5 7 1.6c1.6-1.1 4-1.6 7-1.6v-13c-3 0-5.4.5-7 1.6Z" />
+      <path d="M12 6.5v13" />
+    </>
+  ),
   // Settings — gear.
   settings: (
     <>

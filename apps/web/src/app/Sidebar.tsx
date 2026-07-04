@@ -199,6 +199,22 @@ export function Sidebar() {
                   </NavLink>,
                 )}
               </li>
+              {aiStatus?.enabled && (
+                <li>
+                  {withTip(
+                    t("nav.knowledgeAdmin"),
+                    <NavLink
+                      to="/assistant/knowledge"
+                      className={({ isActive }) =>
+                        isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                      }
+                    >
+                      <span className="sidebar__icon"><NavIcon name="knowledge" /></span>
+                      <span>{t("nav.knowledgeAdmin")}</span>
+                    </NavLink>,
+                  )}
+                </li>
+              )}
             </ul>
           </>
         )}
