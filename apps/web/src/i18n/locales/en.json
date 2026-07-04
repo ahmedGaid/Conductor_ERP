@@ -1326,6 +1326,8 @@
     "all": "All",
     "actions": "Actions",
     "close": "Close",
+    "undo": "Undo",
+    "undone": "Undone",
     "notFound": "We couldn’t find that record."
   },
   "import": {

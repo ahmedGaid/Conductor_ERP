@@ -19,6 +19,7 @@ import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
+import { useUndoableAction } from "../../lib/useUndoableAction";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -35,6 +36,7 @@ const LEAD_SOURCES = ["web", "referral", "call", "campaign", "other"] as const;
 export function LeadsPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const undoable = useUndoableAction();
   const { data, loading, error, reload, mutate } = useAsync(() => listLeads(), [], "crm:leads");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
@@ -127,18 +129,21 @@ export function LeadsPage() {
     setEmail("");
   }
 
-  // Optimistic row transition: patch the lead in place, reconcile with the server's lead, roll back
-  // + toast on failure.
-  function patchLead(id: string, apply: (l: Lead) => Lead, request: () => Promise<Lead>, success: string) {
+  // Qualifying a lead is reversible (its inverse just restores the prior status), so it's an
+  // undo-not-confirm action: flip the row instantly, then offer Undo instead of asking first.
+  // `onUndone` restores the exact pre-action rows — it runs on an Undo click and if the call fails.
+  function qualifyLead(l: Lead) {
     if (!data) return;
-    void runOptimistic<Lead[], Lead>({
-      current: data,
-      mutate,
-      optimistic: (rows) => rows.map((l) => (l.id === id ? apply(l) : l)),
-      request,
-      settle: (predicted, updated) => predicted.map((l) => (l.id === id ? updated : l)),
-      toast,
-      success,
+    const snapshot = data;
+    const prev = l.status;
+    mutate(snapshot.map((row) => (row.id === l.id ? { ...row, status: "qualified" } : row)));
+    void undoable<Lead>({
+      perform: () => setLeadStatus(l.id, "qualified"),
+      undo: async () => {
+        await setLeadStatus(l.id, prev);
+      },
+      message: t("crm.toast.leadQualified"),
+      onUndone: () => mutate(snapshot),
     });
   }
 
@@ -275,10 +280,7 @@ export function LeadsPage() {
                   <td>
                     <RowActions className="crm-actions" label={t("common.actions")}>
                       {l.status === "new" && (
-                        <button
-                          className="btn btn--sm"
-                          onClick={() => patchLead(l.id, (lead) => ({ ...lead, status: "qualified" }), () => setLeadStatus(l.id, "qualified"), t("crm.toast.leadQualified"))}
-                        >
+                        <button className="btn btn--sm" onClick={() => qualifyLead(l)}>
                           {t("crm.leadStatus.qualified")}
                         </button>
                       )}
