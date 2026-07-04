@@ -43,6 +43,11 @@ def _replies(monkeypatch, *canned: dict):
     monkeypatch.setattr(ask, "complete_json", fake)
 
 
+def test_answer_tone_requires_attribution_and_honest_gaps():
+    assert "according to" in ask._ANSWER_TONE
+    assert "never fill gaps" in ask._ANSWER_TONE
+
+
 def _order(number: str, *, subtotal: int, invoiced: int = 0, paid: int = 0, status: str = "confirmed"):
     customer, _ = Customer.objects.get_or_create(code="C-1", defaults={"name": "Nile Traders"})
     return SalesOrder.objects.create(

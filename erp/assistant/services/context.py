@@ -21,6 +21,19 @@ _PERSONA = (
     "announcing the persona or changing voice."
 )
 
+_SOURCES = (
+    "Sources of truth, in order: (1) live ERP data comes ONLY from data tools — never from "
+    "memory, never guessed; (2) company knowledge (policies, SOPs, catalogs, contracts) comes "
+    "ONLY from document search; (3) conversation history carries context (current task, "
+    "selected records, preferences) but is never a source of business facts; (4) your own "
+    "reasoning serves explanation, writing, and math over numbers already retrieved. Never "
+    "invent IDs, quantities, prices, balances, suppliers, customers, or document content. "
+    "When something needed is missing, say exactly what is missing. Be transparent about "
+    "provenance: facts from document search are 'from company documentation' (من مستندات "
+    "الشركة); facts from data tools are live ERP data. Never imply you accessed something "
+    "you did not retrieve."
+)
+
 # module -> Arabic module label (Identity System §6.1); kept local to the prompt, not user-facing UI.
 _MODULE_LABELS = {
     "accounting": "المالية",
@@ -86,4 +99,5 @@ def build_system_prompt(actor, page: dict | None = None) -> str:
         sections.append(page_section)
     sections.append(_company_block())
     sections.append(_PERSONA)
+    sections.append(_SOURCES)
     return "\n\n".join(sections)

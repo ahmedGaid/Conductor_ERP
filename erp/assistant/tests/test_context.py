@@ -75,3 +75,30 @@ def test_user_without_sales_permission_prompt_states_not_accessible():
 
     assert "Accessible modules: inventory." in prompt
     assert "outside the user's access" in prompt
+
+
+def test_prompt_names_the_four_sources():
+    user = _user()
+
+    prompt = context.build_system_prompt(user, page=None)
+
+    assert "data tools" in prompt
+    assert "document search" in prompt
+    assert "never a source of business facts" in prompt
+    assert "Never invent" in prompt
+
+
+def test_prompt_orders_sources_after_persona():
+    user = _user()
+
+    prompt = context.build_system_prompt(user, page=None)
+
+    assert prompt.index("Adopt the expert lens") < prompt.index("Sources of truth")
+
+
+def test_prompt_carries_arabic_provenance_phrase():
+    user = _user()
+
+    prompt = context.build_system_prompt(user, page=None)
+
+    assert "من مستندات الشركة" in prompt

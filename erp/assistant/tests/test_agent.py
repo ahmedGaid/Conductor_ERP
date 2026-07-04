@@ -173,3 +173,4 @@ def test_loop_system_contains_source_routing():
     assert "search_documents" in agent._LOOP_SYSTEM
     assert "never" in agent._LOOP_SYSTEM.lower()
     assert "invent" in agent._LOOP_SYSTEM.lower()
+    assert "before calling search_documents" in agent._LOOP_SYSTEM
