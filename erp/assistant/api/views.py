@@ -21,7 +21,7 @@ from erp.audit import services as audit
 from erp.core.errors import AppError, ValidationError
 from erp.core.import_api import MAX_UPLOAD_BYTES
 from erp.identity.permissions import HasAnyRole
-from erp.identity.roles import BRANCH_MANAGER
+from erp.identity.roles import BRANCH_MANAGER, SYSTEM_ADMIN
 
 from .. import client, services
 from ..errors import (
@@ -30,18 +30,39 @@ from ..errors import (
     ActionForbiddenError,
     AssistantUnavailableError,
 )
-from ..models import Attachment, Conversation, Message
-from ..services import actions, files
+from ..models import Attachment, Conversation, KnowledgeDocument, Message
+from ..services import actions, files, knowledge
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
 
 logger = logging.getLogger(__name__)
 
 _CanBuy = HasAnyRole.require(BRANCH_MANAGER)
+# Managing the shared knowledge base is an admin task (the docs are company-wide, not per-user).
+_CanManageKnowledge = HasAnyRole.require(SYSTEM_ADMIN)
+
+# Text uploads the knowledge base accepts on top of the vision ALLOWED_TYPES (images + PDF).
+KNOWLEDGE_TEXT_TYPES = {
+    "text/plain", "text/markdown", "text/csv",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
 
 
 def _envelope(data, status: int = 200) -> Response:
     return Response({"data": data}, status=status)
+
+
+def _doc_row(d: KnowledgeDocument) -> dict:
+    return {
+        "id": d.id,
+        "title": d.title,
+        "filename": d.filename,
+        "status": d.status,
+        "error_text": d.error_text,
+        "chunk_count": d.chunk_count,
+        "size": d.size,
+        "updated_at": d.updated_at.isoformat(),
+    }
 
 
 class AssistantStatusView(APIView):
@@ -79,6 +100,49 @@ class ExtractDocumentView(APIView):
             actor=request.user,
         )
         return _envelope(proposal)
+
+
+class KnowledgeView(APIView):
+    """List (GET) and upload (POST) knowledge-base documents. Admin-only — the base is shared."""
+
+    permission_classes = [IsAuthenticated, _CanManageKnowledge]
+
+    def get(self, request: Request) -> Response:
+        docs = KnowledgeDocument.objects.all()[:200]
+        return _envelope([_doc_row(d) for d in docs])
+
+    def post(self, request: Request) -> Response:
+        if not client.enabled():
+            raise Http404
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ValidationError("No file was uploaded.")
+        # Hard ceiling checked BEFORE reading the file into memory (Session-00 posture).
+        if upload.size and upload.size > MAX_UPLOAD_BYTES:
+            raise ValidationError(
+                "File is too large.",
+                data={"max_bytes": MAX_UPLOAD_BYTES, "size": upload.size},
+            )
+        media_type = (upload.content_type or "").lower()
+        allowed = ALLOWED_TYPES | KNOWLEDGE_TEXT_TYPES
+        if media_type not in allowed:
+            raise ValidationError(
+                "Unsupported file type.",
+                data={"content_type": media_type, "allowed": sorted(allowed)},
+            )
+        doc = knowledge.ingest_document(
+            data=upload.read(), media_type=media_type, filename=upload.name,
+            title=(request.data.get("title") or upload.name)[:200], actor=request.user,
+        )
+        return _envelope(_doc_row(doc), status=201)
+
+
+class KnowledgeDetailView(APIView):
+    permission_classes = [IsAuthenticated, _CanManageKnowledge]
+
+    def delete(self, request: Request, pk: int) -> Response:
+        knowledge.delete_document(pk, actor=request.user)
+        return Response(status=204)
 
 
 class AttachmentsView(APIView):

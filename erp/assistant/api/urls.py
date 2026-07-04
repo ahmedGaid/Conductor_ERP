@@ -9,6 +9,8 @@ from .views import (
     ConversationDetailView,
     ConversationsView,
     ExtractDocumentView,
+    KnowledgeDetailView,
+    KnowledgeView,
 )
 
 urlpatterns = [
@@ -20,4 +22,6 @@ urlpatterns = [
     path("actions/execute", ActionExecuteView.as_view(), name="assistant-action-execute"),
     path("conversations", ConversationsView.as_view(), name="assistant-conversations"),
     path("conversations/<int:pk>", ConversationDetailView.as_view(), name="assistant-conversation"),
+    path("knowledge", KnowledgeView.as_view(), name="assistant-knowledge"),
+    path("knowledge/<int:pk>", KnowledgeDetailView.as_view(), name="assistant-knowledge-detail"),
 ]
