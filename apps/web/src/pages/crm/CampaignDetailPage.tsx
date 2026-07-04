@@ -6,7 +6,6 @@ import { BackLink } from "../../components/BackLink";
 import { getCampaign, setCampaignStatus, type Campaign, type CampaignStatus } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
-import { useToast } from "../../app/ToastContext";
 import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -24,7 +23,6 @@ const NEXT: Record<CampaignStatus, CampaignStatus | null> = {
 
 export function CampaignDetailPage() {
   const { t } = useTranslation();
-  const toast = useToast();
   const { id = "" } = useParams();
   const undoable = useUndoableAction();
   const { data: campaign, loading, error, reload, mutate } = useAsync<Campaign>(
