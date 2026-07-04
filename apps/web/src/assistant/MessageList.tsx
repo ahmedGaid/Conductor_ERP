@@ -9,11 +9,14 @@ import type {
   ChatMessage,
   ChatStep,
 } from "../api/assistant";
+import { getMe } from "../api/identity";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
 import { Bdi } from "../components/Bdi";
 import { EntityLink } from "../components/EntityLink";
 import { Tooltip } from "../components/Tooltip";
+import { useAsync } from "../hooks/useAsync";
+import { SYSTEM_ADMIN } from "../pages/settings/roles";
 import { ActionCard } from "./ActionCard";
 import { Markdown } from "./Markdown";
 import { followupsFor, type SuggestionKey } from "./suggestions";
@@ -21,10 +24,11 @@ import { followupsFor, type SuggestionKey } from "./suggestions";
 // A citation under an assistant message — a real record the answer is built from, click-through so
 // every number is verifiable. Internal navigation closes a floating panel via `onNavigate`.
 // Citation type → (EntityLink type, the nav icon of its home module). "order" is handled apart
-// because a sales-order citation carries the record id (a direct /sales/orders/:id link), while
-// the rest resolve through EntityLink by their business code/number.
+// because a sales-order citation carries the record id (a direct /sales/orders/:id link); "document"
+// is handled apart too (knowledge-base doc, not an EntityLink-resolvable record); the rest resolve
+// through EntityLink by their business code/number.
 const CITE_ENTITY: Record<
-  Exclude<AskCitation["type"], "order">,
+  Exclude<AskCitation["type"], "order" | "document">,
   { type: "customer" | "item" | "supplier" | "purchaseOrder" | "journal"; icon: string }
 > = {
   customer: { type: "customer", icon: "crm" },
@@ -34,12 +38,42 @@ const CITE_ENTITY: Record<
   journal: { type: "journal", icon: "accounting" },
 };
 
-function CitationLink({ c, onNavigate }: { c: AskCitation; onNavigate?: () => void }) {
+function CitationLink({
+  c,
+  onNavigate,
+  canOpenKnowledge,
+}: {
+  c: AskCitation;
+  onNavigate?: () => void;
+  canOpenKnowledge: boolean;
+}) {
+  const { t } = useTranslation();
   if (c.type === "order") {
     return (
       <Link className="assistant-cite" to={`/sales/orders/${c.value}`} onClick={onNavigate}>
         <NavIcon name="sales" />
         <Bdi>{c.label}</Bdi>
+      </Link>
+    );
+  }
+  if (c.type === "document") {
+    const body = (
+      <>
+        <NavIcon name="knowledge" />
+        <span className="assistant-cite__prefix">{t("assistant.citation.fromDocs")}</span>
+        <Bdi>{c.value}</Bdi>
+      </>
+    );
+    if (!canOpenKnowledge) {
+      return <span className="assistant-cite assistant-cite--document assistant-cite--plain">{body}</span>;
+    }
+    return (
+      <Link
+        className="assistant-cite assistant-cite--document"
+        to="/assistant/knowledge"
+        onClick={onNavigate}
+      >
+        {body}
       </Link>
     );
   }
@@ -133,6 +167,8 @@ export function MessageList({
   const toast = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
+  const { data: me } = useAsync(getMe, []);
+  const canOpenKnowledge = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
 
   const onScroll = () => {
     const el = scrollRef.current;
@@ -220,7 +256,7 @@ export function MessageList({
                   <ul className="assistant-cites msg__cites">
                     {cites.map((c) => (
                       <li key={`${c.type}:${c.value}`}>
-                        <CitationLink c={c} onNavigate={onNavigate} />
+                        <CitationLink c={c} onNavigate={onNavigate} canOpenKnowledge={canOpenKnowledge} />
                       </li>
                     ))}
                   </ul>

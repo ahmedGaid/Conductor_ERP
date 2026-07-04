@@ -58,6 +58,9 @@
     "fileType": "File type not supported",
     "stepsLabel": "Steps",
     "stepsSummary": "Checked {{count}} sources",
+    "citation": {
+      "fromDocs": "From company documents"
+    },
     "action": {
       "confirm": "Confirm",
       "dismiss": "Dismiss",

@@ -58,6 +58,9 @@
     "fileType": "نوع الملف غير مدعوم",
     "stepsLabel": "الخطوات",
     "stepsSummary": "راجع {{count}} مصادر",
+    "citation": {
+      "fromDocs": "من مستندات الشركة"
+    },
     "action": {
       "confirm": "تأكيد",
       "dismiss": "تجاهل",

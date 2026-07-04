@@ -101,10 +101,13 @@ export function uploadAttachment(file: File): Promise<AttachmentInfo> {
 export interface AskCitation {
   // A real record the answer is built from — click-through so every number is verifiable.
   // "order" is a sales order (value = id); "purchaseOrder"/"journal" resolve by number,
-  // "supplier"/"customer"/"item" by their business code/SKU.
-  type: "order" | "customer" | "item" | "supplier" | "purchaseOrder" | "journal";
+  // "supplier"/"customer"/"item" by their business code/SKU. "document" is a company knowledge-
+  // base doc (value = title, no separate label — the title IS the display text).
+  type: "order" | "customer" | "item" | "supplier" | "purchaseOrder" | "journal" | "document";
   value: string;
-  label: string;
+  label?: string;
+  document_id?: number;
+  section?: number;
 }
 
 export interface AskAnswer {

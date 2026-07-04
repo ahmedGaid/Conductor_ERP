@@ -735,6 +735,17 @@
   flex: none;
   color: var(--color-text-muted);
 }
+.assistant-cite__prefix {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+.assistant-cite--plain {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+.assistant-cite--plain:hover {
+  background: none;
+}
 
 /* --- Markdown-lite answer body ----------------------------------------------------------------- */
 .assistant-md {
