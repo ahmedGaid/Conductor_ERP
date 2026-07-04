@@ -155,3 +155,88 @@ def test_upload_rejects_oversize_and_bad_type(monkeypatch):
 
     bad = SimpleUploadedFile("a.zip", b"PK\x03\x04", content_type="application/zip")
     assert client.post(KNOW_URL, {"file": bad}, format="multipart").status_code == 400
+
+
+# --- search service ----------------------------------------------------------------------------
+
+def _ingest_text(body: str, title: str, actor) -> KnowledgeDocument:
+    return knowledge.ingest_document(
+        data=body.encode("utf-8"), media_type="text/plain",
+        filename=f"{title}.txt", title=title, actor=actor,
+    )
+
+
+def test_search_finds_english_chunk_by_fts():
+    actor = _admin("search_en")
+    _ingest_text("Shipping happens on weekdays only.", "Shipping", actor)
+    _ingest_text("Refund policy: customers can return items within 14 days.", "Refunds", actor)
+    results = knowledge.search("refund policy")
+    assert results
+    assert "Refund policy" in results[0]["text"]
+
+
+def test_search_arabic_fallback():
+    actor = _admin("search_ar")
+    _ingest_text("سياسة الاسترجاع تسمح للعملاء بإرجاع المنتجات خلال ١٤ يوماً.", "Arabic", actor)
+    results = knowledge.search("سياسة الاسترجاع")
+    assert results
+    assert "الاسترجاع" in results[0]["text"]
+
+
+def test_search_ignores_processing_and_failed_docs(monkeypatch):
+    actor = _admin("search_scope")
+    _ingest_text("Refund policy allows returns within 14 days.", "Ready", actor)
+    # a failed doc whose chunk text would otherwise match
+    monkeypatch.setattr(knowledge, "complete_stream", lambda *_a, **_k: iter([]))
+    failed = knowledge.ingest_document(
+        data=b"\x89PNG\r\n", media_type="image/png", filename="x.png",
+        title="Failed refund doc", actor=actor,
+    )
+    assert failed.status == "failed"
+    # a processing doc with a matching chunk, never marked ready
+    proc = KnowledgeDocument.objects.create(
+        title="Processing", filename="p.txt", media_type="text/plain", status="processing",
+    )
+    KnowledgeChunk.objects.create(document=proc, seq=0, text="Refund policy draft.")
+    KnowledgeChunk.objects.filter(document=proc).update(
+        search=knowledge.SearchVector("text", config="simple")
+    )
+    results = knowledge.search("refund policy")
+    assert results
+    assert all(r["title"] == "Ready" for r in results)
+
+
+def test_search_empty_result_is_empty_list():
+    _admin("search_empty")
+    assert knowledge.search("nonexistent zqxjw term") == []
+    assert knowledge.search("") == []
+
+
+def test_search_blends_embeddings_when_available(monkeypatch):
+    actor = _admin("search_blend")
+    # both match the "refund"&"policy" websearch query; FTS ranks A first (more occurrences)
+    doc_a = _ingest_text("refund policy refund policy handling steps.", "A", actor)
+    doc_b = _ingest_text("refund policy summary.", "B", actor)
+    a_chunk = KnowledgeChunk.objects.get(document=doc_a)
+    b_chunk = KnowledgeChunk.objects.get(document=doc_b)
+    # hand-made vectors: query aligns with B, opposes A → B is the semantic winner
+    a_chunk.embedding = [1.0, 0.0]
+    a_chunk.save(update_fields=["embedding"])
+    b_chunk.embedding = [0.0, 1.0]
+    b_chunk.save(update_fields=["embedding"])
+    monkeypatch.setattr(knowledge.client, "embed_text", lambda _q: [0.0, 1.0])
+    results = knowledge.search("refund policy")
+    assert results[0]["title"] == "B"
+
+
+def test_ingest_survives_embedding_outage(monkeypatch):
+    actor = _admin("ingest_emb_outage")
+
+    def _boom(_text):
+        raise RuntimeError("embeddings down")
+
+    monkeypatch.setattr(knowledge.client, "embed_text", _boom)
+    doc = _ingest_text("Refund policy within 14 days.", "Resilient", actor)
+    assert doc.status == "ready"
+    assert doc.chunk_count >= 1
+    assert all(c.embedding is None for c in KnowledgeChunk.objects.filter(document=doc))

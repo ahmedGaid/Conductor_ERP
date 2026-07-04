@@ -213,3 +213,23 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
     """
     runner = {"gemini": _stream_gemini, "groq": _stream_groq}.get(provider(), _stream_anthropic)
     yield from runner(messages, system, media)
+
+
+# --- knowledge-base embeddings (rag plan session 03) -------------------------------------------
+# Optional semantic ranking for document search. Gemini-only (the SDK is already a dependency);
+# any other provider or a failure returns None and search falls back to full-text alone.
+
+EMBEDDING_MODEL = "text-embedding-004"
+
+
+def embed_text(text: str) -> list[float] | None:
+    """One embedding vector, or None when embeddings are off/unavailable. Never raises."""
+    if not getattr(settings, "ASSISTANT_RAG_EMBEDDINGS", False) or not settings.GEMINI_API_KEY:
+        return None
+    try:
+        resp = get_gemini_client().models.embed_content(
+            model=EMBEDDING_MODEL, contents=text[:8000],
+        )
+        return list(resp.embeddings[0].values)
+    except Exception:  # embeddings are an enhancement — search must survive their outage
+        return None

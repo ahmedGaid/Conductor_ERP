@@ -6,10 +6,12 @@ Session 02 adds ingestion, session 03 adds search + optional embeddings.
 """
 from __future__ import annotations
 
-from django.contrib.postgres.search import SearchVector
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from django.db.models import F, Q
 
 from erp.audit import services as audit
 
+from .. import client
 from ..client import complete_stream
 from ..models import KnowledgeChunk, KnowledgeDocument
 from . import files
@@ -100,6 +102,17 @@ def ingest_document(*, data: bytes, media_type: str, filename: str, title: str, 
     KnowledgeChunk.objects.filter(document=doc).update(
         search=SearchVector("text", config="simple")
     )
+    # Optional semantic index: one embedding per chunk when ASSISTANT_RAG_EMBEDDINGS is on. An
+    # outage returns None per call and never fails ingestion (search stays FTS-only for this doc).
+    try:
+        for chunk in KnowledgeChunk.objects.filter(document=doc):
+            vec = client.embed_text(chunk.text)
+            if vec is None:
+                continue
+            chunk.embedding = vec
+            chunk.save(update_fields=["embedding"])
+    except Exception:  # embeddings are an enhancement — ingestion must survive their outage
+        pass
     doc.status = "ready"
     doc.chunk_count = len(chunks)
     doc.save(update_fields=["status", "chunk_count", "updated_at"])
@@ -128,3 +141,72 @@ def delete_document(doc_id: int, actor) -> None:
         module="assistant", action="knowledge_delete", entity_type="KnowledgeDocument",
         entity_id=doc_id, actor=actor, after={"title": title},
     )
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    na = sum(x * x for x in a) ** 0.5
+    nb = sum(y * y for y in b) ** 0.5
+    return dot / (na * nb) if na and nb else 0.0
+
+
+def _row(chunk: KnowledgeChunk, score: float) -> dict:
+    return {
+        "document_id": chunk.document_id,
+        "title": chunk.document.title,
+        "seq": chunk.seq,
+        "text": chunk.text,
+        "score": round(float(score), 4),
+    }
+
+
+def search(query: str, *, limit: int = 6) -> list[dict]:
+    """Top matching chunks across ready documents.
+
+    Ranking: Postgres full-text (websearch syntax, config "simple") is the baseline. When a
+    query embedding is available, full-text candidates are re-ranked by blending cosine
+    similarity with the FTS rank. When FTS finds nothing (common for Arabic morphology),
+    fall back to icontains on the raw query terms.
+
+    Returns [{"document_id", "title", "seq", "text", "score"}], best first. Empty list =
+    genuinely nothing found — the tool layer turns that into an honest "no document covers
+    this" (never fabricated documentation).
+    """
+    query = (query or "").strip()
+    if not query:
+        return []
+
+    sq = SearchQuery(query, config="simple", search_type="websearch")
+    candidates = list(
+        KnowledgeChunk.objects.filter(document__status="ready", search=sq)
+        .annotate(rank=SearchRank(F("search"), sq))
+        .select_related("document")
+        .order_by("-rank")[: limit * 4]
+    )
+
+    if candidates:
+        q_emb = client.embed_text(query)
+        max_rank = max((c.rank for c in candidates), default=0.0) or 1.0
+        scored = []
+        for c in candidates:
+            if q_emb and c.embedding:
+                score = 0.5 * (c.rank / max_rank) + 0.5 * _cosine(q_emb, c.embedding)
+            else:
+                score = c.rank
+            scored.append((score, c))
+        scored.sort(key=lambda t: t[0], reverse=True)
+        return [_row(c, score) for score, c in scored[:limit]]
+
+    # FTS found nothing (Arabic morphology, rare terms): OR raw words via icontains.
+    words = [w for w in query.split() if len(w) >= 3]
+    if not words:
+        return []
+    term_q = Q()
+    for w in words:
+        term_q |= Q(text__icontains=w)
+    fallback = list(
+        KnowledgeChunk.objects.filter(document__status="ready")
+        .filter(term_q)
+        .select_related("document")[:limit]
+    )
+    return [_row(c, 0.0) for c in fallback]

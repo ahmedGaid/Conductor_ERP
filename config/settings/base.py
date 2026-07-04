@@ -229,6 +229,7 @@ ASSISTANT_ENABLED = env.bool(
 )
 ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="")  # "" = the provider's default model
 ASSISTANT_MAX_TOKENS = env.int("ASSISTANT_MAX_TOKENS", default=4096)  # per-request cost cap
+ASSISTANT_RAG_EMBEDDINGS = env.bool("ASSISTANT_RAG_EMBEDDINGS", default=False)  # off = FTS-only search
 
 # --- Workflow egress (SSRF guard) ---
 # Optional host-suffix allowlist for workflow REST/webhook nodes. Empty = any PUBLIC host (private/
