@@ -17,15 +17,21 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.audit import services as audit
 from erp.core.errors import AppError, ValidationError
 from erp.core.import_api import MAX_UPLOAD_BYTES
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 
 from .. import client, services
-from ..errors import AssistantUnavailableError
-from ..models import Attachment, Conversation
-from ..services import files
+from ..errors import (
+    ActionAlreadyHandledError,
+    ActionFailedError,
+    ActionForbiddenError,
+    AssistantUnavailableError,
+)
+from ..models import Attachment, Conversation, Message
+from ..services import actions, files
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
 
@@ -208,6 +214,63 @@ class ChatView(APIView):
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
         return response
+
+
+class ActionExecuteView(APIView):
+    """Confirm or dismiss a write proposal the agent prepared (plan session 10).
+
+    Body: ``{"message_id": int, "decision": "confirm" | "dismiss"}``. The proposal lives in the
+    assistant message's ``meta`` (own-checked via the conversation owner). Confirm runs the module
+    contract **as the caller** and stamps the proposal consumed — single-use, so a second confirm
+    409s. Nothing here bypasses module RBAC: a role that can't create the document is refused.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        if not client.enabled():
+            raise Http404
+        decision = (request.data.get("decision") or "").strip()
+        if decision not in ("confirm", "dismiss"):
+            raise ValidationError("Choose confirm or dismiss.")
+        # Own-check through the conversation: a foreign message is indistinguishable from absent.
+        message = get_object_or_404(
+            Message, pk=request.data.get("message_id"),
+            conversation__user=request.user, role=Message.Role.ASSISTANT,
+        )
+        meta = message.meta or {}
+        proposal = meta.get("proposal")
+        if not proposal:
+            raise Http404
+        if proposal.get("status") != "pending":
+            # Already confirmed/dismissed — single-use, never runs twice.
+            raise ActionAlreadyHandledError
+
+        name = proposal.get("action")
+        if decision == "dismiss":
+            proposal["status"] = "dismissed"
+            message.save(update_fields=["meta"])
+            audit.record(module="assistant", action="dismiss_action", entity_type="Action",
+                         entity_id=name, actor=request.user)
+            return _envelope({"status": "dismissed"})
+
+        try:
+            result = actions.execute(request.user, name, proposal.get("payload") or {})
+        except PermissionError:
+            # The role lost create rights since the card was shown — calm refusal, proposal untouched.
+            raise ActionForbiddenError
+        except AppError:
+            raise  # module validation (unknown item, empty order…) — surface its blame-free message
+        except Exception as exc:  # unexpected — never leak a trace; leave the proposal reusable
+            raise ActionFailedError from exc
+
+        proposal["status"] = "confirmed"
+        proposal["result"] = result
+        message.save(update_fields=["meta"])
+        audit.record(module="assistant", action=name or "action", entity_type="Action",
+                     entity_id=(result.get("links") or [{}])[0].get("value"), actor=request.user,
+                     after={"summary": result.get("summary")})
+        return _envelope({"status": "confirmed", "followups": [], **result})
 
 
 def _first_line(conversation: Conversation) -> str:

@@ -57,6 +57,21 @@
     "fileType": "File type not supported",
     "stepsLabel": "Steps",
     "stepsSummary": "Checked {{count}} sources",
+    "action": {
+      "confirm": "Confirm",
+      "dismiss": "Dismiss",
+      "dismissed": "Dismissed",
+      "executed": "Created",
+      "risks": "Before you confirm",
+      "affected": "{{count}} records",
+      "openDocument": "Open",
+      "alreadyExecuted": "This was already handled.",
+      "titles": {
+        "create_sales_order_draft": "Draft sales order",
+        "create_purchase_request_draft": "Draft purchase request",
+        "create_customer": "New customer"
+      }
+    },
     "suggestions": {
       "s1": "How much did we sell this month?",
       "s2": "Who are our top customers?",

@@ -40,6 +40,28 @@ def find_customer(code: str) -> CustomerInfo | None:
     return CustomerInfo(code=customer.code, name=customer.name, is_active=customer.is_active)
 
 
+def _next_customer_code() -> str:
+    """Auto-generate the next ``C-000NN`` code (used when a caller creates a customer by name only)."""
+    last = (
+        Customer.objects.filter(code__startswith="C-")
+        .order_by("-code").values_list("code", flat=True).first()
+    )
+    seq = 1
+    if last and last[2:].isdigit():
+        seq = int(last[2:]) + 1
+    return f"C-{seq:05d}"
+
+
+def create_customer(*, name: str, code: str = "", credit_limit_minor: int = 0, actor=None) -> CustomerInfo:
+    """Create a customer by business key (code auto-assigned when omitted). Code-based, no ORM leak."""
+    code = (code or "").strip() or _next_customer_code()
+    customer = Customer.objects.create(
+        code=code, name=name, credit_limit_minor=credit_limit_minor,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    return CustomerInfo(code=customer.code, name=customer.name, is_active=customer.is_active)
+
+
 def place_order(
     *, customer_code: str, warehouse_code: str, lines: list[OrderLineInput],
     order_date=None, currency: str = "EGP", notes: str = "", actor=None,
@@ -186,6 +208,7 @@ __all__ = [
     "OrderLineInput",
     "CustomerInfo",
     "find_customer",
+    "create_customer",
     "sales_summary",
     "top_customers",
     "overdue_receivables",

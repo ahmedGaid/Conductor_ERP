@@ -50,6 +50,14 @@ def list_items(item_type: str = "stock") -> list[ItemInfo]:
     ]
 
 
+def default_warehouse_code() -> str | None:
+    """The first active warehouse's code — a sensible default when a caller omits one."""
+    from ..domain.models import Warehouse
+
+    wh = Warehouse.objects.filter(is_active=True).order_by("code").first()
+    return wh.code if wh is not None else None
+
+
 def low_stock(*, limit: int = 20) -> list[dict]:
     """Items whose on-hand quantity is at/below their reorder point (the AI assistant's read tool).
 
@@ -188,6 +196,7 @@ __all__ = [
     "ItemInfo",
     "find_item",
     "list_items",
+    "default_warehouse_code",
     "low_stock",
     "stock_on_hand",
     "stock_movements",
