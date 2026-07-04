@@ -25,6 +25,39 @@ export const assistantGuide: HelpGuide = {
   ],
 };
 
+export const knowledgeGuide: HelpGuide = {
+  title: { en: "Knowledge base", ar: "قاعدة المعرفة" },
+  purpose: {
+    en: "Upload reference documents (policies, guides, price sheets) so the assistant can answer questions from them, with a citation back to the source.",
+    ar: "ارفع مستندات مرجعية (سياسات، أدلة، قوائم أسعار) ليجيب المساعد الذكي من محتواها، مع رابط للمصدر.",
+  },
+  howItWorks: {
+    en: "Upload a file and it's read, split, and indexed automatically — the status pill shows processing, ready, or failed. Once ready, the assistant can search it when answering a question. Deleting a document removes it from search immediately.",
+    ar: "ارفع ملفاً فتتم قراءته وتقسيمه وفهرسته تلقائياً — تُظهر شارة الحالة: قيد المعالجة، جاهز، أو فشل. بمجرد أن يصبح جاهزاً، يمكن للمساعد البحث فيه عند الإجابة عن سؤال. حذف مستند يزيله من البحث فوراً.",
+  },
+  tasks: [
+    {
+      name: { en: "Add a document", ar: "أضف مستنداً" },
+      steps: [
+        { en: "Click 'Upload', pick a file, and optionally give it a title.", ar: "انقر 'رفع'، اختر ملفاً، وأضف عنواناً اختيارياً." },
+        { en: "Wait for the status to reach 'Ready'.", ar: "انتظر حتى تصل الحالة إلى 'جاهز'." },
+      ],
+    },
+    {
+      name: { en: "Remove a document", ar: "احذف مستنداً" },
+      steps: [
+        { en: "Click delete on the row and confirm.", ar: "انقر حذف في الصف وأكّد." },
+      ],
+    },
+  ],
+  mistakes: [
+    { en: "If a document shows 'Failed', it had no readable text (e.g. a scanned image with no text) — try a text-based file instead.", ar: "إن ظهر مستند بحالة 'فشل'، فهذا يعني عدم وجود نص قابل للقراءة (كصورة ممسوحة بلا نص) — جرّب ملفاً نصياً بدلاً منه." },
+  ],
+  related: [
+    { to: "/assistant", label: { en: "Assistant", ar: "المساعد الذكي" } },
+  ],
+};
+
 export const entityLinkGuide: HelpGuide = {
   title: { en: "Opening a linked record", ar: "فتح سجلّ مرتبط" },
   purpose: {
