@@ -217,6 +217,57 @@ def test_agent_loop_propose_emits_proposal_and_persists_it(monkeypatch):
     assert msg.id == prop["message_id"]
 
 
+# --- declarative confirmation registry (plan session 10) ---------------------------------------
+
+def test_every_action_declares_kind_and_confirm():
+    known_kinds = {"create", "update", "delete", "approve", "post", "reverse", "cancel",
+                  "close_period", "bulk", "adjust"}
+    for action in actions.ACTIONS.values():
+        assert action.kind in known_kinds
+        assert action.requires_confirm is True
+
+
+def test_destructive_kind_without_confirm_is_impossible():
+    fake = actions.Action(
+        "fake_delete_everything", "test only", {}, lambda actor, **_: {}, lambda actor, payload: {},
+        kind="delete", requires_confirm=False,
+    )
+    with pytest.raises(AssertionError):
+        assert fake.requires_confirm or fake.kind not in actions.DESTRUCTIVE_KINDS, (
+            f"action {fake.name}: destructive kind '{fake.kind}' must require confirmation")
+
+
+def test_proposal_kind_rides_in_payload():
+    admin = _admin()
+    _seed_sales()
+    proposal = actions.build(admin, "create_sales_order_draft", _sales_decision())
+    assert proposal["kind"] == "create"
+
+
+def test_execute_reruns_permission_check():
+    admin = _admin()
+    _seed_sales()
+    proposal = actions.build(admin, "create_sales_order_draft", _sales_decision())
+    assert "error" not in proposal
+
+    stripped = _nobody("act_stripped")
+    with pytest.raises(PermissionError):
+        actions.execute(stripped, "create_sales_order_draft", proposal["payload"])
+    assert SalesOrder.objects.count() == 0
+
+
+def test_execute_revalidates_before_write():
+    admin = _admin()
+    _seed_sales()
+    proposal = actions.build(admin, "create_sales_order_draft", _sales_decision())
+    assert "error" not in proposal
+
+    Customer.objects.filter(code="C-1").delete()  # entity vanished between build and execute
+    with pytest.raises(ValueError):
+        actions.execute(admin, "create_sales_order_draft", proposal["payload"])
+    assert SalesOrder.objects.count() == 0
+
+
 @override_settings(ASSISTANT_ENABLED=True)
 def test_foreign_message_is_not_found():
     admin = _admin()

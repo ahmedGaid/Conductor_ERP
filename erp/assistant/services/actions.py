@@ -279,6 +279,12 @@ def _execute_customer(actor, payload: dict) -> dict:
 
 # --- registry -----------------------------------------------------------------------------------
 
+# The harness spec's irreversible list: these kinds can NEVER ship with requires_confirm=False,
+# and their confirm card must restate consequences (not just the payload).
+DESTRUCTIVE_KINDS = {"delete", "cancel", "approve", "post", "reverse", "close_period",
+                     "bulk", "adjust"}
+
+
 @dataclass(frozen=True)
 class Action:
     name: str
@@ -286,6 +292,9 @@ class Action:
     args: dict                # arg -> description
     build_proposal: Callable  # (actor, **args) -> {summary, records, risks, payload} | {error}
     execute: Callable         # (actor, payload) -> {links, summary}
+    kind: str = "create"      # "create" | "update" | "delete" | "approve" | "post" | "reverse" |
+                              # "cancel" | "close_period" | "bulk" | "adjust"
+    requires_confirm: bool = True  # NO action may default to False
 
 
 ACTIONS: dict[str, Action] = {a.name: a for a in [
@@ -318,6 +327,10 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
     ),
 ]}
 
+for _a in ACTIONS.values():
+    assert _a.requires_confirm or _a.kind not in DESTRUCTIVE_KINDS, (
+        f"action {_a.name}: destructive kind '{_a.kind}' must require confirmation")
+
 # Which loop-decision fields can feed an action argument (each action gets only the args it declares).
 ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query")
 
@@ -340,9 +353,12 @@ def build(actor, name: str, decision: dict) -> dict:
     kwargs = {k: decision[k] for k in ACTION_ARG_FIELDS
               if decision.get(k) is not None and k in action.args}
     try:
-        return action.build_proposal(actor, **kwargs)
+        proposal = action.build_proposal(actor, **kwargs)
     except Exception:  # bad argument shape — a calm note, never a crash
         return {"error": "That could not be prepared. Try rephrasing what to create."}
+    if "error" not in proposal:
+        proposal["kind"] = action.kind
+    return proposal
 
 
 def execute(actor, name: str, payload: dict) -> dict:
