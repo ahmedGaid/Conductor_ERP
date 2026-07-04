@@ -2,12 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import type { AskCitation, AttachmentInfo, ChatMessage, ChatStep } from "../api/assistant";
+import type {
+  ActionProposal,
+  AskCitation,
+  AttachmentInfo,
+  ChatMessage,
+  ChatStep,
+} from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
 import { Bdi } from "../components/Bdi";
 import { EntityLink } from "../components/EntityLink";
 import { Tooltip } from "../components/Tooltip";
+import { ActionCard } from "./ActionCard";
 import { Markdown } from "./Markdown";
 import { followupsFor, type SuggestionKey } from "./suggestions";
 
@@ -100,6 +107,7 @@ interface MessageListProps {
   onRetry: () => void;
   onFollowup: (question: string) => void;
   onNavigate?: () => void;
+  onResolveAction: (messageId: number, proposal: ActionProposal) => void;
 }
 
 /**
@@ -119,6 +127,7 @@ export function MessageList({
   onRetry,
   onFollowup,
   onNavigate,
+  onResolveAction,
 }: MessageListProps) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -165,6 +174,7 @@ export function MessageList({
             const cites = (m.meta?.citations as AskCitation[] | undefined) ?? [];
             const atts = (m.meta?.attachments as AttachmentInfo[] | undefined) ?? [];
             const steps = (m.meta?.steps as ChatStep[] | undefined) ?? [];
+            const proposal = m.meta?.proposal as ActionProposal | undefined;
             if (m.role === "user") {
               return (
                 <li key={m.id} className="msg msg--user">
@@ -198,6 +208,14 @@ export function MessageList({
               <li key={m.id} className="msg msg--assistant">
                 {steps.length > 0 && <StepsSummary steps={steps} />}
                 <Markdown text={m.content} onNavigate={onNavigate} />
+                {proposal && (
+                  <ActionCard
+                    messageId={m.id}
+                    proposal={proposal}
+                    onResolved={onResolveAction}
+                    onNavigate={onNavigate}
+                  />
+                )}
                 {cites.length > 0 && (
                   <ul className="assistant-cites msg__cites">
                     {cites.map((c) => (

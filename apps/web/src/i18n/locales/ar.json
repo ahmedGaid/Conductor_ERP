@@ -57,6 +57,21 @@
     "fileType": "نوع الملف غير مدعوم",
     "stepsLabel": "الخطوات",
     "stepsSummary": "راجع {{count}} مصادر",
+    "action": {
+      "confirm": "تأكيد",
+      "dismiss": "تجاهل",
+      "dismissed": "تم التجاهل",
+      "executed": "تم الإنشاء",
+      "risks": "قبل التأكيد",
+      "affected": "{{count}} سجلات",
+      "openDocument": "فتح",
+      "alreadyExecuted": "تم التعامل مع هذا بالفعل.",
+      "titles": {
+        "create_sales_order_draft": "مسودة أمر بيع",
+        "create_purchase_request_draft": "مسودة طلب شراء",
+        "create_customer": "عميل جديد"
+      }
+    },
     "suggestions": {
       "s1": "كم بعنا هذا الشهر؟",
       "s2": "من أكبر عملائنا؟",

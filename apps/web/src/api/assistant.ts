@@ -145,18 +145,60 @@ export interface ChatStep {
   state?: "running" | "done";
 }
 
+// A record link on a proposal/result card — a real record the action touches or created.
+export interface ActionRecord {
+  type: "customer" | "supplier" | "item" | "order" | "purchaseRequest";
+  value: string;
+  label: string;
+}
+
+// A write the agent prepared for the user to confirm (plan session 10). Nothing is created until a
+// confirm; the proposal rides in the assistant message meta, so a reloaded thread shows its settled
+// state. `payload` is server-only detail the client never needs (kept optional/opaque here).
+export interface ActionProposal {
+  action: string;
+  summary: string[];
+  records: ActionRecord[];
+  risks: string[];
+  total: string | null;
+  affected: number;
+  status: "pending" | "confirmed" | "dismissed";
+  // Present once confirmed: the created document's link + a success line.
+  result?: { summary: string; links: ActionRecord[] };
+}
+
 export interface ChatMessage {
   id: number;
   role: "user" | "assistant";
   content: string;
-  // Server-attached extras (the answer's citations, the turn's attachments, the agent's steps);
-  // read-only to the client.
+  // Server-attached extras (the answer's citations, the turn's attachments, the agent's steps, a
+  // write proposal); read-only to the client.
   meta: {
     citations?: AskCitation[];
     attachments?: AttachmentInfo[];
     steps?: ChatStep[];
+    proposal?: ActionProposal;
   } & Record<string, unknown>;
   created_at: string;
+}
+
+// Confirm or dismiss a proposal. Confirm runs the module contract as the caller and returns the
+// created document's link; single-use (a second confirm 409s).
+export interface ActionResult {
+  status: "confirmed" | "dismissed";
+  summary?: string;
+  links?: ActionRecord[];
+  followups?: string[];
+}
+
+export function executeAction(
+  messageId: number,
+  decision: "confirm" | "dismiss",
+): Promise<ActionResult> {
+  return apiFetch<ActionResult>("/assistant/actions/execute", {
+    method: "POST",
+    body: JSON.stringify({ message_id: messageId, decision }),
+  });
 }
 
 // The server returns a flat detail object; keep the wire type internal and expose the split the UI
@@ -216,7 +258,7 @@ export function deleteConversation(id: number): Promise<void> {
 // `data:` JSON per event; sessions 09/10 add more event types to the same union.
 
 export interface ChatEvent {
-  type: "step" | "token" | "citations" | "done" | "error";
+  type: "step" | "token" | "citations" | "done" | "error" | "proposal";
   text?: string;
   citations?: AskCitation[];
   message_id?: number;
@@ -228,6 +270,8 @@ export interface ChatEvent {
   label?: string;
   state?: "running" | "done";
   ok?: boolean;
+  // `proposal` event (session 10): a prepared write awaiting the user's confirm, keyed by message_id.
+  proposal?: ActionProposal;
 }
 
 // Same auth headers apiFetch sends (bearer + Accept-Language). Kept local because a raw stream

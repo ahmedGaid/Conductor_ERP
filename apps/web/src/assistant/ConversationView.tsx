@@ -8,6 +8,7 @@ import {
   uploadAttachment,
   ALLOWED_ATTACHMENT_TYPES,
   MAX_ATTACHMENT_BYTES,
+  type ActionProposal,
   type AskCitation,
   type AttachmentInfo,
   type ChatMessage,
@@ -161,6 +162,8 @@ export function ConversationView() {
     let steps: ChatStep[] = [];
     let citations: AskCitation[] = [];
     let usedTool: string | null = null;
+    let messageId: number | null = null;
+    let proposal: ActionProposal | null = null;
     let errMsg: string | null = null;
     try {
       await chatStream(
@@ -181,8 +184,13 @@ export function ConversationView() {
             setStreamText(acc);
           } else if (e.type === "citations" && e.citations) {
             citations = e.citations;
+          } else if (e.type === "proposal" && e.proposal) {
+            // A prepared write awaiting confirm — carries the real server message id it's keyed to.
+            proposal = e.proposal;
+            if (e.message_id != null) messageId = e.message_id;
           } else if (e.type === "done") {
             usedTool = e.used_tool ?? null;
+            if (e.message_id != null) messageId = e.message_id;
           } else if (e.type === "error") {
             errMsg = e.message ?? t("assistant.errorLine");
           }
@@ -193,15 +201,17 @@ export function ConversationView() {
       // A stop (abort) is not an error — the partial answer below still commits.
       if (!ac.signal.aborted) errMsg = err instanceof Error ? err.message : String(err);
     } finally {
-      if (acc.trim()) {
+      if (acc.trim() || proposal) {
         const asstMsg: ChatMessage = {
-          id: -Date.now() - 1,
+          // Use the real server id when we got one, so a proposal card can execute against it.
+          id: messageId ?? -Date.now() - 1,
           role: "assistant",
           content: acc,
           meta: {
             ...(citations.length ? { citations } : {}),
             ...(usedTool ? { used_tool: usedTool } : {}),
             ...(steps.length ? { steps } : {}),
+            ...(proposal ? { proposal } : {}),
           },
           created_at: new Date().toISOString(),
         };
@@ -270,6 +280,16 @@ export function ConversationView() {
 
   function onNavigate() {
     if (open && mode === "floating") closePanel();
+  }
+
+  // A proposal card was confirmed/dismissed — patch its message meta so the settled state persists
+  // in view (the server already stored the same status; a reload reads it back identically).
+  function resolveAction(id: number, proposal: ActionProposal) {
+    setMessages((m) =>
+      (m ?? []).map((msg) =>
+        msg.id === id ? { ...msg, meta: { ...msg.meta, proposal } } : msg,
+      ),
+    );
   }
 
   // --- drag-and-drop (whole surface) -----------------------------------------------------------
@@ -350,6 +370,7 @@ export function ConversationView() {
           onRetry={() => void retry()}
           onFollowup={(q) => void send(q)}
           onNavigate={onNavigate}
+          onResolveAction={resolveAction}
         />
       )}
 

@@ -24,7 +24,7 @@ from erp.audit import services as audit
 from ..client import complete_stream
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
-from . import context, files
+from . import actions, context, files
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS
 from .llm import complete_json
 
@@ -43,32 +43,61 @@ _LOOP_SYSTEM = (
     "For query_data set entity to a data set above and only use fields listed for it; put "
     "comparisons in filters as {{field, op, value}}, break-downs in group_by, and set aggregate "
     "(with metric for a sum/avg/min/max).\n"
+    "When the user asks you to CREATE/MAKE/ADD/RAISE a record, do not use a data tool — propose a "
+    "write action instead. You have these proposable actions (each only prepares a DRAFT the user "
+    "confirms; you never create anything yourself):\n{action_catalog}\n"
     "Each round respond with EXACTLY ONE JSON object, one of:\n"
     '  {{"action": "tool", "tool": "<name>", "why": "<=8 words, shown to the user>", <args...>}}\n'
+    '  {{"action": "propose", "name": "<action>", "why": "<=8 words>", <action args...>}}\n'
     '  {{"action": "clarify", "question": "<one short question>"}}\n'
     '  {{"action": "answer"}}\n'
-    "Fill only the arguments the chosen tool needs; leave the rest null. Gather with as few tool "
-    "calls as the question needs — you may call several tools across rounds to combine data from "
-    "different areas. When you have enough to answer fully, choose answer. Choose clarify ONLY when "
-    "the request is too vague to act on — never to stall. A tool result shaped {{\"error\": ...}} "
-    "means that path is blocked or wrong: read it and try a different tool/arguments, or answer "
-    "honestly — never repeat the same failing call. 'why' is a short human phrase like 'Checking "
-    "this month's sales'. Never invent data; only these tools can see it."
+    "Fill only the arguments the chosen tool/action needs; leave the rest null. Gather with as few "
+    "tool calls as the question needs — you may call several tools across rounds to combine data from "
+    "different areas. When you have enough to answer fully, choose answer. Choose propose as soon as "
+    "you have what an action needs (gather first if you must, e.g. low-stock before a purchase "
+    "request). Choose clarify ONLY when the request is too vague to act on — never to stall. A result "
+    "shaped {{\"error\": ...}} means that path is blocked or wrong: read it and try different "
+    "arguments/tool, or answer honestly — never repeat the same failing call. 'why' is a short human "
+    "phrase like 'Checking this month's sales'. Never invent data; only these tools can see it."
 )
 
 # The planner's decision schema = the router's flat argument fields (proven across all three
 # providers) plus the loop verbs. Keeping the arg fields flat avoids free-form-object schema quirks
 # and lets the tool-arg mapping below reuse ``_ARG_FIELDS`` verbatim.
+# Action arguments the planner may fill for a "propose" decision. Flat, like the tool args: scalar
+# fields reuse the router schema (supplier/warehouse/query); only the action-specific ones are new.
+_ACTION_FIELDS = {
+    "name": {"type": ["string", "null"], "description": "the action name when action=propose"},
+    "customer": {"type": ["string", "null"], "description": "customer code or name (sales order)"},
+    "from_low_stock": {"type": ["boolean", "null"],
+                       "description": "true to fill a purchase request from low-stock items"},
+    "items": {
+        "type": ["array", "null"],
+        "description": "line items to create: item (sku or name), quantity, optional unit_cost (minor)",
+        "items": {
+            "type": "object",
+            "properties": {
+                "item": {"type": "string"},
+                "quantity": {"type": "string"},
+                "unit_cost": {"type": ["integer", "null"]},
+            },
+            "required": ["item", "quantity", "unit_cost"],
+            "additionalProperties": False,
+        },
+    },
+}
+
 _LOOP_SCHEMA = {
     "type": "object",
     "properties": {
-        "action": {"type": "string", "enum": ["tool", "clarify", "answer"]},
+        "action": {"type": "string", "enum": ["tool", "propose", "clarify", "answer"]},
         "why": {"type": ["string", "null"], "description": "<=8 words, shown to the user"},
         "question": {"type": ["string", "null"],
                      "description": "the clarifying question when action=clarify"},
         **_ROUTER_SCHEMA["properties"],
+        **_ACTION_FIELDS,
     },
-    "required": ["action", "why", "question", *_ROUTER_SCHEMA["required"]],
+    "required": ["action", "why", "question", *_ROUTER_SCHEMA["required"], *_ACTION_FIELDS.keys()],
     "additionalProperties": False,
 }
 
@@ -175,17 +204,29 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     history = _recent_turns(conversation, exclude_id=user_msg.id if user_msg else None)
 
     # --- the loop: plan → run a tool → repeat, until answer / clarify / round cap -----------------
-    loop_system = _LOOP_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text())
+    loop_system = _LOOP_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text(),
+                                      action_catalog=actions.catalog_text())
     results: list[dict] = []      # {tool, why, data} per executed tool
     steps: list[dict] = []        # {tool, why, ok} — persisted summaries, never raw payloads
     citations: list[dict] = []
     clarify_text: str | None = None
+    proposal: dict | None = None  # a built write proposal (session 10) — the turn ends after one
 
     for _round in range(MAX_ROUNDS):
         decision = complete_json(loop_system, _loop_user(q, history, results, file_notes), _LOOP_SCHEMA)
         action = decision.get("action")
         if action == "clarify":
             clarify_text = (decision.get("question") or "").strip()
+            break
+        if action == "propose":
+            # The model proposes a write; we build it (validate + price, no write) and end the turn.
+            # A refusal/unresolved build is fed back as data so the answer explains it calmly — no card.
+            pname = decision.get("name") or ""
+            built = actions.build(actor, pname, decision)
+            results.append({"tool": f"propose:{pname}", "why": (decision.get("why") or "").strip(),
+                            "data": built})
+            if "error" not in built:
+                proposal = built
             break
         if action != "tool":  # "answer", or anything unexpected → stop gathering and answer
             break
@@ -214,10 +255,12 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             return None
         saved = True
         answer = "".join(parts).strip()
-        msg = conversation.messages.create(
-            role="assistant", content=answer,
-            meta={"citations": citations, "used_tool": used_tool, "steps": steps},
-        )
+        meta = {"citations": citations, "used_tool": used_tool, "steps": steps}
+        if proposal is not None:
+            # The proposal rides in the assistant message meta (status starts "pending"); the card is
+            # keyed by this message id and the execute endpoint re-reads the payload from here.
+            meta["proposal"] = {**proposal, "status": "pending"}
+        msg = conversation.messages.create(role="assistant", content=answer, meta=meta)
         conversation.save()  # touch updated_at after the reply lands
         audit.record(
             module="assistant", action="ask", entity_type="Question", entity_id=used_tool or "none",
@@ -238,6 +281,11 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             )
             if file_notes:
                 user += "\n\nAttached files:\n" + "\n\n".join(file_notes)
+            if proposal is not None:
+                # A draft is ready but NOT created yet — narrate it, invite confirm/dismiss below.
+                user += ("\n\nA draft has been prepared for the user to review. Briefly say what it "
+                         "will create and mention they can confirm or dismiss it below; do NOT claim "
+                         "it was created or posted.")
             for chunk in complete_stream(
                 [{"role": "user", "content": user}], system=_answer_system(actor, page), media=media,
             ):
@@ -245,6 +293,9 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                 yield {"type": "token", "text": chunk}
         yield {"type": "citations", "citations": citations}
         msg = _persist()
+        if proposal is not None and msg is not None:
+            yield {"type": "proposal", "message_id": msg.id,
+                   "proposal": {**proposal, "status": "pending"}}
         yield {"type": "done", "message_id": msg.id, "used_tool": used_tool}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer

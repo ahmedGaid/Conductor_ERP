@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    ActionExecuteView,
     AskView,
     AssistantStatusView,
     AttachmentsView,
@@ -16,6 +17,7 @@ urlpatterns = [
     path("attachments", AttachmentsView.as_view(), name="assistant-attachments"),
     path("ask", AskView.as_view(), name="assistant-ask"),
     path("chat", ChatView.as_view(), name="assistant-chat"),
+    path("actions/execute", ActionExecuteView.as_view(), name="assistant-action-execute"),
     path("conversations", ConversationsView.as_view(), name="assistant-conversations"),
     path("conversations/<int:pk>", ConversationDetailView.as_view(), name="assistant-conversation"),
 ]

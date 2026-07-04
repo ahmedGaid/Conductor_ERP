@@ -1072,3 +1072,158 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* --- Action proposal card (plan session 10) ---------------------------------------------------- */
+/* A prepared write the user confirms. Monochrome chrome; the only colour is the danger-toned risk
+   line, always paired with its flag icon + word (per brand). */
+.action-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.action-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.action-card__icon {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+.action-card__icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+.action-card__title {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+}
+.action-card__count {
+  margin-inline-start: auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.action-card__summary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+.action-card__records {
+  margin-block: 0;
+}
+.action-card__risks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.action-card__risks-label {
+  font-size: var(--font-size-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.action-card__risks ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.action-card__risks li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+.action-card__risks .navicon {
+  flex: none;
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  margin-block-start: 0.15rem;
+}
+.action-card__error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+.action-card__foot {
+  display: flex;
+  gap: var(--space-2);
+}
+.action-card__confirm {
+  padding-block: var(--space-1);
+  padding-inline: var(--space-4);
+  border: 1px solid var(--color-brand);
+  border-radius: var(--radius-md);
+  background: var(--color-brand);
+  color: var(--color-text-on-brand);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.action-card__confirm:hover:not(:disabled) {
+  background: var(--color-brand-strong);
+}
+.action-card__dismiss {
+  padding-block: var(--space-1);
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.action-card__dismiss:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+.action-card__confirm:disabled,
+.action-card__dismiss:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Settled states — consumed cards stay in history, visibly at rest. */
+.action-card--done,
+.action-card--dismissed {
+  gap: var(--space-2);
+}
+.action-card--dismissed {
+  opacity: 0.7;
+}
+.action-card__result,
+.action-card__settled {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+.action-card__result .navicon {
+  flex: none;
+  color: var(--color-success);
+}
+.action-card__settled {
+  color: var(--color-text-muted);
+}
+.action-card__settled .navicon {
+  flex: none;
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}

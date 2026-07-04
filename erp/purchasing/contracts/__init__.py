@@ -19,6 +19,7 @@ from ..services.orders import (
     pay_order,
     receive_order,
 )
+from ..services.requests import RequestLineInput, create_request as _create_request
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,22 @@ def list_suppliers() -> list[SupplierInfo]:
         SupplierInfo(code=s.code, name=s.name, is_active=s.is_active)
         for s in _suppliers.filter(is_active=True)
     ]
+
+
+def place_request(*, supplier_code: str, warehouse_code: str, lines: list[RequestLineInput],
+                  request_date=None, currency: str = "EGP", notes: str = "", actor=None):
+    """Create a draft purchase request for a supplier referenced by **code**.
+
+    Returns the created request, or ``None`` when the supplier code is unknown — the caller decides
+    how to surface a missing supplier (mirrors ``sales.place_order``).
+    """
+    supplier = _suppliers.by_code(supplier_code)
+    if supplier is None:
+        return None
+    return _create_request(
+        supplier=supplier, warehouse_code=warehouse_code, lines=lines,
+        request_date=request_date, currency=currency, notes=notes, actor=actor,
+    )
 
 
 # --- scoped read helpers for the AI assistant (session 08 tool catalog) -------------------------
@@ -120,6 +137,8 @@ __all__ = [
     "SupplierInfo",
     "find_supplier",
     "list_suppliers",
+    "place_request",
+    "RequestLineInput",
     "open_purchase_orders",
     "supplier_balances",
     "purchase_summary",
