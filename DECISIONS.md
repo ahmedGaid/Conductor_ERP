@@ -1429,3 +1429,52 @@ shapes for whoever picks this up: extend `find_orders` with a `status=overdue` f
 small dedicated tool (e.g. `overdue_orders`) mirroring `overdue_receivables`'s pattern but querying
 Sales orders by due date instead of AR balance. Natural home: a future tool-catalog session
 (FILE_08 sibling) or folded into rag-knowledge FILE_10/11 if convenient.
+
+### RAG + harness plan — FILE_11 acceptance sign-off (2026-07-04)
+
+**Built:** RAG knowledge base (models, ingestion, FTS + optional Gemini-embedding search,
+`search_documents` tool, loop routing, source-of-truth + transparency prompt rules, management UI,
+document citation chips) + harness hardening (richer context envelope: filters/dirty/recent-actions/
+org facts; intent classification; duplicate-call guard; declarative confirmation registry with
+destructive-kind enforcement).
+
+**Not touched:** audit models, `tokens.css`, contracts signatures, existing tool entries, agent
+event protocol; no new dependencies.
+
+**Canon:** RAG = Postgres FTS ("simple") baseline + optional Gemini embeddings in a JSONField (no
+pgvector); per-document ACLs deferred; document ingestion is synchronous. Harness = the agent loop
+itself (no separate orchestrator service); intent is recorded metadata, not a router; every
+destructive action kind requires confirmation by construction.
+
+**Verified:** `pytest erp/assistant` 135 green (structural coverage of every checklist item:
+knowledge ingest/search/role-gate/embedding-outage, context envelope filters/dirty/recent-actions,
+orchestration dup-guard/MAX_ROUNDS/intent, action kind+confirm assert/permission-recheck/
+double-confirm-refusal, `ASSISTANT_ENABLED=False` unavailable state); `gate:all` 00–13 green;
+`tsc -b` + i18n parity (1571 keys) green. UI surfaces (knowledge page, citation chips) unchanged
+since FILE_06/07 where they were last brand-verified — re-verification not repeated.
+
+**Confirmed live-model finding:** live smoke against Groq/Llama-4 (8 questions, run twice to rule
+out rate-limit noise) reproduced a **more severe form** of the gap tracked since FILE_05 — not just
+skipping `search_documents` and naming an undrawn document, but doing the same for **live business
+data**: "how many sales orders" answered with a fabricated count ("5 open sales orders") with
+**zero tool-call step recorded**, and two of three document questions invented a specific,
+nonexistent document title ("Sales and Returns Policy") with fabricated terms, again with no
+`search_documents` step. This directly fails the acceptance checklist's core probes ("never
+invent", "never claims to have read something it did not retrieve"). The nonexistent-customer and
+history-recall probes passed correctly (real tool calls, honest not-found).
+
+**Decision (user-approved 2026-07-04):** record and defer, do not chase with more prompt tuning —
+matches the precedent set across FILE_05/07/09 (this is a model tool-call-compliance weakness, not
+a code defect; `_LOOP_SYSTEM`'s source-routing wording has already been strengthened twice with no
+durable effect). FILE_11 is scoped as verification/docs-only (no new files) so a fix does not land
+in this session. **Filed for later:** a deterministic guard is the right shape, not more prompting
+— e.g. post-check the model's final answer for a document-name pattern or a specific-number claim
+that isn't backed by a `search_documents`/data-tool step in that turn, and force one real
+corrective round (or fall back to the honest "don't have that" copy) before the answer reaches the
+user. Natural home: a new tool-catalog/harness session (successor to this plan), or promoted ahead
+of `linear-polish-plan` if judged trust-critical before more UI polish.
+
+**Sign-off:** all other acceptance/regression boxes verified green (see above). The two live-model
+grounding failures are known, reproducible, and explicitly deferred per user decision above — not a
+silent gap. This plan (rag-knowledge FILE_01–11) is complete and closes here; queue advances to
+`linear-polish-plan`.
