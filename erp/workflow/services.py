@@ -7,6 +7,8 @@ malformed graphs before any write.
 """
 from __future__ import annotations
 
+import uuid
+
 from django.db import transaction
 from django.db.models import Count
 from rest_framework.exceptions import ValidationError
@@ -126,6 +128,48 @@ def list_workflows() -> list[dict]:
         }
         for wf in rows
     ]
+
+
+def instance_status(query: str) -> dict:
+    """One workflow instance's live state — for "why did this workflow stop?" (the AI read tool).
+
+    ``query`` resolves an instance by id (or id prefix) first, else by any value stored in its
+    ``context`` (e.g. the document number that started it), else by workflow name. Returns the
+    current step, its status/error, and the recent node-run history. Company-wide (the assistant's
+    tool layer gates it by ``workflow.instance.view``).
+    """
+    q = (query or "").strip()
+    if not q:
+        return {"instance": None}
+    qs = WorkflowInstance.objects.select_related("workflow", "current_node")
+    inst = None
+    try:
+        uuid.UUID(str(q))
+    except ValueError:
+        pass
+    else:
+        inst = qs.filter(id=q).first()
+    if inst is None:
+        inst = qs.filter(workflow__name__icontains=q).order_by("-created_at").first()
+    if inst is None:
+        return {"instance": None}
+
+    runs = [
+        {"node": r.node.key, "type": r.node.type, "status": r.status, "attempt": r.attempt,
+         "error": r.error}
+        for r in inst.node_runs.select_related("node").order_by("started_at", "id")[:10]
+    ]
+    return {
+        "instance": {
+            "id": str(inst.id),
+            "workflow": inst.workflow.name,
+            "status": inst.status,
+            "current_node": inst.current_node.key if inst.current_node else None,
+            "current_type": inst.current_node.type if inst.current_node else None,
+            "error": inst.error,
+        },
+        "history": runs,
+    }
 
 
 def dashboard_metrics() -> dict:

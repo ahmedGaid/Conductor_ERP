@@ -19,6 +19,7 @@ import json
 from erp.audit import services as audit
 
 from ..client import complete_stream
+from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
 from . import context, files
 from .llm import complete_json
@@ -28,8 +29,16 @@ MAX_QUESTION_CHARS = 1000
 
 _ROUTER_SYSTEM = (
     "You route a user's question to exactly ONE data tool for an Egyptian business ERP.\n"
-    "Available tools:\n{catalog}\n"
+    "Available tools, grouped by area:\n{catalog}\n"
+    "The query_data tool is the flexible fallback for a count/total that no specific tool covers "
+    "(e.g. 'how many items do we have', 'total sales by status'). Its data sets and their allowed "
+    "fields are:\n{query_grammar}\n"
+    "For query_data, set entity to a data set above and only use fields listed for that data set; "
+    "put comparisons in filters as {{field, op, value}}, break-downs in group_by, and set aggregate "
+    "(with metric for a sum/avg/min/max).\n"
     "Choose the single best tool and fill only the arguments it needs; leave the others null. "
+    "If several tools could help, pick the single most specific one for the question; only fall back "
+    "to query_data when no specific tool answers it. "
     "If no tool fits (a greeting, or something these tools cannot answer), set tool to \"none\". "
     "Do not answer the question here or invent data — only choose the tool."
 )
@@ -39,10 +48,41 @@ _ROUTER_SCHEMA = {
     "properties": {
         "tool": {"type": "string", "enum": [*TOOLS.keys(), "none"]},
         "period": {"type": ["string", "null"], "description": "this_month | last_month | this_year"},
-        "query": {"type": ["string", "null"]},
+        "query": {"type": ["string", "null"], "description": "free-text lookup (code, name, number)"},
         "limit": {"type": ["integer", "null"]},
+        "status": {"type": ["string", "null"], "description": "an exact record status to filter by"},
+        "supplier": {"type": ["string", "null"], "description": "supplier code or name to filter by"},
+        "warehouse": {"type": ["string", "null"], "description": "warehouse code to limit to"},
+        "days": {"type": ["integer", "null"], "description": "a day horizon (e.g. expiry window)"},
+        "entity_type": {"type": ["string", "null"], "description": "a record type, e.g. SalesOrder"},
+        "entity_id": {"type": ["string", "null"], "description": "a record id or number"},
+        # query_data (the structured-query fallback) — a fixed grammar over the registry.
+        "entity": {"type": ["string", "null"],
+                   "description": "for query_data: the data set to count/total"},
+        "filters": {
+            "type": ["array", "null"],
+            "description": "for query_data: conditions to narrow the rows",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "field": {"type": "string"},
+                    "op": {"type": "string",
+                           "description": "eq | gt | lt | gte | lte | contains | between"},
+                    "value": {"type": "string", "description": "text value; for between: 'low,high'"},
+                },
+                "required": ["field", "op", "value"],
+                "additionalProperties": False,
+            },
+        },
+        "group_by": {"type": ["array", "null"], "items": {"type": "string"},
+                     "description": "for query_data: 0–2 fields to break the total down by"},
+        "aggregate": {"type": ["string", "null"],
+                      "description": "for query_data: count | sum | avg | min | max"},
+        "metric": {"type": ["string", "null"],
+                   "description": "for query_data: the field to total for sum/avg/min/max"},
     },
-    "required": ["tool", "period", "query", "limit"],
+    "required": ["tool", "period", "query", "limit", "status", "supplier", "warehouse", "days",
+                 "entity_type", "entity_id", "entity", "filters", "group_by", "aggregate", "metric"],
     "additionalProperties": False,
 }
 
@@ -71,8 +111,9 @@ _ANSWER_SCHEMA = {
     "additionalProperties": False,
 }
 
-# Which router field feeds which tool argument.
-_ARG_FIELDS = ("period", "query", "limit")
+# Which router fields can feed a tool argument (each tool only receives the args it declares).
+_ARG_FIELDS = ("period", "query", "limit", "status", "supplier", "warehouse", "days",
+               "entity_type", "entity_id", "entity", "filters", "group_by", "aggregate", "metric")
 
 
 def answer_question(*, question: str, actor, conversation=None, page: dict | None = None) -> dict:
@@ -92,7 +133,7 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
             conversation.title = q[:60]
         conversation.save()  # also touches updated_at
 
-    route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text()), q, _ROUTER_SCHEMA)
+    route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), q, _ROUTER_SCHEMA)
     name = route.get("tool") or "none"
     tool = TOOLS.get(name)
 
@@ -133,7 +174,7 @@ def _route_and_run(question: str, actor):
     Returns ``(result, citations, used_tool)``. Same logic as ``answer_question`` up to the
     answer step, factored out so the streaming path can reuse it verbatim.
     """
-    route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text()), question, _ROUTER_SCHEMA)
+    route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), question, _ROUTER_SCHEMA)
     name = route.get("tool") or "none"
     tool = TOOLS.get(name)
     if tool is None:

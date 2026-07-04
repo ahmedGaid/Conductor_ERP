@@ -6,8 +6,16 @@ never by importing accounting's ORM models or internals directly.
 """
 from __future__ import annotations
 
-from ..domain.money import DEFAULT_CURRENCY, Money
+import datetime
+
+from django.db.models import Q
+
+from erp.identity.scoping import scope_queryset
+
+from ..domain.models import Account, JournalEntry
 from ..events import JOURNAL_POSTED, PERIOD_CLOSED
+from ..services import reports as _reports
+from ..services import statements as _statements
 from ..services.posting import JournalInput, LineInput, post_journal, reverse_journal
 from ..services.seeding import (
     baseline_summary,
@@ -17,7 +25,102 @@ from ..services.seeding import (
 )
 from ..services.taxes import TaxCodeInfo, compute_tax, find_tax_code
 
+
+# --- scoped/gated read helpers for the AI assistant (session 08 tool catalog) -------------------
+# The financial statements are company-wide GL aggregates (not per-record scoped); the assistant's
+# tool layer gates them by the caller's accounting permission. Journals are per-record and scoped
+# here via ``scope_queryset``. All amounts stay in minor units — the tool layer formats them.
+
+def _period_range(period: str) -> tuple[datetime.date, datetime.date, str]:
+    today = datetime.date.today()
+    if period == "last_month":
+        first_this = today.replace(day=1)
+        last_prev = first_this - datetime.timedelta(days=1)
+        start = last_prev.replace(day=1)
+        return start, last_prev, start.strftime("%Y-%m")
+    if period == "this_year":
+        return today.replace(month=1, day=1), today, str(today.year)
+    return today.replace(day=1), today, today.strftime("%Y-%m")
+
+
+def trial_balance_summary(*, period: str = "this_month", limit: int = 8) -> dict:
+    """Trial-balance totals up to the end of a period + the largest balances (integrity check)."""
+    _, end, label = _period_range(period)
+    tb = _reports.trial_balance(as_of=end)
+    top = sorted(tb.rows, key=lambda r: -abs(r.balance))[: max(1, min(limit, 20))]
+    return {
+        "period_label": label, "as_of": str(end),
+        "total_debit_minor": tb.total_debit, "total_credit_minor": tb.total_credit,
+        "is_balanced": tb.is_balanced,
+        "accounts": [
+            {"code": r.account_code, "name": r.account_name, "type": r.account_type,
+             "balance_minor": r.balance}
+            for r in top
+        ],
+    }
+
+
+def income_statement_summary(*, period: str = "this_month") -> dict:
+    """Revenue, expenses and net income over a period (top lines of each)."""
+    start, end, label = _period_range(period)
+    stmt = _statements.income_statement(date_from=start, date_to=end)
+    return {
+        "period_label": label, "date_from": str(start), "date_to": str(end),
+        "total_revenue_minor": stmt.total_revenue,
+        "total_expenses_minor": stmt.total_expenses,
+        "net_income_minor": stmt.net_income,
+        "revenue": [{"code": l.account_code, "name": l.account_name, "amount_minor": l.amount}
+                    for l in stmt.revenue[:5]],
+        "expenses": [{"code": l.account_code, "name": l.account_name, "amount_minor": l.amount}
+                     for l in stmt.expenses[:5]],
+    }
+
+
+def vat_return_status(*, period: str = "this_month") -> dict:
+    """VAT collected vs recovered over a period, and the net payable to the authority."""
+    start, end, label = _period_range(period)
+    vat = _reports.vat_return(start, end)
+    return {
+        "period_label": label, "start_date": vat.start_date, "end_date": vat.end_date,
+        "output_vat_minor": vat.output_vat, "input_vat_minor": vat.input_vat,
+        "net_payable_minor": vat.net_payable, "is_payable": vat.is_payable,
+    }
+
+
+def find_journal(actor, *, query: str, limit: int = 8) -> list[dict]:
+    """Find posted journal entries by number, reference or memo — scoped to the actor."""
+    q = (query or "").strip()
+    qs = scope_queryset(actor, JournalEntry.objects.all(), "accounting.journal.view")
+    if q:
+        qs = qs.filter(Q(number__icontains=q) | Q(reference__icontains=q) | Q(memo__icontains=q))
+    return [
+        {"id": str(e.id), "number": e.number, "date": str(e.date), "status": e.status,
+         "memo": e.memo, "source": e.source}
+        for e in qs.order_by("-date", "number")[: max(1, min(limit, 20))]
+    ]
+
+
+def account_balance(*, query: str) -> dict:
+    """The current (cumulative) balance of one account, resolved from code or name."""
+    q = (query or "").strip()
+    account = Account.objects.filter(code=q).first() or Account.objects.filter(
+        Q(code__icontains=q) | Q(name__icontains=q)
+    ).order_by("code").first()
+    if account is None:
+        return {"account": None}
+    gl = _reports.general_ledger(account.code)
+    return {
+        "account": {"code": account.code, "name": account.name, "type": account.type},
+        "balance_minor": gl.closing_balance,
+        "entry_count": len(gl.lines),
+    }
+
 __all__ = [
+    "trial_balance_summary",
+    "income_statement_summary",
+    "vat_return_status",
+    "find_journal",
+    "account_balance",
     "Money",
     "DEFAULT_CURRENCY",
     "JournalInput",
