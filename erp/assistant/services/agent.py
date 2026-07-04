@@ -60,6 +60,9 @@ _LOOP_SYSTEM = (
     '  {{"action": "propose", "name": "<action>", "why": "<=8 words>", <action args...>}}\n'
     '  {{"action": "clarify", "question": "<one short question>"}}\n'
     '  {{"action": "answer"}}\n'
+    "On your first decision of a turn, also set intent (lookup/report/document_search/create/"
+    "update/workflow/file/explain/conversation/mixed) — it routes nothing by itself but is "
+    "recorded; classify honestly.\n"
     "Fill only the arguments the chosen tool/action needs; leave the rest null. Gather with as few "
     "tool calls as the question needs — you may call several tools across rounds to combine data from "
     "different areas. When you have enough to answer fully, choose answer. Choose propose as soon as "
@@ -103,10 +106,15 @@ _LOOP_SCHEMA = {
         "why": {"type": ["string", "null"], "description": "<=8 words, shown to the user"},
         "question": {"type": ["string", "null"],
                      "description": "the clarifying question when action=clarify"},
+        "intent": {"type": ["string", "null"],
+                   "description": "on your FIRST decision only: the request's intent, one of "
+                                  "lookup | report | document_search | create | update | "
+                                  "workflow | file | explain | conversation | mixed"},
         **_ROUTER_SCHEMA["properties"],
         **_ACTION_FIELDS,
     },
-    "required": ["action", "why", "question", *_ROUTER_SCHEMA["required"], *_ACTION_FIELDS.keys()],
+    "required": ["action", "why", "question", "intent", *_ROUTER_SCHEMA["required"],
+                 *_ACTION_FIELDS.keys()],
     "additionalProperties": False,
 }
 
@@ -220,9 +228,13 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     citations: list[dict] = []
     clarify_text: str | None = None
     proposal: dict | None = None  # a built write proposal (session 10) — the turn ends after one
+    intent: str | None = None
+    seen_calls: set[tuple] = set()
 
     for _round in range(MAX_ROUNDS):
         decision = complete_json(loop_system, _loop_user(q, history, results, file_notes), _LOOP_SCHEMA)
+        if intent is None:
+            intent = decision.get("intent")
         action = decision.get("action")
         if action == "clarify":
             clarify_text = (decision.get("question") or "").strip()
@@ -241,6 +253,15 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             break
         name = decision.get("tool") or "none"
         why = (decision.get("why") or "").strip()
+        signature = (name, tuple(sorted(
+            (k, str(decision.get(k))) for k in _ARG_FIELDS if decision.get(k) is not None
+        )))
+        if signature in seen_calls:
+            results.append({"tool": name, "why": why, "data": {
+                "error": "You already ran this exact call this turn. Use its earlier result, "
+                         "change the arguments, or answer."}})
+            continue
+        seen_calls.add(signature)
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         data, ok = _run_tool(actor, decision)
         results.append({"tool": name, "why": why, "data": data})
@@ -264,7 +285,7 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             return None
         saved = True
         answer = "".join(parts).strip()
-        meta = {"citations": citations, "used_tool": used_tool, "steps": steps}
+        meta = {"citations": citations, "used_tool": used_tool, "steps": steps, "intent": intent}
         if proposal is not None:
             # The proposal rides in the assistant message meta (status starts "pending"); the card is
             # keyed by this message id and the execute endpoint re-reads the payload from here.

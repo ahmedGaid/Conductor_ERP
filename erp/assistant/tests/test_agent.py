@@ -7,6 +7,8 @@ a scripted sequence of decisions so each test pins one loop behaviour.
 """
 from __future__ import annotations
 
+import json
+
 import pytest
 from django.test import override_settings
 
@@ -105,7 +107,9 @@ def test_runaway_is_capped_at_max_rounds(monkeypatch):
 
     def never_answers(system, user, schema, **_):
         calls["n"] += 1
-        return {"action": "tool", "tool": "sales_summary", "why": "loop", "period": "this_month"}
+        # A distinct arg each round — this is a runaway planner, not a duplicate-call case (that's
+        # covered by test_duplicate_tool_call_blocked below); the dup guard must not mask it.
+        return {"action": "tool", "tool": "sales_summary", "why": "loop", "limit": calls["n"]}
 
     monkeypatch.setattr(agent, "complete_json", never_answers)
     _stream(monkeypatch, "Forced answer.")
@@ -115,6 +119,7 @@ def test_runaway_is_capped_at_max_rounds(monkeypatch):
     # Exactly MAX_ROUNDS planner calls — it never spins past the cap — then it force-answers.
     assert calls["n"] == agent.MAX_ROUNDS
     running = [e for e in events if e["type"] == "step" and e["state"] == "running"]
+    # Distinct args each round mean the dup guard never fires — all MAX_ROUNDS calls actually ran.
     assert len(running) == agent.MAX_ROUNDS
     assert events[-1]["type"] == "done"
     assert conv.messages.get(role="assistant").content == "Forced answer."
@@ -174,3 +179,75 @@ def test_loop_system_contains_source_routing():
     assert "never" in agent._LOOP_SYSTEM.lower()
     assert "invent" in agent._LOOP_SYSTEM.lower()
     assert "before calling search_documents" in agent._LOOP_SYSTEM
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_intent_recorded_on_message_meta(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "sales_summary", "why": "Checking sales",
+         "period": "this_month", "intent": "report"},
+        {"action": "answer"},
+    ])
+    _stream(monkeypatch, "Done.")
+
+    _run(user, conv)
+
+    msg = conv.messages.get(role="assistant")
+    assert msg.meta["intent"] == "report"
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_duplicate_tool_call_blocked(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "sales_summary", "why": "Checking sales", "period": "this_month"},
+        {"action": "tool", "tool": "sales_summary", "why": "Checking sales again",
+         "period": "this_month"},
+        {"action": "answer"},
+    ])
+    captured = {}
+
+    def fake_stream(messages, **_):
+        captured["messages"] = messages
+        return iter(["Done."])
+
+    monkeypatch.setattr(agent, "complete_stream", fake_stream)
+
+    events = _run(user, conv)
+
+    # Only one real tool execution ran — the duplicate round never fires step events.
+    steps = [e for e in events if e["type"] == "step"]
+    assert [(s["tool"], s["state"]) for s in steps] == [
+        ("sales_summary", "running"), ("sales_summary", "done"),
+    ]
+
+    gathered = json.loads(captured["messages"][0]["content"])["data"]
+    assert len(gathered) == 2
+    assert "error" not in gathered[0]["result"]
+    assert "already ran this exact call" in gathered[1]["result"]["error"]
+
+    msg = conv.messages.get(role="assistant")
+    assert len(msg.meta["steps"]) == 1  # the duplicate never counts as an executed step
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_same_tool_different_args_allowed(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "stock_on_hand", "why": "Checking item A", "query": "item-a"},
+        {"action": "tool", "tool": "stock_on_hand", "why": "Checking item B", "query": "item-b"},
+        {"action": "answer"},
+    ])
+    _stream(monkeypatch, "Done.")
+
+    events = _run(user, conv)
+
+    done_steps = [e for e in events if e["type"] == "step" and e["state"] == "done"]
+    assert [s["tool"] for s in done_steps] == ["stock_on_hand", "stock_on_hand"]
+
+    msg = conv.messages.get(role="assistant")
+    assert len(msg.meta["steps"]) == 2
