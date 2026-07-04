@@ -1413,3 +1413,19 @@ injection/leak surface — contradicts the trust bar).
 **Where it lands:** FILE_08 (Phase 3 of the ai-workspace plan). The multi-step agent loop (FILE_09)
 then *composes* `query_data` with the specific tools, which is what delivers the full
 ChatGPT-over-your-data feel.
+
+## Backlog gap — "count of overdue sales orders" has no tool (2026-07-04)
+
+Live smoke during FILE_09 verification: user asked "how many sales orders are overdue" (with a
+low-stock question in the same turn). The agent correctly said Conductor has no report for that
+exact question and volunteered the nearest fact it *could* answer (`overdue_receivables` — money
+customers owe, 1,799.40 EGP), rather than inventing an order count. This is the designed honest-gap
+behavior working correctly, **not a bug** — but it surfaces a real coverage gap: no tool answers
+"how many / which sales orders are overdue" (order-level, by due date), only the money-owed view
+(customer-level).
+
+**Filed for later, not fixed now** (scoped feature add, out of FILE_09's bug-fix scope). Candidate
+shapes for whoever picks this up: extend `find_orders` with a `status=overdue` filter, or add a
+small dedicated tool (e.g. `overdue_orders`) mirroring `overdue_receivables`'s pattern but querying
+Sales orders by due date instead of AR balance. Natural home: a future tool-catalog session
+(FILE_08 sibling) or folded into rag-knowledge FILE_10/11 if convenient.
