@@ -21,6 +21,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
+import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { AccountingNav } from "./AccountingNav";
@@ -30,6 +31,7 @@ import "./accounting.css";
 export function BankStatementDetailPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const undoable = useUndoableAction();
   const { id = "" } = useParams();
   const { data: stmt, loading, error, reload, mutate } = useAsync<BankStatement>(
     () => getBankStatement(id),
@@ -61,6 +63,27 @@ export function BankStatementDetailPage() {
       settle: (_predicted, updated) => updated,
       toast,
       success: opts.success,
+    });
+    reloadCandidates();
+  }
+
+  // Matching a line to a GL candidate is a pure link (no journal, no financial effect) and the
+  // backend already exposes its exact inverse (`unmatchBankLine`), so it's undo-not-confirm: flip
+  // the line instantly, offer Undo instead of asking first.
+  function matchLine(lineId: string, journalLineId: number) {
+    if (!stmt) return;
+    const snapshot = stmt;
+    mutate({
+      ...stmt,
+      lines: stmt.lines.map((x) => (x.id === lineId ? { ...x, is_matched: true } : x)),
+    });
+    void undoable<BankStatement>({
+      perform: () => matchBankLine(lineId, journalLineId),
+      undo: async () => {
+        await unmatchBankLine(lineId);
+      },
+      message: t("accounting.toast.lineMatched"),
+      onUndone: () => mutate(snapshot),
     });
     reloadCandidates();
   }
@@ -186,15 +209,7 @@ export function BankStatementDetailPage() {
                           <select
                             className="latin"
                             value=""
-                            onChange={(e) =>
-                              e.target.value &&
-                              apply(() => matchBankLine(l.id, Number(e.target.value)), {
-                                optimistic: (s) => ({
-                                  ...s,
-                                  lines: s.lines.map((x) => (x.id === l.id ? { ...x, is_matched: true } : x)),
-                                }),
-                              })
-                            }
+                            onChange={(e) => e.target.value && matchLine(l.id, Number(e.target.value))}
                           >
                             <option value="">{lineCandidates.length ? t("accounting.bankRec.pickLedgerLine") : t("accounting.bankRec.noCandidate")}</option>
                             {lineCandidates.map((c) => (

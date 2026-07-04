@@ -417,7 +417,8 @@
       "journalPosted": "Journal posted",
       "bankStatementCreated": "Statement created",
       "reportSaved": "Report saved",
-      "budgetLineSet": "Budget line set"
+      "budgetLineSet": "Budget line set",
+      "lineMatched": "Line matched"
     },
     "tabs": {
       "chart": "Chart of Accounts",

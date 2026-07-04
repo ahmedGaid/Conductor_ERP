@@ -7,14 +7,13 @@ import {
   listReportDefinitions,
   runReportDefinition,
   type AccountType,
-  type ReportDefinition,
   type ReportGroupBy,
   type ReportSchedule,
 } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
-import { runOptimistic } from "../../lib/optimistic";
+import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ExportButtons } from "../../components/ExportButtons";
@@ -30,6 +29,7 @@ const SCHEDULES: ReportSchedule[] = ["none", "daily", "weekly", "monthly"];
 export function ReportBuilderPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const undoable = useUndoableAction();
   const { data: defs, loading, error, reload, mutate } = useAsync(listReportDefinitions, [], "accounting:report-definitions");
 
   const [name, setName] = useState("");
@@ -77,17 +77,32 @@ export function ReportBuilderPage() {
     }
   }
 
-  // Optimistic delete: drop the row instantly, restore it + toast if the request fails.
+  // A saved report definition is just a query config (no financial effect), so deleting one is
+  // undo-not-confirm: drop the row instantly, and Undo re-creates it from the deleted snapshot
+  // (the restored row gets a new id — recreation, not a true restore, but functionally identical).
   function onDelete(defId: string) {
     if (!defs) return;
+    const snapshot = defs;
+    const def = defs.find((d) => d.id === defId);
+    if (!def) return;
     if (runId === defId) setRunId(null);
-    void runOptimistic<ReportDefinition[], { deleted: boolean }>({
-      current: defs,
-      mutate,
-      optimistic: (rows) => rows.filter((d) => d.id !== defId),
-      request: () => deleteReportDefinition(defId),
-      toast,
-      success: t("accounting.toast.reportDeleted"),
+    mutate(snapshot.filter((d) => d.id !== defId));
+    void undoable<{ deleted: boolean }>({
+      perform: () => deleteReportDefinition(defId),
+      undo: async () => {
+        await createReportDefinition({
+          name: def.name,
+          account_type: def.account_type,
+          account_codes: def.account_codes,
+          date_from: def.date_from,
+          date_to: def.date_to,
+          group_by: def.group_by,
+          schedule: def.schedule,
+        });
+        reload();
+      },
+      message: t("accounting.toast.reportDeleted"),
+      onUndone: () => mutate(snapshot),
     });
   }
 
