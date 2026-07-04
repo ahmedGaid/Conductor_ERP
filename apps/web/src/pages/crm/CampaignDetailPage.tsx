@@ -6,8 +6,7 @@ import { BackLink } from "../../components/BackLink";
 import { getCampaign, setCampaignStatus, type Campaign, type CampaignStatus } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
-import { useToast } from "../../app/ToastContext";
-import { runOptimistic } from "../../lib/optimistic";
+import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -24,26 +23,27 @@ const NEXT: Record<CampaignStatus, CampaignStatus | null> = {
 
 export function CampaignDetailPage() {
   const { t } = useTranslation();
-  const toast = useToast();
   const { id = "" } = useParams();
+  const undoable = useUndoableAction();
   const { data: campaign, loading, error, reload, mutate } = useAsync<Campaign>(
     () => getCampaign(id),
     [id],
     `crm:campaign:${id}`,
   );
 
-  // Optimistic status step: flip instantly, reconcile with the server's campaign (metrics may
-  // change), roll back + toast on failure.
+  // Status steps are a field flip with no side effect (the backend allows moving either
+  // direction), so it's undo-not-confirm: flip instantly, offer Undo instead of asking first.
   function changeStatus(status: CampaignStatus) {
     if (!campaign) return;
-    void runOptimistic<Campaign, Campaign>({
-      current: campaign,
-      mutate,
-      optimistic: (c) => ({ ...c, status }),
-      request: () => setCampaignStatus(id, status),
-      settle: (_predicted, updated) => updated,
-      toast,
-      success: status === "active" ? t("crm.toast.campaignActivated") : t("crm.toast.campaignCompleted"),
+    const prev = campaign.status;
+    mutate({ ...campaign, status });
+    void undoable<Campaign>({
+      perform: () => setCampaignStatus(id, status),
+      undo: async () => {
+        await setCampaignStatus(id, prev);
+      },
+      message: status === "active" ? t("crm.toast.campaignActivated") : t("crm.toast.campaignCompleted"),
+      onUndone: () => mutate(campaign),
     });
   }
 

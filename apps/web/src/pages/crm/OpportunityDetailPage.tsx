@@ -18,6 +18,7 @@ import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
+import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { InlineEdit } from "../../components/InlineEdit";
@@ -34,6 +35,7 @@ const NEXT_STAGE: Partial<Record<OppStage, OppStage>> = {
 export function OpportunityDetailPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const undoable = useUndoableAction();
   const { id } = useParams<{ id: string }>();
   const { data, loading, error, reload, mutate } = useAsync<Opportunity>(
     () => getOpportunity(id as string),
@@ -55,6 +57,23 @@ export function OpportunityDetailPage() {
       settle: (_predicted, updated) => updated,
       toast,
       success,
+    });
+  }
+
+  // Advancing between open stages has a clean inverse (the backend allows moving either
+  // direction among qualifying/proposal/negotiation), so it's undo-not-confirm rather than the
+  // win/lose actions below, which spawn a sales order or close the deal for good.
+  function advance(next: OppStage) {
+    if (!data) return;
+    const snapshot = data;
+    mutate({ ...data, stage: next });
+    void undoable<Opportunity>({
+      perform: () => advanceStage(data.id, next),
+      undo: async () => {
+        await advanceStage(data.id, snapshot.stage);
+      },
+      message: t("crm.toast.stageAdvanced", { stage: t(`crm.stage.${next}`) }),
+      onUndone: () => mutate(snapshot),
     });
   }
 
@@ -81,7 +100,7 @@ export function OpportunityDetailPage() {
     const next = NEXT_STAGE[data.stage];
     if (next) {
       pageActions.push({ id: "advance", label: t("crm.detail.advanceTo", { stage: t(`crm.stage.${next}`) }),
-        run: () => act((o) => ({ ...o, stage: next }), () => advanceStage(data.id, next), t("crm.toast.stageAdvanced", { stage: t(`crm.stage.${next}`) })) });
+        run: () => advance(next) });
     }
     pageActions.push({ id: "win", label: t("crm.detail.win"),
       run: () => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon")) });
@@ -160,10 +179,7 @@ export function OpportunityDetailPage() {
                 {NEXT_STAGE[data.stage] && (
                   <button
                     className="btn"
-                    onClick={() => {
-                      const next = NEXT_STAGE[data.stage]!;
-                      act((o) => ({ ...o, stage: next }), () => advanceStage(data.id, next), t("crm.toast.stageAdvanced", { stage: t(`crm.stage.${next}`) }));
-                    }}
+                    onClick={() => advance(NEXT_STAGE[data.stage]!)}
                   >
                     {t("crm.detail.advanceTo", { stage: t(`crm.stage.${NEXT_STAGE[data.stage]}`) })}
                   </button>

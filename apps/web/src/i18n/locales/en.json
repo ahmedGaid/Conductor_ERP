@@ -417,7 +417,8 @@
       "journalPosted": "Journal posted",
       "bankStatementCreated": "Statement created",
       "reportSaved": "Report saved",
-      "budgetLineSet": "Budget line set"
+      "budgetLineSet": "Budget line set",
+      "lineMatched": "Line matched"
     },
     "tabs": {
       "chart": "Chart of Accounts",
@@ -1326,6 +1327,8 @@
     "all": "All",
     "actions": "Actions",
     "close": "Close",
+    "undo": "Undo",
+    "undone": "Undone",
     "notFound": "We couldn’t find that record."
   },
   "import": {

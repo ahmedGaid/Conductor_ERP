@@ -417,7 +417,8 @@
       "journalPosted": "تم ترحيل القيد",
       "bankStatementCreated": "تم إنشاء الكشف",
       "reportSaved": "تم حفظ التقرير",
-      "budgetLineSet": "تم تعيين بند الموازنة"
+      "budgetLineSet": "تم تعيين بند الموازنة",
+      "lineMatched": "تمت مطابقة السطر"
     },
     "tabs": {
       "chart": "دليل الحسابات",
@@ -1326,6 +1327,8 @@
     "all": "الكل",
     "actions": "إجراءات",
     "close": "إغلاق",
+    "undo": "تراجع",
+    "undone": "تم التراجع",
     "notFound": "تعذّر العثور على هذا السجل."
   },
   "import": {
