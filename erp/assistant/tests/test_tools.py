@@ -24,7 +24,8 @@ from erp.accounting.domain.models import (
     JournalLine,
     Period,
 )
-from erp.assistant.tools import TOOLS
+from erp.assistant.services import knowledge
+from erp.assistant.tools import TOOLS, catalog_text
 from erp.audit import services as audit
 from erp.crm.domain.models import Lead  # noqa: F401 (ensures crm app is importable in the suite)
 from erp.identity.models import User
@@ -270,3 +271,32 @@ def test_document_history_hides_modules_the_user_cannot_reach():
     audit.record(module="sales", action="confirm", entity_type="SalesOrder", entity_id="SO-9",
                  actor=admin, after={"status": "confirmed"})
     assert _run("document_history", _nobody(), entity_type="SalesOrder")["entries"] == []
+
+
+# --- knowledge base tool (session 04) -------------------------------------------------------------
+
+def test_search_documents_returns_passages_and_citations():
+    admin = _admin()
+    knowledge.ingest_document(
+        data=b"Refund policy: customers can return items within 14 days.",
+        media_type="text/plain", filename="refunds.txt", title="Refund Policy", actor=admin,
+    )
+
+    result = _run("search_documents", admin, query="refund policy")
+    assert result["found"] is True
+    assert "Refund Policy" in [p["document"] for p in result["passages"]]
+    cite = _cite("search_documents", result)
+    assert cite[0]["type"] == "document"
+    assert cite[0]["value"] == "Refund Policy"
+
+
+def test_search_documents_empty_is_honest():
+    result = _run("search_documents", _admin(), query="nonexistent zqxjw policy")
+    assert result["found"] is False
+    assert "no" in result["note"].lower()
+
+
+def test_catalog_text_lists_knowledge_group():
+    text = catalog_text()
+    assert "Knowledge:" in text
+    assert "search_documents" in text

@@ -11,7 +11,7 @@ import pytest
 from django.test import override_settings
 
 from erp.assistant.models import Conversation
-from erp.assistant.services import agent
+from erp.assistant.services import agent, knowledge
 from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
@@ -139,3 +139,37 @@ def test_clarify_short_circuits_without_tools_or_model_stream(monkeypatch):
     assert msg.content == "Which month do you mean?"
     assert msg.meta["steps"] == []
     assert msg.meta["citations"] == []
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_loop_runs_search_documents_and_cites(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    knowledge.ingest_document(
+        data=b"Refund policy: customers can return items within 14 days.",
+        media_type="text/plain", filename="refunds.txt", title="Refund Policy", actor=user,
+    )
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "search_documents", "why": "Checking policy",
+         "query": "refund policy"},
+        {"action": "answer"},
+    ])
+    _stream(monkeypatch, "Refunds allowed within 14 days.")
+
+    events = _run(user, conv, question="what is the refund policy?")
+
+    steps = [e for e in events if e["type"] == "step"]
+    assert [(s["tool"], s["state"]) for s in steps] == [
+        ("search_documents", "running"), ("search_documents", "done"),
+    ]
+    assert steps[1]["ok"] is True
+
+    cites_event = next(e for e in events if e["type"] == "citations")
+    assert cites_event["citations"][0]["type"] == "document"
+    assert cites_event["citations"][0]["value"] == "Refund Policy"
+
+
+def test_loop_system_contains_source_routing():
+    assert "search_documents" in agent._LOOP_SYSTEM
+    assert "never" in agent._LOOP_SYSTEM.lower()
+    assert "invent" in agent._LOOP_SYSTEM.lower()

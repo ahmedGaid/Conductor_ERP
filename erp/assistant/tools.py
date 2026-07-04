@@ -233,6 +233,28 @@ def _document_history(actor, *, entity_type: str = "", entity_id: str = "", limi
     ]}
 
 
+# --- Knowledge base tool (RAG) — company documents uploaded by an administrator -------------------
+
+def _search_documents(actor, *, query: str = "", limit: int = 6, **_) -> dict:
+    from .services import knowledge  # local import — mirrors how services import each other
+
+    hits = knowledge.search(str(query or ""), limit=int(limit or 6))
+    if not hits:
+        return {"found": False,
+                "note": "No company document covers this. Say so honestly; do not invent "
+                        "documentation content."}
+    return {
+        "found": True,
+        "passages": [
+            {"document": h["title"], "section": h["seq"], "text": h["text"]} for h in hits
+        ],
+        "citations": [
+            {"type": "document", "value": h["title"], "document_id": h["document_id"],
+             "section": h["seq"]} for h in hits
+        ],
+    }
+
+
 # --- Analytics tool — the bounded structured-query escape hatch (session 08 Task E) --------------
 
 def _query_data(actor, *, entity: str = None, filters=None, group_by=None, aggregate: str = None,
@@ -399,6 +421,14 @@ TOOLS: dict[str, Tool] = {t.name: t for t in [
          {"entity_type": "the record type, e.g. SalesOrder / PurchaseOrder / JournalEntry",
           "entity_id": "the record's id or number", "limit": "how many entries (default 10)"},
          _document_history, lambda _r: [], "Audit"),
+    # Knowledge base — company documents (SOPs, policies, catalogs, contracts, manuals)
+    Tool("search_documents",
+         "Search the company's uploaded documents (policies, SOPs, catalogs, contracts, "
+         "manuals) and return the most relevant passages. Use for any question answered by "
+         "documentation rather than live ERP data.",
+         {"query": "what to look for, in the user's own words",
+          "limit": "how many passages (default 6)"},
+         _search_documents, lambda r: r.get("citations", []), "Knowledge"),
     # Analytics — the fallback when no specific tool fits (count/total over a whitelisted data set)
     Tool("query_data",
          "Count or total a data set when no specific tool fits — e.g. 'how many items do we have', "
