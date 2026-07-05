@@ -44,6 +44,8 @@ export function ShortcutsDialog({
     { keys: ["J"], label: t("shortcuts.listDown") },
     { keys: ["K"], label: t("shortcuts.listUp") },
     { keys: ["Enter"], label: t("shortcuts.listOpen") },
+    { keys: ["X"], label: t("shortcuts.listSelect") },
+    { keys: ["Esc"], label: t("shortcuts.listClear") },
   ];
   const forms: Shortcut[] = [
     { keys: ["⌘", "Enter"], label: t("shortcuts.formSubmit") },

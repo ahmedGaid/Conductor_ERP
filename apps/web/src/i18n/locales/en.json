@@ -166,6 +166,8 @@
     "listDown": "Next row",
     "listUp": "Previous row",
     "listOpen": "Open row",
+    "listSelect": "Select row",
+    "listClear": "Clear selection",
     "formSubmit": "Submit form",
     "formCancel": "Cancel"
   },
