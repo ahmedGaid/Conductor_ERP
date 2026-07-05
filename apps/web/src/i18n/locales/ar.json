@@ -166,6 +166,8 @@
     "listDown": "الصف التالي",
     "listUp": "الصف السابق",
     "listOpen": "فتح الصف",
+    "listSelect": "تحديد الصف",
+    "listClear": "مسح التحديد",
     "formSubmit": "إرسال النموذج",
     "formCancel": "إلغاء"
   },
