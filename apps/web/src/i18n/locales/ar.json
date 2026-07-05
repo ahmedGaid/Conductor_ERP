@@ -186,6 +186,9 @@
     "formSubmit": "إرسال النموذج",
     "formCancel": "إلغاء"
   },
+  "commandBar": {
+    "askAi": "اسأل المساعد الذكي: \"{{query}}\""
+  },
   "command": {
     "placeholder": "ابحث في السجلات والصفحات والإجراءات…",
     "empty": "لا نتائج لـ",

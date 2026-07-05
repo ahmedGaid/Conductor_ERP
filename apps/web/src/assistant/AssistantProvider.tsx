@@ -29,12 +29,18 @@ interface AssistantState {
   enabled: boolean;
   /** Bumps whenever the thread list changes; every ThreadList reloads off it (one source of truth). */
   conversationsNonce: number;
+  /** A question handed off from elsewhere (e.g. the ⌘K fallthrough row) awaiting first send. */
+  pendingMessage: string | null;
   openPanel(): void;
   closePanel(): void;
   toggle(): void;
   setMode(m: AssistantMode): void;
   setConversationId(id: number | null): void;
   refreshConversations(): void;
+  /** Opens the panel and queues `text` to be sent as the next message. */
+  openPanelWithMessage(text: string): void;
+  /** Consumes the pending message so it isn't resent on the next render. */
+  clearPendingMessage(): void;
 }
 
 const KEY_OPEN = "assistant.open";
@@ -60,6 +66,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<AssistantMode>(readMode);
   const [conversationId, setConversationState] = useState<number | null>(readConversation);
   const [conversationsNonce, setConversationsNonce] = useState(0);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -85,6 +92,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const setMode = useCallback((m: AssistantMode) => setModeState(m), []);
   const setConversationId = useCallback((id: number | null) => setConversationState(id), []);
   const refreshConversations = useCallback(() => setConversationsNonce((n) => n + 1), []);
+  const openPanelWithMessage = useCallback((text: string) => {
+    setPendingMessage(text);
+    setOpen(true);
+  }, []);
+  const clearPendingMessage = useCallback(() => setPendingMessage(null), []);
 
   const value = useMemo<AssistantState>(
     () => ({
@@ -94,12 +106,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       conversationId,
       enabled: enabled === true,
       conversationsNonce,
+      pendingMessage,
       openPanel,
       closePanel,
       toggle,
       setMode,
       setConversationId,
       refreshConversations,
+      openPanelWithMessage,
+      clearPendingMessage,
     }),
     [
       enabled,
@@ -107,12 +122,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       mode,
       conversationId,
       conversationsNonce,
+      pendingMessage,
       openPanel,
       closePanel,
       toggle,
       setMode,
       setConversationId,
       refreshConversations,
+      openPanelWithMessage,
+      clearPendingMessage,
     ],
   );
 

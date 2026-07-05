@@ -186,6 +186,9 @@
     "formSubmit": "Submit form",
     "formCancel": "Cancel"
   },
+  "commandBar": {
+    "askAi": "Ask the assistant: \"{{query}}\""
+  },
   "command": {
     "placeholder": "Search records, pages and actions…",
     "empty": "No matches for",

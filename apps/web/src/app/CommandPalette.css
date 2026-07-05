@@ -123,6 +123,16 @@
   background-color: var(--color-surface-alt);
 }
 
+.cmdp__item-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+.cmdp__item-icon .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+
 /* Two-line cell for live record hits: name/number over a muted code + type. Static commands carry
    no sublabel, so they render as a single line unchanged. */
 .cmdp__item-text {

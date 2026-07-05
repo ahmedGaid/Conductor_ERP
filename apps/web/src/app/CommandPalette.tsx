@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { searchEntities } from "../api/core";
+import { useAssistant } from "../assistant/AssistantProvider";
 import { normalizeSearch } from "../lib/arabicSearch";
 import { getRecents, recordRecent } from "../lib/recents";
 import { usePaletteActionList } from "./PaletteActionsContext";
 import { NavIcon } from "./icons";
 import "./CommandPalette.css";
 
-type Group = "page" | "results" | "recent" | "create" | "go";
+type Group = "page" | "results" | "recent" | "create" | "go" | "ask";
 
 interface Command {
   id: string;
@@ -41,6 +42,7 @@ export function CommandPalette({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { enabled: assistantEnabled, openPanelWithMessage } = useAssistant();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
@@ -166,6 +168,26 @@ export function CommandPalette({
     return [...pageActions, ...recent, ...commands.filter((c) => !recentIds.has(c.id))];
   }, [commands, pageActions, query, recent, results]);
 
+  // The AI fallthrough row: appended last, never ahead of a real match. Offered when the query
+  // reads like a question (no match at all, more than a few words, or ends with ؟/?) — the same
+  // heuristic whether the user is typing Arabic or English.
+  const askAi = useMemo<Command | null>(() => {
+    if (!assistantEnabled) return null;
+    const q = query.trim();
+    if (!q) return null;
+    const wordCount = q.split(/\s+/).filter(Boolean).length;
+    const looksLikeQuestion = visible.length === 0 || wordCount > 3 || /[؟?]$/.test(q);
+    if (!looksLikeQuestion) return null;
+    return {
+      id: "ask-ai",
+      label: t("commandBar.askAi", { query: q }),
+      group: "ask",
+      run: () => openPanelWithMessage(q),
+    };
+  }, [assistantEnabled, query, visible, t, openPanelWithMessage]);
+
+  const flat = useMemo(() => (askAi ? [...visible, askAi] : visible), [visible, askAi]);
+
   // Keep the native dialog's open state in sync with the controlled `open` prop,
   // resetting the query and focusing the input each time it opens.
   useEffect(() => {
@@ -183,8 +205,8 @@ export function CommandPalette({
 
   // Clamp the highlighted row whenever the result set shrinks.
   useEffect(() => {
-    setActive((i) => Math.min(i, Math.max(visible.length - 1, 0)));
-  }, [visible.length]);
+    setActive((i) => Math.min(i, Math.max(flat.length - 1, 0)));
+  }, [flat.length]);
 
   // Keep the highlighted row in view while arrowing through a long list.
   useEffect(() => {
@@ -201,13 +223,13 @@ export function CommandPalette({
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, visible.length - 1));
+      setActive((i) => Math.min(i + 1, flat.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActive((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      run(visible[active]);
+      run(flat[active]);
     }
   }
 
@@ -225,10 +247,12 @@ export function CommandPalette({
         ? t("command.groupRecent")
         : g === "create"
           ? t("command.groupCreate")
-          : t("command.groupGo");
+          : g === "go"
+            ? t("command.groupGo")
+            : null; // "ask" renders as a bare final row, no group header
 
-  // Render order: page actions, live results, recents, create, then go — matching the flat `visible`
-  // sequence so arrow-key navigation flows top-to-bottom across the groups.
+  // Render order: page actions, live results, recents, create, go, then the AI fallthrough —
+  // matching the `flat` sequence so arrow-key navigation flows top-to-bottom across the groups.
   const recentIds = new Set(recent.map((c) => c.id));
   const allSections: { key: Group; rows: Command[] }[] = [
     { key: "page", rows: visible.filter((c) => c.group === "page") },
@@ -236,6 +260,7 @@ export function CommandPalette({
     { key: "recent", rows: recent },
     { key: "create", rows: visible.filter((c) => c.group === "create" && !recentIds.has(c.id)) },
     { key: "go", rows: visible.filter((c) => c.group === "go" && !recentIds.has(c.id)) },
+    { key: "ask", rows: askAi ? [askAi] : [] },
   ];
   const sections = allSections.filter((s) => s.rows.length > 0);
 
@@ -267,18 +292,19 @@ export function CommandPalette({
         </div>
 
         <div className="cmdp__results" id="cmdp-list" role="listbox">
-          {visible.length === 0 && (
+          {flat.length === 0 && (
             <p className="cmdp__empty">
               {t("command.empty")} “{query.trim()}”
             </p>
           )}
           {sections.map((section) => {
+            const label = labelFor(section.key);
             return (
               <div className="cmdp__group" key={section.key}>
-                <p className="cmdp__group-label">{labelFor(section.key)}</p>
+                {label && <p className="cmdp__group-label">{label}</p>}
                 <ul className="cmdp__list">
                   {section.rows.map((cmd) => {
-                    const idx = visible.indexOf(cmd);
+                    const idx = flat.indexOf(cmd);
                     return (
                       <li key={cmd.id}>
                         <button
@@ -292,6 +318,11 @@ export function CommandPalette({
                           onMouseMove={() => setActive(idx)}
                           onClick={() => run(cmd)}
                         >
+                          {cmd.group === "ask" && (
+                            <span className="cmdp__item-icon" aria-hidden="true">
+                              <NavIcon name="sparkle" />
+                            </span>
+                          )}
                           <span className="cmdp__item-text">
                             <span className="cmdp__item-label">{cmd.label}</span>
                             {cmd.sublabel && <span className="cmdp__item-sub">{cmd.sublabel}</span>}

@@ -32,8 +32,16 @@ import "./assistant-panel.css";
 export function ConversationView() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { conversationId, setConversationId, refreshConversations, open, mode, closePanel } =
-    useAssistant();
+  const {
+    conversationId,
+    setConversationId,
+    refreshConversations,
+    open,
+    mode,
+    closePanel,
+    pendingMessage,
+    clearPendingMessage,
+  } = useAssistant();
 
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -250,6 +258,15 @@ export function ConversationView() {
     const ids = ready.map((a) => a.serverId as number);
     await runStream(convId, { message: q, ...(ids.length ? { attachment_ids: ids } : {}) });
   }
+
+  // A question handed off from elsewhere (the ⌘K fallthrough row) — send it once, like a normal
+  // typed message, then clear it so it isn't resent on the next render.
+  useEffect(() => {
+    if (pendingMessage == null) return;
+    clearPendingMessage();
+    void send(pendingMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMessage]);
 
   async function regenerate() {
     if (streaming || conversationId == null) return;
