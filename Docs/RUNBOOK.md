@@ -8,7 +8,8 @@
 One Django process (served by **waitress**) answers the API **and** serves the built React SPA +
 Django/DRF static via **WhiteNoise** — there is no separate web server for static files. Two Celery
 processes run alongside it: a **worker** (background jobs — reports, notifications, workflow steps)
-and **beat** (the periodic scheduler, e.g. the hourly scheduled-report sweep). State lives in
+and **beat** (the periodic scheduler, e.g. the hourly scheduled-report sweep and the 07:00
+Africa/Cairo daily AI-digest send). State lives in
 **PostgreSQL 16** (all business data) and **Redis** (Celery broker/results + cache/throttle). The
 frontend is a **HashRouter** SPA, so the server only ever serves `/` — no URL-rewrite rules needed.
 Put **IIS/Nginx in front only for TLS** and a public hostname; it reverse-proxies to waitress on

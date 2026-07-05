@@ -6,6 +6,7 @@ environment (.env) so the same code runs on a dev box or a Windows Server instal
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 # config/settings/base.py -> repo root is three parents up.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -188,6 +189,7 @@ CELERY_TASK_ALWAYS_EAGER = env("CELERY_TASK_ALWAYS_EAGER")
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_ACKS_LATE = True  # recover jobs after a worker crash
 CELERY_RESULT_EXTENDED = True
+CELERY_TIMEZONE = TIME_ZONE  # beat crontab times below are Africa/Cairo, not UTC
 
 # Periodic jobs (Celery beat). The scheduled-report task fires hourly and itself decides which saved
 # report definitions are due (daily/weekly/monthly), writing their CSV exports to REPORTS_DIR.
@@ -195,6 +197,10 @@ CELERY_BEAT_SCHEDULE = {
     "run-scheduled-reports": {
         "task": "accounting.run_scheduled_reports",
         "schedule": 3600.0,  # seconds — hourly sweep
+    },
+    "send-ai-digests": {
+        "task": "assistant.send_ai_digests",
+        "schedule": crontab(hour=7, minute=0),  # 07:00 Africa/Cairo daily; task decides who's due
     },
 }
 
