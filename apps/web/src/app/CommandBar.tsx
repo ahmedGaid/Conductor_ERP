@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 
 import { usePreferences } from "../preferences/PreferencesContext";
 import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
+import { useInbox } from "../hooks/useInbox";
 import { useAssistant } from "../assistant/AssistantProvider";
 import { Tooltip } from "../components/Tooltip";
 import { AppMenu } from "./AppMenu";
 import { CommandPalette } from "./CommandPalette";
+import { InboxPanel } from "./InboxPanel";
 import { useShortcuts } from "./ShortcutsContext";
 import { UserMenu } from "./UserMenu";
 import { NavIcon } from "./icons";
@@ -20,6 +22,8 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
   const { enabled: assistantEnabled, toggle: toggleAssistant } = useAssistant();
   const navigate = useNavigate();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const inbox = useInbox();
 
   // When e-invoicing is turned off in setup, hide it from every nav surface (sidebar, palette,
   // cheat-sheet and the g-key chord) so "disabled" reads consistently.
@@ -96,14 +100,18 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
           </Tooltip>
         )}
         <UserMenu />
-        <Tooltip label={t("shell.notifications")} placement="bottom">
+        <Tooltip label={t("inbox.title")} placement="bottom">
           <button
             type="button"
-            className="btn btn--ghost btn--icon"
-            aria-label={t("shell.notifications")}
-            onClick={() => navigate("/notifications")}
+            className="btn btn--ghost btn--icon commandbar__bell"
+            aria-label={t("inbox.title")}
+            aria-haspopup="dialog"
+            aria-expanded={inboxOpen}
+            data-unread={inbox.unread ? "true" : undefined}
+            onClick={() => setInboxOpen((v) => !v)}
           >
             <NavIcon name="notifications" />
+            {inbox.unread && <span className="commandbar__bell-dot" aria-hidden="true" />}
           </button>
         </Tooltip>
         <AppMenu />
@@ -113,6 +121,16 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         einvoiceEnabled={einvoiceEnabled}
+      />
+      <InboxPanel
+        open={inboxOpen}
+        onClose={() => setInboxOpen(false)}
+        items={inbox.items}
+        loading={inbox.loading}
+        error={inbox.error}
+        onReload={inbox.reload}
+        onMarkRead={inbox.markRead}
+        onMarkAll={inbox.markAll}
       />
     </header>
   );

@@ -432,8 +432,10 @@ def seed_crm_extras() -> None:
     create_opportunity(name="Nile follow-up", customer_code="NILE", campaign_code="SPRING26",
                        lines=[OppLineInput("GADGET", Decimal("20"), 300_00)])  # 6,000 open
 
-    # A ticket already past its SLA so it shows as breached and can be escalated.
-    tk = create_ticket(subject="Production line down", customer_code="ACME", priority="high")
+    # A ticket already past its SLA so it shows as breached and can be escalated. Owned by the demo
+    # admin, so escalating it drops an in-app notification into that user's inbox.
+    tk = create_ticket(subject="Production line down", customer_code="ACME", priority="high",
+                        owner="admin")
     tk.sla_due_at = _tz.now() - _dt.timedelta(hours=2)
     tk.save(update_fields=["sla_due_at"])
     created.append(("CAMP", camp.code, "campaign -> open it for ROI (won 15,000 vs cost 12,000)"))

@@ -45,6 +45,19 @@ def _on_ticket_escalated(event) -> None:
         reference=str(p["ticket"]),
         event_name=TICKET_ESCALATED,
     )
+    # Also drop an in-app notification into the ticket owner's inbox — the person accountable for the
+    # ticket is who needs to act on the breach. No owner set → no inbox row (nothing to route to).
+    owner = p.get("owner")
+    if owner:
+        dispatch(
+            channel=NotificationChannel.INAPP,
+            recipient=str(owner),
+            subject=f"Ticket {p['ticket']} escalated",
+            body=f"Support ticket {p['ticket']} breached its SLA and was escalated to "
+                 f"{p.get('priority', 'higher')} priority.",
+            reference=str(p["ticket"]),
+            event_name=TICKET_ESCALATED,
+        )
 
 
 def register() -> None:

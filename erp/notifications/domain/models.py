@@ -17,6 +17,9 @@ from erp.core.models import AuditedModel
 class NotificationChannel(models.TextChoices):
     EMAIL = "email", "Email"
     WHATSAPP = "whatsapp", "WhatsApp"
+    # In-app: the row itself is the delivery — no gateway, no network. Read by the notifications
+    # inbox, addressed to an internal user (``recipient`` holds the username), not a customer.
+    INAPP = "inapp", "In-app"
 
 
 class NotificationStatus(models.TextChoices):
@@ -38,6 +41,9 @@ class Notification(AuditedModel):
     provider_ref = models.CharField(max_length=64, blank=True, default="")  # adapter's message id
     error_text = models.CharField(max_length=255, blank=True, default="")
     sent_at = models.DateTimeField(null=True, blank=True)
+    # When the recipient opened it in their inbox — null = unread. Only meaningful for the in-app
+    # channel (email/WhatsApp leave the app; there is nothing to mark read there).
+    read_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "notifications_notification"

@@ -1543,6 +1543,19 @@
       "failed": "Failed"
     }
   },
+  "inbox": {
+    "title": "Notifications",
+    "close": "Close",
+    "markAllRead": "Mark all read",
+    "empty": "You're all caught up",
+    "emptyHint": "New alerts land here — an escalated ticket, an approval waiting on you.",
+    "events": {
+      "ticketEscalated": {
+        "title": "Ticket {{ref}} escalated",
+        "body": "It breached its SLA and moved up a priority — it needs a look."
+      }
+    }
+  },
   "help": {
     "button": "Help",
     "close": "Close help",

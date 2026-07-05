@@ -11,11 +11,13 @@ from .base import (  # noqa: F401
     registered_channels,
 )
 from .email import EmailAdapter
+from .inapp import InAppAdapter
 from .whatsapp import WhatsAppAdapter
 
 # Register the built-in channels. Additional gateways (SMS, payment, bank import) drop in here.
 register_adapter(EmailAdapter())
 register_adapter(WhatsAppAdapter())
+register_adapter(InAppAdapter())
 
 __all__ = [
     "NotificationAdapter",
@@ -27,4 +29,5 @@ __all__ = [
     "registered_channels",
     "EmailAdapter",
     "WhatsAppAdapter",
+    "InAppAdapter",
 ]

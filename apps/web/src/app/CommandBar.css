@@ -94,6 +94,21 @@
   block-size: 1.2rem;
 }
 
+/* Unread marker on the bell — a small neutral dot, no count. Sits at the icon's top inline-end. */
+.commandbar__bell {
+  position: relative;
+}
+.commandbar__bell-dot {
+  position: absolute;
+  inset-block-start: 0.375rem;
+  inset-inline-end: 0.375rem;
+  inline-size: 0.4375rem;
+  block-size: 0.4375rem;
+  border-radius: var(--radius-full);
+  background: var(--color-text);
+  border: 1.5px solid var(--color-surface);
+}
+
 @media (max-width: 64rem) {
   .commandbar {
     padding-inline: var(--space-3);

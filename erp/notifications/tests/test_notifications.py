@@ -26,12 +26,12 @@ from erp.sales.events import ORDER_INVOICED
 pytestmark = pytest.mark.django_db
 
 
-def _breached_ticket():
+def _breached_ticket(owner: str = ""):
     from erp.crm.domain.models import TicketPriority
     from erp.crm.services.support import create_ticket
 
     ticket = create_ticket(subject="Service down", customer_code="CUST1",
-                           priority=TicketPriority.HIGH)
+                           priority=TicketPriority.HIGH, owner=owner)
     ticket.sla_due_at = timezone.now() - timedelta(hours=1)  # force the SLA breach
     ticket.save(update_fields=["sla_due_at"])
     return ticket
@@ -173,3 +173,111 @@ def test_notifications_api_lists_and_resends():
     resent = client.post(f"/api/notifications/{note.id}/resend")
     assert resent.status_code == 201
     assert Notification.objects.filter(reference="TKT-1").count() == 2
+
+
+# --- in-app inbox: the channel, the source wiring, per-user isolation, read transitions ---
+
+def test_inapp_adapter_registers_and_stores():
+    # The inapp adapter registers like the others and always accepts — the row is the delivery.
+    r = get_adapter(NotificationChannel.INAPP).send(
+        NotificationMessage(recipient="admin", subject="S", body="B"))
+    assert r.ok and r.provider_ref.startswith("inapp-")
+
+
+def test_ticket_escalation_notifies_the_owner_in_app():
+    from erp.crm.services.support import escalate_ticket
+
+    ticket = _breached_ticket(owner="alice")
+    escalate_ticket(ticket)
+    note = Notification.objects.filter(reference=ticket.number,
+                                       channel=NotificationChannel.INAPP).first()
+    assert note is not None and note.recipient == "alice"
+    assert note.read_at is None  # arrives unread
+
+
+def test_escalation_without_owner_creates_no_inbox_row():
+    from erp.crm.services.support import escalate_ticket
+
+    ticket = _breached_ticket(owner="")
+    escalate_ticket(ticket)
+    assert not Notification.objects.filter(reference=ticket.number,
+                                           channel=NotificationChannel.INAPP).exists()
+
+
+def test_inbox_is_isolated_per_user():
+    from erp.identity.models import User
+
+    from erp.notifications.services import inbox_for
+
+    dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="mine")
+    dispatch(channel=NotificationChannel.INAPP, recipient="bob", subject="theirs")
+    alice = User.objects.create_user(username="alice", email="alice@x.com", password="Dev12345!")
+    mine = list(inbox_for(alice))
+    assert len(mine) == 1 and mine[0].recipient == "alice"
+
+
+def test_inbox_orders_unread_before_read_then_newest_first():
+    from erp.identity.models import User
+
+    from erp.notifications.services import inbox_for, mark_read
+
+    older = dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="older")
+    newer = dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="newer")
+    alice = User.objects.create_user(username="alice", email="alice@x.com", password="Dev12345!")
+    mark_read(alice, newer.id)  # read the newer one — it should sink below the unread older one
+    ordered = [n.id for n in inbox_for(alice)]
+    assert ordered == [older.id, newer.id]
+
+
+def test_mark_read_is_owner_scoped_and_idempotent():
+    from erp.identity.models import User
+
+    from erp.notifications.services import mark_read
+
+    note = dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="S")
+    bob = User.objects.create_user(username="bob", email="bob@x.com", password="Dev12345!")
+    assert mark_read(bob, note.id) is None  # not bob's row
+    note.refresh_from_db()
+    assert note.read_at is None
+
+    alice = User.objects.create_user(username="alice", email="alice@x.com", password="Dev12345!")
+    first = mark_read(alice, note.id)
+    assert first.read_at is not None
+    stamp = first.read_at
+    again = mark_read(alice, note.id)  # already read — stamp unchanged
+    assert again.read_at == stamp
+
+
+def test_mark_all_read_flips_only_my_unread():
+    from erp.identity.models import User
+
+    from erp.notifications.services import mark_all_read
+
+    dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="a")
+    dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="b")
+    dispatch(channel=NotificationChannel.INAPP, recipient="bob", subject="c")
+    alice = User.objects.create_user(username="alice", email="alice@x.com", password="Dev12345!")
+    assert mark_all_read(alice) == 2
+    assert Notification.objects.filter(recipient="bob", read_at__isnull=True).count() == 1
+
+
+def test_inbox_api_lists_marks_and_clears():
+    from rest_framework.test import APIClient
+
+    from erp.identity.models import User
+
+    dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="S", reference="TKT-9")
+    alice = User.objects.create_user(username="alice", email="alice@x.com", password="Dev12345!")
+    client = APIClient()
+    client.force_authenticate(user=alice)
+
+    rows = client.get("/api/notifications/inbox").data["data"]
+    assert len(rows) == 1 and rows[0]["reference"] == "TKT-9" and rows[0]["read_at"] is None
+
+    note_id = rows[0]["id"]
+    marked = client.post(f"/api/notifications/inbox/{note_id}/read")
+    assert marked.status_code == 200 and marked.data["data"]["read_at"] is not None
+
+    dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="another")
+    cleared = client.post("/api/notifications/inbox/read-all")
+    assert cleared.data["data"]["count"] == 1  # one still-unread row flipped

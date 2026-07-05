@@ -1,0 +1,193 @@
+/* Notifications inbox — a floating panel from the command-bar bell. Monochrome chrome; unread reads
+   as weight + a quiet inline-start marker, never colour or a count. Anchored to the inline-end top
+   so RTL and LTR mirror. Motion is a settled rise + fade. */
+
+.inbox-panel {
+  position: fixed;
+  z-index: 80;
+  inset-block-start: calc(var(--topbar-size) + var(--space-2));
+  inset-inline-end: var(--space-4);
+  inline-size: min(24rem, calc(100vw - 2 * var(--space-4)));
+  max-block-size: min(32rem, calc(100vh - var(--topbar-size) - 2 * var(--space-4)));
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text);
+  animation: inbox-panel-in var(--dur-slow) var(--ease-out);
+}
+
+.inbox-panel:focus {
+  outline: none;
+}
+
+@keyframes inbox-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-2)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inbox-panel {
+    animation: none;
+  }
+}
+
+.inbox-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex: none;
+  padding-inline: var(--space-4);
+  padding-block: var(--space-3);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.inbox-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-medium);
+}
+
+.inbox-panel__title-icon {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+
+.inbox-panel__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.inbox-panel__markall {
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.inbox-panel__markall:hover {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+
+.inbox-panel__tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.inbox-panel__tool:hover {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+
+.inbox-panel__body {
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.inbox-panel__loading,
+.inbox-panel__error {
+  color: var(--color-text-muted);
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--font-size-sm);
+}
+
+.inbox-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.inbox-row {
+  inline-size: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  text-align: start;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding-inline: var(--space-2);
+  padding-block: var(--space-3);
+  border-radius: var(--radius-md);
+}
+.inbox-row:hover,
+.inbox-row[data-kbd-active="true"] {
+  background: var(--color-surface-sunken);
+}
+
+/* The unread marker — a small dot in the inline-start gutter. Neutral, not a colour badge. */
+.inbox-row__dot {
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  margin-block-start: 0.375rem;
+  border-radius: var(--radius-full);
+  background: transparent;
+}
+.inbox-row--unread .inbox-row__dot {
+  background: var(--color-text);
+}
+
+.inbox-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.inbox-row__headline {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+.inbox-row--unread .inbox-row__headline {
+  font-weight: var(--font-weight-medium);
+}
+
+.inbox-row__body {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-row__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+}
+
+.inbox-row__module::after {
+  content: "·";
+  margin-inline-start: var(--space-2);
+}

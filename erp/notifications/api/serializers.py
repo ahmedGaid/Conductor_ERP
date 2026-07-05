@@ -17,3 +17,16 @@ class NotificationSerializer(serializers.Serializer):
     error_text = serializers.CharField()
     sent_at = serializers.DateTimeField()
     created_at = serializers.DateTimeField()
+
+
+class InboxSerializer(serializers.Serializer):
+    """An in-app inbox row — the subset the panel renders (localised text is derived on the client
+    from ``event_name`` + ``reference``, so the raw English subject/body are only a fallback)."""
+
+    id = serializers.UUIDField()
+    subject = serializers.CharField()
+    body = serializers.CharField()
+    reference = serializers.CharField()
+    event_name = serializers.CharField()
+    read_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField()

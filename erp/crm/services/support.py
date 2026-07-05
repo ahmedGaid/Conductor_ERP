@@ -126,7 +126,8 @@ def escalate_ticket(ticket: Ticket, actor=None) -> Ticket:
     audit.record(module="crm", action="escalate_ticket", entity_type="Ticket",
                  entity_id=ticket.number, actor=actor, after={"priority": ticket.priority})
     bus.publish(events.TICKET_ESCALATED,
-                {"ticket": ticket.number, "priority": ticket.priority, "customer": ticket.customer_code})
+                {"ticket": ticket.number, "priority": ticket.priority,
+                 "customer": ticket.customer_code, "owner": ticket.owner})
     return ticket
 
 
