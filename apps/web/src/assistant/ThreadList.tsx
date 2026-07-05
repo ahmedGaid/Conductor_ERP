@@ -20,28 +20,9 @@ import { useAsync } from "../hooks/useAsync";
 import { useListKeyboardNav } from "../hooks/useListKeyboardNav";
 import i18n from "../i18n";
 import { runOptimistic } from "../lib/optimistic";
+import { relativeTime } from "../lib/relativeTime";
 import { useAssistant } from "./AssistantProvider";
 import "./assistant-panel.css";
-
-// A calm "3 hours ago" using the platform formatter — no dependency, respects the active language.
-const RELATIVE_STEPS: [Intl.RelativeTimeFormatUnit, number][] = [
-  ["year", 60 * 60 * 24 * 365],
-  ["month", 60 * 60 * 24 * 30],
-  ["week", 60 * 60 * 24 * 7],
-  ["day", 60 * 60 * 24],
-  ["hour", 60 * 60],
-  ["minute", 60],
-];
-
-function relativeTime(iso: string, lang: string): string {
-  const diff = (Date.parse(iso) - Date.now()) / 1000;
-  const abs = Math.abs(diff);
-  const fmt = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
-  for (const [unit, secs] of RELATIVE_STEPS) {
-    if (abs >= secs) return fmt.format(Math.round(diff / secs), unit);
-  }
-  return fmt.format(0, "second");
-}
 
 /**
  * The conversation history for the AI workspace — search, pinned/recent groups, an archived shelf,

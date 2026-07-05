@@ -9,7 +9,9 @@ import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
 import { EntityLink, type EntityType } from "../../components/EntityLink";
+import { Disclosure } from "../../components/Disclosure";
 import { ModuleHeader } from "../../components/ModuleHeader";
+import { RecordTimeline } from "../../components/RecordTimelineLazy";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -88,6 +90,10 @@ export function JournalDetailPage() {
               </tbody>
             </table>
           </div>
+
+          <Disclosure summary={t("timeline.title")}>
+            <RecordTimeline entityType="JournalEntry" entityId={data.number} />
+          </Disclosure>
         </div>
       )}
     </section>

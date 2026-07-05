@@ -1447,6 +1447,54 @@
       "defaultSet": "Default view set"
     }
   },
+  "timeline": {
+    "title": "Activity",
+    "empty": "No activity yet",
+    "emptyHint": "Actions on this record will appear here.",
+    "emptyValue": "—",
+    "showAll": "Show all",
+    "showLess": "Show less",
+    "action": {
+      "create_order": "Created",
+      "approve_order": "Approved",
+      "confirm_order": "Confirmed",
+      "deliver_order": "Delivered",
+      "invoice_order": "Invoiced",
+      "receive_payment": "Payment recorded",
+      "return_order": "Returned",
+      "cancel_order": "Cancelled",
+      "receive_order": "Received",
+      "bill_order": "Billed",
+      "pay_order": "Payment recorded",
+      "post_journal": "Posted"
+    },
+    "field": {
+      "status": "Status",
+      "customer_code": "Customer",
+      "customer_name": "Customer",
+      "supplier_code": "Supplier",
+      "supplier_name": "Supplier",
+      "warehouse_code": "Warehouse",
+      "currency": "Currency",
+      "order_date": "Order date",
+      "subtotal_minor": "Subtotal",
+      "tax_code": "VAT code",
+      "tax_minor": "VAT",
+      "invoiced_minor": "Invoiced",
+      "paid_minor": "Paid",
+      "returned_minor": "Returned",
+      "outstanding_minor": "Outstanding",
+      "invoice_number": "Invoice no.",
+      "credit_note_number": "Credit note no.",
+      "received_minor": "Received",
+      "billed_minor": "Billed",
+      "bill_number": "Bill no.",
+      "debit_note_number": "Debit note no.",
+      "date": "Date",
+      "period": "Period",
+      "total": "Total"
+    }
+  },
   "einvoice": {
     "toast": {
       "submitted": "Invoice submitted"

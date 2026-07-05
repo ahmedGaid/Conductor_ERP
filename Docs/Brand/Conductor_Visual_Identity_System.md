@@ -207,6 +207,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | AI assistant (the product surface) | المساعد الذكي | الذكاء الاصطناعي / روبوت (the surface is always **المساعد الذكي**; "AI" alone never appears in Arabic copy, 2026-07-02) |
 | Knowledge base (documents the assistant searches/quotes) | قاعدة المعرفة | مكتبة المستندات / الأرشيف (reserve for a future generic document store, a different concept, 2026-07-04) |
 | Saved view (a named list filter preset) | طريقة عرض | عرض (bare عرض is reserved for عرض سعر = quotation; always use the compound **طريقة عرض**, 2026-07-05) |
+| Activity timeline (per-record activity feed) | سجل النشاط | التاريخ (reserved for a document's business date, a different concept, 2026-07-05) |
 | ARP (the category — Agentic Resource Planning) | الإدارة الذكية للموارد (acronym stays Latin **ARP**, like ERP before it) | تخطيط الموارد الوكيلي (stiff, textbook); marketing signature is «نظام يدير معك، لا يُدار فقط» — usable only after the claims gate opens (`Docs/ARP_STRATEGY.md` §2, 2026-07-02) |
 
 ### 6.2 Status & action voice (Arabic)

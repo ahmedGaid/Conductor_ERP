@@ -1,0 +1,67 @@
+/* Per-record activity timeline (see RecordTimeline.tsx). A quiet vertical rail on the inline-start
+   edge, so it reads top-to-bottom the same way in RTL and LTR — only the reading direction of the
+   text inside each row flips. Logical properties throughout; no raw left/right. */
+.record-timeline__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-inline-start: 2px solid var(--color-border);
+}
+
+.record-timeline__row {
+  position: relative;
+  padding-inline-start: var(--space-4);
+  padding-block-end: var(--space-4);
+}
+.record-timeline__row:last-child {
+  padding-block-end: 0;
+}
+.record-timeline__row::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -5px;
+  inset-block-start: 0.35rem;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+.record-timeline__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+.record-timeline__verb {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+.record-timeline__actor {
+  color: var(--color-text-muted);
+}
+.record-timeline__time {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+}
+
+.record-timeline__changes {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.record-timeline__change {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.record-timeline__field {
+  color: var(--color-text);
+}
+
+.record-timeline__toggle {
+  margin-block-start: var(--space-3);
+}

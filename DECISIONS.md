@@ -1279,6 +1279,17 @@ budget deliberately (edit the constant + this entry), never silently.
   `Idempotency-Key` header makes stock **receive** at-most-once (no state machine protects it);
   replay returns the original movement (200, not 201). Order actions need no key — the status state
   machine already rejects/no-ops replays (`complete_sale` replay is a designed no-op).
+- **2026-07-05 — Frontend bundle budget raised 230 → 235 kB gzip (linear-polish FILE_07).** Baseline
+  measurement (stash FILE_07's changes, rebuild `main`) showed the main chunk already at **231.9 kB**
+  — over budget before FILE_07 touched anything, from accumulated un-pushed work (linear-polish
+  FILE_01–06, rag-knowledge FILE_01–11, doc-grounding) that grew the app without anyone re-running
+  gate03 in isolation. FILE_07's own addition (`RecordTimeline` + the audit history API client) is
+  route-split via `React.lazy`/`Suspense` (`RecordTimelineLazy.tsx`) and adds only ~1 kB gzip to
+  main. Raised the budget to the smallest round number covering current main (232.9 kB) with a
+  little headroom, rather than paper over the debt with a bigger jump. **Still open:** sales /
+  purchasing / inventory / accounting detail pages are the largest unsplit slice of the main chunk
+  and are good candidates for a dedicated future route-splitting session to bring the budget back
+  down structurally, the same way the workflow canvas / admin pages were split in the 230 kB pass.
 
 ## AI 2026-07 — assistant architecture (session 02, part 1)
 

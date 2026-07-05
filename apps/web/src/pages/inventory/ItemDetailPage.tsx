@@ -7,7 +7,9 @@ import { ErrorState } from "../../components/ErrorState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { Disclosure } from "../../components/Disclosure";
 import { EntityLink } from "../../components/EntityLink";
+import { RecordTimeline } from "../../components/RecordTimelineLazy";
 import { InventoryNav } from "./InventoryNav";
 import { MovementsTable } from "./MovementsTable";
 import "./inventory.css";
@@ -82,6 +84,10 @@ export function ItemDetailPage() {
 
           <h3 className="inv-section-title">{t("inventory.detail.movements")}</h3>
           <MovementsTable movements={data.movements} show="item" />
+
+          <Disclosure summary={t("timeline.title")}>
+            <RecordTimeline entityType="Item" entityId={data.item.sku} />
+          </Disclosure>
         </>
       )}
     </section>

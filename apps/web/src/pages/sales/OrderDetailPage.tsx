@@ -39,6 +39,7 @@ import { type DocMenuItem } from "../../components/DocumentMenu";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
 import { Disclosure } from "../../components/Disclosure";
+import { RecordTimeline } from "../../components/RecordTimelineLazy";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
@@ -403,6 +404,10 @@ export function OrderDetailPage() {
             </dl>
           )}
         </div>
+      </Disclosure>
+
+      <Disclosure summary={t("timeline.title")}>
+        <RecordTimeline entityType="SalesOrder" entityId={data.number} />
       </Disclosure>
 
       <ConfirmDialog

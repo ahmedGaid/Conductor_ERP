@@ -55,6 +55,7 @@ export function SupplierDetailPage() {
       nav={<PurchasingNav />}
       backHref="/purchasing/suppliers"
       backLabel={t("party.backToSuppliers")}
+      entityType="Supplier"
       code={code}
       name={name}
       typeLabel={t("party.supplier")}

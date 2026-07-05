@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { BackLink } from "./BackLink";
+import { Disclosure } from "./Disclosure";
+import { RecordTimeline } from "./RecordTimelineLazy";
 
 import type { GeneralLedgerReport } from "../api/accounting";
 import { formatMinor } from "../lib/money";
@@ -31,6 +33,8 @@ interface PartyDetailViewProps {
   nav: ReactNode;
   backHref: string;
   backLabel: string;
+  /** Which audit module entity this party is — drives the activity timeline. */
+  entityType: "Customer" | "Supplier";
   /** Header: party code + name + a "Customer"/"Supplier" caption. */
   code: string;
   name: string;
@@ -52,6 +56,7 @@ export function PartyDetailView({
   nav,
   backHref,
   backLabel,
+  entityType,
   code,
   name,
   typeLabel,
@@ -191,6 +196,10 @@ export function PartyDetailView({
               </table>
             </div>
           </div>
+
+          <Disclosure summary={t("timeline.title")}>
+            <RecordTimeline entityType={entityType} entityId={code} />
+          </Disclosure>
         </>
       )}
     </section>

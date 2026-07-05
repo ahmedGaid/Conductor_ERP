@@ -39,6 +39,8 @@ urlpatterns = [
     path("api/setup/", include("erp.setup.urls")),
     # AI assistant (optional; 404s when disabled) — plan session 02.
     path("api/assistant/", include("erp.assistant.api.urls")),
+    # Audit trail read API (per-record activity timeline) — linear-polish FILE_07.
+    path("api/audit/", include("erp.audit.api.urls")),
     # Built React SPA at the site root (Phase 11). Last, so admin/api/health win; the HashRouter
     # keeps every client route in the URL fragment, so only "" ever reaches the server.
     path("", spa_index, name="spa"),

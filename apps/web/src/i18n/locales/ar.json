@@ -1447,6 +1447,54 @@
       "defaultSet": "تم التعيين كطريقة عرض افتراضية"
     }
   },
+  "timeline": {
+    "title": "سجل النشاط",
+    "empty": "لا يوجد نشاط بعد",
+    "emptyHint": "ستظهر هنا الإجراءات على هذا السجل.",
+    "emptyValue": "—",
+    "showAll": "عرض الكل",
+    "showLess": "عرض أقل",
+    "action": {
+      "create_order": "تم الإنشاء",
+      "approve_order": "تمت الموافقة",
+      "confirm_order": "تم التأكيد",
+      "deliver_order": "تم التسليم",
+      "invoice_order": "تم إصدار الفاتورة",
+      "receive_payment": "تم تسجيل الدفعة",
+      "return_order": "تم الإرجاع",
+      "cancel_order": "تم الإلغاء",
+      "receive_order": "تم الاستلام",
+      "bill_order": "تم تسجيل الفاتورة",
+      "pay_order": "تم تسجيل الدفعة",
+      "post_journal": "تم الترحيل"
+    },
+    "field": {
+      "status": "الحالة",
+      "customer_code": "العميل",
+      "customer_name": "العميل",
+      "supplier_code": "المورد",
+      "supplier_name": "المورد",
+      "warehouse_code": "المخزن",
+      "currency": "العملة",
+      "order_date": "تاريخ الطلب",
+      "subtotal_minor": "الإجمالي الفرعي",
+      "tax_code": "كود الضريبة",
+      "tax_minor": "ضريبة القيمة المضافة",
+      "invoiced_minor": "المفوتر",
+      "paid_minor": "المدفوع",
+      "returned_minor": "المرتجع",
+      "outstanding_minor": "المتبقي",
+      "invoice_number": "رقم الفاتورة",
+      "credit_note_number": "رقم إشعار الدائن",
+      "received_minor": "المستلم",
+      "billed_minor": "المفوتر",
+      "bill_number": "رقم الفاتورة",
+      "debit_note_number": "رقم إشعار المدين",
+      "date": "التاريخ",
+      "period": "الفترة",
+      "total": "الإجمالي"
+    }
+  },
   "einvoice": {
     "toast": {
       "submitted": "تم إرسال الفاتورة"

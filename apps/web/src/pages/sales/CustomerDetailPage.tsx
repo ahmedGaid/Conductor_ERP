@@ -61,6 +61,7 @@ export function CustomerDetailPage() {
       nav={<SalesNav />}
       backHref="/sales/customers"
       backLabel={t("party.backToCustomers")}
+      entityType="Customer"
       code={code}
       name={name}
       typeLabel={t("party.customer")}
