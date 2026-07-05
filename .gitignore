@@ -53,3 +53,6 @@ erp_questionnaire_v4.html
 
 # CodeGraph index cache (local tooling)
 .codegraph/
+
+# Start-Conductor.cmd runtime log (local launcher)
+conductor-dev.log
