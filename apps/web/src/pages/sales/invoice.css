@@ -162,9 +162,17 @@
     max-inline-size: none;
   }
 
-  .invoice-doc {
+  /* `.invoice-doc.card` (two classes) outranks the global `.card` print border so the document
+     always sits borderless on the page, whatever the stylesheet load order. */
+  .invoice-doc.card {
     padding: 0;
     border: none;
     box-shadow: none;
+  }
+
+  /* Never strand the totals from the line items, and never orphan the grand-total rule on its own
+     page — the amount the customer actually reads must land with the table it sums. */
+  .invoice-doc__totals {
+    break-inside: avoid;
   }
 }

@@ -1,6 +1,25 @@
 /* Print / Save-as-PDF: strip the app chrome and print only the report content.
    The browser shapes Arabic (RTL) natively, so this is our zero-dependency PDF export. */
+
+/* Paper geometry: one consistent page box for every printed surface (invoice + report exports).
+   Documents strip their own screen padding in print, so this margin IS the breathing room on paper —
+   without it the content sits at the sheet edge and the margin drifts per browser. */
+@page {
+  size: A4;
+  margin: 16mm;
+}
+
 @media print {
+  /* Keep tabular content whole across page breaks: repeat the header row on every page and never
+     split a single row down the middle. */
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
   .sidebar,
   .commandbar,
   .appshell__skip,
