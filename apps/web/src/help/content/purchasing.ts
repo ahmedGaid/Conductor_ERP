@@ -80,7 +80,7 @@ export const importInvoiceGuide: HelpGuide = {
     {
       name: { en: "From photo to draft PO", ar: "من صورة إلى مسودة أمر شراء" },
       steps: [
-        { en: "Photograph the invoice or pick a PDF (up to 5 MB).", ar: "صوّر الفاتورة أو اختر ملف PDF (حتى ٥ ميجابايت)." },
+        { en: "Photograph the invoice or pick a PDF (up to 5 MB).", ar: "صوّر الفاتورة أو اختر ملف PDF (حتى 5 ميجابايت)." },
         { en: "Check the matched supplier and lines; fix anything the assistant flagged.", ar: "تحقق من المورد والبنود المطابقة؛ وصحّح ما أشار إليه المساعد الذكي." },
         { en: "Create the draft — it opens as a normal purchase order.", ar: "أنشئ المسودة — تُفتح كأمر شراء عادي." },
       ],

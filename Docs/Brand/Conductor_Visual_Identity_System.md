@@ -113,8 +113,15 @@ The product ships **IBM Plex Sans Arabic** (Arabic, primary) + **Inter** (Latin)
   calmly over long workdays — they share the "quiet, precise" personality.
 - `--font-ui` = Arabic, then Latin: Arabic glyphs render in Plex Arabic, Latin/numerals in Inter,
   automatically, in either direction.
-- **Numbers:** `font-variant-numeric: tabular-nums` everywhere figures appear, so money columns align.
-  Latin numerals via `--font-latin` even inside Arabic text (wrap LTR tokens in `<Bdi>`).
+- **Numbers — one digits policy, both locales: Latin numerals (`1,234.56`), never Arabic-Indic
+  (`١٬٢٣٤٫٥٦`).** This is the Egyptian business convention — invoices, banks, and ETA e-invoicing all
+  use Latin digits, and mixing the two hurts scanning. Formatting lives only in
+  [`lib/money.ts`](../../apps/web/src/lib/money.ts) (`en-US` grouping); never format numbers with an
+  `ar`/`ar-EG` locale. Latin numerals render in Inter via `--font-latin`, even inside Arabic text —
+  wrap every LTR token (numbers, codes) in `<Bdi>` so the sign and grouping land on the correct side
+  in RTL. Tabular figures everywhere figures appear so columns align digit-for-digit: the `.num`
+  utility (in `global.css`) is the canonical switch, and the shared numeric classes (`*-table__num`,
+  `*-summary__value`, `.statcard__value`, …) already carry it. Enforced by `gate14`.
 
 ### 4.2 The scale (from tokens — do not invent sizes)
 `xs .75 / sm .875 / md 1 / lg 1.1875 / xl 1.5 / 2xl 1.875` rem · line-height-ui `1.5` · weights

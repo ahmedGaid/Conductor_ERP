@@ -65,7 +65,7 @@ export function IncomeStatementPage() {
           <Section title={t("accounting.types.expense")} lines={data.expenses} total={data.total_expenses} totalLabel={t("accounting.stmt.totalExpenses")} />
           <div className="stmt__net">
             <span>{t("accounting.stmt.netIncome")}</span>
-            <span className={data.net_income >= 0 ? "acct-balanced" : "acct-unbalanced"}>
+            <span className={`num ${data.net_income >= 0 ? "acct-balanced" : "acct-unbalanced"}`}>
               <Bdi>{formatMinor(data.net_income)}</Bdi>
             </span>
           </div>

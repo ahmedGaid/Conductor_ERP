@@ -278,6 +278,19 @@ textarea:focus {
   background-color: var(--color-surface);
 }
 
+/* ---- Number typography ----
+   Digits policy: Latin numerals (1,234.56) in BOTH locales — Egyptian business convention
+   (invoices, banks, ETA e-invoicing all use Latin digits; mixing Arabic-Indic hurts scanning).
+   Numbers are formatted only by lib/money.ts (en-US grouping) and wrapped in <Bdi> so they read
+   as an isolated LTR run inside Arabic text — sign and grouping land on the correct side in RTL.
+   `.num` is the ONE utility that turns on tabular (fixed-width) figures so columns of amounts
+   align digit-for-digit. Numerals render in Inter (via the .latin face on <Bdi>), which carries
+   `tnum`; the `font-feature-settings` line is the fallback for engines that ignore the shorthand. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
 .muted {
   color: var(--color-text-muted);
 }

@@ -52,7 +52,7 @@ export function BalanceSheetPage() {
             />
             <div className="card stmt__net">
               <span>{t("accounting.stmt.totalLiabEquity")}</span>
-              <span><Bdi>{formatMinor(data.total_liabilities_and_equity)}</Bdi></span>
+              <span className="num"><Bdi>{formatMinor(data.total_liabilities_and_equity)}</Bdi></span>
             </div>
           </div>
         </div>

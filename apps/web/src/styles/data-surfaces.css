@@ -139,6 +139,7 @@
 .acct-table__num {
   text-align: end;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .sales-table tbody tr:hover,
@@ -239,6 +240,7 @@
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 /* ---- Secondary reference fields (progressive-disclosure section) ---- */
