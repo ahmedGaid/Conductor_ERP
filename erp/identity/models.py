@@ -277,3 +277,41 @@ class ApprovalLimit(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.role_id}:{self.document_type}<={self.limit_minor}"
+
+
+# --- Saved views ------------------------------------------------------------------------------
+#
+# A saved view is a named filter preset for one list page. It stores nothing cleverer than the
+# list's URL query string (the same scheme <FilterBar> already deep-links through), so applying a
+# view is just navigating to that query. Rows are always owner-scoped — a user only ever sees, and
+# can only ever touch, their own views.
+
+
+class SavedView(models.Model):
+    """A user's named filter preset for one list (identified by ``list_key``)."""
+
+    user = models.ForeignKey(
+        "identity.User", on_delete=models.CASCADE, related_name="saved_views"
+    )
+    # Which list this view belongs to, e.g. "sales:orders" or "inventory:items".
+    list_key = models.CharField(max_length=60)
+    name = models.CharField(max_length=60)
+    # The list's URL query string, e.g. "status=confirmed&customer=Acme". Blank = the unfiltered list.
+    query = models.TextField(blank=True, default="")
+    # At most one default per (user, list_key) — enforced by the service when a default is set.
+    is_default = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "identity_saved_view"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "list_key", "name"], name="uniq_saved_view_user_list_name"
+            ),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.user_id}:{self.list_key}:{self.name}"

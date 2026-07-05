@@ -1,0 +1,116 @@
+/*
+ * Saved views — a quiet dropdown at the start of the filter bar. Monochrome like the chips beside
+ * it; the one touch of colour is the accent star that marks the default view (colour paired with a
+ * meaning + an icon, never decoration). Logical properties throughout, so RTL mirrors cleanly.
+ */
+/* Groups the saved-views control with the filter bar on one wrapping row. */
+.listbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.savedviews {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.savedviews__trigger {
+  gap: var(--space-1);
+}
+.savedviews__trigger svg {
+  color: var(--color-text-muted);
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+.savedviews__name {
+  font-weight: var(--font-weight-medium);
+  max-inline-size: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.savedviews__save {
+  color: var(--color-text-muted);
+}
+
+/* A view row: the selectable name fills the row; the actions sit at the inline-end. */
+.savedviews__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.savedviews__pick {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-inline-size: 8rem;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.savedviews__pick:hover {
+  background-color: var(--color-surface-hover);
+}
+.savedviews__pick--on {
+  font-weight: var(--font-weight-medium);
+}
+.savedviews__pick-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.savedviews__check svg {
+  color: var(--color-text-muted);
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
+.savedviews__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline-end: var(--space-2);
+}
+.savedviews__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.savedviews__action svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+.savedviews__action:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+/* The default view: its star carries the accent (meaning = "opens by default"). */
+.savedviews__action--on,
+.savedviews__action--on:hover {
+  color: var(--color-accent);
+}
+
+.savedviews__editor {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

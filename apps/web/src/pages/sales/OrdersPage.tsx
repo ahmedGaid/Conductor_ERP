@@ -21,6 +21,8 @@ import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { SalesNav } from "./SalesNav";
@@ -72,6 +74,7 @@ export function OrdersPage() {
   // Seed the filter chips from the URL once, so a drill-in link (a customer row → `/sales?customer=…`)
   // opens this list pre-filtered; the chip is then freely editable like any other.
   const [filters, setFilters] = useState<ActiveFilter[]>(() => filtersFromParams(searchParams, fields));
+  const savedViews = useSavedViews({ listKey: "sales:orders", fields, filters, setFilters });
   const [tab, setTab] = useState<string>(ALL_TAB);
 
   const filtered = useMemo(
@@ -152,7 +155,12 @@ export function OrdersPage() {
     <section className="sales-page">
       <SalesNav />
       <div className="sales-page__head">
-        {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
+        {data && data.length > 0 && (
+          <div className="listbar">
+            <SavedViews api={savedViews} />
+            <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+          </div>
+        )}
         <Link className="btn btn--primary sales-page__head-cta" to="/sales/orders/new">
           {t("sales.tabs.newOrder")}
         </Link>

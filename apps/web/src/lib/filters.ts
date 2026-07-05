@@ -117,6 +117,36 @@ export function filtersFromParams<T>(params: URLSearchParams, fields: FilterFiel
   return out;
 }
 
+/**
+ * The inverse of {@link filtersFromParams}: encode active filters back into URL params (one entry
+ * per value), so a filtered list is shareable and a saved view can store the query string. It
+ * round-trips through `filtersFromParams` — operators reset to each field's default on read, exactly
+ * like a deep-link (the deliberately simple scheme: a view is name + list_key + this query string,
+ * nothing cleverer). An empty chip contributes nothing.
+ */
+export function paramsFromFilters(filters: ActiveFilter[]): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const filter of filters) {
+    for (const value of filter.values) {
+      if (value !== "") params.append(filter.key, value);
+    }
+  }
+  return params;
+}
+
+/**
+ * A stable, order-independent form of a filter query string, for equality checks only (never for
+ * display or navigation). Two queries that select the same key/value pairs — regardless of chip
+ * order — canonicalize identically, so "is this the active view?" is robust.
+ */
+export function canonicalizeQuery(query: string): string {
+  const parts: string[] = [];
+  for (const [key, value] of new URLSearchParams(query)) {
+    if (value !== "") parts.push(`${key}=${value}`);
+  }
+  return parts.sort().join("&");
+}
+
 function matchesOne<T>(row: T, field: FilterField<T>, filter: ActiveFilter): boolean {
   const raw = field.accessor(row);
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import OrgPreferences, UserPreferences
+from .models import OrgPreferences, SavedView, UserPreferences
 
 
 class LoginSerializer(serializers.Serializer):
@@ -41,6 +41,26 @@ class OrgPreferencesSerializer(serializers.ModelSerializer):
         exclude = ["id"]
         # is_setup_complete is flipped only by the setup service; base_currency is EGP-only for now.
         read_only_fields = ["updated_at", "is_setup_complete", "base_currency"]
+
+
+class SavedViewSerializer(serializers.ModelSerializer):
+    """Read shape for a saved view."""
+
+    class Meta:
+        model = SavedView
+        fields = ["id", "list_key", "name", "query", "is_default"]
+        read_only_fields = fields
+
+
+class CreateSavedViewSerializer(serializers.Serializer):
+    list_key = serializers.CharField(max_length=60)
+    name = serializers.CharField(max_length=60)
+    query = serializers.CharField(required=False, allow_blank=True, default="", trim_whitespace=False)
+    is_default = serializers.BooleanField(required=False, default=False)
+
+
+class RenameSavedViewSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=60)
 
 
 # --- User management (Increment 3) ---

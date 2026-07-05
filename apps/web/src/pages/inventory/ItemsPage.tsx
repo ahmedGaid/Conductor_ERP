@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
@@ -9,10 +9,12 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
-import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
+import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { RowActions } from "../../components/RowActions";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
@@ -27,7 +29,7 @@ export function ItemsPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { data, loading, error, reload, mutate } = useAsync(listItems, [], "inventory:items");
-  const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<string>(ALL_TAB);
 
   const fields = useMemo<FilterField<Item>[]>(
@@ -44,6 +46,11 @@ export function ItemsPage() {
     ],
     [t],
   );
+
+  // Seed chips from the URL so a drill-in link opens pre-filtered; the saved-views hook then keeps
+  // the chips and the URL in step.
+  const [filters, setFilters] = useState<ActiveFilter[]>(() => filtersFromParams(searchParams, fields));
+  const savedViews = useSavedViews({ listKey: "inventory:items", fields, filters, setFilters });
 
   const filtered = useMemo(
     () => (data ? data.filter((i) => matchesAllFilters(i, fields, filters)) : data),
@@ -166,7 +173,8 @@ export function ItemsPage() {
       )}
 
       {data && data.length > 0 && (
-        <div className="inv-filters">
+        <div className="inv-filters listbar">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

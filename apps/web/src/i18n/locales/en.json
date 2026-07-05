@@ -1430,6 +1430,23 @@
       "on": "on"
     }
   },
+  "views": {
+    "all": "All",
+    "label": "Views",
+    "save": "Save view",
+    "namePlaceholder": "View name",
+    "create": "Save",
+    "rename": "Rename",
+    "delete": "Delete",
+    "setDefault": "Set as default",
+    "empty": "No saved views yet.",
+    "toast": {
+      "saved": "View saved",
+      "renamed": "View renamed",
+      "deleted": "View deleted",
+      "defaultSet": "Default view set"
+    }
+  },
   "einvoice": {
     "toast": {
       "submitted": "Invoice submitted"

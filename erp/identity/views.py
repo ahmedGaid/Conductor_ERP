@@ -14,16 +14,19 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from . import roles_admin, services, users as user_svc
+from . import roles_admin, saved_views, services, users as user_svc
 from .models import Department, Team
 from .permissions import HasAnyRole, HasModulePermission
 from .roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
 from .serializers import (
     BulkUsersSerializer,
     CreateRoleSerializer,
+    CreateSavedViewSerializer,
     CreateUserSerializer,
     LoginSerializer,
     OrgPreferencesSerializer,
+    RenameSavedViewSerializer,
+    SavedViewSerializer,
     SetApprovalLimitSerializer,
     SetRolePermissionSerializer,
     UpdateUserSerializer,
@@ -202,6 +205,57 @@ class OrgPreferencesView(APIView):
         s.is_valid(raise_exception=True)
         org = services.update_org_preferences(request.user, s.validated_data)
         return _envelope(OrgPreferencesSerializer(org).data)
+
+
+# --- Saved views (list filter presets) ---
+
+class SavedViewsView(APIView):
+    """The signed-in user's saved views for one list. GET (?list_key=) lists; POST creates.
+
+    Only ``IsAuthenticated`` — a saved view is personal data, owner-scoped by the service, so it
+    needs no module permission (same posture as PreferencesView)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        list_key = request.query_params.get("list_key", "")
+        views = saved_views.list_views(request.user, list_key)
+        return _envelope(SavedViewSerializer(views, many=True).data)
+
+    def post(self, request: Request) -> Response:
+        s = CreateSavedViewSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        view = saved_views.create_view(
+            request.user, d["list_key"], d["name"], d.get("query", ""), d.get("is_default", False)
+        )
+        return Response({"data": SavedViewSerializer(view).data}, status=201)
+
+
+class SavedViewDetailView(APIView):
+    """Rename (PATCH) or delete (DELETE) one of the caller's own saved views."""
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request: Request, pk: int) -> Response:
+        s = RenameSavedViewSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        view = saved_views.rename_view(request.user, pk, s.validated_data["name"])
+        return _envelope(SavedViewSerializer(view).data)
+
+    def delete(self, request: Request, pk: int) -> Response:
+        saved_views.delete_view(request.user, pk)
+        return Response(status=204)
+
+
+class SavedViewDefaultView(APIView):
+    """Make one of the caller's views the default for its list (unsets any previous default)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, pk: int) -> Response:
+        view = saved_views.set_default(request.user, pk)
+        return _envelope(SavedViewSerializer(view).data)
 
 
 # --- User management (Increment 3) ---
