@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { isModalOpen, isTypingTarget } from "../lib/keyboard";
 import { getListCursor, saveListCursor } from "../lib/listCursor";
+import { usePeek } from "../components/PeekCard";
 
 /**
  * Linear-style keyboard navigation for a list/table. `j`/ArrowDown and `k`/ArrowUp move a
- * row highlight; `Enter`/`o` opens the active row; `Escape` clears the highlight. Bare keys
- * stand down while typing or while a modal dialog owns the keyboard.
+ * row highlight; `Enter`/`o` opens the active row; `space` peeks its primary entity; `Escape`
+ * closes an open peek first, then clears the highlight. Bare keys stand down while typing or while
+ * a modal dialog owns the keyboard.
  *
  * Returns the active index (-1 when nothing is highlighted) and a setter. The caller marks
  * the active row with `data-kbd-active` (for the highlight + scroll-into-view) and
@@ -40,6 +42,11 @@ export function useListKeyboardNav<T>({
   activeRef.current = active;
   const getItemIdRef = useRef(getItemId);
   getItemIdRef.current = getItemId;
+
+  // Latest peek API, read inside the keydown listener without re-subscribing it.
+  const peek = usePeek();
+  const peekRef = useRef(peek);
+  peekRef.current = peek;
 
   // When restoring a saved highlight, suppress the one scroll-into-view it would trigger so the
   // explicit scrollTop restore (below) wins and the position is pixel-faithful.
@@ -112,8 +119,22 @@ export function useListKeyboardNav<T>({
           }
           return i;
         });
+      } else if (e.key === " ") {
+        // Peek the active row's primary entity (the first peekable EntityLink in it). Ignored when
+        // nothing is highlighted or a peek is already open (leaves page-scroll on space untouched).
+        if (activeRef.current < 0 || peekRef.current.isOpen) return;
+        const row = document.querySelector('[data-kbd-active="true"]');
+        const link = row?.querySelector<HTMLElement>("[data-peek-type]");
+        const pt = link?.getAttribute("data-peek-type");
+        const pv = link?.getAttribute("data-peek-value");
+        if (link && pt && pv) {
+          e.preventDefault();
+          peekRef.current.openPeek(pt, pv, link);
+        }
       } else if (e.key === "Escape") {
-        // No preventDefault — let Popover/FilterBar Esc handlers still fire.
+        // No preventDefault — let Popover/FilterBar Esc handlers still fire. When a peek is open its
+        // own Escape handler closes it; keep the row highlight so Esc dismisses the peek first.
+        if (peekRef.current.isOpen) return;
         setActive(-1);
       }
     }

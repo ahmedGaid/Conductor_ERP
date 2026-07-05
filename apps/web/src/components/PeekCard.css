@@ -1,0 +1,90 @@
+/*
+ * Peek card — the body inside the shared Popover (which owns the surface, border, shadow and the
+ * settled enter motion). A quiet, dense read: an entity icon + name, a short list of label→value
+ * facts, and a muted "open" hint. Colour only on a status value, always paired with its word.
+ * Reduced-motion is handled by the global guard (the Popover's enter animation flattens there).
+ */
+.peek-popover {
+  inline-size: 15rem;
+  padding: 0;
+}
+.peek {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+.peek__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.peek__icon {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+.peek__icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+.peek__title {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peek__facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+.peek__fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.peek__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+.peek__value {
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  text-align: end;
+}
+.peek__value--warn {
+  color: var(--color-danger);
+}
+.peek__value--muted {
+  color: var(--color-text-muted);
+}
+
+.peek__open {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+.peek__open .navicon {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+}
+
+.peek__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.peek__skeleton {
+  block-size: 0.7rem;
+}
+.peek__skeleton--sm {
+  inline-size: 60%;
+}

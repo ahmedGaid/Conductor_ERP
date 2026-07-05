@@ -4,6 +4,21 @@
     "shortName": "Conductor",
     "tagline": "Enterprise Resource Planning"
   },
+  "peek": {
+    "aria": "Quick preview",
+    "open": "Open",
+    "outstanding": "Outstanding",
+    "orders": "Orders",
+    "openOrders": "Open orders",
+    "onHand": "On hand",
+    "stockValue": "Stock value",
+    "stockState": "Stock",
+    "belowReorder": "Below reorder point",
+    "inStock": "In stock",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
   "nav": {
     "dashboard": "Home",
     "workflows": "Workflows",

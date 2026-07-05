@@ -4,6 +4,21 @@
     "shortName": "Conductor",
     "tagline": "نظام تخطيط الموارد"
   },
+  "peek": {
+    "aria": "معاينة سريعة",
+    "open": "فتح",
+    "outstanding": "المتبقي",
+    "orders": "الطلبات",
+    "openOrders": "طلبات مفتوحة",
+    "onHand": "المتاح",
+    "stockValue": "قيمة المخزون",
+    "stockState": "المخزون",
+    "belowReorder": "تحت حد الطلب",
+    "inStock": "متوفر",
+    "status": "الحالة",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
   "nav": {
     "dashboard": "الرئيسية",
     "workflows": "مسارات العمل",

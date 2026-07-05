@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { AppShell } from "./app/AppShell";
+import { PeekProvider } from "./components/PeekCard";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { PreferencesProvider, usePreferences } from "./preferences/PreferencesContext";
 import { getSetupStatus } from "./api/setup";
@@ -159,6 +160,7 @@ function SetupGate() {
 
 function AppRoutes() {
   return (
+    <PeekProvider>
       <AppShell>
         {/* Lazy routes paint the shared list skeleton inside the intact shell while their chunk
             loads — the same designed beat as a data load, never a blank screen or spinner. */}
@@ -247,6 +249,7 @@ function AppRoutes() {
         </Routes>
         </Suspense>
       </AppShell>
+    </PeekProvider>
   );
 }
 
