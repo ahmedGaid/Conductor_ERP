@@ -1,8 +1,12 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
 import { BackLink } from "../../components/BackLink";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 
 import { disposeAsset, getAsset, type FixedAsset } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
@@ -25,6 +29,28 @@ export function FixedAssetDetailPage() {
   const [disposeDate, setDisposeDate] = useState(new Date().toISOString().slice(0, 10));
   const [proceeds, setProceeds] = useState("0");
   const [formError, setFormError] = useState<string | null>(null);
+
+  useSetDocumentCrumb(asset?.code);
+
+  // Disposal is a dated form with inputs (forms keep their controls) — no bar primary.
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!asset) return [];
+    return [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(asset.code) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(asset.code) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/accounting/assets/${code}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asset, t]);
+  useSetPageActions({ menuItems: barMenu });
 
   // Optimistic disposal: flip the asset to "disposed" so the badge swaps and the form hides at once,
   // then let the server's asset reconcile the gain/loss and journal number. Failure rolls back + toasts.

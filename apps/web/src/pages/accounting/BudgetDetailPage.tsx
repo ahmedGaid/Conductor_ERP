@@ -1,8 +1,12 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
 import { BackLink } from "../../components/BackLink";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 
 import {
   budgetVsActual,
@@ -35,6 +39,29 @@ export function BudgetDetailPage() {
   const [period, setPeriod] = useState("");
   const { data: variance, loading, error, reload: reloadVariance } =
     useAsync(() => budgetVsActual(id, period || undefined), [id, period]);
+
+  useSetDocumentCrumb(budget?.name);
+
+  // Line entry is a form (forms keep their controls) — no bar primary. CSV/Excel stay on the
+  // in-page ExportButtons until FILE_03 folds report exports into the split pattern.
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!budget) return [];
+    return [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(budget.name) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(budget.name) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/accounting/budgets/${id}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budget, t]);
+  useSetPageActions({ menuItems: barMenu });
 
   // line entry
   const [account, setAccount] = useState("");

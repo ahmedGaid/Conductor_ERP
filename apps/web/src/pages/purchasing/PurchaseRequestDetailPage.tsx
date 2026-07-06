@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -14,6 +14,7 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
@@ -26,7 +27,7 @@ import { Badge } from "../../components/Badge";
 import { purchasingTone } from "../../lib/statusTone";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
-import { DocumentHeader } from "../../components/DocumentHeader";
+import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { Disclosure } from "../../components/Disclosure";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
@@ -132,6 +133,42 @@ export function PurchaseRequestDetailPage() {
   }
   usePaletteActions("pr-detail", pageActions);
 
+  // The page's ONE primary action + its ⋯ menu, published into the sticky PageHeaderBar. Memoized so
+  // the published references stay stable (useSetPageActions treats them as effect deps).
+  function primaryAction(): DocumentPrimary | null {
+    if (!data) return null;
+    const r = data;
+    if (r.status === "draft") return { label: t("purchasing.requests.submit"), onClick: () => act("submitted", () => submitRequest(r.id), "submitted") };
+    if (r.status === "submitted") return { label: t("purchasing.requests.approve"), onClick: () => act("approved", () => approveRequest(r.id), "approved") };
+    if (r.status === "approved") return { label: t("purchasing.requests.convert"), onClick: () => onConvert(r) };
+    return null;
+  }
+  const barPrimary = useMemo(() => {
+    const a = primaryAction();
+    return a ? <DocumentPrimaryButton action={a} /> : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t]);
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!data) return [];
+    const menu: DocMenuItem[] = [
+      { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () => void copyShareLink(`/purchasing/requests/${data.id}`).then((ok) => toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error")),
+      },
+    ];
+    if (data.status === "submitted" || data.status === "approved") {
+      menu.push({ key: "reject", label: t("purchasing.requests.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectRequest(data.id, ""), "rejected") });
+    }
+    return menu;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t]);
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
+
   if (loading) {
     return (
       <section className="pur-page">
@@ -147,39 +184,12 @@ export function PurchaseRequestDetailPage() {
     );
   }
 
-  type Action = { label: string; icon?: string; onClick: () => void } | null;
-  function primaryAction(): Action {
-    const r = data!;
-    if (r.status === "draft") return { label: t("purchasing.requests.submit"), onClick: () => act("submitted", () => submitRequest(r.id), "submitted") };
-    if (r.status === "submitted") return { label: t("purchasing.requests.approve"), onClick: () => act("approved", () => approveRequest(r.id), "approved") };
-    if (r.status === "approved") return { label: t("purchasing.requests.convert"), onClick: () => onConvert(r) };
-    return null;
-  }
-
-  const menu: DocMenuItem[] = [
-    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
-    { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
-    { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
-    {
-      key: "share",
-      label: t("document.share"),
-      icon: "share",
-      onClick: () => void copyShareLink(`/purchasing/requests/${data.id}`).then((ok) => toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error")),
-    },
-  ];
-  if (data.status === "submitted" || data.status === "approved") {
-    menu.push({ key: "reject", label: t("purchasing.requests.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectRequest(data.id, ""), "rejected") });
-  }
-
   return (
     <section className="pur-page">
       <div className="card pur-page">
         <DocumentHeader
           number={data.number}
           status={<Badge tone={purchasingTone(data.status)}>{t(`purchasing.requestStatus.${data.status}`)}</Badge>}
-          primary={primaryAction()}
-          menu={menu}
-          menuLabel={t("document.moreActions")}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> ·{" "}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -22,6 +22,7 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showOrderReceipt, showOrderError, type OrderActionKey, type OrderEvent } from "../../lib/feedback/sales";
 import { runOptimistic } from "../../lib/optimistic";
@@ -32,7 +33,7 @@ import { salesTone } from "../../lib/statusTone";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EntityLink } from "../../components/EntityLink";
-import { DocumentHeader } from "../../components/DocumentHeader";
+import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { type DocMenuItem } from "../../components/DocumentMenu";
@@ -169,6 +170,107 @@ export function OrderDetailPage() {
   }
   usePaletteActions("order-detail", pageActions);
 
+  // --- Primary lifecycle action (the one most-likely next step). ---
+  function primaryAction(): DocumentPrimary | null {
+    if (!data) return null;
+    const o = data;
+    if (o.status === "draft" && o.requires_approval && !o.approved) {
+      return { label: t("sales.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approveOrder(o.id), "approved") };
+    }
+    if (o.status === "draft") {
+      return { label: t("sales.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmOrder(o.id), "confirmed") };
+    }
+    if (o.status === "confirmed" || o.status === "partially_delivered") {
+      return {
+        label: o.status === "partially_delivered" ? t("sales.detail.deliverRemaining") : t("sales.detail.deliver"),
+        onClick: () => act(setStatus("delivered"), () => deliverOrder(o.id), "delivered"),
+      };
+    }
+    if (o.status === "delivered") {
+      return { label: t("sales.detail.invoice"), onClick: () => act(setStatus("invoiced"), () => invoiceOrder(o.id), "invoiced") };
+    }
+    if (o.status === "invoiced") {
+      return { label: t("sales.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payOrder(o.id, o.outstanding_minor), "paid") };
+    }
+    if (o.status === "paid") {
+      return { label: t("sales.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnOrder(o.id), "returned") };
+    }
+    return null;
+  }
+
+  // The page's ONE primary action + its ⋯ menu, published into the sticky PageHeaderBar. Memoized so
+  // the published references stay stable (useSetPageActions treats them as effect deps).
+  const cancellable = data ? isCancellable(data.status, prefs?.order_cancel_until) : false;
+  const barPrimary = useMemo(() => {
+    const a = primaryAction();
+    return a ? <DocumentPrimaryButton action={a} /> : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t]);
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!data) return [];
+    const menu: DocMenuItem[] = [
+      { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
+      {
+        key: "pdf",
+        label: t("document.exportPdf"),
+        icon: "download",
+        // Once invoiced, "Export PDF" opens the on-brand invoice document (the artifact the customer's
+        // customer sees); before that it just prints the order copy.
+        onClick: () =>
+          data.invoice_number ? navigate(`/sales/orders/${data.id}/invoice`) : printDocument(data.number),
+      },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/go/sales_order/${data.number}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // Fast-path the same-day counter sale: drive draft→confirmed→delivered→invoiced in one move.
+    // Additive shortcut to the granular primary action; hidden once nothing remains to fast-path or
+    // when an above-threshold order still needs its approval (the server would refuse the confirm step).
+    const canFastPath =
+      (data.status === "draft" || data.status === "confirmed" || data.status === "partially_delivered") &&
+      !(data.requires_approval && !data.approved);
+    if (canFastPath) {
+      menu.unshift({
+        key: "complete",
+        label: t("sales.detail.completeSale"),
+        icon: "checkCircle",
+        onClick: () => act(setStatus("invoiced"), () => completeSale(data.id), "completed"),
+      });
+    }
+    // Once invoiced, the e-invoice submit is reachable straight from the order (no context switch to
+    // the E-invoicing list) — deep-links to that invoice, focused and ready to submit.
+    if ((data.status === "invoiced" || data.status === "paid") && data.invoice_number) {
+      menu.push({
+        key: "einvoice",
+        label: t("sales.detail.sendEinvoice"),
+        icon: "einvoice",
+        onClick: () => navigate(`/einvoice?focus=${encodeURIComponent(data.invoice_number)}`),
+      });
+    }
+    // Return is reachable from the menu while it isn't the primary action (i.e. on an invoiced order).
+    if (data.status === "invoiced") {
+      menu.push({
+        key: "return",
+        label: t("sales.detail.return"),
+        icon: "rotate",
+        onClick: () => act(setStatus("returned"), () => returnOrder(data.id), "returned"),
+      });
+    }
+    if (cancellable) {
+      menu.push({ key: "cancel", label: t("document.cancelOrder"), icon: "trash", danger: true, onClick: () => setConfirmCancel(true) });
+    }
+    return menu;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t, cancellable]);
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
+
   // A rich receipt handed off from creation / conversion fires once the order has loaded, then the
   // marker is cleared from history state so it never re-fires on back/refresh.
   const firedIntro = useRef(false);
@@ -197,95 +299,6 @@ export function OrderDetailPage() {
     );
   }
 
-  // --- Primary lifecycle action (the one most-likely next step). ---
-  type Action = { label: string; icon?: string; onClick: () => void } | null;
-  function primaryAction(): Action {
-    const o = data!;
-    if (o.status === "draft" && o.requires_approval && !o.approved) {
-      return { label: t("sales.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approveOrder(o.id), "approved") };
-    }
-    if (o.status === "draft") {
-      return { label: t("sales.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmOrder(o.id), "confirmed") };
-    }
-    if (o.status === "confirmed" || o.status === "partially_delivered") {
-      return {
-        label: o.status === "partially_delivered" ? t("sales.detail.deliverRemaining") : t("sales.detail.deliver"),
-        onClick: () => act(setStatus("delivered"), () => deliverOrder(o.id), "delivered"),
-      };
-    }
-    if (o.status === "delivered") {
-      return { label: t("sales.detail.invoice"), onClick: () => act(setStatus("invoiced"), () => invoiceOrder(o.id), "invoiced") };
-    }
-    if (o.status === "invoiced") {
-      return { label: t("sales.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payOrder(o.id, o.outstanding_minor), "paid") };
-    }
-    if (o.status === "paid") {
-      return { label: t("sales.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnOrder(o.id), "returned") };
-    }
-    return null;
-  }
-
-  // --- ⋯ overflow menu. ---
-  const cancellable = isCancellable(data.status, prefs?.order_cancel_until);
-  const menu: DocMenuItem[] = [
-    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
-    { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
-    {
-      key: "pdf",
-      label: t("document.exportPdf"),
-      icon: "download",
-      // Once invoiced, "Export PDF" opens the on-brand invoice document (the artifact the customer's
-      // customer sees); before that it just prints the order copy.
-      onClick: () =>
-        data.invoice_number ? navigate(`/sales/orders/${data.id}/invoice`) : printDocument(data.number),
-    },
-    {
-      key: "share",
-      label: t("document.share"),
-      icon: "share",
-      onClick: () =>
-        void copyShareLink(`/go/sales_order/${data.number}`).then((ok) =>
-          toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
-        ),
-    },
-  ];
-  // Fast-path the same-day counter sale: drive draft→confirmed→delivered→invoiced in one move.
-  // Additive shortcut to the granular primary action; hidden once nothing remains to fast-path or
-  // when an above-threshold order still needs its approval (the server would refuse the confirm step).
-  const canFastPath =
-    (data.status === "draft" || data.status === "confirmed" || data.status === "partially_delivered") &&
-    !(data.requires_approval && !data.approved);
-  if (canFastPath) {
-    menu.unshift({
-      key: "complete",
-      label: t("sales.detail.completeSale"),
-      icon: "checkCircle",
-      onClick: () => act(setStatus("invoiced"), () => completeSale(data.id), "completed"),
-    });
-  }
-  // Once invoiced, the e-invoice submit is reachable straight from the order (no context switch to
-  // the E-invoicing list) — deep-links to that invoice, focused and ready to submit.
-  if ((data.status === "invoiced" || data.status === "paid") && data.invoice_number) {
-    menu.push({
-      key: "einvoice",
-      label: t("sales.detail.sendEinvoice"),
-      icon: "einvoice",
-      onClick: () => navigate(`/einvoice?focus=${encodeURIComponent(data.invoice_number)}`),
-    });
-  }
-  // Return is reachable from the menu while it isn't the primary action (i.e. on an invoiced order).
-  if (data.status === "invoiced") {
-    menu.push({
-      key: "return",
-      label: t("sales.detail.return"),
-      icon: "rotate",
-      onClick: () => act(setStatus("returned"), () => returnOrder(data.id), "returned"),
-    });
-  }
-  if (cancellable) {
-    menu.push({ key: "cancel", label: t("document.cancelOrder"), icon: "trash", danger: true, onClick: () => setConfirmCancel(true) });
-  }
-
   // --- State note (icon + plain language). ---
   const terminal = data.status === "paid" || data.status === "returned" || data.status === "cancelled";
   const tone: StatusTone = data.status === "paid" ? "done" : data.status === "returned" || data.status === "cancelled" ? "exception" : "active";
@@ -298,9 +311,6 @@ export function OrderDetailPage() {
         <DocumentHeader
           number={data.number}
           status={<Badge tone={salesTone(data.status)}>{t(`sales.status.${data.status}`)}</Badge>}
-          primary={primaryAction()}
-          menu={menu}
-          menuLabel={t("document.moreActions")}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> ·{" "}

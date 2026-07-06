@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
@@ -13,6 +13,10 @@ import {
 } from "../../api/users";
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { runOptimistic } from "../../lib/optimistic";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -40,6 +44,27 @@ export function UserDetailPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const current = data;
+
+  useSetDocumentCrumb(data?.display_name);
+
+  // An edit-in-place record — no lifecycle primary; the ⋯ menu carries print / share.
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!data) return [];
+    return [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.display_name) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/admin/users/${userId}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t]);
+  useSetPageActions({ menuItems: barMenu });
 
   // Optimistic field edit: reflect the role/status/department change in the dropdown immediately,
   // settle with the server's user, roll back + toast on failure. No success toast — these dropdowns

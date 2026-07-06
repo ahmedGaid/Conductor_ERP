@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -18,6 +18,7 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
 import { usePreferences } from "../../preferences/PreferencesContext";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
@@ -31,7 +32,7 @@ import { Badge } from "../../components/Badge";
 import { purchasingTone } from "../../lib/statusTone";
 import { PartyLink } from "../../components/PartyLink";
 import { EntityLink } from "../../components/EntityLink";
-import { DocumentHeader } from "../../components/DocumentHeader";
+import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { type DocMenuItem } from "../../components/DocumentMenu";
@@ -161,6 +162,74 @@ export function PurchaseOrderDetailPage() {
   }
   usePaletteActions("po-detail", pageActions);
 
+  // --- Primary lifecycle action (the one most-likely next step). ---
+  function primaryAction(): DocumentPrimary | null {
+    if (!data) return null;
+    const o = data;
+    if (o.status === "draft" && o.requires_approval && !o.approved) {
+      return { label: t("purchasing.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approvePO(o.id), "approved") };
+    }
+    if (o.status === "draft") {
+      return { label: t("purchasing.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmPO(o.id), "confirmed") };
+    }
+    if (o.status === "confirmed" || o.status === "partially_received") {
+      return {
+        label: o.status === "partially_received" ? t("purchasing.detail.receiveRemaining") : t("purchasing.detail.receive"),
+        onClick: () => act(setStatus("received"), () => receivePO(o.id), "received"),
+      };
+    }
+    if (o.status === "received") {
+      return { label: t("purchasing.detail.bill"), onClick: () => act(setStatus("billed"), () => billPO(o.id), "billed") };
+    }
+    if (o.status === "billed") {
+      return { label: t("purchasing.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payPO(o.id, o.outstanding_minor), "paid") };
+    }
+    if (o.status === "paid") {
+      return { label: t("purchasing.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnPO(o.id), "returned") };
+    }
+    return null;
+  }
+
+  // The page's ONE primary action + its ⋯ menu, published into the sticky PageHeaderBar. Memoized so
+  // the published references stay stable (useSetPageActions treats them as effect deps).
+  const cancellable = data ? isCancellable(data.status, prefs?.order_cancel_until) : false;
+  const barPrimary = useMemo(() => {
+    const a = primaryAction();
+    return a ? <DocumentPrimaryButton action={a} /> : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t]);
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!data) return [];
+    const menu: DocMenuItem[] = [
+      { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/go/purchase_order/${data.number}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    if (data.status === "billed") {
+      menu.push({
+        key: "return",
+        label: t("purchasing.detail.return"),
+        icon: "rotate",
+        onClick: () => act(setStatus("returned"), () => returnPO(data.id), "returned"),
+      });
+    }
+    if (cancellable) {
+      menu.push({ key: "cancel", label: t("document.cancelOrder"), icon: "trash", danger: true, onClick: () => setConfirmCancel(true) });
+    }
+    return menu;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t, cancellable]);
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
+
   // A rich receipt handed off from creation / conversion fires once the order has loaded, then the
   // marker is cleared from history state so it never re-fires on back/refresh.
   const firedIntro = useRef(false);
@@ -189,60 +258,6 @@ export function PurchaseOrderDetailPage() {
     );
   }
 
-  type Action = { label: string; icon?: string; onClick: () => void } | null;
-  function primaryAction(): Action {
-    const o = data!;
-    if (o.status === "draft" && o.requires_approval && !o.approved) {
-      return { label: t("purchasing.detail.approve"), onClick: () => act((x) => ({ ...x, approved: true }), () => approvePO(o.id), "approved") };
-    }
-    if (o.status === "draft") {
-      return { label: t("purchasing.detail.confirm"), onClick: () => act(setStatus("confirmed"), () => confirmPO(o.id), "confirmed") };
-    }
-    if (o.status === "confirmed" || o.status === "partially_received") {
-      return {
-        label: o.status === "partially_received" ? t("purchasing.detail.receiveRemaining") : t("purchasing.detail.receive"),
-        onClick: () => act(setStatus("received"), () => receivePO(o.id), "received"),
-      };
-    }
-    if (o.status === "received") {
-      return { label: t("purchasing.detail.bill"), onClick: () => act(setStatus("billed"), () => billPO(o.id), "billed") };
-    }
-    if (o.status === "billed") {
-      return { label: t("purchasing.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payPO(o.id, o.outstanding_minor), "paid") };
-    }
-    if (o.status === "paid") {
-      return { label: t("purchasing.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnPO(o.id), "returned") };
-    }
-    return null;
-  }
-
-  const cancellable = isCancellable(data.status, prefs?.order_cancel_until);
-  const menu: DocMenuItem[] = [
-    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
-    { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
-    { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
-    {
-      key: "share",
-      label: t("document.share"),
-      icon: "share",
-      onClick: () =>
-        void copyShareLink(`/go/purchase_order/${data.number}`).then((ok) =>
-          toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
-        ),
-    },
-  ];
-  if (data.status === "billed") {
-    menu.push({
-      key: "return",
-      label: t("purchasing.detail.return"),
-      icon: "rotate",
-      onClick: () => act(setStatus("returned"), () => returnPO(data.id), "returned"),
-    });
-  }
-  if (cancellable) {
-    menu.push({ key: "cancel", label: t("document.cancelOrder"), icon: "trash", danger: true, onClick: () => setConfirmCancel(true) });
-  }
-
   const terminal = data.status === "paid" || data.status === "returned" || data.status === "cancelled";
   const tone: StatusTone = data.status === "paid" ? "done" : data.status === "returned" || data.status === "cancelled" ? "exception" : "active";
   const completedAt = history && history.length > 0 ? history[history.length - 1].at : null;
@@ -254,9 +269,6 @@ export function PurchaseOrderDetailPage() {
         <DocumentHeader
           number={data.number}
           status={<Badge tone={purchasingTone(data.status)}>{t(`purchasing.status.${data.status}`)}</Badge>}
-          primary={primaryAction()}
-          menu={menu}
-          menuLabel={t("document.moreActions")}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> ·{" "}

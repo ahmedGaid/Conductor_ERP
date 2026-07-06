@@ -1,9 +1,15 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
 import { getJournal, type JournalEntry } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
+import { useToast } from "../../app/ToastContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -28,6 +34,29 @@ export function JournalDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, loading, error, reload } = useAsync<JournalEntry>(() => getJournal(id as string), [id], `accounting:journal:${id}`);
   useRecentEntity(data?.number);
+  const toast = useToast();
+
+  useSetDocumentCrumb(data?.number);
+
+  // A posted journal is read-only — no lifecycle primary; the ⋯ menu carries print / export / share.
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!data) return [];
+    return [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/accounting/journals/${id}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t]);
+  useSetPageActions({ menuItems: barMenu });
 
   return (
     <section className="acct-page">

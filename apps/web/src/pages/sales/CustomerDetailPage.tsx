@@ -5,6 +5,11 @@ import { useParams } from "react-router-dom";
 import { listCustomers, listOrders } from "../../api/sales";
 import { generalLedger } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { formatMinor } from "../../lib/money";
 import { PartyDetailView, type PartyOrderRow } from "../../components/PartyDetailView";
 import { SalesNav } from "./SalesNav";
@@ -32,6 +37,29 @@ export function CustomerDetailPage() {
 
   const name = customer?.name ?? mine[0]?.customer_name ?? code;
   const notFound = !!customers && !!orders && !customer && mine.length === 0;
+  const toast = useToast();
+
+  useSetDocumentCrumb(notFound ? undefined : name);
+
+  // A party record — no lifecycle primary; the ⋯ menu carries print / export / share.
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (notFound) return [];
+    return [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(name) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(name) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/sales/customers/${code}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notFound, name, code, t]);
+  useSetPageActions({ menuItems: barMenu });
 
   const totalInvoiced = mine.reduce((sum, o) => sum + o.invoiced_minor, 0);
   const summary = [

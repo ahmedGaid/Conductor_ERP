@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { BackLink } from "../../components/BackLink";
+import { useToast } from "../../app/ToastContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 
 import {
   deleteRole,
@@ -61,6 +66,34 @@ export function RoleDetailPage() {
     }
   }
 
+  const toast = useToast();
+
+  useSetDocumentCrumb(role?.name);
+
+  // The ⋯ menu carries print / share, then the destructive delete last (custom roles only — the
+  // same guard the old header button had).
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!role) return [];
+    const menu: DocMenuItem[] = [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(role.name) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/admin/roles/${encodeURIComponent(role.name)}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    if (!role.protected) {
+      menu.push({ key: "delete", label: t("admin.roles.delete"), icon: "trash", danger: true, onClick: () => void onDelete() });
+    }
+    return menu;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, t]);
+  useSetPageActions({ menuItems: barMenu });
+
   if (error && !role) return <section className="page-enter"><p className="error-text">{error}</p></section>;
   if (!role || !registry) {
     return (
@@ -84,9 +117,6 @@ export function RoleDetailPage() {
             {" "}{t("admin.roles.memberCount", { count: role.members })}
           </p>
         </div>
-        {!role.protected && (
-          <button className="btn btn--danger" onClick={onDelete}>{t("admin.roles.delete")}</button>
-        )}
       </header>
 
       {role.is_admin && <p className="admin-notice">{t("admin.roles.adminNote")}</p>}

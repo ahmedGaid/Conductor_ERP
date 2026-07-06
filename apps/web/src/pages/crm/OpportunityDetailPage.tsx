@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
@@ -13,6 +14,11 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { DocumentPrimaryButton } from "../../components/DocumentHeader";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { Badge } from "../../components/Badge";
 import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
@@ -109,6 +115,60 @@ export function OpportunityDetailPage() {
   }
   usePaletteActions("opportunity-detail", pageActions);
 
+  useSetDocumentCrumb(data?.number);
+
+  // Bar primary = win the deal (while it is open); advance and lose move to the ⋯ menu with the
+  // same stage gating the old in-page buttons had. Lose closes the deal for good → danger, last.
+  const isOpen = !!data && (data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation");
+  const barPrimary = useMemo(() => {
+    if (!data || !isOpen) return undefined;
+    return (
+      <DocumentPrimaryButton
+        action={{
+          label: t("crm.detail.win"),
+          onClick: () => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon")),
+        }}
+      />
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, isOpen, t]);
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!data) return [];
+    const menu: DocMenuItem[] = [];
+    const next = isOpen ? NEXT_STAGE[data.stage] : undefined;
+    if (next) {
+      menu.push({
+        key: "advance",
+        label: t("crm.detail.advanceTo", { stage: t(`crm.stage.${next}`) }),
+        onClick: () => advance(next),
+      });
+    }
+    menu.push(
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/crm/opportunities/${data.id}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    );
+    if (isOpen) {
+      menu.push({
+        key: "lose",
+        label: t("crm.detail.lose"),
+        danger: true,
+        onClick: () => act((o) => ({ ...o, stage: "lost" }), () => loseOpportunity(data.id), t("crm.toast.oppLost")),
+      });
+    }
+    return menu;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, isOpen, t]);
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
+
   return (
     <section className="crm-page">
       <CrmNav />
@@ -174,30 +234,6 @@ export function OpportunityDetailPage() {
               />
             </div>
 
-            {(data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation") && (
-              <div className="crm-actions">
-                {NEXT_STAGE[data.stage] && (
-                  <button
-                    className="btn"
-                    onClick={() => advance(NEXT_STAGE[data.stage]!)}
-                  >
-                    {t("crm.detail.advanceTo", { stage: t(`crm.stage.${NEXT_STAGE[data.stage]}`) })}
-                  </button>
-                )}
-                <button
-                  className="btn btn--primary"
-                  onClick={() => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon"))}
-                >
-                  {t("crm.detail.win")}
-                </button>
-                <button
-                  className="btn btn--danger"
-                  onClick={() => act((o) => ({ ...o, stage: "lost" }), () => loseOpportunity(data.id), t("crm.toast.oppLost"))}
-                >
-                  {t("crm.detail.lose")}
-                </button>
-              </div>
-            )}
           </div>
 
           {data.lines.length > 0 && (

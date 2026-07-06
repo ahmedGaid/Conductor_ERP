@@ -1,7 +1,13 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
 import { BackLink } from "../../components/BackLink";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { DocumentPrimaryButton } from "../../components/DocumentHeader";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 
 import { getStockCount, postStockCount, setCountLine, type StockCount } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
@@ -28,6 +34,8 @@ export function StockCountDetailPage() {
 
   const counting = count?.status === "counting";
   const posted = count?.status === "posted";
+
+  useSetDocumentCrumb(count ? `${count.warehouse_code} · ${count.count_date}` : undefined);
 
   // Optimistic line edit: reflect the typed count instantly, reconcile with the server's count.
   // No success toast — entering many counts in a row should stay quiet (visual restraint); only a
@@ -62,6 +70,31 @@ export function StockCountDetailPage() {
     });
   }
 
+  // Bar primary = post the count (only while counting), exactly the old in-page button's gating.
+  const barPrimary = useMemo(() => {
+    if (!count || count.status !== "counting") return undefined;
+    return <DocumentPrimaryButton action={{ label: t("inventory.counts.post"), onClick: onPost }} />;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, t]);
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!count) return [];
+    return [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(`${count.warehouse_code} ${count.count_date}`) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(`${count.warehouse_code} ${count.count_date}`) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/inventory/counts/${id}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, t]);
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
+
   return (
     <section className="inv-page">
       <InventoryNav />
@@ -80,11 +113,6 @@ export function StockCountDetailPage() {
               <Badge tone={posted ? "completed" : count.status === "cancelled" ? "failed" : "running"}>
                 {t(`inventory.counts.statuses.${count.status}`)}
               </Badge>
-              {counting && (
-                <button className="btn btn--primary" onClick={onPost}>
-                  {t("inventory.counts.post")}
-                </button>
-              )}
             </div>
           </div>
           {counting && <p className="hint">{t("inventory.counts.enterHint")}</p>}

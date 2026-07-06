@@ -1,15 +1,21 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import { getOrder, type SalesOrder } from "../../api/sales";
 import { getOrgPreferences, type OrgPreferences } from "../../api/identity";
 import { useAsync } from "../../hooks/useAsync";
+import { useToast } from "../../app/ToastContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
 import { ErrorState } from "../../components/ErrorState";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { Bdi } from "../../components/Bdi";
+import { DocumentPrimaryButton } from "../../components/DocumentHeader";
+import { type DocMenuItem } from "../../components/DocumentMenu";
 import { formatMinor } from "../../lib/money";
-import { printDocument } from "../../lib/documentActions";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 import "./invoice.css";
 
 // The on-brand printable invoice — the artifact the customer's customer actually sees (Identity
@@ -25,6 +31,42 @@ export function InvoiceDocumentPage() {
     `sales:order:${id}`,
   );
   const { data: org } = useAsync<OrgPreferences>(getOrgPreferences, [], "identity:org-preferences");
+  const toast = useToast();
+
+  useSetDocumentCrumb(data?.invoice_number);
+
+  // The page exists to print the invoice — that is the bar's primary. Only a real, issued invoice
+  // publishes actions; the not-issued designed state keeps the bar quiet.
+  const hasInvoice =
+    !!data &&
+    (data.status === "invoiced" || data.status === "paid" || data.status === "returned") &&
+    !!data.invoice_number;
+  const barPrimary = useMemo(() => {
+    if (!hasInvoice || !data) return undefined;
+    return (
+      <DocumentPrimaryButton
+        action={{ label: t("document.print"), icon: "print", onClick: () => printDocument(data.invoice_number) }}
+      />
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, hasInvoice, t]);
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!hasInvoice || !data) return [];
+    return [
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.invoice_number) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/sales/orders/${data.id}/invoice`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, hasInvoice, t]);
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
 
   if (loading) {
     return (
@@ -62,12 +104,10 @@ export function InvoiceDocumentPage() {
 
   return (
     <section className="invoice-page">
-      {/* The toolbar is screen-only (no-print) — it never appears on the printed/PDF artifact. */}
+      {/* The toolbar is screen-only (no-print) — it never appears on the printed/PDF artifact.
+          Print/Export live in the page header bar; only the way back to the order stays here. */}
       <div className="invoice-toolbar no-print">
         <Link className="btn" to={`/sales/orders/${data.id}`}>{t("sales.invoice.backToOrder")}</Link>
-        <button type="button" className="btn btn--primary" onClick={() => printDocument(data.invoice_number)}>
-          {t("document.print")}
-        </button>
       </div>
 
       <article className="invoice-doc card">

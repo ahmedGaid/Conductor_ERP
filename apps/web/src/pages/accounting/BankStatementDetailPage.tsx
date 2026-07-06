@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
@@ -20,6 +20,11 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { DocumentPrimaryButton } from "../../components/DocumentHeader";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { runOptimistic } from "../../lib/optimistic";
 import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor, parseToMinor } from "../../lib/money";
@@ -106,6 +111,56 @@ export function BankStatementDetailPage() {
 
   const rec = stmt?.reconciliation;
 
+  useSetDocumentCrumb(stmt ? `${stmt.account_code} · ${stmt.statement_date}` : undefined);
+
+  // Bar primary = the statement's one closing verb (mark reconciled), gated exactly as the old
+  // button: only while open, enabled once the difference is zero. Auto-match moves to the ⋯ menu.
+  const barPrimary = useMemo(() => {
+    if (!stmt || stmt.status !== "open") return undefined;
+    return (
+      <DocumentPrimaryButton
+        action={{
+          label: t("accounting.bankRec.markReconciled"),
+          disabled: !stmt.reconciliation?.is_reconciled,
+          onClick: () =>
+            apply(() => reconcileStatement(id), {
+              optimistic: (s) => ({ ...s, status: "reconciled" }),
+              success: t("accounting.toast.reconciled"),
+            }),
+        }}
+      />
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stmt, t]);
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!stmt) return [];
+    const menu: DocMenuItem[] = [];
+    if (stmt.status === "open") {
+      menu.push({
+        key: "autoMatch",
+        label: t("accounting.bankRec.autoMatch"),
+        icon: "check",
+        onClick: () => apply(() => autoMatchStatement(id), { success: t("accounting.toast.autoMatched") }),
+      });
+    }
+    menu.push(
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(`${stmt.account_code} ${stmt.statement_date}`) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(`${stmt.account_code} ${stmt.statement_date}`) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/accounting/bank-reconciliation/${id}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    );
+    return menu;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stmt, t]);
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
+
   return (
     <section className="acct-page">
       <AccountingNav />
@@ -140,28 +195,6 @@ export function BankStatementDetailPage() {
                   </dd>
                 </div>
               </dl>
-            )}
-            {stmt.status === "open" && (
-              <div className="acct-toolbar">
-                <button
-                  className="btn"
-                  onClick={() => apply(() => autoMatchStatement(id), { success: t("accounting.toast.autoMatched") })}
-                >
-                  {t("accounting.bankRec.autoMatch")}
-                </button>
-                <button
-                  className="btn btn--primary"
-                  disabled={!rec?.is_reconciled}
-                  onClick={() =>
-                    apply(() => reconcileStatement(id), {
-                      optimistic: (s) => ({ ...s, status: "reconciled" }),
-                      success: t("accounting.toast.reconciled"),
-                    })
-                  }
-                >
-                  {t("accounting.bankRec.markReconciled")}
-                </button>
-              </div>
             )}
           </div>
 

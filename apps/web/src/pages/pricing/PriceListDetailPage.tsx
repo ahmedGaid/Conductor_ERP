@@ -23,6 +23,10 @@ import { ErrorState } from "../../components/ErrorState";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useToast } from "../../app/ToastContext";
+import { useSetPageActions } from "../../app/PageActionsContext";
+import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { type DocMenuItem } from "../../components/DocumentMenu";
+import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
@@ -129,6 +133,29 @@ export function PriceListDetailPage() {
   }
 
   const stockItems = (items ?? []).filter((i) => i.type === "stock");
+
+  useSetDocumentCrumb(pl?.name);
+
+  // Adding lines is a form (forms keep their controls) — no bar primary; ⋯ carries print / export /
+  // share for the price list itself.
+  const barMenu = useMemo<DocMenuItem[]>(() => {
+    if (!pl) return [];
+    return [
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(pl.name) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(pl.name) },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(`/pricing/${listId}`).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pl, t]);
+  useSetPageActions({ menuItems: barMenu });
 
   return (
     <section className="pricing-page">

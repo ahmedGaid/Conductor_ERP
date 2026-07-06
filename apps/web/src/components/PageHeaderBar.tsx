@@ -65,7 +65,7 @@ export function PageHeaderBar() {
   const canForward = idx < maxIdx;
 
   return (
-    <div className="pagebar">
+    <div className="pagebar no-print">
       <div className="pagebar__inner">
         <div className="pagebar__arrows">
           <Tooltip label={t("shell.back")} placement="bottom">
