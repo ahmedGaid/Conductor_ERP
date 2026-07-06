@@ -164,7 +164,9 @@
     "logout": "Sign out",
     "notifications": "Notifications",
     "help": "Help",
-    "menu": "Menu"
+    "menu": "Menu",
+    "back": "Back",
+    "forward": "Forward"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",

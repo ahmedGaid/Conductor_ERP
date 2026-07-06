@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
-import { RouteBreadcrumb } from "./RouteBreadcrumb";
+import { PageHeaderBar } from "../components/PageHeaderBar";
+import { PageActionsProvider } from "./PageActionsContext";
 import { DocumentCrumbProvider } from "./DocumentCrumb";
 import { CommandBar } from "./CommandBar";
 import { ShortcutsDialog } from "./ShortcutsDialog";
@@ -95,15 +96,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <CommandBar onMenu={() => setNavOpen((v) => !v)} />
             <main id="main" className="appshell__main" ref={mainRef}>
-              {/* Re-keying on the path replays the enter animation each navigation,
-                  so pages glide in instead of snapping. */}
-              <DocumentCrumbProvider key={location.pathname}>
-                <div className="appshell__content page-enter">
-                  <ActionFeedbackHost />
-                  <RouteBreadcrumb />
-                  {children}
-                </div>
-              </DocumentCrumbProvider>
+              {/* Re-keying on the path resets the per-route contexts (page actions + document
+                  crumb) and replays the enter animation, so pages glide in instead of snapping.
+                  The sticky bar sits OUTSIDE .appshell__content so page-enter's transform never
+                  breaks its sticky positioning. */}
+              <PageActionsProvider key={location.pathname}>
+                <DocumentCrumbProvider>
+                  <PageHeaderBar />
+                  <div className="appshell__content page-enter">
+                    <ActionFeedbackHost />
+                    {children}
+                  </div>
+                </DocumentCrumbProvider>
+              </PageActionsProvider>
             </main>
             <HelpCenter />
             <AssistantPanel />
