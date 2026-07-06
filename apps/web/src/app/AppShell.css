@@ -1,5 +1,8 @@
 .appshell {
-  min-block-size: 100%;
+  /* Fixed to the viewport (not min-*, which would grow with tall content and hand scrolling to the
+     window — then the sticky page header bar, which lives inside the overflow:auto main, would ride
+     away instead of pinning). Fixed height keeps main the scroll container. */
+  block-size: 100%;
   display: grid;
   /* Sidebar sits on the inline-start (right in RTL, left in LTR). */
   grid-template-columns: var(--sidebar-size) 1fr;
@@ -12,6 +15,10 @@
 .appshell__main {
   grid-area: main;
   overflow: auto;
+  /* Grid items default to min-block-size:auto (won't shrink below content), which would keep the
+     1fr row as tall as the page and stop overflow:auto from ever scrolling. 0 lets main bound to
+     its 1fr track and scroll internally, so the sticky page header bar pins. */
+  min-block-size: 0;
   background-color: var(--color-bg);
 }
 
