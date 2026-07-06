@@ -1,9 +1,11 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 
 import { downloadExport } from "../api/client";
 import { useSetPageActions } from "../app/PageActionsContext";
 import { useToast } from "../app/ToastContext";
+import { copyShareLink } from "../lib/documentActions";
 import type { DocMenuItem } from "../components/DocumentMenu";
 
 /**
@@ -15,6 +17,8 @@ import type { DocMenuItem } from "../components/DocumentMenu";
 export function useReportPageActions(path: string | null): void {
   const { t, i18n } = useTranslation();
   const toast = useToast();
+  const location = useLocation();
+  const route = `${location.pathname}${location.search}`;
 
   const primary = useMemo(() => {
     if (!path) return undefined;
@@ -36,9 +40,18 @@ export function useReportPageActions(path: string | null): void {
     return [
       { key: "csv", label: t("export.csv"), icon: "download", onClick: download("csv") },
       { key: "excel", label: t("export.excel"), icon: "download", onClick: download("xlsx") },
+      {
+        key: "share",
+        label: t("document.share"),
+        icon: "share",
+        onClick: () =>
+          void copyShareLink(route).then((ok) =>
+            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+          ),
+      },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, i18n.language, t]);
+  }, [path, i18n.language, t, route]);
 
   useSetPageActions({ primary, menuItems });
 }

@@ -13,6 +13,16 @@ export interface DocMenuItem {
   /** Destructive item (e.g. Cancel Order) — rendered in the danger colour. */
   danger?: boolean;
   disabled?: boolean;
+  /** Required role name (from `useAuth().roles`), if any — absent, not greyed, when lacking it. */
+  permission?: string;
+}
+
+/**
+ * Drops items the current user lacks the permission for — quiet, not greyed (FILE_00 decision 4).
+ * Items without a `permission` always pass. `hasRole` is `useAuth().hasRole`.
+ */
+export function filterMenuItems(items: DocMenuItem[], hasRole: (role: string) => boolean): DocMenuItem[] {
+  return items.filter((item) => !item.permission || hasRole(item.permission));
 }
 
 /**
