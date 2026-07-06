@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -119,7 +120,10 @@ export function InboxPanel({
 
   const hasUnread = items.some((n) => n.read_at === null);
 
-  return (
+  // Portalled to <body> so it isn't trapped in the command bar's stacking context (position:sticky
+  // z-index:5) — otherwise the sticky page header bar (z-index:15) would render over it. The panel is
+  // position:fixed with corner insets, so moving it out of the bar's DOM doesn't change where it sits.
+  return createPortal(
     <aside
       ref={panelRef}
       className="inbox-panel"
@@ -217,6 +221,7 @@ export function InboxPanel({
           </ul>
         )}
       </div>
-    </aside>
+    </aside>,
+    document.body,
   );
 }
