@@ -12,6 +12,8 @@ import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showCustomerReceipt } from "../../lib/feedback/sales";
 import { optimisticCreate } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
@@ -51,6 +53,20 @@ export function CustomersPage() {
     persistKey: "sales:customers",
     getItemId: (c) => c.id,
   });
+
+  // Add is a multi-field form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Customer>[]>(
+    () => [
+      { header: t("sales.customer.code"), accessor: (c) => c.code },
+      { header: t("sales.customer.name"), accessor: (c) => c.name },
+      {
+        header: t("sales.customer.creditLimit"),
+        accessor: (c) => (c.credit_limit_minor ? formatMinor(c.credit_limit_minor) : t("sales.customer.unlimited")),
+      },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: filtered, columns: csvColumns, filename: "customers" });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");

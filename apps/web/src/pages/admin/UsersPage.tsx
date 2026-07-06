@@ -9,12 +9,15 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { normalizeSearch } from "../../lib/arabicSearch";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
+type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 
 export function UsersPage() {
   const { t } = useTranslation();
@@ -29,6 +32,7 @@ export function UsersPage() {
   const [department, setDepartment] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const term = normalizeSearch(search.trim());
@@ -48,6 +52,23 @@ export function UsersPage() {
     persistKey: "admin:users",
     getItemId: (u) => String(u.id),
   });
+
+  const csvColumns = useMemo<CsvColumn<UserRow>[]>(
+    () => [
+      { header: t("admin.users.name"), accessor: (u) => u.display_name },
+      { header: t("admin.users.email"), accessor: (u) => u.email },
+      { header: t("admin.users.role"), accessor: (u) => u.role ?? "" },
+      { header: t("admin.users.department"), accessor: (u) => u.department ?? "" },
+      { header: t("admin.users.status"), accessor: (u) => t(`admin.status.${u.status}`) },
+      { header: t("admin.users.lastLogin"), accessor: (u) => (u.last_login ? u.last_login.slice(0, 10) : "") },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("admin.invite.cta"), onClick: () => setInviteOpen(true) }),
+    [t],
+  );
+  useListPageActions({ primary: listPrimary, rows: filtered, columns: csvColumns, filename: "users" });
 
   function toggle(id: number) {
     setSelected((cur) => {
@@ -77,7 +98,8 @@ export function UsersPage() {
         <p className="module-head__desc">{t("admin.users.intro")}</p>
       </header>
 
-      <InviteForm org={org} onCreated={(msg) => { setNotice(msg); reload(); }} />
+      <InviteForm org={org} open={inviteOpen} onClose={() => setInviteOpen(false)} onCreated={(msg) => { setNotice(msg); reload(); }} />
+
       {notice && <p className="admin-notice">{notice}</p>}
 
       <div className="card admin-filters">
@@ -180,13 +202,16 @@ function initials(name: string): string {
 
 function InviteForm({
   org,
+  open,
+  onClose,
   onCreated,
 }: {
   org: import("../../api/users").OrgUnits | null;
+  open: boolean;
+  onClose: () => void;
   onCreated: (msg: string) => void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -201,7 +226,7 @@ function InviteForm({
     try {
       const created = await createUser({ username, email, role: role || undefined, department: department || undefined });
       onCreated(t("admin.invite.done", { name: username, password: created.temp_password ?? "" }));
-      setUsername(""); setEmail(""); setRole(""); setDepartment(""); setOpen(false);
+      setUsername(""); setEmail(""); setRole(""); setDepartment(""); onClose();
     } catch (e2) {
       setErr(e2 instanceof Error ? e2.message : String(e2));
     } finally {
@@ -209,13 +234,7 @@ function InviteForm({
     }
   }
 
-  if (!open) {
-    return (
-      <div className="admin-invite-cta">
-        <button className="btn btn--primary" onClick={() => setOpen(true)}>{t("admin.invite.cta")}</button>
-      </div>
-    );
-  }
+  if (!open) return null;
 
   return (
     <form className="card admin-invite" onSubmit={submit}>
@@ -245,7 +264,7 @@ function InviteForm({
       </div>
       {err && <p className="error-text">{err}</p>}
       <div className="admin-invite__foot">
-        <button type="button" className="btn" onClick={() => setOpen(false)}>{t("common.cancel")}</button>
+        <button type="button" className="btn" onClick={onClose}>{t("common.cancel")}</button>
         <button type="submit" className="btn btn--primary" disabled={busy}>{t("admin.invite.submit")}</button>
       </div>
     </form>

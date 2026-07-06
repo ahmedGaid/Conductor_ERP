@@ -11,6 +11,8 @@ import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showSupplierReceipt } from "../../lib/feedback/purchasing";
 import { optimisticCreate } from "../../lib/optimistic";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
@@ -50,6 +52,16 @@ export function SuppliersPage() {
     persistKey: "purchasing:suppliers",
     getItemId: (s) => s.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Supplier>[]>(
+    () => [
+      { header: t("purchasing.supplier.code"), accessor: (s) => s.code },
+      { header: t("purchasing.supplier.name"), accessor: (s) => s.name },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: filtered, columns: csvColumns, filename: "suppliers" });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");

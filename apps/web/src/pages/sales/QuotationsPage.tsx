@@ -13,6 +13,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -80,6 +82,22 @@ export function QuotationsPage() {
   const submittable = selection.selectedItems.filter((q) => q.status === "draft");
   const approvable = selection.selectedItems.filter((q) => q.status === "submitted");
 
+  const csvColumns = useMemo<CsvColumn<Quotation>[]>(
+    () => [
+      { header: t("sales.quotations.number"), accessor: (q) => q.number },
+      { header: t("sales.orders.customer"), accessor: (q) => q.customer_name },
+      { header: t("common.date"), accessor: (q) => q.quote_date },
+      { header: t("common.status"), accessor: (q) => t(`sales.quotationStatus.${q.status}`) },
+      { header: t("sales.orders.total"), accessor: (q) => formatMinor(q.subtotal_minor, q.currency) },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("sales.tabs.newQuotation"), onClick: () => navigate("/sales/quotations/new") }),
+    [t, navigate],
+  );
+  useListPageActions({ primary: listPrimary, rows: visible, columns: csvColumns, filename: "sales-quotations" });
+
   // Run one lifecycle verb across many quotations in a single optimistic pass, then clear the selection.
   function bulkAct(targets: Quotation[], status: Quotation["status"], request: (id: string) => Promise<Quotation>, success: string) {
     if (targets.length === 0) return;
@@ -104,9 +122,6 @@ export function QuotationsPage() {
       <SalesNav />
       <div className="sales-page__head">
         {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
-        <Link className="btn btn--primary" to="/sales/quotations/new">
-          {t("sales.tabs.newQuotation")}
-        </Link>
       </div>
 
       {loading && (

@@ -11,6 +11,8 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -66,6 +68,20 @@ export function CampaignsPage() {
     persistKey: "crm:campaigns",
     getItemId: (c) => c.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Campaign>[]>(
+    () => [
+      { header: t("crm.campaign.code"), accessor: (c) => c.code },
+      { header: t("crm.campaign.name"), accessor: (c) => c.name },
+      { header: t("crm.campaign.channel"), accessor: (c) => t(`crm.campaign.channels.${c.channel}`) },
+      { header: t("crm.campaign.cost"), accessor: (c) => formatMinor(c.cost_minor) },
+      { header: t("crm.campaign.wonValue"), accessor: (c) => formatMinor(c.metrics?.won_value_minor ?? 0) },
+      { header: t("crm.campaign.roi"), accessor: (c) => formatMinor(c.metrics?.roi_minor ?? 0) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: visible, columns: csvColumns, filename: "campaigns" });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");

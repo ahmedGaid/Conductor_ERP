@@ -14,7 +14,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { Bdi } from "../../components/Bdi";
 import { Tooltip } from "../../components/Tooltip";
 import { SegmentedControl } from "../../components/SegmentedControl";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
 import { NotificationsNav } from "./NotificationsNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -47,6 +47,8 @@ export function NotificationsPage() {
     });
   }
 
+  useReportPageActions(data && data.length > 0 ? "/notifications" : null);
+
   return (
     <section className="ntf-page">
       <NotificationsNav />
@@ -68,8 +70,6 @@ export function NotificationsPage() {
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {data && data.length === 0 && <EmptyState title={t("notifications.empty")} hint={t("notifications.emptyHint")} />}
-
-      {data && data.length > 0 && <ExportButtons path="/notifications" />}
 
       {data && data.length > 0 && (
         <div className="card ntf-table-wrap">

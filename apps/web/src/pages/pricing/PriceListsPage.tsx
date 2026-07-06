@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -12,6 +12,8 @@ import { ListSkeleton } from "../../components/ListSkeleton";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { PricingTabs } from "./PricingTabs";
 import "./pricing.css";
@@ -29,6 +31,18 @@ export function PriceListsPage() {
     persistKey: "pricing:lists",
     getItemId: (pl) => pl.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<PriceList>[]>(
+    () => [
+      { header: t("pricing.list.code"), accessor: (pl) => pl.code },
+      { header: t("pricing.list.name"), accessor: (pl) => pl.name },
+      { header: t("pricing.list.currency"), accessor: (pl) => pl.currency },
+      { header: t("pricing.list.lines"), accessor: (pl) => pl.line_count },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: data, columns: csvColumns, filename: "price-lists" });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");

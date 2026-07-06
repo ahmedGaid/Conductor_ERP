@@ -17,7 +17,7 @@ import { matchesAllFilters, newFilterId, type ActiveFilter, type FilterField } f
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -68,6 +68,8 @@ export function EInvoicesPage() {
     [filtered, tab],
   );
 
+  useReportPageActions(data && data.length > 0 ? "/einvoice/invoices" : null);
+
   // Optimistic per-row action: patch the invoice in place, reconcile with the server's invoice (it
   // sets the UUID/hash and final status), roll back + toast on failure. `submit` predicts the obvious
   // status flip; `poll` can't predict the outcome, so it leaves the row untouched until settle.
@@ -97,7 +99,6 @@ export function EInvoicesPage() {
       {data && data.length > 0 && (
         <div className="ein-toolbar">
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
-          <ExportButtons path="/einvoice/invoices" />
         </div>
       )}
       {data && data.length > 0 && filtered && (

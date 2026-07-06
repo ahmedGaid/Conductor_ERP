@@ -13,6 +13,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -95,6 +97,22 @@ export function PurchaseOrdersPage() {
   const approvable = selection.selectedItems.filter((o) => o.status === "draft" && o.requires_approval && !o.approved);
   const confirmable = selection.selectedItems.filter((o) => o.status === "draft" && (!o.requires_approval || o.approved));
 
+  const csvColumns = useMemo<CsvColumn<PurchaseOrder>[]>(
+    () => [
+      { header: t("purchasing.orders.number"), accessor: (o) => o.number },
+      { header: t("purchasing.orders.supplier"), accessor: (o) => o.supplier_name },
+      { header: t("common.date"), accessor: (o) => o.order_date },
+      { header: t("common.status"), accessor: (o) => t(`purchasing.status.${o.status}`) },
+      { header: t("sales.orders.total"), accessor: (o) => formatMinor(o.subtotal_minor, o.currency) },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("purchasing.tabs.newOrder"), onClick: () => navigate("/purchasing/orders/new") }),
+    [t, navigate],
+  );
+  useListPageActions({ primary: listPrimary, rows: visible, columns: csvColumns, filename: "purchase-orders" });
+
   // Run one verb across many rows in a single optimistic pass, then clear the selection.
   function bulkAct(targets: PurchaseOrder[], apply: (o: PurchaseOrder) => PurchaseOrder, request: (id: string) => Promise<PurchaseOrder>, success: string) {
     if (targets.length === 0) return;
@@ -141,9 +159,6 @@ export function PurchaseOrdersPage() {
       <PurchasingNav />
       <div className="pur-page__head">
         {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
-        <Link className="btn btn--primary" to="/purchasing/orders/new">
-          {t("purchasing.tabs.newOrder")}
-        </Link>
       </div>
 
       {loading && (

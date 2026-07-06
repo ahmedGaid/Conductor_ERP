@@ -20,13 +20,13 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
-import { ExportButtons } from "../../components/ExportButtons";
+import { downloadExport } from "../../api/client";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
 
 export function BudgetDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const { id = "" } = useParams();
   const { data: budget, reload: reloadBudget } = useAsync(() => getBudget(id), [id], `accounting:budget:${id}`);
@@ -42,25 +42,38 @@ export function BudgetDetailPage() {
 
   useSetDocumentCrumb(budget?.name);
 
-  // Line entry is a form (forms keep their controls) — no bar primary. CSV/Excel stay on the
-  // in-page ExportButtons until FILE_03 folds report exports into the split pattern.
+  // Line entry is a form (forms keep their controls) — no bar primary. The variance report's
+  // CSV/Excel fold into this same ⋯ (unified-ui FILE_03 split pattern), reusing downloadExport.
   const barMenu = useMemo<DocMenuItem[]>(() => {
     if (!budget) return [];
-    return [
+    const menu: DocMenuItem[] = [
       { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(budget.name) },
       { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(budget.name) },
-      {
-        key: "share",
-        label: t("document.share"),
-        icon: "share",
-        onClick: () =>
-          void copyShareLink(`/accounting/budgets/${id}`).then((ok) =>
-            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
-          ),
-      },
     ];
+    if (variance) {
+      const path = `/accounting/budgets/${id}/variance${period ? `?period=${period}` : ""}`;
+      const sep = path.includes("?") ? "&" : "?";
+      const download = (fmt: string) => () =>
+        void downloadExport(`${path}${sep}export=${fmt}&lang=${i18n.language}`).catch((err) =>
+          toast.show(err instanceof Error ? err.message : String(err), "error"),
+        );
+      menu.push(
+        { key: "csv", label: t("export.csv"), icon: "download", onClick: download("csv") },
+        { key: "excel", label: t("export.excel"), icon: "download", onClick: download("xlsx") },
+      );
+    }
+    menu.push({
+      key: "share",
+      label: t("document.share"),
+      icon: "share",
+      onClick: () =>
+        void copyShareLink(`/accounting/budgets/${id}`).then((ok) =>
+          toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+        ),
+    });
+    return menu;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [budget, t]);
+  }, [budget, variance, period, i18n.language, t]);
   useSetPageActions({ menuItems: barMenu });
 
   // line entry
@@ -149,10 +162,6 @@ export function BudgetDetailPage() {
         <ListSkeleton rows={2} />
       )}
       {error && <ErrorState message={error} onRetry={reloadVariance} />}
-
-      {variance && (
-        <ExportButtons path={`/accounting/budgets/${id}/variance${period ? `?period=${period}` : ""}`} />
-      )}
 
       {variance && (
         <div className="card acct-table-wrap">

@@ -7,6 +7,8 @@ import { useAsync } from "../hooks/useAsync";
 import { ErrorState } from "../components/ErrorState";
 import { useListKeyboardNav } from "../hooks/useListKeyboardNav";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../lib/filters";
+import { useListPageActions } from "../hooks/useListPageActions";
+import type { CsvColumn } from "../lib/csvExport";
 import { Bdi } from "../components/Bdi";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar } from "../components/FilterBar";
@@ -62,6 +64,22 @@ export function WorkflowListPage() {
     getItemId: (wf) => wf.id,
   });
 
+  const csvColumns = useMemo<CsvColumn<Workflow>[]>(
+    () => [
+      { header: t("workflow.name"), accessor: (wf) => wf.name },
+      { header: t("workflow.version"), accessor: (wf) => wf.version },
+      { header: t("workflow.status"), accessor: (wf) => t(`workflow.statusValue.${wf.status}`, wf.status) },
+      { header: t("workflow.nodes"), accessor: (wf) => wf.node_count },
+      { header: t("workflow.instances"), accessor: (wf) => wf.instance_count },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("workflow.create"), onClick: () => navigate("/workflows/new") }),
+    [t, navigate],
+  );
+  useListPageActions({ primary: listPrimary, rows: visible, columns: csvColumns, filename: "workflows" });
+
   return (
     <section className="wf-list">
       <header className="module-head">
@@ -70,9 +88,6 @@ export function WorkflowListPage() {
       </header>
       <div className="wf-list__head">
         {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
-        <Link className="btn btn--primary" to="/workflows/new">
-          {t("workflow.create")}
-        </Link>
       </div>
 
       {loading && (

@@ -10,7 +10,7 @@ import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -34,6 +34,8 @@ export function GeneralLedgerPage() {
   const exportQuery = partyCode
     ? `account=${account}&party_type=${partyType}&party=${encodeURIComponent(partyCode)}`
     : `account=${account}`;
+
+  useReportPageActions(data && account ? `/accounting/reports/general-ledger?${exportQuery}` : null);
 
   return (
     <section className="acct-page">
@@ -92,8 +94,6 @@ export function GeneralLedgerPage() {
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
       {!account && <p className="muted">{t("accounting.report.pickAccount")}</p>}
-
-      {data && account && <ExportButtons path={`/accounting/reports/general-ledger?${exportQuery}`} />}
 
       {data && (
         <div className="card acct-table-wrap">

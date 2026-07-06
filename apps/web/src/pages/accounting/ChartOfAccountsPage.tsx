@@ -5,6 +5,8 @@ import { createAccount, listAccounts, type Account, type AccountType } from "../
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -48,6 +50,18 @@ export function ChartOfAccountsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((a) => a.type === tab)) : filtered),
     [filtered, tab],
   );
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Account>[]>(
+    () => [
+      { header: t("accounting.account.code"), accessor: (a) => a.code },
+      { header: t("accounting.account.name"), accessor: (a) => a.name },
+      { header: t("accounting.account.type"), accessor: (a) => t(`accounting.types.${a.type}`) },
+      { header: t("accounting.account.postable"), accessor: (a) => (a.is_postable ? t("common.yes") : t("common.no")) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: visible, columns: csvColumns, filename: "chart-of-accounts" });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");

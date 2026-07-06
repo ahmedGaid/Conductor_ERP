@@ -16,7 +16,7 @@ import { useToast } from "../../app/ToastContext";
 import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -47,6 +47,8 @@ export function ReportBuilderPage() {
     () => (runId ? runReportDefinition(runId) : Promise.resolve(null)),
     [runId],
   );
+
+  useReportPageActions(result && runId ? `/accounting/report-definitions/${runId}/run` : null);
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
@@ -203,7 +205,6 @@ export function ReportBuilderPage() {
       {result && runId && (
         <>
           <h2 className="acct-detail__action-title">{result.name}</h2>
-          <ExportButtons path={`/accounting/report-definitions/${runId}/run`} />
           <div className="card acct-table-wrap">
             <table className="acct-table">
               <thead>

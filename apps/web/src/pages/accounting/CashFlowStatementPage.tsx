@@ -6,7 +6,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -26,6 +26,8 @@ export function CashFlowStatementPage() {
         { label: t("accounting.report.closing"), value: data.closing_balance, strong: true },
       ]
     : [];
+
+  useReportPageActions(data ? `/accounting/reports/cash-flow${period ? `?period=${period}` : ""}` : null);
 
   return (
     <section className="acct-page">
@@ -52,8 +54,6 @@ export function CashFlowStatementPage() {
         <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
-
-      {data && <ExportButtons path={`/accounting/reports/cash-flow${period ? `?period=${period}` : ""}`} />}
 
       {data && (
         <div className="card stmt">

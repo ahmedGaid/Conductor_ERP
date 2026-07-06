@@ -20,6 +20,8 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { useUndoableAction } from "../../lib/useUndoableAction";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -173,6 +175,19 @@ export function LeadsPage() {
     persistKey: "crm:leads",
     getItemId: (l) => l.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Lead>[]>(
+    () => [
+      { header: t("crm.lead.code"), accessor: (l) => l.code },
+      { header: t("crm.lead.name"), accessor: (l) => l.name },
+      { header: t("crm.lead.company"), accessor: (l) => l.company || "" },
+      { header: t("crm.lead.source"), accessor: (l) => t(`crm.source.${l.source}`) },
+      { header: t("common.status"), accessor: (l) => t(`crm.leadStatus.${l.status}`) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: visible, columns: csvColumns, filename: "leads" });
 
   return (
     <section className="crm-page">

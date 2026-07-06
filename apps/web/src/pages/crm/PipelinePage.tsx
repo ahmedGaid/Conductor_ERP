@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NavIcon } from "../../app/icons";
@@ -20,6 +20,8 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { CrmNav } from "./CrmNav";
@@ -98,6 +100,20 @@ export function PipelinePage() {
   }
 
   const stockItems = (items ?? []).filter((i) => i.type === "stock");
+
+  // The new-opportunity form has line items (forms keep their controls) — no bar primary, just
+  // print + CSV of the pipeline table below.
+  const csvColumns = useMemo<CsvColumn<Opportunity>[]>(
+    () => [
+      { header: t("crm.opp.number"), accessor: (o) => o.number },
+      { header: t("crm.opp.name"), accessor: (o) => o.name },
+      { header: t("crm.opp.stage"), accessor: (o) => t(`crm.stage.${o.stage}`) },
+      { header: t("crm.opp.amount"), accessor: (o) => formatMinor(o.amount_minor, o.currency) },
+      { header: t("crm.opp.weighted"), accessor: (o) => formatMinor(o.weighted_minor, o.currency) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: data, columns: csvColumns, filename: "pipeline" });
 
   return (
     <section className="crm-page">

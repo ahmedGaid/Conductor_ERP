@@ -10,6 +10,8 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -46,6 +48,16 @@ export function BudgetsPage() {
     persistKey: "accounting:budgets",
     getItemId: (b) => b.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Budget>[]>(
+    () => [
+      { header: t("accounting.budgets.name"), accessor: (b) => b.name },
+      { header: t("accounting.budgets.fiscalYear"), accessor: (b) => b.fiscal_year_code },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: filtered, columns: csvColumns, filename: "budgets" });
 
   const [name, setName] = useState("");
   const [fy, setFy] = useState(String(new Date().getFullYear()));

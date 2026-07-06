@@ -6,7 +6,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -26,6 +26,8 @@ export function IncomeStatementPage() {
   if (period) exportQuery.set("period", period);
   if (costCenter) exportQuery.set("cost_center", costCenter);
   const exportSuffix = exportQuery.toString() ? `?${exportQuery.toString()}` : "";
+
+  useReportPageActions(data ? `/accounting/reports/income-statement${exportSuffix}` : null);
 
   return (
     <section className="acct-page">
@@ -56,8 +58,6 @@ export function IncomeStatementPage() {
         <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
-
-      {data && <ExportButtons path={`/accounting/reports/income-statement${exportSuffix}`} />}
 
       {data && (
         <div className="card stmt">

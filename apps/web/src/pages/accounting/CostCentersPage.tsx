@@ -7,6 +7,8 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -34,6 +36,17 @@ export function CostCentersPage() {
     () => (data ? data.filter((cc) => matchesAllFilters(cc, fields, filters)) : data),
     [data, fields, filters],
   );
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<CostCenter>[]>(
+    () => [
+      { header: t("accounting.costCenters.code"), accessor: (cc) => cc.code },
+      { header: t("accounting.costCenters.name"), accessor: (cc) => cc.name },
+      { header: t("accounting.costCenters.active"), accessor: (cc) => (cc.is_active ? t("common.yes") : t("common.no")) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: filtered, columns: csvColumns, filename: "cost-centers" });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");

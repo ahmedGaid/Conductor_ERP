@@ -19,6 +19,8 @@ import { crmTone, crmPriorityTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -130,6 +132,19 @@ export function TicketsPage() {
     persistKey: "crm:tickets",
     getItemId: (tk) => tk.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Ticket>[]>(
+    () => [
+      { header: t("crm.ticket.number"), accessor: (tk) => tk.number },
+      { header: t("crm.ticket.subject"), accessor: (tk) => tk.subject },
+      { header: t("crm.ticket.priority"), accessor: (tk) => t(`crm.priority.${tk.priority}`) },
+      { header: t("common.status"), accessor: (tk) => t(`crm.ticketStatus.${tk.status}`) },
+      { header: t("crm.ticket.sla"), accessor: (tk) => t(tk.is_breached ? "crm.ticket.breached" : "crm.ticket.onTime") },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: visible, columns: csvColumns, filename: "tickets" });
 
   // Escalation sweep touches an unknown set of tickets server-side, so it can't be predicted; run
   // it, report how many were escalated, and refresh the list.

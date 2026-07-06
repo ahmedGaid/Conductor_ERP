@@ -13,6 +13,8 @@ import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -108,6 +110,22 @@ export function OrdersPage() {
     activeIndex: active,
   });
 
+  const csvColumns = useMemo<CsvColumn<SalesOrder>[]>(
+    () => [
+      { header: t("sales.orders.number"), accessor: (o) => o.number },
+      { header: t("sales.orders.customer"), accessor: (o) => o.customer_name },
+      { header: t("sales.orders.date"), accessor: (o) => o.order_date },
+      { header: t("sales.orders.status"), accessor: (o) => t(`sales.status.${o.status}`) },
+      { header: t("sales.orders.total"), accessor: (o) => formatMinor(o.subtotal_minor, o.currency) },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("sales.tabs.newOrder"), onClick: () => navigate("/sales/orders/new") }),
+    [t, navigate],
+  );
+  useListPageActions({ primary: listPrimary, rows: visible, columns: csvColumns, filename: "sales-orders" });
+
   // Which selected drafts each bulk verb can act on, mirroring the per-row gating.
   const approvable = selection.selectedItems.filter((o) => o.status === "draft" && o.requires_approval && !o.approved);
   const confirmable = selection.selectedItems.filter((o) => o.status === "draft" && (!o.requires_approval || o.approved));
@@ -161,9 +179,6 @@ export function OrdersPage() {
             <FilterBar fields={fields} filters={filters} onChange={setFilters} />
           </div>
         )}
-        <Link className="btn btn--primary sales-page__head-cta" to="/sales/orders/new">
-          {t("sales.tabs.newOrder")}
-        </Link>
       </div>
 
       {loading && <ListSkeleton />}

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
@@ -15,12 +15,15 @@ import { useAsync } from "../../hooks/useAsync";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showMovementReceipt, showMovementError } from "../../lib/feedback/inventory";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { InventoryNav } from "./InventoryNav";
 import "./inventory.css";
 
 const MODES: MovementType[] = ["receipt", "issue", "transfer"];
+type Movement = Awaited<ReturnType<typeof listMovements>>[number];
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -49,6 +52,20 @@ export function StockMovementPage() {
   const [expiry, setExpiry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Post is a form (forms keep their controls) — no bar primary, just print + CSV of the log below.
+  const csvColumns = useMemo<CsvColumn<Movement>[]>(
+    () => [
+      { header: t("inventory.movement.type"), accessor: (m) => t(`inventory.movement.${m.type}`) },
+      { header: t("inventory.item.sku"), accessor: (m) => m.item_sku },
+      { header: t("inventory.warehouse.code"), accessor: (m) => m.warehouse_code },
+      { header: t("inventory.onHand.quantity"), accessor: (m) => m.quantity },
+      { header: t("inventory.onHand.value"), accessor: (m) => formatMinor(m.value_minor) },
+      { header: t("accounting.journals.number"), accessor: (m) => m.journal_number ?? "" },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: movements, columns: csvColumns, filename: "stock-movements" });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

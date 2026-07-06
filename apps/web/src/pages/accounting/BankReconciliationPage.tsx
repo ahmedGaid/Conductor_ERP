@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NavIcon } from "../../app/icons";
@@ -11,6 +11,8 @@ import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
 import { EmptyState } from "../../components/EmptyState";
@@ -30,6 +32,8 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+type BankStatement = Awaited<ReturnType<typeof listBankStatements>>[number];
+
 export function BankReconciliationPage() {
   const { t } = useTranslation();
   const toast = useToast();
@@ -45,6 +49,18 @@ export function BankReconciliationPage() {
     persistKey: "accounting:bank-reconciliation",
     getItemId: (s) => s.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<BankStatement>[]>(
+    () => [
+      { header: t("accounting.bankRec.account"), accessor: (s) => s.account_code },
+      { header: t("accounting.bankRec.statementDate"), accessor: (s) => s.statement_date },
+      { header: t("accounting.bankRec.closingBalance"), accessor: (s) => formatMinor(s.closing_balance_minor) },
+      { header: t("accounting.costCenters.active"), accessor: (s) => t(`accounting.bankRec.statuses.${s.status}`) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: data, columns: csvColumns, filename: "bank-statements" });
 
   const [account, setAccount] = useState("");
   const [stmtDate, setStmtDate] = useState(today());

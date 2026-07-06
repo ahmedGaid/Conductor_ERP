@@ -8,6 +8,8 @@ import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -70,6 +72,18 @@ export function StockCountsPage() {
     persistKey: "inventory:counts",
     getItemId: (c) => c.id,
   });
+
+  // Start-a-count is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<StockCount>[]>(
+    () => [
+      { header: t("inventory.counts.warehouse"), accessor: (c) => c.warehouse_code },
+      { header: t("inventory.counts.date"), accessor: (c) => c.count_date },
+      { header: t("inventory.counts.lines"), accessor: (c) => c.line_count },
+      { header: t("inventory.counts.status"), accessor: (c) => t(`inventory.counts.statuses.${c.status}`) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: visible, columns: csvColumns, filename: "stock-counts" });
 
   const [warehouse, setWarehouse] = useState("");
   const [countDate, setCountDate] = useState(today());

@@ -8,6 +8,8 @@ import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -18,6 +20,7 @@ export function RolesPage() {
   const navigate = useNavigate();
   const { data: roles, loading, error, reload } = useAsync(listRoles, [], "admin:roles");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const fields = useMemo<FilterField<RoleRow>[]>(
     () => [
@@ -48,6 +51,22 @@ export function RolesPage() {
     getItemId: (r) => r.name,
   });
 
+  const csvColumns = useMemo<CsvColumn<RoleRow>[]>(
+    () => [
+      { header: t("admin.roles.name"), accessor: (r) => r.name },
+      { header: t("admin.roles.kind"), accessor: (r) => t(r.protected ? "admin.roles.builtin" : "admin.roles.custom") },
+      { header: t("admin.roles.members"), accessor: (r) => r.members },
+      { header: t("admin.roles.permissionCount"), accessor: (r) => r.permission_count },
+      { header: t("admin.roles.modules"), accessor: (r) => r.modules.length },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("admin.roles.create"), onClick: () => setCreateOpen(true) }),
+    [t],
+  );
+  useListPageActions({ primary: listPrimary, rows: filtered, columns: csvColumns, filename: "roles" });
+
   return (
     <section className="page-enter">
       <header className="module-head">
@@ -55,7 +74,12 @@ export function RolesPage() {
         <p className="module-head__desc">{t("admin.roles.intro")}</p>
       </header>
 
-      <NewRoleForm roles={roles ?? []} onCreated={(name) => navigate(`/admin/roles/${encodeURIComponent(name)}`)} />
+      <NewRoleForm
+        roles={roles ?? []}
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(name) => navigate(`/admin/roles/${encodeURIComponent(name)}`)}
+      />
 
       {loading && (
         <ListSkeleton rows={2} />
@@ -114,10 +138,19 @@ export function RolesPage() {
   );
 }
 
-function NewRoleForm({ roles, onCreated }: { roles: RoleRow[]; onCreated: (name: string) => void }) {
+function NewRoleForm({
+  roles,
+  open,
+  onClose,
+  onCreated,
+}: {
+  roles: RoleRow[];
+  open: boolean;
+  onClose: () => void;
+  onCreated: (name: string) => void;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
-  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [copyFrom, setCopyFrom] = useState("");
   const [busy, setBusy] = useState(false);
@@ -136,13 +169,7 @@ function NewRoleForm({ roles, onCreated }: { roles: RoleRow[]; onCreated: (name:
     }
   }
 
-  if (!open) {
-    return (
-      <div className="admin-invite-cta">
-        <button className="btn btn--primary" onClick={() => setOpen(true)}>{t("admin.roles.create")}</button>
-      </div>
-    );
-  }
+  if (!open) return null;
 
   return (
     <form className="card admin-invite" onSubmit={submit}>
@@ -160,7 +187,7 @@ function NewRoleForm({ roles, onCreated }: { roles: RoleRow[]; onCreated: (name:
         </label>
       </div>
       <div className="admin-invite__foot">
-        <button type="button" className="btn" onClick={() => setOpen(false)}>{t("common.cancel")}</button>
+        <button type="button" className="btn" onClick={onClose}>{t("common.cancel")}</button>
         <button type="submit" className="btn btn--primary" disabled={busy}>{t("admin.roles.create")}</button>
       </div>
     </form>

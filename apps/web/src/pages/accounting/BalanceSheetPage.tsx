@@ -6,7 +6,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -15,6 +15,8 @@ export function BalanceSheetPage() {
   const { t } = useTranslation();
   const [asOf, setAsOf] = useState("");
   const { data, loading, error, reload } = useAsync(() => balanceSheet(asOf || undefined), [asOf]);
+
+  useReportPageActions(data ? `/accounting/reports/balance-sheet${asOf ? `?as_of=${asOf}` : ""}` : null);
 
   return (
     <section className="acct-page">
@@ -36,8 +38,6 @@ export function BalanceSheetPage() {
         <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
-
-      {data && <ExportButtons path={`/accounting/reports/balance-sheet${asOf ? `?as_of=${asOf}` : ""}`} />}
 
       {data && (
         <div className="stmt-grid">

@@ -13,7 +13,7 @@ import { formatMinor, parseToMinor } from "../../lib/money";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -65,6 +65,8 @@ export function FixedAssetsPage() {
     () => (filtered ? (tab === ALL_TAB ? filtered : filtered.filter((a) => a.status === tab)) : filtered),
     [filtered, tab],
   );
+
+  useReportPageActions(data && data.length > 0 ? "/accounting/reports/asset-register" : null);
 
   // j/k move a row highlight, Enter/o opens it on the detail page.
   const navigate = useNavigate();
@@ -204,7 +206,6 @@ export function FixedAssetsPage() {
         <>
           <div className="acct-toolbar-row">
             <FilterBar fields={fields} filters={filters} onChange={setFilters} />
-            <ExportButtons path="/accounting/reports/asset-register" />
           </div>
           {filtered && (
             <StatusTabs

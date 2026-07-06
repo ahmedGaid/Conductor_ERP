@@ -6,7 +6,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
-import { ExportButtons } from "../../components/ExportButtons";
+import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -16,6 +16,8 @@ export function TrialBalancePage() {
   const [period, setPeriod] = useState("");
   const { data: periods } = useAsync(listPeriods, [], "accounting:periods");
   const { data, loading, error, reload } = useAsync(() => trialBalance(period || undefined), [period]);
+
+  useReportPageActions(data ? `/accounting/reports/trial-balance${period ? `?period=${period}` : ""}` : null);
 
   return (
     <section className="acct-page">
@@ -44,8 +46,6 @@ export function TrialBalancePage() {
         <ListSkeleton />
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
-
-      {data && <ExportButtons path={`/accounting/reports/trial-balance${period ? `?period=${period}` : ""}`} />}
 
       {data && (
         <div className="card acct-table-wrap">

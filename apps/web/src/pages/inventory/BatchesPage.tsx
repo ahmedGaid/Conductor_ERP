@@ -5,6 +5,8 @@ import { listBatches } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
@@ -32,6 +34,18 @@ export function BatchesPage() {
     () => (data ? data.filter((b) => matchesAllFilters(b, fields, filters)) : data),
     [data, fields, filters],
   );
+
+  const csvColumns = useMemo<CsvColumn<Batch>[]>(
+    () => [
+      { header: t("inventory.batches.batch"), accessor: (b) => b.batch_no },
+      { header: t("inventory.batches.item"), accessor: (b) => `${b.sku} ${b.item_name}` },
+      { header: t("inventory.batches.warehouse"), accessor: (b) => b.warehouse_code },
+      { header: t("inventory.batches.received"), accessor: (b) => b.received_quantity },
+      { header: t("inventory.batches.expiry"), accessor: (b) => b.earliest_expiry ?? "" },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: filtered, columns: csvColumns, filename: "batches" });
 
   return (
     <section className="inv-page">

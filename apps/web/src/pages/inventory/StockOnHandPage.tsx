@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { stockOnHand, type StockOnHand } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
@@ -18,6 +20,7 @@ type StockRow = StockOnHand["rows"][number];
 
 export function StockOnHandPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(stockOnHand, [], "inventory:stock-on-hand");
   const [searchParams] = useSearchParams();
 
@@ -40,14 +43,28 @@ export function StockOnHandPage() {
   // Keep the footer total honest with the current filter.
   const totalValue = useMemo(() => rows.reduce((s, r) => s + r.value_minor, 0), [rows]);
 
+  const csvColumns = useMemo<CsvColumn<StockRow>[]>(
+    () => [
+      { header: t("inventory.item.sku"), accessor: (r) => r.sku },
+      { header: t("inventory.item.name"), accessor: (r) => r.item_name },
+      { header: t("inventory.warehouse.code"), accessor: (r) => r.warehouse_code },
+      { header: t("inventory.onHand.quantity"), accessor: (r) => r.quantity },
+      { header: t("inventory.onHand.avgCost"), accessor: (r) => formatMinor(r.avg_cost_minor) },
+      { header: t("inventory.onHand.value"), accessor: (r) => formatMinor(r.value_minor) },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("inventory.tabs.movements"), onClick: () => navigate("/inventory/movements") }),
+    [t, navigate],
+  );
+  useListPageActions({ primary: listPrimary, rows, columns: csvColumns, filename: "stock-on-hand" });
+
   return (
     <section className="inv-page">
       <InventoryNav />
       <div className="inv-page__head">
         {data && data.rows.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
-        <Link className="btn btn--primary" to="/inventory/movements">
-          {t("inventory.tabs.movements")}
-        </Link>
       </div>
 
       {loading && (

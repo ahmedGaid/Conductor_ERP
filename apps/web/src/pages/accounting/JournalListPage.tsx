@@ -8,6 +8,8 @@ import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
@@ -45,14 +47,30 @@ export function JournalListPage() {
     getItemId: (e) => e.id,
   });
 
+  const csvColumns = useMemo<CsvColumn<JournalEntry>[]>(
+    () => [
+      { header: t("accounting.journals.number"), accessor: (e) => e.number },
+      { header: t("common.date"), accessor: (e) => e.date },
+      { header: t("accounting.journals.period"), accessor: (e) => e.period_code },
+      { header: t("accounting.entry.memo"), accessor: (e) => e.memo },
+      {
+        header: t("accounting.journals.total"),
+        accessor: (e) => formatMinor(e.lines.reduce((s, l) => s + l.debit, 0), e.currency),
+      },
+    ],
+    [t],
+  );
+  const listPrimary = useMemo(
+    () => ({ label: t("accounting.tabs.newEntry"), onClick: () => navigate("/accounting/journals/new") }),
+    [t, navigate],
+  );
+  useListPageActions({ primary: listPrimary, rows: filtered, columns: csvColumns, filename: "journal-entries" });
+
   return (
     <section className="acct-page">
       <AccountingNav />
       <div className="acct-page__head">
         {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
-        <Link className="btn btn--primary" to="/accounting/journals/new">
-          {t("accounting.tabs.newEntry")}
-        </Link>
       </div>
 
       {loading && (

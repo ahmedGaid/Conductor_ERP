@@ -9,6 +9,8 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
+import { useListPageActions } from "../../hooks/useListPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
@@ -74,6 +76,18 @@ export function ItemsPage() {
     persistKey: "inventory:items",
     getItemId: (it) => it.id,
   });
+
+  // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
+  const csvColumns = useMemo<CsvColumn<Item>[]>(
+    () => [
+      { header: t("inventory.item.sku"), accessor: (i) => i.sku },
+      { header: t("inventory.item.name"), accessor: (i) => i.name },
+      { header: t("inventory.item.uom"), accessor: (i) => i.uom },
+      { header: t("inventory.item.type"), accessor: (i) => t(`inventory.types.${i.type}`) },
+    ],
+    [t],
+  );
+  useListPageActions({ rows: visible, columns: csvColumns, filename: "items" });
 
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
