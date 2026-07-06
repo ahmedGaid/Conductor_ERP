@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useHelp } from "../help/HelpContext";
@@ -16,11 +16,21 @@ import "./AppMenu.css";
  * at the foot of the sidebar — not here.
  */
 export function AppMenu() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { openHelp } = useHelp();
   const { openShortcuts } = useShortcuts();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
+
+  // Switching language flips the whole app between RTL and LTR, moving this menu's trigger to the
+  // opposite edge. Rather than chase the panel across the flip, close it — the toggle's effect (the
+  // mirrored layout) is the confirmation, and reopening lands it cleanly on the new side. Theme,
+  // which doesn't move anything, deliberately keeps the menu open.
+  useEffect(() => {
+    const close = () => setOpen(false);
+    i18n.on("languageChanged", close);
+    return () => i18n.off("languageChanged", close);
+  }, [i18n]);
 
   const act = (fn: () => void) => {
     setOpen(false);

@@ -84,6 +84,16 @@ function sectionKey(module: string, seg2: string, seg3: string): string | null {
   return map[`${seg2}/${seg3}`] ?? map[seg2] ?? DEFAULT_SECTION[module] ?? null;
 }
 
+// Sections whose list lives at the bare "/module" route (the module's default landing) — there is
+// no "/module/seg2" route for them, so a detail page must step back to "/module". Linking to
+// "/module/seg2" would hit the "*" fallback and bounce to the dashboard. Every other section has
+// its own "/module/seg2" list route, so it steps back there normally.
+const BARE_LIST_SECTION: Record<string, string> = {
+  sales: "orders",
+  purchasing: "orders",
+  crm: "opportunities",
+};
+
 export function RouteBreadcrumb() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
@@ -94,8 +104,10 @@ export function RouteBreadcrumb() {
 
   const section = sectionKey(seg1, seg2, seg3);
   // On a detail page the document number is the current crumb, so the section steps back to a link
-  // to its list (e.g. Sales › Orders › SO-2026-000007, where "Orders" returns to the list).
-  const sectionTo = seg2 ? `/${seg1}/${seg2}` : `/${seg1}`;
+  // to its list (e.g. Sales › Orders › SO-2026-000007, where "Orders" returns to the list). Sections
+  // that live at the bare "/module" route step back there, not to a non-existent "/module/seg2".
+  const sectionTo =
+    seg2 && BARE_LIST_SECTION[seg1] !== seg2 ? `/${seg1}/${seg2}` : `/${seg1}`;
 
   return (
     <nav className="crumb" aria-label={t("common.breadcrumb")}>

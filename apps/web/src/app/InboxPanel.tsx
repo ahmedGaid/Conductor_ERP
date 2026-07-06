@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -9,16 +9,22 @@ import { Tooltip } from "../components/Tooltip";
 import { NavIcon } from "./icons";
 import "./inbox.css";
 
-// Each source event maps to (a) a localised headline/body key and (b) where clicking it lands. Kept
-// as a small table so new in-app sources add one row here, not a branch. Unknown events fall back to
-// the row's stored subject/body and don't navigate.
-const EVENT: Record<string, { key: string; route: string | null }> = {
+// Each source event maps to (a) an optional localised headline/body key and (b) where clicking it
+// lands. Kept as a small table so new in-app sources add one row here, not a branch. Without a `key`
+// the row shows its own stored subject/body (used for events whose text is already composed, like the
+// morning digest); without a `route` the row marks read but doesn't navigate.
+const EVENT: Record<string, { key?: string; route: string | null }> = {
   "crm.TicketEscalated": { key: "ticketEscalated", route: "/crm/tickets" },
+  // The digest's Arabic/English text is pre-composed; clicking it opens the dashboard, whose
+  // "needs attention today" panel is the same at-a-glance view the digest summarises.
+  "assistant.MorningDigest": { route: "/" },
 };
 
 interface InboxPanelProps {
   open: boolean;
   onClose: () => void;
+  /** The bell button this panel drops from — clicks outside both stay open, everywhere else closes it. */
+  anchorRef: RefObject<HTMLElement | null>;
   items: InboxItem[];
   loading: boolean;
   error: string | null;
@@ -32,11 +38,12 @@ interface InboxPanelProps {
  * one-line body, the source module word and a relative time; unread reads as a heavier weight + a
  * quiet inline-start marker, never a colour or a count. Clicking a row opens its record and marks it
  * read. j/k move a highlight, Enter opens it — all scoped to the panel so it never fights the list
- * beneath. Esc closes and focus returns to the bell (mirrors the assistant panel).
+ * beneath. Esc or a click outside closes it and focus returns to the bell.
  */
 export function InboxPanel({
   open,
   onClose,
+  anchorRef,
   items,
   loading,
   error,
@@ -68,6 +75,19 @@ export function InboxPanel({
       returnFocus.current?.focus?.();
     };
   }, [open]);
+
+  // A click anywhere outside the panel and its bell also closes it (Linear-style), same idiom as
+  // the shared Popover.
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(e: PointerEvent) {
+      const target = e.target as Node;
+      if (panelRef.current?.contains(target) || anchorRef.current?.contains(target)) return;
+      onClose();
+    }
+    document.addEventListener("pointerdown", onPointer, true);
+    return () => document.removeEventListener("pointerdown", onPointer, true);
+  }, [open, onClose, anchorRef]);
 
   if (!open) return null;
 
@@ -153,10 +173,12 @@ export function InboxPanel({
           <ul className="inbox-list">
             {items.map((item, i) => {
               const meta = EVENT[item.event_name];
-              const headline = meta
+              // Templated events render from their i18n key; everything else (incl. the pre-composed
+              // digest) shows its own stored subject/body.
+              const headline = meta?.key
                 ? t(`inbox.events.${meta.key}.title`, { ref: item.reference })
                 : item.subject;
-              const detail = meta
+              const detail = meta?.key
                 ? t(`inbox.events.${meta.key}.body`, { ref: item.reference })
                 : item.body;
               const unread = item.read_at === null;

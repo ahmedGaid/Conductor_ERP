@@ -11,6 +11,11 @@
     <link rel="manifest" href="/branding/site.webmanifest" />
     <meta name="msapplication-config" content="/branding/browserconfig.xml" />
     <meta name="theme-color" content="#000000" />
+    <!-- Preload the faces on screen at first paint (Arabic body/medium + Latin body) so they win the
+         font-display:optional window and render with zero swap reflow. See src/styles/fonts.css. -->
+    <link rel="preload" href="/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <!-- Apply the saved presentation preferences before first paint to avoid a flash (no-FOUC).
          Mirrors src/prefs.ts: theme (resolved), accent, density, font size, contrast, motion. -->
     <script>

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -23,6 +23,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
   const navigate = useNavigate();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [inboxOpen, setInboxOpen] = useState(false);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const inbox = useInbox();
 
   // When e-invoicing is turned off in setup, hide it from every nav surface (sidebar, palette,
@@ -102,6 +103,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
         <UserMenu />
         <Tooltip label={t("inbox.title")} placement="bottom">
           <button
+            ref={bellRef}
             type="button"
             className="btn btn--ghost btn--icon commandbar__bell"
             aria-label={t("inbox.title")}
@@ -125,6 +127,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
       <InboxPanel
         open={inboxOpen}
         onClose={() => setInboxOpen(false)}
+        anchorRef={bellRef}
         items={inbox.items}
         loading={inbox.loading}
         error={inbox.error}

@@ -12,6 +12,13 @@ export default defineConfig({
       "/api": "http://localhost:8000",
     },
   },
+  // `vite preview` (production-build smoke test) needs its own proxy — server.proxy is dev-only.
+  preview: {
+    port: 4173,
+    proxy: {
+      "/api": "http://localhost:8000",
+    },
+  },
   build: {
     outDir: "dist",
     sourcemap: true,

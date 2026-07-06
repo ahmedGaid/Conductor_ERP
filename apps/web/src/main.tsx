@@ -1,13 +1,9 @@
 import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
-// Self-hosted fonts (no cloud dependency).
-import "@fontsource/ibm-plex-sans-arabic/400.css";
-import "@fontsource/ibm-plex-sans-arabic/500.css";
-import "@fontsource/ibm-plex-sans-arabic/700.css";
-import "@fontsource/inter/400.css";
-import "@fontsource/inter/500.css";
-import "@fontsource/inter/700.css";
+// Self-hosted fonts (no cloud dependency). Declared with font-display: optional + preloaded in
+// index.html so the brand font renders from first paint with no swap reflow — see styles/fonts.css.
+import "./styles/fonts.css";
 
 import "./styles/tokens.css";
 import "./styles/global.css";

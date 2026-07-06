@@ -1525,3 +1525,67 @@ picking the wrong one could itself surface out-of-scope data). Remains filed as 
 dedicated future session — candidate shape: a post-answer check for unbacked specific-number claims,
 or a stricter planner constraint that a `lookup`/`report` intent may not reach "answer" with zero
 tool calls when `results` is empty.
+
+
+## linear-polish FILE_13 — Acceptance sign-off + feel-pass fixes (2026-07-06)
+
+Acceptance of the linear-polish workstream (FILE_01–12). All four tiers walked live in Arabic RTL
+then English on the seeded demo, gates 00–14 + parity + tsc + gate03 + bundle green. Below: the
+mandated boundary/policy records, plus the fixes the feel pass surfaced (FILE_13 mandates fixing
+"loud/springy/delayed/translationese" NOW, in the acceptance session).
+
+### Mandated records
+- **Undo-not-confirm boundary.** Reversible state flips apply instantly + offer Undo (CRM lead
+  qualify, opportunity/campaign moves, accounting report-builder + bank-statement + fixed-asset
+  actions). The ops that STAY a confirm dialog: anything financial or irreversible — post/approve,
+  payment, delete, and the audit write path. A toast that expires = the action stands (verified by
+  reload). This split is the contract; new actions classify into one side of it, never a third.
+- **Latin-digits policy.** Numbers render as Latin digits in BOTH locales (`1,234.56`, never
+  Arabic-Indic), formatted only by `lib/money.ts`, wrapped in `<Bdi>`, tabular (`.num`) so columns
+  align. Enforced by gate14. (Unchanged this session — restated as the acceptance record.)
+- **Digest schedule + silence rule.** Morning digest builds per-user from existing tool runners run
+  AS the user (module sections gated by that user's permissions), text fully localized to the user's
+  `preferred_language`. It sends daily (or weekly on Monday); Celery beat fires `send_digests` once a
+  day and the task decides due-ness. Silence rule: `build_digest` returns `None` when every section
+  is empty — a digest must earn its send; an all-quiet day produces no notification at all.
+
+### Feel-pass fixes landed this session
+- **Notifications inbox closes on outside click** (was Esc/✕/bell-toggle only). Now mirrors the
+  shared Popover idiom — a pointerdown outside the panel and its bell closes it (Linear-style).
+  `InboxPanel` takes the bell `anchorRef` to distinguish inside/outside.
+- **App (⋮) menu closes on language switch.** A language flip mirrors the whole app RTL↔LTR, moving
+  the menu's trigger to the opposite edge; the open portalled panel used to stay frozen at its old
+  coordinates (repositioning it mid-flip is timing-fragile — the dir-attr MutationObserver fires in a
+  microtask before the command bar re-lays-out, so it measured the stale side even via rAF). Chosen
+  fix: `AppMenu` subscribes to i18n `languageChanged` and closes — a closed panel can't sit on the
+  wrong side, and the mirrored layout IS the toggle's confirmation. Theme, which moves nothing,
+  deliberately keeps the menu open.
+- **Print no longer captures the open action menu.** `window.print()` fires synchronously right after
+  `setOpen(false)` (async React state), so the portalled `.popover` was still mounted and printed
+  into the PDF. Fixed at the print layer: `print.css` hides `.popover` + `.tooltip` (portalled
+  overlays live on `<body>`, outside the chrome the print sheet already strips).
+- **Breadcrumb section link no longer bounces to the dashboard.** A detail page under
+  `/sales/orders/:id` linked "Orders" to `/sales/orders`, which has no route (the orders list IS the
+  bare `/sales`), so it hit the `*` fallback → `/`. Added `BARE_LIST_SECTION` (sales/orders,
+  purchasing/orders, crm/opportunities) so those sections step back to `/module`; every other section
+  keeps its real `/module/seg2` list route.
+- **Morning-digest inbox row is now clickable.** Its `assistant.MorningDigest` event had no route, so
+  clicking did nothing. It now opens the dashboard (whose "needs attention today" panel is the same
+  at-a-glance view the digest summarises). `EVENT` map entries made `key`-optional so pre-composed
+  rows (the digest) show their own stored subject/body instead of a templated i18n key.
+
+### Perceived-performance finding (feel pass) — split: quick win now, rest deferred
+The feel pass caught a systemic "the whole app feels laggy/rigid, not Apple-smooth" issue —
+confirmed identical on the production build (`vite preview`), so NOT dev-mode jank. Three root
+causes: (1) web-font swap reflow, (2) eager shell + lazy content = "top paints then bottom follows",
+(3) skeleton height ≠ content = "jump". Only (1) was fixed here (bounded, low-risk); (2)+(3) are a
+dedicated workstream — filed as `Docs/plan/perceived-performance-plan.md` for a fresh Opus session.
+
+- **Font-swap reflow fix.** Fonts were JS-imported from `@fontsource` with `font-display: swap`, so
+  each page painted in a system fallback then swapped to IBM Plex Sans Arabic / Inter — Arabic
+  fallback metrics differ sharply, reflowing the page mid-view ("text shakes"). Self-hosted the six
+  critical faces in `public/fonts/`, declared them in `src/styles/fonts.css` with
+  `font-display: optional`, and `<link rel="preload">`ed the three at-first-paint faces (Arabic
+  400/500, Inter 400) in `index.html`. Also added a `preview.proxy` to `vite.config.ts` so the
+  production build can reach the API for feel testing. `optional` + preload = brand font from first
+  paint, zero swap reflow. User confirmed "much better"; residual smoothness is causes (2)+(3).
