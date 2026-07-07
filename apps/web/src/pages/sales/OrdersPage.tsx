@@ -7,14 +7,14 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
-import { Checkbox } from "../../components/Checkbox";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -209,14 +209,12 @@ export function OrdersPage() {
           <table className="sales-table">
             <thead>
               <tr>
-                <th className="sales-table__select">
-                  <Checkbox
-                    checked={selection.allSelected}
-                    indeterminate={selection.someSelected}
-                    onChange={() => selection.toggleAll()}
-                    label={t("bulk.selectAll")}
-                  />
-                </th>
+                <SelectAllCell
+                  className="sales-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("sales.orders.number")}</th>
                 <th>{t("sales.orders.customer")}</th>
                 <th>{t("sales.orders.date")}</th>
@@ -233,13 +231,11 @@ export function OrdersPage() {
                   data-selected={selection.isSelected(o.id) ? "true" : undefined}
                   aria-selected={selection.isSelected(o.id) || i === active}
                 >
-                  <td className="sales-table__select">
-                    <Checkbox
-                      checked={selection.isSelected(o.id)}
-                      onChange={(_next, shiftKey) => selection.toggle(i, shiftKey)}
-                      label={t("bulk.selectRow")}
-                    />
-                  </td>
+                  <SelectRowCell
+                    className="sales-table__select"
+                    checked={selection.isSelected(o.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <Link
                       to={`/sales/orders/${o.id}`}
@@ -318,6 +314,12 @@ export function OrdersPage() {
             {t("sales.detail.confirm")}
           </button>
         )}
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("sales-orders-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
       </BulkActionBar>
     </section>
   );

@@ -1889,7 +1889,8 @@
     "selectedOne": "عنصر واحد محدد",
     "clear": "إلغاء التحديد",
     "selectAll": "تحديد الكل",
-    "selectRow": "تحديد الصف"
+    "selectRow": "تحديد الصف",
+    "exportCsv": "تصدير CSV"
   },
   "feedback": {
     "relatedLabel": "سجلات ذات صلة",

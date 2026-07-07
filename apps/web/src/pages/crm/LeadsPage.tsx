@@ -12,7 +12,7 @@ import {
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
-import { Checkbox } from "../../components/Checkbox";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
 import { Badge } from "../../components/Badge";
 import { crmTone } from "../../lib/statusTone";
@@ -21,7 +21,7 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { useUndoableAction } from "../../lib/useUndoableAction";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -254,14 +254,12 @@ export function LeadsPage() {
           <table className="crm-table">
             <thead>
               <tr>
-                <th className="crm-table__select">
-                  <Checkbox
-                    checked={selection.allSelected}
-                    indeterminate={selection.someSelected}
-                    onChange={() => selection.toggleAll()}
-                    label={t("bulk.selectAll")}
-                  />
-                </th>
+                <SelectAllCell
+                  className="crm-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("crm.lead.code")}</th>
                 <th>{t("crm.lead.name")}</th>
                 <th>{t("crm.lead.company")}</th>
@@ -278,13 +276,11 @@ export function LeadsPage() {
                   data-selected={selection.isSelected(l.id) ? "true" : undefined}
                   aria-selected={selection.isSelected(l.id)}
                 >
-                  <td className="crm-table__select">
-                    <Checkbox
-                      checked={selection.isSelected(l.id)}
-                      onChange={(_next, shiftKey) => selection.toggle(i, shiftKey)}
-                      label={t("bulk.selectRow")}
-                    />
-                  </td>
+                  <SelectRowCell
+                    className="crm-table__select"
+                    checked={selection.isSelected(l.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td className="latin">{l.code}</td>
                   <td>{l.name}</td>
                   <td>{l.company || "—"}</td>
@@ -319,6 +315,12 @@ export function LeadsPage() {
             {t("crm.leadStatus.qualified")}
           </button>
         )}
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("leads-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
       </BulkActionBar>
     </section>
   );

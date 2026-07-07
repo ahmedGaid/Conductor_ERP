@@ -5,6 +5,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { createCustomer, listCustomers, type Customer } from "../../api/sales";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
@@ -13,7 +16,7 @@ import { showCustomerReceipt } from "../../lib/feedback/sales";
 import { optimisticCreate } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
@@ -52,6 +55,14 @@ export function CustomersPage() {
     onOpen: (c) => navigate(`/sales/customers/${encodeURIComponent(c.code)}`),
     persistKey: "sales:customers",
     getItemId: (c) => c.id,
+  });
+
+  // Multi-select for bulk CSV export — customers have no lifecycle verb, so this is the only bulk
+  // action (still worth checkbox + Shift-range + ⌘A, per FILE_05: "any table" qualifies for export).
+  const selection = useRowSelection<Customer>({
+    items: filtered ?? [],
+    getItemId: (c) => c.id,
+    activeIndex: active,
   });
 
   // Add is a multi-field form (forms keep their controls) — no bar primary, just print + CSV.
@@ -170,6 +181,12 @@ export function CustomersPage() {
           <table className="sales-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="sales-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("sales.customer.code")}</th>
                 <th>{t("sales.customer.name")}</th>
                 <th className="sales-table__num">{t("sales.customer.creditLimit")}</th>
@@ -178,7 +195,17 @@ export function CustomersPage() {
             </thead>
             <tbody>
               {filtered.map((c, i) => (
-                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={c.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(c.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(c.id) || i === active}
+                >
+                  <SelectRowCell
+                    className="sales-table__select"
+                    checked={selection.isSelected(c.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <PartyLink type="customer" code={c.code} className="latin">
                       <Bdi>{c.code}</Bdi>
@@ -203,6 +230,15 @@ export function CustomersPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("customers-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

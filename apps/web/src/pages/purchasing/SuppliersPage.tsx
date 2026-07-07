@@ -5,6 +5,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
@@ -12,7 +15,7 @@ import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showSupplierReceipt } from "../../lib/feedback/purchasing";
 import { optimisticCreate } from "../../lib/optimistic";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
@@ -51,6 +54,14 @@ export function SuppliersPage() {
     onOpen: (s) => navigate(`/purchasing/suppliers/${encodeURIComponent(s.code)}`),
     persistKey: "purchasing:suppliers",
     getItemId: (s) => s.id,
+  });
+
+  // Multi-select for bulk CSV export — suppliers have no lifecycle verb, so this is the only bulk
+  // action (still worth checkbox + Shift-range + ⌘A, per FILE_05: "any table" qualifies for export).
+  const selection = useRowSelection<Supplier>({
+    items: filtered ?? [],
+    getItemId: (s) => s.id,
+    activeIndex: active,
   });
 
   // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
@@ -157,6 +168,12 @@ export function SuppliersPage() {
           <table className="pur-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="pur-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("purchasing.supplier.code")}</th>
                 <th>{t("purchasing.supplier.name")}</th>
                 <th />
@@ -164,7 +181,17 @@ export function SuppliersPage() {
             </thead>
             <tbody>
               {filtered.map((s, i) => (
-                <tr key={s.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={s.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(s.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(s.id) || i === active}
+                >
+                  <SelectRowCell
+                    className="pur-table__select"
+                    checked={selection.isSelected(s.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <PartyLink type="supplier" code={s.code} className="latin">
                       <Bdi>{s.code}</Bdi>
@@ -186,6 +213,15 @@ export function SuppliersPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("suppliers-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }
