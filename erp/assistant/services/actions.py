@@ -198,6 +198,12 @@ def _build_purchase_request(actor, *, supplier: str | None = None, items=None,
                             warehouse: str | None = None, from_low_stock=None, **_) -> dict:
     if not _can(actor, BRANCH_MANAGER):
         return _refused()
+    # No supplier at all is a missing INPUT, not a missing RECORD — a blocker card offering to
+    # "create the supplier \"\"" would be nonsense. Same for an empty item list below.
+    if not (supplier or "").strip():
+        return {"error": "No supplier was given. Ask the user which supplier this request is for."}
+    if not from_low_stock and not list(items or []):
+        return {"error": "No items were given. Ask the user which items and quantities to request."}
     ranked = _rank(supplier or "", purchasing.list_suppliers(), lambda s: s.name) if supplier else []
     match = ranked[0][1] if ranked and ranked[0][0] >= 0.6 else None
     if match is None:

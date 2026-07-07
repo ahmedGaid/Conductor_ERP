@@ -99,6 +99,7 @@
     },
     "suggest": {
       "missing": "No {{entity}} named \"{{query}}\" exists yet",
+      "missingBare": "No {{entity}} is set up yet",
       "inactive": "The {{entity}} \"{{query}}\" is inactive",
       "ambiguous": "More than one {{entity}} could match \"{{query}}\"",
       "create": "Create the {{entity}} from here",

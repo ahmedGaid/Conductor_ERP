@@ -62,7 +62,12 @@ export function SuggestionCard({
           <NavIcon name={icon} />
         </span>
         <span className="action-card__title">
-          {t(`assistant.suggest.${issue.kind}`, { entity: entityName, query: issue.query })}
+          {/* A blocker can arrive with no name at all (e.g. no warehouse exists yet) — quoting an
+              empty string reads broken, so the bare variant drops the quote entirely. */}
+          {t(
+            issue.query ? `assistant.suggest.${issue.kind}` : "assistant.suggest.missingBare",
+            { entity: entityName, query: issue.query },
+          )}
         </span>
       </header>
 
@@ -90,7 +95,7 @@ export function SuggestionCard({
               return (
                 <Link key={i} className="suggest-card__link" to={option.to ?? "/"}>
                   <NavIcon name={icon} />
-                  {t(option.label_key ?? "assistant.suggest.open")}
+                  {t(option.label_key ?? "assistant.suggest.open", { entity: entityName })}
                   <span className="suggest-card__out" aria-hidden="true">↗</span>
                 </Link>
               );

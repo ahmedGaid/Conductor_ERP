@@ -99,6 +99,7 @@
     },
     "suggest": {
       "missing": "لا يوجد {{entity}} باسم \"{{query}}\" بعد",
+      "missingBare": "لا يوجد أي {{entity}} بعد",
       "inactive": "{{entity}} \"{{query}}\" غير نشط",
       "ambiguous": "أكثر من {{entity}} قد يطابق \"{{query}}\"",
       "create": "أنشئ {{entity}} من هنا",
