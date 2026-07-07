@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import type {
   ActionProposal,
   AskCitation,
+  AssistantSuggestion,
   AttachmentInfo,
   ChatMessage,
   ChatStep,
@@ -19,6 +20,7 @@ import { useAsync } from "../hooks/useAsync";
 import { SYSTEM_ADMIN } from "../pages/settings/roles";
 import { ActionCard } from "./ActionCard";
 import { Markdown } from "./Markdown";
+import { SuggestionCard } from "./SuggestionCard";
 import { followupsFor, type SuggestionKey } from "./suggestions";
 
 // A citation under an assistant message — a real record the answer is built from, click-through so
@@ -211,6 +213,7 @@ export function MessageList({
             const atts = (m.meta?.attachments as AttachmentInfo[] | undefined) ?? [];
             const steps = (m.meta?.steps as ChatStep[] | undefined) ?? [];
             const proposal = m.meta?.proposal as ActionProposal | undefined;
+            const suggestion = m.meta?.suggestion as AssistantSuggestion | undefined;
             if (m.role === "user") {
               return (
                 <li key={m.id} className="msg msg--user">
@@ -252,6 +255,7 @@ export function MessageList({
                     onNavigate={onNavigate}
                   />
                 )}
+                {suggestion && <SuggestionCard suggestion={suggestion} onFollowup={onFollowup} />}
                 {cites.length > 0 && (
                   <ul className="assistant-cites msg__cites">
                     {cites.map((c) => (

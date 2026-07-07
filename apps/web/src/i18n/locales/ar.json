@@ -97,6 +97,26 @@
       "s3": "أي عملاء ما زالوا مدينين لنا؟",
       "s4": "ما الأصناف التي أوشكت على النفاد؟"
     },
+    "suggest": {
+      "missing": "لا يوجد {{entity}} باسم \"{{query}}\" بعد",
+      "inactive": "{{entity}} \"{{query}}\" غير نشط",
+      "ambiguous": "أكثر من {{entity}} قد يطابق \"{{query}}\"",
+      "create": "أنشئ {{entity}} من هنا",
+      "open": "افتح النموذج",
+      "review": "هل تقصد أحد هذه؟",
+      "mapExisting": "استخدم هذا",
+      "useCandidate": "استخدم {{name}} ({{code}}) وتابع",
+      "createCommand": "أنشئ {{entity}} جديد باسم {{name}}",
+      "noPermission": "ليست لديك صلاحية لإصلاح هذا بنفسك. اطلب من مسؤول النظام، وسأتابع من هنا فور إتمامه.",
+      "afterResume": "بعد الإصلاح: {{resume}}",
+      "resolved": "تم الإصلاح — واستُكمل العمل",
+      "entity": {
+        "customer": "عميل",
+        "supplier": "مورّد",
+        "item": "صنف",
+        "warehouse": "مخزن"
+      }
+    },
     "context": {
       "viewing": "سياق الصفحة",
       "detach": "فصل سياق الصفحة عن هذه المحادثة"

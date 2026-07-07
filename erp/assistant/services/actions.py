@@ -47,6 +47,34 @@ def _refused() -> dict:
     return {"error": "You do not have permission to create this document."}
 
 
+def _blocker(entity: str, query, *, kind: str = "missing", candidates: list | None = None) -> dict:
+    """A dependency-shaped failure — the record the request leans on is missing / inactive /
+    ambiguous. The loop turns this into an actionable suggestion (session 12): issue → fastest
+    permitted fix → resume. Plain failures (permission, validation) keep the string convention."""
+    block: dict = {"kind": "ambiguous" if candidates else kind, "entity": entity,
+                   "query": str(query or "").strip()}
+    if candidates:
+        block["candidates"] = candidates
+    return {"blocker": block}
+
+
+def _resolve_warehouse(warehouse: str | None) -> tuple[str, dict | None]:
+    """An explicit code is validated (unknown → missing, disabled → inactive blocker); blank falls
+    back to the default warehouse, or a missing-warehouse blocker when none is configured yet."""
+    code = (warehouse or "").strip()
+    if code:
+        info = inventory.find_warehouse(code)
+        if info is None:
+            return "", _blocker("warehouse", code)
+        if not info.is_active:
+            return "", _blocker("warehouse", code, kind="inactive")
+        return info.code, None
+    default = inventory.default_warehouse_code()
+    if not default:
+        return "", _blocker("warehouse", "")
+    return default, None
+
+
 def _qty(value) -> Decimal | None:
     try:
         q = Decimal(str(value))
@@ -87,18 +115,23 @@ def _build_sales_order(actor, *, customer: str | None = None, items=None,
     snapshot = sales.customer_profile(actor, query=(customer or ""))
     profile = snapshot.get("customer")
     if profile is None:
-        return {"error": f"No customer matches '{customer or ''}' in what you can see."}
-    warehouse_code = (warehouse or "").strip() or inventory.default_warehouse_code()
-    if not warehouse_code:
-        return {"error": "No warehouse is set up to sell from yet."}
+        near = [{"code": c["code"], "name": c["name"], "score": round(score, 2)}
+                for score, c in _rank(customer or "", sales.find_customers(actor, query="", limit=100),
+                                      lambda c: c["name"]) if score >= 0.4][:3]
+        return _blocker("customer", customer, candidates=near)
+    warehouse_code, blocked = _resolve_warehouse(warehouse)
+    if blocked is not None:
+        return blocked
 
     lines, records, risks = [], [], []
+    unresolved: list[str] = []
     total = 0
     for entry in items or []:
         item = _resolve_item(entry.get("item") if isinstance(entry, dict) else None)
         qty = _qty(entry.get("quantity") if isinstance(entry, dict) else None)
         if item is None:
-            risks.append(f"Item '{(entry or {}).get('item', '')}' was not found — skipped.")
+            unresolved.append(str((entry or {}).get("item", "") if isinstance(entry, dict) else ""))
+            risks.append(f"Item '{unresolved[-1]}' was not found — skipped.")
             continue
         if qty is None:
             risks.append(f"'{item.name}' had no valid quantity — skipped.")
@@ -113,6 +146,11 @@ def _build_sales_order(actor, *, customer: str | None = None, items=None,
                       "description": item.name})
         records.append({"type": "item", "value": item.sku, "label": item.name})
     if not lines:
+        if unresolved and unresolved[0]:
+            near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                    for score, i in _rank(unresolved[0], inventory.list_items(), lambda i: i.name)
+                    if score >= 0.4][:3]
+            return _blocker("item", unresolved[0], candidates=near)
         return {"error": "None of the requested items could be added."}
 
     # Overdue balance is a risk line on the card, never a block (the human decides).
@@ -163,10 +201,16 @@ def _build_purchase_request(actor, *, supplier: str | None = None, items=None,
     ranked = _rank(supplier or "", purchasing.list_suppliers(), lambda s: s.name) if supplier else []
     match = ranked[0][1] if ranked and ranked[0][0] >= 0.6 else None
     if match is None:
-        return {"error": f"No supplier matches '{supplier or ''}' — say which supplier to request from."}
+        near = [{"code": s.code, "name": s.name, "score": round(score, 2)}
+                for score, s in ranked if score >= 0.4][:3]
+        return _blocker("supplier", supplier, candidates=near)
 
     entries = list(items or [])
-    warehouse_code = (warehouse or "").strip()
+    warehouse_code = ""
+    if (warehouse or "").strip():
+        warehouse_code, blocked = _resolve_warehouse(warehouse)
+        if blocked is not None:
+            return blocked
     risks = []
     if from_low_stock:
         low = inventory.low_stock(limit=20)
@@ -175,17 +219,20 @@ def _build_purchase_request(actor, *, supplier: str | None = None, items=None,
         entries = [{"item": r["sku"], "quantity": "1"} for r in low]
         warehouse_code = warehouse_code or (low[0].get("warehouse_code") or "")
         risks.append("Quantities defaulted to 1 — set the real amounts on the request screen.")
-    warehouse_code = warehouse_code or (inventory.default_warehouse_code() or "")
     if not warehouse_code:
-        return {"error": "No warehouse is set up to receive into yet."}
+        warehouse_code, blocked = _resolve_warehouse("")
+        if blocked is not None:
+            return blocked
 
     lines, records = [], []
+    unresolved: list[str] = []
     total = 0
     for entry in entries:
         item = _resolve_item(entry.get("item") if isinstance(entry, dict) else None)
         qty = _qty(entry.get("quantity") if isinstance(entry, dict) else None)
         if item is None:
-            risks.append(f"Item '{(entry or {}).get('item', '')}' was not found — skipped.")
+            unresolved.append(str((entry or {}).get("item", "") if isinstance(entry, dict) else ""))
+            risks.append(f"Item '{unresolved[-1]}' was not found — skipped.")
             continue
         if qty is None:
             risks.append(f"'{item.name}' had no valid quantity — skipped.")
@@ -200,6 +247,11 @@ def _build_purchase_request(actor, *, supplier: str | None = None, items=None,
                       "description": item.name})
         records.append({"type": "item", "value": item.sku, "label": item.name})
     if not lines:
+        if unresolved and unresolved[0]:
+            near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                    for score, i in _rank(unresolved[0], inventory.list_items(), lambda i: i.name)
+                    if score >= 0.4][:3]
+            return _blocker("item", unresolved[0], candidates=near)
         return {"error": "None of the requested items could be added."}
 
     records.insert(0, {"type": "supplier", "value": match.code, "label": match.name})
@@ -356,7 +408,7 @@ def build(actor, name: str, decision: dict) -> dict:
         proposal = action.build_proposal(actor, **kwargs)
     except Exception:  # bad argument shape — a calm note, never a crash
         return {"error": "That could not be prepared. Try rephrasing what to create."}
-    if "error" not in proposal:
+    if "error" not in proposal and "blocker" not in proposal:
         proposal["kind"] = action.kind
     return proposal
 

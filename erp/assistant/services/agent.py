@@ -24,7 +24,7 @@ from erp.audit import services as audit
 from ..client import complete_stream
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
-from . import actions, context, files
+from . import actions, context, files, suggestions
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS
 from .llm import complete_json
 
@@ -59,6 +59,7 @@ _LOOP_SYSTEM = (
     '  {{"action": "tool", "tool": "<name>", "why": "<=8 words, shown to the user>", <args...>}}\n'
     '  {{"action": "propose", "name": "<action>", "why": "<=8 words>", <action args...>}}\n'
     '  {{"action": "clarify", "question": "<one short question>"}}\n'
+    '  {{"action": "suggest", "resume": "<one sentence: what you will continue once it is fixed>"}}\n'
     '  {{"action": "answer"}}\n'
     "On your first decision of a turn, also set intent (lookup/report/document_search/create/"
     "update/workflow/file/explain/conversation/mixed) — it routes nothing by itself but is "
@@ -69,8 +70,13 @@ _LOOP_SYSTEM = (
     "you have what an action needs (gather first if you must, e.g. low-stock before a purchase "
     "request). Choose clarify ONLY when the request is too vague to act on — never to stall. A result "
     "shaped {{\"error\": ...}} means that path is blocked or wrong: read it and try different "
-    "arguments/tool, or answer honestly — never repeat the same failing call. 'why' is a short human "
-    "phrase like 'Checking this month's sales'. Never invent data; only these tools can see it."
+    "arguments/tool, or answer honestly — never repeat the same failing call. A result shaped "
+    "{{\"blocker\": ...}} means a record the request depends on is missing, inactive, or ambiguous: "
+    "choose suggest — the system shows the user a fix-it card with their permitted options; set "
+    "resume to the one thing you will continue after the fix (e.g. 'I will prepare the sales order "
+    "for ABC Trading'). Never retry the same missing reference and never invent the record. 'why' "
+    "is a short human phrase like 'Checking this month's sales'. Never invent data; only these "
+    "tools can see it."
 )
 
 # The planner's decision schema = the router's flat argument fields (proven across all three
@@ -102,10 +108,13 @@ _ACTION_FIELDS = {
 _LOOP_SCHEMA = {
     "type": "object",
     "properties": {
-        "action": {"type": "string", "enum": ["tool", "propose", "clarify", "answer"]},
+        "action": {"type": "string", "enum": ["tool", "propose", "clarify", "suggest", "answer"]},
         "why": {"type": ["string", "null"], "description": "<=8 words, shown to the user"},
         "question": {"type": ["string", "null"],
                      "description": "the clarifying question when action=clarify"},
+        "resume": {"type": ["string", "null"],
+                   "description": "when action=suggest: one sentence — what you will continue "
+                                  "after the user fixes the blocker"},
         "intent": {"type": ["string", "null"],
                    "description": "on your FIRST decision only: the request's intent, one of "
                                   "lookup | report | document_search | create | update | "
@@ -113,7 +122,7 @@ _LOOP_SCHEMA = {
         **_ROUTER_SCHEMA["properties"],
         **_ACTION_FIELDS,
     },
-    "required": ["action", "why", "question", "intent", *_ROUTER_SCHEMA["required"],
+    "required": ["action", "why", "question", "resume", "intent", *_ROUTER_SCHEMA["required"],
                  *_ACTION_FIELDS.keys()],
     "additionalProperties": False,
 }
@@ -240,6 +249,9 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     citations: list[dict] = []
     clarify_text: str | None = None
     proposal: dict | None = None  # a built write proposal (session 10) — the turn ends after one
+    suggestion: dict | None = None  # a blocker turned actionable (session 12) — ends the turn too
+    pending: dict | None = None     # the blocked decision, kept in meta for session 13's resume
+    last_blocker: dict | None = None
     intent: str | None = None
     seen_calls: set[tuple] = set()
 
@@ -258,8 +270,22 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             built = actions.build(actor, pname, decision)
             results.append({"tool": f"propose:{pname}", "why": (decision.get("why") or "").strip(),
                             "data": built})
+            if "blocker" in built:
+                # A dependency the write leans on is missing/inactive/ambiguous — don't end the
+                # turn: keep the blocked decision and loop so the model's next step is "suggest".
+                last_blocker = built["blocker"]
+                pending = {k: v for k, v in decision.items()
+                           if v is not None and k not in ("action", "why", "intent", "resume")}
+                continue
             if "error" not in built:
                 proposal = built
+            break
+        if action == "suggest":
+            # Blocker → actionable card: issue + the actor's permitted fixes + the resume promise.
+            # Without a stored blocker there is nothing to suggest — fall through to answer.
+            if last_blocker is not None:
+                suggestion = suggestions.build_suggestion(
+                    actor, last_blocker, (decision.get("resume") or "").strip())
             break
         if action != "tool":  # "answer", or anything unexpected → stop gathering and answer
             break
@@ -276,12 +302,15 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         seen_calls.add(signature)
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         data, ok = _run_tool(actor, decision)
+        blocked = isinstance(data, dict) and "blocker" in data
+        if blocked:  # no tool emits blockers today, but the convention is tool-wide (Task A)
+            last_blocker = data["blocker"]
         results.append({"tool": name, "why": why, "data": data})
-        steps.append({"tool": name, "why": why, "ok": ok})
-        if ok:
+        steps.append({"tool": name, "why": why, "ok": ok and not blocked})
+        if ok and not blocked:
             tool = TOOLS.get(name)
             citations.extend(tool.cite(data) if tool else [])
-        yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": ok}
+        yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": ok and not blocked}
 
     # Deterministic grounding guard (2026-07-04, rag-knowledge FILE_11 follow-up): the planner
     # sometimes classifies a question as document-shaped (intent) yet reaches answer without ever
@@ -321,6 +350,12 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             # The proposal rides in the assistant message meta (status starts "pending"); the card is
             # keyed by this message id and the execute endpoint re-reads the payload from here.
             meta["proposal"] = {**proposal, "status": "pending"}
+        if suggestion is not None:
+            # Same ride for a suggestion card; ``pending`` is the blocked decision session 13
+            # replays once the user returns from the detour.
+            meta["suggestion"] = {**suggestion, "status": "open"}
+            if pending is not None:
+                meta["pending"] = pending
         msg = conversation.messages.create(role="assistant", content=answer, meta=meta)
         conversation.save()  # touch updated_at after the reply lands
         audit.record(
@@ -347,6 +382,14 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                 user += ("\n\nA draft has been prepared for the user to review. Briefly say what it "
                          "will create and mention they can confirm or dismiss it below; do NOT claim "
                          "it was created or posted.")
+            if suggestion is not None:
+                # Issue → fix → the promised return: the card carries the buttons; the prose
+                # carries the plan ("After you save the supplier, I'll bring you back...").
+                user += ("\n\nA fix-it card is shown below your reply. Briefly explain, in order: "
+                         "what is blocking the request, the fastest fix the card offers, and that "
+                         "after they fix it you will continue"
+                         + (f" ({suggestion['resume']})" if suggestion.get("resume") else "")
+                         + ". Do NOT claim anything was created or fixed yet.")
             for chunk in complete_stream(
                 [{"role": "user", "content": user}],
                 system=_answer_system(actor, page, conversation), media=media,
@@ -358,6 +401,9 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         if proposal is not None and msg is not None:
             yield {"type": "proposal", "message_id": msg.id,
                    "proposal": {**proposal, "status": "pending"}}
+        if suggestion is not None and msg is not None:
+            yield {"type": "suggestion", "message_id": msg.id,
+                   "suggestion": {**suggestion, "status": "open"}}
         yield {"type": "done", "message_id": msg.id, "used_tool": used_tool}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer

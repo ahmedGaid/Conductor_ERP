@@ -14,6 +14,7 @@ import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showCustomerReceipt } from "../../lib/feedback/sales";
 import { optimisticCreate } from "../../lib/optimistic";
+import { usePrefill } from "../../lib/usePrefill";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
@@ -79,8 +80,10 @@ export function CustomersPage() {
   );
   useListPageActions({ rows: filtered, columns: csvColumns, filename: "customers" });
 
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
+  // Assistant deep links land here with the extracted values (?prefill=…) — additive only.
+  const prefill = usePrefill(["code", "name"]);
+  const [code, setCode] = useState(prefill.code ?? "");
+  const [name, setName] = useState(prefill.name ?? "");
   const [limit, setLimit] = useState("");
   const [importOpen, setImportOpen] = useState(false);
 

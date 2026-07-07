@@ -10,6 +10,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   type ActionProposal,
   type AskCitation,
+  type AssistantSuggestion,
   type AttachmentInfo,
   type ChatMessage,
   type ChatStep,
@@ -173,6 +174,7 @@ export function ConversationView() {
     let usedTool: string | null = null;
     let messageId: number | null = null;
     let proposal: ActionProposal | null = null;
+    let suggestion: AssistantSuggestion | null = null;
     let errMsg: string | null = null;
     try {
       await chatStream(
@@ -197,6 +199,10 @@ export function ConversationView() {
             // A prepared write awaiting confirm — carries the real server message id it's keyed to.
             proposal = e.proposal;
             if (e.message_id != null) messageId = e.message_id;
+          } else if (e.type === "suggestion" && e.suggestion) {
+            // A blocker turned actionable (session 12) — rides the message meta like a proposal.
+            suggestion = e.suggestion;
+            if (e.message_id != null) messageId = e.message_id;
           } else if (e.type === "done") {
             usedTool = e.used_tool ?? null;
             if (e.message_id != null) messageId = e.message_id;
@@ -210,7 +216,7 @@ export function ConversationView() {
       // A stop (abort) is not an error — the partial answer below still commits.
       if (!ac.signal.aborted) errMsg = err instanceof Error ? err.message : String(err);
     } finally {
-      if (acc.trim() || proposal) {
+      if (acc.trim() || proposal || suggestion) {
         const asstMsg: ChatMessage = {
           // Use the real server id when we got one, so a proposal card can execute against it.
           id: messageId ?? -Date.now() - 1,
@@ -221,6 +227,7 @@ export function ConversationView() {
             ...(usedTool ? { used_tool: usedTool } : {}),
             ...(steps.length ? { steps } : {}),
             ...(proposal ? { proposal } : {}),
+            ...(suggestion ? { suggestion } : {}),
           },
           created_at: new Date().toISOString(),
         };

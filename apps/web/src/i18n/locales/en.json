@@ -97,6 +97,26 @@
       "s3": "Which customers still owe us money?",
       "s4": "What's running low in stock?"
     },
+    "suggest": {
+      "missing": "No {{entity}} named \"{{query}}\" exists yet",
+      "inactive": "The {{entity}} \"{{query}}\" is inactive",
+      "ambiguous": "More than one {{entity}} could match \"{{query}}\"",
+      "create": "Create the {{entity}} from here",
+      "open": "Open the form",
+      "review": "Did you mean one of these?",
+      "mapExisting": "Use this one",
+      "useCandidate": "Use {{name}} ({{code}}) and continue",
+      "createCommand": "Create a new {{entity}} named {{name}}",
+      "noPermission": "You don't have permission to fix this yourself. Ask an administrator, and I'll continue from here once it's done.",
+      "afterResume": "After the fix: {{resume}}",
+      "resolved": "Fixed — the work continued",
+      "entity": {
+        "customer": "customer",
+        "supplier": "supplier",
+        "item": "item",
+        "warehouse": "warehouse"
+      }
+    },
     "context": {
       "viewing": "Page context",
       "detach": "Detach page context from this conversation"

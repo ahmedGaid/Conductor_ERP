@@ -12,6 +12,7 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
+import { usePrefill } from "../../lib/usePrefill";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -99,8 +100,10 @@ export function ItemsPage() {
   );
   useListPageActions({ rows: visible, columns: csvColumns, filename: "items" });
 
-  const [sku, setSku] = useState("");
-  const [name, setName] = useState("");
+  // Assistant deep links land here with the extracted values (?prefill=…) — additive only.
+  const prefill = usePrefill(["sku", "name"]);
+  const [sku, setSku] = useState(prefill.sku ?? "");
+  const [name, setName] = useState(prefill.name ?? "");
   const [uom, setUom] = useState("unit");
   const [type, setType] = useState<ItemType>("stock");
   const [importOpen, setImportOpen] = useState(false);

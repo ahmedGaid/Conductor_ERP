@@ -170,6 +170,40 @@ export interface ActionProposal {
   result?: { summary: string; links: ActionRecord[] };
 }
 
+// A near-match the user can pick when a reference was ambiguous (plan session 12).
+export interface SuggestionCandidate {
+  code: string;
+  name: string;
+  score: number;
+}
+
+// One permission-filtered way out of a blocker. The server sends ONLY what the actor may use —
+// the client renders whatever arrives and never decides permissions itself.
+export interface SuggestionOption {
+  kind: "inline_action" | "deep_link" | "review_candidates" | "open_record";
+  // inline_action: the session-10 action to run from chat (via a follow-up message).
+  action?: string;
+  args?: Record<string, unknown>;
+  // deep_link / open_record: a real app route; `prefill` rides in the URL for the create form.
+  label_key?: string;
+  to?: string;
+  prefill?: Record<string, string>;
+  expect?: { entity: string; query: string };
+  // review_candidates: near matches with scores; picking one maps it and continues.
+  entity?: string;
+  candidates?: SuggestionCandidate[];
+}
+
+// A blocker turned actionable (plan session 12): issue → permitted fixes → the resume promise.
+// Rides in the assistant message meta like a proposal; session 13 flips `status` to "resolved".
+export interface AssistantSuggestion {
+  issue: { kind: "missing" | "inactive" | "ambiguous"; entity: string; query: string };
+  options: SuggestionOption[];
+  no_permission: string | null;
+  resume: string;
+  status: "open" | "resolved";
+}
+
 export interface ChatMessage {
   id: number;
   role: "user" | "assistant";
@@ -181,6 +215,7 @@ export interface ChatMessage {
     attachments?: AttachmentInfo[];
     steps?: ChatStep[];
     proposal?: ActionProposal;
+    suggestion?: AssistantSuggestion;
   } & Record<string, unknown>;
   created_at: string;
 }
@@ -261,7 +296,7 @@ export function deleteConversation(id: number): Promise<void> {
 // `data:` JSON per event; sessions 09/10 add more event types to the same union.
 
 export interface ChatEvent {
-  type: "step" | "token" | "citations" | "done" | "error" | "proposal";
+  type: "step" | "token" | "citations" | "done" | "error" | "proposal" | "suggestion";
   text?: string;
   citations?: AskCitation[];
   message_id?: number;
@@ -275,6 +310,8 @@ export interface ChatEvent {
   ok?: boolean;
   // `proposal` event (session 10): a prepared write awaiting the user's confirm, keyed by message_id.
   proposal?: ActionProposal;
+  // `suggestion` event (session 12): a blocker turned actionable, keyed by message_id.
+  suggestion?: AssistantSuggestion;
 }
 
 // Same auth headers apiFetch sends (bearer + Accept-Language). Kept local because a raw stream

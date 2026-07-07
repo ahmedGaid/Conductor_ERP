@@ -14,6 +14,7 @@ import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showSupplierReceipt } from "../../lib/feedback/purchasing";
 import { optimisticCreate } from "../../lib/optimistic";
+import { usePrefill } from "../../lib/usePrefill";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -74,8 +75,10 @@ export function SuppliersPage() {
   );
   useListPageActions({ rows: filtered, columns: csvColumns, filename: "suppliers" });
 
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
+  // Assistant deep links land here with the extracted values (?prefill=…) — additive only.
+  const prefill = usePrefill(["code", "name"]);
+  const [code, setCode] = useState(prefill.code ?? "");
+  const [name, setName] = useState(prefill.name ?? "");
   const [importOpen, setImportOpen] = useState(false);
 
   // ⌘/Ctrl+Enter submits the add form from any field.

@@ -50,6 +50,21 @@ def list_items(item_type: str = "stock") -> list[ItemInfo]:
     ]
 
 
+@dataclass(frozen=True)
+class WarehouseInfo:
+    code: str
+    name: str
+    is_active: bool
+
+
+def find_warehouse(code: str) -> WarehouseInfo | None:
+    """One warehouse by exact code (active or not) — lets callers tell 'missing' from 'inactive'."""
+    wh = _warehouses.by_code((code or "").strip())
+    if wh is None:
+        return None
+    return WarehouseInfo(code=wh.code, name=wh.name, is_active=wh.is_active)
+
+
 def default_warehouse_code() -> str | None:
     """The first active warehouse's code — a sensible default when a caller omits one."""
     from ..domain.models import Warehouse
@@ -194,7 +209,9 @@ def return_out(sku: str, warehouse_code: str, quantity, *, date=None, reference:
 
 __all__ = [
     "ItemInfo",
+    "WarehouseInfo",
     "find_item",
+    "find_warehouse",
     "list_items",
     "default_warehouse_code",
     "low_stock",
