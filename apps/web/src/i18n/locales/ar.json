@@ -386,6 +386,11 @@
     "failed": "فشل",
     "completed": "مكتمل"
   },
+  "due": {
+    "overdue": "متأخر",
+    "soon": "يستحق قريبًا",
+    "overdueBy": "متأخر منذ {{count}} يوم"
+  },
   "nodeType": {
     "start": "بداية",
     "api_call": "استدعاء API",

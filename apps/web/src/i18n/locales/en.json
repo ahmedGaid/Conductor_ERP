@@ -386,6 +386,11 @@
     "failed": "Failed",
     "completed": "Completed"
   },
+  "due": {
+    "overdue": "Overdue",
+    "soon": "Due soon",
+    "overdueBy": "Overdue by {{count}} days"
+  },
   "nodeType": {
     "start": "Start",
     "api_call": "API call",

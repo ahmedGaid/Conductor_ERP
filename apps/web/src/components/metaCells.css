@@ -1,0 +1,117 @@
+/* Meta-column primitives (StatusRing, OwnerChip, PriorityBar, DueMarker) — Linear's at-a-glance
+   density in Conductor's quiet, monochrome hand. Tokens only, logical properties only; colour
+   appears only where it means something and always beside a word. */
+
+/* ── StatusRing ─────────────────────────────────────────────────────────────
+   Hairline track + a coloured arc that fills by lifecycle stage. The whole SVG is rotated so the
+   arc starts at 12 o'clock; the track is a full circle, so the rotation reads the same either way. */
+.meta-ring {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.meta-ring__svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+.meta-ring__track {
+  stroke: var(--color-border);
+  stroke-width: 2.5;
+}
+.meta-ring__arc {
+  stroke: var(--ring-c, var(--color-text-muted));
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.meta-ring__label {
+  color: var(--color-text);
+}
+
+/* Arc colour per tone — mirrors the status tokens the Badge uses, so a ring and its word share
+   one colour (Badge.css tone recipes). */
+.meta-ring--pending { --ring-c: var(--color-status-pending); }
+.meta-ring--running { --ring-c: var(--color-status-running); }
+.meta-ring--waiting { --ring-c: var(--color-status-waiting); }
+.meta-ring--completed { --ring-c: var(--color-status-completed); }
+.meta-ring--failed { --ring-c: var(--color-status-failed); }
+.meta-ring--accent { --ring-c: var(--color-accent); }
+.meta-ring--neutral { --ring-c: var(--color-text-muted); }
+
+/* ── OwnerChip ──────────────────────────────────────────────────────────────
+   Monochrome initials circle — quiet, sunken, no photo. */
+.meta-owner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  flex: none;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  user-select: none;
+}
+
+/* ── PriorityBar ────────────────────────────────────────────────────────────
+   Three ascending bars; filled count = level. Monochrome until `urgent`, which alone earns the
+   danger token — and only ever beside its word. */
+.meta-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.meta-priority__bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  block-size: 0.875rem;
+}
+.meta-priority__bar {
+  inline-size: 3px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-border);
+}
+.meta-priority__bar:nth-child(1) { block-size: 40%; }
+.meta-priority__bar:nth-child(2) { block-size: 70%; }
+.meta-priority__bar:nth-child(3) { block-size: 100%; }
+.meta-priority__bar.is-on {
+  background-color: var(--color-text-muted);
+}
+.meta-priority--urgent .meta-priority__bar.is-on {
+  background-color: var(--color-danger);
+}
+.meta-priority__word {
+  color: var(--color-danger-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── DueMarker ──────────────────────────────────────────────────────────────
+   Plain date until an open money doc nears (warn) or passes (danger) its due date — colour paired
+   with the word, digits Latin in both locales. */
+.meta-due {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+.meta-due .navicon {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex: none;
+}
+.meta-due--none {
+  color: var(--color-text-subtle);
+}
+.meta-due--soon {
+  color: var(--color-warning-strong);
+}
+.meta-due--overdue {
+  color: var(--color-danger-strong);
+}

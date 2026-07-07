@@ -217,6 +217,8 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Activity timeline (per-record activity feed) | سجل النشاط | التاريخ (reserved for a document's business date, a different concept, 2026-07-05) |
 | ARP (the category — Agentic Resource Planning) | الإدارة الذكية للموارد (acronym stays Latin **ARP**, like ERP before it) | تخطيط الموارد الوكيلي (stiff, textbook); marketing signature is «نظام يدير معك، لا يُدار فقط» — usable only after the claims gate opens (`Docs/ARP_STRATEGY.md` §2, 2026-07-02) |
 | Assign (a role to a user) | إسناد | تعيين (reserve **إسناد** app-wide — matches the existing "الدور المُسند" = assigned role, 2026-07-07) |
+| Overdue (a money doc past its due date) | متأخر | فائت / متجاوز (use **متأخر** — the collections word Egyptian SMBs say; the due-date meta marker, 2026-07-07) |
+| Due soon (nearing its due date) | يستحق قريبًا | قريب الاستحقاق (use the verbal **يستحق قريبًا** — reads as natural business Arabic beside the date, 2026-07-07) |
 
 ### 6.2 Status & action voice (Arabic)
 Human-language statuses (Directive — "Waiting for Finance approval") must read as **natural Egyptian
