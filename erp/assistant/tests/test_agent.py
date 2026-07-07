@@ -306,3 +306,125 @@ def test_same_tool_different_args_allowed(monkeypatch):
 
     msg = conv.messages.get(role="assistant")
     assert len(msg.meta["steps"]) == 2
+
+
+# --- live-data grounding guard (query-data-list-mode plan) ----------------------------------------
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_lookup_intent_with_named_entity_but_no_tool_is_forced_to_query(monkeypatch):
+    """The planner classifies a lookup and even names the query_data entity — then answers with
+    zero tool calls. The guard runs that query for real, so the answer is grounded in rows."""
+    from erp.inventory.domain.models import Item
+
+    Item.objects.create(sku="A", name="Widget", type="stock")
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [{"action": "answer", "intent": "lookup", "entity": "item"}])
+    captured = {}
+
+    def fake_stream(messages, **_):
+        captured["messages"] = messages
+        return iter(["One item."])
+
+    monkeypatch.setattr(agent, "complete_stream", fake_stream)
+
+    events = _run(user, conv, question="list the items")
+
+    steps = [e for e in events if e["type"] == "step"]
+    assert [(s["tool"], s["state"]) for s in steps] == [
+        ("query_data", "running"), ("query_data", "done"),
+    ]
+    assert steps[-1]["ok"] is True
+
+    # The forced rows reached the answer prompt — the model cannot invent the list.
+    gathered = json.loads(captured["messages"][0]["content"])["data"]
+    assert gathered[0]["tool"] == "query_data"
+    assert gathered[0]["result"]["rows"][0]["sku"] == "A"
+
+    # And the real record became a click-through citation.
+    msg = conv.messages.get(role="assistant")
+    assert {"type": "item", "value": "A", "label": "Widget"} in msg.meta["citations"]
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_grounding_guard_skips_when_no_entity_was_named(monkeypatch):
+    """Honest gap: a lookup answered without ANY named entity can't be safely guessed — no forced
+    call fires (remains filed in the erp-status backlog)."""
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [{"action": "answer", "intent": "lookup"}])
+    _stream(monkeypatch, "Answered.")
+
+    events = _run(user, conv)
+
+    assert [e["type"] for e in events] == ["token", "citations", "done"]
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_grounding_guard_skips_when_a_tool_already_succeeded(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "sales_summary", "why": "Checking sales",
+         "period": "this_month", "intent": "lookup", "entity": "item"},
+        {"action": "answer", "entity": "item"},
+    ])
+    _stream(monkeypatch, "Done.")
+
+    events = _run(user, conv)
+
+    steps = [e for e in events if e["type"] == "step"]
+    assert [s["tool"] for s in steps] == ["sales_summary", "sales_summary"]  # no forced query_data
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_grounding_guard_skips_when_query_data_already_ran_and_failed(monkeypatch):
+    """query_data already ran this turn and was refused — re-forcing the same failing call would
+    loop the refusal; the guard stands down and the answer explains it."""
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "query_data", "why": "Listing records", "intent": "lookup",
+         "entity": "item", "filters": [{"field": "password", "op": "eq", "value": "x"}]},
+        {"action": "answer", "entity": "item"},
+    ])
+    _stream(monkeypatch, "I can't look that up.")
+
+    events = _run(user, conv)
+
+    steps = [e for e in events if e["type"] == "step" and e["state"] == "done"]
+    assert [s["tool"] for s in steps] == ["query_data"]  # only the planner's own failed attempt
+    assert steps[0]["ok"] is False
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_loop_routes_list_question_to_query_data_and_answers_from_rows(monkeypatch):
+    """The paved path end-to-end: the planner picks query_data in list mode; the answer prompt
+    receives the actual rows."""
+    from erp.inventory.domain.models import Item
+
+    Item.objects.create(sku="A", name="Widget", type="stock")
+    Item.objects.create(sku="B", name="Gizmo", type="service")
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [
+        {"action": "tool", "tool": "query_data", "why": "Listing the items",
+         "intent": "lookup", "entity": "item", "aggregate": "list"},
+        {"action": "answer"},
+    ])
+    captured = {}
+
+    def fake_stream(messages, **_):
+        captured["messages"] = messages
+        return iter(["Two items: Widget and Gizmo."])
+
+    monkeypatch.setattr(agent, "complete_stream", fake_stream)
+
+    events = _run(user, conv, question="list the items")
+
+    done = [e for e in events if e["type"] == "step" and e["state"] == "done"]
+    assert done[0]["tool"] == "query_data" and done[0]["ok"] is True
+
+    result = json.loads(captured["messages"][0]["content"])["data"][0]["result"]
+    assert result["mode"] == "list"
+    assert {r["sku"] for r in result["rows"]} == {"A", "B"}

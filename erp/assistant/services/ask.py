@@ -30,12 +30,12 @@ MAX_QUESTION_CHARS = 1000
 _ROUTER_SYSTEM = (
     "You route a user's question to exactly ONE data tool for an Egyptian business ERP.\n"
     "Available tools, grouped by area:\n{catalog}\n"
-    "The query_data tool is the flexible fallback for a count/total that no specific tool covers "
-    "(e.g. 'how many items do we have', 'total sales by status'). Its data sets and their allowed "
-    "fields are:\n{query_grammar}\n"
+    "The query_data tool is the flexible fallback for ANY lookup, list, count, or total that no "
+    "specific tool covers (e.g. 'list the items', 'show the quotations', 'how many items do we "
+    "have', 'total sales by status'). Its data sets and their allowed fields are:\n{query_grammar}\n"
     "For query_data, set entity to a data set above and only use fields listed for that data set; "
     "put comparisons in filters as {{field, op, value}}, break-downs in group_by, and set aggregate "
-    "(with metric for a sum/avg/min/max).\n"
+    "('list' returns the rows themselves; sum/avg/min/max need metric).\n"
     "Choose the single best tool and fill only the arguments it needs; leave the others null. "
     "If several tools could help, pick the single most specific one for the question; only fall back "
     "to query_data when no specific tool answers it. "
@@ -58,7 +58,7 @@ _ROUTER_SCHEMA = {
         "entity_id": {"type": ["string", "null"], "description": "a record id or number"},
         # query_data (the structured-query fallback) — a fixed grammar over the registry.
         "entity": {"type": ["string", "null"],
-                   "description": "for query_data: the data set to count/total"},
+                   "description": "for query_data: the data set to list/count/total"},
         "filters": {
             "type": ["array", "null"],
             "description": "for query_data: conditions to narrow the rows",
@@ -77,7 +77,7 @@ _ROUTER_SCHEMA = {
         "group_by": {"type": ["array", "null"], "items": {"type": "string"},
                      "description": "for query_data: 0–2 fields to break the total down by"},
         "aggregate": {"type": ["string", "null"],
-                      "description": "for query_data: count | sum | avg | min | max"},
+                      "description": "for query_data: list | count | sum | avg | min | max"},
         "metric": {"type": ["string", "null"],
                    "description": "for query_data: the field to total for sum/avg/min/max"},
     },

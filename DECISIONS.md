@@ -1661,3 +1661,29 @@ FILE_13. Free-text-to-SQL stays banned (branch/own scope is enforced in Python v
 not in the DB - raw SQL would leak across scopes). Rejected: a thin find_items tool as stopgap
 (strict subset of list mode; would be dead code within a week). Trigger: live FILE_12 smoke -
 "GIVE ME LIST OF ITEMS" had no tool route, planner could only re-ask its clarify question.
+
+## query_data list mode shipped — execution choices (2026-07-07)
+
+- **No aggregate + no group_by now defaults to LIST, not count** ("show me the items" means rows).
+  Grouped queries without an aggregate still default to count; an unknown aggregate still falls
+  back to count. The planner/router prompts and the tool description teach `aggregate: "list"`.
+- **List projection is its own whitelist** (`columns` per entity), separate from filters/groups —
+  a field can be filterable without being shown. Money columns format at the edge (`_egp` +
+  `*_minor` twin, same as `_grouped`); dates/Decimals are stringified because every result rides
+  `json.dumps` into the planner prompt. Rows never expose ids — ids appear only inside citations.
+- **List citations only for record types the client can render** (`AskCitation`: order, customer,
+  item, supplier, purchaseOrder, journal). New entities (quotation, ticket, …) cite nothing rather
+  than emit a dead link type; stock movement/balance cite their item. Extending the client cite
+  map is separate UI work, not smuggled in here.
+- **Registry expansion (11 entities)**: quotation, purchase_request, warehouse, stock_movement,
+  stock_balance, lead, opportunity, ticket, campaign, account, einvoice — each with the module's
+  own view code and the module list endpoint's scoping (accounts + warehouses + stock balances are
+  org-wide masters/rollups; the rest run `scope_queryset`). `stock_balance` has no branch stamp
+  (plain per-item+warehouse running totals), so it gates on `inventory.item.view` unscoped —
+  same visibility as the item pages that already show on-hand.
+- **Live-data grounding guard shipped with the honest scope cut** the plan allowed: it fires only
+  when the planner classified lookup/report, had zero successful tool calls, did NOT already run
+  query_data this turn, and itself NAMED a registry entity in its final decision — then that query
+  runs for real before the answer streams. The fully-unnamed case (no entity anywhere) remains
+  open in the erp-status backlog; guessing an entity server-side risks answering from the wrong
+  data set, which is worse than the model saying it cannot see the data.

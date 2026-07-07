@@ -181,3 +181,130 @@ def test_branch_scope_still_filters_the_rows():
     assert count["value"] == 1  # only branch A's order
     total = _q(mgr, entity="sales_order", aggregate="sum", metric="subtotal")
     assert total["value"] == "1,000.00 EGP"  # branch B's 9,000 is excluded
+
+
+# --- list mode (query-data-list-mode plan) --------------------------------------------------------
+
+def test_list_returns_rows_with_only_whitelisted_columns():
+    admin = _admin()
+    _items(("A", "Widget", "stock", True), ("B", "Gizmo", "service", False))
+
+    result = _q(admin, entity="item", aggregate="list")
+    assert result["mode"] == "list"
+    assert result["total_matching"] == 2
+    allowed = {"sku", "name", "type", "uom", "category", "is_active"}
+    for row in result["rows"]:
+        assert set(row) <= allowed  # never a raw model field like reorder_point, never an id
+    assert [r["sku"] for r in result["rows"]] == ["A", "B"]  # the entity's default order
+
+
+def test_no_aggregate_and_no_group_by_defaults_to_list_not_count():
+    admin = _admin()
+    _items(("A", "Widget", "stock", True))
+
+    result = _q(admin, entity="item")  # "show me the items" — the planner names nothing else
+    assert result["mode"] == "list"
+    assert result["rows"][0]["sku"] == "A"
+
+
+def test_list_formats_money_and_dates_at_the_edge():
+    admin = _admin()
+    c = Customer.objects.create(code="C-1", name="Nile")
+    _order("SO-1", c, subtotal=1_500_00)
+
+    result = _q(admin, entity="sales_order", aggregate="list")
+    row = result["rows"][0]
+    assert row["subtotal"] == "1,500.00 EGP" and row["subtotal_minor"] == 1_500_00
+    assert row["order_date"] == TODAY.isoformat()  # JSON-safe, not a date object
+    assert row["customer"] == "Nile"
+
+
+def test_list_builds_click_through_citations():
+    admin = _admin()
+    c = Customer.objects.create(code="C-1", name="Nile")
+    o = _order("SO-1", c, subtotal=1_000_00)
+
+    orders = _q(admin, entity="sales_order", aggregate="list")
+    assert orders["citations"] == [{"type": "order", "value": str(o.id), "label": "SO-1"}]
+    customers = _q(admin, entity="customer", aggregate="list")
+    assert customers["citations"] == [{"type": "customer", "value": "C-1", "label": "Nile"}]
+
+
+def test_list_filters_still_apply():
+    admin = _admin()
+    _items(("A", "Widget", "stock", True), ("B", "Old", "stock", False))
+
+    result = _q(admin, entity="item", aggregate="list",
+                filters=[{"field": "is_active", "op": "eq", "value": "true"}])
+    assert [r["sku"] for r in result["rows"]] == ["A"]
+    assert result["total_matching"] == 1
+
+
+def test_list_limit_capped_at_50():
+    admin = _admin()
+    Item.objects.bulk_create(
+        [Item(sku=f"S-{i:03}", name=f"Item {i}", type="stock") for i in range(55)])
+
+    result = _q(admin, entity="item", aggregate="list", limit=999)
+    assert len(result["rows"]) == 50
+    assert result["total_matching"] == 55
+
+
+def test_branch_scope_holds_in_list_mode():
+    a = Branch.objects.create(code="BR-A", name="Alpha")
+    b = Branch.objects.create(code="BR-B", name="Beta")
+    mgr = _branch_manager("q_mgr_list", a)
+    c = Customer.objects.create(code="C-1", name="Nile")
+    _order("SO-A", c, branch=a, subtotal=1_000_00)
+    _order("SO-B", c, branch=b, subtotal=9_000_00)  # other branch — must never be listed
+
+    result = _q(mgr, entity="sales_order", aggregate="list")
+    assert [r["number"] for r in result["rows"]] == ["SO-A"]
+
+
+def test_list_denied_without_permission():
+    Customer.objects.create(code="C-1", name="Nile")
+    assert _q(_nobody(), entity="customer", aggregate="list") == {"error": _DENIED}
+
+
+# --- registry expansion: the new entities are gated and listable ---------------------------------
+
+NEW_ENTITIES = ("quotation", "purchase_request", "warehouse", "stock_movement", "stock_balance",
+                "lead", "opportunity", "ticket", "campaign", "account", "einvoice")
+
+
+def test_new_entities_all_registered_and_gated():
+    nobody = _nobody()
+    for entity in NEW_ENTITIES:
+        assert _q(nobody, entity=entity) == {"error": _DENIED}, entity
+
+
+def test_quotation_lists_for_admin():
+    from erp.sales.domain.models import Quotation
+
+    admin = _admin()
+    c = Customer.objects.create(code="C-1", name="Nile")
+    Quotation.objects.create(number="QT-1", customer=c, quote_date=TODAY,
+                             warehouse_code="WH-1", status="draft", subtotal_minor=750_00)
+
+    result = _q(admin, entity="quotation", aggregate="list")
+    row = result["rows"][0]
+    assert row["number"] == "QT-1" and row["customer"] == "Nile"
+    assert row["subtotal"] == "750.00 EGP"
+
+
+def test_stock_balance_lists_on_hand_with_decimal_quantity():
+    from erp.inventory.domain.models import StockBalance, Warehouse
+
+    admin = _admin()
+    _items(("A", "Widget", "stock", True))
+    wh = Warehouse.objects.create(code="WH-1", name="Main")
+    item = Item.objects.get(sku="A")
+    StockBalance.objects.create(item=item, warehouse=wh, quantity="5.0000", value_minor=2_000_00)
+
+    result = _q(admin, entity="stock_balance", aggregate="list")
+    row = result["rows"][0]
+    assert row["item"] == "A" and row["warehouse"] == "WH-1"
+    assert row["quantity"] == "5"  # Decimal trimmed to a JSON-safe string
+    assert row["value"] == "2,000.00 EGP"
+    assert result["citations"] == [{"type": "item", "value": "A", "label": "Widget"}]

@@ -22,6 +22,7 @@ import json
 from erp.audit import services as audit
 
 from ..client import complete_stream
+from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
 from . import actions, context, files, suggestions
@@ -47,11 +48,12 @@ _LOOP_SYSTEM = (
     "not retrieved with search_documents is invented and forbidden, even if one was searched "
     "earlier in the conversation. If search_documents finds nothing, say no document covers it — "
     "never invent documentation.\n"
-    "The query_data tool is the flexible fallback for a count/total no specific tool covers. Its data "
+    "The query_data tool is the flexible fallback for ANY lookup, list, count, or total no "
+    "specific tool covers (e.g. 'list the items', 'show the quotations'). Its data "
     "sets and their allowed fields are:\n{query_grammar}\n"
     "For query_data set entity to a data set above and only use fields listed for it; put "
     "comparisons in filters as {{field, op, value}}, break-downs in group_by, and set aggregate "
-    "(with metric for a sum/avg/min/max).\n"
+    "('list' returns the rows themselves; sum/avg/min/max need metric).\n"
     "When the user asks you to CREATE/MAKE/ADD/RAISE a record, do not use a data tool — propose a "
     "write action instead. You have these proposable actions (each only prepares a DRAFT the user "
     "confirms; you never create anything yourself):\n{action_catalog}\n"
@@ -252,11 +254,13 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     suggestion: dict | None = None  # a blocker turned actionable (session 12) — ends the turn too
     pending: dict | None = None     # the blocked decision, kept in meta for session 13's resume
     last_blocker: dict | None = None
+    last_decision: dict | None = None  # the round that ended the loop — the grounding guard reads it
     intent: str | None = None
     seen_calls: set[tuple] = set()
 
     for _round in range(MAX_ROUNDS):
         decision = complete_json(loop_system, _loop_user(q, history, results, file_notes), _LOOP_SCHEMA)
+        last_decision = decision
         if intent is None:
             intent = decision.get("intent")
         action = decision.get("action")
@@ -324,6 +328,29 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         why = "Checking company documents"
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         data, ok = _run_tool(actor, {"tool": name, "query": q})
+        results.append({"tool": name, "why": why, "data": data})
+        steps.append({"tool": name, "why": why, "ok": ok})
+        if ok:
+            tool = TOOLS.get(name)
+            citations.extend(tool.cite(data) if tool else [])
+        yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": ok}
+
+    # Live-data grounding guard (query-data-list-mode plan, 2026-07-07): the same failure the
+    # document guard closes, on the data side — a lookup/report intent answered with zero
+    # successful tool calls is a fabrication risk. There is no safe way to guess which of ~20 data
+    # tools the user meant, so this fires only when the planner itself NAMED a query_data entity
+    # yet answered anyway: run that query for real before the answer streams. The fully-unnamed
+    # case (no entity anywhere) stays open — see the erp-status backlog entry.
+    guard_entity = ((last_decision or {}).get("entity") or "").strip()
+    if (clarify_text is None and proposal is None and suggestion is None
+            and intent in ("lookup", "report")
+            and not any(s["ok"] for s in steps)
+            and not any(r["tool"] == "query_data" for r in results)
+            and guard_entity in _QUERY_REGISTRY):
+        name = "query_data"
+        why = "Checking the live data"
+        yield {"type": "step", "tool": name, "label": why, "state": "running"}
+        data, ok = _run_tool(actor, {**last_decision, "tool": name})
         results.append({"tool": name, "why": why, "data": data})
         steps.append({"tool": name, "why": why, "ok": ok})
         if ok:

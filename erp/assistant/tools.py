@@ -265,7 +265,7 @@ def _search_documents(actor, *, query: str = "", limit: int = 6, **_) -> dict:
 
 def _query_data(actor, *, entity: str = None, filters=None, group_by=None, aggregate: str = None,
                 metric: str = None, limit: int = 20, **_) -> dict:
-    """Flexible count/total across a whitelisted data set when no specific tool fits.
+    """Flexible list/count/total across a whitelisted data set when no specific tool fits.
 
     Delegates to ``query_registry.run_query``, which validates every part of the grammar against the
     registry and runs it AS the actor (permission gate + ``scope_queryset``). Not free-text SQL — the
@@ -441,18 +441,20 @@ TOOLS: dict[str, Tool] = {t.name: t for t in [
          {"query": "what to look for, in the user's own words",
           "limit": "how many passages (default 6)"},
          _search_documents, lambda r: r.get("citations", []), "Knowledge"),
-    # Analytics — the fallback when no specific tool fits (count/total over a whitelisted data set)
+    # Analytics — the fallback when no specific tool fits (list/count/total over a whitelisted set)
     Tool("query_data",
-         "Count or total a data set when no specific tool fits — e.g. 'how many items do we have', "
-         "'total sales by status', 'orders per customer'. Pick a data set, optional filters, up to "
-         "two group-by fields, and one aggregate. See the query_data data sets listed below.",
+         "List, count, or total records of a data set when no specific tool fits — e.g. 'list our "
+         "items', 'show the sales orders', 'how many items do we have', 'total sales by status'. "
+         "Pick a data set, optional filters, up to two group-by fields, and one aggregate "
+         "('list' returns the rows themselves). See the query_data data sets listed below.",
          {"entity": "which data set (one of the data sets listed under query_data below)",
           "filters": "optional list of {field, op, value}; op is one of "
                      "eq/gt/lt/gte/lte/contains/between; value as text (for between pass 'low,high')",
           "group_by": "optional 0–2 fields to break the total down by",
-          "aggregate": "count | sum | avg | min | max (default count)",
+          "aggregate": "list | count | sum | avg | min | max (default: list the rows; "
+                       "count when grouped)",
           "metric": "the field to total, required for sum/avg/min/max",
-          "limit": "max rows when grouped (default 20)"},
+          "limit": "max rows (default 20, capped at 50)"},
          _query_data, lambda r: r.get("citations", []), "Analytics"),
 ]}
 
