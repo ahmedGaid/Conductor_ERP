@@ -6,12 +6,15 @@ import { createBudget, getBudget, listBudgets } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -58,6 +61,13 @@ export function BudgetsPage() {
     [t],
   );
   useListPageActions({ rows: filtered, columns: csvColumns, filename: "budgets" });
+
+  // Multi-select for bulk CSV export (no other bulk verb applies to budgets).
+  const selection = useRowSelection<Budget>({
+    items: filtered ?? [],
+    getItemId: (b) => b.id,
+    activeIndex: active,
+  });
 
   const [name, setName] = useState("");
   const [fy, setFy] = useState(String(new Date().getFullYear()));
@@ -125,13 +135,29 @@ export function BudgetsPage() {
           <table className="acct-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="acct-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("accounting.budgets.name")}</th>
                 <th>{t("accounting.budgets.fiscalYear")}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((b, i) => (
-                <tr key={b.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={b.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(b.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(b.id) || i === active}
+                >
+                  <SelectRowCell
+                    className="acct-table__select"
+                    checked={selection.isSelected(b.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <Link
                       className="acct-link"
@@ -149,6 +175,15 @@ export function BudgetsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("budgets-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

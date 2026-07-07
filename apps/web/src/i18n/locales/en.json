@@ -1117,7 +1117,11 @@
       "campaignCompleted": "Campaign completed",
       "opportunityCreated": "Opportunity created",
       "bulkLeadsQualified": "{{count}} leads qualified",
-      "bulkLeadsQualifiedOne": "1 lead qualified"
+      "bulkLeadsQualifiedOne": "1 lead qualified",
+      "bulkResolved": "{{count}} tickets resolved",
+      "bulkResolvedOne": "1 ticket resolved",
+      "bulkClosed": "{{count}} tickets closed",
+      "bulkClosedOne": "1 ticket closed"
     },
     "tabs": {
       "pipeline": "Pipeline",
@@ -1725,8 +1729,6 @@
     }
   },
   "admin": {
-    "select": "Select",
-    "selected": "{{count}} selected",
     "bulkDone": "{{count}} user(s) updated",
     "status": {
       "active": "Active",
@@ -1743,6 +1745,8 @@
       "own": "My records only"
     },
     "action": {
+      "assignRole": "Assign role",
+      "apply": "Apply",
       "activate": "Activate",
       "suspend": "Suspend",
       "archive": "Archive"

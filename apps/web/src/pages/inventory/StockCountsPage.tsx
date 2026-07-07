@@ -6,10 +6,13 @@ import { createStockCount, getStockCount, listStockCounts, listWarehouses, type 
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -71,6 +74,13 @@ export function StockCountsPage() {
     onOpen: (c) => navigate(`/inventory/counts/${c.id}`),
     persistKey: "inventory:counts",
     getItemId: (c) => c.id,
+  });
+
+  // Multi-select for bulk CSV export of the selection (posting/cancelling stays on the detail page).
+  const selection = useRowSelection<StockCount>({
+    items: visible ?? [],
+    getItemId: (c) => c.id,
+    activeIndex: active,
   });
 
   // Start-a-count is a form (forms keep their controls) — no bar primary, just print + CSV.
@@ -168,6 +178,12 @@ export function StockCountsPage() {
           <table className="inv-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="inv-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("inventory.counts.warehouse")}</th>
                 <th>{t("inventory.counts.date")}</th>
                 <th className="inv-table__num">{t("inventory.counts.lines")}</th>
@@ -176,7 +192,17 @@ export function StockCountsPage() {
             </thead>
             <tbody>
               {visible.map((c, i) => (
-                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={c.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(c.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(c.id) || i === active}
+                >
+                  <SelectRowCell
+                    className="inv-table__select"
+                    checked={selection.isSelected(c.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <Link
                       className="inv-link"
@@ -200,6 +226,15 @@ export function StockCountsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("stock-counts-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

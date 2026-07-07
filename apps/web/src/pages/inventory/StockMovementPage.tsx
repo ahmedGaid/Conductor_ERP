@@ -15,8 +15,11 @@ import { useAsync } from "../../hooks/useAsync";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showMovementReceipt, showMovementError } from "../../lib/feedback/inventory";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { InventoryNav } from "./InventoryNav";
@@ -66,6 +69,13 @@ export function StockMovementPage() {
     [t],
   );
   useListPageActions({ rows: movements, columns: csvColumns, filename: "stock-movements" });
+
+  // Multi-select for bulk CSV export (append-only ledger — no other bulk verb, no detail page, so
+  // no keyboard nav; mouse/Shift-range/⌘A/Esc still work).
+  const selection = useRowSelection<Movement>({
+    items: movements ?? [],
+    getItemId: (m) => m.id,
+  });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -205,6 +215,12 @@ export function StockMovementPage() {
           <table className="inv-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="inv-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("inventory.movement.type")}</th>
                 <th>{t("inventory.item.sku")}</th>
                 <th>{t("inventory.warehouse.code")}</th>
@@ -214,8 +230,13 @@ export function StockMovementPage() {
               </tr>
             </thead>
             <tbody>
-              {movements.map((m) => (
-                <tr key={m.id}>
+              {movements.map((m, i) => (
+                <tr key={m.id} data-selected={selection.isSelected(m.id) ? "true" : undefined} aria-selected={selection.isSelected(m.id)}>
+                  <SelectRowCell
+                    className="inv-table__select"
+                    checked={selection.isSelected(m.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>{t(`inventory.movement.${m.type}`)}</td>
                   <td><EntityLink type="item" value={m.item_sku} /></td>
                   <td>
@@ -231,6 +252,15 @@ export function StockMovementPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("stock-movements-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

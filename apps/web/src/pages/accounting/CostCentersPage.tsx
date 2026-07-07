@@ -7,8 +7,11 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -47,6 +50,12 @@ export function CostCentersPage() {
     [t],
   );
   useListPageActions({ rows: filtered, columns: csvColumns, filename: "cost-centers" });
+
+  // Multi-select for bulk CSV export (no other bulk verb applies; no detail page, so no keyboard nav).
+  const selection = useRowSelection<CostCenter>({
+    items: filtered ?? [],
+    getItemId: (cc) => cc.id,
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -115,14 +124,25 @@ export function CostCentersPage() {
           <table className="acct-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="acct-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("accounting.costCenters.code")}</th>
                 <th>{t("accounting.costCenters.name")}</th>
                 <th>{t("accounting.costCenters.active")}</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((cc) => (
-                <tr key={cc.id}>
+              {filtered.map((cc, i) => (
+                <tr key={cc.id} data-selected={selection.isSelected(cc.id) ? "true" : undefined} aria-selected={selection.isSelected(cc.id)}>
+                  <SelectRowCell
+                    className="acct-table__select"
+                    checked={selection.isSelected(cc.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td><Bdi>{cc.code}</Bdi></td>
                   <td>{cc.name}</td>
                   <td>{cc.is_active ? t("common.yes") : t("common.no")}</td>
@@ -132,6 +152,15 @@ export function CostCentersPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("cost-centers-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

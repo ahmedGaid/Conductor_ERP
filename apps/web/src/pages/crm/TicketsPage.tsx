@@ -14,13 +14,16 @@ import {
 } from "../../api/crm";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { Badge } from "../../components/Badge";
 import { crmTone, crmPriorityTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -146,6 +149,34 @@ export function TicketsPage() {
   );
   useListPageActions({ rows: visible, columns: csvColumns, filename: "tickets" });
 
+  // Multi-select for bulk resolve/close, mirroring the per-row gating.
+  const selection = useRowSelection<Ticket>({
+    items: visible ?? [],
+    getItemId: (tk) => tk.id,
+    activeIndex: active,
+  });
+  const resolvable = selection.selectedItems.filter((tk) => tk.status === "open" || tk.status === "in_progress");
+  const closable = selection.selectedItems.filter((tk) => tk.status === "resolved");
+
+  // Run one verb across many rows in a single optimistic pass, mirroring OrdersPage's bulkAct.
+  function bulkAct(targets: Ticket[], apply: (tk: Ticket) => Ticket, request: (id: string) => Promise<Ticket>, success: string) {
+    if (targets.length === 0 || !data) return;
+    const ids = new Set(targets.map((tk) => tk.id));
+    void runOptimistic<Ticket[], Ticket[]>({
+      current: data,
+      mutate,
+      optimistic: (rows) => rows.map((tk) => (ids.has(tk.id) ? apply(tk) : tk)),
+      request: () => Promise.all(targets.map((tk) => request(tk.id))),
+      settle: (rows, updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        return rows.map((tk) => byId.get(tk.id) ?? tk);
+      },
+      toast,
+      success,
+    });
+    selection.clear();
+  }
+
   // Escalation sweep touches an unknown set of tickets server-side, so it can't be predicted; run
   // it, report how many were escalated, and refresh the list.
   async function onRunEscalations() {
@@ -228,6 +259,12 @@ export function TicketsPage() {
           <table className="crm-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="crm-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("crm.ticket.number")}</th>
                 <th>{t("crm.ticket.subject")}</th>
                 <th>{t("crm.ticket.priority")}</th>
@@ -238,7 +275,17 @@ export function TicketsPage() {
             </thead>
             <tbody>
               {visible.map((tk: Ticket, i) => (
-                <tr key={tk.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={tk.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(tk.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(tk.id) || i === active}
+                >
+                  <SelectRowCell
+                    className="crm-table__select"
+                    checked={selection.isSelected(tk.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td className="latin">{tk.number}</td>
                   <td>{tk.subject}</td>
                   <td>
@@ -297,6 +344,45 @@ export function TicketsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        {resolvable.length > 0 && (
+          <button
+            className="btn btn--sm btn--primary"
+            onClick={() =>
+              bulkAct(
+                resolvable,
+                (tk) => ({ ...tk, status: "resolved" }),
+                (id) => resolveTicket(id),
+                t(resolvable.length === 1 ? "crm.toast.bulkResolvedOne" : "crm.toast.bulkResolved", { count: resolvable.length }),
+              )
+            }
+          >
+            {t("crm.ticket.resolve")}
+          </button>
+        )}
+        {closable.length > 0 && (
+          <button
+            className="btn btn--sm"
+            onClick={() =>
+              bulkAct(
+                closable,
+                (tk) => ({ ...tk, status: "closed" }),
+                (id) => closeTicket(id),
+                t(closable.length === 1 ? "crm.toast.bulkClosedOne" : "crm.toast.bulkClosed", { count: closable.length }),
+              )
+            }
+          >
+            {t("crm.ticket.close")}
+          </button>
+        )}
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("tickets-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

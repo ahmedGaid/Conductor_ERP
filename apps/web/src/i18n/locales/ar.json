@@ -1117,7 +1117,11 @@
       "campaignCompleted": "تم إكمال الحملة",
       "opportunityCreated": "تم إنشاء الفرصة",
       "bulkLeadsQualified": "تم تأهيل {{count}} عملاء محتملين",
-      "bulkLeadsQualifiedOne": "تم تأهيل عميل محتمل واحد"
+      "bulkLeadsQualifiedOne": "تم تأهيل عميل محتمل واحد",
+      "bulkResolved": "تم حل {{count}} تذكرة",
+      "bulkResolvedOne": "تم حل تذكرة واحدة",
+      "bulkClosed": "تم إغلاق {{count}} تذكرة",
+      "bulkClosedOne": "تم إغلاق تذكرة واحدة"
     },
     "tabs": {
       "pipeline": "خط الفرص",
@@ -1725,8 +1729,6 @@
     }
   },
   "admin": {
-    "select": "تحديد",
-    "selected": "تم تحديد {{count}}",
     "bulkDone": "تم تحديث {{count}} مستخدم",
     "status": {
       "active": "نشط",
@@ -1743,6 +1745,8 @@
       "own": "سجلاتي فقط"
     },
     "action": {
+      "assignRole": "إسناد دور",
+      "apply": "تطبيق",
       "activate": "تفعيل",
       "suspend": "إيقاف",
       "archive": "أرشفة"

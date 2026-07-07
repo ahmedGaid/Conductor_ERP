@@ -44,6 +44,7 @@
   .inv-table__select,
   .crm-table__select,
   .acct-table__select,
+  .admin-table__select,
   /* Portalled overlays live on <body>, outside the hidden chrome. A menu triggering the print
      (⋯ → Print) is still mounted when window.print() fires synchronously — the close is async
      React state — so hide the overlay layer outright, never on paper. */

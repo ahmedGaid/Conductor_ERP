@@ -5,12 +5,15 @@ import { useNavigate } from "react-router-dom";
 import { createWarehouse, listWarehouses, type Warehouse } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
@@ -44,6 +47,13 @@ export function WarehousesPage() {
     onOpen: (w) => navigate(`/inventory/warehouses/${encodeURIComponent(w.code)}`),
     persistKey: "inventory:warehouses",
     getItemId: (w) => w.id,
+  });
+
+  // Multi-select for bulk CSV export of the selection (no other bulk verb applies to warehouses).
+  const selection = useRowSelection<Warehouse>({
+    items: filtered ?? [],
+    getItemId: (w) => w.id,
+    activeIndex: active,
   });
 
   // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
@@ -123,13 +133,29 @@ export function WarehousesPage() {
           <table className="inv-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="inv-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("inventory.warehouse.code")}</th>
                 <th>{t("inventory.warehouse.name")}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((w, i) => (
-                <tr key={w.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={w.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(w.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(w.id) || i === active}
+                >
+                  <SelectRowCell
+                    className="inv-table__select"
+                    checked={selection.isSelected(w.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td><EntityLink type="warehouse" value={w.code} /></td>
                   <td>{w.name}</td>
                 </tr>
@@ -138,6 +164,15 @@ export function WarehousesPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("warehouses-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

@@ -6,14 +6,19 @@ import { acquireAsset, getAsset, listAssets, runDepreciation, type AssetStatus, 
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { downloadCsv, rowsToCsv } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
+import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
@@ -76,6 +81,25 @@ export function FixedAssetsPage() {
     persistKey: "accounting:assets",
     getItemId: (a) => a.code,
   });
+
+  // Multi-select for bulk CSV export of the selection (dispose/depreciate stay on the detail page
+  // and the depreciation-run form above).
+  const selection = useRowSelection<FixedAsset>({
+    items: visible ?? [],
+    getItemId: (a) => a.code,
+    activeIndex: active,
+  });
+  const csvColumns = useMemo<CsvColumn<FixedAsset>[]>(
+    () => [
+      { header: t("accounting.assets.code"), accessor: (a) => a.code },
+      { header: t("accounting.assets.name"), accessor: (a) => a.name },
+      { header: t("accounting.assets.cost"), accessor: (a) => formatMinor(a.cost_minor) },
+      { header: t("accounting.assets.accumulated"), accessor: (a) => formatMinor(a.accumulated_depreciation_minor) },
+      { header: t("accounting.assets.nbv"), accessor: (a) => formatMinor(a.net_book_value_minor) },
+      { header: t("accounting.assets.status"), accessor: (a) => t(`accounting.assets.statuses.${a.status}`) },
+    ],
+    [t],
+  );
 
   // New-asset form. ⌘/Ctrl+Enter submits it from any field (cost, dates, etc.).
   const acquireFormRef = useRef<HTMLFormElement>(null);
@@ -225,6 +249,12 @@ export function FixedAssetsPage() {
             <table className="acct-table">
               <thead>
                 <tr>
+                  <SelectAllCell
+                    className="acct-table__select"
+                    allSelected={selection.allSelected}
+                    someSelected={selection.someSelected}
+                    onToggleAll={selection.toggleAll}
+                  />
                   <th>{t("accounting.assets.code")}</th>
                   <th>{t("accounting.assets.name")}</th>
                   <th className="acct-table__num">{t("accounting.assets.cost")}</th>
@@ -235,7 +265,17 @@ export function FixedAssetsPage() {
               </thead>
               <tbody>
                 {visible.map((a, i) => (
-                  <tr key={a.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                  <tr
+                    key={a.id}
+                    data-kbd-active={i === active ? "true" : undefined}
+                    data-selected={selection.isSelected(a.code) ? "true" : undefined}
+                    aria-selected={selection.isSelected(a.code) || i === active}
+                  >
+                    <SelectRowCell
+                      className="acct-table__select"
+                      checked={selection.isSelected(a.code)}
+                      onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                    />
                     <td>
                       <Link
                         className="acct-link"
@@ -263,6 +303,15 @@ export function FixedAssetsPage() {
           )}
         </>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("fixed-assets-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

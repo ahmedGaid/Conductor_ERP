@@ -6,10 +6,13 @@ import { getJournal, listJournals, type JournalEntry } from "../../api/accountin
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
@@ -66,6 +69,13 @@ export function JournalListPage() {
   );
   useListPageActions({ primary: listPrimary, rows: filtered, columns: csvColumns, filename: "journal-entries" });
 
+  // Multi-select for bulk CSV export (journals are posted on creation — no other bulk verb applies).
+  const selection = useRowSelection<JournalEntry>({
+    items: filtered ?? [],
+    getItemId: (e) => e.id,
+    activeIndex: active,
+  });
+
   return (
     <section className="acct-page">
       <AccountingNav />
@@ -93,6 +103,12 @@ export function JournalListPage() {
           <table className="acct-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="acct-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("accounting.journals.number")}</th>
                 <th>{t("common.date")}</th>
                 <th>{t("accounting.journals.period")}</th>
@@ -104,7 +120,17 @@ export function JournalListPage() {
               {filtered.map((e, i) => {
                 const total = e.lines.reduce((s, l) => s + l.debit, 0);
                 return (
-                  <tr key={e.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                  <tr
+                    key={e.id}
+                    data-kbd-active={i === active ? "true" : undefined}
+                    data-selected={selection.isSelected(e.id) ? "true" : undefined}
+                    aria-selected={selection.isSelected(e.id) || i === active}
+                  >
+                    <SelectRowCell
+                      className="acct-table__select"
+                      checked={selection.isSelected(e.id)}
+                      onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                    />
                     <td>
                       <Link
                         to={`/accounting/journals/${e.id}`}
@@ -136,6 +162,15 @@ export function JournalListPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("journal-entries-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

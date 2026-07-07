@@ -6,13 +6,16 @@ import { createCampaign, getCampaign, listCampaigns, type CampaignChannel } from
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
@@ -82,6 +85,13 @@ export function CampaignsPage() {
     [t],
   );
   useListPageActions({ rows: visible, columns: csvColumns, filename: "campaigns" });
+
+  // Multi-select for bulk CSV export (no other bulk verb applies to campaigns).
+  const selection = useRowSelection<Campaign>({
+    items: visible ?? [],
+    getItemId: (c) => c.id,
+    activeIndex: active,
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -175,17 +185,33 @@ export function CampaignsPage() {
           <table className="crm-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="crm-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("crm.campaign.code")}</th>
                 <th>{t("crm.campaign.name")}</th>
                 <th>{t("crm.campaign.channel")}</th>
-                <th className="crm-num">{t("crm.campaign.cost")}</th>
-                <th className="crm-num">{t("crm.campaign.wonValue")}</th>
-                <th className="crm-num">{t("crm.campaign.roi")}</th>
+                <th className="crm-table__num">{t("crm.campaign.cost")}</th>
+                <th className="crm-table__num">{t("crm.campaign.wonValue")}</th>
+                <th className="crm-table__num">{t("crm.campaign.roi")}</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((c, i) => (
-                <tr key={c.id} data-kbd-active={i === active ? "true" : undefined} aria-selected={i === active}>
+                <tr
+                  key={c.id}
+                  data-kbd-active={i === active ? "true" : undefined}
+                  data-selected={selection.isSelected(c.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(c.id) || i === active}
+                >
+                  <SelectRowCell
+                    className="crm-table__select"
+                    checked={selection.isSelected(c.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <Link
                       className="crm-link"
@@ -198,9 +224,9 @@ export function CampaignsPage() {
                   </td>
                   <td>{c.name}</td>
                   <td>{t(`crm.campaign.channels.${c.channel}`)}</td>
-                  <td className="crm-num"><Bdi>{formatMinor(c.cost_minor)}</Bdi></td>
-                  <td className="crm-num"><Bdi>{formatMinor(c.metrics?.won_value_minor ?? 0)}</Bdi></td>
-                  <td className={`crm-num ${(c.metrics?.roi_minor ?? 0) >= 0 ? "crm-ontime" : "crm-breach"}`}>
+                  <td className="crm-table__num"><Bdi>{formatMinor(c.cost_minor)}</Bdi></td>
+                  <td className="crm-table__num"><Bdi>{formatMinor(c.metrics?.won_value_minor ?? 0)}</Bdi></td>
+                  <td className={`crm-table__num ${(c.metrics?.roi_minor ?? 0) >= 0 ? "crm-ontime" : "crm-breach"}`}>
                     <Bdi>{formatMinor(c.metrics?.roi_minor ?? 0)}</Bdi>
                   </td>
                 </tr>
@@ -209,6 +235,15 @@ export function CampaignsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("campaigns-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

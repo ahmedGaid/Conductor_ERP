@@ -20,8 +20,11 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { CrmNav } from "./CrmNav";
@@ -114,6 +117,13 @@ export function PipelinePage() {
     [t],
   );
   useListPageActions({ rows: data, columns: csvColumns, filename: "pipeline" });
+
+  // Multi-select for bulk CSV export (stage moves stay on the opportunity detail page; no list-level
+  // keyboard nav here, so mouse/Shift-range/⌘A/Esc drive selection).
+  const selection = useRowSelection<Opportunity>({
+    items: data ?? [],
+    getItemId: (o) => o.id,
+  });
 
   return (
     <section className="crm-page">
@@ -218,6 +228,12 @@ export function PipelinePage() {
           <table className="crm-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="crm-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("crm.opp.number")}</th>
                 <th>{t("crm.opp.name")}</th>
                 <th>{t("crm.opp.stage")}</th>
@@ -226,8 +242,13 @@ export function PipelinePage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((o: Opportunity) => (
-                <tr key={o.id}>
+              {data.map((o: Opportunity, i) => (
+                <tr key={o.id} data-selected={selection.isSelected(o.id) ? "true" : undefined} aria-selected={selection.isSelected(o.id)}>
+                  <SelectRowCell
+                    className="crm-table__select"
+                    checked={selection.isSelected(o.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <Link
                       to={`/crm/opportunities/${o.id}`}
@@ -250,6 +271,15 @@ export function PipelinePage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("pipeline-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

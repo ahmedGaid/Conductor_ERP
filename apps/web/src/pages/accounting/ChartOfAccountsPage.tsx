@@ -4,9 +4,12 @@ import { useTranslation } from "react-i18next";
 import { createAccount, listAccounts, type Account, type AccountType } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -62,6 +65,12 @@ export function ChartOfAccountsPage() {
     [t],
   );
   useListPageActions({ rows: visible, columns: csvColumns, filename: "chart-of-accounts" });
+
+  // Multi-select for bulk CSV export (no other bulk verb applies; no detail page, so no keyboard nav).
+  const selection = useRowSelection<Account>({
+    items: visible ?? [],
+    getItemId: (a) => a.id,
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -156,6 +165,12 @@ export function ChartOfAccountsPage() {
           <table className="acct-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="acct-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("accounting.account.code")}</th>
                 <th>{t("accounting.account.name")}</th>
                 <th>{t("accounting.account.type")}</th>
@@ -163,8 +178,13 @@ export function ChartOfAccountsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((a) => (
-                <tr key={a.id}>
+              {visible.map((a, i) => (
+                <tr key={a.id} data-selected={selection.isSelected(a.id) ? "true" : undefined} aria-selected={selection.isSelected(a.id)}>
+                  <SelectRowCell
+                    className="acct-table__select"
+                    checked={selection.isSelected(a.id)}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
                     <Bdi>{a.code}</Bdi>
                   </td>
@@ -177,6 +197,15 @@ export function ChartOfAccountsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("chart-of-accounts-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

@@ -1,16 +1,19 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { bulkUsers, createUser, getOrgUnits, getUser, listUsers } from "../../api/users";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { normalizeSearch } from "../../lib/arabicSearch";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -30,7 +33,7 @@ export function UsersPage() {
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [department, setDepartment] = useState("");
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [assignRoleTo, setAssignRoleTo] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -70,20 +73,20 @@ export function UsersPage() {
   );
   useListPageActions({ primary: listPrimary, rows: filtered, columns: csvColumns, filename: "users" });
 
-  function toggle(id: number) {
-    setSelected((cur) => {
-      const next = new Set(cur);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
+  // Multi-select for bulk suspend/activate/archive/assign-role via the identity bulk endpoint.
+  const selection = useRowSelection<UserRow>({
+    items: filtered,
+    getItemId: (u) => String(u.id),
+    activeIndex: active,
+  });
 
   // A bulk action touches the selected set server-side and returns only a count, so it stays a
   // round-trip: run it, clear the selection, refresh, and report the count via toast.
-  async function runBulk(action: "suspend" | "activate" | "archive") {
+  async function runBulk(action: "suspend" | "activate" | "archive" | "assign_role") {
     try {
-      const { affected } = await bulkUsers(action, [...selected]);
-      setSelected(new Set());
+      const ids = selection.selectedItems.map((u) => u.id);
+      const { affected } = await bulkUsers(action, ids, action === "assign_role" ? assignRoleTo : undefined);
+      selection.clear();
       reload();
       toast.show(t("admin.bulkDone", { count: affected }), "success");
     } catch (err) {
@@ -123,17 +126,6 @@ export function UsersPage() {
         </select>
       </div>
 
-      {selected.size > 0 && (
-        <div className="card admin-bulkbar">
-          <span>{t("admin.selected", { count: selected.size })}</span>
-          <div className="admin-bulkbar__actions">
-            <button className="btn btn--sm" onClick={() => runBulk("activate")}>{t("admin.action.activate")}</button>
-            <button className="btn btn--sm" onClick={() => runBulk("suspend")}>{t("admin.action.suspend")}</button>
-            <button className="btn btn--sm" onClick={() => runBulk("archive")}>{t("admin.action.archive")}</button>
-          </div>
-        </div>
-      )}
-
       {loading && (
         <ListSkeleton rows={2} />
       )}
@@ -145,7 +137,12 @@ export function UsersPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th aria-label={t("admin.select")}></th>
+                <SelectAllCell
+                  className="admin-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("admin.users.name")}</th>
                 <th>{t("admin.users.email")}</th>
                 <th>{t("admin.users.role")}</th>
@@ -161,23 +158,24 @@ export function UsersPage() {
                   key={u.id}
                   className="admin-row"
                   data-kbd-active={i === active ? "true" : undefined}
-                  aria-selected={i === active}
-                  onClick={() => navigate(`/admin/users/${u.id}`)}
-                  onMouseEnter={() => prefetch(`admin:user:${u.id}`, () => getUser(u.id))}
+                  data-selected={selection.isSelected(String(u.id)) ? "true" : undefined}
+                  aria-selected={selection.isSelected(String(u.id)) || i === active}
                 >
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(u.id)}
-                      onChange={() => toggle(u.id)}
-                      aria-label={u.username}
-                    />
-                  </td>
+                  <SelectRowCell
+                    className="admin-table__select"
+                    checked={selection.isSelected(String(u.id))}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td>
-                    <span className="admin-id">
+                    <Link
+                      to={`/admin/users/${u.id}`}
+                      className="admin-id"
+                      onMouseEnter={() => prefetch(`admin:user:${u.id}`, () => getUser(u.id))}
+                      onFocus={() => prefetch(`admin:user:${u.id}`, () => getUser(u.id))}
+                    >
                       <span className="admin-avatar" aria-hidden="true">{initials(u.display_name)}</span>
                       <span className="admin-id__name">{u.display_name}</span>
-                    </span>
+                    </Link>
                   </td>
                   <td className="latin muted">{u.email}</td>
                   <td>{u.role ?? "—"}</td>
@@ -191,6 +189,29 @@ export function UsersPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button className="btn btn--sm" onClick={() => runBulk("activate")}>{t("admin.action.activate")}</button>
+        <button className="btn btn--sm" onClick={() => runBulk("suspend")}>{t("admin.action.suspend")}</button>
+        <button className="btn btn--sm" onClick={() => runBulk("archive")}>{t("admin.action.archive")}</button>
+        <select
+          value={assignRoleTo}
+          onChange={(e) => setAssignRoleTo(e.target.value)}
+          aria-label={t("admin.action.assignRole")}
+        >
+          <option value="">{t("admin.action.assignRole")}</option>
+          {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <button className="btn btn--sm" disabled={!assignRoleTo} onClick={() => runBulk("assign_role")}>
+          {t("admin.action.apply")}
+        </button>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("users-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

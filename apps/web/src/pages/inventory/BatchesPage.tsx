@@ -4,9 +4,12 @@ import { useTranslation } from "react-i18next";
 import { listBatches } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
@@ -16,6 +19,10 @@ import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
 
 type Batch = Awaited<ReturnType<typeof listBatches>>[number];
+
+function batchId(b: Batch): string {
+  return `${b.batch_no}-${b.sku}-${b.warehouse_code}`;
+}
 
 export function BatchesPage() {
   const { t } = useTranslation();
@@ -47,6 +54,13 @@ export function BatchesPage() {
   );
   useListPageActions({ rows: filtered, columns: csvColumns, filename: "batches" });
 
+  // Multi-select for bulk CSV export (no other bulk verb applies to this read-only reference list;
+  // no detail page to open, so no keyboard nav — mouse/Shift-range/⌘A/Esc still work).
+  const selection = useRowSelection<Batch>({
+    items: filtered ?? [],
+    getItemId: batchId,
+  });
+
   return (
     <section className="inv-page">
       <InventoryNav />
@@ -74,6 +88,12 @@ export function BatchesPage() {
           <table className="inv-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="inv-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("inventory.batches.batch")}</th>
                 <th>{t("inventory.batches.item")}</th>
                 <th>{t("inventory.batches.warehouse")}</th>
@@ -83,7 +103,12 @@ export function BatchesPage() {
             </thead>
             <tbody>
               {filtered.map((b, i) => (
-                <tr key={`${b.batch_no}-${b.sku}-${b.warehouse_code}-${i}`}>
+                <tr key={batchId(b)} data-selected={selection.isSelected(batchId(b)) ? "true" : undefined} aria-selected={selection.isSelected(batchId(b))}>
+                  <SelectRowCell
+                    className="inv-table__select"
+                    checked={selection.isSelected(batchId(b))}
+                    onToggle={(shiftKey) => selection.toggle(i, shiftKey)}
+                  />
                   <td><Bdi>{b.batch_no}</Bdi></td>
                   <td><EntityLink type="item" value={b.sku} /> · {b.item_name}</td>
                   <td><EntityLink type="warehouse" value={b.warehouse_code} /></td>
@@ -95,6 +120,15 @@ export function BatchesPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("batches-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

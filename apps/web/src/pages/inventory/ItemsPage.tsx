@@ -5,12 +5,15 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
+import { useRowSelection } from "../../hooks/useRowSelection";
+import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
+import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { useListPageActions } from "../../hooks/useListPageActions";
-import type { CsvColumn } from "../../lib/csvExport";
+import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
@@ -75,6 +78,13 @@ export function ItemsPage() {
     onOpen: (it) => navigate(`/inventory/items/${encodeURIComponent(it.sku)}`),
     persistKey: "inventory:items",
     getItemId: (it) => it.id,
+  });
+
+  // Multi-select for bulk CSV export of the selection (no other bulk verb applies to items).
+  const selection = useRowSelection<Item>({
+    items: visible ?? [],
+    getItemId: (it) => it.id,
+    activeIndex: active,
   });
 
   // Add is a form (forms keep their controls) — no bar primary, just print + CSV.
@@ -211,6 +221,12 @@ export function ItemsPage() {
           <table className="inv-table">
             <thead>
               <tr>
+                <SelectAllCell
+                  className="inv-table__select"
+                  allSelected={selection.allSelected}
+                  someSelected={selection.someSelected}
+                  onToggleAll={selection.toggleAll}
+                />
                 <th>{t("inventory.item.sku")}</th>
                 <th>{t("inventory.item.name")}</th>
                 <th>{t("inventory.item.uom")}</th>
@@ -220,7 +236,17 @@ export function ItemsPage() {
             </thead>
             <tbody>
               {visible.map((i, idx) => (
-                <tr key={i.id} data-kbd-active={idx === active ? "true" : undefined} aria-selected={idx === active}>
+                <tr
+                  key={i.id}
+                  data-kbd-active={idx === active ? "true" : undefined}
+                  data-selected={selection.isSelected(i.id) ? "true" : undefined}
+                  aria-selected={selection.isSelected(i.id) || idx === active}
+                >
+                  <SelectRowCell
+                    className="inv-table__select"
+                    checked={selection.isSelected(i.id)}
+                    onToggle={(shiftKey) => selection.toggle(idx, shiftKey)}
+                  />
                   <td><EntityLink type="item" value={i.sku} /></td>
                   <td>{i.name}</td>
                   <td>{i.uom}</td>
@@ -240,6 +266,15 @@ export function ItemsPage() {
           </table>
         </div>
       )}
+
+      <BulkActionBar count={selection.count} onClear={selection.clear}>
+        <button
+          className="btn btn--sm"
+          onClick={() => downloadCsv("items-selected", rowsToCsv(selection.selectedItems, csvColumns))}
+        >
+          {t("bulk.exportCsv")}
+        </button>
+      </BulkActionBar>
     </section>
   );
 }

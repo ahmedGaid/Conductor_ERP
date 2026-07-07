@@ -155,7 +155,8 @@
 .pur-table__select,
 .inv-table__select,
 .crm-table__select,
-.acct-table__select {
+.acct-table__select,
+.admin-table__select {
   inline-size: 1px;
   white-space: nowrap;
   vertical-align: middle;
@@ -166,7 +167,8 @@
 .pur-table tbody tr[data-selected="true"],
 .inv-table tbody tr[data-selected="true"],
 .crm-table tbody tr[data-selected="true"],
-.acct-table tbody tr[data-selected="true"] {
+.acct-table tbody tr[data-selected="true"],
+.admin-table tbody tr[data-selected="true"] {
   background-color: var(--color-surface-alt);
 }
 
