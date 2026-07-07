@@ -20,7 +20,7 @@ import { collectContext } from "./context";
 import { useAssistant } from "./AssistantProvider";
 import { Composer, type PendingAttachment } from "./Composer";
 import { MessageList } from "./MessageList";
-import { firstRunSuggestions } from "./suggestions";
+import { suggestionKeys } from "./suggestions";
 import "./assistant-panel.css";
 
 /**
@@ -41,6 +41,7 @@ export function ConversationView() {
     closePanel,
     pendingMessage,
     clearPendingMessage,
+    contextDetached,
   } = useAssistant();
 
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
@@ -175,7 +176,7 @@ export function ConversationView() {
     let errMsg: string | null = null;
     try {
       await chatStream(
-        { conversation_id: convId, context: collectContext(), ...opts },
+        { conversation_id: convId, context: collectContext({ detached: contextDetached }), ...opts },
         (e) => {
           if (e.type === "step" && e.tool) {
             // Steps arrive strictly running-then-done; a `done` closes the last open line.
@@ -362,8 +363,14 @@ export function ConversationView() {
             <p className="conversation__empty-lead" dir="auto">{t("assistant.subtitle")}</p>
             <p className="conversation__empty-hint">{t("assistant.tryLabel")}</p>
             <ul className="msg-followups__list">
-              {firstRunSuggestions().map((k) => {
-                const q = t(`assistant.suggestions.${k}`);
+              {(() => {
+                // Module-aware chips (session 11): what the user can ask *here* — record questions
+                // on a detail page (unless detached), the module's reports on its lists, the
+                // original four everywhere else. Recomputed per render, so navigation refreshes it.
+                const ctx = collectContext();
+                return suggestionKeys(ctx.module, ctx.record != null && !contextDetached);
+              })().map((k) => {
+                const q = t(k);
                 return (
                   <li key={k}>
                     <button type="button" className="msg-followups__chip" onClick={() => void send(q)}>

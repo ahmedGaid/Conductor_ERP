@@ -31,6 +31,9 @@ interface AssistantState {
   conversationsNonce: number;
   /** A question handed off from elsewhere (e.g. the ⌘K fallthrough row) awaiting first send. */
   pendingMessage: string | null;
+  /** True while the user has detached the page record from this conversation (context chip ×). */
+  contextDetached: boolean;
+  setContextDetached(v: boolean): void;
   openPanel(): void;
   closePanel(): void;
   toggle(): void;
@@ -67,6 +70,10 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [conversationId, setConversationState] = useState<number | null>(readConversation);
   const [conversationsNonce, setConversationsNonce] = useState(0);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [contextDetached, setContextDetached] = useState(false);
+
+  // Detach is per-conversation: switching (or starting) a thread re-attaches the page context.
+  useEffect(() => setContextDetached(false), [conversationId]);
 
   useEffect(() => {
     let alive = true;
@@ -107,6 +114,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       enabled: enabled === true,
       conversationsNonce,
       pendingMessage,
+      contextDetached,
+      setContextDetached,
       openPanel,
       closePanel,
       toggle,
@@ -123,6 +132,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       conversationId,
       conversationsNonce,
       pendingMessage,
+      contextDetached,
       openPanel,
       closePanel,
       toggle,

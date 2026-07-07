@@ -15,18 +15,37 @@ const DocumentCrumbContext = createContext<CrumbState | null>(null);
 // Mirrors the published label outside React so non-hook callers (the assistant's synchronous
 // `collectContext()`) can read "what record is the user viewing" without a re-render.
 let currentLabel: string | null = null;
+const crumbListeners = new Set<() => void>();
+
+function publishCrumb(label: string | null): void {
+  if (label === currentLabel) return;
+  currentLabel = label;
+  crumbListeners.forEach((fn) => fn());
+}
 
 /** The published document crumb label, read outside a component (no hook, no re-render). */
 export function getDocumentCrumb(): string | null {
   return currentLabel;
 }
 
+/**
+ * Notifies on every crumb publish/clear — pairs with `getDocumentCrumb` as a
+ * `useSyncExternalStore` source, so the assistant panel's context chip follows the user across
+ * record pages while it stays open.
+ */
+export function subscribeDocumentCrumb(listener: () => void): () => void {
+  crumbListeners.add(listener);
+  return () => {
+    crumbListeners.delete(listener);
+  };
+}
+
 export function DocumentCrumbProvider({ children }: { children: ReactNode }) {
   const [label, setLabel] = useState<string | null>(null);
   useEffect(() => {
-    currentLabel = label;
+    publishCrumb(label);
     return () => {
-      currentLabel = null;
+      publishCrumb(null);
     };
   }, [label]);
   // Memoize so the context value (and the consumer effect that reads it) only changes when the label

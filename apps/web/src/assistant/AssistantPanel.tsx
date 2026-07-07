@@ -1,13 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { NavIcon } from "../app/icons";
+import { getDocumentCrumb, subscribeDocumentCrumb } from "../app/DocumentCrumb";
 import { Tooltip } from "../components/Tooltip";
+import { collectContext } from "./context";
 import { ConversationView } from "./ConversationView";
 import { ThreadList } from "./ThreadList";
 import { useAssistant } from "./AssistantProvider";
 import "./assistant-panel.css";
+
+// Modules with their own single-stroke icon; anything else (admin, settings…) falls back to sparkle.
+const CHIP_ICONS = new Set(["sales", "purchasing", "inventory", "accounting", "crm", "pricing"]);
 
 /**
  * The global AI panel — one component, two renderings (floating card / docked side-rail) switched
@@ -18,11 +23,19 @@ import "./assistant-panel.css";
 export function AssistantPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { enabled, open, mode, closePanel, setMode } = useAssistant();
+  const { enabled, open, mode, closePanel, setMode, contextDetached, setContextDetached } =
+    useAssistant();
   const panelRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   // The panel body shows either the active conversation or the thread history (no room for two columns).
   const [view, setView] = useState<"chat" | "threads">("chat");
+
+  // The record the user is looking at, live: the crumb store notifies on every publish/clear, so
+  // walking between records with the panel open moves the chip with the page. Detach (×) hides it
+  // for this conversation — the context still travels, marked background (`detached: true`).
+  const crumb = useSyncExternalStore(subscribeDocumentCrumb, getDocumentCrumb);
+  const record = !contextDetached && crumb != null ? collectContext().record : null;
+  const recordModule = record?.type.split(".")[0] ?? "";
 
   // Esc closes; on open, focus moves into the panel and returns to the trigger on close.
   useEffect(() => {
@@ -74,6 +87,24 @@ export function AssistantPanel() {
           </span>
           <span className="assistant-panel__title">{t("assistant.title")}</span>
         </span>
+        {record && (
+          <span className="assistant-panel__context" title={t("assistant.context.viewing")}>
+            <span className="assistant-panel__context-icon" aria-hidden="true">
+              <NavIcon name={CHIP_ICONS.has(recordModule) ? recordModule : "sparkle"} />
+            </span>
+            <bdi className="assistant-panel__context-label">{record.label}</bdi>
+            <Tooltip label={t("assistant.context.detach")} placement="bottom">
+              <button
+                type="button"
+                className="assistant-panel__context-detach"
+                aria-label={t("assistant.context.detach")}
+                onClick={() => setContextDetached(true)}
+              >
+                <NavIcon name="close" />
+              </button>
+            </Tooltip>
+          </span>
+        )}
         <div className="assistant-panel__tools">
           <Tooltip
             label={t(view === "threads" ? "assistant.threads.backToChat" : "assistant.threads.title")}

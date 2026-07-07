@@ -12,6 +12,9 @@ export interface PageContext {
   recent: string[]; // last 5 visited module paths
   filters: Record<string, string>; // current route's query params, capped
   dirty: boolean; // true when the current page has unsaved form changes
+  // true when the user detached the page record from this conversation (context chip ×):
+  // the record still travels as background, but the server stops treating it as the subject.
+  detached?: boolean;
 }
 
 const RECENT_KEY = "assistant.recentPages";
@@ -63,7 +66,7 @@ function currentRecord(path: string): PageContext["record"] {
   return { type: `${seg1}.${seg2}`, id: seg3, label };
 }
 
-export function collectContext(): PageContext {
+export function collectContext(opts?: { detached?: boolean }): PageContext {
   const path = window.location.hash.slice(1) || "/";
   return {
     path,
@@ -73,5 +76,6 @@ export function collectContext(): PageContext {
     recent: recentPages(),
     filters: currentFilters(),
     dirty: dirtyFlag,
+    ...(opts?.detached ? { detached: true } : {}),
   };
 }

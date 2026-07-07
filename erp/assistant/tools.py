@@ -24,6 +24,7 @@ from typing import Callable
 
 from erp.accounting import contracts as accounting
 from erp.audit.models import AuditEntry
+from erp.crm import contracts as crm
 from erp.identity import access
 from erp.inventory import contracts as inventory
 from erp.purchasing import contracts as purchasing
@@ -88,6 +89,11 @@ def _find_customers(actor, *, query: str = "", limit: int = 10, **_) -> dict:
     if not access.has_permission(actor, "sales.customer.view"):
         return _denied()
     return {"customers": sales.find_customers(actor, query=query or "", limit=int(limit or 10))}
+
+
+def _find_opportunities(actor, *, query: str = "", limit: int = 8, **_) -> dict:
+    rows = crm.find_opportunities(actor, query=query or "", limit=int(limit or 8))
+    return {"opportunities": [{**o, "amount": _egp(o["amount_minor"])} for o in rows]}
 
 
 # --- Purchasing tools ----------------------------------------------------------------------------
@@ -355,6 +361,12 @@ TOOLS: dict[str, Tool] = {t.name: t for t in [
          "Look up customers by code or name.",
          {"query": "text to search customer code / name", "limit": "how many (default 10)"},
          _find_customers, _cite_customers, "Customers"),
+    Tool("find_opportunities",
+         "Look up sales opportunities (pipeline deals) by number, name or customer code — "
+         "stage, value and expected close date.",
+         {"query": "text to search opportunity number / name / customer code",
+          "limit": "how many (default 8)"},
+         _find_opportunities, lambda _r: [], "Customers"),
     # Purchasing
     Tool("open_purchase_orders",
          "Purchase orders still in flight (not yet paid), optionally filtered by status or supplier.",

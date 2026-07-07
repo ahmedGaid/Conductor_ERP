@@ -81,7 +81,17 @@ def _page_block(page: dict | None) -> str | None:
         lines.append(f"- The user is currently in the {module} module, at route {page.get('path', '')}.")
     record = page.get("record")
     if record and record.get("label"):
-        lines.append(f"- They are viewing {record.get('type', 'record')} {record['label']}.")
+        if page.get("detached"):
+            # The user detached the record from this conversation — it stays visible as background
+            # so navigation still makes sense, but it is never the implied subject of a question.
+            lines.append(
+                f"- The page shows {record.get('type', 'record')} {record['label']} in the "
+                "background, but the user detached it from this conversation — do NOT treat it "
+                "as the subject of their questions; if a reference is ambiguous, ask which "
+                "record they mean."
+            )
+        else:
+            lines.append(f"- They are viewing {record.get('type', 'record')} {record['label']}.")
     recent = page.get("recent") or []
     if recent:
         lines.append(f"- Recently visited: {', '.join(recent)}.")

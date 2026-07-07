@@ -97,6 +97,82 @@
       "s3": "Which customers still owe us money?",
       "s4": "What's running low in stock?"
     },
+    "context": {
+      "viewing": "Page context",
+      "detach": "Detach page context from this conversation"
+    },
+    "pageSuggest": {
+      "sales": {
+        "record": {
+          "r1": "What is the status and total of this order?",
+          "r2": "Does this customer still owe us money?",
+          "r3": "Draft an email updating the customer on this order",
+          "r4": "Who changed this document?"
+        },
+        "bare": {
+          "b1": "Which customers still owe us money?",
+          "b2": "Compare this month's sales with last month",
+          "b3": "Who are our top customers this year?",
+          "b4": "Create a draft sales order"
+        }
+      },
+      "purchasing": {
+        "record": {
+          "r1": "What is the status of this document?",
+          "r2": "How much do we owe this supplier?",
+          "r3": "Who changed this document?",
+          "r4": "Draft an email to the supplier about this order"
+        },
+        "bare": {
+          "b1": "Which purchase orders are still open?",
+          "b2": "How much did we buy this month?",
+          "b3": "Which suppliers do we still owe?",
+          "b4": "Create a purchase request for items running low"
+        }
+      },
+      "inventory": {
+        "record": {
+          "r1": "How much of this item do we have in stock?",
+          "r2": "Show this item's recent movements",
+          "r3": "Is this item close to running out?",
+          "r4": "Who changed this item?"
+        },
+        "bare": {
+          "b1": "What items are running low?",
+          "b2": "Which items expire soon?",
+          "b3": "How many items do we carry?",
+          "b4": "How much stock is in the default warehouse?"
+        }
+      },
+      "accounting": {
+        "record": {
+          "r1": "Explain this journal entry",
+          "r2": "Who created or changed this entry?",
+          "r3": "Is the trial balance balanced this month?",
+          "r4": "Where does VAT stand this month?"
+        },
+        "bare": {
+          "b1": "Is the trial balance balanced this month?",
+          "b2": "Did we make a profit this month?",
+          "b3": "Where does VAT stand this month?",
+          "b4": "What is the cash account balance?"
+        }
+      },
+      "crm": {
+        "record": {
+          "r1": "What stage is this opportunity at?",
+          "r2": "Show this customer's profile and balance",
+          "r3": "Who changed this record?",
+          "r4": "Draft a follow-up email for this opportunity"
+        },
+        "bare": {
+          "b1": "Which opportunities are open?",
+          "b2": "Who are our top customers this year?",
+          "b3": "Which customers still owe us money?",
+          "b4": "Add a new customer"
+        }
+      }
+    },
     "threads": {
       "title": "Conversations",
       "backToChat": "Back to conversation",

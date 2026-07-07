@@ -223,6 +223,18 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     # --- the loop: plan → run a tool → repeat, until answer / clarify / round cap -----------------
     loop_system = _LOOP_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text(),
                                       action_catalog=actions.catalog_text())
+    # Page-record resolution (session 11): when the user is ON a record page (and hasn't detached
+    # it), pronouns and bare references resolve to that record — the planner reaches for the
+    # matching detail tool with the record's identifier instead of asking "which order?".
+    record = (page or {}).get("record") or {}
+    if record.get("label") and not (page or {}).get("detached"):
+        loop_system = (
+            f"The user is currently viewing {record.get('type', 'record')} "
+            f"{record.get('id', '')} ({record['label']}). Pronouns and bare references "
+            "('this order', 'هذا الأمر', 'it', 'the customer', 'هذا العميل') resolve to this "
+            "page record — never ask which record is meant. Prefer tools scoped to it, passing "
+            f"its number or name ('{record['label']}') as the query.\n\n"
+        ) + loop_system
     results: list[dict] = []      # {tool, why, data} per executed tool
     steps: list[dict] = []        # {tool, why, ok} — persisted summaries, never raw payloads
     citations: list[dict] = []

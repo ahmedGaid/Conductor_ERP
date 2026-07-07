@@ -80,6 +80,57 @@
   text-overflow: ellipsis;
 }
 
+/* The page-context chip: what record the conversation is anchored to. Quiet — border + muted
+   text, no colour; the record label is the only content. Shrinks with ellipsis before the tools. */
+.assistant-panel__context {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  margin-inline-start: auto;
+  padding-inline-start: var(--space-2);
+  padding-block: var(--space-0-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+.assistant-panel__context-icon {
+  display: inline-flex;
+  flex: none;
+}
+.assistant-panel__context-icon .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+.assistant-panel__context-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.assistant-panel__context-detach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.assistant-panel__context-detach:hover {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+}
+.assistant-panel__context-detach .navicon {
+  inline-size: 0.8rem;
+  block-size: 0.8rem;
+}
+
 .assistant-panel__tools {
   display: inline-flex;
   align-items: center;
