@@ -1650,3 +1650,14 @@ Founder approved `Docs/ARP_DEEP_VISION.md` in full (its §10). Adopted:
   tools return empty result sets, not errors, for no-match queries — nothing to upgrade there
   today; the loop still handles `{"blocker": ...}` from any tool generically. Duplicate-customer
   "already exists" stays a plain error (it is not a missing dependency).
+
+## Assistant "ask anything" = query_data list mode, not text-to-SQL (2026-07-07)
+
+Founder requirement: the assistant must answer any data question the user is permitted to see,
+chatbot-grade. Decision: extend the EXISTING bounded grammar (query_registry.py) with a list mode
+(real rows, whitelisted columns) + expand the entity registry + reroute the planner prompt - one
+dedicated session, plan at Docs/plan/query-data-list-mode.md, scheduled BEFORE ai-workspace
+FILE_13. Free-text-to-SQL stays banned (branch/own scope is enforced in Python via scope_queryset,
+not in the DB - raw SQL would leak across scopes). Rejected: a thin find_items tool as stopgap
+(strict subset of list mode; would be dead code within a week). Trigger: live FILE_12 smoke -
+"GIVE ME LIST OF ITEMS" had no tool route, planner could only re-ask its clarify question.
