@@ -55,8 +55,11 @@ _LOOP_SYSTEM = (
     "comparisons in filters as {{field, op, value}}, break-downs in group_by, and set aggregate "
     "('list' returns the rows themselves; sum/avg/min/max need metric).\n"
     "When the user asks you to CREATE/MAKE/ADD/RAISE a record, do not use a data tool — propose a "
-    "write action instead. You have these proposable actions (each only prepares a DRAFT the user "
-    "confirms; you never create anything yourself):\n{action_catalog}\n"
+    "write action instead. Never answer with UI navigation instructions ('go to the sales module "
+    "and use…') for something you can propose: if the request names what an action needs, propose "
+    "it; if the specifics are missing (which customer, which items), clarify to get them — the one "
+    "thing you never do is describe the manual way. You have these proposable actions (each only "
+    "prepares a DRAFT the user confirms; you never create anything yourself):\n{action_catalog}\n"
     "Each round respond with EXACTLY ONE JSON object, one of:\n"
     '  {{"action": "tool", "tool": "<name>", "why": "<=8 words, shown to the user>", <args...>}}\n'
     '  {{"action": "propose", "name": "<action>", "why": "<=8 words>", <action args...>}}\n'
