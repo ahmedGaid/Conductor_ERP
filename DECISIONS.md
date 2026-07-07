@@ -1589,3 +1589,37 @@ dedicated workstream — filed as `Docs/plan/perceived-performance-plan.md` for 
   400/500, Inter 400) in `index.html`. Also added a `preview.proxy` to `vite.config.ts` so the
   production build can reach the API for feel testing. `optional` + preload = brand font from first
   paint, zero swap reflow. User confirmed "much better"; residual smoothness is causes (2)+(3).
+
+## ARP Deep Vision — agentic OS + six guarantees (2026-07-07)
+
+Founder approved `Docs/ARP_DEEP_VISION.md` in full (its §10). Adopted:
+
+- **Roadmap inserts** (applied in `Docs/plan/arp-roadmap.md` + `EXECUTION_ORDER.md`):
+  **Phase W+** (Agentic OS foundations: Action Graph v2 with declared requires/effects/invariants/
+  compensation/risk/idempotency, verifier invariant packs after every agent write, simulation
+  diff card via rolled-back transaction, eval harness) after ai-workspace FILE_15 and BEFORE
+  smart-import (queue position 6) — because import preview and month-close preview both ride on
+  simulation. **Phase A2** (Implementation Consultant: Arabic interview, Egyptian industry
+  blueprint packs as versioned data, simulated setup, go-live readiness score) after A.
+  **Phase B2** (Company Brain per-tenant typed memory + Autonomy Ladder, per-(user,action) trust
+  levels 0–4 earned/demoted) after B. **Phase C re-chartered** as Agent Runtime + roster (charters
+  as config records: scope/budget/cadence/escalation/KPI; agent inbox; brief = digest of
+  findings). **Phase F gains** playbook/blueprint sharing + anonymized benchmark opt-in.
+- **Six guarantees are binding acceptance bars** (deep vision §7): G1 every phase acceptance
+  includes a scripted unaided non-technical-user test; G2 zero-hallucination contract — the
+  deterministic grounding guard (FILE_11 addendum, documents) generalizes to ALL data-shaped
+  intents when W+ is built, closing the filed live-data gap as a standing bar; G3 model router
+  with the admission rule — a model routes an intent class ONLY after passing the golden eval
+  suite in BOTH languages at the flagship bar, auto-escalation on low confidence/schema
+  failure/verifier failure; G4 Arabic=English parity as a build-blocking eval gate (Arabic is
+  the primary test language; deterministic normalization — Arabic-Indic digits, hamza/ta-marbuta/
+  tashkeel, mixed-language sentences — runs before the model); G5 every function reachable three
+  ways (screen, ⌘K, chat); G6 flexibility via stated-once policies (Company Brain), playbooks,
+  and autonomy — never new settings pages (STRATEGY §5.2 holds).
+- **Autonomy hard floor:** `post`/`destructive` actions never exceed ladder level 1
+  (confirm-each) without an explicit founder-level policy switch; every level change is audited.
+- **Open forks deliberately deferred to phase start** (same discipline as smart-import FILE_10):
+  scheduler (management-command + cron vs worker); Company Brain data model + privacy detail
+  (strictly per-tenant now; cross-tenant learning only via explicit anonymized opt-in, a Phase F
+  decision); autonomy-ladder × RBAC interaction; router implementation. Each gets its own entry
+  when its phase begins.
