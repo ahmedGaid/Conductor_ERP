@@ -1687,3 +1687,43 @@ not in the DB - raw SQL would leak across scopes). Rejected: a thin find_items t
   runs for real before the answer streams. The fully-unnamed case (no entity anywhere) remains
   open in the erp-status backlog; guessing an entity server-side risks answering from the wrong
   data set, which is worse than the model saying it cannot see the data.
+
+## Business-cycles expansion plan: harvest, don't execute (2026-07-07)
+
+Founder received an externally-authored plan (now `Docs/plan/business-cycles-source/`, renamed
+from "Business Cycles Expansion plan" — spaces broke tooling). Verdict after full read: **written
+for a different stack** (NestJS + stored procedures + plpgsql triggers + multi-tenant +
+field_mutability + Makefile + decimal money + FX freezing) and ~half of its scope already exists
+in Conductor (line qty tracking, PO 3-way qty guard, ETA lifecycle, balanced immutable journals,
+period guard via NoPeriodError, COA/tax/trial balance, reversal-only corrections). **No code from
+it is usable; the business ideas are.** Never execute it directly.
+
+**Harvest list (translate to Django conventions when scheduled):**
+1. Customer Receipt + Application as separate auditable acts (receipt ≠ application; unapplied /
+   on-account balance) + supplier-payment mirror — top gap; matches the Egyptian collector
+   workflow. Today payment is per-order only.
+2. 3-way match tolerances as data + match_exception records with human resolution actions
+   (today: hard qty guard only, no price tolerance, no exception workflow).
+3. Delivery note / goods receipt as first-class numbered documents (today: actions + stock
+   movements, no printable document).
+4. ETA per-attempt immutable submission evidence log (payload + hash per attempt).
+5. Small wins: duplicate supplier-ref guard, line-level partial invoicing, posting rules as data.
+6. Chain-as-data (source_doc_type/id/line_id) — NOT a separate feature: it IS the Action Graph;
+   folded into Phase W+ requirements.
+
+**Claude's enhancements (added to the same harvest, ARP-first):**
+- AR aging + collections view fed by receipts — feeds "Needs attention today" + the assistant.
+- Agent auto-suggests receipt application (exact-amount match, else oldest-first), propose-only
+  rung of the autonomy ladder — claims-gate demo candidate.
+- Match-exception resolution reuses the FILE_12 guided-detour SuggestionCard pattern.
+- Delivery note PDF Arabic-first through the existing invoice PDF pipeline.
+- C1–C8 rewritten as Django constraints + a "cycle invariants" pytest gate (next free gate number).
+- Chain breadcrumb UI (SO → DEL → INV) — the Action Graph made visible; unified-ui primitive.
+- Customer on-account balance surfaced on the customer page + a query_data entity.
+
+**Rejected:** stored procedures/triggers as enforcement (RBAC + rules stay in Python — standing
+decision), tenant_id/multi-tenant columns, FX freezing, decimal money, rebuilding existing
+modules, standalone AR-invoice refactor (deferred; decide inside the receipts plan).
+
+**Scheduling:** new `business-cycles-plan/` (ag-plan format) slotted AFTER ai-workspace FILE_15,
+alongside/before os-foundations; chain-as-data goes into the W+ charter directly.
