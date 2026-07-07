@@ -1279,6 +1279,8 @@
 }
 .action-card__result .navicon {
   flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
   color: var(--color-success);
 }
 .action-card__settled {
