@@ -1623,3 +1623,30 @@ Founder approved `Docs/ARP_DEEP_VISION.md` in full (its §10). Adopted:
   (strictly per-tenant now; cross-tenant learning only via explicit anonymized opt-in, a Phase F
   decision); autonomy-ladder × RBAC interaction; router implementation. Each gets its own entry
   when its phase begins.
+
+## ai-workspace FILE_12 — guided detours design choices (2026-07-07)
+
+- **Create deep links target the LIST pages, not `/new` routes.** App.tsx has no create routes for
+  customer/supplier/item/warehouse — creation is the list pages' inline add forms. The plan's
+  example (`/purchasing/suppliers/new`) was written from memory; per its own rule ("copy from the
+  file, never from memory") the `ENTITY_REGISTRY` in `erp/assistant/services/suggestions.py` uses
+  the real list routes with `?prefill=<url-encoded JSON>`, consumed once by `lib/usePrefill.ts`.
+  `test_suggestions.py` guards the registry against a hardcoded copy of the route list.
+- **Inline "create it from here" re-enters the loop as a follow-up message** instead of adding a
+  second execute path: the button sends a localized "create a new customer named X" ask, the
+  planner proposes the session-10 action, and the normal confirm ActionCard executes it. One write
+  path, one audit trail; rejected alternative (direct `executeAction` from the SuggestionCard)
+  would have needed a parallel proposal-less execute endpoint.
+- **The card is built server-side from the STORED blocker, not the model's echo.** The planner's
+  `suggest` decision only contributes the one-sentence `resume`; kind/entity/query/candidates come
+  from the actual failed round, so the card can never invent a blocker. Permission filtering is
+  server-side: granular code (`access.has_permission`) for deep links AND the action's own role
+  gate for inline actions; denied ⇒ zero buttons + calm `no_permission` text (never greyed out).
+- **Suggestion deep links do NOT close the floating panel** (they skip `onNavigate`, unlike
+  citations) — the detour promise "I'll bring you back and continue" requires the conversation to
+  survive the route change. `meta.pending` (the blocked propose decision) + the deep link's
+  `expect` marker are persisted for FILE_13's return detection.
+- **Blocker scope kept to dependency-shaped failures in `actions.py` builders.** `tools.py` read
+  tools return empty result sets, not errors, for no-match queries — nothing to upgrade there
+  today; the loop still handles `{"blocker": ...}` from any tool generically. Duplicate-customer
+  "already exists" stays a plain error (it is not a missing dependency).
