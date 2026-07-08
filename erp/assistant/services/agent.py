@@ -441,3 +441,119 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         yield {"type": "done", "message_id": msg.id, "used_tool": used_tool}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer
+
+
+def resume_detour(*, actor, conversation, source_message, resolved):
+    """Continue a paused suggestion after a guided detour (plan session 13) — the return half of the
+    session-12 promise. ``source_message`` is the assistant turn carrying the suggestion card and its
+    ``meta.pending`` (the blocked ``propose`` decision). ``resolved`` is the record the user just
+    created (``{entity, id, label}``) or ``None`` (they returned via "I'm done" without our capturing
+    one — the rebuild re-resolves the reference by its original query).
+
+    Settles the card (single-use, reload-safe), records an honest ``detour_return`` user turn, rebuilds
+    the paused proposal against the now-existing record, and streams a welcome-back that either carries
+    the re-prepared draft or says calmly it's still missing (re-opening the card). Yields the same SSE
+    events as :func:`run`. It NEVER re-runs the planner or the vision path: the extraction that
+    produced the paused args is reused, never redone (Task D). Tests monkeypatch ``complete_stream``.
+    """
+    meta = source_message.meta or {}
+    pending = meta.get("pending") or {}
+    suggestion_meta = meta.get("suggestion") or {}
+    issue = suggestion_meta.get("issue") or {}
+    entity = issue.get("entity") or (resolved or {}).get("entity") or "record"
+    label = (resolved or {}).get("label") or issue.get("query") or ""
+
+    # Settle the card first so a reload shows it resolved (mirrors a consumed proposal). If the
+    # rebuild finds the record still missing we re-open it below.
+    suggestion_meta["status"] = "resolved"
+    source_message.meta = meta
+    source_message.save(update_fields=["meta"])
+
+    # An honest synthetic turn: recorded in the transcript, flagged so the UI renders a calm
+    # "returned" divider (localised) rather than an English user bubble. entity/label ride in meta
+    # for that localisation.
+    if resolved:
+        note = (f"Detour complete: {entity} {label} ({resolved.get('id', '')}) now exists. "
+                "Resume the pending work.")
+    else:
+        note = (f"Detour complete — back from creating the {entity}. "
+                f"Re-check whether '{issue.get('query', '')}' exists now and resume.")
+    conversation.messages.create(
+        role="user", content=note,
+        meta={"kind": "detour_return", "entity": entity, "label": label},
+    )
+    conversation.save()
+
+    # Rebuild the paused proposal — the missing record now exists, so ``build`` re-resolves it. No
+    # planner, no tools: just the one blocked resolution retried against fresh data.
+    pname = pending.get("name") or ""
+    built = actions.build(actor, pname, dict(pending)) if pname else {"error": "nothing to resume"}
+    proposal: dict | None = None
+    still_blocked = "blocker" in built
+    if still_blocked:
+        # The record the user was sent to create still can't be found — re-open the original card.
+        suggestion_meta["status"] = "open"
+        source_message.meta = meta
+        source_message.save(update_fields=["meta"])
+    elif "error" not in built:
+        proposal = {**built, "status": "pending"}
+
+    if proposal is not None:
+        instruction = (
+            f"The user just returned from creating {entity} '{label}'. Welcome them back warmly and "
+            "briefly by name of that record, then say the draft you had paused is ready again below "
+            "and they can confirm or dismiss it. Do NOT claim anything was created or posted.")
+    elif still_blocked:
+        instruction = (
+            f"The user returned but the {entity} '{issue.get('query', '')}' still can't be found. "
+            "Tell them calmly and blame-free that it's still missing, and that the fix-it options are "
+            "open again above. Do NOT claim anything was created.")
+    else:
+        instruction = (
+            "The user returned from a detour but the paused work could not be re-prepared. Explain "
+            "calmly what you can and invite them to say again what to create. Do NOT claim success.")
+
+    citations: list[dict] = []
+    steps: list[dict] = []
+    used_tool = None
+    intent = "create"
+    parts: list[str] = []
+    saved = False
+
+    def _persist():
+        nonlocal saved
+        if saved:
+            return None
+        saved = True
+        answer = "".join(parts).strip()
+        out = {"citations": citations, "used_tool": used_tool, "steps": steps,
+               "intent": intent, "kind": "detour_return_reply"}
+        if proposal is not None:
+            out["proposal"] = {**proposal}
+        msg = conversation.messages.create(role="assistant", content=answer, meta=out)
+        conversation.save()
+        audit.record(
+            module="assistant", action="detour_resume", entity_type="Question",
+            entity_id=pname or "none", actor=actor,
+            after={"entity": entity, "resolved": bool(resolved), "proposal": proposal is not None},
+        )
+        return msg
+
+    try:
+        user = json.dumps(
+            {"detour_return": note, "record": resolved, "proposal_ready": proposal is not None},
+            ensure_ascii=False,
+        )
+        for chunk in complete_stream(
+            [{"role": "user", "content": user + "\n\n" + instruction}],
+            system=_answer_system(actor, None, conversation),
+        ):
+            parts.append(chunk)
+            yield {"type": "token", "text": chunk}
+        yield {"type": "citations", "citations": citations}
+        msg = _persist()
+        if proposal is not None and msg is not None:
+            yield {"type": "proposal", "message_id": msg.id, "proposal": {**proposal}}
+        yield {"type": "done", "message_id": msg.id if msg else None, "used_tool": used_tool}
+    finally:
+        _persist()  # disconnect / error mid-stream still saves the partial welcome-back

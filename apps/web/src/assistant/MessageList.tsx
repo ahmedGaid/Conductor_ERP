@@ -214,6 +214,19 @@ export function MessageList({
             const steps = (m.meta?.steps as ChatStep[] | undefined) ?? [];
             const proposal = m.meta?.proposal as ActionProposal | undefined;
             const suggestion = m.meta?.suggestion as AssistantSuggestion | undefined;
+            // A synthetic "detour return" turn (session 13) is recorded honestly, but shown as a calm
+            // localised divider — not an English user bubble — so the transcript stays on-brand.
+            if (m.meta?.kind === "detour_return") {
+              const entity = t(`assistant.suggest.entity.${m.meta.entity}`, String(m.meta.entity ?? ""));
+              return (
+                <li key={m.id} className="msg-detour-return" role="status">
+                  <NavIcon name="rotate" />
+                  <span dir="auto">
+                    {t("assistant.detour.welcomeBack", { entity, label: m.meta.label ?? "" })}
+                  </span>
+                </li>
+              );
+            }
             if (m.role === "user") {
               return (
                 <li key={m.id} className="msg msg--user">
@@ -255,7 +268,9 @@ export function MessageList({
                     onNavigate={onNavigate}
                   />
                 )}
-                {suggestion && <SuggestionCard suggestion={suggestion} onFollowup={onFollowup} />}
+                {suggestion && (
+                  <SuggestionCard suggestion={suggestion} messageId={m.id} onFollowup={onFollowup} />
+                )}
                 {cites.length > 0 && (
                   <ul className="assistant-cites msg__cites">
                     {cites.map((c) => (

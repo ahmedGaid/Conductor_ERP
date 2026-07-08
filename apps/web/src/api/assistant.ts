@@ -216,6 +216,11 @@ export interface ChatMessage {
     steps?: ChatStep[];
     proposal?: ActionProposal;
     suggestion?: AssistantSuggestion;
+    // A synthetic "detour_return" user turn (session 13): rendered as a calm localised divider, not a
+    // raw bubble. entity/label localise its text ("Back from creating supplier ABC Trading").
+    kind?: string;
+    entity?: string;
+    label?: string;
   } & Record<string, unknown>;
   created_at: string;
 }
@@ -325,21 +330,17 @@ function streamHeaders(): Record<string, string> {
   };
 }
 
-export async function chatStream(
-  body: {
-    conversation_id: number;
-    message?: string;
-    context?: PageContext;
-    // Re-answer the conversation's last question in place (retry / regenerate); no new user turn.
-    regenerate?: boolean;
-    // Ids of already-uploaded attachments to claim onto this turn (session 07).
-    attachment_ids?: number[];
-  },
+// The shared SSE reader for every assistant stream (chat + detour resume): POST a JSON body, replay
+// once through the refresh cookie on a 401, then dispatch each `data:` frame as a ChatEvent. Kept in
+// one place so both streams share identical framing, auth and error handling.
+async function sseStream(
+  path: string,
+  body: unknown,
   onEvent: (e: ChatEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
   const send = () =>
-    fetch("/api/assistant/chat", {
+    fetch(path, {
       method: "POST",
       headers: streamHeaders(),
       body: JSON.stringify(body),
@@ -386,6 +387,37 @@ export async function chatStream(
   } finally {
     reader.releaseLock();
   }
+}
+
+export function chatStream(
+  body: {
+    conversation_id: number;
+    message?: string;
+    context?: PageContext;
+    // Re-answer the conversation's last question in place (retry / regenerate); no new user turn.
+    regenerate?: boolean;
+    // Ids of already-uploaded attachments to claim onto this turn (session 07).
+    attachment_ids?: number[];
+  },
+  onEvent: (e: ChatEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return sseStream("/api/assistant/chat", body, onEvent, signal);
+}
+
+// Resume paused work after a guided detour (plan session 13). `message_id` is the suggestion turn;
+// `resolved` is the record the user just created (or null → the server re-resolves by query). Streams
+// the welcome-back over the same ChatEvent contract as chatStream.
+export function resumeDetour(
+  body: {
+    conversation_id: number;
+    message_id: number;
+    resolved: { entity: string; id: string; label: string } | null;
+  },
+  onEvent: (e: ChatEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return sseStream("/api/assistant/detours/resume", body, onEvent, signal);
 }
 
 // --- Knowledge base (plan session 06) ------------------------------------------------------------

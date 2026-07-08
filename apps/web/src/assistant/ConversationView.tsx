@@ -5,6 +5,7 @@ import {
   chatStream,
   createConversation,
   getConversation,
+  resumeDetour,
   uploadAttachment,
   ALLOWED_ATTACHMENT_TYPES,
   MAX_ATTACHMENT_BYTES,
@@ -12,6 +13,7 @@ import {
   type AskCitation,
   type AssistantSuggestion,
   type AttachmentInfo,
+  type ChatEvent,
   type ChatMessage,
   type ChatStep,
 } from "../api/assistant";
@@ -43,6 +45,8 @@ export function ConversationView() {
     pendingMessage,
     clearPendingMessage,
     contextDetached,
+    pendingResume,
+    clearPendingResume,
   } = useAssistant();
 
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
@@ -160,7 +164,13 @@ export function ConversationView() {
 
   async function runStream(
     convId: number,
-    opts: { message?: string; regenerate?: boolean; attachment_ids?: number[] },
+    opts: {
+      message?: string;
+      regenerate?: boolean;
+      attachment_ids?: number[];
+      // Session 13: resume paused work after a guided detour instead of asking a new question.
+      resume?: { message_id: number; resolved: { entity: string; id: string; label: string } | null };
+    },
   ) {
     setStreaming(true);
     setStreamText("");
@@ -176,9 +186,22 @@ export function ConversationView() {
     let proposal: ActionProposal | null = null;
     let suggestion: AssistantSuggestion | null = null;
     let errMsg: string | null = null;
+    // The event handling is identical for a fresh answer and a detour resume — only the request
+    // differs (resume replays paused work server-side; no new question, no page context needed).
+    const startStream = (onEvent: (e: ChatEvent) => void) =>
+      opts.resume
+        ? resumeDetour(
+            { conversation_id: convId, message_id: opts.resume.message_id, resolved: opts.resume.resolved },
+            onEvent,
+            ac.signal,
+          )
+        : chatStream(
+            { conversation_id: convId, context: collectContext({ detached: contextDetached }), ...opts },
+            onEvent,
+            ac.signal,
+          );
     try {
-      await chatStream(
-        { conversation_id: convId, context: collectContext({ detached: contextDetached }), ...opts },
+      await startStream(
         (e) => {
           if (e.type === "step" && e.tool) {
             // Steps arrive strictly running-then-done; a `done` closes the last open line.
@@ -210,7 +233,6 @@ export function ConversationView() {
             errMsg = e.message ?? t("assistant.errorLine");
           }
         },
-        ac.signal,
       );
     } catch (err) {
       // A stop (abort) is not an error — the partial answer below still commits.
@@ -275,6 +297,29 @@ export function ConversationView() {
     void send(pendingMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingMessage]);
+
+  // A guided detour returned (session 13): DetourPill selected this conversation and asked us to
+  // resume. Wait until the selection has caught up and the thread has finished loading, so the
+  // streamed welcome-back appends to real history instead of being overwritten by the load.
+  useEffect(() => {
+    if (pendingResume == null) return;
+    if (conversationId !== pendingResume.conversationId || loading || messages == null) return;
+    const req = pendingResume;
+    clearPendingResume();
+    void (async () => {
+      await runStream(req.conversationId, { resume: { message_id: req.messageId, resolved: req.resolved } });
+      // Reload from server truth: the resume settled (or re-opened) the original suggestion card, and
+      // the optimistic append can't see that flip — a fresh fetch shows the card in its final state
+      // alongside the welcome-back reply and its proposal.
+      try {
+        const d = await getConversation(req.conversationId);
+        setMessages(d.messages);
+      } catch {
+        /* keep the optimistic view if the reload fails; a manual reopen will reconcile */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingResume, conversationId, loading, messages]);
 
   async function regenerate() {
     if (streaming || conversationId == null) return;

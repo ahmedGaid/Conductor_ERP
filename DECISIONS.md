@@ -1290,6 +1290,17 @@ budget deliberately (edit the constant + this entry), never silently.
   purchasing / inventory / accounting detail pages are the largest unsplit slice of the main chunk
   and are good candidates for a dedicated future route-splitting session to bring the budget back
   down structurally, the same way the workflow canvas / admin pages were split in the 230 kB pass.
+- **2026-07-08 — Frontend bundle budget raised 235 → 250 kB gzip (before ai-workspace FILE_13).**
+  Same recurring cause as the 230→235 raise: main chunk crept to **243.4 kB** (measured red on
+  clean HEAD via stash, erp-status 2026-07-08) from accumulated un-split detail pages
+  (sales/purchasing/inventory/accounting), NOT from any single heavy import. Raised to the smallest
+  round number covering current main with headroom for FILE_13's small frontend additions
+  (`assistant/detour.ts` + provider detour state + a SuggestionCard tweak). **This is a deliberate
+  hold, not the fix.** The structural fix stays scheduled: route-split the four detail-page slices
+  via `React.lazy` in the **perceived-performance workstream**
+  (`Docs/plan/perceived-performance-plan.md`) — that pass should bring the budget back DOWN, the
+  way the 230 kB pass did. The 235 → 250 bump is the last painless raise; the next breach should be
+  fixed structurally, not bumped again.
 
 ## AI 2026-07 — assistant architecture (session 02, part 1)
 

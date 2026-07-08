@@ -337,6 +337,59 @@ class ActionExecuteView(APIView):
         return _envelope({"status": "confirmed", "followups": [], **result})
 
 
+class DetourResumeView(APIView):
+    """Resume paused work after a guided detour (plan session 13) — the return half of a session-12
+    suggestion. Body: ``{"message_id": int, "resolved": {entity, id, label} | null}`` (the client also
+    sends ``conversation_id`` for symmetry; the own-check goes through the message's conversation).
+
+    The suggestion + its ``meta.pending`` live on the assistant message. Single-use, exactly like a
+    proposal: once the card is resolved a second resume 409s. Streams the welcome-back over the same
+    SSE contract as ``ChatView`` (reusing ``_sse``), so the client renders it like any reply.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request):
+        if not client.enabled():
+            raise Http404
+        # Own-check through the conversation: a foreign / unknown message is a plain 404.
+        message = get_object_or_404(
+            Message, pk=request.data.get("message_id"),
+            conversation__user=request.user, role=Message.Role.ASSISTANT,
+        )
+        meta = message.meta or {}
+        suggestion = meta.get("suggestion")
+        if not suggestion or not meta.get("pending"):
+            raise Http404  # nothing paused here to resume
+        if suggestion.get("status") != "open":
+            # Already resolved — single-use, never resumes twice.
+            raise ActionAlreadyHandledError
+        resolved = request.data.get("resolved") or None
+        if resolved is not None and not isinstance(resolved, dict):
+            raise ValidationError("resolved must be an object or null.")
+        conversation = message.conversation
+
+        def _events():
+            try:
+                for event in services.resume_detour(
+                    actor=request.user, conversation=conversation,
+                    source_message=message, resolved=resolved,
+                ):
+                    yield _sse(event)
+            except (BrokenPipeError, ConnectionResetError, GeneratorExit):
+                raise  # client cancelled — partial welcome-back already persisted; exit quietly
+            except AppError as exc:
+                yield _sse({"type": "error", "message": exc.message})
+            except Exception:  # pragma: no cover - unexpected; never leak a trace to the client
+                logger.exception("assistant detour resume failed")
+                yield _sse({"type": "error", "message": AssistantUnavailableError.message})
+
+        response = StreamingHttpResponse(_events(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
+
+
 def _first_line(conversation: Conversation) -> str:
     first = conversation.messages.first()
     return (first.content.splitlines()[0][:100] if first and first.content else "")

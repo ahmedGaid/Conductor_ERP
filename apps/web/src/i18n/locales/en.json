@@ -118,6 +118,15 @@
         "warehouse": "warehouse"
       }
     },
+    "detour": {
+      "waiting": "Waiting — creating {{entity}}…",
+      "done": "I'm done",
+      "cancel": "Cancel",
+      "cancelled": "Detour cancelled — the fix-it options above are still open",
+      "stale": "Still creating the {{entity}}?",
+      "welcomeBack": "Back from creating {{entity}} {{label}} — continuing",
+      "resumed": "Continuing where we left off…"
+    },
     "context": {
       "viewing": "Page context",
       "detach": "Detach page context from this conversation"

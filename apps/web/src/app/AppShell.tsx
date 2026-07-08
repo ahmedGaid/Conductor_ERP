@@ -19,6 +19,7 @@ import { HelpProvider } from "../help/HelpContext";
 import { usePreferences } from "../preferences/PreferencesContext";
 import { AssistantProvider } from "../assistant/AssistantProvider";
 import { AssistantPanel } from "../assistant/AssistantPanel";
+import { DetourPill } from "../assistant/DetourPill";
 import { pushRecentPage } from "../assistant/context";
 import "./AppShell.css";
 
@@ -112,6 +113,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </main>
             <HelpCenter />
             <AssistantPanel />
+            <DetourPill />
             <ShortcutsHost />
             <Toaster />
           </div>

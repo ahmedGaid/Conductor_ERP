@@ -9,6 +9,16 @@ import {
 } from "react";
 
 import { assistantStatus } from "../api/assistant";
+import { readDetour, writeDetour, type Detour } from "./detour";
+
+// A resume the return-detection surface has requested: run against `conversationId`, replaying the
+// paused work on `messageId` with the record the user just created (`resolved`) or null (re-resolve
+// by query). ConversationView consumes it once its thread matches and has loaded.
+export interface ResumeRequest {
+  conversationId: number;
+  messageId: number;
+  resolved: { entity: string; id: string; label: string } | null;
+}
 
 /**
  * Shared state for the global AI panel — mounted once in the app shell so the command-bar button,
@@ -44,6 +54,18 @@ interface AssistantState {
   openPanelWithMessage(text: string): void;
   /** Consumes the pending message so it isn't resent on the next render. */
   clearPendingMessage(): void;
+  /** The active guided detour (a suggestion sent the user off to create a record), or null. */
+  detour: Detour | null;
+  /** Remember an errand so we can bring the user back and continue (persists across a reload). */
+  startDetour(detour: Detour): void;
+  /** Forget the active detour (returned, cancelled, or resumed). */
+  clearDetour(): void;
+  /** A resume the return surface has asked ConversationView to run, or null. */
+  pendingResume: ResumeRequest | null;
+  /** Ask ConversationView to resume the paused work in a conversation. */
+  requestResume(req: ResumeRequest): void;
+  /** Consume the resume request so it isn't run twice. */
+  clearPendingResume(): void;
 }
 
 const KEY_OPEN = "assistant.open";
@@ -71,6 +93,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [conversationsNonce, setConversationsNonce] = useState(0);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [contextDetached, setContextDetached] = useState(false);
+  const [detour, setDetourState] = useState<Detour | null>(readDetour);
+  const [pendingResume, setPendingResume] = useState<ResumeRequest | null>(null);
 
   // Detach is per-conversation: switching (or starting) a thread re-attaches the page context.
   useEffect(() => setContextDetached(false), [conversationId]);
@@ -104,6 +128,16 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     setOpen(true);
   }, []);
   const clearPendingMessage = useCallback(() => setPendingMessage(null), []);
+  const startDetour = useCallback((d: Detour) => {
+    writeDetour(d); // persist immediately so a full reload mid-errand still returns the user
+    setDetourState(d);
+  }, []);
+  const clearDetour = useCallback(() => {
+    writeDetour(null);
+    setDetourState(null);
+  }, []);
+  const requestResume = useCallback((req: ResumeRequest) => setPendingResume(req), []);
+  const clearPendingResume = useCallback(() => setPendingResume(null), []);
 
   const value = useMemo<AssistantState>(
     () => ({
@@ -124,6 +158,12 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       refreshConversations,
       openPanelWithMessage,
       clearPendingMessage,
+      detour,
+      startDetour,
+      clearDetour,
+      pendingResume,
+      requestResume,
+      clearPendingResume,
     }),
     [
       enabled,
@@ -141,6 +181,12 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       refreshConversations,
       openPanelWithMessage,
       clearPendingMessage,
+      detour,
+      startDetour,
+      clearDetour,
+      pendingResume,
+      requestResume,
+      clearPendingResume,
     ],
   );
 

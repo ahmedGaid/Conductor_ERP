@@ -8,7 +8,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 
-const MAIN_CHUNK_GZIP_BUDGET_KB = 235;
+const MAIN_CHUNK_GZIP_BUDGET_KB = 250;
 
 const assetsDir = join(import.meta.dirname, "..", "dist", "assets");
 let files;

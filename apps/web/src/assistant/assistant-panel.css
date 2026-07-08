@@ -1379,3 +1379,88 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
+
+/* --- Guided detour (session 13) ------------------------------------------------------------- */
+/* The slim "waiting — creating supplier…" pill sits in the bottom-start corner, opposite the
+   floating panel (bottom-end) so the two never collide. Monochrome chrome; the only affordances are
+   two quiet text buttons. */
+.detour-pill {
+  position: fixed;
+  inset-block-end: var(--space-5);
+  inset-inline-start: var(--space-5);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-inline-size: min(24rem, calc(100vw - 2 * var(--space-5)));
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  animation: detour-pill-in var(--dur) var(--ease-out) both;
+}
+.detour-pill__icon {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+.detour-pill__label {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detour-pill__action,
+.detour-pill__cancel {
+  flex: none;
+  padding-inline: var(--space-2);
+  padding-block: var(--space-0-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: none;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+.detour-pill__action {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+.detour-pill__action:hover {
+  background: var(--color-surface-alt);
+}
+.detour-pill__cancel {
+  color: var(--color-text-muted);
+}
+.detour-pill__cancel:hover {
+  color: var(--color-text);
+}
+@keyframes detour-pill-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detour-pill {
+    animation: none;
+  }
+}
+
+/* The "returned — continuing" divider: an honest, calm marker in the transcript where a detour
+   came back, in place of a raw English user bubble. */
+.msg-detour-return {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

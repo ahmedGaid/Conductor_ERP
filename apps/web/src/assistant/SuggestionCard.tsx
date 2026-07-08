@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import type { AssistantSuggestion, SuggestionCandidate, SuggestionOption } from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { Bdi } from "../components/Bdi";
+import { useAssistant } from "./AssistantProvider";
+import { collectContext } from "./context";
 
 // Blocker entity → its home-module icon (same hand as citations / action records).
 const ENTITY_ICON: Record<string, string> = {
@@ -22,12 +24,17 @@ const ENTITY_ICON: Record<string, string> = {
  */
 export function SuggestionCard({
   suggestion,
+  messageId,
   onFollowup,
 }: {
   suggestion: AssistantSuggestion;
+  // The assistant message this card rides on — the detour remembers it so the resume knows which
+  // paused work to continue. Negative/optimistic ids never carry a resumable detour (see below).
+  messageId: number;
   onFollowup: (question: string) => void;
 }) {
   const { t } = useTranslation();
+  const { conversationId, startDetour } = useAssistant();
   const { issue, options, no_permission: noPermission, resume } = suggestion;
   const entityName = t(`assistant.suggest.entity.${issue.entity}`, issue.entity);
   const icon = ENTITY_ICON[issue.entity] ?? "sparkle";
@@ -91,9 +98,31 @@ export function SuggestionCard({
             }
             if (option.kind === "deep_link" || option.kind === "open_record") {
               // A real link; the panel stays open across the route change so the paused work —
-              // and the promise to continue it — survives the detour.
+              // and the promise to continue it — survives the detour. A create deep link carries
+              // `expect` (what we're going to create): remember the errand so return-detection can
+              // bring the user straight back and resume (session 13). Needs the real server message
+              // id — an optimistic (negative) id has no resumable server state, so we just navigate.
+              const startsDetour =
+                option.kind === "deep_link" &&
+                option.expect != null &&
+                conversationId != null &&
+                messageId > 0;
               return (
-                <Link key={i} className="suggest-card__link" to={option.to ?? "/"}>
+                <Link
+                  key={i}
+                  className="suggest-card__link"
+                  to={option.to ?? "/"}
+                  onClick={() => {
+                    if (!startsDetour) return;
+                    startDetour({
+                      conversationId,
+                      messageId,
+                      expect: option.expect!,
+                      returnTo: collectContext().path,
+                      startedAt: Date.now(),
+                    });
+                  }}
+                >
                   <NavIcon name={icon} />
                   {t(option.label_key ?? "assistant.suggest.open", { entity: entityName })}
                   <span className="suggest-card__out" aria-hidden="true">↗</span>
