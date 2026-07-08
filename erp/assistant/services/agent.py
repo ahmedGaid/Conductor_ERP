@@ -60,6 +60,12 @@ _LOOP_SYSTEM = (
     "it; if the specifics are missing (which customer, which items), clarify to get them — the one "
     "thing you never do is describe the manual way. You have these proposable actions (each only "
     "prepares a DRAFT the user confirms; you never create anything yourself):\n{action_catalog}\n"
+    "Attachments: when the user attaches an image or PDF (an invoice, a purchase order, a photo of "
+    "one) it is given to you directly — READ it. When they say 'create a PO from the attached image' "
+    "or similar, extract the supplier and the line items (item, quantity, and unit cost when shown) "
+    "straight from it and fill the propose action's fields. Never ask the user to retype what the "
+    "attachment plainly shows, and never invent lines you cannot actually see — if the image is "
+    "unreadable or a value is genuinely absent, say so or leave that field null.\n"
     "Each round respond with EXACTLY ONE JSON object, one of:\n"
     '  {{"action": "tool", "tool": "<name>", "why": "<=8 words, shown to the user>", <args...>}}\n'
     '  {{"action": "propose", "name": "<action>", "why": "<=8 words>", <action args...>}}\n'
@@ -225,7 +231,8 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             conversation.title = q[:60]
         conversation.save()  # also touches updated_at
 
-    # Attached files: text/tabular fold into the planner input; images/PDF ride the vision path.
+    # Attached files: text/tabular fold into the planner input as text; images/PDF ride the vision
+    # path — handed to BOTH the planner (so it can read them to fill a propose) and the final answer.
     media: list[dict] = []
     file_notes: list[str] = []
     if user_msg is not None:
@@ -233,6 +240,12 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             described = files.describe_for_model(att)
             if described.get("media"):
                 media.append(described["media"])
+                # A text breadcrumb so the planner's prompt also names the attachment — the image
+                # itself is injected alongside, so it reads the values rather than asking for them.
+                file_notes.append(
+                    f"[attached image/PDF '{att.name}' is provided to you directly — read it for any "
+                    "values the user points to; extract supplier and line items to propose a record]"
+                )
             elif described.get("text"):
                 file_notes.append(described["text"])
 
@@ -266,7 +279,10 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     seen_calls: set[tuple] = set()
 
     for _round in range(MAX_ROUNDS):
-        decision = complete_json(loop_system, _loop_user(q, history, results, file_notes), _LOOP_SCHEMA)
+        # media rides every round: the planner keeps its eyes on the attachment until it proposes
+        # (usually round 1), so it can read supplier/lines from an image instead of guessing them.
+        decision = complete_json(loop_system, _loop_user(q, history, results, file_notes),
+                                 _LOOP_SCHEMA, media=media)
         last_decision = decision
         if intent is None:
             intent = decision.get("intent")

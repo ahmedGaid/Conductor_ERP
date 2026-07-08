@@ -4,6 +4,33 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Chat planner now sees attachments — create-from-image (2026-07-08)
+
+Founder smoke of FILE_13 surfaced a real, separate bug: attaching an image + "create po" produced a
+draft with **fabricated** line items (Bolt/fish), and "create po from attached image" answered
+"what items are in the image?". Root cause: image attachments reached **only** the final-answer
+model (`agent.py` `complete_stream(..., media=media)`); the **planner** seam `complete_json` had no
+`media` param, so the brain that decides `propose`/`clarify` and fills line items was structurally
+blind — a zero-hallucination-guarantee violation. Same blindness in `ask.py`'s single-shot router
+(left for a follow-up; chat is the surface in use).
+
+Decision — **full fix (founder chose it over stopgap/defer):** thread `media` through
+`llm.complete_json` and all three provider runners (Anthropic image blocks before the text, Gemini
+`Part.from_bytes`, Groq `image_url`; PDF unsupported on Groq, same as the streaming path). The agent
+loop passes `media=media` to the planner every round and adds a text breadcrumb naming the
+attachment; the loop system prompt now instructs the planner to READ an attached invoice/PO image
+and extract supplier + line items into the propose action, never to retype-ask or invent lines it
+can't see. The propose schema already carried `items` (item/quantity/unit_cost) and
+`_build_purchase_request` already resolves supplier+items, so eyes alone complete the path.
+
+Cost tradeoff (accepted): the image is re-sent to the planner on each loop round (≤`MAX_ROUNDS`),
+but a create-from-image turn almost always proposes on round 1, so in practice one vision call.
+Prompt-caching the attachment is the future optimisation if multi-round image turns become common.
+Overlaps the dedicated `extract-document` upload path and FILE_14 (tabular import) — those stay;
+this is the free-chat "make a record from this picture" path. Test: `test_files.py
+::test_chat_image_reaches_the_planner` asserts the planner seam receives the image bytes. NOT part
+of FILE_13 (workflow resume) — that slice is unchanged and still awaits its own live smoke.
+
 ## Reconciliation of conflicting specs (2026-06-14)
 
 The `files/` folder contained three conflicting specs (full NestJS ERP, Django engineering

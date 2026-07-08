@@ -13,7 +13,15 @@ import time
 
 from django.conf import settings
 
-from ..client import get_client, get_gemini_client, groq_chat, model_id, provider
+from ..client import (
+    _anthropic_media_block,
+    _groq_media_block,
+    get_client,
+    get_gemini_client,
+    groq_chat,
+    model_id,
+    provider,
+)
 from ..errors import AssistantUnavailableError
 from .extraction import _gemini_schema  # reuse the strict→Gemini schema translation
 
@@ -23,20 +31,24 @@ def _schema_hint(schema: dict) -> str:
     return " Respond with a single JSON object only, no prose, matching this schema: " + json.dumps(schema)
 
 
-def _anthropic(system: str, user: str, schema: dict) -> str:
+def _anthropic(system: str, user: str, schema: dict, media: list | None = None) -> str:
+    # Images/PDF precede the instruction text in the user turn (mirrors extraction._extract_anthropic).
+    content = ([_anthropic_media_block(m) for m in media] if media else []) + [
+        {"type": "text", "text": user}
+    ]
     resp = get_client().messages.create(
         model=model_id(),
         max_tokens=settings.ASSISTANT_MAX_TOKENS,
         system=system,
         output_config={"format": {"type": "json_schema", "schema": schema}},
-        messages=[{"role": "user", "content": [{"type": "text", "text": user}]}],
+        messages=[{"role": "user", "content": content}],
     )
     if getattr(resp, "stop_reason", None) not in ("end_turn", None):
         return ""
     return next((b.text for b in resp.content if b.type == "text"), "")
 
 
-def _gemini(system: str, user: str, schema: dict) -> str:
+def _gemini(system: str, user: str, schema: dict, media: list | None = None) -> str:
     from google.genai import types
 
     cfg = dict(
@@ -49,16 +61,20 @@ def _gemini(system: str, user: str, schema: dict) -> str:
         cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
     except Exception:  # pragma: no cover - older SDK/model without thinking support
         pass
+    parts = [types.Part.from_bytes(data=m["data"], mime_type=m["media_type"]) for m in (media or [])]
     resp = get_gemini_client().models.generate_content(
-        model=model_id(), contents=[user], config=types.GenerateContentConfig(**cfg)
+        model=model_id(), contents=[*parts, user], config=types.GenerateContentConfig(**cfg)
     )
     return getattr(resp, "text", "") or ""
 
 
-def _groq(system: str, user: str, schema: dict) -> str:
+def _groq(system: str, user: str, schema: dict, media: list | None = None) -> str:
+    # Llama-4 vision reads images (not PDF — _groq_media_block returns None for those).
+    blocks = [b for b in (_groq_media_block(m) for m in (media or [])) if b is not None]
+    user_content = [{"type": "text", "text": user}, *blocks] if blocks else user
     body = groq_chat(
         [{"role": "system", "content": system + _schema_hint(schema)},
-         {"role": "user", "content": user}],
+         {"role": "user", "content": user_content}],
         model=model_id(), max_tokens=settings.ASSISTANT_MAX_TOKENS,
     )
     try:
@@ -67,11 +83,16 @@ def _groq(system: str, user: str, schema: dict) -> str:
         return ""
 
 
-def complete_json(system: str, user: str, schema: dict, *, retries: int = 3) -> dict:
-    """One text prompt → one parsed JSON dict, from the configured provider.
+def complete_json(system: str, user: str, schema: dict, *, media: list | None = None,
+                  retries: int = 3) -> dict:
+    """One prompt → one parsed JSON dict, from the configured provider.
 
-    Retries transient failures with a short backoff (free-tier keys have low per-minute limits).
-    Raises ``AssistantUnavailableError`` (blame-free, retryable) on repeated failure or garbage.
+    ``media`` (optional) is a list of ``{"media_type", "data": bytes}`` (see services.files) —
+    images/PDF injected into the user turn so a vision-capable provider reads them while it decides
+    (the agent planner passes attachments here so "create a PO from the attached image" extracts real
+    lines instead of guessing). Retries transient failures with a short backoff (free-tier keys have
+    low per-minute limits). Raises ``AssistantUnavailableError`` (blame-free, retryable) on repeated
+    failure or garbage.
     """
     prov = provider()
     runner = {"gemini": _gemini, "groq": _groq}.get(prov, _anthropic)
@@ -80,7 +101,7 @@ def complete_json(system: str, user: str, schema: dict, *, retries: int = 3) -> 
     text = ""
     for attempt in range(retries):
         try:
-            text = runner(system, user, schema)
+            text = runner(system, user, schema, media)
             break
         except Exception as exc:  # network / auth / rate-limit — blame-free, retryable
             last_exc = exc

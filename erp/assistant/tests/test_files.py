@@ -16,7 +16,7 @@ from rest_framework.test import APIClient
 
 from erp.assistant.api import views
 from erp.assistant.models import Attachment
-from erp.assistant.services import ask, files
+from erp.assistant.services import agent, ask, files
 from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
@@ -170,6 +170,41 @@ def test_chat_with_attachment_persists_link(settings, tmp_path, monkeypatch):
     att.refresh_from_db()
     assert att.message is not None and att.message.role == "user"
     assert att.message.meta["attachments"][0]["id"] == att.id
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_chat_image_reaches_the_planner(settings, tmp_path, monkeypatch):
+    """The planner — not only the final narrator — is handed the attached image, so 'create a PO
+    from the attached image' reads real values instead of guessing. Regression: media reached only
+    the answer step (agent.py:429), so the blind planner fabricated line items / asked what the
+    image showed."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    client, user = _client()
+    cid = _conversation(client)
+    att = Attachment.objects.create(
+        user=user, file=ContentFile(b"\x89PNG\r\nphoto", name="po.png"),
+        name="po.png", content_type="image/png", size=11,
+    )
+    seen: dict = {}
+
+    def fake_json(system, user, schema, *, media=None, **_):
+        seen["media"] = media
+        return {"action": "answer"}
+
+    monkeypatch.setattr(agent, "complete_json", fake_json)
+    monkeypatch.setattr(agent, "complete_stream", lambda messages, **_: iter(["ok"]))
+
+    resp = client.post(
+        CHAT_URL,
+        {"conversation_id": cid, "message": "create a PO from the attached image",
+         "attachment_ids": [att.id]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    _drain(resp)
+    assert seen["media"], "planner received no media — the image never reached complete_json"
+    assert seen["media"][0]["media_type"] == "image/png"
+    assert seen["media"][0]["data"] == b"\x89PNG\r\nphoto"
 
 
 @override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
