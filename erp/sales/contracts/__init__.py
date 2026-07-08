@@ -41,14 +41,15 @@ def find_customer(code: str) -> CustomerInfo | None:
 
 
 def _next_customer_code() -> str:
-    """Auto-generate the next ``C-000NN`` code (used when a caller creates a customer by name only)."""
-    last = (
-        Customer.objects.filter(code__startswith="C-")
-        .order_by("-code").values_list("code", flat=True).first()
-    )
-    seq = 1
-    if last and last[2:].isdigit():
-        seq = int(last[2:]) + 1
+    """Auto-generate the next free ``C-000NN`` code (used when a caller creates a customer by name
+    only). Uses the NUMERIC max of the ``C-<digits>`` codes — not string order, which mis-ranks
+    mixed-width codes like ``C-9003`` above ``C-10000`` — then steps past any code already taken (a
+    prior auto-gen, or the same number in a different width, e.g. ``C-9003`` vs ``C-09003``)."""
+    codes = list(Customer.objects.filter(code__startswith="C-").values_list("code", flat=True))
+    taken = set(codes)
+    seq = max((int(c[2:]) for c in codes if c[2:].isdigit()), default=0) + 1
+    while f"C-{seq:05d}" in taken:
+        seq += 1
     return f"C-{seq:05d}"
 
 

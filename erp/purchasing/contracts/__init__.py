@@ -8,7 +8,7 @@ from django.db.models import Count, Q, Sum
 
 from erp.identity.scoping import scope_queryset
 
-from ..domain.models import PurchaseOrder
+from ..domain.models import PurchaseOrder, Supplier
 from ..events import PO_BILLED, PO_CONFIRMED, PO_PAID, PO_RECEIVED
 from ..repositories import suppliers as _suppliers
 from ..services.orders import (
@@ -45,14 +45,15 @@ def list_suppliers() -> list[SupplierInfo]:
 
 
 def _next_supplier_code() -> str:
-    """Auto-generate the next ``S-000NN`` code (used when a caller creates a supplier by name only)."""
-    last = (
-        Supplier.objects.filter(code__startswith="S-")
-        .order_by("-code").values_list("code", flat=True).first()
-    )
-    seq = 1
-    if last and last[2:].isdigit():
-        seq = int(last[2:]) + 1
+    """Auto-generate the next free ``S-000NN`` code (used when a caller creates a supplier by name
+    only). Numeric max of the ``S-<digits>`` codes — not string order, which mis-ranks mixed-width
+    codes like ``S-9003`` above ``S-10000`` — then steps past any code already taken (a prior
+    auto-gen, or the same number in a different width)."""
+    codes = list(Supplier.objects.filter(code__startswith="S-").values_list("code", flat=True))
+    taken = set(codes)
+    seq = max((int(c[2:]) for c in codes if c[2:].isdigit()), default=0) + 1
+    while f"S-{seq:05d}" in taken:
+        seq += 1
     return f"S-{seq:05d}"
 
 
