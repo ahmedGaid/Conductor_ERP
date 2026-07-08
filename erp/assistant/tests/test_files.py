@@ -208,6 +208,51 @@ def test_chat_image_reaches_the_planner(settings, tmp_path, monkeypatch):
 
 
 @override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_image_carries_to_a_follow_up_turn(settings, tmp_path, monkeypatch):
+    """An image attached on one turn stays in the planner's eyes on the NEXT turn that has no
+    attachment of its own. Regression: media was built only from the current message's attachments,
+    so 'ok, create that invoice' / 'take the items from the image' went blind — the planner then
+    asked what the image showed and drifted into the import path (live smoke, 2026-07-08)."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    client, user = _client()
+    cid = _conversation(client)
+    att = Attachment.objects.create(
+        user=user, file=ContentFile(b"\x89PNG\r\ninvoice", name="inv.png"),
+        name="inv.png", content_type="image/png", size=13,
+    )
+    seen: dict = {}
+
+    def fake_json(system, user, schema, *, media=None, **_):
+        seen["media"] = media
+        return {"action": "answer"}
+
+    monkeypatch.setattr(agent, "complete_json", fake_json)
+    monkeypatch.setattr(agent, "complete_stream", lambda messages, **_: iter(["ok"]))
+
+    # Turn 1: attach the image.
+    r1 = client.post(
+        CHAT_URL,
+        {"conversation_id": cid, "message": "create a PO from this image", "attachment_ids": [att.id]},
+        format="json",
+    )
+    assert r1.status_code == 200
+    _drain(r1)
+
+    # Turn 2: a bare follow-up, no attachment — the image must still reach the planner.
+    seen.clear()
+    r2 = client.post(
+        CHAT_URL,
+        {"conversation_id": cid, "message": "ok, take the items from the image"},
+        format="json",
+    )
+    assert r2.status_code == 200
+    _drain(r2)
+    assert seen.get("media"), "planner went blind on the follow-up — the earlier image was not carried"
+    assert seen["media"][0]["media_type"] == "image/png"
+    assert seen["media"][0]["data"] == b"\x89PNG\r\ninvoice"
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_chat_with_foreign_attachment_404_before_stream(settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     client, _ = _client()

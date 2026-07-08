@@ -170,6 +170,24 @@ def _recent_turns(conversation, exclude_id: int | None) -> list[dict]:
     return [{"role": m.role, "content": m.content} for m in tail]
 
 
+def _recent_vision_attachments(conversation, exclude_id: int | None) -> list:
+    """The image/PDF attachments of the most recent EARLIER turn that carried any (within the history
+    window). Used to keep an attached image in view across follow-up turns: it is claimed onto the one
+    message that first referenced it, so 'ok, create that invoice' / 'take the items from the image' —
+    sent as fresh messages with no attachment of their own — would otherwise leave the planner blind.
+    Vision only (image/PDF): tabular files route through their own import card, so they are not
+    carried forward."""
+    qs = conversation.messages.filter(role="user")
+    if exclude_id is not None:
+        qs = qs.exclude(id=exclude_id)
+    for m in qs.order_by("-id")[:_HISTORY_TURNS]:
+        atts = [a for a in m.attachments.all()
+                if (a.content_type or "").lower() in files.VISION_TYPES]
+        if atts:
+            return atts
+    return []
+
+
 def _loop_user(question: str, history: list[dict], results: list[dict], file_notes: list[str]) -> str:
     """The per-round planner input: prior turns, the current question, and everything gathered so
     far (each tool's why + result), so the model decides the next step in context."""
@@ -259,6 +277,21 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                 )
             elif described.get("text"):
                 file_notes.append(described["text"])
+
+    # Carry an earlier image/PDF forward when THIS turn attached none of its own — so a follow-up
+    # that refers to "the attached image" ('ok, create that invoice', 'take the items from it') keeps
+    # the attachment in the planner's eyes instead of going blind. Only when the current turn has no
+    # vision media; the file is read fresh each such turn (bounded to one prior image-bearing turn).
+    if not media and user_msg is not None:
+        for att in _recent_vision_attachments(conversation, exclude_id=user_msg.id):
+            described = files.describe_for_model(att)
+            if described.get("media"):
+                media.append(described["media"])
+                file_notes.append(
+                    f"[image/PDF '{att.name}' attached earlier in this conversation is still provided "
+                    "to you directly — read it for any values the user refers to; extract supplier and "
+                    "line items to propose a record. Do not ask the user to retype what it shows]"
+                )
 
     history = _recent_turns(conversation, exclude_id=user_msg.id if user_msg else None)
 
