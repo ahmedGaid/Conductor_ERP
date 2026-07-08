@@ -84,5 +84,30 @@
   color: var(--color-text-muted);
 }
 
+/* New-conversation action — pushed to the inline-end edge, mirrors the panel's header tool. */
+.assistant-head__new {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex: none;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.assistant-head__new:hover {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+}
+.assistant-head__new .navicon {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+
 /* Message rendering (bubbles, markdown, citations, composer) lives in assistant-panel.css, shared
    by this page and the global panel through ConversationView. */

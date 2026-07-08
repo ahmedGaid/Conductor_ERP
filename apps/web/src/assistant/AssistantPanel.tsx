@@ -23,8 +23,8 @@ const CHIP_ICONS = new Set(["sales", "purchasing", "inventory", "accounting", "c
 export function AssistantPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { enabled, open, mode, closePanel, setMode, contextDetached, setContextDetached } =
-    useAssistant();
+  const { enabled, open, mode, closePanel, setMode, contextDetached, setContextDetached,
+    setConversationId } = useAssistant();
   const panelRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   // The panel body shows either the active conversation or the thread history (no room for two columns).
@@ -106,6 +106,19 @@ export function AssistantPanel() {
           </span>
         )}
         <div className="assistant-panel__tools">
+          <Tooltip label={t("assistant.threads.new")} placement="bottom">
+            <button
+              type="button"
+              className="assistant-panel__tool"
+              aria-label={t("assistant.threads.new")}
+              onClick={() => {
+                setConversationId(null);
+                setView("chat");
+              }}
+            >
+              <NavIcon name="plus" />
+            </button>
+          </Tooltip>
           <Tooltip
             label={t(view === "threads" ? "assistant.threads.backToChat" : "assistant.threads.title")}
             placement="bottom"
