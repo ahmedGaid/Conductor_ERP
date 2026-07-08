@@ -117,20 +117,25 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
     (blame-free, retryable) only when every provider is exhausted.
     """
     last_exc: Exception | None = None
-    for prov in provider_chain():
+    chain = provider_chain()
+    for i, prov in enumerate(chain):
         runner = _RUNNERS.get(prov, _anthropic)
         model = model_id(prov)
+        # Fail fast while a fallback remains: a provider that is down should hand off immediately, not
+        # burn the whole retry+backoff budget first. Only the LAST provider (no fallback left) gets the
+        # full retries — that's where waiting out a transient rate-limit is worth it.
+        attempts = retries if i == len(chain) - 1 else 1
         text = ""
-        for attempt in range(retries):
+        for attempt in range(attempts):
             try:
                 text = runner(system, user, schema, media, model)
                 break
             except Exception as exc:  # network / auth / rate-limit — retry, then fail over
                 last_exc = exc
-                if attempt < retries - 1:
+                if attempt < attempts - 1:
                     time.sleep(1.5 * (attempt + 1))
         else:
-            continue  # this provider exhausted its retries — try the next in the chain
+            continue  # this provider exhausted its attempts — try the next in the chain
         if not text:
             last_exc = AssistantUnavailableError(data={"reason": "empty_model_output"})
             continue  # empty output — try the next provider rather than fail outright

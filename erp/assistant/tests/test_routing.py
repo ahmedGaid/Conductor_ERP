@@ -75,6 +75,23 @@ def test_complete_json_skips_a_provider_that_returns_garbage(monkeypatch):
 
 @override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="g", GROQ_API_KEY="", MISTRAL_API_KEY="",
                    ASSISTANT_PROVIDER="")
+def test_a_failing_non_terminal_provider_is_tried_once_then_handed_off(monkeypatch):
+    """Fail fast while a fallback remains: a down primary must not burn its whole retry budget before
+    failing over (the primary here would otherwise sleep 3x on every call)."""
+    calls = {"anthropic": 0}
+
+    def down(*_a, **_k):
+        calls["anthropic"] += 1
+        raise RuntimeError("down")
+
+    monkeypatch.setitem(llm._RUNNERS, "anthropic", down)
+    monkeypatch.setitem(llm._RUNNERS, "gemini", lambda *_a, **_k: '{"ok": true}')
+    assert llm.complete_json("s", "u", {}, retries=3) == {"ok": True}
+    assert calls["anthropic"] == 1  # one attempt, then straight to the fallback
+
+
+@override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="g", GROQ_API_KEY="", MISTRAL_API_KEY="",
+                   ASSISTANT_PROVIDER="")
 def test_complete_json_raises_when_every_provider_fails(monkeypatch):
     def down(*_a, **_k):
         raise RuntimeError("down")
