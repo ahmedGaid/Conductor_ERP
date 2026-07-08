@@ -50,6 +50,24 @@ def list_items(item_type: str = "stock") -> list[ItemInfo]:
     ]
 
 
+def create_item(*, sku: str, name: str, uom: str = "unit", reorder_point=0, actor=None) -> ItemInfo:
+    """Create a stock item by SKU (its natural key). Code-based, no ORM leak — mirrors
+    ``sales.create_customer`` / ``purchasing.create_supplier`` for the assistant's import path."""
+    from ..domain.models import Item
+
+    item = Item.objects.create(
+        sku=(sku or "").strip(), name=name, uom=(uom or "unit").strip() or "unit",
+        reorder_point=reorder_point or 0,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active)
+
+
+def item_sku_exists(sku: str) -> bool:
+    """True when an item with this exact SKU already exists (import duplicate check)."""
+    return _items.by_sku((sku or "").strip()) is not None
+
+
 @dataclass(frozen=True)
 class WarehouseInfo:
     code: str
@@ -213,6 +231,8 @@ __all__ = [
     "find_item",
     "find_warehouse",
     "list_items",
+    "create_item",
+    "item_sku_exists",
     "default_warehouse_code",
     "low_stock",
     "stock_on_hand",

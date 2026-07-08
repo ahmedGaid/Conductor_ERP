@@ -93,9 +93,13 @@ def check() -> None:
     views_src = _read("erp/accounting/api/views.py")
     _assert('request.query_params.get("export")' in views_src,
             "report views must serve downloads via the ?export= param")
-    _assert((WEB_SRC / "components" / "ExportButtons.tsx").is_file(), "missing components/ExportButtons.tsx")
+    # The export toolbar moved from a standalone ExportButtons component into the unified page-header
+    # bar (unified-ui FILE_03): the useReportPageActions hook registers CSV/Excel/PDF actions, backed
+    # by lib/csvExport.ts. Assert that new wiring rather than the retired component.
+    _assert((WEB_SRC / "hooks" / "useReportPageActions.tsx").is_file(),
+            "missing hooks/useReportPageActions.tsx (report export toolbar)")
     _assert((WEB_SRC / "styles" / "print.css").is_file(), "missing styles/print.css (print-to-PDF)")
-    _assert("ExportButtons" in _read("apps/web/src/pages/accounting/TrialBalancePage.tsx"),
+    _assert("useReportPageActions" in _read("apps/web/src/pages/accounting/TrialBalancePage.tsx"),
             "trial balance screen missing the export toolbar")
 
     # 5e. Fixed assets: the sub-ledger service posts acquisition/depreciation/disposal through

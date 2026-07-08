@@ -62,6 +62,12 @@ def create_customer(*, name: str, code: str = "", credit_limit_minor: int = 0, a
     return CustomerInfo(code=customer.code, name=customer.name, is_active=customer.is_active)
 
 
+def customer_name_exists(actor, name: str) -> bool:
+    """True when the actor can already see a customer with this exact name (import duplicate check).
+    Scoped like every sales read, so a user only dedupes against customers in their own data scope."""
+    return _scoped_customers(actor).filter(name__iexact=(name or "").strip()).exists()
+
+
 def place_order(
     *, customer_code: str, warehouse_code: str, lines: list[OrderLineInput],
     order_date=None, currency: str = "EGP", notes: str = "", actor=None,
@@ -209,6 +215,7 @@ __all__ = [
     "CustomerInfo",
     "find_customer",
     "create_customer",
+    "customer_name_exists",
     "sales_summary",
     "top_customers",
     "overdue_receivables",

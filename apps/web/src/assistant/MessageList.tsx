@@ -9,6 +9,7 @@ import type {
   AttachmentInfo,
   ChatMessage,
   ChatStep,
+  ImportTask,
 } from "../api/assistant";
 import { getMe } from "../api/identity";
 import { NavIcon } from "../app/icons";
@@ -19,6 +20,7 @@ import { Tooltip } from "../components/Tooltip";
 import { useAsync } from "../hooks/useAsync";
 import { SYSTEM_ADMIN } from "../pages/settings/roles";
 import { ActionCard } from "./ActionCard";
+import { ImportCard } from "./ImportCard";
 import { Markdown } from "./Markdown";
 import { SuggestionCard } from "./SuggestionCard";
 import { followupsFor, type SuggestionKey } from "./suggestions";
@@ -144,6 +146,7 @@ interface MessageListProps {
   onFollowup: (question: string) => void;
   onNavigate?: () => void;
   onResolveAction: (messageId: number, proposal: ActionProposal) => void;
+  onResolveImport: (messageId: number, task: ImportTask) => void;
 }
 
 /**
@@ -164,6 +167,7 @@ export function MessageList({
   onFollowup,
   onNavigate,
   onResolveAction,
+  onResolveImport,
 }: MessageListProps) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -214,6 +218,7 @@ export function MessageList({
             const steps = (m.meta?.steps as ChatStep[] | undefined) ?? [];
             const proposal = m.meta?.proposal as ActionProposal | undefined;
             const suggestion = m.meta?.suggestion as AssistantSuggestion | undefined;
+            const importTask = m.meta?.import as ImportTask | undefined;
             // A synthetic "detour return" turn (session 13) is recorded honestly, but shown as a calm
             // localised divider — not an English user bubble — so the transcript stays on-brand.
             if (m.meta?.kind === "detour_return") {
@@ -270,6 +275,14 @@ export function MessageList({
                 )}
                 {suggestion && (
                   <SuggestionCard suggestion={suggestion} messageId={m.id} onFollowup={onFollowup} />
+                )}
+                {importTask && (
+                  <ImportCard
+                    messageId={m.id}
+                    task={importTask}
+                    onResolved={onResolveImport}
+                    onNavigate={onNavigate}
+                  />
                 )}
                 {cites.length > 0 && (
                   <ul className="assistant-cites msg__cites">

@@ -127,6 +127,38 @@
       "welcomeBack": "عُدنا من إنشاء {{entity}} {{label}} — نكمل الآن",
       "resumed": "نكمل من حيث توقّفنا…"
     },
+    "import": {
+      "mapTitle": "استيراد {{target}}",
+      "previewTitle": "قبل الاستيراد",
+      "rows": "{{count}} صف",
+      "ignore": "— تجاهل —",
+      "continue": "معاينة",
+      "back": "رجوع",
+      "ignoredColumns": "أعمدة مُستبعَدة: {{columns}}",
+      "needsColumn": "اختر عمودًا لـ: {{fields}}",
+      "valid": "{{count}} جاهزة",
+      "duplicates": "{{count}} موجودة بالفعل",
+      "errors": "{{count}} تحتاج تصحيحًا",
+      "rowError": "الصف {{row}} — {{field}} — {{message}}",
+      "rowDuplicate": "الصف {{row}} — {{key}} — سيُتخطّى",
+      "confirmLine": "إنشاء {{count}} وتخطّي {{skip}}",
+      "created": "أُنشئت {{count}}",
+      "skipped": "تُخطّيت {{count}}",
+      "downloadReport": "تنزيل التقرير الكامل",
+      "target": {
+        "customers": "العملاء",
+        "suppliers": "الموردين",
+        "items": "الأصناف"
+      },
+      "fields": {
+        "name": "الاسم",
+        "code": "الرمز",
+        "credit_limit_minor": "حد الائتمان",
+        "sku": "الرمز التخزيني",
+        "uom": "الوحدة",
+        "reorder_point": "حد إعادة الطلب"
+      }
+    },
     "context": {
       "viewing": "سياق الصفحة",
       "detach": "فصل سياق الصفحة عن هذه المحادثة"

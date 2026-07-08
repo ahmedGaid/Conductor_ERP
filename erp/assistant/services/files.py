@@ -35,6 +35,11 @@ TEXT_BUDGET = 8 * 1024
 # How many data rows of a table we show the model (plus the true total row count).
 ROW_SAMPLE = 20
 
+# The tabular types the structured-import pipeline (session 14) reads row by row.
+IMPORT_TYPES = CSV_TYPES | {XLSX_TYPE}
+# Hard ceiling on rows a single import reads into memory — a runaway file can't exhaust the process.
+MAX_IMPORT_ROWS = 5000
+
 
 def fetch_unclaimed(attachment_ids, *, user) -> list[Attachment]:
     """The caller's own still-unclaimed attachments, in order — or 404 if any id doesn't qualify.
@@ -94,6 +99,58 @@ def describe_for_model(attachment: Attachment) -> dict:
     clipped = text[:TEXT_BUDGET]
     note = "\n…(truncated)" if len(text) > TEXT_BUDGET else ""
     return {"text": f'File "{attachment.name}" ({attachment.content_type}):\n{clipped}{note}'}
+
+
+def read_table(attachment: Attachment) -> tuple[list[str], list[list]]:
+    """A tabular attachment → ``(header, data_rows)`` for the structured-import pipeline (session 14).
+
+    Unlike ``describe_for_model`` (which samples a file into model-ready text), this returns the real
+    rows so preview/execute can validate and create each one. Header cells are stripped strings; data
+    cells stay as read (``None`` for blank XLSX cells) and the parse layer coerces them. Bounded to
+    ``MAX_IMPORT_ROWS`` data rows. A non-tabular type returns ``([], [])``.
+    """
+    ct = (attachment.content_type or "").lower()
+    raw = _read_bytes(attachment)
+    if ct in CSV_TYPES:
+        return _read_csv_rows(raw)
+    if ct == XLSX_TYPE:
+        return _read_xlsx_rows(raw)
+    return [], []
+
+
+def _read_csv_rows(raw: bytes) -> tuple[list[str], list[list]]:
+    text = raw.decode("utf-8-sig", errors="replace")
+    reader = csv.reader(io.StringIO(text))
+    try:
+        header = [str(h).strip() for h in next(reader)]
+    except StopIteration:
+        return [], []
+    rows: list[list] = []
+    for row in reader:
+        if len(rows) >= MAX_IMPORT_ROWS:
+            break
+        rows.append(list(row))
+    return header, rows
+
+
+def _read_xlsx_rows(raw: bytes) -> tuple[list[str], list[list]]:
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
+    try:
+        rows_iter = wb.active.iter_rows(values_only=True)
+        try:
+            header = [("" if h is None else str(h)).strip() for h in next(rows_iter)]
+        except StopIteration:
+            return [], []
+        rows: list[list] = []
+        for row in rows_iter:
+            if len(rows) >= MAX_IMPORT_ROWS:
+                break
+            rows.append(list(row))
+        return header, rows
+    finally:
+        wb.close()
 
 
 def _read_bytes(attachment: Attachment) -> bytes:

@@ -1380,6 +1380,123 @@
   color: var(--color-text-muted);
 }
 
+/* --- Import card (session 14) --------------------------------------------------------------- */
+/* Shares the action-card frame; adds the mapping grid, the preview tallies + peek table, and the
+   report's download link. Colour appears only beside a word (a ready/duplicate/error tally). */
+.import-card__map {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.import-card__map-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.import-card__field {
+  flex: none;
+  inline-size: 40%;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+.import-card__req {
+  margin-inline-start: 0.15rem;
+  color: var(--color-text-muted);
+}
+.import-card__select {
+  flex: 1;
+  min-inline-size: 0;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+.import-card__ignored {
+  margin: 0;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+.import-card__tallies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.import-card__tally {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.import-card__tally .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+.import-card__tally--ok {
+  color: var(--color-success);
+}
+.import-card__tally--bad {
+  color: var(--color-danger);
+}
+.import-card__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.import-card__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+.import-card__table th,
+.import-card__table td {
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  text-align: start;
+  white-space: nowrap;
+  border-block-end: 1px solid var(--color-border);
+}
+.import-card__table th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium, 500);
+}
+.import-card__table tbody tr:last-child td {
+  border-block-end: none;
+}
+.import-card__issues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+.import-card__issues--muted {
+  color: var(--color-text-muted);
+}
+.import-card__report-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.import-card__report-link .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
 /* --- Guided detour (session 13) ------------------------------------------------------------- */
 /* The slim "waiting — creating supplier…" pill sits in the bottom-start corner, opposite the
    floating panel (bottom-end) so the two never collide. Monochrome chrome; the only affordances are

@@ -204,6 +204,64 @@ export interface AssistantSuggestion {
   status: "open" | "resolved";
 }
 
+// --- Bulk import (plan session 14) -------------------------------------------------------------
+// A spreadsheet the agent read: its columns mapped to a target's fields, stepped through
+// mapping → preview → report. Rides in the assistant message meta like a proposal, so a reloaded
+// thread shows the same stage; execute persists the report back for reload-safety.
+
+// One field of an import target (the create form's shape) — drives the mapping dropdowns.
+export interface ImportField {
+  key: string;
+  label: string;
+  required: boolean;
+}
+
+// field key → the file column carrying it (or null when unmapped/ignored).
+export type ImportMapping = Record<string, string | null>;
+
+export interface ImportRowError {
+  row: number;
+  field: string;
+  message: string;
+}
+
+export interface ImportPreview {
+  valid: number;
+  errors: ImportRowError[];
+  duplicates: { row: number; key: string }[];
+  // First parsed rows (each a field→value map plus its 1-based `row`), for the peek table.
+  rows: Record<string, string | number>[];
+}
+
+export interface ImportReportRow {
+  row: number;
+  status: "created" | "skipped" | "error";
+  key: string;
+  message: string;
+}
+
+export interface ImportReport {
+  created: number;
+  skipped: number;
+  errors: ImportRowError[];
+  report: ImportReportRow[];
+  links: ActionRecord[];
+}
+
+export interface ImportTask {
+  attachment_id: number;
+  target: "customers" | "suppliers" | "items";
+  fields: ImportField[];
+  columns: string[];
+  mapping: ImportMapping;
+  sample: Record<string, string>[];
+  row_count: number;
+  issues: string[];
+  stage: "mapping" | "report";
+  // Filled once the batch is executed (server-persisted, reload-safe).
+  report?: ImportReport;
+}
+
 export interface ChatMessage {
   id: number;
   role: "user" | "assistant";
@@ -216,6 +274,7 @@ export interface ChatMessage {
     steps?: ChatStep[];
     proposal?: ActionProposal;
     suggestion?: AssistantSuggestion;
+    import?: ImportTask;
     // A synthetic "detour_return" user turn (session 13): rendered as a calm localised divider, not a
     // raw bubble. entity/label localise its text ("Back from creating supplier ABC Trading").
     kind?: string;
@@ -241,6 +300,25 @@ export function executeAction(
   return apiFetch<ActionResult>("/assistant/actions/execute", {
     method: "POST",
     body: JSON.stringify({ message_id: messageId, decision }),
+  });
+}
+
+// Dry-run a mapped import — parse + duplicate check, nothing written (plan session 14). Keyed by the
+// import card's message; the server reads the file + target from its persisted meta, so the client
+// only sends the column mapping the user adjusted.
+export function previewImport(messageId: number, mapping: ImportMapping): Promise<ImportPreview> {
+  return apiFetch<ImportPreview>("/assistant/imports/preview", {
+    method: "POST",
+    body: JSON.stringify({ message_id: messageId, mapping }),
+  });
+}
+
+// Create the valid, non-duplicate rows (single-use — a second run 409s). The report is persisted
+// back onto the card so a reload shows the settled outcome.
+export function executeImport(messageId: number, mapping: ImportMapping): Promise<ImportReport> {
+  return apiFetch<ImportReport>("/assistant/imports/execute", {
+    method: "POST",
+    body: JSON.stringify({ message_id: messageId, mapping }),
   });
 }
 
@@ -301,7 +379,7 @@ export function deleteConversation(id: number): Promise<void> {
 // `data:` JSON per event; sessions 09/10 add more event types to the same union.
 
 export interface ChatEvent {
-  type: "step" | "token" | "citations" | "done" | "error" | "proposal" | "suggestion";
+  type: "step" | "token" | "citations" | "done" | "error" | "proposal" | "suggestion" | "import";
   text?: string;
   citations?: AskCitation[];
   message_id?: number;
@@ -317,6 +395,8 @@ export interface ChatEvent {
   proposal?: ActionProposal;
   // `suggestion` event (session 12): a blocker turned actionable, keyed by message_id.
   suggestion?: AssistantSuggestion;
+  // `import` event (session 14): a mapping-stage spreadsheet import card, keyed by message_id.
+  import?: ImportTask;
 }
 
 // Same auth headers apiFetch sends (bearer + Accept-Language). Kept local because a raw stream

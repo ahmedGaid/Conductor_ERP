@@ -127,6 +127,38 @@
       "welcomeBack": "Back from creating {{entity}} {{label}} — continuing",
       "resumed": "Continuing where we left off…"
     },
+    "import": {
+      "mapTitle": "Import {{target}}",
+      "previewTitle": "Before you import",
+      "rows": "{{count}} rows",
+      "ignore": "— ignore —",
+      "continue": "Preview",
+      "back": "Back",
+      "ignoredColumns": "Columns left out: {{columns}}",
+      "needsColumn": "Choose a column for: {{fields}}",
+      "valid": "{{count}} ready",
+      "duplicates": "{{count}} already exist",
+      "errors": "{{count}} need fixing",
+      "rowError": "Row {{row}} — {{field}} — {{message}}",
+      "rowDuplicate": "Row {{row}} — {{key}} — will be skipped",
+      "confirmLine": "Create {{count}}, skip {{skip}}",
+      "created": "Created {{count}}",
+      "skipped": "skipped {{count}}",
+      "downloadReport": "Download full report",
+      "target": {
+        "customers": "customers",
+        "suppliers": "suppliers",
+        "items": "items"
+      },
+      "fields": {
+        "name": "Name",
+        "code": "Code",
+        "credit_limit_minor": "Credit limit",
+        "sku": "SKU",
+        "uom": "Unit",
+        "reorder_point": "Reorder point"
+      }
+    },
     "context": {
       "viewing": "Page context",
       "detach": "Detach page context from this conversation"

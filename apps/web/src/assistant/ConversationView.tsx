@@ -16,6 +16,7 @@ import {
   type ChatEvent,
   type ChatMessage,
   type ChatStep,
+  type ImportTask,
 } from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
@@ -185,6 +186,7 @@ export function ConversationView() {
     let messageId: number | null = null;
     let proposal: ActionProposal | null = null;
     let suggestion: AssistantSuggestion | null = null;
+    let importTask: ImportTask | null = null;
     let errMsg: string | null = null;
     // The event handling is identical for a fresh answer and a detour resume — only the request
     // differs (resume replays paused work server-side; no new question, no page context needed).
@@ -226,6 +228,10 @@ export function ConversationView() {
             // A blocker turned actionable (session 12) — rides the message meta like a proposal.
             suggestion = e.suggestion;
             if (e.message_id != null) messageId = e.message_id;
+          } else if (e.type === "import" && e.import) {
+            // A spreadsheet import card (session 14) — mapping stage, keyed to its message id.
+            importTask = e.import;
+            if (e.message_id != null) messageId = e.message_id;
           } else if (e.type === "done") {
             usedTool = e.used_tool ?? null;
             if (e.message_id != null) messageId = e.message_id;
@@ -238,7 +244,7 @@ export function ConversationView() {
       // A stop (abort) is not an error — the partial answer below still commits.
       if (!ac.signal.aborted) errMsg = err instanceof Error ? err.message : String(err);
     } finally {
-      if (acc.trim() || proposal || suggestion) {
+      if (acc.trim() || proposal || suggestion || importTask) {
         const asstMsg: ChatMessage = {
           // Use the real server id when we got one, so a proposal card can execute against it.
           id: messageId ?? -Date.now() - 1,
@@ -250,6 +256,7 @@ export function ConversationView() {
             ...(steps.length ? { steps } : {}),
             ...(proposal ? { proposal } : {}),
             ...(suggestion ? { suggestion } : {}),
+            ...(importTask ? { import: importTask } : {}),
           },
           created_at: new Date().toISOString(),
         };
@@ -362,6 +369,16 @@ export function ConversationView() {
     );
   }
 
+  // An import card advanced to (or settled at) a new stage — patch its message meta so the stage
+  // persists in view. Execute also stored the same card server-side; a reload reads it back.
+  function resolveImport(id: number, task: ImportTask) {
+    setMessages((m) =>
+      (m ?? []).map((msg) =>
+        msg.id === id ? { ...msg, meta: { ...msg.meta, import: task } } : msg,
+      ),
+    );
+  }
+
   // --- drag-and-drop (whole surface) -----------------------------------------------------------
   const hasFiles = (e: DragEvent) => e.dataTransfer?.types?.includes("Files");
 
@@ -447,6 +464,7 @@ export function ConversationView() {
           onFollowup={(q) => void send(q)}
           onNavigate={onNavigate}
           onResolveAction={resolveAction}
+          onResolveImport={resolveImport}
         />
       )}
 

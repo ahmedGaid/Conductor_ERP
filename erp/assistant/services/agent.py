@@ -25,7 +25,7 @@ from ..client import complete_stream
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
-from . import actions, context, files, suggestions
+from . import actions, context, files, imports, suggestions
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS
 from .llm import complete_json
 
@@ -66,9 +66,16 @@ _LOOP_SYSTEM = (
     "straight from it and fill the propose action's fields. Never ask the user to retype what the "
     "attachment plainly shows, and never invent lines you cannot actually see — if the image is "
     "unreadable or a value is genuinely absent, say so or leave that field null.\n"
+    "Importing a list: when the user attaches a CSV or Excel spreadsheet and asks to import/load/add "
+    "it as customers, suppliers, or items (a whole list at once, not one record), choose action "
+    "import and set target to customers/suppliers/items when it's clear (leave null to auto-detect). "
+    "The system reads the file, maps its columns, and shows a preview the user confirms before any "
+    "record is created — do not propose single records for a bulk list, and never claim rows were "
+    "created.\n"
     "Each round respond with EXACTLY ONE JSON object, one of:\n"
     '  {{"action": "tool", "tool": "<name>", "why": "<=8 words, shown to the user>", <args...>}}\n'
     '  {{"action": "propose", "name": "<action>", "why": "<=8 words>", <action args...>}}\n'
+    '  {{"action": "import", "target": "<customers|suppliers|items|null>", "why": "<=8 words>"}}\n'
     '  {{"action": "clarify", "question": "<one short question>"}}\n'
     '  {{"action": "suggest", "resume": "<one sentence: what you will continue once it is fixed>"}}\n'
     '  {{"action": "answer"}}\n'
@@ -101,6 +108,9 @@ _LOOP_SYSTEM = (
 # fields reuse the router schema (supplier/warehouse/query); only the action-specific ones are new.
 _ACTION_FIELDS = {
     "name": {"type": ["string", "null"], "description": "the action name when action=propose"},
+    "target": {"type": ["string", "null"],
+               "description": "when action=import: the list the file holds — "
+                              "customers | suppliers | items (leave null to let the system detect)"},
     "customer": {"type": ["string", "null"], "description": "customer code or name (sales order)"},
     "from_low_stock": {"type": ["boolean", "null"],
                        "description": "true to fill a purchase request from low-stock items"},
@@ -123,7 +133,8 @@ _ACTION_FIELDS = {
 _LOOP_SCHEMA = {
     "type": "object",
     "properties": {
-        "action": {"type": "string", "enum": ["tool", "propose", "clarify", "suggest", "answer"]},
+        "action": {"type": "string",
+                   "enum": ["tool", "propose", "import", "clarify", "suggest", "answer"]},
         "why": {"type": ["string", "null"], "description": "<=8 words, shown to the user"},
         "question": {"type": ["string", "null"],
                      "description": "the clarifying question when action=clarify"},
@@ -271,6 +282,7 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     citations: list[dict] = []
     clarify_text: str | None = None
     proposal: dict | None = None  # a built write proposal (session 10) — the turn ends after one
+    import_task: dict | None = None  # a spreadsheet import card (session 14) — ends the turn too
     suggestion: dict | None = None  # a blocker turned actionable (session 12) — ends the turn too
     pending: dict | None = None     # the blocked decision, kept in meta for session 13's resume
     last_blocker: dict | None = None
@@ -306,6 +318,27 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                 continue
             if "error" not in built:
                 proposal = built
+            break
+        if action == "import":
+            # A bulk import from an attached spreadsheet: find the tabular attachment on this turn,
+            # inspect it (map columns → fields), and end the turn with a mapping-stage card. The
+            # planner never sees the attachment id — the file is resolved server-side from the user
+            # turn, so it can't point the import at another file.
+            tabular = next(
+                (a for a in (user_msg.attachments.all() if user_msg else [])
+                 if (a.content_type or "").lower() in files.IMPORT_TYPES),
+                None,
+            )
+            why = (decision.get("why") or "").strip()
+            if tabular is None:
+                results.append({"tool": "import", "why": why, "data": {
+                    "error": "No spreadsheet is attached to import. Ask the user to attach a CSV or "
+                             "Excel file of the customers, suppliers, or items to add."}})
+                break
+            inspected = imports.inspect(actor, tabular, decision.get("target"))
+            results.append({"tool": "import", "why": why, "data": inspected})
+            if "error" not in inspected:
+                import_task = imports.as_card(inspected, tabular.id)
             break
         if action == "suggest":
             # Blocker → actionable card: issue + the actor's permitted fixes + the resume promise.
@@ -400,6 +433,10 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             # The proposal rides in the assistant message meta (status starts "pending"); the card is
             # keyed by this message id and the execute endpoint re-reads the payload from here.
             meta["proposal"] = {**proposal, "status": "pending"}
+        if import_task is not None:
+            # The import card rides in meta too (mapping stage); preview/execute re-read the file +
+            # target from here, keyed by this message id, and execute persists the report back.
+            meta["import"] = import_task
         if suggestion is not None:
             # Same ride for a suggestion card; ``pending`` is the blocked decision session 13
             # replays once the user returns from the detour.
@@ -432,6 +469,12 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                 user += ("\n\nA draft has been prepared for the user to review. Briefly say what it "
                          "will create and mention they can confirm or dismiss it below; do NOT claim "
                          "it was created or posted.")
+            if import_task is not None:
+                # A mapping-stage import card is shown below — narrate it, never claim any create.
+                user += ("\n\nA spreadsheet import has been prepared: its columns are mapped to fields "
+                         "and shown in a card below. Briefly say you read the file (name the target and "
+                         "row count if useful), and that they can adjust the column mapping and preview "
+                         "the rows before anything is created. Do NOT claim any records were created.")
             if suggestion is not None:
                 # Issue → fix → the promised return: the card carries the buttons; the prose
                 # carries the plan ("After you save the supplier, I'll bring you back...").
@@ -451,6 +494,8 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         if proposal is not None and msg is not None:
             yield {"type": "proposal", "message_id": msg.id,
                    "proposal": {**proposal, "status": "pending"}}
+        if import_task is not None and msg is not None:
+            yield {"type": "import", "message_id": msg.id, "import": import_task}
         if suggestion is not None and msg is not None:
             yield {"type": "suggestion", "message_id": msg.id,
                    "suggestion": {**suggestion, "status": "open"}}

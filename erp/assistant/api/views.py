@@ -31,7 +31,7 @@ from ..errors import (
     AssistantUnavailableError,
 )
 from ..models import Attachment, Conversation, KnowledgeDocument, Message
-from ..services import actions, files, knowledge
+from ..services import actions, files, imports, knowledge
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
 
@@ -388,6 +388,77 @@ class DetourResumeView(APIView):
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
         return response
+
+
+def _import_card(request: Request):
+    """Resolve (and own-check) the assistant message carrying an import card + its persisted task.
+
+    Preview/execute are keyed by ``message_id`` (not a raw ``attachment_id``): the file and target
+    ride in the card's ``meta.import``, so a client can never point the run at someone else's file or
+    a different target — it only supplies the column mapping the user adjusted."""
+    message = get_object_or_404(
+        Message, pk=request.data.get("message_id"),
+        conversation__user=request.user, role=Message.Role.ASSISTANT,
+    )
+    task = (message.meta or {}).get("import")
+    if not task:
+        raise Http404
+    attachment = get_object_or_404(Attachment, pk=task.get("attachment_id"), user=request.user)
+    mapping = request.data.get("mapping")
+    if not isinstance(mapping, dict):
+        raise ValidationError("A column mapping is required.")
+    return message, task, attachment, mapping
+
+
+class ImportInspectView(APIView):
+    """Sniff an uploaded spreadsheet and propose a header→field mapping (plan session 14). Creating
+    records is the same right as any create, so Branch Manager is required. Returns a mapping-stage
+    card; the chat loop reaches the same ``imports.inspect`` directly when the user asks in chat."""
+
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def post(self, request: Request) -> Response:
+        if not client.enabled():
+            raise Http404
+        attachment = get_object_or_404(Attachment, pk=request.data.get("attachment_id"),
+                                       user=request.user)
+        inspected = imports.inspect(request.user, attachment, request.data.get("target"))
+        if "error" in inspected:
+            return _envelope(inspected)
+        return _envelope(imports.as_card(inspected, attachment.id))
+
+
+class ImportPreviewView(APIView):
+    """Dry-run every row of a mapped import — parse + duplicate check, nothing written."""
+
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def post(self, request: Request) -> Response:
+        if not client.enabled():
+            raise Http404
+        _message, task, attachment, mapping = _import_card(request)
+        return _envelope(imports.preview(request.user, attachment, mapping, task.get("target")))
+
+
+class ImportExecuteView(APIView):
+    """Create the valid, non-duplicate rows (single-use — a second run 409s). Persists the report
+    into the card's ``meta.import`` so a reloaded thread shows the settled outcome, mirroring how a
+    confirmed action proposal is stored."""
+
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def post(self, request: Request) -> Response:
+        if not client.enabled():
+            raise Http404
+        message, task, attachment, mapping = _import_card(request)
+        if task.get("stage") == "report":
+            raise ActionAlreadyHandledError
+        result = imports.execute(request.user, attachment, mapping, task.get("target"))
+        meta = message.meta or {}
+        meta["import"] = {**task, "mapping": mapping, "stage": "report", "report": result}
+        message.meta = meta
+        message.save(update_fields=["meta"])
+        return _envelope(result)
 
 
 def _first_line(conversation: Conversation) -> str:

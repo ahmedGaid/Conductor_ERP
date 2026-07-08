@@ -44,6 +44,34 @@ def list_suppliers() -> list[SupplierInfo]:
     ]
 
 
+def _next_supplier_code() -> str:
+    """Auto-generate the next ``S-000NN`` code (used when a caller creates a supplier by name only)."""
+    last = (
+        Supplier.objects.filter(code__startswith="S-")
+        .order_by("-code").values_list("code", flat=True).first()
+    )
+    seq = 1
+    if last and last[2:].isdigit():
+        seq = int(last[2:]) + 1
+    return f"S-{seq:05d}"
+
+
+def create_supplier(*, name: str, code: str = "", actor=None) -> SupplierInfo:
+    """Create a supplier by business key (code auto-assigned when omitted). Code-based, no ORM leak."""
+    code = (code or "").strip() or _next_supplier_code()
+    supplier = Supplier.objects.create(
+        code=code, name=name,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    return SupplierInfo(code=supplier.code, name=supplier.name, is_active=supplier.is_active)
+
+
+def supplier_name_exists(name: str) -> bool:
+    """True when a supplier with this exact name already exists (import duplicate check). Suppliers
+    are company-wide (``list_suppliers`` is unscoped), so this is not actor-narrowed."""
+    return Supplier.objects.filter(name__iexact=(name or "").strip()).exists()
+
+
 def place_request(*, supplier_code: str, warehouse_code: str, lines: list[RequestLineInput],
                   request_date=None, currency: str = "EGP", notes: str = "", actor=None):
     """Create a draft purchase request for a supplier referenced by **code**.
@@ -137,6 +165,8 @@ __all__ = [
     "SupplierInfo",
     "find_supplier",
     "list_suppliers",
+    "create_supplier",
+    "supplier_name_exists",
     "place_request",
     "RequestLineInput",
     "open_purchase_orders",
