@@ -4,8 +4,12 @@ Single construction point so (a) tests monkeypatch ``get_client`` / ``get_gemini
 gates never make live calls, and (b) an install without an SDK or an API key still runs — the
 assistant is optional and everything checks ``enabled()`` first.
 
-Two providers behind the same extraction contract: Anthropic (Claude) and Google (Gemini).
-``provider()`` picks by explicit ``ASSISTANT_PROVIDER`` or by whichever key is present.
+Four providers behind one seam: Anthropic (Claude), Google (Gemini), Mistral, Groq. Every key that
+is set joins an automatic FAILOVER CHAIN (``provider_chain()``): the JSON/stream helpers try the
+preferred provider first and fall to the next available one when it is down / rate-limited /
+erroring. ``ASSISTANT_PROVIDER`` forces one to the front; otherwise the built-in ``PROVIDER_ORDER``
+(strongest first) decides. ``provider()`` is just the head of the chain, kept for the callers that
+only need the primary (model defaulting, the Gemini-only embedding path).
 """
 from __future__ import annotations
 
@@ -16,32 +20,62 @@ from django.conf import settings
 DEFAULT_MODELS = {
     "anthropic": "claude-opus-4-8",
     "gemini": "gemini-2.5-flash",
+    "mistral": "mistral-small-latest",  # OpenAI-compatible; vision (Pixtral family) + JSON mode
     "groq": "meta-llama/llama-4-scout-17b-16e-instruct",  # multimodal (image) on Groq
 }
 
+# Which settings key holds each provider's credential.
+PROVIDER_KEYS = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "gemini": "GEMINI_API_KEY",
+    "mistral": "MISTRAL_API_KEY",
+    "groq": "GROQ_API_KEY",
+}
+
+# Default preference (strongest / most reliable first). A configured ASSISTANT_PROVIDER jumps ahead
+# of this; task-aware ordering (e.g. prefer a vision model for an image turn) is a later refinement.
+PROVIDER_ORDER = ["anthropic", "gemini", "mistral", "groq"]
+
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+MISTRAL_BASE_URL = "https://api.mistral.ai/v1"
 
 
 def enabled() -> bool:
     return bool(getattr(settings, "ASSISTANT_ENABLED", False))
 
 
-def provider() -> str:
+def _has_key(name: str) -> bool:
+    return bool(getattr(settings, PROVIDER_KEYS.get(name, ""), ""))
+
+
+def provider_chain() -> list[str]:
+    """The ordered list of providers to try this request: a forced ``ASSISTANT_PROVIDER`` first (even
+    without a key — tests monkeypatch its client), then every other provider that has a key, in
+    ``PROVIDER_ORDER``. Never empty — falls back to a deterministic ``["anthropic"]`` for a flag-on,
+    no-key setup so the path stays predictable."""
     configured = getattr(settings, "ASSISTANT_PROVIDER", "")
+    chain: list[str] = []
     if configured:
-        return configured
-    if settings.ANTHROPIC_API_KEY:
-        return "anthropic"
-    if settings.GEMINI_API_KEY:
-        return "gemini"
-    if settings.GROQ_API_KEY:
-        return "groq"
-    # Flag forced on with no key (tests, dry setups): keep a deterministic path.
-    return "anthropic"
+        chain.append(configured)
+    for name in PROVIDER_ORDER:
+        if name not in chain and _has_key(name):
+            chain.append(name)
+    return chain or ["anthropic"]
 
 
-def model_id() -> str:
-    return settings.ASSISTANT_MODEL or DEFAULT_MODELS[provider()]
+def provider() -> str:
+    """The primary provider — the head of the failover chain."""
+    return provider_chain()[0]
+
+
+def model_id(prov: str | None = None) -> str:
+    """The model for a given provider (default: the primary). ``ASSISTANT_MODEL`` applies only to the
+    primary provider — a fallback provider always uses its own default model, so we never send, say, a
+    Claude model id to Mistral mid-failover."""
+    prov = prov or provider()
+    if settings.ASSISTANT_MODEL and prov == provider():
+        return settings.ASSISTANT_MODEL
+    return DEFAULT_MODELS.get(prov, DEFAULT_MODELS["anthropic"])
 
 
 def get_client():
@@ -86,6 +120,24 @@ def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = 
     return resp.json()
 
 
+def mistral_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True) -> dict:
+    """One OpenAI-compatible chat completion against Mistral. Same thin shape as ``groq_chat`` (no
+    SDK, one monkeypatchable seam); raises on any non-2xx for the caller to map."""
+    import httpx
+
+    payload = {"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": 0}
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+    resp = httpx.post(
+        f"{MISTRAL_BASE_URL}/chat/completions",
+        headers={"Authorization": f"Bearer {settings.MISTRAL_API_KEY}"},
+        json=payload,
+        timeout=60.0,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 # --- Streaming (plan session 02) ---------------------------------------------------------------
 # The natural-language answer step can stream its prose token-by-token so the chat UI renders as
 # the model writes. Same key/config plumbing as the JSON path; only the transport differs. Any
@@ -123,10 +175,11 @@ def _inject_blocks(messages: list, media: list, block_for) -> list:
     return msgs
 
 
-def _stream_anthropic(messages: list, system: str | None, media: list | None = None):
+def _stream_anthropic(messages: list, system: str | None, media: list | None = None,
+                      prov: str | None = None):
     if media:
         messages = _inject_blocks(messages, media, _anthropic_media_block)
-    kwargs = dict(model=model_id(), max_tokens=settings.ASSISTANT_MAX_TOKENS, messages=messages)
+    kwargs = dict(model=model_id(prov), max_tokens=settings.ASSISTANT_MAX_TOKENS, messages=messages)
     if system:
         kwargs["system"] = system
     with get_client().messages.stream(**kwargs) as stream:
@@ -135,7 +188,8 @@ def _stream_anthropic(messages: list, system: str | None, media: list | None = N
                 yield text
 
 
-def _stream_gemini(messages: list, system: str | None, media: list | None = None):
+def _stream_gemini(messages: list, system: str | None, media: list | None = None,
+                   prov: str | None = None):
     from google.genai import types
 
     cfg = dict(max_output_tokens=settings.ASSISTANT_MAX_TOKENS)
@@ -152,21 +206,31 @@ def _stream_gemini(messages: list, system: str | None, media: list | None = None
     else:
         contents = [m["content"] for m in messages]
     for chunk in get_gemini_client().models.generate_content_stream(
-        model=model_id(), contents=contents, config=types.GenerateContentConfig(**cfg)
+        model=model_id(prov), contents=contents, config=types.GenerateContentConfig(**cfg)
     ):
         text = getattr(chunk, "text", "") or ""
         if text:
             yield text
 
 
-def _groq_media_block(m: dict):
+def _openai_image_block(m: dict):
+    """An OpenAI-compatible image content block (Groq + Mistral share the shape). PDF isn't shown on
+    this path — the vision models here read images, not PDFs."""
     if m["media_type"] == "application/pdf":
-        return None  # Llama-4 vision can't read PDF; the file simply isn't shown
+        return None
     return {"type": "image_url",
             "image_url": {"url": f'data:{m["media_type"]};base64,{_b64(m["data"])}'}}
 
 
-def _stream_groq(messages: list, system: str | None, media: list | None = None):
+# Back-compat name (llm.py imports it); the block shape is provider-neutral.
+_groq_media_block = _openai_image_block
+_mistral_media_block = _openai_image_block
+
+
+def _stream_openai_compatible(base_url: str, api_key: str, messages: list, system: str | None,
+                              media: list | None, prov: str | None):
+    """Shared SSE stream for the OpenAI-compatible providers (Groq, Mistral): same request shape,
+    same ``choices[].delta.content`` deltas — only the base URL + key differ."""
     import json as _json
 
     import httpx
@@ -175,17 +239,17 @@ def _stream_groq(messages: list, system: str | None, media: list | None = None):
         msgs_in = [dict(m) for m in messages]
         last = msgs_in[-1]
         text = last["content"] if isinstance(last["content"], str) else ""
-        blocks = [b for b in (_groq_media_block(m) for m in media) if b is not None]
+        blocks = [b for b in (_openai_image_block(m) for m in media) if b is not None]
         last["content"] = [{"type": "text", "text": text}, *blocks]
         messages = msgs_in
     msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
     payload = {
-        "model": model_id(), "messages": msgs,
+        "model": model_id(prov), "messages": msgs,
         "max_tokens": settings.ASSISTANT_MAX_TOKENS, "temperature": 0, "stream": True,
     }
     with httpx.stream(
-        "POST", f"{GROQ_BASE_URL}/chat/completions",
-        headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+        "POST", f"{base_url}/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}"},
         json=payload, timeout=60.0,
     ) as resp:
         resp.raise_for_status()
@@ -203,16 +267,52 @@ def _stream_groq(messages: list, system: str | None, media: list | None = None):
                 yield delta
 
 
-def complete_stream(messages: list, *, system: str | None = None, media: list | None = None):
-    """Yield answer text chunks from the active provider.
+def _stream_groq(messages: list, system: str | None, media: list | None = None,
+                 prov: str | None = None):
+    yield from _stream_openai_compatible(
+        GROQ_BASE_URL, settings.GROQ_API_KEY, messages, system, media, prov)
 
-    ``media`` (optional) is a list of ``{"media_type", "data": bytes}`` — images/PDF injected into
-    the user turn for a vision-capable provider (see services.files). Falls back to a single yield of
-    the full completion for any provider without a streaming path yet — callers never need to know
-    the difference.
+
+def _stream_mistral(messages: list, system: str | None, media: list | None = None,
+                    prov: str | None = None):
+    yield from _stream_openai_compatible(
+        MISTRAL_BASE_URL, settings.MISTRAL_API_KEY, messages, system, media, prov)
+
+
+_STREAM_RUNNERS = {
+    "anthropic": _stream_anthropic,
+    "gemini": _stream_gemini,
+    "groq": _stream_groq,
+    "mistral": _stream_mistral,
+}
+
+
+def complete_stream(messages: list, *, system: str | None = None, media: list | None = None):
+    """Yield answer text chunks, failing over across the provider chain.
+
+    Each provider is tried in ``provider_chain()`` order; if one raises *before* its first token (down
+    / auth / rate-limit) the next is tried. Once a token has been yielded we are committed to that
+    provider — a mid-stream failure ends the answer (the caller persists the partial). ``media`` is a
+    list of ``{"media_type", "data": bytes}`` injected into the user turn for a vision provider.
     """
-    runner = {"gemini": _stream_gemini, "groq": _stream_groq}.get(provider(), _stream_anthropic)
-    yield from runner(messages, system, media)
+    from .errors import AssistantUnavailableError
+
+    last_exc: Exception | None = None
+    for prov in provider_chain():
+        runner = _STREAM_RUNNERS.get(prov, _stream_anthropic)
+        gen = runner(messages, system, media, prov)
+        try:
+            first = next(gen)
+        except StopIteration:
+            return  # provider succeeded but produced nothing — an empty answer, not a failure
+        except Exception as exc:  # provider down before any token — fail over to the next one
+            last_exc = exc
+            continue
+        yield first
+        yield from gen  # a mid-stream error here propagates; the partial is already out
+        return
+    raise AssistantUnavailableError(
+        data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"})
 
 
 # --- knowledge-base embeddings (rag plan session 03) -------------------------------------------

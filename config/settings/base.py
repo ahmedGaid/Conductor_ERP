@@ -223,15 +223,19 @@ REDIS_URL = _redis_url
 
 # --- AI assistant (plan session 02; optional layer — see DECISIONS.md "AI 2026-07") ---
 # Off unless an API key is present: a customer install with no key runs fully, AI UI hidden.
-# Keys live in env only, never in code or the DB. Two providers behind one seam
-# (erp.assistant.client): Anthropic (Claude) or Google (Gemini) — auto-picked by which key is set,
-# or forced with ASSISTANT_PROVIDER=anthropic|gemini.
+# Keys live in env only, never in code or the DB. Four providers behind one seam
+# (erp.assistant.client): Anthropic (Claude), Google (Gemini), Mistral, Groq. Any key you set joins
+# an automatic FAILOVER CHAIN — requests try the preferred provider first and fall to the next
+# available one if it is down / rate-limited / erroring. Set ASSISTANT_PROVIDER=<name> to force a
+# specific provider to the front of that chain; leave "" to use the built-in preference order.
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
 GROQ_API_KEY = env("GROQ_API_KEY", default="")  # Groq inference (OpenAI-compatible; Llama-4 vision)
-ASSISTANT_PROVIDER = env("ASSISTANT_PROVIDER", default="")  # "" = auto by key
+MISTRAL_API_KEY = env("MISTRAL_API_KEY", default="")  # Mistral (OpenAI-compatible; Pixtral vision)
+ASSISTANT_PROVIDER = env("ASSISTANT_PROVIDER", default="")  # "" = auto chain; else this one first
 ASSISTANT_ENABLED = env.bool(
-    "ASSISTANT_ENABLED", default=bool(ANTHROPIC_API_KEY or GEMINI_API_KEY or GROQ_API_KEY)
+    "ASSISTANT_ENABLED",
+    default=bool(ANTHROPIC_API_KEY or GEMINI_API_KEY or GROQ_API_KEY or MISTRAL_API_KEY),
 )
 ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="")  # "" = the provider's default model
 ASSISTANT_MAX_TOKENS = env.int("ASSISTANT_MAX_TOKENS", default=4096)  # per-request cost cap

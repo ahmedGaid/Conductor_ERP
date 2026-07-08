@@ -23,7 +23,7 @@ from erp.audit import services as audit
 from erp.inventory import contracts as inventory
 from erp.purchasing import contracts as purchasing
 
-from ..client import get_client, get_gemini_client, groq_chat, model_id, provider
+from ..client import get_client, get_gemini_client, groq_chat, mistral_chat, model_id, provider
 from ..errors import ExtractionFailedError
 
 # Media types the endpoint accepts (mirrors the Session-00 import posture: allowlist, no sniffing).
@@ -162,6 +162,8 @@ def extract_document(*, data: bytes, media_type: str, filename: str, actor) -> d
         extracted = _extract_gemini(data, media_type)
     elif prov == "groq":
         extracted = _extract_groq(data, media_type)
+    elif prov == "mistral":
+        extracted = _extract_mistral(data, media_type)
     else:
         extracted = _extract_anthropic(data, media_type)
     return _proposal(extracted, filename, actor)
@@ -272,9 +274,12 @@ _GROQ_SCHEMA_HINT = (
 )
 
 
-def _extract_groq(data: bytes, media_type: str) -> dict:
+def _extract_openai_compatible(chat, prov: str, data: bytes, media_type: str) -> dict:
+    """Shared image→JSON extraction for the OpenAI-compatible providers (Groq, Mistral): image-only
+    vision, json-object mode (the shape is spelled into the system prompt), retry then surface a
+    blame-free error. ``chat`` is the provider's chat seam; ``prov`` selects its default model."""
     if media_type == PDF_TYPE:
-        # Llama-4 vision can't read PDF — ask for a photo instead (designed, blame-free).
+        # These vision models read images, not native PDF — ask for a photo instead (blame-free).
         return {**_UNREADABLE, "issues": ["pdf_unsupported_on_this_provider"]}
 
     b64 = base64.standard_b64encode(data).decode("ascii")
@@ -289,8 +294,7 @@ def _extract_groq(data: bytes, media_type: str) -> dict:
     last_exc: Exception | None = None
     for attempt in range(3):
         try:
-            body = groq_chat(messages, model=model_id(),
-                             max_tokens=settings.ASSISTANT_MAX_TOKENS)
+            body = chat(messages, model=model_id(prov), max_tokens=settings.ASSISTANT_MAX_TOKENS)
             break
         except Exception as exc:  # network/auth/rate-limit — blame-free, retryable
             last_exc = exc
@@ -309,6 +313,14 @@ def _extract_groq(data: bytes, media_type: str) -> dict:
         return json.loads(text)
     except ValueError as exc:
         raise ExtractionFailedError(data={"reason": "unparseable_model_output"}) from exc
+
+
+def _extract_groq(data: bytes, media_type: str) -> dict:
+    return _extract_openai_compatible(groq_chat, "groq", data, media_type)
+
+
+def _extract_mistral(data: bytes, media_type: str) -> dict:
+    return _extract_openai_compatible(mistral_chat, "mistral", data, media_type)
 
 
 def _proposal(extracted: dict, filename: str, actor) -> dict:

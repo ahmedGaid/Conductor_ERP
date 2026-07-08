@@ -1,10 +1,12 @@
-"""Shared text→JSON completion across the three providers (Anthropic / Gemini / Groq).
+"""Shared text→JSON completion across the four providers (Anthropic / Gemini / Mistral / Groq).
 
 The document-extraction path (``extraction.py``) sends an image; the natural-language assistant
 (``ask.py``) sends text. Both need the same thing: a JSON object back from whichever provider is
 configured. This module is the single place that speaks each provider's JSON dialect for a *text*
 prompt, so callers stay provider-agnostic and tests monkeypatch one seam (``ask`` monkeypatches
-``complete_json`` directly, so gates never make a live call).
+``complete_json`` directly, so gates never make a live call). ``complete_json`` fails over across the
+provider chain: if the preferred provider is down / rate-limited / returns garbage, the next
+available one is tried before the request is declared unavailable.
 """
 from __future__ import annotations
 
@@ -19,8 +21,9 @@ from ..client import (
     get_client,
     get_gemini_client,
     groq_chat,
+    mistral_chat,
     model_id,
-    provider,
+    provider_chain,
 )
 from ..errors import AssistantUnavailableError
 from .extraction import _gemini_schema  # reuse the strict→Gemini schema translation
@@ -31,13 +34,14 @@ def _schema_hint(schema: dict) -> str:
     return " Respond with a single JSON object only, no prose, matching this schema: " + json.dumps(schema)
 
 
-def _anthropic(system: str, user: str, schema: dict, media: list | None = None) -> str:
+def _anthropic(system: str, user: str, schema: dict, media: list | None = None,
+               model: str | None = None) -> str:
     # Images/PDF precede the instruction text in the user turn (mirrors extraction._extract_anthropic).
     content = ([_anthropic_media_block(m) for m in media] if media else []) + [
         {"type": "text", "text": user}
     ]
     resp = get_client().messages.create(
-        model=model_id(),
+        model=model or model_id("anthropic"),
         max_tokens=settings.ASSISTANT_MAX_TOKENS,
         system=system,
         output_config={"format": {"type": "json_schema", "schema": schema}},
@@ -48,7 +52,8 @@ def _anthropic(system: str, user: str, schema: dict, media: list | None = None) 
     return next((b.text for b in resp.content if b.type == "text"), "")
 
 
-def _gemini(system: str, user: str, schema: dict, media: list | None = None) -> str:
+def _gemini(system: str, user: str, schema: dict, media: list | None = None,
+            model: str | None = None) -> str:
     from google.genai import types
 
     cfg = dict(
@@ -63,19 +68,22 @@ def _gemini(system: str, user: str, schema: dict, media: list | None = None) -> 
         pass
     parts = [types.Part.from_bytes(data=m["data"], mime_type=m["media_type"]) for m in (media or [])]
     resp = get_gemini_client().models.generate_content(
-        model=model_id(), contents=[*parts, user], config=types.GenerateContentConfig(**cfg)
+        model=model or model_id("gemini"), contents=[*parts, user],
+        config=types.GenerateContentConfig(**cfg),
     )
     return getattr(resp, "text", "") or ""
 
 
-def _groq(system: str, user: str, schema: dict, media: list | None = None) -> str:
-    # Llama-4 vision reads images (not PDF — _groq_media_block returns None for those).
-    blocks = [b for b in (_groq_media_block(m) for m in (media or [])) if b is not None]
+def _openai_compatible(chat, api_key_provider: str, system: str, user: str, schema: dict,
+                       media: list | None, model: str | None) -> str:
+    """Shared JSON path for the OpenAI-compatible providers (Groq, Mistral): a vision image block per
+    media item, the schema spelled into the system prompt (json-object mode only), one chat call."""
+    blocks = [b for b in ((_groq_media_block(m)) for m in (media or [])) if b is not None]
     user_content = [{"type": "text", "text": user}, *blocks] if blocks else user
-    body = groq_chat(
+    body = chat(
         [{"role": "system", "content": system + _schema_hint(schema)},
          {"role": "user", "content": user_content}],
-        model=model_id(), max_tokens=settings.ASSISTANT_MAX_TOKENS,
+        model=model or model_id(api_key_provider), max_tokens=settings.ASSISTANT_MAX_TOKENS,
     )
     try:
         return body["choices"][0]["message"]["content"] or ""
@@ -83,36 +91,55 @@ def _groq(system: str, user: str, schema: dict, media: list | None = None) -> st
         return ""
 
 
+def _groq(system: str, user: str, schema: dict, media: list | None = None,
+          model: str | None = None) -> str:
+    return _openai_compatible(groq_chat, "groq", system, user, schema, media, model)
+
+
+def _mistral(system: str, user: str, schema: dict, media: list | None = None,
+             model: str | None = None) -> str:
+    return _openai_compatible(mistral_chat, "mistral", system, user, schema, media, model)
+
+
+_RUNNERS = {"anthropic": _anthropic, "gemini": _gemini, "groq": _groq, "mistral": _mistral}
+
+
 def complete_json(system: str, user: str, schema: dict, *, media: list | None = None,
                   retries: int = 3) -> dict:
-    """One prompt → one parsed JSON dict, from the configured provider.
+    """One prompt → one parsed JSON dict, failing over across the provider chain.
 
     ``media`` (optional) is a list of ``{"media_type", "data": bytes}`` (see services.files) —
     images/PDF injected into the user turn so a vision-capable provider reads them while it decides
     (the agent planner passes attachments here so "create a PO from the attached image" extracts real
-    lines instead of guessing). Retries transient failures with a short backoff (free-tier keys have
-    low per-minute limits). Raises ``AssistantUnavailableError`` (blame-free, retryable) on repeated
-    failure or garbage.
+    lines instead of guessing). Each provider in ``provider_chain()`` is retried a few times with a
+    short backoff (free-tier keys have low per-minute limits); if it still fails, or returns empty /
+    unparseable output, the next available provider is tried. Raises ``AssistantUnavailableError``
+    (blame-free, retryable) only when every provider is exhausted.
     """
-    prov = provider()
-    runner = {"gemini": _gemini, "groq": _groq}.get(prov, _anthropic)
-
     last_exc: Exception | None = None
-    text = ""
-    for attempt in range(retries):
+    for prov in provider_chain():
+        runner = _RUNNERS.get(prov, _anthropic)
+        model = model_id(prov)
+        text = ""
+        for attempt in range(retries):
+            try:
+                text = runner(system, user, schema, media, model)
+                break
+            except Exception as exc:  # network / auth / rate-limit — retry, then fail over
+                last_exc = exc
+                if attempt < retries - 1:
+                    time.sleep(1.5 * (attempt + 1))
+        else:
+            continue  # this provider exhausted its retries — try the next in the chain
+        if not text:
+            last_exc = AssistantUnavailableError(data={"reason": "empty_model_output"})
+            continue  # empty output — try the next provider rather than fail outright
         try:
-            text = runner(system, user, schema, media)
-            break
-        except Exception as exc:  # network / auth / rate-limit — blame-free, retryable
-            last_exc = exc
-            if attempt < retries - 1:
-                time.sleep(1.5 * (attempt + 1))
-    else:
-        raise AssistantUnavailableError(data={"reason": last_exc.__class__.__name__}) from last_exc
-
-    if not text:
-        raise AssistantUnavailableError(data={"reason": "empty_model_output"})
-    try:
-        return json.loads(text)
-    except ValueError as exc:
-        raise AssistantUnavailableError(data={"reason": "unparseable_model_output"}) from exc
+            return json.loads(text)
+        except ValueError as exc:
+            last_exc = exc  # garbage JSON — try the next provider
+            continue
+    if isinstance(last_exc, AssistantUnavailableError):
+        raise last_exc
+    raise AssistantUnavailableError(
+        data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"}) from last_exc
