@@ -67,8 +67,8 @@ def test_page_language_instructs_english_when_ui_is_english():
 
     prompt = context.build_system_prompt(user, page=page)
 
-    assert "interface is currently set to English" in prompt
-    assert "answer in English" in prompt
+    assert "interface is set to English" in prompt
+    assert "match the language of the user's latest message" in prompt
 
 
 def test_page_language_instructs_arabic_when_ui_is_arabic():
@@ -78,7 +78,7 @@ def test_page_language_instructs_arabic_when_ui_is_arabic():
 
     prompt = context.build_system_prompt(user, page=page)
 
-    assert "interface is currently set to Arabic" in prompt
+    assert "interface is set to Arabic" in prompt
 
 
 def test_page_section_absent_when_no_page():
