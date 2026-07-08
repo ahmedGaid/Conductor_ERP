@@ -4,6 +4,34 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Multi-provider failover routing + Mistral (2026-07-08)
+
+The assistant used exactly one provider per install (`provider()` picked one by key/`ASSISTANT_PROVIDER`;
+`complete_json` retried the *same* one). A provider outage or rate-limit failed the whole request.
+Founder ask: "automatic routing — when the model is down, go to the up one; keep all configured
+providers ready to switch; start with the strongest."
+
+Decision — a **failover chain**, not a single provider. `client.provider_chain()` returns every
+provider that has a key, ordered by a strength-first `PROVIDER_ORDER` (`anthropic > gemini > mistral >
+groq`); a set `ASSISTANT_PROVIDER` jumps to the front. `complete_json` retries each provider a few
+times then falls to the next (also on empty/garbage output), raising `AssistantUnavailableError` only
+when the chain is exhausted. `complete_stream` fails over **before the first token** — once tokens are
+out we are committed (a mid-stream failure ends the answer; the caller persists the partial). `provider()`
+is now just the chain head (kept for model defaulting + the Gemini-only embedding path); `model_id(prov)`
+is per-provider and `ASSISTANT_MODEL` applies only to the primary, so a fallback never gets another
+provider's model id.
+
+**Mistral** added as the fourth provider (OpenAI-compatible → mirrors Groq, **no new dependency**):
+`mistral_chat` + streaming + JSON + document-extraction paths, default `mistral-small-latest`
+(Pixtral-family vision + JSON mode). Groq + Mistral now share `_openai_image_block` /
+`_stream_openai_compatible` / `_extract_openai_compatible`.
+
+Not done (filed): **task-aware** "strongest for THIS task" ordering (e.g. prefer a vision-capable
+model on an image turn) — the current order is static. This belongs in the ai-reliability roadmap's
+gateway/routing phase. Config chosen 2026-07-08: `ASSISTANT_PROVIDER` cleared → auto chain (currently
+`gemini → mistral → groq`; add an Anthropic key and Opus auto-leads). Keys live only in the gitignored
+`.env`. Tests: `test_routing.py` (9); assistant suite 196 → 205.
+
 ## Chat planner now sees attachments — create-from-image (2026-07-08)
 
 Founder smoke of FILE_13 surfaced a real, separate bug: attaching an image + "create po" produced a
