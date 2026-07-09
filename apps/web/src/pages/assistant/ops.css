@@ -1,0 +1,168 @@
+/* Ops view (ai-reliability T1.8, admin-only). Token-driven + logical CSS only. */
+
+.ops-days {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ops-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+}
+
+.ops-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-4);
+}
+
+.ops-card__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  margin-block-end: var(--space-3);
+}
+.ops-card__title--spaced {
+  margin-block-start: var(--space-4);
+}
+.ops-card__empty,
+.ops-card__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.ops-chart-card,
+.ops-side-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* In-house bar chart — no charting dependency (plan: reuse a primitive or build inline SVG/table). */
+.ops-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  block-size: 8rem;
+}
+.ops-bars__col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  block-size: 100%;
+}
+.ops-bars__count {
+  font-size: var(--font-size-xs);
+}
+.ops-bars__track {
+  flex: 1;
+  inline-size: 100%;
+  display: flex;
+  align-items: flex-end;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.ops-bars__fill {
+  inline-size: 100%;
+  background-color: var(--color-accent);
+  border-radius: var(--radius-sm);
+  min-block-size: 2px;
+}
+.ops-bars__label {
+  font-size: var(--font-size-xs);
+}
+
+.ops-error-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ops-error-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+}
+
+.ops-eval {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.ops-eval__rate {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ops-filters {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.ops-table-wrap {
+  overflow-x: auto;
+}
+.ops-trace-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.ops-trace-table th,
+.ops-trace-table td {
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--table-pad-block);
+  text-align: start;
+  border-block-end: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.ops-trace-table th {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+.ops-trace-row {
+  cursor: pointer;
+}
+.ops-trace-row:hover {
+  background-color: var(--color-surface-sunken);
+}
+.ops-trace-row__detail td {
+  padding: 0;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.ops-step-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-surface-sunken);
+}
+.ops-step-table th,
+.ops-step-table td {
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--space-2);
+  text-align: start;
+  font-size: var(--font-size-sm);
+}
+.ops-step-table th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.ops-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 960px) {
+  .ops-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ops-row {
+    grid-template-columns: 1fr;
+  }
+}

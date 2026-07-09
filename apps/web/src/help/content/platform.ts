@@ -58,6 +58,21 @@ export const knowledgeGuide: HelpGuide = {
   ],
 };
 
+export const opsGuide: HelpGuide = {
+  title: { en: "AI ops", ar: "عمليات الذكاء الاصطناعي" },
+  purpose: {
+    en: "What the assistant did, what it cost, and whether it's healthy.",
+    ar: "ما فعله المساعد الذكي، وتكلفته، ومدى سلامته.",
+  },
+  howItWorks: {
+    en: "Every call is logged automatically. Pick a window to see totals, a daily chart, top errors, and the latest quality check. Click a table row to see its steps.",
+    ar: "يُسجَّل كل طلب تلقائياً. اختر فترة لرؤية الإجماليات، والرسم اليومي، وأكثر الأخطاء شيوعاً، وآخر فحص جودة. انقر صفاً في الجدول لرؤية خطواته.",
+  },
+  related: [
+    { to: "/assistant/knowledge", label: { en: "Knowledge base", ar: "قاعدة المعرفة" } },
+  ],
+};
+
 export const entityLinkGuide: HelpGuide = {
   title: { en: "Opening a linked record", ar: "فتح سجلّ مرتبط" },
   purpose: {

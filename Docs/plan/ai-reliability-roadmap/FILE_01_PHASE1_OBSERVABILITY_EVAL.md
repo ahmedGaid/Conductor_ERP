@@ -197,7 +197,7 @@
   command exists and refuses to run without `--yes-live`.
 - **Output:** free-text quality measurable without a human in the loop each run.
 
-### [ ] T1.8 — Ops view: traces, cost, quality
+### [x] T1.8 — Ops view: traces, cost, quality
 
 - **Goal:** an admin-only page answers "what did the AI do today, what did it cost, is it healthy".
 - **Prereq:** T1.2, T1.6.

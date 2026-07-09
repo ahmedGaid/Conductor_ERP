@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .ops import OpsSummaryView, OpsTracesView
 from .views import (
     ActionExecuteView,
     AskView,
@@ -32,4 +33,6 @@ urlpatterns = [
     path("conversations/<int:pk>", ConversationDetailView.as_view(), name="assistant-conversation"),
     path("knowledge", KnowledgeView.as_view(), name="assistant-knowledge"),
     path("knowledge/<int:pk>", KnowledgeDetailView.as_view(), name="assistant-knowledge-detail"),
+    path("ops/summary", OpsSummaryView.as_view(), name="assistant-ops-summary"),
+    path("ops/traces", OpsTracesView.as_view(), name="assistant-ops-traces"),
 ]

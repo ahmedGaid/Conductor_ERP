@@ -40,6 +40,7 @@
     "usersAdmin": "Users",
     "rolesAdmin": "Roles",
     "knowledgeAdmin": "Knowledge base",
+    "opsAdmin": "AI ops",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar"
   },
@@ -292,6 +293,74 @@
     "uploadFailed": "Upload failed. Please try again.",
     "fileTooLarge": "File is too large (max 5 MB)",
     "fileType": "File type not supported"
+  },
+  "ops": {
+    "title": "AI ops",
+    "subtitle": "What the assistant did, what it cost, and whether it's healthy.",
+    "daysOption": "{{n}} days",
+    "totalCalls": "Total calls",
+    "errorRate": "Error rate",
+    "latency": "Latency",
+    "p50p95": "p50 / p95",
+    "tokens": "Tokens",
+    "inOut": "in / out",
+    "cost": "Cost",
+    "callsPerDay": "Calls per day",
+    "topErrors": "Top error classes",
+    "noErrors": "No errors in this window.",
+    "evalScoreboard": "Latest eval scoreboard",
+    "noEvals": "No eval run recorded yet.",
+    "filterFeature": "Filter by feature",
+    "filterStatus": "Filter by status",
+    "allFeatures": "All features",
+    "allStatuses": "All statuses",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "feature": {
+      "chat": "Chat",
+      "ask": "Ask",
+      "agent": "Agent",
+      "extract": "Extraction",
+      "digest": "Digest",
+      "suggest": "Suggestions",
+      "embed": "Embedding",
+      "eval": "Eval"
+    },
+    "status": {
+      "ok": "OK",
+      "error": "Error",
+      "timeout": "Timeout",
+      "cancelled": "Cancelled",
+      "guardrail_blocked": "Blocked"
+    },
+    "stepKind": {
+      "llm": "Model call",
+      "tool": "Tool call",
+      "retrieval": "Retrieval",
+      "guardrail": "Guardrail",
+      "validation": "Validation"
+    },
+    "step": {
+      "seq": "#",
+      "kind": "Kind",
+      "name": "Name",
+      "latency": "Latency",
+      "status": "Status"
+    },
+    "col": {
+      "time": "Time",
+      "feature": "Feature",
+      "actor": "User",
+      "model": "Model",
+      "status": "Status",
+      "latency": "Latency",
+      "cost": "Cost",
+      "steps": "Steps"
+    },
+    "empty": {
+      "title": "No AI activity yet",
+      "body": "Once the assistant handles a chat, question, or agent run, it will show up here."
+    }
   },
   "moduleIntro": {
     "accounting": "Your chart of accounts, journal entries, ledgers and financial statements — the books of the business.",

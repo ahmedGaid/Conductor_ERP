@@ -543,3 +543,7 @@ export function uploadKnowledge(file: File, title: string): Promise<KnowledgeDoc
 export function deleteKnowledge(id: number): Promise<void> {
   return apiFetch<void>(`/assistant/knowledge/${id}`, { method: "DELETE" });
 }
+
+// Ops view (ai-reliability T1.8) types/fetchers live in ./assistantOps — that page is route-split
+// (App.tsx lazy-loads OpsPage), so keeping them out of this eagerly-loaded module keeps the main
+// bundle inside its gzip budget (scripts/check-bundle-size.mjs).

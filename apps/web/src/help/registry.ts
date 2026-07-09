@@ -17,6 +17,7 @@ import {
   executionViewerGuide,
   knowledgeGuide,
   notificationsGuide,
+  opsGuide,
   workflowCanvasGuide,
   workflowsGuide,
 } from "./content/platform";
@@ -148,6 +149,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/einvoice": einvoiceGuide,
   "/assistant": assistantGuide,
   "/assistant/knowledge": knowledgeGuide,
+  "/assistant/ops": opsGuide,
   "/notifications": notificationsGuide,
   "/go/:type/:key": entityLinkGuide,
   "/crm": pipelineGuide,

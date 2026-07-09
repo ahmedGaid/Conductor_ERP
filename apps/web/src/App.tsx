@@ -99,6 +99,7 @@ const UsersPage = lazyPage(() => import("./pages/admin/UsersPage"), "UsersPage")
 const UserDetailPage = lazyPage(() => import("./pages/admin/UserDetailPage"), "UserDetailPage");
 const RolesPage = lazyPage(() => import("./pages/admin/RolesPage"), "RolesPage");
 const KnowledgePage = lazyPage(() => import("./pages/assistant/KnowledgePage"), "KnowledgePage");
+const OpsPage = lazyPage(() => import("./pages/assistant/OpsPage"), "OpsPage");
 const RoleDetailPage = lazyPage(() => import("./pages/admin/RoleDetailPage"), "RoleDetailPage");
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -235,6 +236,7 @@ function AppRoutes() {
           <Route path="/einvoice" element={<EInvoicesPage />} />
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/assistant/knowledge" element={<KnowledgePage />} />
+          <Route path="/assistant/ops" element={<OpsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           {/* Universal entity links resolve a business number → its UUID detail route. */}
           <Route path="/go/:type/:key" element={<ResolveRedirect />} />
