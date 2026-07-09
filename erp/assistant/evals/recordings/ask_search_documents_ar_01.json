@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
-      "limit": null,
+      "tool": "search_documents",
+      "period": null,
+      "query": "سياسة إرجاع المنتجات",
+      "limit": 6,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "وفقاً لمستند سياسة الإرجاع، يمكن إرجاع المنتج خلال 14 يوماً من الشراء بإيصال ساري."
     }
   ],
   "stream_responses": []

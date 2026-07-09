@@ -1,0 +1,31 @@
+{
+  "json_responses": [
+    {
+      "tool": "query_data",
+      "period": "this_month",
+      "query": null,
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": "sales_order",
+      "filters": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "shipped"
+        }
+      ],
+      "group_by": null,
+      "aggregate": "count",
+      "metric": null
+    },
+    {
+      "answer": "عدد أوامر البيع المشحونة في الشهر الحالي (2026-07) هو 37 أمر بيع."
+    }
+  ],
+  "stream_responses": []
+}

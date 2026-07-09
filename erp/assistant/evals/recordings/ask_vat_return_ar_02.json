@@ -1,8 +1,8 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "vat_return_status",
+      "period": "last_month",
       "query": null,
       "limit": null,
       "status": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "صافي الضريبة المستحقة عن الشهر الماضي هو 1,825.00 EGP، مستنداً إلى 3 قيود ضريبية."
     }
   ],
   "stream_responses": []

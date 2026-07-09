@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "find_orders",
+      "period": null,
+      "query": "SO-2026-0012",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "طلب البيع رقم SO-2026-0012 مسجل باسم عميل تجريبي بقيمة إجمالية 500.00 EGP. هل تريد تفاصيل الأصناف أو حالة السداد أو أي معلومات أخرى عنه؟"
     }
   ],
   "stream_responses": []

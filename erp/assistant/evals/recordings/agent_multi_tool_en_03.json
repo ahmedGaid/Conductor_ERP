@@ -1,0 +1,26 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "Fetch this month's sales total",
+      "intent": "report",
+      "tool": "sales_summary",
+      "period": "this_month"
+    },
+    {
+      "action": "tool",
+      "why": "Fetch suppliers we still owe money to",
+      "intent": "report",
+      "tool": "supplier_balances",
+      "limit": 10
+    },
+    {
+      "action": "answer",
+      "why": "Provide the requested comparison",
+      "intent": "report"
+    }
+  ],
+  "stream_responses": [
+    "This month’s sales total is 9,000.00 EGP.\nAmount still owed to suppliers is 1,500.00 EGP."
+  ]
+}

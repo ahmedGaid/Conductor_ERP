@@ -1,7 +1,7 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
+      "tool": "income_statement_summary",
       "period": "this_month",
       "query": null,
       "limit": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "Conductor لا يملك تقريراً بعد لحساب صافي الربح لهذا الشهر تحديداً. هل تريد أن أعرف إجمالي الإيرادات أو إجمالي المصروفات لهذا الشهر؟"
     }
   ],
   "stream_responses": []

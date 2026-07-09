@@ -1,8 +1,8 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "income_statement_summary",
+      "period": "last_month",
       "query": null,
       "limit": null,
       "status": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "صافي الربح لشهر يونيو 2026 هو 7,575.00 EGP."
     }
   ],
   "stream_responses": []

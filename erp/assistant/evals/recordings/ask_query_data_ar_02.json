@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "open_purchase_orders",
+      "period": null,
+      "query": null,
+      "limit": 20,
+      "status": "confirmed",
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "قائمة أوامر الشراء بحالة **مؤكد**:\n\n| رقم أمر الشراء | المورد         | تاريخ الأمر | الإجمالي (جنيه) | المتبقي (جنيه) |\n|----------------|----------------|-------------|-----------------|-----------------|\n| PO-2026-000001 | Globex Supplies | 2026-06-15  | 3,200.00        | 0.00            |\n| PO-2026-000005 | Globex Supplies | 2026-06-15  | 3.00            | 0.00            |"
+    }
+  ],
+  "stream_responses": []
+}

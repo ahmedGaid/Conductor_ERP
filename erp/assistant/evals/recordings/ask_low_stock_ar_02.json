@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "low_stock",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 20,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "الأصناف التي وصلت لحد إعادة الطلب هي: صنف \"زيت طهي 1 لتر\" (الكمية الحالية 2، نقطة إعادة الطلب 8) وصنف \"سكر 2 كجم\" (الكمية الحالية 1، نقطة إعادة الطلب 5)."
     }
   ],
   "stream_responses": []

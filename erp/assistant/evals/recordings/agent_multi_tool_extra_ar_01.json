@@ -1,0 +1,38 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "بحث عن أمر شراء وحالة الأصناف",
+      "intent": "lookup",
+      "tool": "query_data",
+      "entity": "purchase_order",
+      "filters": [
+        {
+          "field": "number",
+          "op": "eq",
+          "value": "PO-2026-0022"
+        }
+      ],
+      "group_by": [],
+      "aggregate": "list",
+      "metric": null,
+      "limit": 1
+    },
+    {
+      "action": "tool",
+      "why": "التحقق من وجود أمر الشراء",
+      "intent": "lookup",
+      "tool": "find_orders",
+      "query": "PO-2026-0022"
+    },
+    {
+      "action": "suggest",
+      "why": "لم يتم العثور على أمر الشراء",
+      "resume": "سأقوم بفتح طلب شراء جديد إذا رغبتم بذلك",
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": [
+    "Conductor لا يملك بيانات لأمر شراء برقم PO-2026-0022."
+  ]
+}

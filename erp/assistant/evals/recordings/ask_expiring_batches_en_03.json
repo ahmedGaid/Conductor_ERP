@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "expiring_batches",
+      "period": null,
+      "query": null,
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": 30,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "هناك صنف واحد منتهية الصلاحية خلال 30 يوماً:\n\n| الصنف | الكمية | رقم الدفعة | تاريخ انتهاء الصلاحية |\n|------|--------|------------|----------------------|\n| UHT Milk 1L | 40 | B-2026-07 | 2026-07-25 |"
+    }
+  ],
+  "stream_responses": []
+}

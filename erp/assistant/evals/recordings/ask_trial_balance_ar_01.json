@@ -1,7 +1,7 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
+      "tool": "trial_balance_summary",
       "period": "this_month",
       "query": null,
       "limit": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "ميزان المراجعة متوازن لهذا الشهر. الإجمالي: 50,000.00 EGP."
     }
   ],
   "stream_responses": []

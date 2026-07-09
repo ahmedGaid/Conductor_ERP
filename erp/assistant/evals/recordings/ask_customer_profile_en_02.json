@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "customer_profile",
+      "period": null,
+      "query": "Life Pharmacy",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "عميل Life Pharmacy مدين بمبلغ 420.00 EGP وفقاً لأحدث رصيد متاح. آخر أمر بيع مسجل باسم عميل تجريبي (SO-2026-951) بقيمة 500.00 EGP ولا يرتبط بعميل Life Pharmacy."
     }
   ],
   "stream_responses": []

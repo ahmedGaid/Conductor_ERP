@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "account_balance",
+      "period": null,
+      "query": "cash",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "الرصيد الحالي لحساب النقد (1010 - نقد) هو 18,500.00 EGP."
     }
   ],
   "stream_responses": []

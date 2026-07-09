@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "top_customers",
+      "period": null,
+      "query": null,
+      "limit": 3,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "أفضل 3 عملاء من حيث المبيعات:\n\n| الترتيب | اسم العميل | إجمالي المبيعات (EGP) |\n|--------|------------|----------------------|\n| 1      | مخبز الحرية | 3,000.00             |\n| 2      | صيدلية الشفاء | 2,600.00             |\n| 3      | متجر الوفاء  | 2,200.00             |"
+    }
+  ],
+  "stream_responses": []
+}

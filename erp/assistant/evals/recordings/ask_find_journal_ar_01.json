@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "find_journal",
+      "period": null,
+      "query": "JE-2026-0501",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "قيد اليومية رقم JE-2026-0501 بتاريخ 2026-07-05،Memo: قيد تسوية،الحالة: مسجل."
     }
   ],
   "stream_responses": []

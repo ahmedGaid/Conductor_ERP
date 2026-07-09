@@ -1,8 +1,8 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "vat_return_status",
+      "period": "this_year",
       "query": null,
       "limit": null,
       "status": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "صافي الضريبة المستحقة لهذا العام (2026) هو 3,200.00 EGP، وفقاً للسجلات الضريبية المسجلة في الفترة 2026-01 إلى 2026-07."
     }
   ],
   "stream_responses": []

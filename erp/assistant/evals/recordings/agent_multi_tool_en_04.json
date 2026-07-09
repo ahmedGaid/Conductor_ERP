@@ -1,0 +1,83 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "Fetch open POs for Gamma Supplies",
+      "intent": "lookup",
+      "tool": "open_purchase_orders",
+      "supplier": "Gamma Supplies",
+      "limit": 20,
+      "status": null,
+      "warehouse": null
+    },
+    {
+      "action": "tool",
+      "why": "Check low stock items",
+      "intent": "lookup",
+      "tool": "low_stock",
+      "limit": 20
+    },
+    {
+      "action": "tool",
+      "why": "Check stock on hand for Gamma Supplies items",
+      "intent": "lookup",
+      "tool": "stock_on_hand",
+      "query": "Packaging Box M",
+      "limit": 1
+    },
+    {
+      "action": "tool",
+      "intent": "lookup",
+      "why": "Check Gamma Supplies items in low stock",
+      "tool": "query_data",
+      "entity": "item",
+      "filters": [
+        {
+          "field": "sku",
+          "op": "contains",
+          "value": "ITM-0077"
+        }
+      ],
+      "group_by": [],
+      "aggregate": "list",
+      "limit": 1
+    },
+    {
+      "action": "tool",
+      "why": "Check Gamma Supplies items in low stock",
+      "intent": "lookup",
+      "tool": "query_data",
+      "entity": "item",
+      "filters": [
+        {
+          "field": "supplier_code",
+          "op": "eq",
+          "value": "Gamma Supplies"
+        }
+      ],
+      "group_by": [],
+      "aggregate": "list",
+      "limit": 50
+    },
+    {
+      "action": "tool",
+      "why": "Check Gamma Supplies items in low stock",
+      "intent": "lookup",
+      "tool": "query_data",
+      "entity": "item",
+      "filters": [
+        {
+          "field": "supplier_code",
+          "op": "eq",
+          "value": "Gamma Supplies"
+        }
+      ],
+      "group_by": [],
+      "aggregate": "list",
+      "limit": 50
+    }
+  ],
+  "stream_responses": [
+    "There are no open purchase orders for **Gamma Supplies** in the system.\n\nThe only open purchase order is for **مورد تجريبي** (PO-2026-0091).\n\nRegarding low stock, the system shows one item below its reorder point:\n\n| صنف | الكمية المتاحة | نقطة إعادة الطلب |\n|------|---------------|------------------|\n| Packaging Box M (ITM-0077) | 5 | 20 |"
+  ]
+}

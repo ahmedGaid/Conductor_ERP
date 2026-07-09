@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "workflow_instance_status",
+      "period": null,
+      "query": "WF-0091",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "طلب الإجازة WF-0091 في انتظار موافقة المدير حالياً (خطوة: مراجعة المدير). تم تقديمه في 2026-07-06 الساعة 08:00."
     }
   ],
   "stream_responses": []

@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "overdue_receivables",
+      "period": null,
+      "query": null,
+      "limit": 10,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "عميلان متأخران في السداد:\n\n| كود العميل | اسم العميل       | المبلغ المتأخر (جنيه) |\n|------------|------------------|-----------------------|\n| CUS-0020   | مطعم الفردوس    | 1,500.00              |\n| CUS-0021   | متجر الأصالة     | 1,300.00              |\n\nالإجمالي: 2,800.00 جنيه"
+    }
+  ],
+  "stream_responses": []
+}

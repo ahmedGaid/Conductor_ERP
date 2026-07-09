@@ -1,0 +1,12 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need employee identifier to look up",
+      "question": "Which employee record is Sarah in (code, department, or full name)?",
+      "intent": "lookup",
+      "tool": "none"
+    }
+  ],
+  "stream_responses": []
+}

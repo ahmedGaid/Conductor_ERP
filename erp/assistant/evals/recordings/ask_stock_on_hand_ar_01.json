@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "stock_on_hand",
+      "period": null,
+      "query": "أرز أبيض 5 كجم",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "الكمية المتوفرة من صنف أرز أبيض 5 كجم هي 42 وحدة في المخزون."
     }
   ],
   "stream_responses": []

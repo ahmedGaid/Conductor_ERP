@@ -1,0 +1,12 @@
+{
+  "json_responses": [
+    {
+      "action": "answer",
+      "why": "Weather is not business data",
+      "intent": "conversation"
+    }
+  ],
+  "stream_responses": [
+    "Conductor cannot answer that specific question yet."
+  ]
+}

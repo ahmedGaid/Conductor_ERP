@@ -1,8 +1,8 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "none",
+      "period": null,
       "query": null,
       "limit": null,
       "status": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "Conductor لا يمكنه الإجابة على هذا السؤال بعد. هل تريد قائمة ببيانات الدفع (حسابات بنكية) المسجلة للعملاء بدلاً من ذلك؟"
     }
   ],
   "stream_responses": []

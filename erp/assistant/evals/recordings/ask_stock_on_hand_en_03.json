@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "stock_on_hand",
+      "period": null,
+      "query": "Cooking Oil 1L",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "المخزون المتاح من صنف Cooking Oil 1L هو 25 وحدة بقيمة 750.00 EGP في المخزن الافتراضي (WH-01)."
     }
   ],
   "stream_responses": []

@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "stock_movements",
+      "period": null,
+      "query": "Cooking Oil 1L",
+      "limit": 15,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "حركة مخزون صنف Cooking Oil 1L (ITM-0044) خلال الفترة:\n\n| التاريخ والوقت       | النوع   | الكمية  |\n|----------------------|---------|---------|\n| 2026-07-01 10:00     | استلام  | 20      |\n| 2026-07-03 09:00     | صرف   | 5       |\n\nالرصيد الحالي: 15 وحدة."
+    }
+  ],
+  "stream_responses": []
+}

@@ -2,7 +2,7 @@
   "json_responses": [
     {
       "tool": "sales_summary",
-      "period": "this_month",
+      "period": "last_month",
       "query": null,
       "limit": null,
       "status": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "إجمالي المبيعات لشهر يونيو 2026 هو 13,875.00 EGP (1,387,500 وحدة نقدية صغيرة)."
     }
   ],
   "stream_responses": []

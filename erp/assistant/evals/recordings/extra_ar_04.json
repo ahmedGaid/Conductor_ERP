@@ -1,8 +1,8 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "query_data",
+      "period": null,
       "query": null,
       "limit": null,
       "status": null,
@@ -11,14 +11,14 @@
       "days": null,
       "entity_type": null,
       "entity_id": null,
-      "entity": null,
+      "entity": "stock_balance",
       "filters": null,
       "group_by": null,
-      "aggregate": null,
-      "metric": null
+      "aggregate": "sum",
+      "metric": "value"
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "رصيد حساب المخزون الحالي 25,158.00 جنيه مصري."
     }
   ],
   "stream_responses": []

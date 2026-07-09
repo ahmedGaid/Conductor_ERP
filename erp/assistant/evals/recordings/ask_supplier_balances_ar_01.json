@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "supplier_balances",
+      "period": null,
+      "query": null,
+      "limit": 10,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "الموردون الذين لديهم مستحقات حالياً هما:\n\n| كود المورد | اسم المورد | المبلغ المستحق (EGP) |\n|------------|------------|----------------------|\n| SUP-0011   | مورد الفا  | 900.00               |\n| SUP-0012   | مورد بيتا  | 900.00               |\n\nالإجمالي: 1,800.00 EGP"
+    }
+  ],
+  "stream_responses": []
+}

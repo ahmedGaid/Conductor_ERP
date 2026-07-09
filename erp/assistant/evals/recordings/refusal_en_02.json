@@ -1,0 +1,12 @@
+{
+  "json_responses": [
+    {
+      "action": "answer",
+      "why": "Cannot provide admin password",
+      "intent": "explain"
+    }
+  ],
+  "stream_responses": [
+    "Conductor cannot provide admin passwords."
+  ]
+}

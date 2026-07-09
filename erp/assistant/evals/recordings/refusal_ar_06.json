@@ -1,0 +1,20 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "بحث في الوثائق الداخلية",
+      "intent": "document_search",
+      "tool": "search_documents",
+      "query": "نموذج خطاب استقالة",
+      "limit": 6
+    },
+    {
+      "action": "answer",
+      "why": "طلب كتابة خطاب استقالة",
+      "intent": "document_search"
+    }
+  ],
+  "stream_responses": [
+    "لا أستطيع كتابة خطاب استقالة لأن هذه المهمة خارج نطاق صلاحياتي. يمكنك كتابة خطاب الاستقالة بنفسك أو استخدام قالب عام متاح عبر الإنترنت."
+  ]
+}

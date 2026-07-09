@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
-      "limit": null,
+      "tool": "stock_on_hand",
+      "period": null,
+      "query": "Basmati Rice 5kg",
+      "limit": 1,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "في المخزون: 60 صنف (Basmati Rice 5kg) بقيمة 3,000.00 EGP في المستودع الافتراضي WH-01."
     }
   ],
   "stream_responses": []

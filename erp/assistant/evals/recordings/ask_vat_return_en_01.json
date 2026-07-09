@@ -1,7 +1,7 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
+      "tool": "vat_return_status",
       "period": "this_month",
       "query": null,
       "limit": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "صافي ضريبة القيمة المضافة المستحقة لهذا الشهر: 5,450.00 جنيه مصري."
     }
   ],
   "stream_responses": []

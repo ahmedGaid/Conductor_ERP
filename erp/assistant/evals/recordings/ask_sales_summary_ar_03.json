@@ -2,7 +2,7 @@
   "json_responses": [
     {
       "tool": "sales_summary",
-      "period": "this_month",
+      "period": "this_year",
       "query": null,
       "limit": null,
       "status": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "إجمالي المبيعات لهذا العام 15,250.00 EGP (24 أمر بيع)."
     }
   ],
   "stream_responses": []

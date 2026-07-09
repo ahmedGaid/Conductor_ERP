@@ -1,0 +1,26 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "حساب صافي الربح وضريبة القيمة المضافة",
+      "intent": "report",
+      "tool": "income_statement_summary",
+      "period": "this_year"
+    },
+    {
+      "action": "tool",
+      "why": "حساب ضريبة القيمة المضافة المستحقة",
+      "intent": "report",
+      "tool": "vat_return_status",
+      "period": "this_year"
+    },
+    {
+      "action": "answer",
+      "why": "جاهز للإجابة",
+      "intent": "report"
+    }
+  ],
+  "stream_responses": [
+    "صافي الربح لهذا العام: 30,000.00 EGP\nضريبة القيمة المضافة المستحقة لهذا العام: 800.00 EGP"
+  ]
+}

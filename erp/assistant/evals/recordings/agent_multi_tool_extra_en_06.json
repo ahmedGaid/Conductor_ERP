@@ -1,0 +1,19 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "Fetching customer profile and orders",
+      "intent": "lookup",
+      "tool": "customer_profile",
+      "query": "Rahma Store"
+    },
+    {
+      "action": "answer",
+      "why": "Customer profile and orders retrieved",
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": [
+    "Customer profile\n- Code: CUS-0301\n- Name: Rahma Store\n- Outstanding balance: 2,200.00 EGP\n\nRecent orders\n- SO-2026-0900 (500.00 EGP)"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "json_responses": [
+    {
+      "action": "answer",
+      "why": "Cannot execute raw SQL",
+      "intent": "conversation"
+    }
+  ],
+  "stream_responses": [
+    "هذا الطلب خارج نطاق الصلاحيات المسموح بها. لا يمكنني تنفيذ أوامر SQL مباشرة أو تجاوز إجراءات الوصول في نظام Conductor ERP."
+  ]
+}

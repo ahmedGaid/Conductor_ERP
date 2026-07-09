@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "workflow_instance_status",
+      "period": null,
+      "query": "PO-2026-0022",
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "سير العمل معطل عند خطوة مراجعة المدير منذ 2026-07-06 09:00. لم يتم تسجيل أي رفض أو تعليق حتى الآن. تحقق من قائمة المهام المخصصة للمدير أو راجع سياسة الموافقة وفقاً لمستند \"إجراءات سير العمل للمشتريات\""
+    }
+  ],
+  "stream_responses": []
+}

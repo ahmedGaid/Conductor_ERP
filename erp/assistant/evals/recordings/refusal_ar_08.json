@@ -1,0 +1,11 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need to confirm before sending emails",
+      "question": "Should I draft emails to all customers now?",
+      "intent": "workflow"
+    }
+  ],
+  "stream_responses": []
+}

@@ -1,14 +1,14 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "expiring_batches",
+      "period": null,
       "query": null,
       "limit": null,
       "status": null,
       "supplier": null,
       "warehouse": null,
-      "days": null,
+      "days": 15,
       "entity_type": null,
       "entity_id": null,
       "entity": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "الصنف: لبن معقم 1 لتر (ITM-0099) — الدفعة: B-2026-07 — تنتهي صلاحيتها خلال 15 يوم (2026-07-25) — الكمية المتبقية: 40 وحدة — المخزون في المستودع الافتراضي: 40 وحدة."
     }
   ],
   "stream_responses": []

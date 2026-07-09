@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "find_journal",
+      "period": null,
+      "query": "JE-2026-0733",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "JE-2026-0733 posted on 2026-07-05 with memo 'Adjusting entry'."
     }
   ],
   "stream_responses": []

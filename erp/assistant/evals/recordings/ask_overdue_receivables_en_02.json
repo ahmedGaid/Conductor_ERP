@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "overdue_receivables",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 10,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "عميلان متأخران في السداد:\n- باراكا كو (CUS-0043): 1,500.00 EGP\n- راجا فاونديشن (CUS-0044): 1,300.00 EGP\n\nإجمالي المبالغ المتأخرة: 2,800.00 EGP"
     }
   ],
   "stream_responses": []

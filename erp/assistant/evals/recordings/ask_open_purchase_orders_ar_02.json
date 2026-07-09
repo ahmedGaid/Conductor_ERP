@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "open_purchase_orders",
+      "period": null,
+      "query": null,
+      "limit": 20,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "أوامر الشراء المفتوحة حالياً:\n\n| رقم الأمر | المورد | الحالة | الإجمالي (جنيه) | المتبقي (جنيه) |\n|-----------|--------|--------|-----------------|----------------|\n| PO-2026-0023 | مورد تجريبي | confirmed | 3,000.00 | 1,000.00 |"
+    }
+  ],
+  "stream_responses": []
+}

@@ -1,0 +1,26 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "intent": "lookup",
+      "tool": "stock_on_hand",
+      "why": "Checking item stock",
+      "query": "زيت الطهي"
+    },
+    {
+      "action": "tool",
+      "tool": "stock_movements",
+      "why": "Retrieving recent stock movements",
+      "query": "زيت طهي 1 لتر",
+      "limit": 10
+    },
+    {
+      "action": "answer",
+      "intent": "mixed",
+      "why": "Stock check and movements retrieved"
+    }
+  ],
+  "stream_responses": [
+    "المخزون الحالي لصنف زيت الطهي: 18 وحدة، بقيمة 540.00 EGP. آخر حركة مسجلة لصنف زيت الطهي كانت استلام 20 وحدة في 2026-07-01T10:00:00."
+  ]
+}

@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
-      "limit": null,
+      "tool": "stock_on_hand",
+      "period": null,
+      "query": "زيت طهي 1 لتر",
+      "limit": 20,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "رصيد المخزون لصنف **زيت طهي 1 لتر** في المستودع الافتراضي (WH-01) هو **18 وحدة** بقيمة إجمالية **540.00 EGP**."
     }
   ],
   "stream_responses": []

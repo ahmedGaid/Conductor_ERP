@@ -235,7 +235,7 @@
   lands in `unknown`, never crashes the seam.
 - **Output:** regressions surface within a week, automatically.
 
-### [ ] T1.10 — Baseline capture + CI wiring (phase acceptance)
+### [x] T1.10 — Baseline capture + CI wiring (phase acceptance)
 
 - **Goal:** baseline numbers recorded; evals wired into CI; phase signed off.
 - **Prereq:** all above.

@@ -1,13 +1,13 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "low_stock",
+      "period": null,
       "query": null,
       "limit": null,
       "status": null,
       "supplier": null,
-      "warehouse": null,
+      "warehouse": "الفرع الثاني",
       "days": null,
       "entity_type": null,
       "entity_id": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "الصنف منخفض المخزون في مخزن الفرع الثاني: معقم أيدي 500 مل (الكمية الحالية 6، نقطة إعادة الطلب 20)."
     }
   ],
   "stream_responses": []

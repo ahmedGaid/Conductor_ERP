@@ -1,0 +1,31 @@
+{
+  "json_responses": [
+    {
+      "tool": "query_data",
+      "period": null,
+      "query": null,
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": "account",
+      "filters": [
+        {
+          "field": "type",
+          "op": "eq",
+          "value": "Receivable"
+        }
+      ],
+      "group_by": [],
+      "aggregate": "sum",
+      "metric": "balance"
+    },
+    {
+      "answer": "Conductor cannot answer that specific question yet. Would you like the total of all open sales invoices instead?"
+    }
+  ],
+  "stream_responses": []
+}

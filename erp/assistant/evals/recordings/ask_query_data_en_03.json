@@ -1,8 +1,8 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "query_data",
+      "period": null,
       "query": null,
       "limit": null,
       "status": null,
@@ -11,14 +11,20 @@
       "days": null,
       "entity_type": null,
       "entity_id": null,
-      "entity": null,
-      "filters": null,
+      "entity": "customer",
+      "filters": [
+        {
+          "field": "is_active",
+          "op": "eq",
+          "value": "true"
+        }
+      ],
       "group_by": null,
-      "aggregate": null,
+      "aggregate": "count",
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "عدد العملاء النشطين 88 عميل."
     }
   ],
   "stream_responses": []

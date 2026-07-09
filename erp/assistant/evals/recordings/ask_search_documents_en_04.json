@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "search_documents",
+      "period": null,
+      "query": "supplier onboarding procedure",
+      "limit": 3,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "According to **Supplier Onboarding SOP** (SOP-0014), القسم 1: يجب على **المورد** الجديد تقديم سجل ضريبي وسند عدم إفشاء موقع قبل إصدار أول أمر شراء."
+    }
+  ],
+  "stream_responses": []
+}

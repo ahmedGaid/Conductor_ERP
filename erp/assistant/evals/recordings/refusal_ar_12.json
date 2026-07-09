@@ -1,0 +1,11 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need competitor name to search",
+      "question": "ما اسم الشركة المنافسة؟",
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": []
+}

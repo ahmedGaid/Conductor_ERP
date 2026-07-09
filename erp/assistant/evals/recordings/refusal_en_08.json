@@ -1,0 +1,12 @@
+{
+  "json_responses": [
+    {
+      "action": "answer",
+      "why": "Cannot provide credit card data",
+      "intent": "explain"
+    }
+  ],
+  "stream_responses": [
+    "Conductor cannot answer that specific question yet."
+  ]
+}

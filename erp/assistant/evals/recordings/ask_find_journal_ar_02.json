@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "find_journal",
+      "period": null,
+      "query": "JE-2026-0512",
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "تفاصيل قيد اليومية JE-2026-0512: \n- التاريخ: 2026-07-05\n- البيان: قيد تسوية\n- الحالة: مسجل\n\nلم يتم بعد استرجاع تفاصيل الحسابات والدفاتر لهذا القيد. هل تريد أن أبحث في تفاصيله؟"
+    }
+  ],
+  "stream_responses": []
+}

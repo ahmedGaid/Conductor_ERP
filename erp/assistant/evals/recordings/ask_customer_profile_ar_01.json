@@ -1,9 +1,9 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
+      "tool": "customer_profile",
+      "period": null,
+      "query": "متجر الرحمة",
       "limit": null,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "رصيد **متجر الرحمة** (عميل: CUS-0301) هو 2,200.00 EGP."
     }
   ],
   "stream_responses": []

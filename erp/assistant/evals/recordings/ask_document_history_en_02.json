@@ -1,16 +1,16 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "document_history",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 10,
       "status": null,
       "supplier": null,
       "warehouse": null,
       "days": null,
-      "entity_type": null,
-      "entity_id": null,
+      "entity_type": "SalesOrder",
+      "entity_id": "SO-2026-0011",
       "entity": null,
       "filters": null,
       "group_by": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "Conductor does not have that specific report yet."
     }
   ],
   "stream_responses": []

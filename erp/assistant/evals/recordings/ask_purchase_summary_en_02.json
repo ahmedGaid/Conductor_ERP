@@ -1,8 +1,8 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "purchase_summary",
+      "period": "last_month",
       "query": null,
       "limit": null,
       "status": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "خلال الشهر الماضي، تم شراء أصناف بقيمة إجمالية قدرها 15,710.00 جنيه مصري عبر 20 أمر شراء."
     }
   ],
   "stream_responses": []

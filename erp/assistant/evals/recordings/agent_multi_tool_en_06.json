@@ -1,0 +1,21 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "Checking who last modified the order",
+      "intent": "lookup",
+      "tool": "document_history",
+      "entity_type": "SalesOrder",
+      "entity_id": "SO-2026-0011"
+    },
+    {
+      "action": "answer",
+      "why": "Answer ready",
+      "intent": "lookup",
+      "tool": "none"
+    }
+  ],
+  "stream_responses": [
+    "آخر من قام بتعديل أمر البيع SO-2026-0011 هو الموظف sales1 بتاريخ 2026-07-04."
+  ]
+}

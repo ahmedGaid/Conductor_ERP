@@ -1,0 +1,11 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need employee name to look up",
+      "question": "ما اسم الموظف بالكامل؟",
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": []
+}

@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
-      "limit": null,
+      "tool": "stock_movements",
+      "period": null,
+      "query": "زيت طهي 1 لتر",
+      "limit": 15,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "آخر حركات صنف زيت طهي 1 لتر (ITM-0022):\n- 2026-07-01: استلام 20 وحدة\n- 2026-07-03: صرف 5 وحدات"
     }
   ],
   "stream_responses": []

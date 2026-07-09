@@ -1,7 +1,7 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
+      "tool": "purchase_summary",
       "period": "this_month",
       "query": null,
       "limit": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "إجمالي المشتريات لشهر يوليو 2026 هو 9,800.00 EGP موزعة على 11 فاتورة."
     }
   ],
   "stream_responses": []

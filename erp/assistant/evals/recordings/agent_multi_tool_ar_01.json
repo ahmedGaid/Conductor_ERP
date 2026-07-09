@@ -1,10 +1,26 @@
 {
   "json_responses": [
-    {"action": "tool", "tool": "sales_summary", "period": "this_month", "why": "جلب إجمالي المبيعات"},
-    {"action": "tool", "tool": "low_stock", "why": "جلب الأصناف منخفضة المخزون"},
-    {"action": "answer", "why": null}
+    {
+      "action": "tool",
+      "why": "Fetch this month's sales total",
+      "intent": "report",
+      "tool": "sales_summary",
+      "period": "this_month"
+    },
+    {
+      "action": "tool",
+      "why": "Fetch low-stock items",
+      "intent": "report",
+      "tool": "low_stock",
+      "limit": 20
+    },
+    {
+      "action": "answer",
+      "why": "Ready to compare",
+      "intent": "report"
+    }
   ],
   "stream_responses": [
-    "إجمالي المبيعات هذا الشهر 12,500.00 EGP، مقابل صنف واحد منخفض المخزون (أرز أبيض)."
+    "إجمالي المبيعات هذا الشهر: 12,500.00 EGP\nعدد الأصناف منخفضة المخزون: 1 صنف (أرز أبيض)\n\nوفقاً للسجلات، لا يوجد ارتباط مباشر بين المبيعات والأصناف منخفضة المخزون في التقرير الحالي."
   ]
 }

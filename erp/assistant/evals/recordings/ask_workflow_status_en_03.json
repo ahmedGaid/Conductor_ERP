@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "workflow_instance_status",
+      "period": null,
+      "query": "PO-2026-0044",
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "لم يتم تقديم سبب توقف سير الموافقة في السجلات. الخطوة الحالية هي مراجعة المدير منذ 2026-07-06 09:00. قد يكون السبب عدم الموافقة أو عدم استكمال الخطوات السابقة وفقاً للسياسات. نحتاج إلى مراجعة سجلات المدير أو سياسة الموافقة وفقاً لمستند سياسة الموافقة على أوامر الشراء."
+    }
+  ],
+  "stream_responses": []
+}

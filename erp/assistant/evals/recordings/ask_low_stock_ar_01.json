@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "low_stock",
+      "period": null,
+      "query": null,
+      "limit": 20,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "لا يوجد أصناف وصلت لحد إعادة الطلب حالياً. الصنف الوحيد الذي اقترب من إعادة الطلب هو: صنف \"أرز أبيض 5 كجم\" (ITM-0011) بمخزون حالي 4 وحدات، بينما نقطة إعادة الطلب 10 وحدات."
+    }
+  ],
+  "stream_responses": []
+}

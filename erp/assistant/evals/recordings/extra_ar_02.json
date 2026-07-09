@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "top_customers",
+      "period": "this_year",
+      "query": null,
+      "limit": 4,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "أفضل 4 عملاء لهذا العام (حتى 2026-07):\n\n| العميل | إجمالي المبيعات (EGP) |\n|--------|----------------------|\n| متجر الوحدة | 3,000.00 |\n| شركة الرجاء | 2,600.00 |\n| مؤسسة الفتح | 2,200.00 |\n| معرض التقدم | 1,800.00 |"
+    }
+  ],
+  "stream_responses": []
+}

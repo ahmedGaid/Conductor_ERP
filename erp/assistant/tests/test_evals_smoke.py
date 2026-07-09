@@ -61,4 +61,9 @@ def test_run_evals_command_completes_offline_under_90s():
     assert elapsed < 90
     output = out.getvalue()
     assert "pass_rate" in output
-    assert f"recorded: {len(RECORDED_IDS)}" in output
+    # "recorded" count reflects however many golden cases have a recording fixture on disk today
+    # (grows over time, e.g. T1.10's baseline capture) -- only assert the smoke set is covered.
+    import re
+
+    match = re.search(r"recorded: (\d+)", output)
+    assert match and int(match.group(1)) >= len(RECORDED_IDS)

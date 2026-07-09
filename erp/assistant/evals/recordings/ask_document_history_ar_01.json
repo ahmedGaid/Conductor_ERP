@@ -1,16 +1,16 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "document_history",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 10,
       "status": null,
       "supplier": null,
       "warehouse": null,
       "days": null,
-      "entity_type": null,
-      "entity_id": null,
+      "entity_type": "PurchaseOrder",
+      "entity_id": "PO-2026-0022",
       "entity": null,
       "filters": null,
       "group_by": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "تم تعديل أمر الشراء PO-2026-0022 بواسطة مدير (manager1) في 2026-07-06 الساعة 09:30."
     }
   ],
   "stream_responses": []

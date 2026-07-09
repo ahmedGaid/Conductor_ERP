@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
-      "query": null,
-      "limit": null,
+      "tool": "find_opportunities",
+      "period": null,
+      "query": "Fajr Group",
+      "limit": 8,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "The opportunity 'Fajr Group deal' (OPP-0031) is currently in the negotiation stage with an expected close date of 2026-09-01 and a value of 2,750.00 EGP."
     }
   ],
   "stream_responses": []

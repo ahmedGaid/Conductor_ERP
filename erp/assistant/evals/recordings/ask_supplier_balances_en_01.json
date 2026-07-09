@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "supplier_balances",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 10,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "وفقاً للبيانات الحية، المورد الوحيد الذي لا يزال مستحقاً له مبلغ هو: مورد \"Gamma Supplies\" (الرمز: SUP-0021) بمبلغ 600.00 EGP."
     }
   ],
   "stream_responses": []

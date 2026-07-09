@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "top_customers",
+      "period": null,
+      "query": null,
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "Top customers by sales for the current period:\n\n| Customer Code | Customer Name      | Total Sales |\n|---------------|--------------------|-------------|\n| CUS-0016       | Al Nour Co         | 3,000.00 EGP|\n| CUS-0017       | Amal Foundation    | 2,600.00 EGP|\n| CUS-0018       | Quality Expo       | 2,200.00 EGP|"
+    }
+  ],
+  "stream_responses": []
+}

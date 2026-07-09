@@ -1,0 +1,27 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "جلب قائمة الموردين المتأخرين",
+      "intent": "lookup",
+      "tool": "supplier_balances",
+      "limit": 10
+    },
+    {
+      "action": "tool",
+      "intent": "lookup",
+      "why": "بحث أوامر شراء مفتوحة للمورد",
+      "tool": "open_purchase_orders",
+      "supplier": "SUP-0011",
+      "limit": 20
+    },
+    {
+      "action": "answer",
+      "why": "عرض الموردين المتأخرين وأوامرهم المفتوحة",
+      "intent": "report"
+    }
+  ],
+  "stream_responses": [
+    "الموردون المتأخر سدادهم: \n- مورد الفا (SUP-0011) - 900.00 EGP\n\nحول أوامر الشراء المفتوحة، لا تتوفر بيانات محددة للموردين المتأخرين في السداد. ومع ذلك، يمكن عرض أوامر الشراء المفتوحة:\n- PO-2026-0077 لمورد تجريبي - 1,000.00 EGP"
+  ]
+}

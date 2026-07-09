@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "top_customers",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 3,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "أفضل 3 عملاء من حيث المبيعات:\n1. شركة الرياض: 3,000.00 EGP\n2. مصنع الاتحاد: 2,600.00 EGP\n3. متجر السلام: 2,200.00 EGP"
     }
   ],
   "stream_responses": []

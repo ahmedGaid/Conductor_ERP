@@ -1,24 +1,30 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "query_data",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 20,
       "status": null,
       "supplier": null,
       "warehouse": null,
       "days": null,
       "entity_type": null,
       "entity_id": null,
-      "entity": null,
-      "filters": null,
+      "entity": "sales_order",
+      "filters": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "shipped"
+        }
+      ],
       "group_by": null,
-      "aggregate": null,
+      "aggregate": "list",
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "SO-2026-0071"
     }
   ],
   "stream_responses": []

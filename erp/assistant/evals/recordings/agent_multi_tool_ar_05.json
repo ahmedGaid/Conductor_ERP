@@ -1,0 +1,27 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "البحث عن سياسة الضمان",
+      "intent": "document_search",
+      "tool": "search_documents",
+      "query": "سياسة الضمان",
+      "limit": 6
+    },
+    {
+      "action": "tool",
+      "why": "التحقق من رصيد حساب المبيعات",
+      "intent": "mixed",
+      "tool": "account_balance",
+      "query": "المبيعات"
+    },
+    {
+      "action": "answer",
+      "why": "تم العثور على السياسة والرصيد",
+      "intent": "mixed"
+    }
+  ],
+  "stream_responses": [
+    "سياسة الضمان: الضمان يغطي 12 شهراً وفقاً لمستند سياسة الضمان.\n\nرصيد حساب المبيعات (4010 - إيرادات المبيعات): 32,000.00 EGP."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "json_responses": [
+    {
+      "tool": "query_data",
+      "period": null,
+      "query": null,
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": "purchase_order",
+      "filters": [
+        {
+          "field": "number",
+          "op": "eq",
+          "value": "PO-2026-0099"
+        }
+      ],
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "Conductor لا يملك تقريراً بهذا السجل بعد. هل تريد معرفة حالة آخر أمر شراء؟"
+    }
+  ],
+  "stream_responses": []
+}

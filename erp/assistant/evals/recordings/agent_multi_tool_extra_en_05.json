@@ -1,0 +1,19 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "Checking this quarter's trial balance",
+      "intent": "report",
+      "tool": "trial_balance_summary",
+      "period": "this_month"
+    },
+    {
+      "action": "answer",
+      "why": "Trial balance is balanced this quarter-end",
+      "intent": "report"
+    }
+  ],
+  "stream_responses": [
+    "The trial balance for July 2026 (quarter-end) is balanced. Total debit and credit are both 50,000.00 EGP."
+  ]
+}

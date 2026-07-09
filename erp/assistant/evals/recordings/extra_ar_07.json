@@ -1,10 +1,10 @@
 {
   "json_responses": [
     {
-      "tool": "sales_summary",
-      "period": "this_month",
+      "tool": "supplier_balances",
+      "period": null,
       "query": null,
-      "limit": null,
+      "limit": 10,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "إجمالي المبيعات لهذا الشهر 12,500.00 EGP (18 أمر بيع)."
+      "answer": "مورد دلتا (SUP-0090) مستحق له مبلغ 1,300.00 جنيه."
     }
   ],
   "stream_responses": []
