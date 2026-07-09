@@ -17,7 +17,7 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
-import { Badge } from "../../components/Badge";
+import { StatusRing } from "../../components/StatusRing";
 import { purchasingTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -193,7 +193,12 @@ export function PurchaseRequestsPage() {
                   <td>{r.supplier_name}</td>
                   <td className="latin muted">{r.request_date}</td>
                   <td>
-                    <Badge tone={purchasingTone(r.status)}>{t(`purchasing.requestStatus.${r.status}`)}</Badge>
+                    <StatusRing
+                      docType="purchaseRequest"
+                      status={r.status}
+                      tone={purchasingTone(r.status)}
+                      label={t(`purchasing.requestStatus.${r.status}`)}
+                    />
                   </td>
                   <td className="pur-table__num"><Bdi>{formatMinor(r.subtotal_minor, r.currency)}</Bdi></td>
                 </tr>

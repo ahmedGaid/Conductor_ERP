@@ -16,6 +16,8 @@ import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
+import { StatusRing } from "../../components/StatusRing";
+import { journalTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { AccountingNav } from "./AccountingNav";
@@ -56,6 +58,7 @@ export function JournalListPage() {
       { header: t("common.date"), accessor: (e) => e.date },
       { header: t("accounting.journals.period"), accessor: (e) => e.period_code },
       { header: t("accounting.entry.memo"), accessor: (e) => e.memo },
+      { header: t("common.status"), accessor: (e) => t(`accounting.journalStatus.${e.status}`) },
       {
         header: t("accounting.journals.total"),
         accessor: (e) => formatMinor(e.lines.reduce((s, l) => s + l.debit, 0), e.currency),
@@ -113,6 +116,7 @@ export function JournalListPage() {
                 <th>{t("common.date")}</th>
                 <th>{t("accounting.journals.period")}</th>
                 <th>{t("accounting.entry.memo")}</th>
+                <th>{t("common.status")}</th>
                 <th className="acct-table__num">{t("accounting.journals.total")}</th>
               </tr>
             </thead>
@@ -151,6 +155,14 @@ export function JournalListPage() {
                       ) : (
                         e.memo
                       )}
+                    </td>
+                    <td>
+                      <StatusRing
+                        docType="journal"
+                        status={e.status}
+                        tone={journalTone(e.status)}
+                        label={t(`accounting.journalStatus.${e.status}`)}
+                      />
                     </td>
                     <td className="acct-table__num">
                       <Bdi>{formatMinor(total, e.currency)}</Bdi>

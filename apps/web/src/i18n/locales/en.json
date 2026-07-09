@@ -776,6 +776,10 @@
       "period": "Period",
       "total": "Total"
     },
+    "journalStatus": {
+      "draft": "Draft",
+      "posted": "Posted"
+    },
     "report": {
       "period": "Period",
       "allPeriods": "All periods",
@@ -1502,7 +1506,8 @@
     "close": "Close",
     "undo": "Undo",
     "undone": "Undone",
-    "notFound": "We couldn’t find that record."
+    "notFound": "We couldn’t find that record.",
+    "owner": "Owner"
   },
   "import": {
     "action": "Import CSV",

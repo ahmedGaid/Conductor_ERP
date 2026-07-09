@@ -14,7 +14,8 @@ import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
 import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
-import { Badge } from "../../components/Badge";
+import { StatusRing } from "../../components/StatusRing";
+import { OwnerChip } from "../../components/OwnerChip";
 import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
@@ -264,6 +265,7 @@ export function LeadsPage() {
                 <th>{t("crm.lead.name")}</th>
                 <th>{t("crm.lead.company")}</th>
                 <th>{t("crm.lead.source")}</th>
+                <th>{t("common.owner")}</th>
                 <th>{t("crm.opp.stage")}</th>
                 <th />
               </tr>
@@ -285,8 +287,14 @@ export function LeadsPage() {
                   <td>{l.name}</td>
                   <td>{l.company || "—"}</td>
                   <td className="muted">{t(`crm.source.${l.source}`)}</td>
+                  <td>{l.owner ? <OwnerChip name={l.owner} /> : "—"}</td>
                   <td>
-                    <Badge tone={crmTone(l.status)}>{t(`crm.leadStatus.${l.status}`)}</Badge>
+                    <StatusRing
+                      docType="lead"
+                      status={l.status}
+                      tone={crmTone(l.status)}
+                      label={t(`crm.leadStatus.${l.status}`)}
+                    />
                   </td>
                   <td>
                     <RowActions className="crm-actions" label={t("common.actions")}>

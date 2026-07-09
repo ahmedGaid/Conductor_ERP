@@ -17,6 +17,8 @@ import { matchesAllFilters, newFilterId, type ActiveFilter, type FilterField } f
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
+import { StatusRing } from "../../components/StatusRing";
+import { einvoiceTone } from "../../lib/statusTone";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -138,9 +140,12 @@ export function EInvoicesPage() {
                   <td className="ein-table__num"><Bdi>{formatMinor(e.total_minor, e.currency)}</Bdi></td>
                   <td className="latin muted">{e.uuid ? `${e.uuid.slice(0, 12)}…` : "—"}</td>
                   <td>
-                    <span className={`ein-badge ein-badge--${e.status}`}>
-                      {t(`einvoice.status.${e.status}`)}
-                    </span>
+                    <StatusRing
+                      docType="einvoice"
+                      status={e.status}
+                      tone={einvoiceTone(e.status)}
+                      label={t(`einvoice.status.${e.status}`)}
+                    />
                   </td>
                   <td>
                     <RowActions label={t("common.actions")}>

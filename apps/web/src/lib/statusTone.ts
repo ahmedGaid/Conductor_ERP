@@ -48,7 +48,20 @@ const CRM_PRIORITY_TONES: Record<string, BadgeTone> = {
   urgent: "failed",
 };
 
+const EINVOICE_TONES: Record<string, BadgeTone> = {
+  submitted: "running",
+  valid: "completed",
+  rejected: "failed",
+  cancelled: "neutral",
+};
+
+const JOURNAL_TONES: Record<string, BadgeTone> = {
+  posted: "completed",
+};
+
 export const salesTone = (status: string): BadgeTone => SALES_TONES[status] ?? "pending";
 export const purchasingTone = (status: string): BadgeTone => PURCHASING_TONES[status] ?? "pending";
 export const crmTone = (status: string): BadgeTone => CRM_TONES[status] ?? "pending";
 export const crmPriorityTone = (priority: string): BadgeTone => CRM_PRIORITY_TONES[priority] ?? "neutral";
+export const einvoiceTone = (status: string): BadgeTone => EINVOICE_TONES[status] ?? "pending";
+export const journalTone = (status: string): BadgeTone => JOURNAL_TONES[status] ?? "pending";

@@ -68,37 +68,3 @@
 .ein-table tbody tr:hover {
   background-color: var(--color-surface-alt);
 }
-
-/* status pills — ETA lifecycle */
-.ein-badge {
-  display: inline-flex;
-  align-items: center;
-  padding-inline: var(--space-2);
-  padding-block: var(--space-0-5);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-  color: var(--color-status-pending);
-  background-color: var(--color-status-pending-bg);
-}
-.ein-badge--draft {
-  color: var(--color-status-pending);
-  background-color: var(--color-status-pending-bg);
-}
-.ein-badge--submitted {
-  color: var(--color-status-running);
-  background-color: var(--color-status-running-bg);
-}
-.ein-badge--valid {
-  color: var(--color-status-completed);
-  background-color: var(--color-status-completed-bg);
-}
-.ein-badge--rejected {
-  color: var(--color-status-failed);
-  background-color: var(--color-status-failed-bg);
-}
-.ein-badge--cancelled {
-  color: var(--color-text-muted);
-  background-color: var(--color-surface-alt);
-}

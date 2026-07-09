@@ -17,7 +17,7 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
-import { Badge } from "../../components/Badge";
+import { StatusRing } from "../../components/StatusRing";
 import { salesTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -193,7 +193,12 @@ export function QuotationsPage() {
                   <td>{q.customer_name}</td>
                   <td className="latin muted">{q.quote_date}</td>
                   <td>
-                    <Badge tone={salesTone(q.status)}>{t(`sales.quotationStatus.${q.status}`)}</Badge>
+                    <StatusRing
+                      docType="quotation"
+                      status={q.status}
+                      tone={salesTone(q.status)}
+                      label={t(`sales.quotationStatus.${q.status}`)}
+                    />
                   </td>
                   <td className="sales-table__num"><Bdi>{formatMinor(q.subtotal_minor, q.currency)}</Bdi></td>
                 </tr>

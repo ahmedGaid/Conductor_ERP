@@ -17,8 +17,10 @@ import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
 import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
-import { Badge } from "../../components/Badge";
-import { crmTone, crmPriorityTone } from "../../lib/statusTone";
+import { StatusRing } from "../../components/StatusRing";
+import { PriorityBar } from "../../components/PriorityBar";
+import { OwnerChip } from "../../components/OwnerChip";
+import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
@@ -268,6 +270,7 @@ export function TicketsPage() {
                 <th>{t("crm.ticket.number")}</th>
                 <th>{t("crm.ticket.subject")}</th>
                 <th>{t("crm.ticket.priority")}</th>
+                <th>{t("common.owner")}</th>
                 <th>{t("crm.opp.stage")}</th>
                 <th>{t("crm.ticket.sla")}</th>
                 <th />
@@ -289,10 +292,16 @@ export function TicketsPage() {
                   <td className="latin">{tk.number}</td>
                   <td>{tk.subject}</td>
                   <td>
-                    <Badge tone={crmPriorityTone(tk.priority)}>{t(`crm.priority.${tk.priority}`)}</Badge>
+                    <PriorityBar priority={tk.priority} />
                   </td>
+                  <td>{tk.owner ? <OwnerChip name={tk.owner} /> : "—"}</td>
                   <td>
-                    <Badge tone={crmTone(tk.status)}>{t(`crm.ticketStatus.${tk.status}`)}</Badge>
+                    <StatusRing
+                      docType="ticket"
+                      status={tk.status}
+                      tone={crmTone(tk.status)}
+                      label={t(`crm.ticketStatus.${tk.status}`)}
+                    />
                   </td>
                   <td>
                     {tk.is_breached ? (

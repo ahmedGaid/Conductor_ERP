@@ -219,6 +219,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Assign (a role to a user) | إسناد | تعيين (reserve **إسناد** app-wide — matches the existing "الدور المُسند" = assigned role, 2026-07-07) |
 | Overdue (a money doc past its due date) | متأخر | فائت / متجاوز (use **متأخر** — the collections word Egyptian SMBs say; the due-date meta marker, 2026-07-07) |
 | Due soon (nearing its due date) | يستحق قريبًا | قريب الاستحقاق (use the verbal **يستحق قريبًا** — reads as natural business Arabic beside the date, 2026-07-07) |
+| Owner (record assignee — the rep responsible, e.g. a ticket/lead) | المسؤول | مالك (reserve **مالك** for business/asset ownership — a different concept, 2026-07-09) |
 
 ### 6.2 Status & action voice (Arabic)
 Human-language statuses (Directive — "Waiting for Finance approval") must read as **natural Egyptian
@@ -327,6 +328,9 @@ fast-and-rough (Brief §6, value 5).
 
 ## 11. Change log
 
+- **2026-07-09 — Lexicon §6.1 extended (unified-ui meta rollout, FILE_08).** Added **Owner →
+  المسؤول** (reserve **مالك** for business/asset ownership) as the canonical term for a record's
+  assigned rep, governed here before shipping the OwnerChip column on tickets/leads.
 - **2026-07-02 — ARP category term added to the lexicon (§6.1).** Canonical Arabic category phrase
   **الإدارة الذكية للموارد**; the acronym stays Latin **ARP** in both languages. Public use gated by
   `Docs/ARP_STRATEGY.md` §2. No visual/token change.
