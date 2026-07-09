@@ -5,6 +5,8 @@ Messages are append-only; edits create new messages so the transcript stays hone
 """
 from __future__ import annotations
 
+import uuid
+
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
@@ -112,3 +114,82 @@ class KnowledgeChunk(models.Model):
 
     def __str__(self) -> str:
         return f"{self.document_id}#{self.seq}"
+
+
+class Trace(models.Model):
+    """One AI provider/feature call. Payload policy: sizes and outcomes only — never full
+    prompts, completions, or tool result rows (see TraceStep.detail)."""
+
+    class Feature(models.TextChoices):
+        CHAT = "chat"
+        ASK = "ask"
+        AGENT = "agent"
+        EXTRACT = "extract"
+        DIGEST = "digest"
+        SUGGEST = "suggest"
+        EMBED = "embed"
+        EVAL = "eval"
+
+    class Status(models.TextChoices):
+        OK = "ok"
+        ERROR = "error"
+        TIMEOUT = "timeout"
+        CANCELLED = "cancelled"
+        GUARDRAIL_BLOCKED = "guardrail_blocked"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="ai_traces",
+    )
+    feature = models.CharField(max_length=12, choices=Feature.choices)
+    conversation = models.ForeignKey(
+        Conversation, null=True, blank=True, on_delete=models.SET_NULL, related_name="traces",
+    )
+    provider = models.CharField(max_length=40, blank=True, default="")
+    model = models.CharField(max_length=80, blank=True, default="")
+    prompt_ref = models.CharField(max_length=120, blank=True, default="")
+    input_tokens = models.PositiveIntegerField(default=0)
+    output_tokens = models.PositiveIntegerField(default=0)
+    latency_ms = models.PositiveIntegerField(default=0)
+    cost_microcents = models.BigIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OK)
+    error_class = models.CharField(max_length=40, blank=True, default="")
+    meta = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["feature", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.feature}:{self.id}"
+
+
+class TraceStep(models.Model):
+    """One step inside a Trace's run (llm call, tool call, retrieval, guardrail check,
+    validation). ``detail`` carries sizes/flags only — never full arguments or result rows."""
+
+    class Kind(models.TextChoices):
+        LLM = "llm"
+        TOOL = "tool"
+        RETRIEVAL = "retrieval"
+        GUARDRAIL = "guardrail"
+        VALIDATION = "validation"
+
+    trace = models.ForeignKey(Trace, on_delete=models.CASCADE, related_name="steps")
+    seq = models.PositiveIntegerField()
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    name = models.CharField(max_length=100, blank=True, default="")
+    latency_ms = models.PositiveIntegerField(default=0)
+    ok = models.BooleanField(default=True)
+    detail = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["trace_id", "seq"]
+        indexes = [models.Index(fields=["trace", "seq"])]
+
+    def __str__(self) -> str:
+        return f"{self.trace_id}#{self.seq}:{self.kind}"
