@@ -43,7 +43,7 @@
 
 ## Tasks
 
-### [ ] T1.1 — Trace models + migration
+### [x] T1.1 — Trace models + migration
 
 - **Goal:** Postgres tables exist for traces and trace steps.
 - **Prereq:** none (phase start).
@@ -64,7 +64,7 @@
   states payload policy (sizes not contents).
 - **Output:** empty trace tables, ready for the seam.
 
-### [ ] T1.2 — Tracing seam around client.py
+### [x] T1.2 — Tracing seam around client.py
 
 - **Goal:** every provider call records a Trace row without changing any caller's behavior.
 - **Prereq:** T1.1.

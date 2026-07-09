@@ -1,0 +1,162 @@
+"""Tracing seam (ai-reliability T1.1/T1.2): every AI call self-reports to Trace/TraceStep
+without changing behavior, and a tracing bug can never break the call it observes."""
+from __future__ import annotations
+
+import pytest
+from django.test import override_settings
+
+from erp.assistant import client
+from erp.assistant.models import Trace, TraceStep
+from erp.assistant.services import llm, tracing
+from erp.identity.models import User
+
+pytestmark = pytest.mark.django_db
+
+
+def _user(username: str = "trace_user") -> User:
+    return User.objects.create_user(username=username, password="Dev12345!",
+                                    email=f"{username}@example.test")
+
+
+# --- trace_call / TraceHandle -------------------------------------------------------------------
+
+def test_trace_call_writes_exactly_one_trace_with_usage_and_cost():
+    u = _user()
+    assert Trace.objects.count() == 0
+    with tracing.trace_call("ask", actor=u) as handle:
+        handle.usage(provider="anthropic", model="claude-opus-4-8", input_tokens=100,
+                     output_tokens=50)
+    assert Trace.objects.count() == 1
+    trace = Trace.objects.get()
+    assert trace.feature == "ask"
+    assert trace.actor_id == u.id
+    assert trace.provider == "anthropic"
+    assert trace.model == "claude-opus-4-8"
+    assert trace.input_tokens == 100
+    assert trace.output_tokens == 50
+    assert trace.status == Trace.Status.OK
+    in_price, out_price = tracing.PRICING["claude-opus-4-8"]
+    expected_cost = round(100 * in_price / 1000 + 50 * out_price / 1000)
+    assert trace.cost_microcents == expected_cost
+
+
+def test_trace_call_records_error_and_reraises():
+    with pytest.raises(RuntimeError):
+        with tracing.trace_call("agent") as handle:
+            handle.usage(provider="anthropic", model="claude-opus-4-8")
+            raise RuntimeError("boom")
+    trace = Trace.objects.get()
+    assert trace.status == Trace.Status.ERROR
+    assert trace.error_class == "RuntimeError"
+
+
+def test_trace_call_records_steps():
+    with tracing.trace_call("agent") as handle:
+        handle.step(kind="llm", name="round1", ok=True, latency_ms=120)
+        handle.step(kind="tool", name="inventory.stock_levels", ok=True, detail={"rows": 3})
+    trace = Trace.objects.get()
+    steps = list(TraceStep.objects.filter(trace=trace).order_by("seq"))
+    assert [s.kind for s in steps] == ["llm", "tool"]
+    assert steps[1].detail == {"rows": 3}
+
+
+def test_unknown_model_costs_zero_and_flags_meta():
+    with tracing.trace_call("ask") as handle:
+        handle.usage(provider="anthropic", model="some-future-model", input_tokens=10,
+                     output_tokens=10)
+    trace = Trace.objects.get()
+    assert trace.cost_microcents == 0
+    assert trace.meta.get("cost_unknown") is True
+
+
+def test_a_raising_tracer_write_does_not_break_the_call(monkeypatch):
+    """If Trace.objects.create() itself blows up, the AI call still returns cleanly."""
+    def boom(*_a, **_k):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(Trace.objects, "create", boom)
+    with tracing.trace_call("ask") as handle:
+        handle.usage(provider="anthropic", model="claude-opus-4-8", input_tokens=1, output_tokens=1)
+    assert Trace.objects.filter(feature="ask").count() == 0  # write failed, but no exception raised
+
+
+def test_null_trace_is_inert():
+    with tracing.null_trace() as handle:
+        handle.usage(provider="anthropic", model="x")
+        handle.step(kind="llm")
+        handle.mark_ttft()
+    assert Trace.objects.count() == 0
+
+
+# --- complete_json feature wiring ----------------------------------------------------------------
+
+@override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="", GROQ_API_KEY="", MISTRAL_API_KEY="",
+                   ASSISTANT_PROVIDER="")
+def test_complete_json_traces_when_feature_given(monkeypatch):
+    monkeypatch.setitem(llm._RUNNERS, "anthropic", lambda *_a, **_k: '{"ok": true}')
+    u = _user("trace_json_user")
+    result = llm.complete_json("sys", "user text", {}, feature="ask", actor=u, retries=1)
+    assert result == {"ok": True}
+    trace = Trace.objects.get()
+    assert trace.feature == "ask"
+    assert trace.actor_id == u.id
+    assert trace.provider == "anthropic"
+    assert trace.input_tokens > 0
+    assert trace.output_tokens > 0
+    assert trace.meta.get("tokens_estimated") is True
+
+
+@override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="", GROQ_API_KEY="", MISTRAL_API_KEY="",
+                   ASSISTANT_PROVIDER="")
+def test_complete_json_untraced_when_no_feature(monkeypatch):
+    monkeypatch.setitem(llm._RUNNERS, "anthropic", lambda *_a, **_k: '{"ok": true}')
+    assert llm.complete_json("sys", "user text", {}, retries=1) == {"ok": True}
+    assert Trace.objects.count() == 0
+
+
+@override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="", GROQ_API_KEY="", MISTRAL_API_KEY="",
+                   ASSISTANT_PROVIDER="")
+def test_complete_json_traces_failure_when_every_provider_fails(monkeypatch):
+    def down(*_a, **_k):
+        raise RuntimeError("down")
+
+    monkeypatch.setitem(llm._RUNNERS, "anthropic", down)
+    from erp.assistant.errors import AssistantUnavailableError
+    with pytest.raises(AssistantUnavailableError):
+        llm.complete_json("sys", "user", {}, feature="ask", retries=1)
+    trace = Trace.objects.get()
+    assert trace.status == Trace.Status.ERROR
+
+
+# --- complete_stream feature wiring: TTFT + estimated usage ---------------------------------------
+
+@override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="", GROQ_API_KEY="", MISTRAL_API_KEY="",
+                   ASSISTANT_PROVIDER="")
+def test_complete_stream_traces_ttft_and_estimated_usage(monkeypatch):
+    def fake_stream(_messages, _system, _media, _prov):
+        yield "hello "
+        yield "world"
+
+    monkeypatch.setitem(client._STREAM_RUNNERS, "anthropic", fake_stream)
+    u = _user("trace_stream_user")
+    chunks = list(client.complete_stream(
+        [{"role": "user", "content": "hi"}], feature="chat", actor=u,
+    ))
+    assert chunks == ["hello ", "world"]
+    trace = Trace.objects.get()
+    assert trace.feature == "chat"
+    assert trace.provider == "anthropic"
+    assert "ttft_ms" in trace.meta
+    assert trace.meta.get("tokens_estimated") is True
+    assert trace.output_tokens > 0
+
+
+@override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="", GROQ_API_KEY="", MISTRAL_API_KEY="",
+                   ASSISTANT_PROVIDER="")
+def test_complete_stream_untraced_when_no_feature(monkeypatch):
+    def fake_stream(_messages, _system, _media, _prov):
+        yield "hi"
+
+    monkeypatch.setitem(client._STREAM_RUNNERS, "anthropic", fake_stream)
+    assert list(client.complete_stream([{"role": "user", "content": "hi"}])) == ["hi"]
+    assert Trace.objects.count() == 0

@@ -157,15 +157,20 @@ _UNREADABLE = {"readable": False, "lines": [], "confidence": "low",
 
 def extract_document(*, data: bytes, media_type: str, filename: str, actor) -> dict:
     """One document in → one reviewed-draft proposal out. Read-only; audit-logged."""
+    from .tracing import estimate_tokens, trace_call
+
     prov = provider()
-    if prov == "gemini":
-        extracted = _extract_gemini(data, media_type)
-    elif prov == "groq":
-        extracted = _extract_groq(data, media_type)
-    elif prov == "mistral":
-        extracted = _extract_mistral(data, media_type)
-    else:
-        extracted = _extract_anthropic(data, media_type)
+    with trace_call("extract", actor=actor) as handle:
+        if prov == "gemini":
+            extracted = _extract_gemini(data, media_type)
+        elif prov == "groq":
+            extracted = _extract_groq(data, media_type)
+        elif prov == "mistral":
+            extracted = _extract_mistral(data, media_type)
+        else:
+            extracted = _extract_anthropic(data, media_type)
+        handle.usage(provider=prov, model=model_id(prov), estimated=True, input_tokens=0,
+                     output_tokens=estimate_tokens(json.dumps(extracted, ensure_ascii=False)))
     return _proposal(extracted, filename, actor)
 
 

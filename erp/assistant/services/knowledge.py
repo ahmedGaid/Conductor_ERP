@@ -55,7 +55,7 @@ def chunk_text(text: str) -> list[str]:
     return chunks
 
 
-def _extract_text(*, data: bytes, media_type: str, filename: str) -> str:
+def _extract_text(*, data: bytes, media_type: str, filename: str, actor=None) -> str:
     """Plain text out of any allowed upload.
 
     txt/md: decoded locally. csv/xlsx: flattened through the files.py table helpers (REUSED, not
@@ -73,6 +73,7 @@ def _extract_text(*, data: bytes, media_type: str, filename: str) -> str:
     parts = complete_stream(
         [{"role": "user", "content": _TRANSCRIBE_INSTRUCTION}],
         media=[{"media_type": ct, "data": data}],
+        feature="extract", actor=actor,
     )
     return "".join(parts)
 
@@ -88,7 +89,7 @@ def ingest_document(*, data: bytes, media_type: str, filename: str, title: str, 
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
     )
     try:
-        text = _extract_text(data=data, media_type=media_type, filename=filename)
+        text = _extract_text(data=data, media_type=media_type, filename=filename, actor=actor)
     except Exception as exc:  # never re-raise — the failure lands on the row, blame-free
         return _fail(doc, str(exc) or "extraction failed")
     text = (text or "").strip()

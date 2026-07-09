@@ -105,7 +105,8 @@ _RUNNERS = {"anthropic": _anthropic, "gemini": _gemini, "groq": _groq, "mistral"
 
 
 def complete_json(system: str, user: str, schema: dict, *, media: list | None = None,
-                  retries: int = 3) -> dict:
+                  retries: int = 3, feature: str | None = None, actor=None,
+                  conversation_id=None, prompt_ref: str = "") -> dict:
     """One prompt → one parsed JSON dict, failing over across the provider chain.
 
     ``media`` (optional) is a list of ``{"media_type", "data": bytes}`` (see services.files) —
@@ -115,36 +116,49 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
     short backoff (free-tier keys have low per-minute limits); if it still fails, or returns empty /
     unparseable output, the next available provider is tried. Raises ``AssistantUnavailableError``
     (blame-free, retryable) only when every provider is exhausted.
+
+    ``feature`` (optional) opens a trace for this call — omit it and the call is untraced,
+    exactly as before (see ``services.tracing``).
     """
-    last_exc: Exception | None = None
-    chain = provider_chain()
-    for i, prov in enumerate(chain):
-        runner = _RUNNERS.get(prov, _anthropic)
-        model = model_id(prov)
-        # Fail fast while a fallback remains: a provider that is down should hand off immediately, not
-        # burn the whole retry+backoff budget first. Only the LAST provider (no fallback left) gets the
-        # full retries — that's where waiting out a transient rate-limit is worth it.
-        attempts = retries if i == len(chain) - 1 else 1
-        text = ""
-        for attempt in range(attempts):
+    from .tracing import estimate_tokens, null_trace, trace_call
+
+    cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
+          if feature else null_trace())
+    with cm as handle:
+        last_exc: Exception | None = None
+        chain = provider_chain()
+        for i, prov in enumerate(chain):
+            runner = _RUNNERS.get(prov, _anthropic)
+            model = model_id(prov)
+            # Fail fast while a fallback remains: a provider that is down should hand off
+            # immediately, not burn the whole retry+backoff budget first. Only the LAST provider
+            # (no fallback left) gets the full retries — that's where waiting out a transient
+            # rate-limit is worth it.
+            attempts = retries if i == len(chain) - 1 else 1
+            text = ""
+            for attempt in range(attempts):
+                try:
+                    text = runner(system, user, schema, media, model)
+                    break
+                except Exception as exc:  # network / auth / rate-limit — retry, then fail over
+                    last_exc = exc
+                    if attempt < attempts - 1:
+                        time.sleep(1.5 * (attempt + 1))
+            else:
+                continue  # this provider exhausted its attempts — try the next in the chain
+            if not text:
+                last_exc = AssistantUnavailableError(data={"reason": "empty_model_output"})
+                continue  # empty output — try the next provider rather than fail outright
             try:
-                text = runner(system, user, schema, media, model)
-                break
-            except Exception as exc:  # network / auth / rate-limit — retry, then fail over
-                last_exc = exc
-                if attempt < attempts - 1:
-                    time.sleep(1.5 * (attempt + 1))
-        else:
-            continue  # this provider exhausted its attempts — try the next in the chain
-        if not text:
-            last_exc = AssistantUnavailableError(data={"reason": "empty_model_output"})
-            continue  # empty output — try the next provider rather than fail outright
-        try:
-            return json.loads(text)
-        except ValueError as exc:
-            last_exc = exc  # garbage JSON — try the next provider
-            continue
-    if isinstance(last_exc, AssistantUnavailableError):
-        raise last_exc
-    raise AssistantUnavailableError(
-        data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"}) from last_exc
+                parsed = json.loads(text)
+            except ValueError as exc:
+                last_exc = exc  # garbage JSON — try the next provider
+                continue
+            handle.usage(provider=prov, model=model, estimated=True,
+                         input_tokens=estimate_tokens(system + user),
+                         output_tokens=estimate_tokens(text))
+            return parsed
+        if isinstance(last_exc, AssistantUnavailableError):
+            raise last_exc
+        raise AssistantUnavailableError(
+            data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"}) from last_exc

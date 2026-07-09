@@ -137,7 +137,11 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
             conversation.title = q[:60]
         conversation.save()  # also touches updated_at
 
-    route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), q, _ROUTER_SCHEMA)
+    route = complete_json(
+        _ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), q,
+        _ROUTER_SCHEMA, feature="ask", actor=actor,
+        conversation_id=conversation.id if conversation is not None else None,
+    )
     name = route.get("tool") or "none"
     tool = TOOLS.get(name)
 
@@ -154,7 +158,8 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
     answer_obj = complete_json(
         _answer_system(actor, page),
         json.dumps({"question": q, "data": result}, ensure_ascii=False),
-        _ANSWER_SCHEMA,
+        _ANSWER_SCHEMA, feature="ask", actor=actor,
+        conversation_id=conversation.id if conversation is not None else None,
     )
     answer = (answer_obj.get("answer") or "").strip()
 
@@ -172,13 +177,16 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
     return {"answer": answer, "citations": citations, "used_tool": used}
 
 
-def _route_and_run(question: str, actor):
+def _route_and_run(question: str, actor, conversation_id=None):
     """Shared front half of the pipeline: route → run the scoped tool → build citations.
 
     Returns ``(result, citations, used_tool)``. Same logic as ``answer_question`` up to the
     answer step, factored out so the streaming path can reuse it verbatim.
     """
-    route = complete_json(_ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), question, _ROUTER_SCHEMA)
+    route = complete_json(
+        _ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()),
+        question, _ROUTER_SCHEMA, feature="ask", actor=actor, conversation_id=conversation_id,
+    )
     name = route.get("tool") or "none"
     tool = TOOLS.get(name)
     if tool is None:
@@ -234,7 +242,7 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
             elif described.get("text"):
                 file_notes.append(described["text"])
 
-    result, citations, used = _route_and_run(q, actor)
+    result, citations, used = _route_and_run(q, actor, conversation_id=conversation.id)
 
     parts: list[str] = []
     saved = False
@@ -262,6 +270,7 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
             user += "\n\nAttached files:\n" + "\n\n".join(file_notes)
         for chunk in complete_stream(
             [{"role": "user", "content": user}], system=_answer_system(actor, page), media=media,
+            feature="chat", actor=actor, conversation_id=conversation.id,
         ):
             parts.append(chunk)
             yield {"type": "token", "text": chunk}

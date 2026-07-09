@@ -99,25 +99,41 @@ def get_gemini_client():
     return genai.Client(api_key=settings.GEMINI_API_KEY, http_options=http_options)
 
 
-def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True) -> dict:
+def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True,
+              feature: str | None = None, actor=None, conversation_id=None,
+              prompt_ref: str = "") -> dict:
     """One OpenAI-compatible chat completion against Groq. Returns the parsed JSON response.
 
     A thin function (not an SDK) so there's no extra dependency and tests can monkeypatch this
     single seam. Raises on any non-2xx (the caller maps it to the blame-free retryable error).
+
+    ``feature`` (optional) opens a trace for this call — used only by callers that hit Groq
+    directly (bypassing ``llm.complete_json``, which traces its own runners); omit it here when
+    a caller already wraps the whole call in its own trace, to avoid a duplicate Trace row.
     """
     import httpx
 
-    payload = {"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": 0}
-    if json_mode:
-        payload["response_format"] = {"type": "json_object"}
-    resp = httpx.post(
-        f"{GROQ_BASE_URL}/chat/completions",
-        headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
-        json=payload,
-        timeout=60.0,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    from .services.tracing import null_trace, trace_call
+
+    cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
+          if feature else null_trace())
+    with cm as handle:
+        payload = {"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": 0}
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        resp = httpx.post(
+            f"{GROQ_BASE_URL}/chat/completions",
+            headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+            json=payload,
+            timeout=60.0,
+        )
+        resp.raise_for_status()
+        body = resp.json()
+        usage = body.get("usage") or {}
+        if usage:
+            handle.usage(provider="groq", model=model, input_tokens=usage.get("prompt_tokens", 0),
+                         output_tokens=usage.get("completion_tokens", 0))
+        return body
 
 
 def mistral_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True) -> dict:
@@ -287,32 +303,53 @@ _STREAM_RUNNERS = {
 }
 
 
-def complete_stream(messages: list, *, system: str | None = None, media: list | None = None):
+def complete_stream(messages: list, *, system: str | None = None, media: list | None = None,
+                    feature: str | None = None, actor=None, conversation_id=None,
+                    prompt_ref: str = ""):
     """Yield answer text chunks, failing over across the provider chain.
 
     Each provider is tried in ``provider_chain()`` order; if one raises *before* its first token (down
     / auth / rate-limit) the next is tried. Once a token has been yielded we are committed to that
     provider — a mid-stream failure ends the answer (the caller persists the partial). ``media`` is a
     list of ``{"media_type", "data": bytes}`` injected into the user turn for a vision provider.
+
+    ``feature`` (optional) opens a trace for this call, recording TTFT and total latency; token
+    counts are estimated (see ``services.tracing.estimate_tokens`` — these providers' streaming
+    paths don't return usage, only the final non-streamed call does). Omit ``feature`` and the
+    call is untraced, exactly as before.
     """
     from .errors import AssistantUnavailableError
+    from .services.tracing import estimate_tokens, null_trace, trace_call
 
-    last_exc: Exception | None = None
-    for prov in provider_chain():
-        runner = _STREAM_RUNNERS.get(prov, _stream_anthropic)
-        gen = runner(messages, system, media, prov)
-        try:
-            first = next(gen)
-        except StopIteration:
-            return  # provider succeeded but produced nothing — an empty answer, not a failure
-        except Exception as exc:  # provider down before any token — fail over to the next one
-            last_exc = exc
-            continue
-        yield first
-        yield from gen  # a mid-stream error here propagates; the partial is already out
-        return
-    raise AssistantUnavailableError(
-        data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"})
+    cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
+          if feature else null_trace())
+    with cm as handle:
+        out_parts: list[str] = []
+        last_exc: Exception | None = None
+        for prov in provider_chain():
+            runner = _STREAM_RUNNERS.get(prov, _stream_anthropic)
+            gen = runner(messages, system, media, prov)
+            try:
+                first = next(gen)
+            except StopIteration:
+                return  # provider succeeded but produced nothing — an empty answer, not a failure
+            except Exception as exc:  # provider down before any token — fail over to the next one
+                last_exc = exc
+                continue
+            handle.usage(provider=prov, model=model_id(prov))
+            handle.mark_ttft()
+            out_parts.append(first)
+            yield first
+            for chunk in gen:  # a mid-stream error here propagates; the partial is already out
+                out_parts.append(chunk)
+                yield chunk
+            input_text = (system or "") + "".join(
+                m.get("content", "") for m in messages if isinstance(m.get("content"), str))
+            handle.usage(estimated=True, input_tokens=estimate_tokens(input_text),
+                         output_tokens=estimate_tokens("".join(out_parts)))
+            return
+        raise AssistantUnavailableError(
+            data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"})
 
 
 # --- knowledge-base embeddings (rag plan session 03) -------------------------------------------
@@ -322,14 +359,23 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
 EMBEDDING_MODEL = "text-embedding-004"
 
 
-def embed_text(text: str) -> list[float] | None:
-    """One embedding vector, or None when embeddings are off/unavailable. Never raises."""
+def embed_text(text: str, *, actor=None, conversation_id=None) -> list[float] | None:
+    """One embedding vector, or None when embeddings are off/unavailable. Never raises.
+
+    Always traced as ``feature="embed"`` — every caller gets automatic tracing with no code
+    change (this function has exactly one purpose, unlike the multi-feature call sites)."""
     if not getattr(settings, "ASSISTANT_RAG_EMBEDDINGS", False) or not settings.GEMINI_API_KEY:
         return None
-    try:
-        resp = get_gemini_client().models.embed_content(
-            model=EMBEDDING_MODEL, contents=text[:8000],
-        )
-        return list(resp.embeddings[0].values)
-    except Exception:  # embeddings are an enhancement — search must survive their outage
-        return None
+    from .services.tracing import estimate_tokens, trace_call
+
+    with trace_call("embed", actor=actor, conversation_id=conversation_id) as handle:
+        try:
+            resp = get_gemini_client().models.embed_content(
+                model=EMBEDDING_MODEL, contents=text[:8000],
+            )
+            handle.usage(provider="gemini", model=EMBEDDING_MODEL, estimated=True,
+                         input_tokens=estimate_tokens(text[:8000]), output_tokens=0)
+            return list(resp.embeddings[0].values)
+        except Exception:  # embeddings are an enhancement — search must survive their outage
+            handle.fail("embed_failed")
+            return None
