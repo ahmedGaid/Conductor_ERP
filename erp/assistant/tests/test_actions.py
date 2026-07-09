@@ -863,3 +863,174 @@ def test_create_account_permission_refused_at_both_stages():
         actions.execute(nobody, "create_account",
                         {"name": "Marketing", "type": "expense", "code": "", "parent_code": ""})
     assert Account.objects.filter(name="Marketing").count() == 0
+
+
+# --- CRM actions (agent-actions FILE_05) -------------------------------------------------------
+
+from erp.crm.domain.models import Opportunity, Activity
+
+
+def _seed_crm():
+    Customer.objects.create(code="C-1", name="Nile Traders")
+
+
+def test_build_then_execute_creates_opportunity_draft():
+    admin = _admin()
+    _seed_crm()
+
+    proposal = actions.build(admin, "create_opportunity",
+                             {"customer": "Nile Traders", "name": "New Deal", "value": 50000})
+    assert "error" not in proposal
+    assert proposal["action"] == "create_opportunity"
+    kinds = {r["type"] for r in proposal["records"]}
+    assert kinds == {"customer"}
+    assert Opportunity.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "create_opportunity", proposal["payload"])
+    opp = Opportunity.objects.get()
+    assert opp.customer_code == "C-1"
+    assert opp.name == "New Deal"
+    assert opp.stage == "qualifying"  # new opps start in qualifying
+    assert result["links"][0]["value"] == str(opp.id)
+    assert AuditEntry.objects.filter(module="crm", action="create_opportunity").exists()
+
+
+def test_create_opportunity_unknown_customer_is_a_blocker():
+    admin = _admin()
+    _seed_crm()
+
+    proposal = actions.build(admin, "create_opportunity",
+                             {"customer": "Unknown Customer", "name": "Deal"})
+    assert "blocker" in proposal
+
+
+def test_create_opportunity_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_crm()
+
+    proposal = actions.build(nobody, "create_opportunity",
+                             {"customer": "Nile Traders", "name": "Deal"})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_opportunity",
+                        {"customer_code": "C-1", "name": "Deal", "amount_minor": 0,
+                         "expected_close": None})
+    assert Opportunity.objects.count() == 0
+
+
+def test_advance_opportunity_stage_and_execute():
+    admin = _admin()
+    _seed_crm()
+    opp = Opportunity.objects.create(number="OPP-2026-000001", name="Big Deal",
+                                     customer_code="C-1", stage="qualifying")
+
+    proposal = actions.build(admin, "advance_opportunity_stage",
+                             {"query": opp.number, "stage": "proposal"})
+    assert "error" not in proposal
+    assert proposal["action"] == "advance_opportunity_stage"
+    assert not proposal["risks"]  # advancing forward is no risk
+
+    result = actions.execute(admin, "advance_opportunity_stage", proposal["payload"])
+    opp.refresh_from_db()
+    assert opp.stage == "proposal"
+    assert result["links"][0]["value"] == str(opp.id)
+    assert AuditEntry.objects.filter(module="crm", action="advance_stage").exists()
+
+
+def test_advance_opportunity_backward_is_a_risk_and_still_confirmable():
+    admin = _admin()
+    _seed_crm()
+    opp = Opportunity.objects.create(number="OPP-2026-000001", name="Big Deal",
+                                     customer_code="C-1", stage="proposal")
+
+    proposal = actions.build(admin, "advance_opportunity_stage",
+                             {"query": opp.number, "stage": "qualifying"})
+    assert "error" not in proposal
+    assert proposal["risks"]  # moving backward is flagged as a risk
+
+    actions.execute(admin, "advance_opportunity_stage", proposal["payload"])
+    opp.refresh_from_db()
+    assert opp.stage == "qualifying"
+
+
+def test_advance_opportunity_unknown_query_is_a_blocker():
+    admin = _admin()
+    _seed_crm()
+
+    proposal = actions.build(admin, "advance_opportunity_stage",
+                             {"query": "OPP-9999-000000", "stage": "proposal"})
+    assert "blocker" in proposal
+
+
+def test_advance_opportunity_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_crm()
+    opp = Opportunity.objects.create(number="OPP-2026-000001", name="Big Deal",
+                                     customer_code="C-1", stage="qualifying")
+
+    proposal = actions.build(nobody, "advance_opportunity_stage",
+                             {"query": opp.number, "stage": "proposal"})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "advance_opportunity_stage",
+                        {"opportunity_number": opp.number, "stage": "proposal"})
+    opp.refresh_from_db()
+    assert opp.stage == "qualifying"
+
+
+def test_log_activity_and_execute():
+    admin = _admin()
+    _seed_crm()
+    opp = Opportunity.objects.create(number="OPP-2026-000001", name="Big Deal",
+                                     customer_code="C-1", stage="qualifying")
+
+    proposal = actions.build(admin, "log_activity",
+                             {"query": opp.number, "note": "Discussed pricing",
+                              "type": "call"})
+    assert "error" not in proposal
+    assert proposal["action"] == "log_activity"
+    assert Activity.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "log_activity", proposal["payload"])
+    activity = Activity.objects.get()
+    assert activity.type == "call"
+    assert activity.subject == "Discussed pricing"
+    assert activity.related_type == "opportunity"
+    assert activity.related_ref == opp.number
+    assert result["links"][0]["value"] == opp.number
+    assert AuditEntry.objects.filter(module="crm", action="log_activity").exists()
+
+
+def test_log_activity_against_customer():
+    admin = _admin()
+    _seed_crm()
+
+    proposal = actions.build(admin, "log_activity",
+                             {"query": "Nile Traders", "note": "Renewal call",
+                              "type": "call"})
+    assert "error" not in proposal
+
+    actions.execute(admin, "log_activity", proposal["payload"])
+    activity = Activity.objects.get()
+    assert activity.type == "call"
+    assert activity.related_type == "customer"
+    assert activity.related_ref == "C-1"
+
+
+def test_log_activity_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_crm()
+    opp = Opportunity.objects.create(number="OPP-2026-000001", name="Big Deal",
+                                     customer_code="C-1", stage="qualifying")
+
+    proposal = actions.build(nobody, "log_activity",
+                             {"query": opp.number, "note": "A note"})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "log_activity",
+                        {"related_type": "opportunity", "related_ref": opp.number,
+                         "subject": "A note", "type": "note"})
+    assert Activity.objects.count() == 0

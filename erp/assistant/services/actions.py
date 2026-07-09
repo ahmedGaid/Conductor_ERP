@@ -22,6 +22,7 @@ from difflib import SequenceMatcher
 from typing import Callable
 
 from erp.accounting import contracts as accounting
+from erp.crm import contracts as crm
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
 from erp.inventory import contracts as inventory
 from erp.pricing import contracts as pricing
@@ -1051,6 +1052,197 @@ def _execute_create_account(actor, payload: dict) -> dict:
     }
 
 
+# --- Action 15: create opportunity -----------------------------------------------------------------
+
+def _build_create_opportunity(actor, *, customer: str | None = None, name: str | None = None,
+                              value: int | None = None, expected_close: str | None = None,
+                              **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    deal_name = (name or "").strip()
+    if not deal_name:
+        return {"error": "What should the deal be called?"}
+    cust = (customer or "").strip()
+    if not cust:
+        return {"error": "Which customer is this opportunity for?"}
+
+    customers = sales.find_customers(actor, query=cust, limit=3)
+    if not customers:
+        return _blocker("customer", cust)
+    if len(customers) > 1:
+        near = [{"code": c["code"], "name": c["name"], "score": round(score, 2)}
+                for score, c in _rank(cust, customers, lambda c: c["name"]) if score >= 0.4][:3]
+        if near:
+            return _blocker("customer", cust, candidates=near)
+    customer_code = customers[0]["code"]
+    customer_name = customers[0]["name"]
+
+    amount_minor = value or 0
+    close_date = (expected_close or "").strip() or None
+
+    records = [{"type": "customer", "value": customer_code, "label": customer_name}]
+    summary = [f"New opportunity '{deal_name}' for {customer_code}"]
+    if amount_minor > 0:
+        summary.append(f"worth {_egp(amount_minor)}")
+    if close_date:
+        summary.append(f"close by {close_date}")
+    return {
+        "action": "create_opportunity",
+        "summary": summary,
+        "records": records,
+        "risks": [],
+        "total": _egp(amount_minor) if amount_minor > 0 else None,
+        "affected": 1,
+        "payload": {"customer_code": customer_code, "name": deal_name, "amount_minor": amount_minor,
+                    "expected_close": close_date},
+    }
+
+
+def _execute_create_opportunity(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    opp = crm.create_opportunity(
+        name=payload["name"], customer_code=payload["customer_code"],
+        expected_close=payload.get("expected_close"), actor=actor,
+    )
+    return {
+        "summary": f"Opportunity {opp.number} created for {payload['customer_code']}.",
+        "links": [{"type": "opportunity", "value": str(opp.id), "label": opp.number}],
+    }
+
+
+# --- Action 16: advance opportunity stage ----------------------------------------------------------
+
+def _build_advance_opportunity_stage(actor, *, query: str | None = None,
+                                     stage: str | None = None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which opportunity? Give its number or name."}
+    matches = crm.find_opportunities(actor, query=q, limit=5)
+    if not matches:
+        return _blocker("opportunity", q)
+    opp = matches[0]
+
+    if opp["stage"] not in ("qualifying", "proposal", "negotiation"):
+        return {"error": f"Cannot advance a {opp['stage']} opportunity."}
+
+    target_stage = (stage or "").strip().lower()
+    valid_stages = ["qualifying", "proposal", "negotiation"]
+    if target_stage not in valid_stages:
+        return {"error": f"Target stage must be one of: {', '.join(valid_stages)}."}
+    if opp["stage"] == target_stage:
+        return {"error": f"Opportunity is already in stage '{opp['stage']}'."}
+
+    risks = []
+    stage_order = {"qualifying": 0, "proposal": 1, "negotiation": 2}
+    if stage_order.get(target_stage, 0) < stage_order.get(opp["stage"], 0):
+        risks.append(f"Moving backward from '{opp['stage']}' to '{target_stage}'.")
+
+    records = [
+        {"type": "customer", "value": opp["customer_code"], "label": opp["customer_code"]},
+        {"type": "opportunity", "value": opp["number"], "label": opp["number"]},
+    ]
+    return {
+        "action": "advance_opportunity_stage",
+        "summary": [
+            f"Move {opp['number']} from {opp['stage']} to {target_stage}",
+            f"Customer: {opp['customer_code']}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": None,
+        "affected": 1,
+        "payload": {"opportunity_number": opp["number"], "stage": target_stage},
+    }
+
+
+def _execute_advance_opportunity_stage(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    from erp.crm.domain.models import Opportunity
+    opp = Opportunity.objects.get(number=payload["opportunity_number"])
+    opp = crm.advance_stage(opp, stage=payload["stage"], actor=actor)
+    return {
+        "summary": f"Opportunity {opp.number} moved to {opp.stage}.",
+        "links": [{"type": "opportunity", "value": str(opp.id), "label": opp.number}],
+    }
+
+
+# --- Action 17: log activity -----------------------------------------------------------------------
+
+def _build_log_activity(actor, *, query: str | None = None, note: str | None = None,
+                        type: str | None = None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    record_query = (query or "").strip()
+    if not record_query:
+        return {"error": "Which customer or opportunity is this activity for?"}
+    activity_note = (note or "").strip()
+    if not activity_note:
+        return {"error": "What is the activity note?"}
+
+    activity_type = (type or "note").strip().lower()
+    valid_types = ["call", "email", "meeting", "task", "note"]
+    if activity_type not in valid_types:
+        activity_type = "note"
+
+    opps = crm.find_opportunities(actor, query=record_query, limit=5)
+    customers = sales.find_customers(actor, query=record_query, limit=5)
+
+    candidates = []
+    if opps:
+        for o in opps:
+            candidates.append({"type": "opportunity", "number": o["number"], "customer": o["customer_code"]})
+    if customers:
+        for c in customers:
+            candidates.append({"type": "customer", "code": c["code"], "name": c["name"]})
+
+    if not candidates:
+        return _blocker("customer or opportunity", record_query)
+    if len(candidates) > 1:
+        return _blocker("customer or opportunity", record_query,
+                       candidates=[c.get("number") or c.get("code") for c in candidates[:3]])
+
+    target = candidates[0]
+    if target["type"] == "opportunity":
+        related_type = "opportunity"
+        related_ref = target["number"]
+        label = f"{target['number']}"
+    else:
+        related_type = "customer"
+        related_ref = target["code"]
+        label = f"{target['name']} ({target['code']})"
+
+    records = [{"type": target["type"], "value": related_ref, "label": label}]
+    return {
+        "action": "log_activity",
+        "summary": [f"Log {activity_type}: {activity_note[:40]}..."],
+        "records": records,
+        "risks": [],
+        "total": None,
+        "affected": 1,
+        "payload": {"related_type": related_type, "related_ref": related_ref,
+                    "subject": activity_note, "type": activity_type},
+    }
+
+
+def _execute_log_activity(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    activity = crm.log_activity(
+        type=payload["type"], subject=payload["subject"],
+        related_type=payload["related_type"], related_ref=payload["related_ref"],
+        actor=actor,
+    )
+    return {
+        "summary": f"Activity logged: {payload['subject'][:40]}...",
+        "links": [{"type": payload["related_type"], "value": payload["related_ref"],
+                   "label": payload["related_ref"]}],
+    }
+
+
 # --- registry -----------------------------------------------------------------------------------
 
 # The harness spec's irreversible list: these kinds can NEVER ship with requires_confirm=False,
@@ -1201,6 +1393,34 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
          "parent": "optional parent account code or name"},
         _build_create_account, _execute_create_account,
     ),
+    Action(
+        "create_opportunity",
+        "Create a new opportunity/deal for a customer (the user confirms). Use for "
+        "'new opportunity for <customer>: <deal name>, worth <amount>'.",
+        {"customer": "customer code or name",
+         "name": "the opportunity/deal name",
+         "value": "optional deal value in minor units",
+         "expected_close": "optional expected close date (YYYY-MM-DD)"},
+        _build_create_opportunity, _execute_create_opportunity,
+    ),
+    Action(
+        "advance_opportunity_stage",
+        "Move an opportunity to another stage in the pipeline (the user confirms). Use for "
+        "'move opportunity <number> to <stage>'. Valid stages: qualifying, proposal, negotiation.",
+        {"query": "opportunity number or name to find",
+         "stage": "target stage (qualifying, proposal, negotiation)"},
+        _build_advance_opportunity_stage, _execute_advance_opportunity_stage,
+        kind="update",
+    ),
+    Action(
+        "log_activity",
+        "Log a call, email, meeting, task or note against a customer or opportunity (the user "
+        "confirms). Use for 'log a call with <customer>: <note>'.",
+        {"query": "customer code/name or opportunity number",
+         "note": "the activity note text",
+         "type": "optional activity type: call, email, meeting, task, or note (default note)"},
+        _build_log_activity, _execute_log_activity,
+    ),
 ]}
 
 for _a in ACTIONS.values():
@@ -1210,7 +1430,8 @@ for _a in ACTIONS.values():
 # Which loop-decision fields can feed an action argument (each action gets only the args it declares).
 ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query",
                     "item", "quantity", "from_warehouse", "to_warehouse", "reorder_point", "scope",
-                    "lines", "date", "reference", "type", "code", "parent", "memo", "name")
+                    "lines", "date", "reference", "type", "code", "parent", "memo", "name",
+                    "value", "expected_close", "stage", "note")
 
 
 def catalog_text() -> str:
