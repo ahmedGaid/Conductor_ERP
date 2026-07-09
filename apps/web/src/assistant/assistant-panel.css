@@ -4,7 +4,7 @@
 
 .assistant-panel {
   position: fixed;
-  z-index: 80;
+  z-index: 75; /* below the help drawer (80) — help opens over the panel, not tied with it */
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
@@ -533,6 +533,7 @@
   margin: 0;
   line-height: 1.6;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: var(--font-size-sm);
 }
 

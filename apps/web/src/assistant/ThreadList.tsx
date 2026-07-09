@@ -256,6 +256,11 @@ export function ThreadList({ onPick }: { onPick?: () => void } = {}) {
         ) : ordered.length === 0 ? (
           query ? (
             <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+          ) : showArchived ? (
+            <EmptyState
+              title={t("assistant.threads.archivedEmpty")}
+              hint={t("assistant.threads.archivedEmptyHint")}
+            />
           ) : (
             <EmptyState title={t("assistant.threads.empty")} hint={t("assistant.threads.emptyHint")} />
           )

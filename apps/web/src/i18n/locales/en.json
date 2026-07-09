@@ -46,6 +46,8 @@
   "assistant": {
     "title": "Assistant",
     "subtitle": "Ask about your sales, receivables and stock — answers come from your own records.",
+    "disabledTitle": "Assistant isn't set up yet",
+    "disabledHint": "Ask an administrator to add an AI provider key to turn this on.",
     "placeholder": "Ask a question…",
     "ask": "Ask",
     "thinking": "Thinking…",
@@ -242,6 +244,8 @@
       "search": "Search conversations…",
       "empty": "Your conversations will live here",
       "emptyHint": "Ask a question to start your first one.",
+      "archivedEmpty": "No archived conversations",
+      "archivedEmptyHint": "Conversations you archive will show up here.",
       "startHint": "Ask anything about your work to begin.",
       "untitled": "New conversation",
       "rename": "Rename",

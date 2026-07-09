@@ -5,6 +5,7 @@ import { ThreadList } from "../../assistant/ThreadList";
 import { useAssistant } from "../../assistant/AssistantProvider";
 import { NavIcon } from "../../app/icons";
 import { Tooltip } from "../../components/Tooltip";
+import { EmptyState } from "../../components/EmptyState";
 import "./assistant.css";
 
 // The fullscreen workspace: a thread-history rail on the inline-start edge and the active
@@ -12,7 +13,19 @@ import "./assistant.css";
 // so the panel and this page never disagree.
 export function AssistantPage() {
   const { t } = useTranslation();
-  const { setConversationId } = useAssistant();
+  const { setConversationId, enabled } = useAssistant();
+
+  if (!enabled) {
+    return (
+      <section className="assistant-page">
+        <EmptyState
+          title={t("assistant.disabledTitle")}
+          hint={t("assistant.disabledHint")}
+          icon={<NavIcon name="sparkle" />}
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="assistant-page assistant-page--workspace">

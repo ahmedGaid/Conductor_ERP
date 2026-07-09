@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { useAssistant } from "../assistant/AssistantProvider";
 import { Tooltip } from "../components/Tooltip";
 import { resolveGuide } from "./registry";
 import { useHelp } from "./HelpContext";
@@ -10,12 +11,15 @@ import "./help.css";
 
 /** Floating "?" button + the slide-in guide drawer. Mounted once in the app shell, so every page
  *  gets context help automatically — the guide shown is chosen from the current route. The open
- *  state lives in HelpContext so the top-bar "?" action can open the same drawer. */
+ *  state lives in HelpContext so the top-bar "?" action can open the same drawer. The fab itself
+ *  hides while the assistant panel is open — both anchor the same inline-end corner, so the panel
+ *  would otherwise sit on top of it; the ⋮ menu's Help item still reaches the drawer either way. */
 export function HelpCenter() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { open, openHelp, closeHelp, toggleHelp } = useHelp();
+  const { open: assistantOpen } = useAssistant();
   const setOpen = (v: boolean) => (v ? openHelp() : closeHelp());
 
   // Pick the right language for guide content from the active locale.
@@ -42,18 +46,20 @@ export function HelpCenter() {
 
   return (
     <>
-      <Tooltip label={t("help.button")} placement="top">
-        <button
-          type="button"
-          className="help-fab"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          aria-label={t("help.button")}
-          onClick={toggleHelp}
-        >
-          <span aria-hidden="true">?</span>
-        </button>
-      </Tooltip>
+      {!assistantOpen && (
+        <Tooltip label={t("help.button")} placement="top">
+          <button
+            type="button"
+            className="help-fab"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            aria-label={t("help.button")}
+            onClick={toggleHelp}
+          >
+            <span aria-hidden="true">?</span>
+          </button>
+        </Tooltip>
+      )}
 
       {open && (
         <>
