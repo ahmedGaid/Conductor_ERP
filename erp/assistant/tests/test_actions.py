@@ -8,6 +8,8 @@ posture. No model hop is involved — proposals are built directly (the loop's p
 """
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 from django.test import override_settings
 from rest_framework.test import APIClient
@@ -16,7 +18,7 @@ from erp.assistant.models import Conversation, Message
 from erp.assistant.services import actions, agent
 from erp.audit.models import AuditEntry
 from erp.identity.models import User
-from erp.inventory.domain.models import Item, Warehouse
+from erp.inventory.domain.models import Item, StockBalance, StockCount, StockTransfer, Warehouse
 from erp.purchasing.domain.models import PurchaseOrder, PurchaseRequest, Supplier
 from erp.purchasing.services.requests import RequestLineInput as PRLineInput
 from erp.purchasing.services.requests import create_request as purchasing_create_request
@@ -597,3 +599,140 @@ def test_create_supplier_permission_refused_at_both_stages():
     with pytest.raises(PermissionError):
         actions.execute(nobody, "create_supplier", {"name": "New Supplier"})
     assert Supplier.objects.count() == 0
+
+
+# --- inventory actions (agent-actions FILE_03) ----------------------------------------------------
+
+def _seed_inventory():
+    item = Item.objects.create(sku="SKU-1", name="Blue Widget")
+    wh_a = Warehouse.objects.create(code="WH-A", name="North")
+    wh_b = Warehouse.objects.create(code="WH-B", name="South")
+    StockBalance.objects.create(item=item, warehouse=wh_a, quantity=Decimal("50"), value_minor=5000)
+    return item, wh_a, wh_b
+
+
+def _transfer_decision():
+    return {"item": "SKU-1", "quantity": "20", "from_warehouse": "WH-A", "to_warehouse": "WH-B"}
+
+
+def test_build_then_execute_creates_stock_transfer_draft():
+    admin = _admin()
+    _seed_inventory()
+
+    proposal = actions.build(admin, "create_stock_transfer_draft", _transfer_decision())
+    assert "error" not in proposal
+    assert proposal["action"] == "create_stock_transfer_draft"
+    assert not proposal["risks"]  # 20 of 50 on hand — no risk
+    assert StockTransfer.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "create_stock_transfer_draft", proposal["payload"])
+    transfer = StockTransfer.objects.get()
+    assert transfer.status == "draft"
+    assert transfer.source.code == "WH-A"
+    assert transfer.destination.code == "WH-B"
+    assert transfer.quantity == Decimal("20")
+    # A draft never moves stock or hits the GL.
+    from erp.inventory.domain.models import StockMovement
+
+    assert StockMovement.objects.count() == 0
+    balance = StockBalance.objects.get(item__sku="SKU-1", warehouse__code="WH-A")
+    assert balance.quantity == Decimal("50")
+    assert result["links"][0]["value"] == str(transfer.id)
+    assert AuditEntry.objects.filter(module="inventory", action="create_transfer_draft").exists()
+
+
+def test_stock_transfer_over_on_hand_is_a_risk_and_still_confirmable():
+    admin = _admin()
+    _seed_inventory()
+
+    proposal = actions.build(admin, "create_stock_transfer_draft",
+                             {"item": "SKU-1", "quantity": "999",
+                              "from_warehouse": "WH-A", "to_warehouse": "WH-B"})
+    assert "error" not in proposal
+    assert proposal["risks"]  # exceeds on-hand — flagged, not blocked
+
+    actions.execute(admin, "create_stock_transfer_draft", proposal["payload"])
+    assert StockTransfer.objects.count() == 1
+
+
+def test_stock_transfer_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_inventory()
+
+    proposal = actions.build(nobody, "create_stock_transfer_draft", _transfer_decision())
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_stock_transfer_draft",
+                        {"item_sku": "SKU-1", "source_code": "WH-A", "destination_code": "WH-B",
+                         "quantity": "20"})
+    assert StockTransfer.objects.count() == 0
+
+
+def test_build_then_execute_creates_stock_count_draft():
+    admin = _admin()
+    _seed_inventory()
+
+    proposal = actions.build(admin, "create_stock_count_draft", {"warehouse": "WH-A"})
+    assert "error" not in proposal
+    assert proposal["action"] == "create_stock_count_draft"
+    assert proposal["affected"] == 1  # one item has a balance at WH-A
+    assert StockCount.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "create_stock_count_draft", proposal["payload"])
+    count = StockCount.objects.get()
+    assert count.status == "counting"
+    assert count.warehouse.code == "WH-A"
+    assert count.lines.count() == 1
+    assert count.lines.get().system_quantity == Decimal("50")
+    assert result["links"][0]["value"] == str(count.id)
+
+
+def test_stock_count_empty_warehouse_is_an_error_no_card():
+    admin = _admin()
+    _seed_inventory()
+
+    proposal = actions.build(admin, "create_stock_count_draft", {"warehouse": "WH-B"})
+    assert "error" in proposal
+    assert "action" not in proposal
+
+
+def test_stock_count_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_inventory()
+
+    proposal = actions.build(nobody, "create_stock_count_draft", {"warehouse": "WH-A"})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_stock_count_draft", {"warehouse_code": "WH-A"})
+    assert StockCount.objects.count() == 0
+
+
+def test_set_reorder_point_updates_master_and_audits():
+    admin = _admin()
+    item, _, _ = _seed_inventory()
+    assert item.reorder_point == 0
+
+    proposal = actions.build(admin, "set_reorder_point", {"item": "SKU-1", "reorder_point": "50"})
+    assert "error" not in proposal
+    assert proposal["action"] == "set_reorder_point"
+    assert proposal["kind"] == "update"
+
+    result = actions.execute(admin, "set_reorder_point", proposal["payload"])
+    item.refresh_from_db()
+    assert item.reorder_point == 50
+    assert result["links"][0]["value"] == "SKU-1"
+    assert AuditEntry.objects.filter(module="inventory", action="set_reorder_point").exists()
+
+
+def test_set_reorder_point_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_inventory()
+
+    proposal = actions.build(nobody, "set_reorder_point", {"item": "SKU-1", "reorder_point": "50"})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "set_reorder_point", {"sku": "SKU-1", "reorder_point": "50"})
+    Item.objects.get(sku="SKU-1").reorder_point == 0

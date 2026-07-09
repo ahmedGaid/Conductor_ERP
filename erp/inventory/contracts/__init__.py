@@ -12,12 +12,16 @@ import datetime
 
 from django.db import models
 
+from erp.audit import services as audit
+
 from ..domain.models import StockMovement
 from ..events import STOCK_ISSUED, STOCK_RECEIVED, STOCK_TRANSFERRED
 from ..repositories import items as _items
 from ..repositories import warehouses as _warehouses
 from ..services import reports as _reports
+from ..services import stock_count as _stock_count
 from ..services.stock import (
+    create_transfer_draft,
     issue_stock,
     receive_stock,
     return_in_stock,
@@ -33,19 +37,22 @@ class ItemInfo:
     name: str
     type: str
     is_active: bool
+    reorder_point: str = "0"
 
 
 def find_item(sku: str) -> ItemInfo | None:
     item = _items.by_sku(sku)
     if item is None:
         return None
-    return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active)
+    return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active,
+                    reorder_point=str(item.reorder_point))
 
 
 def list_items(item_type: str = "stock") -> list[ItemInfo]:
     """Light snapshot of active items of one type (for cross-module lookups/matching)."""
     return [
-        ItemInfo(sku=i.sku, name=i.name, type=i.type, is_active=i.is_active)
+        ItemInfo(sku=i.sku, name=i.name, type=i.type, is_active=i.is_active,
+                reorder_point=str(i.reorder_point))
         for i in _items.filter(type=item_type, is_active=True)
     ]
 
@@ -175,6 +182,96 @@ def expiring_batches(*, days: int = 30) -> dict:
     }
 
 
+@dataclass(frozen=True)
+class StockTransferInfo:
+    id: str
+    code: str
+    sku: str
+    item_name: str
+    source_code: str
+    destination_code: str
+    quantity: str
+
+
+def create_stock_transfer_draft(*, item_sku: str, source_code: str, destination_code: str,
+                                quantity, date=None, reference: str = "", memo: str = "",
+                                actor=None) -> StockTransferInfo:
+    """Draft a planned move of ``item_sku`` from ``source_code`` to ``destination_code`` — no
+    balance moves until a future post step. Raises on an unknown item/warehouse."""
+    item = _items.by_sku((item_sku or "").strip())
+    if item is None:
+        raise UnknownItemError(data={"sku": item_sku})
+    source = _warehouses.by_code((source_code or "").strip())
+    if source is None:
+        raise UnknownWarehouseError(data={"warehouse": source_code})
+    destination = _warehouses.by_code((destination_code or "").strip())
+    if destination is None:
+        raise UnknownWarehouseError(data={"warehouse": destination_code})
+    transfer = create_transfer_draft(
+        item=item, source=source, destination=destination, quantity=quantity,
+        date=date, reference=reference, memo=memo, actor=actor,
+    )
+    return StockTransferInfo(
+        id=str(transfer.id), code=f"XFER-{str(transfer.id)[:8].upper()}",
+        sku=item.sku, item_name=item.name,
+        source_code=source.code, destination_code=destination.code,
+        quantity=str(transfer.quantity),
+    )
+
+
+@dataclass(frozen=True)
+class StockCountInfo:
+    id: str
+    code: str
+    warehouse_code: str
+    line_count: int
+
+
+def create_stock_count_draft(*, warehouse_code: str, item_skus: list[str] | None = None,
+                             count_date=None, reference: str = "", memo: str = "",
+                             actor=None) -> StockCountInfo:
+    """Open a draft (``counting``) stock count for a warehouse, snapshotting system quantities for
+    every item given (or every item with a balance there, when ``item_skus`` is empty)."""
+    warehouse = _warehouses.by_code((warehouse_code or "").strip())
+    if warehouse is None:
+        raise UnknownWarehouseError(data={"warehouse": warehouse_code})
+    count = _stock_count.create_count(
+        warehouse=warehouse, item_skus=item_skus, count_date=count_date,
+        reference=reference, memo=memo, actor=actor,
+    )
+    return StockCountInfo(
+        id=str(count.id), code=f"COUNT-{str(count.id)[:8].upper()}",
+        warehouse_code=warehouse.code, line_count=count.lines.count(),
+    )
+
+
+@dataclass(frozen=True)
+class ReorderPointUpdate:
+    sku: str
+    name: str
+    previous_reorder_point: str
+    reorder_point: str
+
+
+def set_reorder_point(*, sku: str, reorder_point, actor=None) -> ReorderPointUpdate:
+    """Update an item's reorder point (master-data edit, no stock movement)."""
+    item = _items.by_sku((sku or "").strip())
+    if item is None:
+        raise UnknownItemError(data={"sku": sku})
+    previous = item.reorder_point
+    item.reorder_point = reorder_point
+    item.save(update_fields=["reorder_point"])
+    audit.record(
+        module="inventory", action="set_reorder_point", entity_type="Item",
+        entity_id=str(item.id), actor=actor,
+        before={"reorder_point": str(previous)}, after={"reorder_point": str(item.reorder_point)},
+    )
+    return ReorderPointUpdate(
+        sku=item.sku, name=item.name,
+        previous_reorder_point=str(previous), reorder_point=str(item.reorder_point),
+    )
+
+
 def _resolve(sku: str, warehouse_code: str):
     item = _items.by_sku(sku)
     if item is None:
@@ -242,6 +339,12 @@ __all__ = [
     "receive",
     "return_in",
     "return_out",
+    "StockTransferInfo",
+    "create_stock_transfer_draft",
+    "StockCountInfo",
+    "create_stock_count_draft",
+    "ReorderPointUpdate",
+    "set_reorder_point",
     # legacy instance-based services (used within tests/other inventory callers)
     "issue_stock",
     "receive_stock",

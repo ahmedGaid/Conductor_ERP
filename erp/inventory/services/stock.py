@@ -25,7 +25,15 @@ from erp.core.events import bus
 
 from .. import events
 from ..domain import costing
-from ..domain.models import Item, ItemType, MovementType, StockBalance, StockMovement, Warehouse
+from ..domain.models import (
+    Item,
+    ItemType,
+    MovementType,
+    StockBalance,
+    StockMovement,
+    StockTransfer,
+    Warehouse,
+)
 from ..errors import (
     InsufficientStockError,
     InvalidCountError,
@@ -259,6 +267,33 @@ def return_out_stock(
     )
     bus.publish(events.STOCK_ISSUED, {"item": item.sku, "warehouse": warehouse.code, "value": value})
     return movement
+
+
+@transaction.atomic
+def create_transfer_draft(
+    *, item: Item, source: Warehouse, destination: Warehouse, quantity,
+    date=None, reference: str = "", memo: str = "", actor=None,
+) -> StockTransfer:
+    """Record a planned transfer without moving any balance — posting it is a later feature."""
+    _require_stock_item(item)
+    _require_positive(quantity)
+    if source.id == destination.id:
+        raise SameWarehouseTransferError()
+    transfer = StockTransfer.objects.create(
+        item=item, source=source, destination=destination, quantity=Decimal(quantity),
+        date=date or dt.date.today(), reference=reference, memo=memo,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
+    )
+    audit.record(
+        module="inventory", action="create_transfer_draft", entity_type="StockTransfer",
+        entity_id=str(transfer.id), actor=actor,
+        after={"sku": item.sku, "from": source.code, "to": destination.code,
+               "qty": str(transfer.quantity)},
+    )
+    return transfer
 
 
 @transaction.atomic

@@ -725,6 +725,157 @@ def _execute_supplier(actor, payload: dict) -> dict:
     }
 
 
+# --- Action 10: stock transfer draft ------------------------------------------------------------
+
+def _build_stock_transfer(actor, *, item: str | None = None, quantity=None,
+                          from_warehouse: str | None = None, to_warehouse: str | None = None,
+                          **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    resolved = _resolve_item(item or "")
+    if resolved is None:
+        near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                for score, i in _rank(item or "", inventory.list_items(), lambda i: i.name)
+                if score >= 0.4][:3]
+        return _blocker("item", item, candidates=near)
+    source_code, blocked = _resolve_warehouse(from_warehouse)
+    if blocked is not None:
+        return blocked
+    dest_code, blocked = _resolve_warehouse(to_warehouse)
+    if blocked is not None:
+        return blocked
+    if source_code == dest_code:
+        return {"error": "Source and destination warehouse must differ."}
+    qty = _qty(quantity)
+    if qty is None:
+        return {"error": "What quantity should be transferred?"}
+
+    risks = []
+    on_hand_row = next(
+        (r for r in inventory.stock_on_hand(query=resolved.sku, warehouse=source_code)["rows"]
+         if r["warehouse_code"] == source_code), None,
+    )
+    on_hand = Decimal(on_hand_row["quantity"]) if on_hand_row else Decimal("0")
+    if qty > on_hand:
+        risks.append(f"Only {on_hand} of '{resolved.name}' on hand at {source_code} — "
+                     f"transferring {qty} would exceed it.")
+
+    records = [{"type": "item", "value": resolved.sku, "label": resolved.name}]
+    return {
+        "action": "create_stock_transfer_draft",
+        "summary": [
+            f"Draft transfer of {qty} {resolved.name} from {source_code} to {dest_code}",
+            f"{on_hand} currently on hand at {source_code}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": None,
+        "affected": len(records),
+        "payload": {"item_sku": resolved.sku, "source_code": source_code,
+                    "destination_code": dest_code, "quantity": str(qty)},
+    }
+
+
+def _execute_stock_transfer(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    transfer = inventory.create_stock_transfer_draft(
+        item_sku=payload["item_sku"], source_code=payload["source_code"],
+        destination_code=payload["destination_code"], quantity=Decimal(payload["quantity"]),
+        actor=actor,
+    )
+    return {
+        "summary": f"Draft transfer {transfer.code} created — {transfer.quantity} "
+                   f"{transfer.item_name} from {transfer.source_code} to {transfer.destination_code}.",
+        "links": [{"type": "stockTransfer", "value": transfer.id, "label": transfer.code}],
+    }
+
+
+# --- Action 11: stock count draft ---------------------------------------------------------------
+
+def _build_stock_count(actor, *, warehouse: str | None = None, scope: str | None = None,
+                       **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    warehouse_code, blocked = _resolve_warehouse(warehouse)
+    if blocked is not None:
+        return blocked
+    rows = inventory.stock_on_hand(warehouse=warehouse_code, limit=50)["rows"]
+    line_count = len(rows)
+    if line_count == 0:
+        return {"error": f"No items have a balance at {warehouse_code} to count."}
+
+    records = [{"type": "warehouse", "value": warehouse_code, "label": warehouse_code}]
+    return {
+        "action": "create_stock_count_draft",
+        "summary": [
+            f"Start a stock count at {warehouse_code}",
+            f"{line_count} item line(s) will be snapshotted",
+        ],
+        "records": records,
+        "risks": [],
+        "total": None,
+        "affected": line_count,
+        "payload": {"warehouse_code": warehouse_code},
+    }
+
+
+def _execute_stock_count(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    count = inventory.create_stock_count_draft(warehouse_code=payload["warehouse_code"], actor=actor)
+    return {
+        "summary": f"Stock count {count.code} opened at {count.warehouse_code} "
+                   f"({count.line_count} line(s)).",
+        "links": [{"type": "stockCount", "value": count.id, "label": count.code}],
+    }
+
+
+# --- Action 12: set an item's reorder point -------------------------------------------------------
+
+def _build_set_reorder_point(actor, *, item: str | None = None, reorder_point=None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    resolved = _resolve_item(item or "")
+    if resolved is None:
+        near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                for score, i in _rank(item or "", inventory.list_items(), lambda i: i.name)
+                if score >= 0.4][:3]
+        return _blocker("item", item, candidates=near)
+    new_point = _qty(reorder_point)
+    if new_point is None:
+        return {"error": "What should the new reorder point be?"}
+    on_hand_rows = inventory.stock_on_hand(query=resolved.sku)["rows"]
+    on_hand = sum((Decimal(r["quantity"]) for r in on_hand_rows), Decimal("0"))
+
+    records = [{"type": "item", "value": resolved.sku, "label": resolved.name}]
+    return {
+        "action": "set_reorder_point",
+        "summary": [
+            f"Set reorder point of {resolved.name} from {resolved.reorder_point} to {new_point}",
+            f"{on_hand} currently on hand",
+        ],
+        "records": records,
+        "risks": [],
+        "total": None,
+        "affected": 1,
+        "payload": {"sku": resolved.sku, "reorder_point": str(new_point)},
+    }
+
+
+def _execute_set_reorder_point(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    updated = inventory.set_reorder_point(
+        sku=payload["sku"], reorder_point=Decimal(payload["reorder_point"]), actor=actor,
+    )
+    return {
+        "summary": f"Reorder point for {updated.name} set to {updated.reorder_point} "
+                   f"(was {updated.previous_reorder_point}).",
+        "links": [{"type": "item", "value": updated.sku, "label": updated.name}],
+    }
+
+
 # --- registry -----------------------------------------------------------------------------------
 
 # The harness spec's irreversible list: these kinds can NEVER ship with requires_confirm=False,
@@ -824,6 +975,35 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         {"query": "the new supplier's name"},
         _build_supplier, _execute_supplier,
     ),
+    Action(
+        "create_stock_transfer_draft",
+        "Prepare a DRAFT stock transfer of one item between two warehouses (nothing moves until "
+        "the user confirms). Use for 'move/transfer <n> of <item> from <warehouse A> to "
+        "<warehouse B>'. Flags a risk if the quantity exceeds on-hand at the source.",
+        {"item": "item sku or name to transfer",
+         "quantity": "quantity to transfer",
+         "from_warehouse": "source warehouse code",
+         "to_warehouse": "destination warehouse code"},
+        _build_stock_transfer, _execute_stock_transfer,
+    ),
+    Action(
+        "create_stock_count_draft",
+        "Open a DRAFT stock count for a warehouse, snapshotting current system quantities (the user "
+        "confirms; counted figures are entered and posted later on the count screen). Use for "
+        "'start/open a stock count in <warehouse>'.",
+        {"warehouse": "warehouse code to count",
+         "scope": "optional category or 'all' — currently counts every item with a balance there"},
+        _build_stock_count, _execute_stock_count,
+    ),
+    Action(
+        "set_reorder_point",
+        "Update an item's reorder point (master-data edit, no stock movement; the user confirms). "
+        "Use for 'set the reorder point of <item> to <n>'.",
+        {"item": "item sku or name",
+         "reorder_point": "the new reorder point quantity"},
+        _build_set_reorder_point, _execute_set_reorder_point,
+        kind="update",
+    ),
 ]}
 
 for _a in ACTIONS.values():
@@ -831,7 +1011,8 @@ for _a in ACTIONS.values():
         f"action {_a.name}: destructive kind '{_a.kind}' must require confirmation")
 
 # Which loop-decision fields can feed an action argument (each action gets only the args it declares).
-ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query")
+ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query",
+                    "item", "quantity", "from_warehouse", "to_warehouse", "reorder_point", "scope")
 
 
 def catalog_text() -> str:

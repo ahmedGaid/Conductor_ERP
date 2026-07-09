@@ -143,6 +143,33 @@ class StockCount(AuditedModel):
         return f"Count {self.warehouse_id} @ {self.count_date}"
 
 
+class TransferStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"      # created, stock not yet moved
+    POSTED = "posted", "Posted"   # movement created, balances moved
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class StockTransfer(AuditedModel):
+    """A drafted move of one item between two warehouses. While ``draft`` no balance/movement exists
+    yet — posting it (a later inventory-module feature) is what actually calls ``transfer_stock``."""
+
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="+")
+    source = models.ForeignKey(Warehouse, on_delete=models.PROTECT, related_name="+")
+    destination = models.ForeignKey(Warehouse, on_delete=models.PROTECT, related_name="+")
+    quantity = models.DecimalField(max_digits=18, decimal_places=4)
+    date = models.DateField()
+    reference = models.CharField(max_length=128, blank=True, default="")
+    memo = models.CharField(max_length=255, blank=True, default="")
+    status = models.CharField(max_length=16, choices=TransferStatus.choices, default=TransferStatus.DRAFT)
+
+    class Meta:
+        db_table = "inventory_stock_transfer"
+        ordering = ["-date", "-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Transfer {self.item_id}: {self.source_id} -> {self.destination_id}"
+
+
 class StockCountLine(TimeStampedModel):
     """One item on a stock count: the system snapshot vs the counted quantity and the posted variance."""
 

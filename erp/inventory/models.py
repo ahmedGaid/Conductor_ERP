@@ -11,6 +11,8 @@ from .domain.models import (  # noqa: F401
     StockCount,
     StockCountLine,
     StockMovement,
+    StockTransfer,
+    TransferStatus,
     Warehouse,
 )
 
@@ -24,5 +26,7 @@ __all__ = [
     "StockCount",
     "StockCountLine",
     "StockMovement",
+    "StockTransfer",
+    "TransferStatus",
     "Warehouse",
 ]
