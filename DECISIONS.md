@@ -4,6 +4,15 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Agent actions — drafts-only standing decision reaffirmed (agent-actions FILE_06, 2026-07-09)
+
+**Deferred choice on posting actions** — the 17 write actions shipped in FILE_01–05 all create *drafts* (unposted journal, draft order, draft count, draft transfer, draft PO, draft quotation). No action posts/receives/pays/approves/reverses — the human finishes each on the normal module screen. This is the standing decision from ai-workspace FILE_10 and is reaffirmed:
+
+- **Option A (current)** — stay drafts-only forever. Safest; the human always sees the final state before posting. Simplest audit story. Audit trail records every assistant-created draft, not the final posted action.
+- **Option B (future)** — allow posting actions, still confirm-gated, with extra guards (typed re-entry, setting + permission gate). Would require FILE_05 (self-verification) live first so numbers are cross-checked before a post card is shown.
+
+**Decision:** Remain on Option A for v1. Benchmark suite (ai-reliability FILE_05 T5.6) covers these actions with the unsafe-write predicate (any executed write without a confirmed card = failure). Posting actions queued as a separate plan if founder chooses Option B later.
+
 ## unified-ui-plan acceptance (FILE_09, 2026-07-09)
 
 Closing decisions for the whole plan (FILE_01–08), reconfirmed against the shipped code in a live
