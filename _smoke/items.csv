@@ -1,0 +1,23 @@
+﻿SKU,Item Name,UoM,Reorder Point
+SKU-3001,Foods Widget 1,pack,0
+SKU-3002,Textiles Widget 2,pack,0
+SKU-3003,Electronics Widget 3,pack,5
+SKU-3004,Motors Widget 4,litre,20
+SKU-3001,Dup Widget,box,5
+SKU-3005,Pharma Widget 5,kg,20
+SKU-3006,Steel Widget 6,pack,20
+SKU-3007,Group Widget 7,kg,10
+,No SKU Widget,unit,3
+SKU-3008,Holdings Widget 8,box,5
+SKU-3009,Retail Widget 9,box,0
+SKU-3010,Logistics Widget 10,pack,10
+SKU-3011,Farms Widget 11,pack,20
+SKU-3012,Mills Widget 12,kg,20
+SKU-3013,Works Widget 13,kg,0
+SKU-3014,Stores Widget 14,unit,20
+SKU-3015,Trading Widget 15,box,10
+SKU-3016,Foods Widget 16,box,20
+SKU-3017,Textiles Widget 17,litre,0
+SKU-3018,Electronics Widget 18,unit,10
+SKU-3019,Motors Widget 19,kg,10
+SKU-3020,Pharma Widget 20,pack,20

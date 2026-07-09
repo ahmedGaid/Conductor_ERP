@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conductor — The Founder Plan · 2026 → 2036</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111113;--ink-2:#4b4b50;--ink-3:#8a8a90;--hair:#e7e7ea;--hair-2:#d4d4d8;
+  --paper:#fcfcfd;--card:#ffffff;--wash:#f5f5f7;
+  --green:#0f6e56;--green-wash:#e9f5f0;
+  --amber:#854f0b;--amber-wash:#faf3e4;
+  --accent:#111113;
+  --radius:14px;
+  --font:'Inter','IBM Plex Sans Arabic',-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#f2f2f3;--ink-2:#b9b9bf;--ink-3:#7c7c84;--hair:#26262b;--hair-2:#35353b;
+    --paper:#101012;--card:#17171a;--wash:#1c1c20;
+    --green:#5dcaa5;--green-wash:#0e2a22;
+    --amber:#efc275;--amber-wash:#2b2113;
+    --accent:#f2f2f3;
+  }
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{font-family:var(--font);background:var(--paper);color:var(--ink);line-height:1.65;font-size:16px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--ink);color:var(--paper)}
+
+.wrap{max-width:1060px;margin:0 auto;padding:0 32px}
+@media(max-width:640px){.wrap{padding:0 20px}}
+
+/* ---------- top progress + nav ---------- */
+#bar{position:fixed;top:0;left:0;height:2px;background:var(--ink);width:0;z-index:60;transition:width .1s linear}
+nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
+nav .wrap{display:flex;align-items:center;gap:8px;height:56px}
+.mark{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;letter-spacing:.01em;margin-inline-end:auto;white-space:nowrap}
+.mark svg{display:block}
+nav a{font-size:12.5px;color:var(--ink-3);text-decoration:none;padding:6px 10px;border-radius:8px;white-space:nowrap;transition:color .15s,background .15s}
+nav a:hover{color:var(--ink);background:var(--wash)}
+nav a.on{color:var(--ink);background:var(--wash)}
+@media(max-width:860px){nav a{display:none}nav a.always{display:inline-block}}
+
+/* ---------- hero ---------- */
+header{padding:96px 0 72px;border-bottom:1px solid var(--hair)}
+.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:500;margin-bottom:20px}
+h1{font-size:clamp(34px,5.4vw,58px);line-height:1.08;font-weight:600;letter-spacing:-.025em;max-width:15ch}
+.sub{margin-top:22px;font-size:18px;color:var(--ink-2);max-width:58ch}
+.sub em{font-style:normal;color:var(--ink);font-weight:500}
+.meta{margin-top:32px;display:flex;gap:10px;flex-wrap:wrap}
+.chip{font-size:12.5px;padding:6px 13px;border:1px solid var(--hair-2);border-radius:999px;color:var(--ink-2);background:var(--card)}
+.chip b{font-weight:600;color:var(--ink)}
+
+/* ---------- ladder ---------- */
+.ladder{display:flex;align-items:stretch;gap:0;margin-top:56px;border:1px solid var(--hair);border-radius:var(--radius);overflow:hidden;background:var(--card)}
+.rung{flex:1;padding:16px 8px 14px;text-align:center;border-inline-end:1px solid var(--hair);position:relative}
+.rung:last-child{border-inline-end:none;background:var(--green-wash)}
+.rung .n{font-size:11px;color:var(--ink-3);font-weight:500;letter-spacing:.08em}
+.rung .t{font-size:13.5px;font-weight:600;margin-top:2px}
+.rung:last-child .t{color:var(--green)}
+@media(max-width:720px){.ladder{flex-wrap:wrap}.rung{flex:1 1 33%;border-block-end:1px solid var(--hair)}}
+
+/* ---------- sections ---------- */
+section{padding:72px 0 8px}
+.sec-k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:500;margin-bottom:10px}
+h2{font-size:clamp(24px,3.2vw,34px);font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.lead{margin-top:14px;color:var(--ink-2);max-width:64ch}
+
+/* ---------- math ---------- */
+.math{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:36px}
+@media(max-width:720px){.math{grid-template-columns:1fr}}
+.stat{background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);padding:26px 26px 22px}
+.stat .l{font-size:13px;color:var(--ink-3);font-weight:500}
+.stat .v{font-size:40px;font-weight:600;letter-spacing:-.03em;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat .d{font-size:13.5px;color:var(--ink-2);margin-top:8px;line-height:1.5}
+.equation{margin-top:22px;background:var(--wash);border-radius:var(--radius);padding:20px 26px;font-size:14.5px;color:var(--ink-2);display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.equation code{font-family:inherit;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.thesis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+@media(max-width:720px){.thesis{grid-template-columns:1fr}}
+.thesis .t-card{border:1px solid var(--hair);border-radius:var(--radius);padding:18px 20px;background:var(--card)}
+.thesis .t-card b{display:block;font-size:14.5px;font-weight:600;margin-bottom:4px}
+.thesis .t-card span{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+
+/* ---------- timeline ---------- */
+.tl{position:relative;margin-top:48px;padding-inline-start:44px}
+.tl::before{content:"";position:absolute;inset-inline-start:13px;top:8px;bottom:8px;width:1px;background:var(--hair-2)}
+.phase{position:relative;margin-bottom:26px;background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);overflow:hidden;opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+.phase.in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.phase{opacity:1;transform:none;transition:none}}
+.phase::before{content:attr(data-n);position:absolute;inset-inline-start:-44px;top:26px;width:27px;height:27px;border-radius:50%;background:var(--paper);border:1px solid var(--hair-2);color:var(--ink-2);font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.phase.here::before{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.p-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:22px 28px 0}
+.p-years{font-size:12.5px;font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.p-name{font-size:20px;font-weight:600;letter-spacing:-.015em}
+.badge{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 11px;border-radius:999px}
+.badge.here{background:var(--ink);color:var(--paper)}
+.badge.fund{background:var(--wash);color:var(--ink-2);margin-inline-start:auto;text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:500}
+.p-job{padding:10px 28px 0;color:var(--ink-2);font-size:15px;max-width:72ch}
+.p-grid{display:grid;grid-template-columns:1.25fr .9fr;gap:0;margin-top:20px;border-top:1px solid var(--hair)}
+@media(max-width:760px){.p-grid{grid-template-columns:1fr}}
+.p-col{padding:20px 28px 24px}
+.p-col+.p-col{border-inline-start:1px solid var(--hair)}
+@media(max-width:760px){.p-col+.p-col{border-inline-start:none;border-top:1px solid var(--hair)}}
+.p-col h4{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:12px}
+.moves{list-style:none}
+.moves li{position:relative;padding-inline-start:20px;font-size:14px;color:var(--ink-2);margin-bottom:9px;line-height:1.55}
+.moves li::before{content:"";position:absolute;inset-inline-start:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--ink-3)}
+.moves li b{color:var(--ink);font-weight:500}
+.gate{list-style:none}
+.gate li{display:flex;gap:10px;font-size:13.5px;color:var(--ink-2);margin-bottom:9px;line-height:1.5}
+.gate li svg{flex:none;margin-top:2px}
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+.kpi{background:var(--wash);border-radius:10px;padding:10px 14px;min-width:104px}
+.kpi .kv{font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .kl{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+.p-foot{border-top:1px solid var(--hair);padding:13px 28px;display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3);background:var(--wash)}
+.p-foot b{color:var(--ink-2);font-weight:500}
+
+/* ---------- systems ---------- */
+.sys{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:36px}
+@media(max-width:760px){.sys{grid-template-columns:1fr}}
+.sys-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);padding:24px 26px}
+.sys-card h3{font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sys-card h3 svg{color:var(--ink-3)}
+.row{display:flex;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--hair);font-size:13.5px}
+.row:last-child{border-bottom:none}
+.row .ph{flex:none;font-size:11px;font-weight:600;color:var(--ink-3);background:var(--wash);border-radius:999px;padding:2px 9px;font-variant-numeric:tabular-nums}
+.row .what{color:var(--ink);font-weight:500}
+.row .why{color:var(--ink-3);font-size:12.5px}
+.frow{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--hair);font-size:13.5px}
+.frow:last-child{border-bottom:none}
+.frow .sz{flex:none;width:64px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink)}
+.frow .role{color:var(--ink-2)}
+.frow .role b{color:var(--ink);font-weight:500}
+
+/* ---------- risks + refuse ---------- */
+.risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:36px}
+@media(max-width:760px){.risk-grid{grid-template-columns:1fr}}
+.risk{background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);padding:18px 22px}
+.risk b{display:block;font-size:14px;font-weight:600;margin-bottom:5px}
+.risk span{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+.refuse{margin-top:36px;background:var(--amber-wash);border:1px solid color-mix(in srgb,var(--amber) 25%,transparent);border-radius:var(--radius);padding:26px 28px}
+.refuse h3{font-size:15px;font-weight:600;color:var(--amber);margin-bottom:14px;letter-spacing:.02em}
+.refuse ol{list-style:none;counter-reset:r;display:grid;grid-template-columns:1fr 1fr;gap:10px 28px}
+@media(max-width:720px){.refuse ol{grid-template-columns:1fr}}
+.refuse li{counter-increment:r;position:relative;padding-inline-start:30px;font-size:14px;color:var(--ink-2);line-height:1.5}
+.refuse li::before{content:counter(r);position:absolute;inset-inline-start:0;top:1px;width:20px;height:20px;border-radius:50%;border:1px solid var(--amber);color:var(--amber);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.refuse li b{color:var(--ink);font-weight:500}
+
+/* ---------- footer ---------- */
+footer{margin-top:88px;border-top:1px solid var(--hair);padding:44px 0 64px}
+.f-grid{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between}
+.f-col{font-size:13px;color:var(--ink-3);line-height:2}
+.f-col b{display:block;color:var(--ink);font-weight:600;font-size:13px;margin-bottom:4px}
+.f-col span{display:block}
+
+/* ---------- print ---------- */
+@media print{
+  nav,#bar{display:none}
+  body{background:#fff;color:#111}
+  .phase{break-inside:avoid;opacity:1;transform:none}
+  header{padding:40px 0 30px}
+  section{padding:34px 0 0}
+}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+
+<nav aria-label="Sections">
+  <div class="wrap">
+    <span class="mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 17c3-6.5 6.5-10 9.5-10 2.4 0 4 1.8 4 4.2 0 3.4-2.6 5.8-5.4 5.8-2 0-3.3-1.3-3.3-3.1"/></svg>
+      Conductor · Founder plan
+    </span>
+    <a href="#math" class="always">The math</a>
+    <a href="#p1">P1</a><a href="#p2">P2</a><a href="#p3">P3</a><a href="#p4">P4</a><a href="#p5">P5</a><a href="#p6">P6</a>
+    <a href="#systems">Systems</a>
+    <a href="#risks">Risks</a>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Internal · adopted 2026-07-04 · reviewed quarterly</div>
+    <h1>From first ARP to a multi&#8209;billion company.</h1>
+    <p class="sub">Ten years, six phases, one rule: <em>a phase is done only when its gate passes</em> — product, business, and company, all three. Egypt proves the product. Saudi Arabia pays for the company. The platform multiplies both.</p>
+    <div class="meta">
+      <span class="chip">Horizon <b>2026 → 2036</b></span>
+      <span class="chip">Target <b>$200M ARR</b></span>
+      <span class="chip">Category <b>ARP — Agentic Resource Planning</b></span>
+      <span class="chip">Canon <b>Docs/FOUNDER_PLAN.md</b></span>
+    </div>
+
+    <div class="ladder" role="img" aria-label="The ladder: product, proof, SaaS machine, company, platform and ecosystem, category leader">
+      <div class="rung"><div class="n">01</div><div class="t">Product</div></div>
+      <div class="rung"><div class="n">02</div><div class="t">Proof</div></div>
+      <div class="rung"><div class="n">03</div><div class="t">SaaS machine</div></div>
+      <div class="rung"><div class="n">04</div><div class="t">Company</div></div>
+      <div class="rung"><div class="n">05</div><div class="t">Platform</div></div>
+      <div class="rung"><div class="n">06</div><div class="t">Category leader</div></div>
+    </div>
+  </div>
+</header>
+
+<section id="math">
+  <div class="wrap">
+    <div class="sec-k">Section 0</div>
+    <h2>The honest math</h2>
+    <p class="lead">A plan aimed at a big number starts with the number. No magic — arithmetic, then three consequences that shape everything below.</p>
+
+    <div class="math">
+      <div class="stat"><div class="l">Valuation target</div><div class="v">$2–3B</div><div class="d">Fast-growing software trades at roughly 10–15× annual recurring revenue.</div></div>
+      <div class="stat"><div class="l">ARR required</div><div class="v">$200M</div><div class="d">The single number the whole ten-year plan reverse-engineers from.</div></div>
+      <div class="stat"><div class="l">Paying companies</div><div class="v">~50,000</div><div class="d">At ~$4,000 / year blended — SMB volume + mid-market + platform revenue.</div></div>
+    </div>
+
+    <div class="equation">
+      <span><code>~50,000</code> companies × <code>~$4,000</code>/yr = <code>$200M</code> ARR × <code>10–15×</code> = <code>$2–3B</code></span>
+      <span style="color:var(--ink-3);font-size:13px">Egypt ~3.8M MSMEs · KSA ~1.3M SMEs · GCC hundreds of thousands more. The market is big enough.</span>
+    </div>
+
+    <div class="thesis">
+      <div class="t-card"><b>Egypt proves the product</b><span>Huge SMB base, home advantage, the talent base — but low software prices. Proving ground, not the valuation.</span></div>
+      <div class="t-card"><b>Saudi Arabia pays for the company</b><span>SME budgets 5–10× Egypt's, same language, ZATCA e-invoicing mandates compliant software. The revenue engine from Phase 4.</span></div>
+      <div class="t-card"><b>The platform multiplies both</b><span>Subscriptions alone can't carry it. Revenue layers arrive on schedule: channel → cloud → AI usage → marketplace → products.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="timeline">
+  <div class="wrap">
+    <div class="sec-k">Sections 3 – 8</div>
+    <h2>Six phases, six gates</h2>
+    <p class="lead">Each phase has an entry condition, a job, exit metrics, and a funding event. You do not start a phase early — skipping gates is how companies die looking busy.</p>
+
+    <div class="tl">
+
+      <!-- PHASE 1 -->
+      <article class="phase here" id="p1" data-n="1">
+        <div class="p-head">
+          <span class="p-years">2026 – 2027</span>
+          <span class="p-name">Product &amp; proof</span>
+          <span class="badge here">You are here</span>
+          <span class="badge fund">Bootstrap → YC / pre-seed</span>
+        </div>
+        <p class="p-job">Finish the ARP core and put ten real companies on it. The month-close running live at a real customer is the launch moment of the company — not just a feature.</p>
+        <div class="p-grid">
+          <div class="p-col">
+            <h4>Key moves</h4>
+            <ul class="moves">
+              <li>Finish <b>AI workspace</b> sessions 01–15 (in flight).</li>
+              <li><b>Migration agent</b> — spreadsheets → running company in one afternoon. The go-to-market weapon, not a feature: ERP dies at implementation; ours takes an afternoon.</li>
+              <li><b>Autonomous month-close</b> — the flagship. Its first live run opens the claims gate and unlocks the public ARP story.</li>
+              <li>Pick <b>one ICP</b> and write it down: Egyptian trading &amp; distribution SMBs (10–100 staff) that already use an external accountant.</li>
+              <li>Onboard all ten pilots personally. Payment = data, weekly calls, permission to tell their story.</li>
+            </ul>
+          </div>
+          <div class="p-col">
+            <h4>Exit gate</h4>
+            <ul class="gate">
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>Month-close ran live, audit trail complete → public ARP claim</li>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>10 companies live · ≥7 open it every working day</li>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>Real messy migration ≤ one afternoon, zero consultant hours</li>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>Written ICP one-pager; all ten pilots match it</li>
+            </ul>
+          </div>
+        </div>
+        <div class="p-foot"><span>Team <b>founder only</b></span><span>Funding <b>YC application on the live ARP demo</b></span><span>Habit <b>write every decision down</b></span></div>
+      </article>
+
+      <!-- PHASE 2 -->
+      <article class="phase" id="p2" data-n="2">
+        <div class="p-head">
+          <span class="p-years">2027 – 2028</span>
+          <span class="p-name">Product-market fit</span>
+          <span class="badge fund">Seed ~$1–2M</span>
+        </div>
+        <p class="p-job">Prove one type of company will pay, stay, and refer — repeatedly. 100 customers is still founder-scale: talk to every one personally; every churn gets a written post-mortem sentence.</p>
+        <div class="p-grid">
+          <div class="p-col">
+            <h4>Key moves</h4>
+            <ul class="moves">
+              <li>Convert pilots to paid. <b>Simple public pricing</b>, EGP tiers, annual pays 10 months, no custom deals.</li>
+              <li>Grow <b>10 → 50 → 100</b> paying. Channels in order: pilot referrals → their external accountants → Arabic demo-driven content (YouTube, LinkedIn) — demos, never hype.</li>
+              <li>Ship retention features: <b>daily brief, anomaly watch, bank photo reconciliation</b> (roadmap C–D). Scope freeze holds: no HR, no manufacturing.</li>
+              <li>First 3 hires only after ~50 paying: <b>support engineer → full-stack engineer → part-time finance</b>. Culture one-pager written before hire #1.</li>
+            </ul>
+          </div>
+          <div class="p-col">
+            <h4>Exit gate</h4>
+            <div class="kpis">
+              <div class="kpi"><div class="kv">100</div><div class="kl">paying customers</div></div>
+              <div class="kpi"><div class="kv">≥90%</div><div class="kl">yearly retention</div></div>
+              <div class="kpi"><div class="kv">≥25%</div><div class="kl">new logos via referral</div></div>
+              <div class="kpi"><div class="kv">≤30d</div><div class="kl">to first closed month</div></div>
+              <div class="kpi"><div class="kv">≥80%</div><div class="kl">weekly active companies</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="p-foot"><span>Team <b>1 → 4</b></span><span>Funding <b>seed raised on PMF numbers — or revenue covers Phase 3</b></span><span>Founder <b>out of routine support by exit</b></span></div>
+      </article>
+
+      <!-- PHASE 3 -->
+      <article class="phase" id="p3" data-n="3">
+        <div class="p-head">
+          <span class="p-years">2028 – 2029</span>
+          <span class="p-name">The SaaS machine</span>
+          <span class="badge fund">Series A ~$5–10M</span>
+        </div>
+        <p class="p-job">Make growth repeatable — revenue that arrives on a schedule, from a process, not from the founder's personal effort.</p>
+        <div class="p-grid">
+          <div class="p-col">
+            <h4>Key moves</h4>
+            <ul class="moves">
+              <li><b>Sales:</b> one written process — inbound demo → migration-agent trial on the customer's own data → close. The trial IS the demo: competitors show slides; we show their company already running.</li>
+              <li><b>Marketing:</b> Arabic-first content engine — money keywords, customer stories with real numbers.</li>
+              <li><b>Accountant channel goes formal:</b> accountant portal (one login, many clients) + partner program with revenue share and certification. Target 50 active partners.</li>
+              <li><b>Cloud multi-tenant becomes the default</b> — the scalability hinge; customer #1,000 costs marginally nothing. Self-hosted becomes the premium option.</li>
+              <li><b>Finance:</b> automated billing, MRR/cohort dashboard, 18-month cash model updated monthly.</li>
+            </ul>
+          </div>
+          <div class="p-col">
+            <h4>Exit gate</h4>
+            <div class="kpis">
+              <div class="kpi"><div class="kv">$1M</div><div class="kl">ARR</div></div>
+              <div class="kpi"><div class="kv">400–600</div><div class="kl">customers</div></div>
+              <div class="kpi"><div class="kv">≥100%</div><div class="kl">net revenue retention</div></div>
+              <div class="kpi"><div class="kv">≤12mo</div><div class="kl">CAC payback</div></div>
+              <div class="kpi"><div class="kv">≥75%</div><div class="kl">gross margin</div></div>
+            </div>
+            <ul class="gate" style="margin-top:14px">
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>3 straight quarters of new MRR from process, not founder heroics</li>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>Accountant channel ≥20% of new customers</li>
+            </ul>
+          </div>
+        </div>
+        <div class="p-foot"><span>Team <b>8–12</b></span><span>Funding <b>Series A — explicit use: the company + Saudi Arabia</b></span></div>
+      </article>
+
+      <!-- PHASE 4 -->
+      <article class="phase" id="p4" data-n="4">
+        <div class="p-head">
+          <span class="p-years">2029 – 2030</span>
+          <span class="p-name">The company &amp; Saudi Arabia</span>
+          <span class="badge fund">Series B ~$20–30M</span>
+        </div>
+        <p class="p-job">Build the organization, and open the market that pays. The founder's product is now the company itself.</p>
+        <div class="p-grid">
+          <div class="p-col">
+            <h4>Key moves</h4>
+            <ul class="moves">
+              <li><b>KSA entry checklist</b> — each a project: ZATCA e-invoicing certification · Saudi VAT · KSA data residency · SAR pricing &amp; payments · Riyadh presence (country lead + 2–3) · 2–3 implementation partners signed before launch.</li>
+              <li>Same ICP, same playbook, <b>Saudi prices</b>. UAE follows ~a year later with a lighter checklist.</li>
+              <li><b>Leadership layer:</b> Heads of Engineering · Product/Design · Revenue · Customer Success · Finance &amp; Ops · KSA Country Lead.</li>
+              <li><b>Hiring system:</b> scorecards → structured interviews (work sample) → offer bands → career ladder → twice-yearly reviews. Egypt = the talent arbitrage serving GCC revenue.</li>
+              <li>Culture doc in active use — it decides real hires and promotions.</li>
+            </ul>
+          </div>
+          <div class="p-col">
+            <h4>Exit gate</h4>
+            <div class="kpis">
+              <div class="kpi"><div class="kv">$5–8M</div><div class="kl">ARR</div></div>
+              <div class="kpi"><div class="kv">≥30%</div><div class="kl">new MRR from KSA</div></div>
+              <div class="kpi"><div class="kv">30–60</div><div class="kl">team</div></div>
+            </div>
+            <ul class="gate" style="margin-top:14px">
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>Leadership team runs the week without the founder in every meeting</li>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>KSA unit economics proven — CAC payback ≤12 months at Saudi prices</li>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>≥50% of founder's calendar on hiring, strategy, capital</li>
+            </ul>
+          </div>
+        </div>
+        <div class="p-foot"><span>Team <b>30–60</b></span><span>Funding <b>Series B — platform + GCC expansion</b></span><span>Trust bar <b>ZATCA cert · SOC 2 · KSA residency</b></span></div>
+      </article>
+
+      <!-- PHASE 5 -->
+      <article class="phase" id="p5" data-n="5">
+        <div class="p-head">
+          <span class="p-years">2030 – 2032</span>
+          <span class="p-name">Platform &amp; ecosystem</span>
+          <span class="badge fund">Series C</span>
+        </div>
+        <p class="p-job">Let other people build on Conductor and sell Conductor. An ecosystem grows while you sleep; a product only grows while you work.</p>
+        <div class="p-grid">
+          <div class="p-col">
+            <h4>Key moves</h4>
+            <ul class="moves">
+              <li><b>Public API + webhooks + SDK</b> — the same contracts the AI already uses, exposed properly. The architecture was built for this.</li>
+              <li><b>AI skills marketplace:</b> third parties ship vertical agents that run inside Conductor's permission and audit model — the ARP mechanics become the platform's safety guarantee competitors can't bolt on. Revenue share ~80/20.</li>
+              <li><b>Partner program v2, tiered:</b> implementation partners · accounting firms (now hundreds) · per-country resellers · technology partners.</li>
+              <li><b>Certification academy</b> — "Conductor Certified" becomes a CV line in Cairo and Riyadh. Free university licenses.</li>
+              <li><b>Annual conference</b> — the stage where ARP is defined for the industry, by us, with customers on it.</li>
+              <li>Complete the GCC; Kuwait / Qatar / Oman / Bahrain via resellers, no offices. Jordan + North Africa via partners.</li>
+            </ul>
+          </div>
+          <div class="p-col">
+            <h4>Exit gate</h4>
+            <div class="kpis">
+              <div class="kpi"><div class="kv">$25–40M</div><div class="kl">ARR</div></div>
+              <div class="kpi"><div class="kv">≥20%</div><div class="kl">non-subscription revenue</div></div>
+              <div class="kpi"><div class="kv">300+</div><div class="kl">active partners</div></div>
+              <div class="kpi"><div class="kv">50+</div><div class="kl">third-party apps</div></div>
+              <div class="kpi"><div class="kv">≥115%</div><div class="kl">net revenue retention</div></div>
+            </div>
+            <ul class="gate" style="margin-top:14px">
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>A third party earns real money on the platform — the ecosystem test</li>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>A partners-only country entry turned profitable</li>
+            </ul>
+          </div>
+        </div>
+        <div class="p-foot"><span>Team <b>120–200</b></span><span>Trust bar <b>ISO 27001 · per-country residency</b></span></div>
+      </article>
+
+      <!-- PHASE 6 -->
+      <article class="phase" id="p6" data-n="6">
+        <div class="p-head">
+          <span class="p-years">2032 – 2036</span>
+          <span class="p-name">Category leader</span>
+          <span class="badge fund">IPO / strategic options</span>
+        </div>
+        <p class="p-job">Make "ARP" an industry term with Conductor as its reference, expand the product family, and build a company that outlives its founder's daily attention.</p>
+        <div class="p-grid">
+          <div class="p-col">
+            <h4>Key moves</h4>
+            <ul class="moves">
+              <li><b>Product family</b> on the shared platform (identity, permissions, AI runtime, design system) — each gated on customer evidence: POS → HR &amp; Payroll (the freeze lifts only now, by explicit decision) → BI → procurement network → AI Studio.</li>
+              <li><b>Data &amp; AI moat compounds:</b> millions of documents/month through migration, month-close, anomaly agents → benchmarks, industry-tuned agents, forecasting — with consent, anonymized, compliant. A competitor starting today cannot copy it.</li>
+              <li><b>Enduring-company systems:</b> succession per key role · leadership development · ~10% long-term R&amp;D · real governance · institutional memory.</li>
+              <li>English-market entry only if GCC growth alone can't carry the plan — a decision, not a default.</li>
+            </ul>
+          </div>
+          <div class="p-col">
+            <h4>Exit</h4>
+            <div class="kpis">
+              <div class="kpi"><div class="kv">$150–250M</div><div class="kl">ARR</div></div>
+              <div class="kpi"><div class="kv">≥120%</div><div class="kl">net revenue retention</div></div>
+              <div class="kpi"><div class="kv">400–700</div><div class="kl">team</div></div>
+            </div>
+            <ul class="gate" style="margin-top:14px">
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4 10-10"/></svg>The multi-billion outcome is an output of the machine, not a hope</li>
+            </ul>
+          </div>
+        </div>
+        <div class="p-foot"><span>Team <b>400–700</b></span><span>Position <b>IPO-ready or strategically optional</b></span></div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section id="systems">
+  <div class="wrap">
+    <div class="sec-k">Sections 9 – 13 · the underneath</div>
+    <h2>Systems that run through every phase</h2>
+    <p class="lead">Brand, revenue layers, the data moat, the trust ladder, and the founder's own ladder — none of these is a phase; all of them compound across all six.</p>
+
+    <div class="sys">
+      <div class="sys-card">
+        <h3><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3v18M3 8h18M3 16h18"/></svg>Revenue layers — added on schedule, never all at once</h3>
+        <div class="row"><span class="ph">Ph 2</span><span class="what">SaaS subscriptions</span><span class="why">the spine, always ≥60%</span></div>
+        <div class="row"><span class="ph">Ph 3</span><span class="what">Accountant / partner channel</span><span class="why">distribution without salaries</span></div>
+        <div class="row"><span class="ph">Ph 3</span><span class="what">Cloud tiers + premium self-hosted</span><span class="why">enterprise upsell</span></div>
+        <div class="row"><span class="ph">Ph 4</span><span class="what">AI usage credits + KSA pricing</span><span class="why">5–10× price point</span></div>
+        <div class="row"><span class="ph">Ph 5</span><span class="what">Marketplace share · certification · premium support</span><span class="why">~20% of third-party sales</span></div>
+        <div class="row"><span class="ph">Ph 6</span><span class="what">Adjacent products</span><span class="why">cross-sold on the platform</span></div>
+      </div>
+
+      <div class="sys-card">
+        <h3><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>Trust ladder — buyers get bigger; proof must too</h3>
+        <div class="row"><span class="ph">Ph 1–2</span><span class="what">Backups + restore drills · encryption · RBAC + audit</span></div>
+        <div class="row"><span class="ph">Ph 3</span><span class="what">99.9% SLA · status page · pen test · ETA e-invoice</span></div>
+        <div class="row"><span class="ph">Ph 4</span><span class="what">ZATCA cert · KSA residency · SOC 2 I → II</span></div>
+        <div class="row"><span class="ph">Ph 5–6</span><span class="what">ISO 27001 · per-country residency · public incident history</span></div>
+      </div>
+
+      <div class="sys-card">
+        <h3><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>The founder's own ladder — plan your obsolescence</h3>
+        <div class="frow"><span class="sz">1–10</span><span class="role"><b>Builder</b> — product + first customers personally; depth IS the job</span></div>
+        <div class="frow"><span class="sz">10–30</span><span class="role"><b>Manager</b> — hire, write the playbooks, run the metrics week</span></div>
+        <div class="frow"><span class="sz">30–100</span><span class="role"><b>Leader</b> — hire leaders, culture, KSA, capital</span></div>
+        <div class="frow"><span class="sz">100–300</span><span class="role"><b>Executive</b> — strategy, allocation, key partners, category story</span></div>
+        <div class="frow"><span class="sz">300+</span><span class="role"><b>CEO / vision</b> — direction, people, capital only</span></div>
+      </div>
+
+      <div class="sys-card">
+        <h3><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3a5 5 0 015 5c0 2-1 3.5-2.5 4.5L14 21h-4l-.5-8.5C8 11.5 7 10 7 8a5 5 0 015-5z"/></svg>The data &amp; AI moat — the compounding asset</h3>
+        <p style="font-size:13.5px;color:var(--ink-2);line-height:1.7">Every phase feeds it: migration sees every messy company → month-close sees every book → anomaly watch learns every fraud pattern → bank vision reads every statement format → WhatsApp hears every question in Egyptian Arabic. Rules that keep it an asset: explicit granular consent · anonymized aggregates only · the six ARP mechanics never weaken · public AI-responsibility page from Phase 3. <b style="color:var(--ink);font-weight:500">Trust is value #1 — the moat is only a moat if customers brag about giving us the data.</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="risks">
+  <div class="wrap">
+    <div class="sec-k">Sections 14 – 15</div>
+    <h2>Risks named now, refusals written down</h2>
+    <p class="lead">Reviewed quarterly. Every phase's plan must be survivable at 60% of the target raise; default-alive after Phase 3 is the standing goal.</p>
+
+    <div class="risk-grid">
+      <div class="risk"><b>Egypt macro / currency</b><span>GCC revenue from Phase 4 is the hard-currency hedge; costs stay in EGP.</span></div>
+      <div class="risk"><b>Incumbents copy "AI features"</b><span>They can bolt on chat; they can't retrofit actor-scoped, auditable agentic architecture. Keep the six mechanics inviolable, keep shipping demos.</span></div>
+      <div class="risk"><b>Founder burnout / bus factor</b><span>The founder ladder + write-everything-down + a leadership layer at Phase 4.</span></div>
+      <div class="risk"><b>AI cost / quality shifts</b><span>Model-agnostic agent layer; usage-based pricing passes cost through.</span></div>
+      <div class="risk"><b>Compliance surprise</b><span>E-invoicing rule changes are product features with an owner, not chores — budgeted every phase.</span></div>
+      <div class="risk"><b>Fundraising winter</b><span>Gates don't move for money weather; the plan survives at 60% of each raise.</span></div>
+    </div>
+
+    <div class="refuse">
+      <h3>The company-level refuse list — what we will not do</h3>
+      <ol>
+        <li><b>No phase-skipping.</b> No Series A before repeatable sales, no KSA before PMF, no marketplace before partners exist.</li>
+        <li><b>No revenue that fights the product</b> — no agency business, no custom forks, no white-labeling that hides the brand.</li>
+        <li><b>No feature-grid selling, no hype claims</b> — demos or silence, at every company size.</li>
+        <li><b>No hiring ahead of proof.</b> Headcount follows revenue evidence, never precedes it.</li>
+        <li><b>No market entry without the checklist</b> and a named owner.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="f-grid">
+      <div class="f-col">
+        <b>Cadence</b>
+        <span>Weekly — current phase's metric table, numbers only</span>
+        <span>Quarterly — full read; gates move only by written, dated decision</span>
+        <span>Yearly — re-derive the math from actual ARR</span>
+      </div>
+      <div class="f-col">
+        <b>Canon</b>
+        <span>Docs/FOUNDER_PLAN.md — this plan, full text</span>
+        <span>Docs/ARP_STRATEGY.md — category, scope, team rules</span>
+        <span>Docs/plan/arp-roadmap.md — build order, phases A–F</span>
+      </div>
+      <div class="f-col">
+        <b>Conductor</b>
+        <span>ERP was software you operate.</span>
+        <span>ARP is software that operates with you.</span>
+        <span style="margin-top:6px;color:var(--ink-3)">Internal · claims-gated · 2026-07-04</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  addEventListener('scroll',function(){
+    var h=document.documentElement,p=h.scrollTop/(h.scrollHeight-h.clientHeight);
+    bar.style.width=(p*100).toFixed(2)+'%';
+  },{passive:true});
+
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var phases=document.querySelectorAll('.phase');
+  if(reduce||!('IntersectionObserver' in window)){phases.forEach(function(p){p.classList.add('in')});}
+  else{
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{rootMargin:'0px 0px -8% 0px'});
+    phases.forEach(function(p){io.observe(p)});
+  }
+
+  var links=[].slice.call(document.querySelectorAll('nav a[href^="#"]'));
+  var targets=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
+  var spy=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)});
+      }
+    });
+  },{rootMargin:'-40% 0px -55% 0px'});
+  targets.forEach(function(t){spy.observe(t)});
+})();
+</script>
+</body>
+</html>

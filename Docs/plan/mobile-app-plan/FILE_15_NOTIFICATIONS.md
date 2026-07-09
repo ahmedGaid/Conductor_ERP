@@ -1,0 +1,87 @@
+# SESSION 15 — Push Notifications & Deep Links
+# Files: erp/notifications/** (additive), apps/mobile/src/notifications/** (new),
+#        apps/mobile/app/(tabs)/inbox/notifications.tsx (new)
+
+**Objective:** the ERP taps you on the shoulder — approvals waiting, mentions, assignments,
+workflow updates, AI results — as native push that deep-links straight into the exact record,
+respecting permissions and language. Plus the in-app notification inbox mirroring web's
+(`erp/notifications` is the source; the linear-polish plan has an inbox session — READ what
+shipped). Push is a delivery channel for the EXISTING notification system, not a second system.
+
+---
+
+## Before You Start
+
+1. Open `erp/notifications/` (models, services, API) → what creates notifications today, their
+   types, how web lists/marks-read. The mobile inbox and push both hang off THIS.
+2. Session 03's `push_token` field + registration endpoint — the delivery address book.
+3. Read current `expo-notifications` + Expo push service docs: token shape, Android channels,
+   iOS entitlements, EAS credentials setup. DECISIONS check: Expo's push service is a relay
+   (Google/Apple see notification payloads either way); keep payloads MINIMAL — type + record
+   ref + localized title, never amounts or customer names in the push body beyond what the
+   notification type template says. Write this payload-privacy rule into the DECISIONS entry.
+4. Session 06's `parseLink` — pushes carry `conductor://` targets.
+
+"Do not write anything yet."
+
+---
+
+## Task A — Backend fan-out (`erp/notifications/`, additive)
+
+1. `services/push.py`: `send_push(notification)` — look up the user's live (non-revoked) devices
+   with push tokens → build per-language payload (user's language preference; ar default) →
+   POST to Expo push API (batched, with receipt checking; invalid-token receipts clear the dead
+   token). Called from wherever notifications are created today (find the single choke point —
+   there should be one service; if creation is scattered, add the hook at the model/service
+   layer, not per-caller).
+2. Per-type opt-outs: a small `NotificationPreference` model (user × type × channel) IF web
+   doesn't already have one — READ first. Mobile settings screen gets the toggles; web can adopt
+   later.
+3. Badge count: unread count in each push payload (`badge`) so the app icon stays honest.
+4. Tests: fan-out to 2 devices, language split, revoked device skipped, dead-token cleanup,
+   payload contains ref + keys but no forbidden fields.
+
+## Task B — Client (`src/notifications/`)
+
+1. Registration: after login/biometric-enrol (session 07 hook point), ask with a designed
+   pre-prompt (value first: "عشان توصلك الموافقات أول بأول") → OS permission → token →
+   session 03 endpoint. Declines respected forever; re-ask only from settings.
+2. Android channels: one per notification family (approvals / mentions / workflow / AI) with
+   Arabic names — this is what makes OS-level per-type control feel native.
+3. Handlers: foreground push → quiet in-app Toast (never a modal); tap (background/killed) →
+   `parseLink` → navigate (through the session 07 lock, stash-then-unlock). Badge sync on open;
+   mark-read propagates to server (same endpoint web uses).
+4. Inbox screen (`inbox/notifications.tsx`): the web inbox mirrored — grouped list, unread
+   emphasis, mark-all-read, each row deep-links. The inbox tab badge = approvals + unread count
+   (session 10's badge merges here).
+
+---
+
+## Smoke Test
+
+- [ ] Web action (submit PO for approval) → phone buzzes within seconds → notification in Arabic
+      → tap from KILLED app → biometric unlock → lands on THAT approval detail
+- [ ] Approve there → web reflects it; badge count drops on the app icon
+- [ ] Foreground push → quiet toast, no interruption of typing
+- [ ] Language preference en → push arrives in English; switch back → Arabic
+- [ ] Revoke device from web → push to it stops (check Expo receipts/logs); re-login →resumes
+- [ ] Type toggle off (approvals) in mobile settings → that push stops, others continue; inbox
+      still shows the notification (channel ≠ existence)
+- [ ] Inbox parity with web: same items, same read states after mark-read on either side
+- [ ] `pytest erp/notifications` green; tsc + parity green; PARITY.md notification rows flipped
+
+## Risks
+
+- iOS push credentials/entitlements are pure ceremony but block everything → do the EAS
+  credentials setup FIRST in the session, let it bake while building Task A.
+- Notification storms (bulk workflow events) → batch/collapse at the fan-out layer (Expo
+  `collapseId`/tag per record) — one record, one visible notification.
+
+---
+
+## After This Session
+
+```
+Smoke test passed?
+→ Commit, rename with _done → /compact → open FILE_16_OFFLINE_WRITES.md
+```

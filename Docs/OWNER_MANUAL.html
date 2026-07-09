@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="build-date" content="2026-07-08">
+<title>Conductor — Owner Manual (Master Roadmap)</title>
+<style>
+:root{
+  --bg:#fafafa; --panel:#ffffff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e5e5e5;
+  --accent:#1a1a1a; --ok:#1c7c43; --warn:#9a6700; --risk:#b42318; --chip:#f0f0f0;
+  --link:#0b57d0; --mark:#fff2b3;
+}
+[data-theme="dark"]{
+  --bg:#111214; --panel:#1a1c1f; --ink:#ececec; --muted:#9a9a9a; --line:#2a2d31;
+  --accent:#ececec; --ok:#4ade80; --warn:#fbbf24; --risk:#f87171; --chip:#26292d;
+  --link:#8ab4f8; --mark:#5c4d00;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.65 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh}
+a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+nav{width:280px;flex-shrink:0;border-inline-end:1px solid var(--line);background:var(--panel);position:sticky;top:0;height:100vh;overflow-y:auto;padding:20px 16px}
+nav h1{font-size:16px;margin-bottom:2px}
+nav .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+nav input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:14px;margin-bottom:14px}
+nav ul{list-style:none}
+nav li a{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;color:var(--ink);font-size:13.5px}
+nav li a:hover{background:var(--chip);text-decoration:none}
+nav .pct{color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums}
+nav .grp{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 4px}
+main{flex:1;max-width:900px;padding:36px 44px 120px}
+h2{font-size:24px;margin:44px 0 6px;scroll-margin-top:20px}
+h2:first-of-type{margin-top:0}
+h3{font-size:17px;margin:26px 0 8px;scroll-margin-top:20px}
+p{margin:8px 0;max-width:74ch}
+.lead{color:var(--muted);font-size:15px;max-width:74ch}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px;background:var(--panel)}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:start;vertical-align:top}
+th{background:var(--chip);font-weight:600}
+.tblwrap{overflow-x:auto}
+.chip{display:inline-block;background:var(--chip);border-radius:99px;padding:1px 10px;font-size:11.5px;color:var(--muted);margin-inline-end:6px}
+.good{color:var(--ok);font-weight:600}.bad{color:var(--risk);font-weight:600}.warn{color:var(--warn);font-weight:600}
+.task{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0;background:var(--panel)}
+.task .tid{font-family:Consolas,monospace;font-size:12px;color:var(--muted)}
+.task label{display:flex;gap:10px;align-items:baseline;cursor:pointer;font-weight:600}
+.task input{transform:translateY(1px)}
+.task .why,.task .rev{font-size:13.5px;color:var(--muted);margin-top:5px;max-width:78ch}
+.task .rev b{color:var(--ink)}
+.task.done label span.tname{text-decoration:line-through;color:var(--muted)}
+.bar{height:6px;background:var(--chip);border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--ok);width:0%}
+details{margin:8px 0}
+summary{cursor:pointer;font-weight:600;font-size:14px}
+svg text{font:12px "Segoe UI",sans-serif;fill:var(--ink)}
+svg .box{fill:var(--panel);stroke:var(--ink);stroke-width:1.2;rx:8}
+svg .arrow{stroke:var(--muted);stroke-width:1.4;fill:none;marker-end:url(#ah)}
+svg .dim{fill:var(--muted)}
+.figwrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin:14px 0}
+figcaption{font-size:12.5px;color:var(--muted);padding:4px 8px}
+dl.gloss dt{font-weight:600;margin-top:12px} dl.gloss dd{color:var(--muted);margin-inline-start:0;max-width:74ch}
+.topbtns{position:fixed;bottom:18px;inset-inline-end:18px;display:flex;gap:8px}
+.topbtns button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:13px}
+.hid{display:none!important}
+.searchnote{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+@media (max-width:860px){body{flex-direction:column}nav{width:100%;height:auto;position:static}main{padding:20px}}
+</style>
+</head>
+<body>
+<nav id="nav">
+  <h1>Conductor — Owner Manual</h1>
+  <div class="sub">Master roadmap, explained for the founder · built 2026-07-08</div>
+  <input id="q" type="search" placeholder="Search everything… (e.g. backup, VAT, tenant)">
+  <div class="grp">Start here</div>
+  <ul>
+    <li><a href="#overview">The big picture</a></li>
+    <li><a href="#howtoread">How to use this manual</a></li>
+    <li><a href="#review">How you review any task</a></li>
+  </ul>
+  <div class="grp">The 13 domains</div>
+  <ul id="domnav"></ul>
+  <div class="grp">Reference</div>
+  <ul>
+    <li><a href="#gloss">Glossary</a></li>
+    <li><a href="#progress">Progress summary</a></li>
+  </ul>
+</nav>
+<main id="main">
+
+<h2 id="overview">The big picture</h2>
+<p class="lead">Conductor is being built like a house: foundations first, then floors, then the
+things guests see. This manual explains the full engineering roadmap — 13 areas of work
+("domains") — in plain words, so you can follow, question, and approve work without reading code.</p>
+
+<div class="card">
+<p><b>The one rule that governs everything:</b> the live queue in
+<code>Docs/plan/EXECUTION_ORDER.md</code> decides what gets built <i>today</i>. This roadmap is the
+<b>reservoir</b> — the complete map of everything that must eventually exist. Small "floor" tasks
+(standards, security, testing) slot into gaps; big domains open only when their entry gate opens
+(e.g. multi-tenant work waits for the SaaS phase of the Founder Plan).</p>
+</div>
+
+<div class="figwrap"><figure>
+<svg viewBox="0 0 840 300" width="840" height="300" role="img" aria-label="System map">
+<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#888"/></marker></defs>
+<rect class="box" x="20" y="20" width="180" height="54" rx="8"/><text x="110" y="42" text-anchor="middle">Web app (React)</text><text x="110" y="60" text-anchor="middle" class="dim">what users see</text>
+<rect class="box" x="20" y="120" width="180" height="54" rx="8"/><text x="110" y="142" text-anchor="middle">AI assistant</text><text x="110" y="160" text-anchor="middle" class="dim">acts as the user</text>
+<rect class="box" x="300" y="70" width="200" height="54" rx="8"/><text x="400" y="92" text-anchor="middle">Business engine (Django)</text><text x="400" y="110" text-anchor="middle" class="dim">sales · inventory · accounting · VAT</text>
+<rect class="box" x="300" y="180" width="200" height="54" rx="8"/><text x="400" y="202" text-anchor="middle">Rules that never bend</text><text x="400" y="220" text-anchor="middle" class="dim">permissions · audit · balanced money</text>
+<rect class="box" x="600" y="20" width="200" height="54" rx="8"/><text x="700" y="42" text-anchor="middle">Database (Postgres)</text><text x="700" y="60" text-anchor="middle" class="dim">the books, protected</text>
+<rect class="box" x="600" y="120" width="200" height="54" rx="8"/><text x="700" y="142" text-anchor="middle">Outside world</text><text x="700" y="160" text-anchor="middle" class="dim">ETA tax · banks · API · webhooks</text>
+<rect class="box" x="600" y="220" width="200" height="54" rx="8"/><text x="700" y="242" text-anchor="middle">Backups + monitoring</text><text x="700" y="260" text-anchor="middle" class="dim">safety net</text>
+<path class="arrow" d="M200,47 C250,47 260,90 300,92"/>
+<path class="arrow" d="M200,147 C250,147 260,100 300,100"/>
+<path class="arrow" d="M500,90 C550,80 560,50 600,47"/>
+<path class="arrow" d="M500,100 C550,110 560,140 600,145"/>
+<path class="arrow" d="M400,124 L400,180"/>
+<path class="arrow" d="M700,174 L700,220"/>
+</svg>
+<figcaption>Everything users and the AI do passes through one business engine, which passes through
+the unbending rules, before touching the books.</figcaption>
+</figure></div>
+
+<h3>Why 13 domains and not a single to-do list</h3>
+<p>Each domain is a different <i>kind</i> of risk. Core ERP protects <b>correct money</b>. Security
+protects <b>trust</b>. DevOps protects <b>"it still works tomorrow"</b>. A flat list hides which
+risk you're buying down; domains make it visible. Every domain below tells you: what it is, why it
+matters, what good and bad look like, the common traps, and how to review each finished task.</p>
+
+<h2 id="howtoread">How to use this manual</h2>
+<div class="card">
+<p><b>Search box</b> (top-left) filters everything live. <b>Checkboxes</b> next to tasks are your
+personal progress tracker — they save in this browser only; the real source of truth is the
+<code>Status:</code> line inside each roadmap file. <b>Chips</b> like
+<span class="chip">gate: SaaS phase</span> mean the task waits for a business milestone.
+<b>Task IDs</b> like <code>D5.P1.T1</code> mean Domain 5, Phase 1, Task 1 — quote the ID when you
+ask an engineer or AI session "where are we on this?"</p>
+<p><b>Your weekly ritual (15 minutes):</b> open this page → Progress summary → for anything marked
+done since last week, run its "How you review" line. If a review fails, the task was not done —
+say so plainly.</p>
+</div>
+
+<h2 id="review">How you review any task — the universal 5 questions</h2>
+<div class="card">
+<ol>
+<li><b>Show me.</b> Ask for a live demo in the app (Arabic first), not a description. No demo = not done.</li>
+<li><b>Show me it failing safely.</b> Ask "what happens when it goes wrong?" — the error must be polite Arabic, blame-free, and tell the user what to do next.</li>
+<li><b>Show me the gates.</b> Ask for the gate-run output (the automated checks). All green, pasted, dated.</li>
+<li><b>Show me the test that would catch it breaking later.</b> Every fix/feature leaves a tripwire behind.</li>
+<li><b>Would Linear ship this?</b> Your standing taste question. If your gut says no, trust it.</li>
+</ol>
+<p class="lead">Every task below adds ONE specific check on top of these five.</p>
+</div>
+
+<div id="domains"></div>
+
+<h2 id="gloss">Glossary — plain words for every term in this manual</h2>
+<dl class="gloss" id="glossdl"></dl>
+
+<h2 id="progress">Progress summary</h2>
+<div id="progsum"></div>
+<p class="lead">Checkboxes are your local view. The engineering truth lives in
+<code>Docs/plan/master-roadmap/</code> — each task's <code>Status:</code> line.</p>
+
+</main>
+<div class="topbtns">
+  <button id="themeBtn">Theme</button>
+  <button onclick="window.scrollTo({top:0,behavior:'smooth'})">Top</button>
+</div>
+
+<script>
+const DOMAINS = [
+{id:"D1", name:"Core ERP Foundation", file:"FILE_01_CORE_ERP.md",
+ what:"The money loop itself — sales, inventory, purchasing, accounting, VAT — made complete and impossible to corrupt. This is the product's beating heart.",
+ why:"Every promise Conductor makes ('correct money', 'closed by construction') rests here. One wrong number seen by one accountant ends trust permanently.",
+ fits:"Everything else — AI, reports, imports, SaaS — reads and writes THROUGH this. If it's soft here, it's soft everywhere.",
+ good:"Books always balance, even if someone tries to break them on purpose. Closed months are sealed. Every number in a report can be clicked back to its source document.",
+ bad:"Balance checks that live only in one code path (imports or AI can sneak past). 'Close' that's just a label. Reports that almost match the ledger.",
+ pitfalls:["Enforcing rules in app code only — the database itself must also refuse bad entries.","Building costing before opening balances — order matters.","Treating tax (ETA) as an integration; it's core."],
+ tasks:[
+  ["D1.P1.T1","Database refuses unbalanced entries","Today the app checks that debits = credits; after this, the database itself refuses — even a bug or a rogue script can't write a broken entry.","Ask the engineer to TRY to insert an unbalanced entry directly into the database in front of you. It must fail."],
+  ["D1.P1.T2","Closed months are sealed","Once a month is closed, nothing can post, edit or delete inside it — reopening needs special permission and leaves a trace.","Close a test month, then try to backdate an invoice into it. You should get a polite Arabic message naming the period, not an error wall."],
+  ["D1.P1.T3","Invoice-number gap detector","One command that reports missing or duplicate document numbers — auditors and the tax authority ask for gapless sequences.","Ask to run it live on the demo company; you should see a clean table, and a planted duplicate should scream."],
+  ["D1.P1.T4","Opening balances, done right","A proper doorway for a company's starting numbers (what it owns, owes, is owed) that must balance before it posts.","Enter a deliberately unbalanced set — the app must show exactly how much is off and propose the fix, never accept silently."],
+  ["D1.P2.T1","Product costing (COGS)","Every sale learns what the goods actually cost, so profit is real, not guessed. Landed costs (shipping, customs) folded in.","Ask: 'show me one sale, and walk me from its profit number to the purchase that set its cost.' The walk must be clickable."],
+  ["D1.P3.T1","Real tax-authority connection (ETA)","Replaces the practice stub with the real government e-invoicing API. The wedge demo becomes real.","Ask to see one invoice accepted by the ETA sandbox, status visible in the app."],
+  ["D1.P3.T2","VAT return double-check","The VAT return draft cross-checks itself against the ledger and lists any difference document-by-document.","Ask for a period with a planted mismatch: the screen must name the exact documents causing it."],
+  ["D1.P4.T1","Harvest the business-cycles ideas","We decided to take the good items from an older plan without executing the whole plan. This turns each item into a proper task or a written 'no'.","Read the resulting list; every item must say either 'task filed' or 'refused because…'. No silent drops."]
+ ]},
+{id:"D2", name:"Architecture & Scalability", file:"FILE_02_ARCHITECTURE.md",
+ what:"The internal shape of the system: clean walls between modules, speed budgets, and — when the business phase arrives — serving many companies from one installation (multi-tenancy).",
+ why:"Bad architecture doesn't fail loudly; it makes every future month 10% slower until the team drowns. Multi-tenancy done wrong leaks one customer's books to another — a company-ending bug.",
+ fits:"Sets the rails every other domain's code runs on. The SaaS business (D12) is impossible without its Phase 3.",
+ good:"A new feature touches one module. Pages answer instantly at real data volumes. A tenant can NEVER see another tenant's rows — provably, with tests that try.",
+ bad:"Modules reaching into each other's internals. 'It's fast on my machine' with 50 test records. Tenancy bolted on with per-screen filters instead of one enforced wall.",
+ pitfalls:["Starting multi-tenancy before the business gate (wasted, drifts).","Microservices envy — the modular monolith is a choice, not a stopgap.","Caching money data (only reference data may be cached)."],
+ tasks:[
+  ["D2.P1.T1","Wall-checker between modules","An automated check that fails when one module reaches into another's private code.","Ask to see it catch a planted violation, naming file and line."],
+  ["D2.P1.T2","The one-page system map","ARCHITECTURE.md — the whole system on one page, so no engineer or AI re-guesses the design.","Read it yourself. If YOU can follow one request through the system, it passed."],
+  ["D2.P1.T3","Reliable side-effects design (outbox)","A written decision on how 'when X happens, also do Y' (notify, webhook) never gets lost, even on crashes.","Check DECISIONS.md has the entry, with the condition for upgrading to heavier tools later."],
+  ["D2.P2.T1","Speed budgets on top pages","Each key page gets a database-work budget; tests fail if a change makes it chattier.","Ask which 10 pages are covered and see the budget file. Numbers, not vibes."],
+  ["D2.P2.T2","Smart caching of reference data","Frequently-read, rarely-changed data (accounts list, tax rates) served from memory — never documents or balances.","Ask: 'what is cached?' The answer must NOT include any money data."],
+  ["D2.P3.T1","Tenancy model decision","THE big irreversible choice for serving many companies from one system — written, argued, signed by you.","This one you must actually read and sign. Ask for the 'what would make us regret this' paragraph.","gate: SaaS phase"],
+  ["D2.P3.T2","Tenant walls, first slice","The tenant separation built on 3 pilot modules with attack-tests trying to cross.","Ask to watch the leak-test suite run: every cross-tenant attempt must come back empty.","gate: SaaS phase"]
+ ]},
+{id:"D3", name:"Design System & UX", file:"FILE_03_DESIGN_SYSTEM.md",
+ what:"The visual and interaction craft: a catalog of every building block, accessibility (keyboard, contrast), and automated tripwires so the look can never drift off-brand.",
+ why:"'Linear-quality' is the differentiator. Craft decays one shortcut at a time unless machines guard it.",
+ fits:"The in-flight polish plans (linear-polish, unified-ui) own the big surface work; this domain owns the guardrails and the floor.",
+ good:"Every screen usable by keyboard alone, in Arabic, in dark mode. One catalog page shows every component. A wrong color literally cannot merge.",
+ bad:"A slightly different button per page. Focus disappearing when you Tab. 'We'll fix RTL later.'",
+ pitfalls:["Adding a component library instead of using our own blocks.","Testing only in English/LTR.","Confusing 'gate is green' with 'feels right' — your taste check still matters."],
+ tasks:[
+  ["D3.P1.T1","Component catalog page","A hidden dev page showing every building block in both languages and themes — the reuse menu.","Open /dev/catalog yourself; flip to Arabic + dark. Anything ugly there is ugly everywhere."],
+  ["D3.P1.T2","Stronger style tripwires","The automated brand check learns to catch the remaining leak paths (direction-unsafe CSS, raw colors).","Ask to see a planted violation get caught."],
+  ["D3.P2.T1","Keyboard & focus audit","Top 5 pages fully operable without a mouse; focus visible and never lost — both directions (RTL!).","Unplug the mouse. Do one invoice start-to-finish with keys only, in Arabic."],
+  ["D3.P2.T2","Contrast + calm-motion proof","A script proving text/background pairs meet the readability standard in both themes; animation honors 'reduce motion'.","Ask for the script output; then set your OS to 'reduce motion' and confirm the app stills."],
+  ["D3.P3.T1","Every empty/error/loading state designed","A census of all pages' three states; no bare 'No data' anywhere.","Pick 3 random pages, disconnect the network, look. Designed states or it failed."]
+ ]},
+{id:"D4", name:"Implementation Framework & Coding Standards", file:"FILE_04_STANDARDS.md",
+ what:"Written patterns + automated style/type checks so every engineer and AI session produces the SAME shape of code.",
+ why:"You employ many AI sessions of varying strength. Standards are how weak sessions produce strong code. Cheapest domain, highest leverage.",
+ fits:"The floor under all other domains — do its Phase 1 early, in queue gaps.",
+ good:"A new module looks like it was written by the same person as the old ones. A wrong pattern fails a check before you ever see it.",
+ bad:"Three error formats. Types that lie between backend and frontend. 'Standards' that live in someone's head.",
+ pitfalls:["Writing standards nobody enforces (must be gates, not essays).","Big-bang reformat commits mixed with logic changes.","Skipping the golden example — agents copy examples, not rules."],
+ tasks:[
+  ["D4.P1.T1","Contributor guide + golden backend example","One annotated, copy-paste-perfect example of 'how we write a feature' backend-side.","Ask a NEW AI session to build a tiny feature using only the doc. If it needed more context, the doc failed."],
+  ["D4.P1.T2","Golden frontend example","Same for pages: the canonical list+detail pattern, forms, errors, translations.","Same test as above, frontend-side."],
+  ["D4.P1.T3","One error format everywhere","Every API error has the same shape and a polite Arabic message; a test enforces it fleet-wide.","Trigger any error in the app: message must be blame-free Arabic telling the user what next."],
+  ["D4.P2.T1","Python style & type checker","Automated linting/typing for the backend — catches the #1 class of AI-written bugs before merge.","Ask to see it catch a planted type error. Needs your OK first (new dev tool)."],
+  ["D4.P2.T2","Frontend style checker","Same for the web app, including brand rules (no raw colors, no hardcoded text) at editor time.","Planted violation demo."],
+  ["D4.P2.T3","Backend→frontend type generation","Frontend types generated from backend definitions — the two can no longer drift apart silently.","Ask: 'change a backend field without regenerating' — the build must fail."],
+  ["D4.P3.T1","Decision-log discipline","DECISIONS.md gets a fixed template + index so choices stay findable and reversible.","Skim the index; pick one old decision and check you understand it from its entry alone."],
+  ["D4.P3.T2","PR checklist","Every code change ships with the same checklist: gates output, translations, brand check, how-to-test.","Open any recent PR: checklist filled, not deleted."]
+ ]},
+{id:"D5", name:"Security", file:"FILE_05_SECURITY.md",
+ what:"Closing the known holes (a data-scope leak, SSRF, auth hardening — already written up in plan 00), then the platform baseline: headers, secrets, rate limits, upload safety, tamper-proof audit log, and a written threat model + incident plan.",
+ why:"You sell TRUST to businesses about their money. One breach outweighs a year of features. Several issues are already known and written down — every week open, they compound.",
+ fits:"Blocks SaaS (D12) and multi-tenancy (D2.P3) by design. The AI layer's own guardrails live in the ai-reliability plan.",
+ good:"Every fix arrives with a test that fails before and passes after. Secrets only in environment config. The audit log provably cannot be edited. An incident plan that was rehearsed on a calm day.",
+ bad:"Fixes without regression tests. 'We'll rotate that key later.' Rate limiting only by IP (Egyptian ISPs share IPs heavily). A threat model written to impress rather than to use.",
+ pitfalls:["Fixing the instance but not sweeping for the same pattern elsewhere.","Security theater (badges, no substance).","Delaying plan 00 for feature work — it outranks features at the next gap."],
+ tasks:[
+  ["D5.P1.T1","Execute the known-issues plan (00)","The already-documented data leak, SSRF, and auth issues — verified, fixed, regression-tested, swept for copies.","Ask for the before/after test list: every issue must have a test that failed before the fix."],
+  ["D5.P2.T1","Browser security headers","Standard protective headers incl. a strict content policy (easy for us — we already ban outside assets).","Ask for the header test output + a 5-minute browse with the console open: zero violations."],
+  ["D5.P2.T2","Secrets policy + startup check","All keys/passwords only in environment config; app refuses to start if one is missing; a scanner catches committed keys.","Ask to see the app refuse to boot with a missing key — one clear line, not a crash wall."],
+  ["D5.P2.T3","Login rate limits","Password guessing gets slowed and locked out, politely, and every lockout is recorded.","Watch 6 fast wrong logins: the 6th must be refused with a calm message."],
+  ["D5.P2.T4","Upload safety + tamper-proof audit","Files are strictly checked on every upload path; audit history physically cannot be edited or deleted.","Ask them to TRY editing an audit row directly in the database — it must refuse."],
+  ["D5.P2.T5","Dependency vulnerability check","Automated scan of our (deliberately few) libraries for known holes, with a triage routine.","Ask when it last ran and what's on the accepted-risk list with expiry dates."],
+  ["D5.P3.T1","Threat model document","The map of what we protect, from whom, through which doors — every gap becomes a filed task.","Read it. If you can't follow it, it failed (it's partly FOR you). You sign it."],
+  ["D5.P3.T2","Incident response runbook","The calm-day plan for a bad day: first hour, evidence, honest customer messages in Arabic, key rotation.","Ask to walk one tabletop drill with you as the customer-notification approver."]
+ ]},
+{id:"D6", name:"Quality Assurance & Testing", file:"FILE_06_QA_TESTING.md",
+ what:"The safety net: coverage floors that only ratchet up, realistic test-company builders, 'golden' money scenarios with hand-computed exact numbers, and a real-browser test pack that clicks through the app in Arabic and English.",
+ why:"Tests are what let AI agents change code fast WITHOUT you fearing every release. The golden money suite is your sleep-at-night file.",
+ fits:"AI answer-quality testing lives in the ai-reliability plan; this is the classical half. CI (D7) makes it run on every change.",
+ good:"Six real business journeys clicked through by a robot browser on every change, in both languages. Money scenarios asserted to the exact piaster.",
+ bad:"Tests that mock away the real logic. 'Approximately equal' on money. Coverage chased as a number instead of a floor.",
+ pitfalls:["Testing through shortcuts instead of real service paths.","Flaky browser tests that everyone learns to ignore.","Writing the golden numbers from the code instead of by hand (circular!)."],
+ tasks:[
+  ["D6.P1.T1","Coverage floor + ratchet","Measure how much code tests touch, per module; it may only go UP from today.","Ask for the floor file and its trend after a month."],
+  ["D6.P1.T2","Test-company builders","Reusable builders that create a realistic company (through REAL paths) for any test to use.","Ask: 'do the builders go through the real posting logic?' The answer must be yes, with the balance check run on the result."],
+  ["D6.P1.T3","Golden money scenarios","Six hand-computed business stories (VAT rounding, partial payment, credit note…) asserted to the exact piaster, forever.","Pick one scenario and check the arithmetic in its comment yourself with a calculator. Seriously — do it once."],
+  ["D6.P2.T1","Robot-browser smoke pack","A real browser logs in, makes an invoice, receives payment… 6 journeys × 2 languages, on demand.","Watch it run once. Needs your OK first (new dev tool: Playwright)."],
+  ["D6.P2.T2","Arabic/RTL sweep","The robot visits EVERY page in Arabic checking for layout breaks, untranslated text, console errors.","Ask for the last sweep report; zero findings or filed fixes."],
+  ["D6.P2.T3","One-command demo company","`seed_demo` builds the same realistic Egyptian trading company every time — for tests, demos, screenshots, and you.","Run it (or watch), then log in and poke around. This is also YOUR playground company."],
+  ["D6.P3.T1","Release checklist page","One page with every check before any merge-to-main, all commands copy-pasteable.","Before the next release, ask for the filled checklist."]
+ ]},
+{id:"D7", name:"Infrastructure & DevOps", file:"FILE_07_INFRA_DEVOPS.md",
+ what:"Boring-on-purpose plumbing: one-command dev start, safe database migrations, CI (checks run automatically on every change), an installable customer package, backups that are PROVEN restorable, and health/log plumbing.",
+ why:"Today gates run on the honor system and there are no automated checks on merge (no CI yet). Backups without a restore drill are hopes. Customer-hosted sales need an installer, not a repo clone.",
+ fits:"CI executes D6's tests. Packaging carries D12's cloud later. Monitoring feeds D10's health signals.",
+ good:"Every change checked by machines before merge. A backup restored and balance-verified on schedule. Install to working app in under 30 minutes.",
+ bad:"'Works on my machine.' A migration that bricks a customer's server. Backups nobody ever restored.",
+ pitfalls:["Over-tooling (Kubernetes for zero customers).","Skipping the restore DRILL (the backup script is the easy half).","CI so slow everyone bypasses it — keep it under 10 minutes."],
+ tasks:[
+  ["D7.P1.T1","One-command dev start","Anyone (or any AI) brings up the whole system with one command; setup documented for a clean machine.","Ask a fresh session to set up from the doc alone and time it (target ≤15 min)."],
+  ["D7.P1.T2","Migration safety rules","Database-change rules that make customer-server upgrades safe (two-step removals, reversibility), machine-checked.","Ask to see the check catch a planted unsafe migration."],
+  ["D7.P2.T1","Automated checks on every change (CI)","GitHub runs all tests + gates on every proposed change; merge is blocked while red.","Open any PR on GitHub: green checks visible. Ask to see a red one blocked."],
+  ["D7.P2.T2","Robot-browser tests in CI","The D6 journeys run automatically on every change, with failure screenshots saved.","Ask for a failure screenshot from a deliberately broken run."],
+  ["D7.P3.T1","Customer install package (Docker)","A versioned package: install, upgrade, roll back — with an Arabic+English runbook. Needs your OK (deployment tooling decision).","Watch the dry-run: fresh install <30 min, then an upgrade, then a rollback with data intact."],
+  ["D7.P3.T2","Backups + restore DRILL","Scheduled backups + a script that restores into a scratch database and re-verifies the books balance. Drill executed, dated.","Ask: 'when was the last successful RESTORE?' A date, or it failed."],
+  ["D7.P3.T3","Health endpoints + structured logs","The app can say 'I'm alive / I'm ready' to machines; logs become searchable records with a request-trace id, no private data.","Ask to see one request traced through the logs by its id."],
+  ["D7.P3.T4","Error tracking decision","How production errors get collected and surfaced (privacy-friendly, likely in-house first). Needs your sign-off.","Trigger a test error; it should appear once (not 500 times) in the admin view."]
+ ]},
+{id:"D8", name:"Data Platform & Database", file:"FILE_08_DATA_PLATFORM.md",
+ what:"The database floor: correct delete-protection and indexes everywhere, slow-query visibility, an archive-not-delete lifecycle, proof the system stays fast at 3 years of data, and rebuildable report tables.",
+ why:"Data mistakes are the least forgiving kind — a wrong cascade delete destroys books silently. And reports computed from raw data get slow exactly when the customer succeeds.",
+ fits:"Feeds D2's speed budgets, D1's reports (P&L, balance sheet ride on its read models), and the retention rules D12's export/delete promises depend on.",
+ good:"Nothing referenced by the books can ever be hard-deleted. Reports rebuildable from scratch and provably equal to the ledger. Fast at 50,000 documents.",
+ bad:"Cascade deletes near documents. Reports that drift from the ledger. Retention improvised per customer request.",
+ pitfalls:["Testing at toy volumes.","A second analytics database before it's needed.","Forgetting Egyptian statutory retention periods (ask the accountant — it's flagged in the task)."],
+ tasks:[
+  ["D8.P1.T1","Delete-protection & index audit","Systematic pass: anything the books reference is delete-protected; money fields are exact integers; lookups indexed.","Try deleting a product that appears on an old invoice: must refuse and offer archive instead."],
+  ["D8.P1.T2","Slow-query visibility","Anything slow gets logged with enough context to fix; baseline 'query plans' saved for the top pages.","Ask for the baselines folder and one before/after example."],
+  ["D8.P2.T1","Archive, don't delete","Masters (products, partners) archive out of pickers but stay in history; retention policy written incl. legal periods.","Archive a product: gone from new-invoice picker, intact on old invoices and reports."],
+  ["D8.P2.T2","Speed at 3-years volume","The demo company scaled to ~50k documents; every speed budget re-proven at that size.","Ask to click through the scaled company yourself. Lists must feel instant."],
+  ["D8.P3.T1","Report tables (P&L, balance sheet, aging…)","Purpose-built, rebuildable report data — every report names the decision it informs, every number clicks to source.","Pick any report number and click down to the document. Then ask: 'what decision does this report inform?'"]
+ ]},
+{id:"D9", name:"Integrations & APIs", file:"FILE_09_INTEGRATIONS.md",
+ what:"The doors to the outside: personal API tokens, a small STABLE public API (v1), signed webhooks ('when X happens, tell my other system'), bank statement file import, and the payment-rail decision.",
+ why:"Accountants' tools, customers' scripts, and future partners all connect here. A stable small API beats a big unstable one; ecosystems die on broken promises.",
+ fits:"Tokens ride D5's auth. Webhooks ride D2's outbox. The whole surface is the seed D11's platform grows from. ETA tax lives in D1 (it's core, not an integration).",
+ good:"External tools act AS the user (permissions and audit hold). v1 never breaks. Webhooks signed and retried. Unknown bank formats produce a polite ask, not a crash.",
+ bad:"A token more powerful than its owner. Field renames breaking partners silently. Webhooks that fire-and-forget.",
+ pitfalls:["Exposing internal endpoints directly (freeze a curated list instead).","Skipping webhook signatures 'for now'.","Building OAuth/marketplace auth before the platform phase."],
+ tasks:[
+  ["D9.P1.T1","Personal API tokens","Users create named, revocable keys that can do at most what the user can do — every use audited as that user.","Make a read-only token; try posting an invoice with it: polite refusal, and the audit shows the attempt."],
+  ["D9.P1.T2","Public API v1 + stability promise","A small curated list of endpoints frozen as v1, with a written 'we never break v1' policy.","Ask: 'how many endpoints, and what's the promise?' Small number, written policy."],
+  ["D9.P2.T1","Signed webhooks","Other systems get notified of events, tamper-proof (signed), retried on failure, dead-lettered with a notification if the receiver stays down.","Ask for the delivery-log screen and one dead-letter example."],
+  ["D9.P3.T1","Bank statement file import","Upload the bank's CSV export → lines flow into the existing reconciliation matching. Per-bank quirks are config, not code.","Bring a REAL statement from your bank and watch it import."],
+  ["D9.P3.T2","Payment rail decision","Paymob vs Fawry vs defer — written comparison for SaaS billing and invoice payment links. You decide.","You read and sign the DECISIONS entry."]
+ ]},
+{id:"D10", name:"Customer Implementation & Success", file:"FILE_10_CUSTOMER_SUCCESS.md",
+ what:"The human loop around the product for the first 10→100 customers: a self-serve setup checklist, a designed 'first invoice' trust moment, in-app feedback, a support runbook with honest response promises, and a weekly 'who do I call' health list.",
+ why:"ERP dies at implementation (that's why the migration agent is the go-to-market weapon). Retention is decided in week one; churn at small scale is silent unless you look.",
+ fits:"The big machinery is elsewhere (smart-import = migration, Phase A2 = AI consultant); this is the visibility and care layer around it.",
+ good:"A fresh company knows exactly what to do next without a call. Complaints land in one place with context attached. You know each week which customer is drifting.",
+ bad:"Onboarding that lives in your WhatsApp memory. Feedback scattered across chats. Health 'dashboards' with charts but no call list.",
+ pitfalls:["Building heavy onboarding that A2's AI consultant will replace (build thin, share the logic).","Promising response times you can't keep solo.","Adding third-party analytics (breaks the privacy story) — derive from our own data."],
+ tasks:[
+  ["D10.P1.T1","Getting-started checklist","A fresh company sees what's set up and what's missing, each item deep-linking to the fix; disappears when complete.","Create a fresh test company and follow ONLY the checklist to a working setup."],
+  ["D10.P1.T2","First-invoice trust moment","After a company's first real posted invoice: a quiet one-time panel proving what just happened (numbered, taxed, in the ledger — with links).","Post a first invoice on a fresh company; the moment should make YOU feel the trust promise. Once only."],
+  ["D10.P2.T1","In-app feedback","A quiet 'tell us' affordance; report + context (page, version) land in one admin list. Nothing external.","Send a feedback from any page; find it in the admin list with its context; check the transparency line shows the user what was attached."],
+  ["D10.P2.T2","Support runbook + honest SLA","Written severities and response targets YOU can keep solo, plus the Arabic+English SLA paragraph for contracts.","Read it and ask yourself: can I honestly keep these targets this quarter?"],
+  ["D10.P3.T1","Weekly customer health list","A ranked 'who needs a call' list derived from real usage — every risk factor in words, not charts.","Ask: 'who are this week's top 3 and why?' The why must be sentences.","gate: ≥10 live companies"]
+ ]},
+{id:"D11", name:"Marketplace & Extensibility", file:"FILE_11_MARKETPLACE.md",
+ what:"Mostly deliberate WAITING, plus two cheap seeds: a doctrine keeping today's plug-in-shaped seams clean (import adapters, AI tools, webhook topics), and a rule that public names never change silently.",
+ why:"Platforms built before demand kill startups. But retrofitting extension points costs 10× — so the seams get kept clean now for the price of a document.",
+ fits:"Founder Plan Phase 5 (2030–2032) opens the real program. D9's API/webhooks are the substrate partners will build on.",
+ good:"Nothing public promised early; when Phase 5 arrives, the platform assembles from seams that stayed clean for years.",
+ bad:"An SDK with zero customers. Extensions that could bypass permissions (never: they act as scoped API clients).",
+ pitfalls:["Pulling the phase forward out of excitement — the gate is a business gate.","Letting internal seam names leak into customer contracts."],
+ tasks:[
+  ["D11.P1.T1","Extension-seams doctrine","Catalog today's plug-in-shaped seams + the rule new ones follow the same clean pattern.","Skim the doc; each seam has a stability label (internal / frozen / candidate-public)."],
+  ["D11.P1.T2","Stable-names discipline","Public identifiers (error codes, event names, API fields…) can't be renamed without a written decision.","Check CONTRIBUTING has the one-line rule and the five identifier classes are covered."],
+  ["D11.P2.T1","Platform charter","When the business gate opens: the signed architecture for third-party extensions (isolation, review, revenue share).","Future-you signs this. Until then, its status should say 'gated'.","gate: Founder Plan Phase 5"]
+ ]},
+{id:"D12", name:"Product & SaaS Operations", file:"FILE_12_SAAS_OPS.md",
+ what:"Running Conductor as a service: plans & entitlements (what each subscription may use), AI-usage metering, billing through our OWN invoicing (dog-food), tenant lifecycle (signup, suspend, full-data export, delete), and a public status page.",
+ why:"The Founder Plan's revenue layers (subscriptions → AI usage → tiers) need this machinery. The 'export your books anytime' promise is trust made concrete — leaving must be as dignified as joining.",
+ fits:"Everything gated on D2.P3 tenancy + the SaaS business phase. Billing waits for D9's payment-rail decision.",
+ good:"Over-limit feels like a polite conversation, never a wall mid-invoice. Usage visible to the customer (transparency). Export opens in Excel with Arabic intact.",
+ bad:"Plan checks scattered through every screen. Metering bolted on after billing disputes. Suspension that deletes data.",
+ pitfalls:["Hard walls on limit (grace periods are brand).","Building before the pricing matrix is decided (blocker by design).","A status page written during the first outage."],
+ tasks:[
+  ["D12.P1.T1","Plans & entitlements","One central 'may this company use X?' check; over-limit states designed and calm. Waits for your pricing matrix.","Try exceeding a seat limit on a test tenant: polite explanation + upgrade path, nothing breaks.","gate: SaaS phase"],
+  ["D12.P1.T2","Usage metering","Per-company counters (AI usage, seats, volume) with a customer-visible usage page.","Numbers on the customer page must reconcile with the admin view.","gate: SaaS phase"],
+  ["D12.P2.T1","Subscription billing","Billing through our own sales module + the chosen payment rail; failed payments enter calm dunning with grace.","Walk the sandbox: subscribe → pay → fail → grace → suspend. Every state designed.","gate: SaaS phase"],
+  ["D12.P2.T2","Tenant lifecycle + full export","Signup, suspend/resume, delete-after-retention — and the trust jewel: export ALL your books in open files, anytime.","Run an export and open it in Excel: complete, Arabic correct. This is the promise; test it personally.","gate: SaaS phase"],
+  ["D12.P3.T1","Status page + alerting","Self-hosted public status page fed by our own checks; you get alerted within minutes.","Ask for the outage simulation record: alert time <5 min, honest incident post.","gate: cloud live"]
+ ]},
+{id:"D13", name:"Documentation & Knowledge Management", file:"FILE_13_DOCS_KNOWLEDGE.md",
+ what:"Keeping knowledge alive: an index of all docs with freshness dates, a runbook completeness audit, Arabic-first help articles for the money loop, generated (never-stale) API docs, and the rule keeping THIS manual current.",
+ why:"Stale docs are worse than none — AI agents follow them into walls. Arabic-first help shrinks support load and no competitor has it.",
+ fits:"Continuous; hard-gated at phase exits. The AI-readable half lives in the RAG plan (queue 2).",
+ good:"Every doc has an owner and a date. Help articles use the one canonical Arabic term per concept. API docs regenerate from code.",
+ bad:"Orphan documents contradicting each other. Help written in translated-English Arabic. Hand-maintained API docs.",
+ pitfalls:["Writing docs as a project instead of a habit with tripwires.","Screenshots from improvised data (use the seed company — reproducible).","Letting this manual rot (there's a task for that)."],
+ tasks:[
+  ["D13.P1.T1","Docs index + staleness tripwire","Every document listed with owner and date; old or orphaned ones get flagged automatically.","Open Docs/INDEX.md; spot-check three rows."],
+  ["D13.P1.T2","Runbook completeness audit","Phase-exit check that all six operational runbooks exist and were dry-run.","Ask for the six dry-run dates."],
+  ["D13.P2.T1","Arabic-first help articles","The five money-loop guides (first invoice, payment, receipt, month routines, VAT) written Arabic-first with reproducible screenshots.","Read the Arabic yourself — does it sound like a native colleague or a translation?"],
+  ["D13.P2.T2","Generated API reference","API docs produced from the code itself, so they can never silently drift.","Ask: 'change a field without regenerating' — a check must fail."],
+  ["D13.P3.T1","This manual stays honest","A tripwire warns when roadmap files change but this manual wasn't updated.","If you're reading a manual older than the roadmap, this task failed — check the build date vs recent commits."]
+ ]}
+];
+
+const GLOSSARY = [
+["API","A doorway other software uses to talk to Conductor — like a service counter with strict rules."],
+["Audit trail / audit log","The permanent diary of who did what, when. Tamper-proof by design."],
+["CI (Continuous Integration)","Robots that run all checks automatically on every proposed code change, before it can merge."],
+["COGS / Costing","Knowing what sold goods actually cost you, so profit numbers are real."],
+["DECISIONS.md","The book of choices: every big decision written down with its reasons, so it's never re-argued from memory."],
+["Dog-fooding","Using your own product for your own business (we bill customers with our own invoicing)."],
+["Entitlements","What a subscription plan allows: seats, modules, AI usage."],
+["Gate","An automated check that blocks 'done' until it passes (style, translations, money rules…)."],
+["Golden test","A test with hand-computed exact expected numbers. If code ever disagrees with the hand math, it fails."],
+["i18n / parity","Every text exists in BOTH Arabic and English; the build fails otherwise."],
+["Idempotent","Safe to run twice — the second run changes nothing. Critical for payments and imports."],
+["Ledger","The book of accounts. Every money movement lives here, always balanced."],
+["Migration (database)","A scripted change to the database's shape. Done wrong, it can brick a customer's server — hence the safety rules."],
+["Multi-tenancy","Many companies served by one installation, with walls so none can ever see another's data."],
+["Outbox pattern","A reliability trick: 'also notify X' is saved in the same breath as the main change, so it can never be lost."],
+["Rate limiting","Slowing down repeated requests (like password guesses) so abuse becomes impractical."],
+["RBAC","Role-based access control — permissions. Deny by default: you can do nothing until explicitly allowed."],
+["Read model / projection","A purpose-built, rebuildable table that makes a report fast, provably equal to the ledger."],
+["Regression test","A test written for a fixed bug, so that exact bug can never quietly return."],
+["RTL","Right-to-left. Arabic's direction — our default, not an afterthought."],
+["Runbook","A step-by-step recipe for an operational moment (install, backup, incident) written on a calm day."],
+["SSRF","A trick making the server fetch internal addresses it shouldn't. One of the known issues plan 00 closes."],
+["Tenant","One customer company inside the shared service."],
+["Webhook","Conductor calling YOUR other system when something happens ('invoice posted'), signed so it can't be faked."],
+["Tokens (design)","The single palette file all colors come from; raw colors anywhere else fail the gate."]
+];
+
+/* render domains */
+const dwrap=document.getElementById('domains'), dnav=document.getElementById('domnav');
+DOMAINS.forEach(d=>{
+  const sec=document.createElement('section'); sec.id=d.id; sec.className='domain';
+  let tasks=d.tasks.map(t=>{
+    const gated = t[4] ? `<span class="chip">⏳ ${t[4]}</span>` : (t.length>4?'':'');
+    return `<div class="task" data-tid="${t[0]}">
+      <label><input type="checkbox" data-key="${t[0]}"><span class="tname">${t[1]}</span></label>
+      <div class="tid">${t[0]} ${t[4]?`· <span class="warn">waits for: ${t[4].replace('gate: ','')}</span>`:''}</div>
+      <div class="why"><b>What & why:</b> ${t[2]}</div>
+      <div class="rev"><b>How you review:</b> ${t[3]}</div>
+    </div>`;
+  }).join('');
+  sec.innerHTML=`
+   <h2>${d.id} — ${d.name}</h2>
+   <div class="bar"><i data-bar="${d.id}"></i></div>
+   <p class="lead">Engineering file: <code>Docs/plan/master-roadmap/${d.file}</code></p>
+   <div class="card">
+     <p><b>What it is:</b> ${d.what}</p>
+     <p><b>Why it matters:</b> ${d.why}</p>
+     <p><b>How it fits:</b> ${d.fits}</p>
+   </div>
+   <div class="tblwrap"><table>
+     <tr><th style="width:50%"><span class="good">Good looks like</span></th><th><span class="bad">Bad looks like</span></th></tr>
+     <tr><td>${d.good}</td><td>${d.bad}</td></tr>
+   </table></div>
+   <details><summary>Common pitfalls (${d.pitfalls.length})</summary><ul>${d.pitfalls.map(p=>`<li>${p}</li>`).join('')}</ul></details>
+   <h3>Tasks (${d.tasks.length})</h3>${tasks}`;
+  dwrap.appendChild(sec);
+  const li=document.createElement('li');
+  li.innerHTML=`<a href="#${d.id}"><span>${d.id} · ${d.name}</span><span class="pct" data-pct="${d.id}">0%</span></a>`;
+  dnav.appendChild(li);
+});
+
+/* glossary */
+document.getElementById('glossdl').innerHTML=GLOSSARY.map(g=>`<dt>${g[0]}</dt><dd>${g[1]}</dd>`).join('');
+
+/* progress (localStorage) */
+const LS='conductor-owner-manual-progress';
+let prog={}; try{prog=JSON.parse(localStorage.getItem(LS)||'{}')}catch(e){}
+function refresh(){
+  let rows='';
+  DOMAINS.forEach(d=>{
+    const total=d.tasks.length, done=d.tasks.filter(t=>prog[t[0]]).length, pct=Math.round(done/total*100);
+    const bar=document.querySelector(`[data-bar="${d.id}"]`); if(bar)bar.style.width=pct+'%';
+    const pctEl=document.querySelector(`[data-pct="${d.id}"]`); if(pctEl)pctEl.textContent=pct+'%';
+    rows+=`<tr><td><a href="#${d.id}">${d.id} — ${d.name}</a></td><td>${done} / ${total}</td><td>${pct}%</td></tr>`;
+  });
+  const all=DOMAINS.flatMap(d=>d.tasks), allDone=all.filter(t=>prog[t[0]]).length;
+  document.getElementById('progsum').innerHTML=
+   `<div class="card"><b>Overall: ${allDone} / ${all.length} tasks checked (${Math.round(allDone/all.length*100)}%)</b>
+    <div class="bar"><i style="width:${Math.round(allDone/all.length*100)}%"></i></div></div>
+    <div class="tblwrap"><table><tr><th>Domain</th><th>Done</th><th>%</th></tr>${rows}</table></div>`;
+}
+document.querySelectorAll('.task input[type=checkbox]').forEach(cb=>{
+  cb.checked=!!prog[cb.dataset.key];
+  cb.closest('.task').classList.toggle('done',cb.checked);
+  cb.addEventListener('change',()=>{
+    prog[cb.dataset.key]=cb.checked; if(!cb.checked)delete prog[cb.dataset.key];
+    localStorage.setItem(LS,JSON.stringify(prog));
+    cb.closest('.task').classList.toggle('done',cb.checked); refresh();
+  });
+});
+refresh();
+
+/* search: filter sections + tasks, highlight matches */
+const q=document.getElementById('q');
+q.addEventListener('input',()=>{
+  const term=q.value.trim().toLowerCase();
+  document.querySelectorAll('mark').forEach(m=>{const p=m.parentNode;p.replaceChild(document.createTextNode(m.textContent),m);p.normalize();});
+  document.querySelectorAll('section.domain').forEach(sec=>{
+    if(!term){sec.classList.remove('hid');sec.querySelectorAll('.task').forEach(t=>t.classList.remove('hid'));return;}
+    let secHit=false;
+    sec.querySelectorAll('.task').forEach(t=>{
+      const hit=t.textContent.toLowerCase().includes(term);
+      t.classList.toggle('hid',!hit); if(hit)secHit=true;
+    });
+    const headHit=sec.querySelector('.card').textContent.toLowerCase().includes(term)||sec.querySelector('h2').textContent.toLowerCase().includes(term);
+    if(headHit){secHit=true; if(!sec.querySelector('.task:not(.hid)'))sec.querySelectorAll('.task').forEach(t=>t.classList.remove('hid'));}
+    sec.classList.toggle('hid',!secHit);
+    if(secHit&&term.length>2){
+      sec.querySelectorAll('.task:not(.hid) .why, .task:not(.hid) .rev, .task:not(.hid) .tname').forEach(el=>{
+        el.childNodes.forEach(n=>{
+          if(n.nodeType===3){
+            const i=n.textContent.toLowerCase().indexOf(term);
+            if(i>-1){const s=n.splitText(i);s.splitText(term.length);const mk=document.createElement('mark');mk.textContent=s.textContent;s.parentNode.replaceChild(mk,s);}
+          }
+        });
+      });
+    }
+  });
+});
+
+/* theme */
+const root=document.documentElement;
+const saved=localStorage.getItem('com-theme');
+if(saved)root.dataset.theme=saved;
+else if(matchMedia('(prefers-color-scheme: dark)').matches)root.dataset.theme='dark';
+document.getElementById('themeBtn').onclick=()=>{
+  root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';
+  localStorage.setItem('com-theme',root.dataset.theme);
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+# SESSION 18 — Security Hardening
+# Files: apps/mobile/src/security/** (new), erp/identity (small additive), app.json / native
+#        config, DECISIONS.md (threat-model entry), apps/mobile/SECURITY.md (new)
+
+**Objective:** raise the app from "secure by architecture" (tokens hashed server-side, keystore
+storage, revocation, RBAC server-side — already built) to enterprise-auditable: certificate
+pinning, screen privacy, root/jailbreak posture, session policy, and a written threat model a
+customer's IT department can read. Everything lands with a `SECURITY.md` that states what we
+protect against and — honestly — what we don't.
+
+---
+
+## Before You Start
+
+1. Re-read sessions 03/07 implementations (token lifecycle, lock, privacy shield scaffold).
+2. Read current Expo guidance for: TLS pinning (expo-build-properties network-security-config on
+   Android / ATS + pinning approach on iOS — the viable Expo-compatible technique CHANGES over
+   time; read first, decide second), `FLAG_SECURE`, and root/jailbreak signal options.
+   **Any new dep (e.g. a pinning or device-integrity module) = DECISIONS entry first.**
+3. Ask the deployment question: pinning against WHICH cert? Self-hosted customers have their own
+   certs → pin to the leaf is impossible globally. Resolution: pin to the server's CA/public key
+   per configured server, fetched-and-pinned on first login (TOFU + change alarm), OR pin only
+   the cloud offering's cert and document self-hosted as standard-TLS. This is a real product
+   decision → DECISIONS, this session.
+
+"Do not write anything yet."
+
+---
+
+## Task A — Transport & device posture
+
+1. Implement the pinning decision from above; failure mode = designed blocking screen ("لا يمكن
+   التحقق من الخادم" + support guidance), never a silent fallback to unpinned.
+2. Root/jailbreak detection (best-effort signals; document that determined attackers bypass
+   client checks — honesty in SECURITY.md): on detection, WARN + report flag to server on login
+   (device row gets `integrity_flag`) — org policy (block vs. allow-with-flag) is a server-side
+   setting an admin controls, not a hardcoded choice.
+3. `FLAG_SECURE` on Android (screenshots/recording blocked) as a server-driven org policy too —
+   default ON for the app switcher shield (session 07), full screenshot blocking per org choice
+   (some SMBs WANT to screenshot invoices to WhatsApp — policy, not dogma).
+
+## Task B — Session & data policy
+
+1. Server-side (identity, additive): per-org mobile session policy knobs — refresh-token max
+   lifetime, inactivity revocation (cron/management command sweeping stale `last_seen_at`),
+   max devices per user. Sensible defaults; exposed where web admin settings live.
+2. On-device data: catalogue what exists (SQLite cache, drafts, outbox, attachment temp files) →
+   ensure sign-out/revocation wipes ALL of it (session 07 wipe audited and extended: WAL files,
+   temp dirs); iOS `DataProtection` entitlement class + Android EncryptedFile/keystore-backed
+   options per current platform guidance for the SQLite file (device-encryption reality:
+   documented, not oversold).
+3. Audit events: mobile-specific security events flow to `erp.audit` — login, biometric-enable,
+   device revoke, integrity flag, pinning failure (server hears of it on next contact). No new
+   audit pathway — the existing `record(...)` service.
+
+## Task C — Paper: SECURITY.md + MDM notes
+
+Write `apps/mobile/SECURITY.md` (English; customer-IT-facing): auth architecture, token
+lifecycle diagram, storage inventory + protection classes, pinning policy, integrity posture,
+session policy knobs, wipe semantics, what is OUT of scope (compromised-OS guarantees). MDM/BYOD
+note: AppConfig-style managed configuration (server URL pre-provisioning) — implement the
+managed-config read if trivial with current Expo, else document as roadmap with the key schema
+already defined.
+
+---
+
+## Smoke Test
+
+- [ ] MITM attempt (proxy with custom CA, e.g. mitmproxy) → app refuses with the designed screen;
+      remove proxy → works. On a self-hosted-style second server per the DECISIONS choice
+- [ ] Sign out → device storage inspected (adb / simulator filesystem): no `conductor.db`, no
+      drafts, no attachment temps, nothing in SecureStore
+- [ ] Server-side inactivity sweep revokes a stale test device → phone lands on sign-in with the
+      calm notice; audit rows exist for the whole journey
+- [ ] Rooted emulator (or root-signal simulation) → warning surfaced + `integrity_flag` visible
+      on the device row server-side; org policy toggle blocks login when set
+- [ ] Org screenshot policy ON → screenshot attempt blocked on Android; switcher shield on iOS
+- [ ] `pytest erp/identity` green incl. new policy tests; tsc green; SECURITY.md reviewed
+      against what the code ACTUALLY does (no aspirational claims — read it line by line)
+
+## Risks
+
+- Pinning bricking the app on legitimate cert rotation → pin to CA/SPKI not leaf where possible,
+  ship a break-glass: OTA update (session 20's expo-updates) can replace pins — document the
+  rotation runbook in SECURITY.md.
+- Security theatre creep → every control in this session maps to a threat in the threat model;
+  anything that doesn't, gets deleted.
+
+---
+
+## After This Session
+
+```
+Smoke test passed?
+→ Commit, rename with _done → /compact → open FILE_19_QA_AUTOMATION.md
+```

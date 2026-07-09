@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — Conductor ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0c; --surface:#141418; --surface-2:#1b1b20; --surface-3:#232329;
+    --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.20); --line-pop:rgba(255,255,255,.42);
+    --text:#fafafa; --text-2:#a4a4ac; --text-3:#6a6a72; --white:#fff;
+    --r-sm:10px; --r:14px; --r-lg:20px;
+    --sans:"Inter","Segoe UI",Arial,sans-serif;
+    --mono:"IBM Plex Mono","Courier New",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 50% -8%, rgba(255,255,255,.045), transparent 50%)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+
+  nav{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0;
+    border-bottom:1px solid var(--line);margin-bottom:clamp(36px,7vw,68px)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:-.02em}
+  .brand .mk{width:22px;height:22px;border-radius:7px;background:var(--white);display:grid;place-items:center;color:#0a0a0c;font-size:13px;font-weight:800}
+  .nav-links{display:flex;gap:26px}
+  .nav-links a{color:var(--text-2);text-decoration:none;font-size:14px;font-weight:500;transition:.15s}
+  .nav-links a:hover{color:var(--text)}
+  .nav-right{display:flex;align-items:center;gap:16px}
+  .nav-right a.signin{color:var(--text-2);text-decoration:none;font-size:14px;font-weight:500}
+  .nav-right a.signin:hover{color:var(--text)}
+  .btn-w{background:var(--white);color:#0a0a0c;text-decoration:none;font-size:14px;font-weight:600;padding:9px 18px;border-radius:var(--r-sm);transition:.16s}
+  .btn-w:hover{background:#e6e6e8;transform:translateY(-1px)}
+  @media(max-width:760px){.nav-links{display:none}}
+
+  header.hero{text-align:center;margin-bottom:14px}
+  .eyebrow{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;margin-bottom:18px;border:1px solid var(--line);border-radius:999px;padding:5px 13px}
+  h1{font-size:clamp(32px,6.5vw,56px);font-weight:800;letter-spacing:-.045em;line-height:1.02}
+  .hero .lede{color:var(--text-2);font-size:clamp(16px,2.2vw,20px);margin-top:16px}
+  .hero .hybrid{margin-top:14px;font-size:13.5px;color:var(--text-3)}
+  .hero .hybrid b{color:var(--text-2);font-weight:500}
+
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:38px 0 30px}
+  @media(max-width:840px){.tiers{grid-template-columns:1fr}}
+  .tier{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;display:flex;flex-direction:column;transition:border-color .2s, transform .2s}
+  .tier:hover{border-color:var(--line-2);transform:translateY(-2px)}
+  .tier.pop{border-color:var(--line-pop);background:var(--surface-2)}
+  .badge{position:absolute;top:18px;right:18px;background:var(--white);color:#0a0a0c;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px}
+  .tier .tname{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .tier .tdesc{font-size:13px;color:var(--text-2);margin-top:6px;min-height:38px;line-height:1.5}
+  .tier .price{margin:20px 0 18px;display:flex;align-items:baseline;gap:7px}
+  .tier .price .big{font-family:var(--mono);font-size:36px;font-weight:600;letter-spacing:-.03em}
+  .tier .price .unit{font-size:13px;color:var(--text-3)}
+  .tier .price .custom{font-family:var(--mono);font-size:32px;font-weight:600;letter-spacing:-.02em}
+  .tier .mods-label{font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;margin:0 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+  .tier ul{list-style:none;display:flex;flex-direction:column;gap:10px;flex:1}
+  .tier ul li{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text)}
+  .tier ul li .tick{width:16px;height:16px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;font-size:10px;color:var(--text-2);flex:0 0 auto}
+  .tier .tcta{margin-top:24px;text-decoration:none;text-align:center;font-size:14px;font-weight:600;padding:12px;border-radius:var(--r-sm);transition:.16s;cursor:pointer}
+  .tier .tcta.dark{background:var(--surface-3);border:1px solid var(--line-2);color:var(--text)}
+  .tier .tcta.dark:hover{background:#2e2e36;border-color:var(--line-pop)}
+  .tier .tcta.solid{background:var(--white);color:#0a0a0c}
+  .tier .tcta.solid:hover{background:#e6e6e8}
+  .tier .estimate{margin-top:11px;text-align:center;font-size:12.5px;color:var(--text-3);text-decoration:none;cursor:pointer;transition:.15s}
+  .tier .estimate:hover{color:var(--text)}
+
+  /* builder (hidden until requested) */
+  .build-wrap{scroll-margin-top:20px;display:none;margin-bottom:40px}
+  .build-wrap.open{display:block}
+  .sec-head{text-align:center;margin-bottom:20px}
+  .sec-head h2{font-size:clamp(20px,3vw,26px);font-weight:700;letter-spacing:-.025em}
+  .sec-head p{font-size:13.5px;color:var(--text-2);margin-top:8px;max-width:50ch;margin-inline:auto}
+  .builder{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(18px,3vw,28px)}
+  .builder-bar{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+  .builder-bar .h{font-size:16px;font-weight:600}
+  .builder-bar .hint{font-size:12.5px;color:var(--text-3)}
+  .user{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px;transition:border-color .2s}
+  .user:hover{border-color:var(--line-2)}
+  .user-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .user-name{flex:1;border:1px solid transparent;background:transparent;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text);padding:7px 10px;border-radius:var(--r-sm);min-width:0;transition:.15s}
+  .user-name:hover{background:var(--surface-3)}
+  .user-name:focus{outline:none;background:var(--bg);border-color:var(--line-2)}
+  .user-sub{font-family:var(--mono);font-size:14px;font-weight:500;white-space:nowrap}
+  .user-sub small{color:var(--text-3);font-family:var(--sans)}
+  .del{width:32px;height:32px;border:1px solid var(--line);background:transparent;border-radius:var(--r-sm);color:var(--text-3);cursor:pointer;display:grid;place-items:center;transition:.15s;flex:0 0 auto;font-size:13px}
+  .del:hover{border-color:var(--line-2);color:var(--text);background:var(--surface-3)}
+  .mods{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:transparent;border-radius:999px;padding:8px 14px;cursor:pointer;user-select:none;font-size:13px;font-weight:500;color:var(--text-2);transition:.16s;line-height:1}
+  .chip:hover{border-color:var(--line-2);color:var(--text)}
+  .chip .tick{width:0;opacity:0;overflow:hidden;transition:.16s;font-size:11px}
+  .chip .price{font-family:var(--mono);font-size:12px;color:var(--text-3)}
+  .chip.on{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.4);color:var(--text);font-weight:600}
+  .chip.on .tick{width:11px;opacity:1}
+  .chip.on .price{color:var(--text-2)}
+  .add-user{width:100%;border:1px dashed var(--line);background:transparent;border-radius:var(--r);padding:14px;color:var(--text-2);font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;transition:.18s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .add-user:hover{border-color:var(--line-2);color:var(--text);background:var(--surface-2)}
+  .total-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+  .total-bar .label{font-size:12.5px;color:var(--text-3);margin-bottom:4px}
+  .total-bar .amt{font-family:var(--mono);font-size:32px;font-weight:500;letter-spacing:-.03em}
+  .total-bar .amt .per{font-size:14px;color:var(--text-3);font-family:var(--sans)}
+  .total-bar .yearly{font-size:12.5px;color:var(--text-2);margin-top:6px}
+  .total-bar .yearly b{font-family:var(--mono);color:var(--text);font-weight:500}
+  .cta-col{display:flex;flex-direction:column;gap:8px;min-width:190px}
+  .cta-primary{text-decoration:none;font-size:15px;font-weight:600;color:#0a0a0c;background:var(--white);padding:14px 30px;border-radius:var(--r-sm);transition:.16s;text-align:center}
+  .cta-primary:hover{background:#e6e6e8;transform:translateY(-1px)}
+  .cta-note{font-size:12px;color:var(--text-3);text-align:center}
+
+  .faq{max-width:720px;margin:0 auto}
+  .faq h3{font-size:22px;font-weight:700;text-align:center;margin-bottom:18px;letter-spacing:-.02em}
+  .faq-item{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 20px;margin-bottom:10px;transition:border-color .2s}
+  .faq-item:hover{border-color:var(--line-2)}
+  .faq-item .q{font-size:14.5px;font-weight:600;margin-bottom:6px}
+  .faq-item .a{font-size:13.5px;color:var(--text-2);line-height:1.6}
+
+  footer{text-align:center;color:var(--text-3);font-size:12.5px;padding:40px 0}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="brand"><span class="mk">C</span> Conductor ERP</div>
+    <div class="nav-links"><a href="#">Product</a><a href="#">Solutions</a><a href="#">Pricing</a><a href="#">Resources</a></div>
+    <div class="nav-right"><a class="signin" href="#">Sign in</a><a class="btn-w" href="#demo">Book a demo</a></div>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow">Pricing</div>
+    <h1>Simplified pricing<br>for Conductor ERP</h1>
+    <p class="lede">Predictable costs, complete control.</p>
+    <p class="hybrid">A one-time <b>implementation</b> fee + a simple <b>per-user monthly</b> subscription.</p>
+  </header>
+
+  <div class="tiers" id="tiers"></div>
+
+  <div class="build-wrap" id="build">
+    <div class="sec-head">
+      <h2>Build a custom plan</h2>
+      <p>Price each person by the exact modules they use. We'll confirm scope and implementation on your demo call.</p>
+    </div>
+    <div class="builder">
+      <div class="builder-bar"><span class="h">Configure per user</span><span class="hint">Add a user, then toggle their modules</span></div>
+      <div id="users"></div>
+      <button class="add-user" id="addUser"><span style="font-size:17px;line-height:0">＋</span> Add user</button>
+      <div class="total-bar">
+        <div class="figure">
+          <div class="label">Estimated monthly subscription</div>
+          <div class="amt"><span id="total" class="num">0</span> <span class="per">EGP / mo</span></div>
+          <div class="yearly">Pay yearly: <b><span id="yearly" class="num">0</span></b> EGP — save <b><span id="savings" class="num">0</span></b> EGP · plus one-time implementation</div>
+        </div>
+        <div class="cta-col">
+          <a class="cta-primary" href="#demo">Book a demo</a>
+          <span class="cta-note">We'll scope implementation together</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="faq">
+    <h3>Questions before you start</h3>
+    <div class="faq-item"><div class="q">How does pricing work?</div><div class="a">A one-time implementation fee (setup, migration, training) plus a simple per-user monthly subscription. You own your setup and subscribe to the platform.</div></div>
+    <div class="faq-item"><div class="q">Is there a free trial?</div><div class="a">No free plan. We run a guided demo and a scoped pilot, so you see Conductor working with your own processes before you commit.</div></div>
+    <div class="faq-item"><div class="q">Can different people have different modules?</div><div class="a">Yes. Pick a tier for a standard bundle, or ask about a custom plan to price each user by the exact modules they use.</div></div>
+    <div class="faq-item"><div class="q">Can I change plans later?</div><div class="a">Anytime. Move between tiers or adjust modules per user — your monthly bill updates the next cycle.</div></div>
+    <div class="faq-item"><div class="q">Do I save by paying yearly?</div><div class="a">Yes. Annual billing gives you roughly one month free (about 10% off the monthly price).</div></div>
+  </div>
+
+  <footer>Prices in EGP · one-time implementation + monthly subscription · cancel the subscription anytime.</footer>
+</div>
+
+<script>
+const ANNUAL_DISCOUNT = 0.10;
+const fmt = n => new Intl.NumberFormat("en-US").format(Math.round(n));
+const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+const TIERS = [
+  { id:"core", name:"Core", pop:false, perUser:1200,
+    desc:"For new and small businesses managing core finances.",
+    mods:["General Ledger","Inventory","Purchasing"], cta:"Book a demo", ctaClass:"dark", estimate:false },
+  { id:"ops", name:"Ops", pop:true, perUser:2800,
+    desc:"Full operations for growing teams. Most chosen plan.",
+    mods:["Everything in Core","Sales & CRM","Asset Management","Analytics"], cta:"Book a demo", ctaClass:"solid", estimate:false },
+  { id:"ent", name:"Enterprise", pop:false, perUser:null,
+    desc:"Full ERP power for larger or complex organizations.",
+    mods:["Everything in Ops","Manufacturing, HR & Payroll","EAM & Maintenance","Multi-company","Custom workflows & permissions"], cta:"Talk to sales", ctaClass:"dark", estimate:true },
+];
+
+function renderTiers(){
+  document.getElementById("tiers").innerHTML = TIERS.map(t => {
+    const lis = t.mods.map(m => `<li><span class="tick">✓</span>${m}</li>`).join("");
+    let priceBlock;
+    if(t.perUser === null){
+      priceBlock = `<div class="price"><span class="custom">Custom</span></div>`;
+    } else {
+      priceBlock = `<div class="price"><span class="big num">${fmt(t.perUser)}</span><span class="unit">EGP / user / mo</span></div>`;
+    }
+    const estimateLink = t.estimate ? `<a class="estimate" data-build="1">or estimate a custom plan →</a>` : ``;
+    return `<div class="tier${t.pop?' pop':''}">
+      ${t.pop?'<span class="badge">Most popular</span>':''}
+      <div class="tname">${t.name}</div>
+      <div class="tdesc">${t.desc}</div>
+      ${priceBlock}
+      <div class="mods-label">Included modules</div>
+      <ul>${lis}</ul>
+      <a class="tcta ${t.ctaClass}" href="#demo">${t.cta}</a>
+      ${estimateLink}
+    </div>`;
+  }).join("");
+}
+
+const MODULES = [
+  { id:"gl",  name:"General Ledger",      price:500 },
+  { id:"inv", name:"Inventory",           price:400 },
+  { id:"po",  name:"Purchasing",          price:300 },
+  { id:"mfg", name:"Manufacturing",       price:600 },
+  { id:"crm", name:"Sales & CRM",         price:350 },
+  { id:"hr",  name:"Human Resources",     price:350 },
+  { id:"fa",  name:"Asset Management",    price:300 },
+  { id:"bi",  name:"Reports & Analytics", price:250 },
+];
+const M = Object.fromEntries(MODULES.map(m => [m.id, m]));
+let seq = 0;
+let users = [ { id:++seq, name:"User 1", mods:new Set(["gl","inv"]) } ];
+const userTotal = u => [...u.mods].reduce((s,id)=> s + (M[id]?.price||0), 0);
+const planTotal  = () => users.reduce((s,u)=> s + userTotal(u), 0);
+
+function smoothCount(el, to){
+  const from = +(el.dataset.v||0); el.dataset.v = to;
+  if(reduce || from===to){ el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dur=380;
+  function step(t){ const p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3);
+    el.textContent = fmt(from+(to-from)*e); if(p<1) requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
+function renderUsers(){
+  const host = document.getElementById("users"); host.innerHTML = "";
+  users.forEach(u => {
+    const card = document.createElement("div");
+    card.className = "user"; card.dataset.uid = u.id;
+    const chips = MODULES.map(m =>
+      `<button class="chip${u.mods.has(m.id)?' on':''}" data-mod="${m.id}"><span class="tick">✓</span>${m.name}<span class="price">${m.price}</span></button>`).join("");
+    card.innerHTML = `<div class="user-top">
+        <input class="user-name" value="${u.name.replace(/"/g,'&quot;')}" maxlength="40" aria-label="User name">
+        <span class="user-sub"><span class="num">${fmt(userTotal(u))}</span> <small>EGP</small></span>
+        <button class="del" title="Remove" aria-label="Remove user">✕</button>
+      </div><div class="mods">${chips}</div>`;
+    host.appendChild(card);
+  });
+}
+function renderBuilderTotal(){
+  const t = planTotal();
+  smoothCount(document.getElementById("total"), t);
+  document.getElementById("yearly").textContent  = fmt(t*12*(1-ANNUAL_DISCOUNT));
+  document.getElementById("savings").textContent = fmt(t*12*ANNUAL_DISCOUNT);
+}
+
+document.getElementById("tiers").addEventListener("click", e => {
+  if(e.target.closest("[data-build]")){
+    e.preventDefault();
+    const w = document.getElementById("build");
+    w.classList.add("open");
+    w.scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"});
+  }
+});
+
+document.getElementById("users").addEventListener("click", e => {
+  const card = e.target.closest(".user"); if(!card) return;
+  const u = users.find(x=>x.id === +card.dataset.uid); if(!u) return;
+  if(e.target.closest(".del")){ users = users.filter(x=>x!==u); renderUsers(); renderBuilderTotal(); return; }
+  const chip = e.target.closest(".chip");
+  if(chip){
+    const mid = chip.dataset.mod;
+    u.mods.has(mid) ? u.mods.delete(mid) : u.mods.add(mid);
+    chip.classList.toggle("on");
+    card.querySelector(".user-sub .num").textContent = fmt(userTotal(u));
+    renderBuilderTotal();
+  }
+});
+document.getElementById("users").addEventListener("input", e => {
+  if(e.target.classList.contains("user-name")){
+    const u = users.find(x=>x.id === +e.target.closest(".user").dataset.uid);
+    if(u) u.name = e.target.value || "User";
+  }
+});
+document.getElementById("addUser").addEventListener("click", () => {
+  users.push({ id:++seq, name:`User ${users.length+1}`, mods:new Set() });
+  renderUsers(); renderBuilderTotal();
+  const cards = document.querySelectorAll(".user");
+  cards[cards.length-1]?.querySelector(".user-name")?.focus();
+});
+
+renderTiers(); renderUsers(); renderBuilderTotal();
+</script>
+</body>
+</html>
