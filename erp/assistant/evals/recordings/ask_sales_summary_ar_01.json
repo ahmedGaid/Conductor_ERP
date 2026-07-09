@@ -1,0 +1,7 @@
+{
+  "json_responses": [
+    {"tool": "sales_summary", "period": "this_month"},
+    {"answer": "إجمالي المبيعات هذا الشهر 12,500.00 EGP على 18 طلبًا."}
+  ],
+  "stream_responses": []
+}

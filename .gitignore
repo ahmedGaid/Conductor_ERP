@@ -51,6 +51,9 @@ temp/
 project_context.md
 erp_questionnaire_v4.html
 
+# Eval scoreboards are generated per run (T1.6) — recordings are checked in, results are not
+/erp/assistant/evals/results/*.json
+
 # CodeGraph index cache (local tooling)
 .codegraph/
 

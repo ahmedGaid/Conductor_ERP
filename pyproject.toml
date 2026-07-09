@@ -16,6 +16,9 @@ select = ["E", "F", "I", "UP", "B"]
 DJANGO_SETTINGS_MODULE = "config.settings.dev"
 python_files = ["tests.py", "test_*.py", "*_test.py"]
 testpaths = ["erp"]
+markers = [
+    "evals: offline golden-dataset eval runner tests (ai-reliability T1.6) — recorded responses, zero network",
+]
 
 [tool.mypy]
 python_version = "3.13"

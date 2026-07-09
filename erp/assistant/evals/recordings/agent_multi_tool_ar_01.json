@@ -1,0 +1,10 @@
+{
+  "json_responses": [
+    {"action": "tool", "tool": "sales_summary", "period": "this_month", "why": "جلب إجمالي المبيعات"},
+    {"action": "tool", "tool": "low_stock", "why": "جلب الأصناف منخفضة المخزون"},
+    {"action": "answer", "why": null}
+  ],
+  "stream_responses": [
+    "إجمالي المبيعات هذا الشهر 12,500.00 EGP، مقابل صنف واحد منخفض المخزون (أرز أبيض)."
+  ]
+}

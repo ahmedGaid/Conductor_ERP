@@ -41,3 +41,12 @@ runner (T1.6) and the LLM-judge grader (T1.7).
 **Never edit a shipped case's `expected` to make a failing model pass.** If a model's behavior
 changed on purpose, add a new case (or a new dataset version) — don't silently loosen an existing
 one. That would erase the yardstick the whole reliability roadmap is measured against.
+
+## Offline runner (T1.6)
+
+`manage.py run_evals` grades every case that has a recording at `evals/recordings/<id>.json`
+(`manage.py record_evals --yes-live` makes live calls to write one); cases without a recording are
+skipped, not failed, so the dataset can grow ahead of the recordings that exercise it. `ask` and
+`agent` cases run through the real service function end to end; `extract` stubs the provider call
+and runs real post-processing; `suggest` has no Python service yet and always reports `no_runner`.
+`judge` cases report `needs_judge` until T1.7.

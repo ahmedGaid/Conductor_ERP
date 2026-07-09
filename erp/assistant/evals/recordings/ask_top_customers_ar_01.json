@@ -1,0 +1,7 @@
+{
+  "json_responses": [
+    {"tool": "top_customers", "limit": 5},
+    {"answer": "أفضل العملاء من حيث المبيعات: مطاعم النيل (CUS-0001)، سوبر ماركت الأمانة (CUS-0002)، وشركة الفجر للتجارة (CUS-0003)."}
+  ],
+  "stream_responses": []
+}

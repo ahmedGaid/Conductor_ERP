@@ -154,7 +154,7 @@
   split; ids unique.
 - **Output:** the quality yardstick every later phase is measured against.
 
-### [ ] T1.6 — Offline eval runner
+### [x] T1.6 — Offline eval runner
 
 - **Goal:** `manage.py run_evals` + pytest marker grade the golden set with zero network.
 - **Prereq:** T1.5.
