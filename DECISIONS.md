@@ -1793,3 +1793,46 @@ modules, standalone AR-invoice refactor (deferred; decide inside the receipts pl
 
 **Scheduling:** new `business-cycles-plan/` (ag-plan format) slotted AFTER ai-workspace FILE_15,
 alongside/before os-foundations; chain-as-data goes into the W+ charter directly.
+
+## ai-workspace FILE_15 (Acceptance) — sign-off (2026-07-09)
+
+Full acceptance/regression/polish/brand-feel pass on the AI workspace (Phases 1–3, FILE_01–14).
+**Regression:** `pytest erp/` full suite 675 passed; `check-i18n-parity.mjs` 1758 keys ar/en; `tsc
+-b` clean; `gate03` (brand) green. **Live browser walkthrough** (Playwright, admin + auditor
+roles, Arabic and English, light and dark): panel open via sparkle + ⌘J, floating/docked/fullscreen
+mode switch (mode + last conversation persist), new-conversation reset, thread list (search/pin/
+rename/archive/delete, empty states), markdown tables + record-link citations + follow-up chips,
+step-summary collapse, Stop button, full RTL flip with native Arabic replies, keyboard-shortcuts
+cheat-sheet lists Assistant (⌘ then J), auditor role sees the assistant (not admin-gated) and gets
+a calm clarify instead of a raw error on an ambiguous propose.
+
+**Bug found + fixed:** the standalone Help "?" FAB (`help-fab`, z-index 60) and the assistant panel
+(floating/docked, z-index 75) both anchor the same inline-end corner (`inset-block-end` +
+`inset-inline-end` / full inline-end edge) — with the panel open, it visually and *interactively*
+covered the FAB (Playwright confirmed: click intercepted by the panel's subtree). Fixed in
+`apps/web/src/help/HelpCenter.tsx`: the FAB now hides while `useAssistant().open` is true; the ⋮
+top-bar Menu's "Help" item (`AppMenu.tsx`) already opens the same drawer regardless of panel state,
+and the drawer (z-index 80) correctly paints over the panel either way — confirmed live (fab hides
+→ Menu→Help still opens the drawer over the panel → fab reappears on close, zero regressions,
+tsc clean).
+
+**Action confirm discipline (reaffirmed):** `ActionCard.tsx` proposes nothing until Confirm calls
+the module contract; the confirm/dismiss buttons disable while a request is in flight (prevents a
+double-submit race), and the backend contract is the actual permission gate — a limited role can
+reach propose/clarify (the assistant itself isn't role-gated) but is expected to be refused at
+Confirm by the module's own RBAC check (covered by `test_actions.py`, not re-proven live this
+session — clarify-branch was hit before a full proposal formed).
+
+**Import discipline (reaffirmed):** the three import targets (customers/suppliers/items) are
+FK-free at create time, so the "missing-reference detour" checklist line doesn't apply — see
+`imports.py` module docstring (already the FILE_15 checklist's documented deviation).
+
+**Deviation from the FILE_15 template's close-out step:** "Merge feat/ai-workspace → main" doesn't
+apply as written — FILE_11–14 already landed on `main` via individual commits across prior
+sessions (no long-lived `feat/ai-workspace` branch was in flight); this session's fix commits
+straight to `main` the same way.
+
+**Not re-tested live this session (already live-smoked in prior sessions, see erp-status
+history):** create-from-image (fix f3181b0, re-smoked clean 2026-07-09), supplier CSV import
+execute path (fix 6c0e25c, smoked 2026-07-09), guided-detour workflow-resume (FILE_13, smoked
+2026-07-08).
