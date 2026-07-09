@@ -48,7 +48,23 @@ The Linear-grade surface every phase demos on. Two plan folders, run in queue or
   status rings, owner initials chips, priority bars where the queue is worked by urgency,
   overdue markers on money docs). Frontend-only. Deliberate follow-ups filed, NOT in it:
   attachments (invoice photo/memo upload), photo avatars, public share links; ⋯ import entries
-  arrive with Phase A's engine.
+  arrive with Phase A's engine. unified-ui-plan closed 2026-07-09 (FILE_09 acceptance, both
+  languages, gates + brand-feel green); the three deferred items get their own one-paragraph stub
+  below so they don't get lost before someone schedules them:
+  - **Attachments** — invoice photo / memo image on sales, purchasing and accounting documents.
+    Needs an upload API (multipart or presigned URL), a storage decision (local disk vs. object
+    storage — customer-hosted single-tenant, so likely local disk under a per-org path unless a
+    customer needs S3-compatible), a gallery/lightbox component in the app's own visual language,
+    and a DocumentMenu "Attach file" verb. No plan file yet — needs its own `FILE_00` scoping pass
+    before it's queue-ready.
+  - **Photo avatars** — replace `OwnerChip`'s monochrome initials with an uploaded photo where one
+    exists, falling back to initials otherwise. Rides on the same upload/storage decision as
+    attachments above — do them together, not separately, once that decision is made.
+  - **Smart-import ⋯ entry points** — once `smart-import-plan`'s backend engine lands (queue
+    position 8, Phase A), list pages get an "Import" item in the ⋯ menu (or as the visible primary
+    on empty-state lists) that opens the import wizard. The unified-ui page-actions plumbing
+    (`useSetPageActions` / `useListPageActions`) already supports adding this with no new
+    primitive — it's a wiring task for whichever smart-import session builds the entry UI.
 
 ## Phase W+ — Agentic OS foundations (adopted 2026-07-07; after ai-workspace 15, before Phase A)
 

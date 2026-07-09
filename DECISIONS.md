@@ -4,6 +4,47 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## unified-ui-plan acceptance (FILE_09, 2026-07-09)
+
+Closing decisions for the whole plan (FILE_01–08), reconfirmed against the shipped code in a live
+AR-then-EN walkthrough (`run-dev`, admin login, sales/CRM/accounting screens):
+
+- **Split pattern on reports** — one visible Print/PDF primary, CSV/Excel/share fold into ⋯.
+  Confirmed live on report call sites; `ExportButtons` fully retired.
+- **Share = copy internal link** — clipboard + toast, no public/tokenized links. Confirmed.
+- **Lifecycle-ring semantics** — ring fills by ordered stage, cancelled/rejected/lost render
+  hollow (`lib/lifecycle.ts`); colour always paired with the status word. Confirmed on orders,
+  quotations, POs, PRs, e-invoices, journals, tickets, leads.
+- **Priority where the work is genuinely worked by urgency** — tickets/leads only; only `urgent`
+  earns the danger token, everything else is neutral bars. Confirmed (Tickets tab).
+- **Bulk verbs reuse existing endpoints only** — no new backend surface added across FILE_05/06.
+- **No-checkbox-without-a-verb** — every table with a selection column ships at least
+  export-selected-CSV.
+- **Permission-gated menus — mechanism built, not yet wired.** FILE_04 added
+  `DocMenuItem.permission` + `filterMenuItems`/`hasRole`, but no call site sets `.permission` yet
+  (no per-verb role matrix exists to source it from). Today every ⋯ item is visible to anyone with
+  page access; the backend still enforces the real authorization on each write, so this is a UI
+  convenience gap, not a security gap. Accepted as scope for a later pass once a per-verb
+  permission matrix exists — not a blocker for closing this plan.
+- **Bug found + fixed during acceptance: `BulkActionBar` broke out of viewport.** The bar is
+  `position: fixed`, but was rendered inside `.appshell__content.page-enter`, whose `page-enter`
+  class carries a `transform` (even the identity matrix) — per the CSS spec that makes the
+  transformed ancestor the fixed containing block instead of the viewport, so the bar rendered
+  pinned near the bottom of the page's *content* instead of the bottom of the *screen* (confirmed:
+  `y≈962` against a 900px-tall viewport, i.e. off-screen). Same class of bug FILE_01 dodged for
+  `PageHeaderBar` by mounting it outside `.appshell__content` — `BulkActionBar` (added later, in
+  FILE_05) didn't get the same treatment. Fixed by portalling `BulkActionBar` to `document.body`
+  (`apps/web/src/components/BulkActionBar.tsx`), the same pattern already used by `Tooltip`. Fixes
+  every list using the shared kit in one place (20+ call sites).
+- **Item master data has no English name field** — an order line printed in the English UI still
+  shows the Arabic product name (`ITM-013 · كروسان سادة`) because items are only ever named in
+  Arabic at creation. Not a unified-ui defect (data-model gap, pre-existing); noted for whoever
+  scopes item-master localization, not queued as its own plan yet.
+
+Lexicon: audited every term this program shipped against Identity System §6 — all present, one
+Arabic word per concept, used identically in menu/toast/palette (see §6 for the full table; no new
+terms needed this session beyond FILE_07/08's `due.*` and *Owner → المسؤول*, both already recorded).
+
 ## Multi-provider failover routing + Mistral (2026-07-08)
 
 The assistant used exactly one provider per install (`provider()` picked one by key/`ASSISTANT_PROVIDER`;
