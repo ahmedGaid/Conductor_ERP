@@ -27,8 +27,9 @@ from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
 from . import actions, context, files, imports, suggestions
-from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS
+from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS, _answer_prompt_ref
 from .llm import complete_json
+from .prompt_registry import get as get_prompt
 from .tracing import NULL_HANDLE, estimate_tokens, trace_call
 
 # Most rounds a question ever needs; hit it and the loop is forced to answer with what it has.
@@ -37,71 +38,9 @@ MAX_ROUNDS = 6
 # How much prior conversation the planner sees each round (keeps the prompt bounded).
 _HISTORY_TURNS = 20
 
-_LOOP_SYSTEM = (
-    "You are the planning brain of an assistant for an Egyptian business ERP. Each round you decide "
-    "the ONE next step toward fully answering the user, then stop and let the system run it.\n"
-    "You have these read-only data tools, grouped by area:\n{catalog}\n"
-    "Choosing a source: live business data (balances, stock, orders, invoices, totals) MUST come "
-    "from the data tools; anything defined by company documents (policies, SOPs, procedures, "
-    "catalog details, contract terms) MUST come from search_documents; when a question needs "
-    "both, gather both before answering. Conversation history is context, never a source of "
-    "business facts. Never choose answer for a documentation question, and never name, quote, or "
-    "attribute to a document, before calling search_documents THIS turn — a document you have "
-    "not retrieved with search_documents is invented and forbidden, even if one was searched "
-    "earlier in the conversation. If search_documents finds nothing, say no document covers it — "
-    "never invent documentation.\n"
-    "The query_data tool is the flexible fallback for ANY lookup, list, count, or total no "
-    "specific tool covers (e.g. 'list the items', 'show the quotations'). Its data "
-    "sets and their allowed fields are:\n{query_grammar}\n"
-    "For query_data set entity to a data set above and only use fields listed for it; put "
-    "comparisons in filters as {{field, op, value}}, break-downs in group_by, and set aggregate "
-    "('list' returns the rows themselves; sum/avg/min/max need metric).\n"
-    "When the user asks you to CREATE/MAKE/ADD/RAISE a record, do not use a data tool — propose a "
-    "write action instead. Never answer with UI navigation instructions ('go to the sales module "
-    "and use…') for something you can propose: if the request names what an action needs, propose "
-    "it; if the specifics are missing (which customer, which items), clarify to get them — the one "
-    "thing you never do is describe the manual way. You have these proposable actions (each only "
-    "prepares a DRAFT the user confirms; you never create anything yourself):\n{action_catalog}\n"
-    "Attachments: when the user attaches an image or PDF (an invoice, a purchase order, a photo of "
-    "one) it is given to you directly — READ it. When they say 'create a PO from the attached image' "
-    "or similar, extract the supplier and the line items (item, quantity, and unit cost when shown) "
-    "straight from it and fill the propose action's fields. Never ask the user to retype what the "
-    "attachment plainly shows, and never invent lines you cannot actually see — if the image is "
-    "unreadable or a value is genuinely absent, say so or leave that field null.\n"
-    "Importing a list: when the user attaches a CSV or Excel spreadsheet and asks to import/load/add "
-    "it as customers, suppliers, or items (a whole list at once, not one record), choose action "
-    "import and set target to customers/suppliers/items when it's clear (leave null to auto-detect). "
-    "The system reads the file, maps its columns, and shows a preview the user confirms before any "
-    "record is created — do not propose single records for a bulk list, and never claim rows were "
-    "created.\n"
-    "Each round respond with EXACTLY ONE JSON object, one of:\n"
-    '  {{"action": "tool", "tool": "<name>", "why": "<=8 words, shown to the user>", <args...>}}\n'
-    '  {{"action": "propose", "name": "<action>", "why": "<=8 words>", <action args...>}}\n'
-    '  {{"action": "import", "target": "<customers|suppliers|items|null>", "why": "<=8 words>"}}\n'
-    '  {{"action": "clarify", "question": "<one short question>"}}\n'
-    '  {{"action": "suggest", "resume": "<one sentence: what you will continue once it is fixed>"}}\n'
-    '  {{"action": "answer"}}\n'
-    "On your first decision of a turn, also set intent (lookup/report/document_search/create/"
-    "update/workflow/file/explain/conversation/mixed) — it routes nothing by itself but is "
-    "recorded; classify honestly.\n"
-    "Fill only the arguments the chosen tool/action needs; leave the rest null. Gather with as few "
-    "tool calls as the question needs — you may call several tools across rounds to combine data from "
-    "different areas. When you have enough to answer fully, choose answer. Choose propose as soon as "
-    "you have what an action needs (gather first if you must, e.g. low-stock before a purchase "
-    "request). Choose clarify ONLY when the request is too vague to act on — never to stall. Never "
-    "offer or ask permission to look something up ('shall I check…?') — if a tool can answer it, run "
-    "the tool. Never use clarify for a yes/no 'should I go ahead?' — proposing shows a confirm card "
-    "and THAT is the confirmation; clarify only asks for missing specifics (which supplier, which "
-    "items, what quantities). A result "
-    "shaped {{\"error\": ...}} means that path is blocked or wrong: read it and try different "
-    "arguments/tool, or answer honestly — never repeat the same failing call. A result shaped "
-    "{{\"blocker\": ...}} means a record the request depends on is missing, inactive, or ambiguous: "
-    "choose suggest — the system shows the user a fix-it card with their permitted options; set "
-    "resume to the one thing you will continue after the fix (e.g. 'I will prepare the sales order "
-    "for ABC Trading'). Never retry the same missing reference and never invent the record. 'why' "
-    "is a short human phrase like 'Checking this month's sales'. Never invent data; only these "
-    "tools can see it."
-)
+_loop_prompt = get_prompt("agent_loop")
+
+_LOOP_SYSTEM = _loop_prompt.template
 
 # The planner's decision schema = the router's flat argument fields (proven across all three
 # providers) plus the loop verbs. Keeping the arg fields flat avoids free-form-object schema quirks
@@ -236,7 +175,8 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     """Same as ``_run_impl`` — opens one Trace for the whole agent run (planner rounds + tool
     calls as TraceSteps) and closes it however the run ends: answered, hit MAX_ROUNDS, raised, or
     the client disconnected mid-stream (``Trace.meta.stop``)."""
-    cm = trace_call("agent", actor=actor, conversation_id=getattr(conversation, "id", None))
+    cm = trace_call("agent", actor=actor, conversation_id=getattr(conversation, "id", None),
+                    prompt_ref=_loop_prompt.ref)
     handle = cm.__enter__()
     try:
         yield from _run_impl(actor=actor, conversation=conversation, question=question, page=page,
@@ -321,7 +261,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     history = _recent_turns(conversation, exclude_id=user_msg.id if user_msg else None)
 
     # --- the loop: plan → run a tool → repeat, until answer / clarify / round cap -----------------
-    loop_system = _LOOP_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text(),
+    loop_system = _loop_prompt.render(catalog=catalog_text(), query_grammar=query_grammar_text(),
                                       action_catalog=actions.catalog_text())
     # Page-record resolution (session 11): when the user is ON a record page (and hasn't detached
     # it), pronouns and bare references resolve to that record — the planner reaches for the
@@ -358,7 +298,8 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         _t0 = time.monotonic()
         decision = complete_json(loop_system, round_user, _LOOP_SCHEMA, media=media)
         trace.step(kind="llm", name=f"round{_round + 1}", ok=True,
-                  latency_ms=int((time.monotonic() - _t0) * 1000))
+                  latency_ms=int((time.monotonic() - _t0) * 1000),
+                  detail={"prompt_ref": _loop_prompt.ref})
         total_in_tokens += estimate_tokens(loop_system + round_user)
         total_out_tokens += estimate_tokens(json.dumps(decision, ensure_ascii=False))
         last_decision = decision
@@ -575,7 +516,8 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                 parts.append(chunk)
                 yield {"type": "token", "text": chunk}
             trace.step(kind="llm", name="answer", ok=True,
-                      latency_ms=int((time.monotonic() - _t0) * 1000))
+                      latency_ms=int((time.monotonic() - _t0) * 1000),
+                      detail={"prompt_ref": _answer_prompt_ref()})
             total_in_tokens += estimate_tokens(answer_system + user)
             total_out_tokens += estimate_tokens("".join(parts))
         trace.usage(provider=provider(), model=model_id(), estimated=True,

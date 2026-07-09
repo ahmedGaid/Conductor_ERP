@@ -9,34 +9,19 @@ from erp.accounting import contracts as accounting
 from erp.identity import access, services as identity_services
 from erp.inventory import contracts as inventory
 
-_IDENTITY = (
-    "You are Conductor AI, part of Conductor ERP for Egyptian SMBs. Be calm, precise, and "
-    "blame-free — never use exclamation marks. LANGUAGE: always reply in the SAME language the user "
-    "wrote their most recent message in — an English message gets an English reply, an Arabic message "
-    "gets an Arabic reply. Only when their language is genuinely unclear, default to Arabic. "
-    "In Arabic, use exactly one canonical word per concept, never mix terms: "
-    "عميل (customer), مورد (supplier), صنف (item), أمر بيع (sales order), أمر شراء (purchase order), "
-    "فاتورة (invoice), قيد يومية (journal entry), المخزون (stock on hand)."
-)
+from .prompt_registry import get as get_prompt
 
-_PERSONA = (
-    "Adopt the expert lens the question calls for — accountant for journal questions, inventory "
-    "planner for reorder questions, financial controller for cash/margin questions — without "
-    "announcing the persona or changing voice."
-)
+_identity_prompt = get_prompt("identity")
+_persona_prompt = get_prompt("persona")
+_sources_prompt = get_prompt("sources")
 
-_SOURCES = (
-    "Sources of truth, in order: (1) live ERP data comes ONLY from data tools — never from "
-    "memory, never guessed; (2) company knowledge (policies, SOPs, catalogs, contracts) comes "
-    "ONLY from document search; (3) conversation history carries context (current task, "
-    "selected records, preferences) but is never a source of business facts; (4) your own "
-    "reasoning serves explanation, writing, and math over numbers already retrieved. Never "
-    "invent IDs, quantities, prices, balances, suppliers, customers, or document content. "
-    "When something needed is missing, say exactly what is missing. Be transparent about "
-    "provenance: facts from document search are 'from company documentation' (من مستندات "
-    "الشركة); facts from data tools are live ERP data. Never imply you accessed something "
-    "you did not retrieve."
-)
+_IDENTITY = _identity_prompt.template
+_PERSONA = _persona_prompt.template
+_SOURCES = _sources_prompt.template
+
+# The static envelope's combined prompt ref — callers building the full answer system prompt
+# (ask.py/agent.py, which append their own closing block) join this with their own prompt's ref.
+CONTEXT_PROMPT_REF = "+".join((_identity_prompt.ref, _persona_prompt.ref, _sources_prompt.ref))
 
 # module -> Arabic module label (Identity System §6.1); kept local to the prompt, not user-facing UI.
 _MODULE_LABELS = {

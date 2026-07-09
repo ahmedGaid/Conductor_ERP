@@ -107,7 +107,7 @@
   ≥ 4 TraceSteps in order; detail contains sizes not rows. Gates green.
 - **Output:** agent runs are replayable as step trees.
 
-### [ ] T1.4 — Prompt registry
+### [x] T1.4 — Prompt registry
 
 - **Goal:** all system prompts are versioned files; traces record `prompt_ref`.
 - **Prereq:** T1.2.

@@ -33,6 +33,7 @@ from erp.sales import contracts as sales
 from .actions import _can, _refused
 from .files import read_table
 from .llm import complete_json
+from .prompt_registry import get as get_prompt
 
 # How many sample rows the inspector shows the model (headers + these → a header→field mapping).
 INSPECT_SAMPLE = 5
@@ -119,17 +120,9 @@ TARGETS: dict[str, Target] = {
 # Union of every field key across targets — the (fixed) shape the inspector model fills.
 _ALL_FIELD_KEYS = tuple(dict.fromkeys(f.key for t in TARGETS.values() for f in t.fields))
 
-_INSPECT_SYSTEM = (
-    "You map the columns of an uploaded spreadsheet to the fields of an ERP import target. The three "
-    "targets and their fields are:\n"
-    "- customers: name (required), code, credit_limit_minor\n"
-    "- suppliers: name (required), code\n"
-    "- items: sku (required), name (required), uom, reorder_point\n"
-    "Given the file's column headers and a few sample rows, pick the target the file clearly holds "
-    "and map each target field to the EXACT header text that carries it (Arabic or English headers "
-    "both fine), or null when no column fits. Never invent a header; only use ones that appear. "
-    "Leave a field null rather than force a wrong column."
-)
+_inspect_prompt = get_prompt("import_inspect")
+
+_INSPECT_SYSTEM = _inspect_prompt.template
 
 _INSPECT_SCHEMA = {
     "type": "object",

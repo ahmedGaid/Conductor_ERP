@@ -23,25 +23,15 @@ from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
 from . import context, files
 from .llm import complete_json
+from .prompt_registry import get as get_prompt
 
 # Longest question we will send to the model — a cheap per-request guard (Part 3 cost control).
 MAX_QUESTION_CHARS = 1000
 
-_ROUTER_SYSTEM = (
-    "You route a user's question to exactly ONE data tool for an Egyptian business ERP.\n"
-    "Available tools, grouped by area:\n{catalog}\n"
-    "The query_data tool is the flexible fallback for ANY lookup, list, count, or total that no "
-    "specific tool covers (e.g. 'list the items', 'show the quotations', 'how many items do we "
-    "have', 'total sales by status'). Its data sets and their allowed fields are:\n{query_grammar}\n"
-    "For query_data, set entity to a data set above and only use fields listed for that data set; "
-    "put comparisons in filters as {{field, op, value}}, break-downs in group_by, and set aggregate "
-    "('list' returns the rows themselves; sum/avg/min/max need metric).\n"
-    "Choose the single best tool and fill only the arguments it needs; leave the others null. "
-    "If several tools could help, pick the single most specific one for the question; only fall back "
-    "to query_data when no specific tool answers it. "
-    "If no tool fits (a greeting, or something these tools cannot answer), set tool to \"none\". "
-    "Do not answer the question here or invent data — only choose the tool."
-)
+_router_prompt = get_prompt("router")
+_answer_tone_prompt = get_prompt("answer_tone")
+
+_ROUTER_SYSTEM = _router_prompt.template
 
 _ROUTER_SCHEMA = {
     "type": "object",
@@ -88,25 +78,18 @@ _ROUTER_SCHEMA = {
 
 # Appended after the context envelope (identity/user/page/company/persona) — the data-answering
 # constraints that never change per request.
-_ANSWER_TONE = (
-    "Answer briefly and plainly, like a trusted colleague. Use ONLY the numbers and facts in DATA — "
-    "never invent, estimate, or add figures that are not there. Money values in DATA are already "
-    "formatted (e.g. '1,250.00 EGP') — quote them verbatim. When DATA is present it is already "
-    "scoped to what this user is permitted to see (their branch/scope) — never claim a permission "
-    "problem in that case. When DATA is empty because no matching report exists yet for this exact "
-    "question, say plainly that Conductor cannot answer that specific question yet (not a "
-    "permission issue) and suggest a nearby question you *can* answer. Only mention permissions "
-    "when the question is about a module the user's role block says they cannot access. Never "
-    "mention tools, JSON, schemas, or that you are an AI. Use short lists or a compact table for "
-    "multiple records rather than long paragraphs. When part of the answer came from company "
-    "documents, attribute it (e.g. 'according to <document title>' / 'وفقاً لمستند <العنوان>'). "
-    "When a data result was empty or a tool failed, say what happened plainly and offer the "
-    "nearest next step; never fill gaps with invented values."
-)
+_ANSWER_TONE = _answer_tone_prompt.template
 
 
 def _answer_system(actor, page: dict | None) -> str:
     return context.build_system_prompt(actor, page) + "\n\n" + _ANSWER_TONE
+
+
+def _answer_prompt_ref() -> str:
+    """The combined ref of every template in the answer system prompt (context envelope's
+    static blocks + the closing answer-tone block) — shared by ask.py and agent.py since both
+    build the same envelope + tone combination."""
+    return f"{context.CONTEXT_PROMPT_REF}+{_answer_tone_prompt.ref}"
 
 _ANSWER_SCHEMA = {
     "type": "object",
@@ -141,6 +124,7 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
         _ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), q,
         _ROUTER_SCHEMA, feature="ask", actor=actor,
         conversation_id=conversation.id if conversation is not None else None,
+        prompt_ref=_router_prompt.ref,
     )
     name = route.get("tool") or "none"
     tool = TOOLS.get(name)
@@ -160,6 +144,7 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
         json.dumps({"question": q, "data": result}, ensure_ascii=False),
         _ANSWER_SCHEMA, feature="ask", actor=actor,
         conversation_id=conversation.id if conversation is not None else None,
+        prompt_ref=_answer_prompt_ref(),
     )
     answer = (answer_obj.get("answer") or "").strip()
 
@@ -186,6 +171,7 @@ def _route_and_run(question: str, actor, conversation_id=None):
     route = complete_json(
         _ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()),
         question, _ROUTER_SCHEMA, feature="ask", actor=actor, conversation_id=conversation_id,
+        prompt_ref=_router_prompt.ref,
     )
     name = route.get("tool") or "none"
     tool = TOOLS.get(name)
@@ -271,6 +257,7 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
         for chunk in complete_stream(
             [{"role": "user", "content": user}], system=_answer_system(actor, page), media=media,
             feature="chat", actor=actor, conversation_id=conversation.id,
+            prompt_ref=_answer_prompt_ref(),
         ):
             parts.append(chunk)
             yield {"type": "token", "text": chunk}
