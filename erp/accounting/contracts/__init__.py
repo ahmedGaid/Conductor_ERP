@@ -7,6 +7,7 @@ never by importing accounting's ORM models or internals directly.
 from __future__ import annotations
 
 import datetime
+from dataclasses import dataclass
 
 from django.db.models import Q
 
@@ -14,9 +15,10 @@ from erp.identity.scoping import scope_queryset
 
 from ..domain.models import Account, FiscalYear, JournalEntry, Period
 from ..events import JOURNAL_POSTED, PERIOD_CLOSED
+from ..services import chart as _chart
 from ..services import reports as _reports
 from ..services import statements as _statements
-from ..services.posting import JournalInput, LineInput, post_journal, reverse_journal
+from ..services.posting import JournalInput, LineInput, create_draft_journal, post_journal, reverse_journal
 from ..services.seeding import (
     baseline_summary,
     get_standard_vat_rate_bps,
@@ -115,6 +117,55 @@ def account_balance(*, query: str) -> dict:
         "entry_count": len(gl.lines),
     }
 
+@dataclass
+class AccountInfo:
+    code: str
+    name: str
+    type: str
+    is_postable: bool = True
+    is_active: bool = True
+
+
+def find_account(code: str) -> AccountInfo | None:
+    """An account by its exact code, or ``None``."""
+    account = Account.objects.filter(code=code).first()
+    if account is None:
+        return None
+    return AccountInfo(code=account.code, name=account.name, type=account.type,
+                       is_postable=account.is_postable, is_active=account.is_active)
+
+
+def list_accounts() -> list[AccountInfo]:
+    """Light snapshot of every account (for cross-module lookups/matching, e.g. journal lines)."""
+    return [
+        AccountInfo(code=a.code, name=a.name, type=a.type, is_postable=a.is_postable,
+                   is_active=a.is_active)
+        for a in Account.objects.all()
+    ]
+
+
+def next_account_code(account_type: str) -> str:
+    """Preview the code a new account of this type would receive if none is given."""
+    return _chart.next_account_code(account_type)
+
+
+def create_account(*, name: str, type: str, code: str = "", parent_code: str = "",
+                   actor=None) -> AccountInfo | None:
+    """Create a chart-of-accounts leaf. ``None`` if ``parent_code`` was given but is stale."""
+    account = _chart.create_account(name=name, type=type, code=code, parent_code=parent_code,
+                                    actor=actor)
+    if account is None:
+        return None
+    return AccountInfo(code=account.code, name=account.name, type=account.type,
+                       is_postable=account.is_postable, is_active=account.is_active)
+
+
+def create_journal_entry_draft(data: JournalInput, actor=None) -> JournalEntry:
+    """Validate and create an UNPOSTED draft journal entry (see ``post_journal`` for the shared
+    invariants). A human posts it later from the journal screen."""
+    return create_draft_journal(data, actor=actor)
+
+
 def current_fiscal_period() -> dict | None:
     """The fiscal year + period covering today, or None if neither is set up yet."""
     today = datetime.date.today()
@@ -136,6 +187,12 @@ __all__ = [
     "find_journal",
     "account_balance",
     "current_fiscal_period",
+    "AccountInfo",
+    "find_account",
+    "list_accounts",
+    "next_account_code",
+    "create_account",
+    "create_journal_entry_draft",
     "Money",
     "DEFAULT_CURRENCY",
     "JournalInput",

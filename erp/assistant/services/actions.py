@@ -15,12 +15,14 @@ Two safety boundaries, both mirroring the read tools:
 """
 from __future__ import annotations
 
+import datetime as _dt
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from difflib import SequenceMatcher
 from typing import Callable
 
-from erp.identity.roles import BRANCH_MANAGER, SYSTEM_ADMIN
+from erp.accounting import contracts as accounting
+from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
 from erp.inventory import contracts as inventory
 from erp.pricing import contracts as pricing
 from erp.purchasing import contracts as purchasing
@@ -89,6 +91,15 @@ def _qty(value) -> Decimal | None:
     return q if q > 0 else None
 
 
+def _minor(value) -> int:
+    """A journal-line amount → non-negative integer minor units (0 when absent/garbage)."""
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return n if n > 0 else 0
+
+
 # --- record resolution (fuzzy, mirrors extraction's matcher) ------------------------------------
 
 def _rank(name: str, candidates: list, key) -> list[tuple[float, object]]:
@@ -107,6 +118,20 @@ def _resolve_item(query: str) -> inventory.ItemInfo | None:
     if exact is not None and exact.type == "stock" and exact.is_active:
         return exact
     ranked = _rank(q, inventory.list_items(), lambda i: i.name)
+    if ranked and ranked[0][0] >= 0.6:
+        return ranked[0][1]
+    return None
+
+
+def _resolve_account(query: str) -> accounting.AccountInfo | None:
+    """An account query → one AccountInfo: exact code wins, else the best name match (>=0.6)."""
+    q = (query or "").strip()
+    if not q:
+        return None
+    exact = accounting.find_account(q)
+    if exact is not None:
+        return exact
+    ranked = _rank(q, accounting.list_accounts(), lambda a: a.name)
     if ranked and ranked[0][0] >= 0.6:
         return ranked[0][1]
     return None
@@ -876,6 +901,156 @@ def _execute_set_reorder_point(actor, payload: dict) -> dict:
     }
 
 
+# --- Action 13: journal entry draft ---------------------------------------------------------------
+
+def _build_journal_entry(actor, *, lines=None, date: str | None = None,
+                         reference: str | None = None, **_) -> dict:
+    if not _can(actor, ACCOUNTANT, BRANCH_MANAGER):
+        return _refused()
+    entries = list(lines or [])
+    if len(entries) < 2:
+        return {"error": "A journal entry needs at least two lines."}
+
+    resolved_lines, records, risks = [], [], []
+    seen_codes: set[str] = set()
+    total_debit = total_credit = 0
+    for entry in entries:
+        query = (entry.get("account") if isinstance(entry, dict) else None) or ""
+        account = _resolve_account(query)
+        if account is None:
+            return {"error": f"Account '{query}' was not found. Give its code or exact name."}
+        if not account.is_active or not account.is_postable:
+            reason = "inactive" if not account.is_active else "a group account and cannot be posted to"
+            return {"error": f"'{account.name}' is {reason}."}
+        debit = _minor(entry.get("debit")) if isinstance(entry, dict) else 0
+        credit = _minor(entry.get("credit")) if isinstance(entry, dict) else 0
+        if (debit > 0) == (credit > 0):
+            return {"error": f"'{account.name}' line needs exactly one of debit or credit, "
+                             "not both or neither."}
+        memo = ((entry.get("memo") if isinstance(entry, dict) else "") or "").strip()
+        total_debit += debit
+        total_credit += credit
+        resolved_lines.append({"account_code": account.code, "debit": debit, "credit": credit,
+                               "memo": memo})
+        if account.code not in seen_codes:
+            records.append({"type": "account", "value": account.code, "label": account.name})
+            seen_codes.add(account.code)
+
+    if total_debit != total_credit:
+        gap = abs(total_debit - total_credit)
+        return {"error": f"Debits and credits do not match — {_egp(total_debit)} debit vs "
+                         f"{_egp(total_credit)} credit, a gap of {_egp(gap)}."}
+
+    entry_date = (date or "").strip() or _dt.date.today().isoformat()
+    return {
+        "action": "create_journal_entry_draft",
+        "summary": [
+            f"Draft journal entry, {len(resolved_lines)} line(s)",
+            f"debit {_egp(total_debit)} = credit {_egp(total_credit)}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": _egp(total_debit),
+        "affected": len(records),
+        "payload": {"lines": resolved_lines, "date": entry_date,
+                    "reference": (reference or "").strip()},
+    }
+
+
+def _execute_journal_entry(actor, payload: dict) -> dict:
+    if not _can(actor, ACCOUNTANT, BRANCH_MANAGER):
+        raise PermissionError
+    entry = accounting.create_journal_entry_draft(
+        accounting.JournalInput(
+            date=_dt.date.fromisoformat(payload["date"]),
+            lines=[accounting.LineInput(account_code=ln["account_code"], debit=ln["debit"],
+                                        credit=ln["credit"], memo=ln.get("memo", ""))
+                   for ln in payload["lines"]],
+            reference=payload.get("reference", ""), source="assistant",
+        ),
+        actor=actor,
+    )
+    return {
+        "summary": f"Draft journal entry {entry.number} created (unposted).",
+        "links": [{"type": "journalEntry", "value": str(entry.id), "label": entry.number}],
+    }
+
+
+# --- Action 14: create account --------------------------------------------------------------------
+
+_ACCOUNT_TYPES = {"asset", "liability", "equity", "income", "expense"}
+
+
+def _build_create_account(actor, *, name: str | None = None, type: str | None = None,
+                          code: str | None = None, parent: str | None = None, **_) -> dict:
+    if not _can(actor, ACCOUNTANT, BRANCH_MANAGER):
+        return _refused()
+    account_name = (name or "").strip()
+    if not account_name:
+        return {"error": "What name should the new account have?"}
+    account_type = (type or "").strip().lower()
+    if account_type not in _ACCOUNT_TYPES:
+        return {"error": "Account type must be asset, liability, equity, income or expense."}
+
+    everyone = accounting.list_accounts()
+    parent_account = None
+    if (parent or "").strip():
+        parent_account = _resolve_account(parent)
+        if parent_account is None:
+            return {"error": f"Parent account '{parent}' was not found."}
+
+    requested_code = (code or "").strip()
+    if requested_code and any(a.code == requested_code for a in everyone):
+        return {"error": f"Account code '{requested_code}' is already in use."}
+    preview_code = requested_code or accounting.next_account_code(account_type)
+
+    risks = []
+    target = account_name.casefold()
+    dupes = [a for a in everyone if a.name.casefold().strip() == target]
+    if dupes:
+        joined = ", ".join(f"{a.name} ({a.code})" for a in dupes)
+        risks.append(f"An account named '{account_name}' already exists: {joined}.")
+    else:
+        near = [a for score, a in _rank(account_name, everyone, lambda a: a.name)
+                if score >= 0.7][:3]
+        if near:
+            joined = ", ".join(f"{a.name} ({a.code})" for a in near)
+            risks.append(f"Similar accounts already exist: {joined}.")
+
+    records = []
+    if parent_account is not None:
+        records.append({"type": "account", "value": parent_account.code,
+                        "label": parent_account.name})
+    return {
+        "action": "create_account",
+        "summary": [
+            f"New {account_type} account '{account_name}' ({preview_code})",
+            f"Under {parent_account.name}" if parent_account is not None else "Top level",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": None,
+        "affected": 1,
+        "payload": {"name": account_name, "type": account_type, "code": requested_code,
+                    "parent_code": parent_account.code if parent_account is not None else ""},
+    }
+
+
+def _execute_create_account(actor, payload: dict) -> dict:
+    if not _can(actor, ACCOUNTANT, BRANCH_MANAGER):
+        raise PermissionError
+    account = accounting.create_account(
+        name=payload["name"], type=payload["type"], code=payload.get("code", ""),
+        parent_code=payload.get("parent_code", ""), actor=actor,
+    )
+    if account is None:
+        raise ValueError("parent account no longer exists")
+    return {
+        "summary": f"Account {account.name} ({account.code}) created.",
+        "links": [{"type": "account", "value": account.code, "label": account.name}],
+    }
+
+
 # --- registry -----------------------------------------------------------------------------------
 
 # The harness spec's irreversible list: these kinds can NEVER ship with requires_confirm=False,
@@ -1004,6 +1179,28 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         _build_set_reorder_point, _execute_set_reorder_point,
         kind="update",
     ),
+    Action(
+        "create_journal_entry_draft",
+        "Prepare a DRAFT (unposted) journal entry (the user confirms; posting happens later on "
+        "the journal screen). Use for 'draft a journal: debit <account> <amount>, credit "
+        "<account> <amount>'. Refuses with no card if debits and credits do not balance.",
+        {"lines": "list of {account (code or name), debit (minor units, optional), "
+                  "credit (minor units, optional), memo (optional)} — two or more lines, "
+                  "debits must equal credits",
+         "date": "optional entry date (defaults to today)",
+         "reference": "optional reference text"},
+        _build_journal_entry, _execute_journal_entry,
+    ),
+    Action(
+        "create_account",
+        "Create a new chart-of-accounts entry (master-data edit, the user confirms). Use for "
+        "'create an expense account called <name>'. Warns if a similar account already exists.",
+        {"name": "the new account's name",
+         "type": "asset, liability, equity, income or expense",
+         "code": "optional account code (auto-assigned if omitted)",
+         "parent": "optional parent account code or name"},
+        _build_create_account, _execute_create_account,
+    ),
 ]}
 
 for _a in ACTIONS.values():
@@ -1012,7 +1209,8 @@ for _a in ACTIONS.values():
 
 # Which loop-decision fields can feed an action argument (each action gets only the args it declares).
 ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query",
-                    "item", "quantity", "from_warehouse", "to_warehouse", "reorder_point", "scope")
+                    "item", "quantity", "from_warehouse", "to_warehouse", "reorder_point", "scope",
+                    "lines", "date", "reference", "type", "code", "parent", "memo", "name")
 
 
 def catalog_text() -> str:

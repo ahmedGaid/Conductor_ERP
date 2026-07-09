@@ -229,6 +229,65 @@ def post_journal(data: JournalInput, actor=None) -> JournalEntry:
 
 
 @transaction.atomic
+def create_draft_journal(data: JournalInput, actor=None) -> JournalEntry:
+    """Validate and create an UNPOSTED draft journal entry — the same account/balance invariants
+    as ``post_journal`` (unknown account, non-postable/inactive account, unbalanced) but the period
+    lock is not checked and the ledger is untouched. A human posts it later from the journal screen.
+    """
+    period = period_repo.containing(data.date)
+    if period is None:
+        raise NoPeriodError(data={"date": str(data.date)})
+    resolved_accounts = _validate_and_load_accounts(data)
+
+    entry = JournalEntry.objects.create(
+        number=data.number or _next_number(),
+        date=data.date,
+        period=period,
+        currency=data.currency,
+        memo=data.memo,
+        reference=data.reference,
+        source=data.source,
+        party_type=data.party_type,
+        party_code=data.party_code,
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+        branch=actor.branch if getattr(actor, "is_authenticated", False) else None,
+        department=actor.department if getattr(actor, "is_authenticated", False) else None,
+        team=actor.team if getattr(actor, "is_authenticated", False) else None,
+    )
+    JournalLine.objects.bulk_create(
+        [
+            JournalLine(
+                entry=entry,
+                line_no=i,
+                account=resolved_accounts[line.account_code],
+                debit=line.debit,
+                credit=line.credit,
+                memo=line.memo,
+                cost_center_code=line.cost_center_code,
+            )
+            for i, line in enumerate(data.lines, start=1)
+        ]
+    )
+
+    audit.record(
+        module="accounting",
+        action="create_draft_journal",
+        entity_type="JournalEntry",
+        entity_id=entry.number,
+        actor=actor,
+        after={
+            "number": entry.number,
+            "date": str(entry.date),
+            "period": period.code,
+            "lines": len(data.lines),
+            "total": sum(line.debit for line in data.lines),
+            "currency": entry.currency,
+        },
+    )
+    return entry
+
+
+@transaction.atomic
 def reverse_journal(entry: JournalEntry, actor=None, date=None) -> JournalEntry:
     """Post the mirror-image of a posted entry (the only correct way to undo one)."""
     if entry.status != EntryStatus.POSTED:

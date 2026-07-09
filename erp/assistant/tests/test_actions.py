@@ -736,3 +736,130 @@ def test_set_reorder_point_permission_refused_at_both_stages():
     with pytest.raises(PermissionError):
         actions.execute(nobody, "set_reorder_point", {"sku": "SKU-1", "reorder_point": "50"})
     Item.objects.get(sku="SKU-1").reorder_point == 0
+
+
+# --- accounting actions (agent-actions FILE_04) ---------------------------------------------------
+
+from erp.accounting.domain.models import Account, JournalEntry
+from erp.accounting.tests.factories import make_coa, make_period
+
+
+def _seed_accounting():
+    make_coa()
+    make_period()  # code "2026-06", open, covers 2026-06-01..2026-06-30
+
+
+def _journal_decision():
+    return {"lines": [{"account": "Rent Expense", "debit": 5000},
+                      {"account": "Cash", "credit": 5000}],
+            "date": "2026-06-15"}
+
+
+def test_build_then_execute_creates_journal_entry_draft():
+    admin = _admin()
+    _seed_accounting()
+
+    proposal = actions.build(admin, "create_journal_entry_draft", _journal_decision())
+    assert "error" not in proposal
+    assert proposal["action"] == "create_journal_entry_draft"
+    kinds = {r["type"] for r in proposal["records"]}
+    assert kinds == {"account"}
+    assert JournalEntry.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "create_journal_entry_draft", proposal["payload"])
+    entry = JournalEntry.objects.get()
+    assert entry.status == "draft"
+    assert entry.lines.count() == 2
+    assert result["links"][0]["value"] == str(entry.id)
+    assert AuditEntry.objects.filter(module="accounting", action="create_draft_journal").exists()
+
+
+def test_unbalanced_journal_is_an_error_no_card():
+    admin = _admin()
+    _seed_accounting()
+
+    proposal = actions.build(admin, "create_journal_entry_draft",
+                             {"lines": [{"account": "Rent Expense", "debit": 5000},
+                                       {"account": "Cash", "credit": 4000}],
+                              "date": "2026-06-15"})
+    assert "error" in proposal
+    assert "action" not in proposal
+    assert JournalEntry.objects.count() == 0
+
+
+def test_journal_unknown_account_is_an_error_no_card():
+    admin = _admin()
+    _seed_accounting()
+
+    proposal = actions.build(admin, "create_journal_entry_draft",
+                             {"lines": [{"account": "Not A Real Account Name At All", "debit": 5000},
+                                       {"account": "Cash", "credit": 5000}],
+                              "date": "2026-06-15"})
+    assert "error" in proposal
+    assert "action" not in proposal
+
+
+def test_journal_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_accounting()
+
+    proposal = actions.build(nobody, "create_journal_entry_draft", _journal_decision())
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_journal_entry_draft",
+                        {"lines": [{"account_code": "5100", "debit": 5000, "credit": 0},
+                                   {"account_code": "1000", "debit": 0, "credit": 5000}],
+                         "date": "2026-06-15", "reference": ""})
+    assert JournalEntry.objects.count() == 0
+
+
+def test_create_account_and_execute():
+    admin = _admin()
+    _seed_accounting()
+
+    proposal = actions.build(admin, "create_account",
+                             {"name": "Marketing Expense", "type": "expense"})
+    assert "error" not in proposal
+    assert proposal["action"] == "create_account"
+    assert Account.objects.filter(name="Marketing Expense").count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "create_account", proposal["payload"])
+    account = Account.objects.get(name="Marketing Expense")
+    assert account.type == "expense"
+    assert result["links"][0]["value"] == account.code
+    assert AuditEntry.objects.filter(module="accounting", action="create_account").exists()
+
+
+def test_create_account_duplicate_name_is_a_risk_and_still_confirmable():
+    admin = _admin()
+    _seed_accounting()
+
+    proposal = actions.build(admin, "create_account", {"name": "Cash", "type": "asset"})
+    assert "error" not in proposal
+    assert proposal["risks"], "a duplicate name should surface a risk line, not block silently"
+
+    actions.execute(admin, "create_account", proposal["payload"])
+    assert Account.objects.filter(name="Cash").count() == 2
+
+
+def test_create_account_duplicate_code_is_an_error():
+    admin = _admin()
+    _seed_accounting()  # "1000" (Cash) already taken
+
+    proposal = actions.build(admin, "create_account",
+                             {"name": "Petty Cash", "type": "asset", "code": "1000"})
+    assert "error" in proposal and "already in use" in proposal["error"]
+
+
+def test_create_account_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_accounting()
+
+    proposal = actions.build(nobody, "create_account", {"name": "Marketing", "type": "expense"})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_account",
+                        {"name": "Marketing", "type": "expense", "code": "", "parent_code": ""})
+    assert Account.objects.filter(name="Marketing").count() == 0
