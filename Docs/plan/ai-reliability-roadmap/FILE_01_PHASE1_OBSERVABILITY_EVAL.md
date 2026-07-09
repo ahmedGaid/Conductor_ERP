@@ -177,7 +177,7 @@
   a deliberately wrong recording fails its grader (negative test included).
 - **Output:** quality is a command away.
 
-### [ ] T1.7 — LLM-as-judge grader + calibration
+### [x] T1.7 — LLM-as-judge grader + calibration
 
 - **Goal:** free-text answers get graded by a judge model, and the judge itself is calibrated.
 - **Prereq:** T1.6.

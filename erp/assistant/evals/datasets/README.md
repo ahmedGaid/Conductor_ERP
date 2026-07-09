@@ -49,4 +49,8 @@ one. That would erase the yardstick the whole reliability roadmap is measured ag
 skipped, not failed, so the dataset can grow ahead of the recordings that exercise it. `ask` and
 `agent` cases run through the real service function end to end; `extract` stubs the provider call
 and runs real post-processing; `suggest` has no Python service yet and always reports `no_runner`.
-`judge` cases report `needs_judge` until T1.7.
+`judge` cases report `needs_judge` in the offline runner (judging needs a live model call). The
+real judge grader (T1.7) is `graders.grade_judge()` — called live by `manage.py calibrate_judge
+--yes-live` against `calibration_v1.jsonl` (30 hand-labeled ar/en pairs), which requires >= 90%
+agreement before judge verdicts count, and unit-tested offline by injecting a recorded judge
+output as `judge_call`.

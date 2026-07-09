@@ -1,12 +1,21 @@
-"""Deterministic offline graders for golden dataset cases (ai-reliability T1.6).
+"""Deterministic offline graders for golden dataset cases (ai-reliability T1.6), plus the
+LLM-as-judge grader for free-text rubrics (T1.7).
 
-Each grader is a pure function of ``(case, output)`` — no DB, no provider, no randomness, so a
-given recording always grades the same way. ``judge`` cases (free-text rubric) are not gradeable
-here; ``grade()`` reports them as ``needs_judge`` until T1.7 ships the LLM-as-judge grader.
+The deterministic graders are pure functions of ``(case, output)`` — no DB, no provider, no
+randomness, so a given recording always grades the same way. ``grade()`` (used by the offline
+runner) still reports ``judge`` cases as ``needs_judge`` — judging needs a live model call, which
+would break the runner's zero-network guarantee. ``grade_judge()`` is the real judge grader: called
+directly by ``manage.py calibrate_judge`` and any future live judge run, and unit-tested by
+injecting a fake ``judge_call`` so it never needs network either.
 """
 from __future__ import annotations
 
 import json
+
+from ..errors import AssistantUnavailableError
+from ..services import llm as llm_service
+from ..services.prompt_registry import get as get_prompt
+from .. import client as assistant_client
 
 _TYPE_MAP = {
     "string": str, "integer": int, "number": (int, float), "boolean": bool,
@@ -79,6 +88,61 @@ def grade_schema(case: dict, output: dict) -> tuple[bool, str]:
     if errors:
         return False, "; ".join(errors)
     return True, ""
+
+
+_JUDGE_SCHEMA = {
+    "type": "object", "required": ["pass", "reason"],
+    "properties": {"pass": {"type": "boolean"}, "reason": {"type": "string"}},
+}
+
+# Cheapest tier, cross-provider: never the model under test. Tried in order; first provider that
+# returns a parseable response wins.
+_JUDGE_PROVIDERS = ("gemini", "groq")
+
+
+def _default_judge_call(system: str, user: str) -> dict:
+    """Live judge call, traced under ``feature="eval"`` so eval spend is visible and separable
+    from the traffic it grades. Not used by the offline runner — only by ``calibrate_judge`` and
+    any future opt-in live judge run."""
+    from ..services.tracing import estimate_tokens, trace_call
+
+    last_exc: Exception | None = None
+    for prov in _JUDGE_PROVIDERS:
+        runner = llm_service._RUNNERS[prov]
+        with trace_call("eval", prompt_ref=get_prompt("eval_judge").ref) as handle:
+            try:
+                text = runner(system, user, _JUDGE_SCHEMA, None, assistant_client.model_id(prov))
+            except Exception as exc:  # provider down/unauthenticated — try the next one
+                handle.fail(exc.__class__.__name__)
+                last_exc = exc
+                continue
+            if not text:
+                continue
+            try:
+                parsed = json.loads(text)
+            except ValueError as exc:
+                last_exc = exc
+                continue
+            handle.usage(provider=prov, model=assistant_client.model_id(prov), estimated=True,
+                         input_tokens=estimate_tokens(system + user), output_tokens=estimate_tokens(text))
+            return parsed
+    raise AssistantUnavailableError(
+        data={"reason": last_exc.__class__.__name__ if last_exc else "no_judge_provider"})
+
+
+def grade_judge(case: dict, output: dict, *, judge_call=None) -> tuple[bool, str]:
+    """Grade a free-text answer against its rubric via an LLM judge. ``judge_call`` (optional) is
+    ``(system, user) -> {"pass": bool, "reason": str}`` — injected by tests with a recorded judge
+    output so this stays offline-testable; defaults to a real live call."""
+    judge_call = judge_call or _default_judge_call
+    prompt = get_prompt("eval_judge")
+    system = prompt.render(
+        rubric=case["expected"]["judge"],
+        case_input=json.dumps(case["input"], ensure_ascii=False),
+        answer=_answer_text(output),
+    )
+    result = judge_call(system, "Grade the answer above against the rubric.")
+    return bool(result.get("pass")), str(result.get("reason", ""))
 
 
 GRADERS = {
