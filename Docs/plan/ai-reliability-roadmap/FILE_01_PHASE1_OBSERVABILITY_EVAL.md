@@ -130,7 +130,7 @@
   `pytest erp/assistant` green; ask/agent smoke behavior unchanged (existing tests untouched and green).
 - **Output:** prompts are diffable, versioned artifacts.
 
-### [ ] T1.5 — Golden dataset v1
+### [x] T1.5 — Golden dataset v1
 
 - **Goal:** ≥ 150 graded eval cases covering real ERP flows, ar + en, stored as fixtures.
 - **Prereq:** T1.4 (cases pin prompt refs).
