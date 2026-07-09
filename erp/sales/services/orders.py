@@ -170,6 +170,38 @@ def create_order(
 
 
 @transaction.atomic
+def update_order_lines(order: SalesOrder, lines: list[OrderLineInput], actor=None) -> SalesOrder:
+    """Replace a **draft** order's lines wholesale (assistant edit action). Once an order leaves
+    draft, its lines move through delivery/return instead — this never touches a confirmed order."""
+    _require(order, OrderStatus.DRAFT)
+    if not lines:
+        raise EmptyOrderError()
+    for ln in lines:
+        info = inventory.find_item(ln.item_sku)
+        if info is None or info.type != "stock" or not info.is_active:
+            raise UnknownItemError(data={"sku": ln.item_sku})
+    order.lines.all().delete()
+    subtotal = 0
+    for i, ln in enumerate(lines, start=1):
+        gross = _round_minor(Decimal(ln.quantity) * Decimal(ln.unit_price_minor))
+        discount = int(ln.discount_minor or 0)
+        if discount < 0 or discount > gross:
+            raise InvalidDiscountError(data={"line": i, "gross": gross, "discount": discount})
+        total = gross - discount
+        SalesOrderLine.objects.create(
+            order=order, line_no=i, item_sku=ln.item_sku, description=ln.description,
+            quantity=Decimal(ln.quantity), unit_price_minor=ln.unit_price_minor,
+            discount_minor=discount, line_total_minor=total,
+        )
+        subtotal += total
+    order.subtotal_minor = subtotal
+    order.save(update_fields=["subtotal_minor"])
+    audit.record(module="sales", action="update_order_lines", entity_type="SalesOrder",
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
+    return order
+
+
+@transaction.atomic
 def approve_order(order: SalesOrder, actor=None) -> SalesOrder:
     """Manager sign-off for an above-threshold order (required before confirm).
 

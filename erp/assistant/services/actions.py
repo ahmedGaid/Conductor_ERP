@@ -32,6 +32,12 @@ def _egp(minor: int | None) -> str:
     return f"{(minor or 0) / 100:,.2f} EGP"
 
 
+def _lines_total(lines: list[dict]) -> int:
+    """Sum a list of ``{quantity, unit_price_minor}`` dicts — used for a before/after diff line."""
+    return sum(int((Decimal(ln["quantity"]) * Decimal(ln["unit_price_minor"])).quantize(Decimal("1")))
+               for ln in lines)
+
+
 def _can(actor, *roles: str) -> bool:
     """Role gate mirroring ``HasAnyRole`` — superuser / System Admin bypass, else any of ``roles``."""
     if not getattr(actor, "is_authenticated", False):
@@ -335,6 +341,223 @@ def _execute_customer(actor, payload: dict) -> dict:
     }
 
 
+# --- Action 4: quotation draft ------------------------------------------------------------------
+
+def _build_quotation(actor, *, customer: str | None = None, items=None,
+                     warehouse: str | None = None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    snapshot = sales.customer_profile(actor, query=(customer or ""))
+    profile = snapshot.get("customer")
+    if profile is None:
+        near = [{"code": c["code"], "name": c["name"], "score": round(score, 2)}
+                for score, c in _rank(customer or "", sales.find_customers(actor, query="", limit=100),
+                                      lambda c: c["name"]) if score >= 0.4][:3]
+        return _blocker("customer", customer, candidates=near)
+    warehouse_code, blocked = _resolve_warehouse(warehouse)
+    if blocked is not None:
+        return blocked
+
+    lines, records, risks = [], [], []
+    unresolved: list[str] = []
+    total = 0
+    for entry in items or []:
+        item = _resolve_item(entry.get("item") if isinstance(entry, dict) else None)
+        qty = _qty(entry.get("quantity") if isinstance(entry, dict) else None)
+        if item is None:
+            unresolved.append(str((entry or {}).get("item", "") if isinstance(entry, dict) else ""))
+            risks.append(f"Item '{unresolved[-1]}' was not found — skipped.")
+            continue
+        if qty is None:
+            risks.append(f"'{item.name}' had no valid quantity — skipped.")
+            continue
+        price = pricing.resolve_unit_price(profile["code"], item.sku, quantity=qty)
+        unit = price.unit_price_minor if price is not None else 0
+        if price is None:
+            risks.append(f"No price on file for '{item.name}' — set it on the quote screen.")
+        line_total = int((qty * Decimal(unit)).quantize(Decimal("1")))
+        total += line_total
+        lines.append({"item_sku": item.sku, "quantity": str(qty), "unit_price_minor": unit,
+                      "description": item.name})
+        records.append({"type": "item", "value": item.sku, "label": item.name})
+    if not lines:
+        if unresolved and unresolved[0]:
+            near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                    for score, i in _rank(unresolved[0], inventory.list_items(), lambda i: i.name)
+                    if score >= 0.4][:3]
+            return _blocker("item", unresolved[0], candidates=near)
+        return {"error": "None of the requested items could be added."}
+
+    owed = snapshot.get("outstanding_minor", 0)
+    if owed and owed > 0:
+        risks.append(f"{profile['name']} still owes {_egp(owed)}.")
+
+    records.insert(0, {"type": "customer", "value": profile["code"], "label": profile["name"]})
+    return {
+        "action": "create_quotation_draft",
+        "summary": [
+            f"Draft quotation for {profile['name']}",
+            f"{len(lines)} line(s), total {_egp(total)}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": _egp(total),
+        "affected": len(records),
+        "payload": {"customer_code": profile["code"], "warehouse_code": warehouse_code,
+                    "lines": lines},
+    }
+
+
+def _execute_quotation(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    quote = sales.place_quotation(
+        customer_code=payload["customer_code"], warehouse_code=payload["warehouse_code"],
+        lines=[sales.QuoteLineInput(item_sku=ln["item_sku"], quantity=Decimal(ln["quantity"]),
+                                    unit_price_minor=ln["unit_price_minor"],
+                                    description=ln.get("description", "")) for ln in payload["lines"]],
+        actor=actor,
+    )
+    if quote is None:
+        raise ValueError("customer no longer exists")
+    return {
+        "summary": f"Draft quotation {quote.number} created.",
+        "links": [{"type": "quotation", "value": str(quote.id), "label": quote.number}],
+    }
+
+
+# --- Action 5: convert a quotation into a sales order draft --------------------------------------
+
+def _build_convert_quotation(actor, *, query: str | None = None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which quotation? Give its number or the customer's name."}
+    matches = sales.find_quotations(actor, query=q, limit=5)
+    if not matches:
+        return _blocker("quotation", q)
+    quote = matches[0]
+
+    risks = []
+    if quote["status"] == "converted":
+        risks.append(f"Already converted to order {quote['converted_order_number']}.")
+    elif quote["status"] != "approved":
+        risks.append(f"Quotation is '{quote['status']}', not approved yet — confirming will fail "
+                     "until it is approved on the quotation screen.")
+
+    records = [
+        {"type": "customer", "value": quote["customer_code"], "label": quote["customer_name"]},
+        {"type": "quotation", "value": quote["id"], "label": quote["number"]},
+    ]
+    return {
+        "action": "convert_quotation",
+        "summary": [
+            f"Convert {quote['number']} ({quote['customer_name']}) into a sales order draft",
+            f"{len(quote['lines'])} line(s), total {_egp(quote['subtotal_minor'])}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": _egp(quote["subtotal_minor"]),
+        "affected": len(records),
+        "payload": {"quotation_number": quote["number"]},
+    }
+
+
+def _execute_convert_quotation(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    order = sales.convert_quotation(payload["quotation_number"], actor=actor)
+    if order is None:
+        raise ValueError("quotation no longer exists")
+    return {
+        "summary": f"Quotation converted — sales order {order.number} created.",
+        "links": [{"type": "order", "value": str(order.id), "label": order.number}],
+    }
+
+
+# --- Action 6: edit a draft sales order's lines ---------------------------------------------------
+
+def _build_edit_sales_order(actor, *, query: str | None = None, items=None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which order? Give its number."}
+    order = sales.find_order(actor, query=q)
+    if order is None:
+        return _blocker("order", q)
+    if order["status"] != "draft":
+        return {"error": f"Order {order['number']} is '{order['status']}', not a draft — its lines "
+                         "can no longer be changed here."}
+
+    lines, records, risks = [], [], []
+    unresolved: list[str] = []
+    total = 0
+    for entry in items or []:
+        item = _resolve_item(entry.get("item") if isinstance(entry, dict) else None)
+        qty = _qty(entry.get("quantity") if isinstance(entry, dict) else None)
+        if item is None:
+            unresolved.append(str((entry or {}).get("item", "") if isinstance(entry, dict) else ""))
+            risks.append(f"Item '{unresolved[-1]}' was not found — skipped.")
+            continue
+        if qty is None:
+            risks.append(f"'{item.name}' had no valid quantity — skipped.")
+            continue
+        raw_price = entry.get("unit_price") if isinstance(entry, dict) else None
+        if isinstance(raw_price, (int, float)) and raw_price > 0:
+            unit = int(raw_price)
+        else:
+            price = pricing.resolve_unit_price(order["customer_code"], item.sku, quantity=qty)
+            unit = price.unit_price_minor if price is not None else 0
+            if price is None:
+                risks.append(f"No price on file for '{item.name}' — set it on the order screen.")
+        line_total = int((qty * Decimal(unit)).quantize(Decimal("1")))
+        total += line_total
+        lines.append({"item_sku": item.sku, "quantity": str(qty), "unit_price_minor": unit,
+                      "description": item.name})
+        records.append({"type": "item", "value": item.sku, "label": item.name})
+    if not lines:
+        if unresolved and unresolved[0]:
+            near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                    for score, i in _rank(unresolved[0], inventory.list_items(), lambda i: i.name)
+                    if score >= 0.4][:3]
+            return _blocker("item", unresolved[0], candidates=near)
+        return {"error": "None of the requested items could be added."}
+
+    records.insert(0, {"type": "order", "value": order["id"], "label": order["number"]})
+    return {
+        "action": "edit_sales_order_draft",
+        "summary": [
+            f"Change draft order {order['number']} to {len(lines)} line(s)",
+            f"before {_egp(_lines_total(order['lines']))} → after {_egp(total)}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": _egp(total),
+        "affected": len(records),
+        "payload": {"order_number": order["number"], "lines": lines},
+    }
+
+
+def _execute_edit_sales_order(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    order = sales.update_draft_order(
+        order_number=payload["order_number"],
+        lines=[sales.OrderLineInput(item_sku=ln["item_sku"], quantity=Decimal(ln["quantity"]),
+                                    unit_price_minor=ln["unit_price_minor"],
+                                    description=ln.get("description", "")) for ln in payload["lines"]],
+        actor=actor,
+    )
+    if order is None:
+        raise ValueError("order no longer exists")
+    return {
+        "summary": f"Draft order {order.number} updated.",
+        "links": [{"type": "order", "value": str(order.id), "label": order.number}],
+    }
+
+
 # --- registry -----------------------------------------------------------------------------------
 
 # The harness spec's irreversible list: these kinds can NEVER ship with requires_confirm=False,
@@ -382,6 +605,33 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         "<name>'. Warns if a similar customer already exists.",
         {"query": "the new customer's name"},
         _build_customer, _execute_customer,
+    ),
+    Action(
+        "create_quotation_draft",
+        "Prepare a DRAFT quotation for a customer (nothing is posted; the user confirms). Use for "
+        "'quote <customer> for <n> of <item>'.",
+        {"customer": "customer code or name",
+         "items": "list of {item (sku or name), quantity}",
+         "warehouse": "optional warehouse code to quote from"},
+        _build_quotation, _execute_quotation,
+    ),
+    Action(
+        "convert_quotation",
+        "Turn an already-approved quotation into a DRAFT sales order (the user confirms). Use for "
+        "'turn quotation <number> into an order' or 'convert <customer>'s quote'. Refuses to "
+        "execute a quotation that isn't approved yet.",
+        {"query": "quotation number or customer name to find the quotation"},
+        _build_convert_quotation, _execute_convert_quotation,
+    ),
+    Action(
+        "edit_sales_order_draft",
+        "Change the lines on a sales order that is still a DRAFT (the user confirms). Use for "
+        "'change the draft order <number> to <n> of <item>'. Refused with no card if the order is "
+        "no longer a draft.",
+        {"query": "the order number",
+         "items": "new/changed lines: list of {item (sku or name), quantity, "
+                  "unit_price (minor units, optional — priced automatically if omitted)}"},
+        _build_edit_sales_order, _execute_edit_sales_order,
     ),
 ]}
 

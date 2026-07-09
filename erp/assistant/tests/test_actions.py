@@ -18,7 +18,10 @@ from erp.audit.models import AuditEntry
 from erp.identity.models import User
 from erp.inventory.domain.models import Item, Warehouse
 from erp.purchasing.domain.models import PurchaseRequest, Supplier
-from erp.sales.domain.models import Customer, SalesOrder
+from erp.sales.domain.models import Customer, Quotation, QuotationStatus, SalesOrder
+from erp.sales.services import quotations as quotation_services
+from erp.sales.services.orders import OrderLineInput
+from erp.sales.services.orders import create_order as sales_create_order
 
 pytestmark = pytest.mark.django_db
 
@@ -278,3 +281,160 @@ def test_foreign_message_is_not_found():
 
     res = other.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm"}, format="json")
     assert res.status_code == 404
+
+
+# --- quotation + edit-order actions (agent-actions FILE_01) --------------------------------------
+
+def _quote_decision():
+    return {"customer": "Nile Traders", "items": [{"item": "SKU-1", "quantity": "3"}],
+            "warehouse": "WH-1"}
+
+
+def test_build_then_execute_creates_quotation_draft():
+    admin = _admin()
+    _seed_sales()
+
+    proposal = actions.build(admin, "create_quotation_draft", _quote_decision())
+    assert "error" not in proposal
+    assert proposal["action"] == "create_quotation_draft"
+    kinds = {r["type"] for r in proposal["records"]}
+    assert {"customer", "item"} <= kinds
+    assert Quotation.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "create_quotation_draft", proposal["payload"])
+    quote = Quotation.objects.get()
+    assert quote.status == QuotationStatus.DRAFT
+    assert quote.customer.code == "C-1"
+    assert result["links"][0]["value"] == str(quote.id)
+
+
+def test_quotation_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_sales()
+
+    proposal = actions.build(nobody, "create_quotation_draft", _quote_decision())
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_quotation_draft",
+                        {"customer_code": "C-1", "warehouse_code": "WH-1",
+                         "lines": [{"item_sku": "SKU-1", "quantity": "1", "unit_price_minor": 0}]})
+    assert Quotation.objects.count() == 0
+
+
+def _approved_quotation(customer: Customer) -> Quotation:
+    quote = quotation_services.create_quotation(
+        customer=customer, warehouse_code="WH-1",
+        lines=[quotation_services.QuoteLineInput(item_sku="SKU-1", quantity=3, unit_price_minor=1000)],
+    )
+    return quotation_services.submit_quotation(quote)  # auto-approves (below threshold)
+
+
+def test_convert_approved_quotation_creates_order_draft():
+    admin = _admin()
+    _seed_sales()
+    customer = Customer.objects.get(code="C-1")
+    quote = _approved_quotation(customer)
+
+    proposal = actions.build(admin, "convert_quotation", {"query": quote.number})
+    assert "error" not in proposal
+    assert proposal["action"] == "convert_quotation"
+    assert not proposal["risks"]
+    assert SalesOrder.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "convert_quotation", proposal["payload"])
+    order = SalesOrder.objects.get()
+    assert order.customer.code == "C-1"
+    quote.refresh_from_db()
+    assert quote.status == QuotationStatus.CONVERTED
+    assert result["links"][0]["value"] == str(order.id)
+
+
+def test_convert_quotation_not_approved_surfaces_risk_and_fails_on_confirm():
+    admin = _admin()
+    _seed_sales()
+    customer = Customer.objects.get(code="C-1")
+    quote = quotation_services.create_quotation(
+        customer=customer, warehouse_code="WH-1",
+        lines=[quotation_services.QuoteLineInput(item_sku="SKU-1", quantity=3, unit_price_minor=1000)],
+    )  # still draft, never submitted
+
+    proposal = actions.build(admin, "convert_quotation", {"query": quote.number})
+    assert "error" not in proposal  # still a card — the risk line warns, it doesn't block
+    assert proposal["risks"]
+
+    with pytest.raises(Exception):
+        actions.execute(admin, "convert_quotation", proposal["payload"])
+    assert SalesOrder.objects.count() == 0
+
+
+def test_convert_quotation_unknown_query_is_a_blocker():
+    admin = _admin()
+    _seed_sales()
+
+    proposal = actions.build(admin, "convert_quotation", {"query": "QUO-9999-000000"})
+    assert "blocker" in proposal
+
+
+def test_edit_draft_order_updates_lines():
+    admin = _admin()
+    _seed_sales()
+    Item.objects.create(sku="SKU-2", name="Red Gadget")
+    customer = Customer.objects.get(code="C-1")
+    order = sales_create_order(
+        customer=customer, warehouse_code="WH-1",
+        lines=[OrderLineInput(item_sku="SKU-1", quantity=3, unit_price_minor=1000)],
+    )
+
+    proposal = actions.build(admin, "edit_sales_order_draft",
+                             {"query": order.number,
+                              "items": [{"item": "SKU-2", "quantity": "5", "unit_price": 2000}]})
+    assert "error" not in proposal
+    assert proposal["action"] == "edit_sales_order_draft"
+
+    result = actions.execute(admin, "edit_sales_order_draft", proposal["payload"])
+    order.refresh_from_db()
+    assert order.lines.count() == 1
+    line = order.lines.get()
+    assert line.item_sku == "SKU-2"
+    assert line.quantity == 5
+    assert result["links"][0]["value"] == str(order.id)
+
+
+def test_edit_non_draft_order_returns_error_no_card():
+    admin = _admin()
+    _seed_sales()
+    customer = Customer.objects.get(code="C-1")
+    order = sales_create_order(
+        customer=customer, warehouse_code="WH-1",
+        lines=[OrderLineInput(item_sku="SKU-1", quantity=3, unit_price_minor=1000)],
+    )
+    order.status = "confirmed"
+    order.save(update_fields=["status"])
+
+    proposal = actions.build(admin, "edit_sales_order_draft",
+                             {"query": order.number,
+                              "items": [{"item": "SKU-1", "quantity": "1", "unit_price": 1000}]})
+    assert "error" in proposal
+    assert "action" not in proposal  # never a card for a non-draft order
+
+
+def test_edit_sales_order_permission_refused_at_both_stages():
+    admin = _admin()
+    _seed_sales()
+    customer = Customer.objects.get(code="C-1")
+    order = sales_create_order(
+        customer=customer, warehouse_code="WH-1",
+        lines=[OrderLineInput(item_sku="SKU-1", quantity=3, unit_price_minor=1000)],
+    )
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "edit_sales_order_draft",
+                             {"query": order.number,
+                              "items": [{"item": "SKU-1", "quantity": "1", "unit_price": 1000}]})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "edit_sales_order_draft",
+                        {"order_number": order.number,
+                         "lines": [{"item_sku": "SKU-1", "quantity": "1", "unit_price_minor": 1000}]})

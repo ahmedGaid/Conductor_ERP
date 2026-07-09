@@ -90,7 +90,10 @@
       "titles": {
         "create_sales_order_draft": "مسودة أمر بيع",
         "create_purchase_request_draft": "مسودة طلب شراء",
-        "create_customer": "عميل جديد"
+        "create_customer": "عميل جديد",
+        "create_quotation_draft": "مسودة عرض سعر",
+        "convert_quotation": "تحويل عرض سعر",
+        "edit_sales_order_draft": "تعديل مسودة الأمر"
       }
     },
     "suggestions": {

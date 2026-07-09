@@ -12,7 +12,7 @@ from django.db.models import Count, Q, Sum
 
 from erp.identity.scoping import scope_queryset
 
-from ..domain.models import Customer, SalesOrder
+from ..domain.models import Customer, Quotation, SalesOrder
 from ..events import ORDER_CONFIRMED, ORDER_DELIVERED, ORDER_INVOICED, PAYMENT_RECEIVED
 from ..repositories import customers as _customers
 from ..services.orders import (
@@ -22,7 +22,10 @@ from ..services.orders import (
     deliver_order,
     invoice_order,
     receive_payment,
+    update_order_lines,
 )
+from ..services.quotations import QuoteLineInput, create_quotation
+from ..services.quotations import convert_quotation as _convert_quotation
 
 
 @dataclass(frozen=True)
@@ -85,6 +88,38 @@ def place_order(
         customer=customer, warehouse_code=warehouse_code, lines=lines,
         order_date=order_date, currency=currency, notes=notes, actor=actor,
     )
+
+
+def update_draft_order(*, order_number: str, lines: list[OrderLineInput], actor=None):
+    """Replace a **draft** order's lines by order number. ``None`` if the order no longer exists —
+    the caller decides how to handle a stale reference (mirrors ``place_order``)."""
+    order = SalesOrder.objects.filter(number=order_number).first()
+    if order is None:
+        return None
+    return update_order_lines(order, lines, actor=actor)
+
+
+def place_quotation(
+    *, customer_code: str, warehouse_code: str, lines: list[QuoteLineInput],
+    quote_date=None, currency: str = "EGP", notes: str = "", actor=None,
+) -> Quotation | None:
+    """Create a DRAFT quotation for a customer referenced by **code**. ``None`` if unknown."""
+    customer = _customers.by_code(customer_code)
+    if customer is None:
+        return None
+    return create_quotation(
+        customer=customer, warehouse_code=warehouse_code, lines=lines,
+        quote_date=quote_date, currency=currency, notes=notes, actor=actor,
+    )
+
+
+def convert_quotation(number: str, actor=None) -> SalesOrder | None:
+    """Turn a quotation (referenced by **number**) into a sales order draft. ``None`` if the
+    quotation no longer exists; raises the usual sales errors (not approved, already converted)."""
+    quote = Quotation.objects.filter(number=number).first()
+    if quote is None:
+        return None
+    return _convert_quotation(quote, actor=actor)
 
 
 # --- scoped read helpers for the AI assistant (session 02 part 2) ------------------------------
@@ -168,6 +203,54 @@ def find_orders(actor, *, query: str, limit: int = 8) -> list[dict]:
     ]
 
 
+def find_order(actor, *, query: str) -> dict | None:
+    """One sales order's full detail (incl. lines) for the assistant's edit action — scoped, exact
+    number match first, else the most recent number/customer match."""
+    q = (query or "").strip()
+    base = _scoped_orders(actor).select_related("customer")
+    order = base.filter(number=q).first() or base.filter(
+        Q(number__icontains=q) | Q(customer__name__icontains=q)
+    ).order_by("-order_date").first()
+    if order is None:
+        return None
+    return {
+        "id": str(order.id), "number": order.number, "status": order.status,
+        "customer_code": order.customer.code, "customer_name": order.customer.name,
+        "warehouse_code": order.warehouse_code, "currency": order.currency,
+        "lines": [
+            {"item_sku": ln.item_sku, "description": ln.description, "quantity": str(ln.quantity),
+             "unit_price_minor": ln.unit_price_minor}
+            for ln in order.lines.all().order_by("line_no")
+        ],
+    }
+
+
+def _scoped_quotations(actor):
+    return scope_queryset(actor, Quotation.objects.all(), "sales.quotation.view")
+
+
+def find_quotations(actor, *, query: str, limit: int = 8) -> list[dict]:
+    """Find quotations by number or customer — scoped to the actor, most recent first. Carries lines
+    + status so the assistant's convert action can build a proposal without a second lookup."""
+    q = (query or "").strip()
+    qs = _scoped_quotations(actor).select_related("customer")
+    if q:
+        qs = qs.filter(
+            Q(number__icontains=q) | Q(customer__name__icontains=q) | Q(customer__code__icontains=q)
+        )
+    return [
+        {"id": str(o.id), "number": o.number, "customer_code": o.customer.code,
+         "customer_name": o.customer.name, "status": o.status, "subtotal_minor": o.subtotal_minor,
+         "converted_order_number": o.converted_order_number,
+         "lines": [
+             {"item_sku": ln.item_sku, "description": ln.description, "quantity": str(ln.quantity),
+              "unit_price_minor": ln.unit_price_minor}
+             for ln in o.lines.all().order_by("line_no")
+         ]}
+        for o in qs.order_by("-quote_date", "-created_at")[: max(1, min(limit, 20))]
+    ]
+
+
 def _scoped_customers(actor):
     return scope_queryset(actor, Customer.objects.all(), "sales.customer.view")
 
@@ -221,14 +304,20 @@ __all__ = [
     "top_customers",
     "overdue_receivables",
     "find_orders",
+    "find_order",
     "find_customers",
+    "find_quotations",
     "customer_profile",
     "place_order",
+    "update_draft_order",
     "create_order",
     "confirm_order",
     "deliver_order",
     "invoice_order",
     "receive_payment",
+    "QuoteLineInput",
+    "place_quotation",
+    "convert_quotation",
     "ORDER_CONFIRMED",
     "ORDER_DELIVERED",
     "ORDER_INVOICED",

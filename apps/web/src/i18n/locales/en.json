@@ -90,7 +90,10 @@
       "titles": {
         "create_sales_order_draft": "Draft sales order",
         "create_purchase_request_draft": "Draft purchase request",
-        "create_customer": "New customer"
+        "create_customer": "New customer",
+        "create_quotation_draft": "Draft quotation",
+        "convert_quotation": "Convert quotation",
+        "edit_sales_order_draft": "Edit order draft"
       }
     },
     "suggestions": {
