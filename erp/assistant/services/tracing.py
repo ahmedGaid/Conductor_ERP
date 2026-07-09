@@ -141,9 +141,12 @@ def trace_call(feature: str, *, actor=None, conversation_id=None, prompt_ref: st
         _write(handle)
 
 
+NULL_HANDLE = _NullHandle()  # stateless — safe to share as a default "tracing off" handle
+
+
 @contextmanager
 def null_trace():
-    yield _NullHandle()
+    yield NULL_HANDLE
 
 
 def _write(handle: TraceHandle) -> None:

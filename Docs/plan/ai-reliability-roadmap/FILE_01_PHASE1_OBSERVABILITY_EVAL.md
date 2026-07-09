@@ -90,7 +90,7 @@
   path records ttft. `pytest erp/assistant` green.
 - **Output:** every AI call self-reports.
 
-### [ ] T1.3 — Agent-step and tool-call tracing
+### [x] T1.3 — Agent-step and tool-call tracing
 
 - **Goal:** agent runs produce a full step tree (plan → tool calls → answer) under one Trace.
 - **Prereq:** T1.2.

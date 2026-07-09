@@ -18,16 +18,18 @@ monkeypatch those two names on this module, exactly as they do for ``ask``.
 from __future__ import annotations
 
 import json
+import time
 
 from erp.audit import services as audit
 
-from ..client import complete_stream
+from ..client import complete_stream, model_id, provider
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
 from . import actions, context, files, imports, suggestions
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS
 from .llm import complete_json
+from .tracing import NULL_HANDLE, estimate_tokens, trace_call
 
 # Most rounds a question ever needs; hit it and the loop is forced to answer with what it has.
 MAX_ROUNDS = 6
@@ -231,6 +233,28 @@ def _run_tool(actor, decision: dict) -> tuple[dict, bool]:
 
 def run(*, actor, conversation, question: str, page: dict | None = None,
         regenerate: bool = False, attachment_ids=None):
+    """Same as ``_run_impl`` — opens one Trace for the whole agent run (planner rounds + tool
+    calls as TraceSteps) and closes it however the run ends: answered, hit MAX_ROUNDS, raised, or
+    the client disconnected mid-stream (``Trace.meta.stop``)."""
+    cm = trace_call("agent", actor=actor, conversation_id=getattr(conversation, "id", None))
+    handle = cm.__enter__()
+    try:
+        yield from _run_impl(actor=actor, conversation=conversation, question=question, page=page,
+                             regenerate=regenerate, attachment_ids=attachment_ids, trace=handle)
+    except GeneratorExit:
+        handle.meta["stop"] = "cancelled"
+        cm.__exit__(None, None, None)
+        raise
+    except BaseException as exc:
+        handle.meta.setdefault("stop", "error")
+        cm.__exit__(type(exc), exc, exc.__traceback__)
+        raise
+    else:
+        cm.__exit__(None, None, None)
+
+
+def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
+              regenerate: bool = False, attachment_ids=None, trace=NULL_HANDLE):
     """Generator over the agentic chat pipeline — yields SSE-ready event dicts.
 
     Event protocol (extends session 02's token/citations/done/error):
@@ -242,6 +266,7 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     assistant turn (+ audit) lands in a ``finally`` so a client disconnect keeps the partial answer.
     ``regenerate`` re-answers the last question in place; ``attachment_ids`` are claimed onto the new
     user turn and folded into the model input (text files inline, images/PDF via the vision path).
+    ``trace`` (default a no-op handle) records this run's steps — see the ``run()`` wrapper above.
     """
     # --- resolve the question + persist / clean up the user turn (mirrors stream_answer) ----------
     if regenerate:
@@ -322,12 +347,20 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     last_decision: dict | None = None  # the round that ended the loop — the grounding guard reads it
     intent: str | None = None
     seen_calls: set[tuple] = set()
+    total_in_tokens = 0
+    total_out_tokens = 0
+    hit_round_cap = False
 
     for _round in range(MAX_ROUNDS):
         # media rides every round: the planner keeps its eyes on the attachment until it proposes
         # (usually round 1), so it can read supplier/lines from an image instead of guessing them.
-        decision = complete_json(loop_system, _loop_user(q, history, results, file_notes),
-                                 _LOOP_SCHEMA, media=media)
+        round_user = _loop_user(q, history, results, file_notes)
+        _t0 = time.monotonic()
+        decision = complete_json(loop_system, round_user, _LOOP_SCHEMA, media=media)
+        trace.step(kind="llm", name=f"round{_round + 1}", ok=True,
+                  latency_ms=int((time.monotonic() - _t0) * 1000))
+        total_in_tokens += estimate_tokens(loop_system + round_user)
+        total_out_tokens += estimate_tokens(json.dumps(decision, ensure_ascii=False))
         last_decision = decision
         if intent is None:
             intent = decision.get("intent")
@@ -388,14 +421,19 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             (k, str(decision.get(k))) for k in _ARG_FIELDS if decision.get(k) is not None
         )))
         if signature in seen_calls:
+            trace.step(kind="validation", name=name, ok=False, detail={"reason": "duplicate_call"})
             results.append({"tool": name, "why": why, "data": {
                 "error": "You already ran this exact call this turn. Use its earlier result, "
                          "change the arguments, or answer."}})
             continue
         seen_calls.add(signature)
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
+        _t0 = time.monotonic()
         data, ok = _run_tool(actor, decision)
         blocked = isinstance(data, dict) and "blocker" in data
+        trace.step(kind="tool", name=name, ok=ok and not blocked,
+                  latency_ms=int((time.monotonic() - _t0) * 1000),
+                  detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
         if blocked:  # no tool emits blockers today, but the convention is tool-wide (Task A)
             last_blocker = data["blocker"]
         results.append({"tool": name, "why": why, "data": data})
@@ -404,6 +442,8 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
             tool = TOOLS.get(name)
             citations.extend(tool.cite(data) if tool else [])
         yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": ok and not blocked}
+    else:
+        hit_round_cap = True
 
     # Deterministic grounding guard (2026-07-04, rag-knowledge FILE_11 follow-up): the planner
     # sometimes classifies a question as document-shaped (intent) yet reaches answer without ever
@@ -416,7 +456,10 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         name = "search_documents"
         why = "Checking company documents"
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
+        _t0 = time.monotonic()
         data, ok = _run_tool(actor, {"tool": name, "query": q})
+        trace.step(kind="tool", name=name, ok=ok, latency_ms=int((time.monotonic() - _t0) * 1000),
+                  detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
         results.append({"tool": name, "why": why, "data": data})
         steps.append({"tool": name, "why": why, "ok": ok})
         if ok:
@@ -439,7 +482,10 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         name = "query_data"
         why = "Checking the live data"
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
+        _t0 = time.monotonic()
         data, ok = _run_tool(actor, {**last_decision, "tool": name})
+        trace.step(kind="tool", name=name, ok=ok, latency_ms=int((time.monotonic() - _t0) * 1000),
+                  detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
         results.append({"tool": name, "why": why, "data": data})
         steps.append({"tool": name, "why": why, "ok": ok})
         if ok:
@@ -451,6 +497,7 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     # ``used_tool`` = the last tool that succeeded — keeps session-06's per-tool follow-up chips
     # working (client reads it from ``done`` and from the reloaded message meta).
     used_tool = next((s["tool"] for s in reversed(steps) if s["ok"]), None)
+    trace.meta["stop"] = "step_budget" if hit_round_cap else "answered"
 
     parts: list[str] = []
     saved = False
@@ -516,12 +563,23 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                          "after they fix it you will continue"
                          + (f" ({suggestion['resume']})" if suggestion.get("resume") else "")
                          + ". Do NOT claim anything was created or fixed yet.")
+            answer_system = _answer_system(actor, page, conversation)
+            _t0 = time.monotonic()
+            _first = True
             for chunk in complete_stream(
-                [{"role": "user", "content": user}],
-                system=_answer_system(actor, page, conversation), media=media,
+                [{"role": "user", "content": user}], system=answer_system, media=media,
             ):
+                if _first:
+                    trace.mark_ttft()
+                    _first = False
                 parts.append(chunk)
                 yield {"type": "token", "text": chunk}
+            trace.step(kind="llm", name="answer", ok=True,
+                      latency_ms=int((time.monotonic() - _t0) * 1000))
+            total_in_tokens += estimate_tokens(answer_system + user)
+            total_out_tokens += estimate_tokens("".join(parts))
+        trace.usage(provider=provider(), model=model_id(), estimated=True,
+                   input_tokens=total_in_tokens, output_tokens=total_out_tokens)
         yield {"type": "citations", "citations": citations}
         msg = _persist()
         if proposal is not None and msg is not None:

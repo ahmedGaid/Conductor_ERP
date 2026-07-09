@@ -6,8 +6,8 @@ import pytest
 from django.test import override_settings
 
 from erp.assistant import client
-from erp.assistant.models import Trace, TraceStep
-from erp.assistant.services import llm, tracing
+from erp.assistant.models import Conversation, Trace, TraceStep
+from erp.assistant.services import agent, llm, tracing
 from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
@@ -160,3 +160,78 @@ def test_complete_stream_untraced_when_no_feature(monkeypatch):
     monkeypatch.setitem(client._STREAM_RUNNERS, "anthropic", fake_stream)
     assert list(client.complete_stream([{"role": "user", "content": "hi"}])) == ["hi"]
     assert Trace.objects.count() == 0
+
+
+# --- agent run tracing (T1.3): one Trace per run, steps for each planner round + tool call --------
+
+def _agent_actor(username: str = "trace_agent_user") -> User:
+    u = User.objects.create_user(username=username, password="Dev12345!",
+                                 email=f"{username}@example.test")
+    u.is_superuser = True
+    u.save(update_fields=["is_superuser"])
+    return u
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_agent_run_writes_one_trace_with_steps_for_two_tools(monkeypatch):
+    user = _agent_actor()
+    conv = Conversation.objects.create(user=user)
+    decisions = iter([
+        {"action": "tool", "tool": "sales_summary", "why": "Checking sales", "period": "this_month"},
+        {"action": "tool", "tool": "low_stock", "why": "Checking stock", "limit": 5},
+        {"action": "answer"},
+    ])
+    monkeypatch.setattr(agent, "complete_json", lambda *_a, **_k: next(decisions))
+    monkeypatch.setattr(agent, "complete_stream", lambda *_a, **_k: iter(["All ", "good."]))
+
+    events = list(agent.run(actor=user, conversation=conv, question="how did we do", page=None))
+
+    assert events[-1]["type"] == "done"
+    assert Trace.objects.filter(feature="agent").count() == 1
+    trace = Trace.objects.get(feature="agent")
+    assert trace.actor_id == user.id
+    assert trace.conversation_id == conv.id
+    assert trace.status == Trace.Status.OK
+    assert trace.meta.get("stop") == "answered"
+    assert "ttft_ms" in trace.meta
+
+    steps = list(TraceStep.objects.filter(trace=trace).order_by("seq"))
+    assert len(steps) >= 4
+    assert [s.kind for s in steps] == ["llm", "tool", "llm", "tool", "llm", "llm"]
+    tool_steps = [s for s in steps if s.kind == "tool"]
+    assert [s.name for s in tool_steps] == ["sales_summary", "low_stock"]
+    assert all(s.ok for s in tool_steps)
+    # detail carries sizes, never the raw result rows.
+    assert all(set(s.detail.keys()) <= {"result_size"} for s in tool_steps)
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_agent_run_at_round_cap_records_step_budget_stop(monkeypatch):
+    user = _agent_actor()
+    conv = Conversation.objects.create(user=user)
+    monkeypatch.setattr(agent, "complete_json",
+                        lambda *_a, **_k: {"action": "tool", "tool": "does_not_exist", "why": "x"})
+    monkeypatch.setattr(agent, "complete_stream", lambda *_a, **_k: iter(["Done."]))
+
+    list(agent.run(actor=user, conversation=conv, question="loop forever", page=None))
+
+    trace = Trace.objects.get(feature="agent")
+    assert trace.meta.get("stop") == "step_budget"
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_agent_run_traces_error_when_planner_raises(monkeypatch):
+    user = _agent_actor()
+    conv = Conversation.objects.create(user=user)
+
+    def boom(*_a, **_k):
+        raise RuntimeError("planner down")
+
+    monkeypatch.setattr(agent, "complete_json", boom)
+
+    with pytest.raises(RuntimeError):
+        list(agent.run(actor=user, conversation=conv, question="anything", page=None))
+
+    trace = Trace.objects.get(feature="agent")
+    assert trace.status == Trace.Status.ERROR
+    assert trace.error_class == "RuntimeError"
