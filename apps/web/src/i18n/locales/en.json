@@ -93,7 +93,10 @@
         "create_customer": "New customer",
         "create_quotation_draft": "Draft quotation",
         "convert_quotation": "Convert quotation",
-        "edit_sales_order_draft": "Edit order draft"
+        "edit_sales_order_draft": "Edit order draft",
+        "create_purchase_order_draft": "Draft purchase order",
+        "convert_purchase_request": "Convert purchase request",
+        "create_supplier": "New supplier"
       }
     },
     "suggestions": {

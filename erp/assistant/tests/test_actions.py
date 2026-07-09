@@ -17,7 +17,10 @@ from erp.assistant.services import actions, agent
 from erp.audit.models import AuditEntry
 from erp.identity.models import User
 from erp.inventory.domain.models import Item, Warehouse
-from erp.purchasing.domain.models import PurchaseRequest, Supplier
+from erp.purchasing.domain.models import PurchaseOrder, PurchaseRequest, Supplier
+from erp.purchasing.services.requests import RequestLineInput as PRLineInput
+from erp.purchasing.services.requests import create_request as purchasing_create_request
+from erp.purchasing.services.requests import submit_request as purchasing_submit_request
 from erp.sales.domain.models import Customer, Quotation, QuotationStatus, SalesOrder
 from erp.sales.services import quotations as quotation_services
 from erp.sales.services.orders import OrderLineInput
@@ -438,3 +441,159 @@ def test_edit_sales_order_permission_refused_at_both_stages():
         actions.execute(nobody, "edit_sales_order_draft",
                         {"order_number": order.number,
                          "lines": [{"item_sku": "SKU-1", "quantity": "1", "unit_price_minor": 1000}]})
+
+
+# --- purchasing actions (agent-actions FILE_02) --------------------------------------------------
+
+def _seed_purchasing():
+    Supplier.objects.create(code="S-1", name="Cairo Supplies")
+    Item.objects.create(sku="SKU-1", name="Blue Widget")
+    Warehouse.objects.create(code="WH-1", name="Main")
+
+
+def _po_decision():
+    return {"supplier": "Cairo Supplies",
+            "items": [{"item": "SKU-1", "quantity": "3", "unit_cost": 1000}],
+            "warehouse": "WH-1"}
+
+
+def test_build_then_execute_creates_purchase_order_draft():
+    admin = _admin()
+    _seed_purchasing()
+
+    proposal = actions.build(admin, "create_purchase_order_draft", _po_decision())
+    assert "error" not in proposal
+    assert proposal["action"] == "create_purchase_order_draft"
+    kinds = {r["type"] for r in proposal["records"]}
+    assert {"supplier", "item"} <= kinds
+    assert not proposal["risks"]  # a real cost was given
+    assert PurchaseOrder.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "create_purchase_order_draft", proposal["payload"])
+    order = PurchaseOrder.objects.get()
+    assert order.status == "draft"
+    assert order.supplier.code == "S-1"
+    assert result["links"][0]["value"] == str(order.id)
+
+
+def test_purchase_order_item_without_cost_is_a_risk_and_still_confirmable():
+    admin = _admin()
+    _seed_purchasing()
+
+    proposal = actions.build(admin, "create_purchase_order_draft",
+                             {"supplier": "Cairo Supplies",
+                              "items": [{"item": "SKU-1", "quantity": "3"}], "warehouse": "WH-1"})
+    assert "error" not in proposal
+    assert proposal["risks"]  # no cost on record — flagged, not blocked
+
+    actions.execute(admin, "create_purchase_order_draft", proposal["payload"])
+    assert PurchaseOrder.objects.count() == 1
+
+
+def test_purchase_order_permission_refused_at_both_stages():
+    nobody = _nobody()
+    _seed_purchasing()
+
+    proposal = actions.build(nobody, "create_purchase_order_draft", _po_decision())
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_purchase_order_draft",
+                        {"supplier_code": "S-1", "warehouse_code": "WH-1",
+                         "lines": [{"item_sku": "SKU-1", "quantity": "1", "unit_cost_minor": 1000}]})
+    assert PurchaseOrder.objects.count() == 0
+
+
+def _approved_request(supplier: Supplier) -> PurchaseRequest:
+    req = purchasing_create_request(
+        supplier=supplier, warehouse_code="WH-1",
+        lines=[PRLineInput(item_sku="SKU-1", quantity=3, unit_cost_minor=1000)],
+    )
+    return purchasing_submit_request(req)  # auto-approves (below threshold)
+
+
+def test_convert_approved_purchase_request_creates_order_draft():
+    admin = _admin()
+    _seed_purchasing()
+    supplier = Supplier.objects.get(code="S-1")
+    req = _approved_request(supplier)
+
+    proposal = actions.build(admin, "convert_purchase_request", {"query": req.number})
+    assert "error" not in proposal
+    assert proposal["action"] == "convert_purchase_request"
+    assert not proposal["risks"]
+    assert PurchaseOrder.objects.count() == 0  # building writes nothing
+
+    result = actions.execute(admin, "convert_purchase_request", proposal["payload"])
+    order = PurchaseOrder.objects.get()
+    assert order.supplier.code == "S-1"
+    req.refresh_from_db()
+    assert req.status == "converted"
+    assert result["links"][0]["value"] == str(order.id)
+
+
+def test_convert_purchase_request_not_approved_surfaces_risk_and_fails_on_confirm():
+    admin = _admin()
+    _seed_purchasing()
+    supplier = Supplier.objects.get(code="S-1")
+    req = purchasing_create_request(
+        supplier=supplier, warehouse_code="WH-1",
+        lines=[PRLineInput(item_sku="SKU-1", quantity=3, unit_cost_minor=1000)],
+    )  # still draft, never submitted
+
+    proposal = actions.build(admin, "convert_purchase_request", {"query": req.number})
+    assert "error" not in proposal  # still a card — the risk line warns, it doesn't block
+    assert proposal["risks"]
+
+    with pytest.raises(Exception):
+        actions.execute(admin, "convert_purchase_request", proposal["payload"])
+    assert PurchaseOrder.objects.count() == 0
+
+
+def test_convert_purchase_request_unknown_query_is_a_blocker():
+    admin = _admin()
+    _seed_purchasing()
+
+    proposal = actions.build(admin, "convert_purchase_request", {"query": "PR-9999-000000"})
+    assert "blocker" in proposal
+
+
+def test_convert_purchase_request_permission_refused_at_both_stages():
+    admin = _admin()
+    _seed_purchasing()
+    supplier = Supplier.objects.get(code="S-1")
+    req = _approved_request(supplier)
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "convert_purchase_request", {"query": req.number})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "convert_purchase_request", {"request_number": req.number})
+    assert PurchaseOrder.objects.count() == 0
+
+
+def test_create_supplier_exact_duplicate_blocks_near_duplicate_warns():
+    admin = _admin()
+    Supplier.objects.create(code="S-1", name="Cairo Supplies")
+
+    exact = actions.build(admin, "create_supplier", {"query": "Cairo Supplies"})
+    assert "error" in exact and "already exists" in exact["error"]
+
+    near = actions.build(admin, "create_supplier", {"query": "Cairo Supplies Co"})
+    assert "error" not in near
+    assert near["risks"], "a close name should surface a risk line, not a silent create"
+
+    actions.execute(admin, "create_supplier", near["payload"])
+    assert Supplier.objects.filter(name="Cairo Supplies Co").exists()
+
+
+def test_create_supplier_permission_refused_at_both_stages():
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "create_supplier", {"query": "New Supplier"})
+    assert "error" in proposal and "permission" in proposal["error"].lower()
+
+    with pytest.raises(PermissionError):
+        actions.execute(nobody, "create_supplier", {"name": "New Supplier"})
+    assert Supplier.objects.count() == 0

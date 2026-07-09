@@ -93,7 +93,10 @@
         "create_customer": "عميل جديد",
         "create_quotation_draft": "مسودة عرض سعر",
         "convert_quotation": "تحويل عرض سعر",
-        "edit_sales_order_draft": "تعديل مسودة الأمر"
+        "edit_sales_order_draft": "تعديل مسودة الأمر",
+        "create_purchase_order_draft": "مسودة أمر شراء",
+        "convert_purchase_request": "تحويل طلب شراء",
+        "create_supplier": "مورد جديد"
       }
     },
     "suggestions": {

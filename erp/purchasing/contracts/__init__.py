@@ -8,7 +8,7 @@ from django.db.models import Count, Q, Sum
 
 from erp.identity.scoping import scope_queryset
 
-from ..domain.models import PurchaseOrder, Supplier
+from ..domain.models import PurchaseOrder, PurchaseRequest, Supplier
 from ..events import PO_BILLED, PO_CONFIRMED, PO_PAID, PO_RECEIVED
 from ..repositories import suppliers as _suppliers
 from ..services.orders import (
@@ -19,7 +19,11 @@ from ..services.orders import (
     pay_order,
     receive_order,
 )
-from ..services.requests import RequestLineInput, create_request as _create_request
+from ..services.requests import (
+    RequestLineInput,
+    convert_request as _convert_request,
+    create_request as _create_request,
+)
 
 
 @dataclass(frozen=True)
@@ -89,6 +93,30 @@ def place_request(*, supplier_code: str, warehouse_code: str, lines: list[Reques
     )
 
 
+def place_order(*, supplier_code: str, warehouse_code: str, lines: list[POLineInput],
+                order_date=None, currency: str = "EGP", notes: str = "", tax_code: str = "",
+                actor=None) -> PurchaseOrder | None:
+    """Create a DRAFT purchase order for a supplier referenced by **code**. ``None`` if unknown
+    (mirrors ``place_request``)."""
+    supplier = _suppliers.by_code(supplier_code)
+    if supplier is None:
+        return None
+    return create_order(
+        supplier=supplier, warehouse_code=warehouse_code, lines=lines,
+        order_date=order_date, currency=currency, notes=notes, tax_code=tax_code, actor=actor,
+    )
+
+
+def convert_purchase_request(number: str, actor=None) -> PurchaseOrder | None:
+    """Turn an approved purchase request (referenced by **number**) into a DRAFT purchase order.
+    ``None`` if the request no longer exists; raises the usual purchasing errors (not approved,
+    already converted) — mirrors ``sales.convert_quotation``."""
+    req = PurchaseRequest.objects.filter(number=number).first()
+    if req is None:
+        return None
+    return _convert_request(req, actor=actor)
+
+
 # --- scoped read helpers for the AI assistant (session 08 tool catalog) -------------------------
 # Same shape as the sales read helpers: plain dicts, minor units, narrowed to what ``actor`` may see
 # via ``scope_queryset`` — the assistant calls these AS the current user, so branch/own scope holds.
@@ -98,6 +126,33 @@ _OPEN_STATUSES = ("draft", "confirmed", "partially_received", "received", "bille
 
 def _scoped_orders(actor):
     return scope_queryset(actor, PurchaseOrder.objects.all(), "purchasing.order.view")
+
+
+def _scoped_requests(actor):
+    return scope_queryset(actor, PurchaseRequest.objects.all(), "purchasing.request.view")
+
+
+def find_requests(actor, *, query: str, limit: int = 8) -> list[dict]:
+    """Find purchase requests by number or supplier — scoped to the actor, most recent first.
+    Carries lines + status so the assistant's convert action can build a proposal without a second
+    lookup (mirrors ``sales.find_quotations``)."""
+    q = (query or "").strip()
+    qs = _scoped_requests(actor).select_related("supplier")
+    if q:
+        qs = qs.filter(
+            Q(number__icontains=q) | Q(supplier__name__icontains=q) | Q(supplier__code__icontains=q)
+        )
+    return [
+        {"id": str(r.id), "number": r.number, "supplier_code": r.supplier.code,
+         "supplier_name": r.supplier.name, "status": r.status, "subtotal_minor": r.subtotal_minor,
+         "converted_order_number": r.converted_order_number,
+         "lines": [
+             {"item_sku": ln.item_sku, "description": ln.description, "quantity": str(ln.quantity),
+              "unit_cost_minor": ln.unit_cost_minor}
+             for ln in r.lines.all().order_by("line_no")
+         ]}
+        for r in qs.order_by("-request_date", "-created_at")[: max(1, min(limit, 20))]
+    ]
 
 
 def _period_range(period: str) -> tuple[datetime.date, datetime.date, str]:
@@ -170,11 +225,14 @@ __all__ = [
     "supplier_name_exists",
     "place_request",
     "RequestLineInput",
+    "find_requests",
+    "convert_purchase_request",
     "open_purchase_orders",
     "supplier_balances",
     "purchase_summary",
     "POLineInput",
     "create_order",
+    "place_order",
     "confirm_order",
     "receive_order",
     "bill_order",

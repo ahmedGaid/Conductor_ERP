@@ -150,7 +150,7 @@ export interface ChatStep {
 
 // A record link on a proposal/result card — a real record the action touches or created.
 export interface ActionRecord {
-  type: "customer" | "supplier" | "item" | "order" | "purchaseRequest" | "quotation";
+  type: "customer" | "supplier" | "item" | "order" | "purchaseRequest" | "purchaseOrder" | "quotation";
   value: string;
   label: string;
 }

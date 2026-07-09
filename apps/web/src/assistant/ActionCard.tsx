@@ -15,6 +15,9 @@ const ACTION_ICON: Record<string, string> = {
   create_quotation_draft: "sales",
   convert_quotation: "sales",
   edit_sales_order_draft: "sales",
+  create_purchase_order_draft: "purchasing",
+  convert_purchase_request: "purchasing",
+  create_supplier: "purchasing",
 };
 
 // A record the action touches (proposal) or created (result), rendered as a click-through. Customer/
@@ -31,6 +34,14 @@ function RecordLink({ r, onNavigate }: { r: ActionRecord; onNavigate?: () => voi
   if (r.type === "purchaseRequest") {
     return (
       <Link className="assistant-cite" to={`/purchasing/requests/${r.value}`} onClick={onNavigate}>
+        <NavIcon name="purchasing" />
+        <Bdi>{r.label}</Bdi>
+      </Link>
+    );
+  }
+  if (r.type === "purchaseOrder") {
+    return (
+      <Link className="assistant-cite" to={`/purchasing/orders/${r.value}`} onClick={onNavigate}>
         <NavIcon name="purchasing" />
         <Bdi>{r.label}</Bdi>
       </Link>

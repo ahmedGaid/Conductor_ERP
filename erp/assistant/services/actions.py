@@ -558,6 +558,173 @@ def _execute_edit_sales_order(actor, payload: dict) -> dict:
     }
 
 
+# --- Action 7: purchase order draft -------------------------------------------------------------
+
+def _build_purchase_order(actor, *, supplier: str | None = None, items=None,
+                          warehouse: str | None = None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    ranked = _rank(supplier or "", purchasing.list_suppliers(), lambda s: s.name) if supplier else []
+    match = ranked[0][1] if ranked and ranked[0][0] >= 0.6 else None
+    if match is None:
+        near = [{"code": s.code, "name": s.name, "score": round(score, 2)}
+                for score, s in ranked if score >= 0.4][:3]
+        return _blocker("supplier", supplier, candidates=near)
+    warehouse_code, blocked = _resolve_warehouse(warehouse)
+    if blocked is not None:
+        return blocked
+
+    lines, records, risks = [], [], []
+    unresolved: list[str] = []
+    total = 0
+    for entry in items or []:
+        item = _resolve_item(entry.get("item") if isinstance(entry, dict) else None)
+        qty = _qty(entry.get("quantity") if isinstance(entry, dict) else None)
+        if item is None:
+            unresolved.append(str((entry or {}).get("item", "") if isinstance(entry, dict) else ""))
+            risks.append(f"Item '{unresolved[-1]}' was not found — skipped.")
+            continue
+        if qty is None:
+            risks.append(f"'{item.name}' had no valid quantity — skipped.")
+            continue
+        raw_cost = entry.get("unit_cost") if isinstance(entry, dict) else None
+        cost = int(raw_cost) if isinstance(raw_cost, (int, float)) and raw_cost > 0 else 0
+        if cost == 0:
+            risks.append(f"No cost given for '{item.name}' — set it on the order screen.")
+        line_total = int((qty * Decimal(cost)).quantize(Decimal("1")))
+        total += line_total
+        lines.append({"item_sku": item.sku, "quantity": str(qty), "unit_cost_minor": cost,
+                      "description": item.name})
+        records.append({"type": "item", "value": item.sku, "label": item.name})
+    if not lines:
+        if unresolved and unresolved[0]:
+            near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                    for score, i in _rank(unresolved[0], inventory.list_items(), lambda i: i.name)
+                    if score >= 0.4][:3]
+            return _blocker("item", unresolved[0], candidates=near)
+        return {"error": "None of the requested items could be added."}
+
+    records.insert(0, {"type": "supplier", "value": match.code, "label": match.name})
+    return {
+        "action": "create_purchase_order_draft",
+        "summary": [
+            f"Draft purchase order to {match.name}",
+            f"{len(lines)} line(s), total {_egp(total)}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": _egp(total),
+        "affected": len(records),
+        "payload": {"supplier_code": match.code, "warehouse_code": warehouse_code, "lines": lines},
+    }
+
+
+def _execute_purchase_order(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    order = purchasing.place_order(
+        supplier_code=payload["supplier_code"], warehouse_code=payload["warehouse_code"],
+        lines=[purchasing.POLineInput(item_sku=ln["item_sku"], quantity=Decimal(ln["quantity"]),
+                                      unit_cost_minor=ln["unit_cost_minor"],
+                                      description=ln.get("description", ""))
+               for ln in payload["lines"]],
+        actor=actor,
+    )
+    if order is None:
+        raise ValueError("supplier no longer exists")
+    return {
+        "summary": f"Draft purchase order {order.number} created.",
+        "links": [{"type": "purchaseOrder", "value": str(order.id), "label": order.number}],
+    }
+
+
+# --- Action 8: convert a purchase request into a purchase order draft ----------------------------
+
+def _build_convert_purchase_request(actor, *, query: str | None = None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which request? Give its number or the supplier's name."}
+    matches = purchasing.find_requests(actor, query=q, limit=5)
+    if not matches:
+        return _blocker("purchase request", q)
+    req = matches[0]
+
+    risks = []
+    if req["status"] == "converted":
+        risks.append(f"Already converted to order {req['converted_order_number']}.")
+    elif req["status"] != "approved":
+        risks.append(f"Request is '{req['status']}', not approved yet — confirming will fail until "
+                     "it is approved on the purchase request screen.")
+
+    records = [
+        {"type": "supplier", "value": req["supplier_code"], "label": req["supplier_name"]},
+        {"type": "purchaseRequest", "value": req["id"], "label": req["number"]},
+    ]
+    return {
+        "action": "convert_purchase_request",
+        "summary": [
+            f"Convert {req['number']} ({req['supplier_name']}) into a purchase order draft",
+            f"{len(req['lines'])} line(s), total {_egp(req['subtotal_minor'])}",
+        ],
+        "records": records,
+        "risks": risks,
+        "total": _egp(req["subtotal_minor"]),
+        "affected": len(records),
+        "payload": {"request_number": req["number"]},
+    }
+
+
+def _execute_convert_purchase_request(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    order = purchasing.convert_purchase_request(payload["request_number"], actor=actor)
+    if order is None:
+        raise ValueError("purchase request no longer exists")
+    return {
+        "summary": f"Purchase request converted — purchase order {order.number} created.",
+        "links": [{"type": "purchaseOrder", "value": str(order.id), "label": order.number}],
+    }
+
+
+# --- Action 9: create supplier --------------------------------------------------------------------
+
+def _build_supplier(actor, *, query: str | None = None, **_) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    name = (query or "").strip()
+    if not name:
+        return {"error": "What name should the new supplier have?"}
+    if purchasing.supplier_name_exists(name):
+        return {"error": f"A supplier named '{name}' already exists."}
+    risks = []
+    near = [s for score, s in _rank(name, purchasing.list_suppliers(), lambda s: s.name)
+            if score >= 0.7][:3]
+    if near:
+        joined = ", ".join(f"{s.name} ({s.code})" for s in near)
+        risks.append(f"Similar suppliers already exist: {joined}.")
+    return {
+        "action": "create_supplier",
+        "summary": [f"New supplier '{name}'"],
+        "records": [],
+        "risks": risks,
+        "total": None,
+        "affected": 1,
+        "payload": {"name": name},
+    }
+
+
+def _execute_supplier(actor, payload: dict) -> dict:
+    if not _can(actor, BRANCH_MANAGER):
+        raise PermissionError
+    info = purchasing.create_supplier(name=payload["name"], actor=actor)
+    return {
+        "summary": f"Supplier {info.name} ({info.code}) created.",
+        "links": [{"type": "supplier", "value": info.code, "label": info.name}],
+    }
+
+
 # --- registry -----------------------------------------------------------------------------------
 
 # The harness spec's irreversible list: these kinds can NEVER ship with requires_confirm=False,
@@ -632,6 +799,30 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
          "items": "new/changed lines: list of {item (sku or name), quantity, "
                   "unit_price (minor units, optional — priced automatically if omitted)}"},
         _build_edit_sales_order, _execute_edit_sales_order,
+    ),
+    Action(
+        "create_purchase_order_draft",
+        "Prepare a DRAFT purchase order directly to a supplier (nothing is posted; the user "
+        "confirms). Use for 'raise/draft a PO to <supplier> for <n> of <item>'.",
+        {"supplier": "supplier code or name",
+         "items": "list of {item (sku or name), quantity, unit_cost (minor units, optional)}",
+         "warehouse": "optional warehouse code to receive into"},
+        _build_purchase_order, _execute_purchase_order,
+    ),
+    Action(
+        "convert_purchase_request",
+        "Turn an already-approved purchase request into a DRAFT purchase order (the user "
+        "confirms). Use for 'turn request <number> into an order' or 'convert <supplier>'s "
+        "request'. Refuses to execute a request that isn't approved yet.",
+        {"query": "request number or supplier name to find the purchase request"},
+        _build_convert_purchase_request, _execute_convert_purchase_request,
+    ),
+    Action(
+        "create_supplier",
+        "Create a new supplier record by name (the user confirms). Use for 'add a supplier called "
+        "<name>'. Warns if a similar supplier already exists.",
+        {"query": "the new supplier's name"},
+        _build_supplier, _execute_supplier,
     ),
 ]}
 
