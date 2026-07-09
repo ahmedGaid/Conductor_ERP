@@ -6,6 +6,12 @@ import pytest
 from django.test import override_settings
 
 from erp.assistant import client
+from erp.assistant.errors import (
+    ActionFailedError,
+    ActionForbiddenError,
+    AssistantUnavailableError,
+    classify_exception,
+)
 from erp.assistant.models import Conversation, Trace, TraceStep
 from erp.assistant.services import agent, llm, tracing
 from erp.identity.models import User
@@ -47,7 +53,8 @@ def test_trace_call_records_error_and_reraises():
             raise RuntimeError("boom")
     trace = Trace.objects.get()
     assert trace.status == Trace.Status.ERROR
-    assert trace.error_class == "RuntimeError"
+    assert trace.error_class == "unknown"
+    assert trace.meta["raw_error_class"] == "RuntimeError"
 
 
 def test_trace_call_records_steps():
@@ -86,6 +93,65 @@ def test_null_trace_is_inert():
         handle.step(kind="llm")
         handle.mark_ttft()
     assert Trace.objects.count() == 0
+
+
+# --- error taxonomy (T1.9): classify_exception is a closed set, mapped at the seam ---------------
+
+def test_classify_exception_covers_known_shapes():
+    class RateLimitError(Exception):
+        pass
+
+    class APITimeoutError(Exception):
+        pass
+
+    class APIConnectionError(Exception):
+        pass
+
+    assert classify_exception(RateLimitError("429 too many requests")) == "rate_limited"
+    assert classify_exception(APITimeoutError("timed out")) == "timeout"
+    assert classify_exception(APIConnectionError("connection reset")) == "provider_error"
+    assert classify_exception(GeneratorExit()) == "cancelled"
+    assert classify_exception(ActionForbiddenError()) == "guardrail_blocked"
+    assert classify_exception(ActionFailedError()) == "tool_error"
+    assert classify_exception(AssistantUnavailableError()) == "provider_error"
+    assert classify_exception(ValueError("bad json")) == "validation_failed"
+    assert classify_exception(RuntimeError("boom")) == "unknown"
+    assert classify_exception(
+        Exception("maximum context length exceeded")
+    ) == "context_overflow"
+
+
+def test_trace_call_maps_taxonomy_to_status_and_keeps_raw_class_name():
+    class RateLimitError(Exception):
+        pass
+
+    with pytest.raises(RateLimitError):
+        with tracing.trace_call("ask") as handle:
+            raise RateLimitError("429")
+    trace = Trace.objects.get()
+    assert trace.error_class == "rate_limited"
+    assert trace.status == Trace.Status.ERROR  # no dedicated status for this bucket
+    assert trace.meta["raw_error_class"] == "RateLimitError"
+
+
+def test_trace_call_maps_timeout_to_timeout_status():
+    class APITimeoutError(Exception):
+        pass
+
+    with pytest.raises(APITimeoutError):
+        with tracing.trace_call("ask") as handle:
+            raise APITimeoutError("timed out")
+    trace = Trace.objects.get()
+    assert trace.error_class == "timeout"
+    assert trace.status == Trace.Status.TIMEOUT
+
+
+def test_fail_from_exception_classifies_and_sets_status():
+    with tracing.trace_call("embed") as handle:
+        handle.fail_from_exception(ActionForbiddenError())
+    trace = Trace.objects.get()
+    assert trace.error_class == "guardrail_blocked"
+    assert trace.status == Trace.Status.GUARDRAIL_BLOCKED
 
 
 # --- complete_json feature wiring ----------------------------------------------------------------
@@ -234,4 +300,21 @@ def test_agent_run_traces_error_when_planner_raises(monkeypatch):
 
     trace = Trace.objects.get(feature="agent")
     assert trace.status == Trace.Status.ERROR
-    assert trace.error_class == "RuntimeError"
+    assert trace.error_class == "unknown"
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_agent_run_traces_cancelled_status_on_client_disconnect(monkeypatch):
+    user = _agent_actor()
+    conv = Conversation.objects.create(user=user)
+    monkeypatch.setattr(agent, "complete_json", lambda *_a, **_k: {"action": "answer"})
+    monkeypatch.setattr(agent, "complete_stream", lambda *_a, **_k: iter(["Some ", "answer"]))
+
+    gen = agent.run(actor=user, conversation=conv, question="anything", page=None)
+    next(gen)  # enter the generator so the trace_call context manager is live
+    gen.close()  # simulates a client disconnect mid-stream (GeneratorExit)
+
+    trace = Trace.objects.get(feature="agent")
+    assert trace.status == Trace.Status.CANCELLED
+    assert trace.error_class == "cancelled"
+    assert trace.meta.get("stop") == "cancelled"

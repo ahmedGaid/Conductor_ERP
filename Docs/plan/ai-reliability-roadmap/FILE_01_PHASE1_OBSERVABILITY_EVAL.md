@@ -217,7 +217,7 @@
   (non-admin → 403).
 - **Output:** the AI stops being a black box.
 
-### [ ] T1.9 — Error taxonomy + weekly report
+### [x] T1.9 — Error taxonomy + weekly report
 
 - **Goal:** failures are classified, counted, and reported weekly.
 - **Prereq:** T1.8.

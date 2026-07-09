@@ -30,7 +30,7 @@ from . import actions, context, files, imports, suggestions
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS, _answer_prompt_ref
 from .llm import complete_json
 from .prompt_registry import get as get_prompt
-from .tracing import NULL_HANDLE, estimate_tokens, trace_call
+from .tracing import NULL_HANDLE, estimate_tokens, mark_cancelled, trace_call
 
 # Most rounds a question ever needs; hit it and the loop is forced to answer with what it has.
 MAX_ROUNDS = 6
@@ -183,6 +183,7 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
                              regenerate=regenerate, attachment_ids=attachment_ids, trace=handle)
     except GeneratorExit:
         handle.meta["stop"] = "cancelled"
+        mark_cancelled(handle)
         cm.__exit__(None, None, None)
         raise
     except BaseException as exc:

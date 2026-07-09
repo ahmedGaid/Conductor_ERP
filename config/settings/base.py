@@ -202,6 +202,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "assistant.send_ai_digests",
         "schedule": crontab(hour=7, minute=0),  # 07:00 Africa/Cairo daily; task decides who's due
     },
+    "send-ai-weekly-report": {
+        "task": "assistant.send_ai_weekly_report",
+        "schedule": crontab(hour=7, minute=30, day_of_week=1),  # Monday 07:30 Africa/Cairo
+    },
 }
 
 # Where scheduled report exports are written.

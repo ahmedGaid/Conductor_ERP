@@ -42,3 +42,52 @@ class ActionFailedError(AppError):
     code = "AI-005"
     status_code = 400
     message = "That could not be created just now"
+
+
+# --- error taxonomy (ai-reliability T1.9) -------------------------------------------------------
+# Closed set every ``Trace.error_class`` value is mapped into at the tracing seam
+# (``services/tracing.py``) — ops aggregation (top error classes, alerts) reasons over a handful
+# of buckets, never an unbounded set of raw exception class names.
+ERROR_TAXONOMY = (
+    "provider_error",
+    "timeout",
+    "rate_limited",
+    "tool_error",
+    "validation_failed",
+    "guardrail_blocked",
+    "context_overflow",
+    "cancelled",
+    "unknown",
+)
+
+
+def classify_exception(exc: BaseException) -> str:
+    """Map any exception raised (or swallowed) at an AI call site to one of ``ERROR_TAXONOMY``.
+
+    Matches by type first (this module's own blame-free errors), then by name/message keywords —
+    provider SDKs (Anthropic, Gemini, Groq/Mistral's httpx) each raise their own exception classes,
+    and this stays dependency-free by never importing them. Falls back to ``"unknown"`` rather than
+    leaking a raw class name, so the taxonomy stays closed."""
+    name = exc.__class__.__name__
+    lname = name.lower()
+    text = str(exc).lower()
+
+    if isinstance(exc, GeneratorExit) or "cancelled" in lname:
+        return "cancelled"
+    if isinstance(exc, ActionForbiddenError):
+        return "guardrail_blocked"
+    if isinstance(exc, ActionFailedError):
+        return "tool_error"
+    if isinstance(exc, (ExtractionFailedError, AssistantUnavailableError)):
+        return "provider_error"
+    if "ratelimit" in lname or "rate limit" in text or "429" in text:
+        return "rate_limited"
+    if "timeout" in lname or "timeout" in text:
+        return "timeout"
+    if "context" in text and any(k in text for k in ("too long", "maximum", "exceed", "too many tokens")):
+        return "context_overflow"
+    if isinstance(exc, (ValueError, TypeError)) or "validation" in lname:
+        return "validation_failed"
+    if any(tok in name for tok in ("API", "HTTP", "Connection", "Provider")):
+        return "provider_error"
+    return "unknown"

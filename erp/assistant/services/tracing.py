@@ -14,8 +14,17 @@ import time
 from contextlib import contextmanager
 
 from .. import models as assistant_models
+from ..errors import classify_exception
 
 logger = logging.getLogger(__name__)
+
+# Taxonomy buckets (ai-reliability T1.9) that get their own Trace.Status rather than the generic
+# ERROR — everything else classify_exception returns still lands on Trace.Status.ERROR.
+_STATUS_BY_ERROR_CLASS = {
+    "timeout": assistant_models.Trace.Status.TIMEOUT,
+    "cancelled": assistant_models.Trace.Status.CANCELLED,
+    "guardrail_blocked": assistant_models.Trace.Status.GUARDRAIL_BLOCKED,
+}
 
 # model id -> (input microcents per 1K tokens, output microcents per 1K tokens). Unknown models
 # cost 0 and set meta.cost_unknown=true rather than guessing.
@@ -98,6 +107,19 @@ class TraceHandle:
         except Exception:
             logger.exception("tracing: fail() failed")
 
+    def fail_from_exception(self, exc: BaseException) -> None:
+        """Same as ``fail()`` but classifies a real exception through the closed taxonomy
+        (``errors.classify_exception``) instead of taking a caller-chosen string — use when a
+        call site catches its own exception (e.g. an optional enhancement degrading gracefully)
+        rather than letting it propagate through ``trace_call``'s own except block."""
+        try:
+            error_class = classify_exception(exc)
+            self.status = _STATUS_BY_ERROR_CLASS.get(error_class, assistant_models.Trace.Status.ERROR)
+            self.error_class = error_class
+            self.meta.setdefault("raw_error_class", exc.__class__.__name__)
+        except Exception:
+            logger.exception("tracing: fail_from_exception() failed")
+
     def step(self, *, kind: str, name: str = "", ok: bool = True, detail: dict | None = None,
              latency_ms: int = 0) -> None:
         try:
@@ -134,11 +156,21 @@ def trace_call(feature: str, *, actor=None, conversation_id=None, prompt_ref: st
     try:
         yield handle
     except Exception as exc:
-        handle.status = assistant_models.Trace.Status.ERROR
-        handle.error_class = exc.__class__.__name__
+        error_class = classify_exception(exc)
+        handle.status = _STATUS_BY_ERROR_CLASS.get(error_class, assistant_models.Trace.Status.ERROR)
+        handle.error_class = error_class
+        handle.meta.setdefault("raw_error_class", exc.__class__.__name__)
         raise
     finally:
         _write(handle)
+
+
+def mark_cancelled(handle: TraceHandle) -> None:
+    """Flag a handle as cancelled — for callers that intercept ``GeneratorExit`` themselves and
+    call the ``trace_call`` context manager's ``__exit__`` directly (see ``services.agent.run``),
+    bypassing ``trace_call``'s own except block above."""
+    handle.status = assistant_models.Trace.Status.CANCELLED
+    handle.error_class = "cancelled"
 
 
 NULL_HANDLE = _NullHandle()  # stateless — safe to share as a default "tracing off" handle

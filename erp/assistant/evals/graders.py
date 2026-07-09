@@ -113,7 +113,7 @@ def _default_judge_call(system: str, user: str) -> dict:
             try:
                 text = runner(system, user, _JUDGE_SCHEMA, None, assistant_client.model_id(prov))
             except Exception as exc:  # provider down/unauthenticated — try the next one
-                handle.fail(exc.__class__.__name__)
+                handle.fail_from_exception(exc)
                 last_exc = exc
                 continue
             if not text:

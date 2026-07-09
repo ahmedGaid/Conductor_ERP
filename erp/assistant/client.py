@@ -376,6 +376,6 @@ def embed_text(text: str, *, actor=None, conversation_id=None) -> list[float] | 
             handle.usage(provider="gemini", model=EMBEDDING_MODEL, estimated=True,
                          input_tokens=estimate_tokens(text[:8000]), output_tokens=0)
             return list(resp.embeddings[0].values)
-        except Exception:  # embeddings are an enhancement — search must survive their outage
-            handle.fail("embed_failed")
+        except Exception as exc:  # embeddings are an enhancement — search must survive their outage
+            handle.fail_from_exception(exc)
             return None

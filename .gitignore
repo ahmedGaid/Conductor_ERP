@@ -54,6 +54,9 @@ erp_questionnaire_v4.html
 # Eval scoreboards are generated per run (T1.6) — recordings are checked in, results are not
 /erp/assistant/evals/results/*.json
 
+# Weekly AI ops reports are generated per run (T1.9) — not project source
+/Docs/ops/*.md
+
 # CodeGraph index cache (local tooling)
 .codegraph/
 
