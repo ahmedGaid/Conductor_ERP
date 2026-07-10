@@ -53,6 +53,14 @@ export interface OpsTraceStep {
   detail: Record<string, unknown>;
 }
 
+// A gateway routing decision (ai-reliability T2.3): the failover chain tried, which provider
+// answered, and why any provider was skipped (breaker-open, or a specific error class).
+export interface OpsTraceRouting {
+  chain: string[];
+  chosen: string | null;
+  skipped: { provider: string; reason: string }[];
+}
+
 export interface OpsTrace {
   id: string;
   created_at: string;
@@ -67,6 +75,7 @@ export interface OpsTrace {
   cost_microcents: number;
   status: "ok" | "error" | "timeout" | "cancelled" | "guardrail_blocked";
   error_class: string;
+  meta: { routing?: OpsTraceRouting } & Record<string, unknown>;
   steps: OpsTraceStep[];
 }
 

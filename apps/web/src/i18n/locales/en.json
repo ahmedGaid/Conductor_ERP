@@ -347,6 +347,9 @@
       "latency": "Latency",
       "status": "Status"
     },
+    "routing": {
+      "skipped": "Skipped providers"
+    },
     "col": {
       "time": "Time",
       "feature": "Feature",

@@ -135,6 +135,14 @@
   border-block-end: 1px solid var(--color-border);
 }
 
+.ops-routing-skipped {
+  margin: 0;
+  padding-inline: var(--table-pad-inline);
+  padding-block: var(--space-2);
+  font-size: var(--font-size-sm);
+  background-color: var(--color-surface-sunken);
+}
+
 .ops-step-table {
   inline-size: 100%;
   border-collapse: collapse;

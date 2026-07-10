@@ -155,6 +155,7 @@ def _trace_row(trace: Trace, *, steps: list[dict]) -> dict:
         "cost_microcents": trace.cost_microcents,
         "status": trace.status,
         "error_class": trace.error_class,
+        "meta": trace.meta,
         "steps": steps,
     }
 

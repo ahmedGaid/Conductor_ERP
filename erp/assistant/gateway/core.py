@@ -31,8 +31,8 @@ from ..client import (
     provider,
     provider_chain,
 )
-from . import retry
-from ..errors import AssistantUnavailableError, classify_exception
+from . import breaker, retry
+from ..errors import AllProvidersDown, AssistantUnavailableError, classify_exception
 from ..services.extraction import _gemini_schema  # reuse the strict→Gemini schema translation
 
 __all__ = ["complete_json", "complete_stream", "embed_text", "model_id", "provider",
@@ -137,8 +137,9 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
     (the agent planner passes attachments here so "create a PO from the attached image" extracts real
     lines instead of guessing). Each provider in ``provider_chain()`` is retried a few times with a
     short backoff (free-tier keys have low per-minute limits); if it still fails, or returns empty /
-    unparseable output, the next available provider is tried. Raises ``AssistantUnavailableError``
-    (blame-free, retryable) only when every provider is exhausted.
+    unparseable output, the next available provider is tried. Raises ``AllProvidersDown``
+    (blame-free, retryable — subclasses ``AssistantUnavailableError``) only when every provider is
+    exhausted or breaker-open (T2.3).
 
     ``feature`` (optional) opens a trace for this call — omit it and the call is untraced,
     exactly as before (see ``services.tracing``).
@@ -151,7 +152,19 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
     with cm as handle:
         last_exc: Exception | None = None
         chain = provider_chain()
-        for i, prov in enumerate(chain):
+        # T2.3: a provider with 5 consecutive retryable failures in the last 60s is skipped for a
+        # 30s cooldown rather than tried again (gateway/breaker.py). ``routing`` is a local dict
+        # mutated in place as the walk progresses; it's only attached to the trace (handle.meta)
+        # when this call is traced, so an untraced call never writes into the shared null handle.
+        usable = [p for p in chain if not breaker.is_open(p)]
+        skipped: list[dict] = [{"provider": p, "reason": "breaker_open"} for p in chain if p not in usable]
+        routing = {"chain": chain, "chosen": None, "skipped": skipped}
+        if feature:
+            handle.meta["routing"] = routing
+        if not usable:
+            handle.fail("provider_error")
+            raise AllProvidersDown(data={"reason": "all_providers_breaker_open"})
+        for i, prov in enumerate(usable):
             runner = _RUNNERS.get(prov, _anthropic)
             model = model_id(prov)
             # Fail fast while a fallback remains: a provider that is down should hand off
@@ -160,9 +173,10 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
             # rate-limit is worth it. Within that budget, only errors retry.is_retryable() calls
             # transient (429/5xx/connection/timeout) get a backoff+retry — a permanent error
             # (401/403/400) fails this provider immediately (T2.2).
-            attempts = retries if i == len(chain) - 1 else 1
+            attempts = retries if i == len(usable) - 1 else 1
             text = ""
             succeeded = False
+            provider_exc: Exception | None = None
             for attempt in range(attempts):
                 _t0 = time.monotonic()
                 try:
@@ -171,6 +185,7 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
                     break
                 except Exception as exc:  # network / auth / rate-limit — maybe retry, then fail over
                     last_exc = exc
+                    provider_exc = exc
                     latency_ms = int((time.monotonic() - _t0) * 1000)
                     error_class = classify_exception(exc)
                     if attempt < attempts - 1 and retry.is_retryable(exc):
@@ -182,15 +197,25 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
                                 detail={"error_class": error_class, "final": True})
                     break
             if not succeeded:
+                # Only a retryable exception counts toward the breaker — a bad key or malformed
+                # request isn't an outage, and retrying it later would never help either.
+                if provider_exc is not None and retry.is_retryable(provider_exc):
+                    breaker.record_failure(prov)
+                skipped.append({"provider": prov,
+                                "reason": classify_exception(provider_exc) if provider_exc else "error"})
                 continue  # this provider exhausted its attempts (or hit a permanent error)
             if not text:
                 last_exc = AssistantUnavailableError(data={"reason": "empty_model_output"})
+                skipped.append({"provider": prov, "reason": "empty_output"})
                 continue  # empty output — try the next provider rather than fail outright
             try:
                 parsed = json.loads(text)
             except ValueError as exc:
                 last_exc = exc  # garbage JSON — try the next provider
+                skipped.append({"provider": prov, "reason": "invalid_json"})
                 continue
+            breaker.record_success(prov)
+            routing["chosen"] = prov
             handle.usage(provider=prov, model=model, estimated=True,
                          input_tokens=estimate_tokens(system + user),
                          output_tokens=estimate_tokens(text))
@@ -200,9 +225,9 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
             # gets wrapped into the blame-free error below — trace_call won't overwrite a
             # handle.error_class that's already set (see services.tracing.trace_call).
             handle.fail_from_exception(last_exc)
-        if isinstance(last_exc, AssistantUnavailableError):
-            raise last_exc
-        raise AssistantUnavailableError(
+        else:
+            handle.fail("provider_error")
+        raise AllProvidersDown(
             data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"}) from last_exc
 
 
@@ -237,12 +262,22 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
         out_parts: list[str] = []
         last_exc: Exception | None = None
         chain = provider_chain()
-        for i, prov in enumerate(chain):
+        # T2.3: same breaker skip/record as complete_json — see the comment there.
+        usable = [p for p in chain if not breaker.is_open(p)]
+        skipped: list[dict] = [{"provider": p, "reason": "breaker_open"} for p in chain if p not in usable]
+        routing = {"chain": chain, "chosen": None, "skipped": skipped}
+        if feature:
+            handle.meta["routing"] = routing
+        if not usable:
+            handle.fail("provider_error")
+            raise AllProvidersDown(data={"reason": "all_providers_breaker_open"})
+        for i, prov in enumerate(usable):
             runner = _STREAM_RUNNERS.get(prov, _STREAM_RUNNERS["anthropic"])
-            attempts = retry.MAX_RETRIES + 1 if i == len(chain) - 1 else 1
+            attempts = retry.MAX_RETRIES + 1 if i == len(usable) - 1 else 1
             first = None
             gen = None
             empty = False
+            provider_exc: Exception | None = None
             for attempt in range(attempts):
                 _t0 = time.monotonic()
                 gen = runner(messages, system, media, prov, timeout=timeout_s)
@@ -254,6 +289,7 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
                     break  # provider succeeded but produced nothing — an empty answer, not a failure
                 except Exception as exc:  # provider down before any token — maybe retry, then fail over
                     last_exc = exc
+                    provider_exc = exc
                     first = None
                     latency_ms = int((time.monotonic() - _t0) * 1000)
                     error_class = classify_exception(exc)
@@ -266,9 +302,17 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
                                 detail={"error_class": error_class, "final": True})
                     break
             if empty:
+                breaker.record_success(prov)  # the provider responded, just produced nothing
+                routing["chosen"] = prov
                 return
             if first is None:
+                if provider_exc is not None and retry.is_retryable(provider_exc):
+                    breaker.record_failure(prov)
+                skipped.append({"provider": prov,
+                                "reason": classify_exception(provider_exc) if provider_exc else "error"})
                 continue  # this provider exhausted its attempts (or hit a permanent error)
+            breaker.record_success(prov)
+            routing["chosen"] = prov
             handle.usage(provider=prov, model=model_id(prov))
             handle.mark_ttft()
             out_parts.append(first)
@@ -283,7 +327,9 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
             return
         if last_exc is not None:
             handle.fail_from_exception(last_exc)  # classify the real failure before the wrap below
-        raise AssistantUnavailableError(
+        else:
+            handle.fail("provider_error")
+        raise AllProvidersDown(
             data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"})
 
 

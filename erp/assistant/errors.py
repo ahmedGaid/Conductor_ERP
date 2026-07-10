@@ -20,6 +20,15 @@ class AssistantUnavailableError(AppError):
     message = "The assistant is unavailable right now"
 
 
+class AllProvidersDown(AssistantUnavailableError):
+    """Every provider in the failover chain is either erroring or breaker-open (T2.3) — same
+    blame-free surface as ``AssistantUnavailableError`` (existing callers/UI already handle it
+    generically), just a distinct type so tests and ops tooling can tell "one provider hiccuped"
+    from "the whole chain is out"."""
+
+    code = "AI-006"
+
+
 class ActionAlreadyHandledError(AppError):
     """A proposal was confirmed or dismissed already — single-use, never runs twice."""
 

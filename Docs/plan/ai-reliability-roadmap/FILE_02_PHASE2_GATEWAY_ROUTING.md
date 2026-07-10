@@ -112,7 +112,7 @@
   unchanged at 74.3%, still above the Phase 1 baseline threshold).
 - **Output:** flaky networks stop paging anyone.
 
-### [ ] T2.3 — Circuit breaker + failover chain
+### [x] T2.3 — Circuit breaker + failover chain — DONE 2026-07-10
 
 - **Goal:** a down provider is skipped automatically; recovery is automatic.
 - **Prereq:** T2.2.
@@ -128,8 +128,50 @@
      `AllProvidersDown` → callers surface the existing designed error state (verify each feature
      has one; add missing ar/en strings).
   4. Trace `meta.routing = {chain, chosen, skipped:[{provider, reason}]}`.
-- **Accept:** tests simulate provider A hard-down → calls flow to B, breaker opens after
-  threshold, probe closes it after cooldown; ops view shows skipped providers.
+- **What shipped:** `gateway/breaker.py` — per-provider state in Django's cache (no new dependency):
+  `record_failure`/`record_success`/`state`/`is_open`. `state()` returns `closed` (default) →
+  `open` (5 consecutive **retryable** failures in a 60s streak; a permanent error like 401 never
+  counts, so a bad key can't fake an outage) → `half_open` once 30s have elapsed, which lets exactly
+  one probe back through (`is_open()` is false for half-open — the chain-walk treats it like closed
+  and `record_success`/`record_failure` decide whether it re-closes or re-opens). Degrades to
+  "always closed" (never opens) if the cache backend can't count atomically — `cache.add`/`incr`
+  wrapped in `try/except (ValueError, NotImplementedError)`; the default backend (LocMemCache, no
+  `CACHES` setting today) can. `core.py`'s `complete_json`/`complete_stream` filter
+  `provider_chain()` into `usable` (breaker-closed/half-open) before walking it; an empty `usable`
+  raises `AllProvidersDown` immediately, without calling any runner. New `errors.AllProvidersDown`
+  **subclasses** `AssistantUnavailableError` — same blame-free surface, so every existing
+  `except AssistantUnavailableError` / `except AppError` call site (views.py's SSE error handler,
+  etc.) already handles it with zero changes; it replaces the old bare `AssistantUnavailableError`
+  raise at chain-exhaustion. `meta.routing = {chain, chosen, skipped:[{provider, reason}]}` is a
+  local dict, only attached to `handle.meta` when the call is traced (`feature` given) — an
+  untraced call still gets breaker protection but never touches the shared `_NullHandle` singleton.
+  `reason` values: `breaker_open`, or the `classify_exception()` taxonomy bucket, or `empty_output`/
+  `invalid_json` for a provider that answered but produced garbage (these don't open the breaker —
+  only a retryable exception does). Ops view (`api/ops.py` `_trace_row`, previously didn't expose
+  `meta` at all) now returns `meta`; `OpsPage.tsx` shows a "Skipped providers" line (translated
+  label) with each `provider (reason)` pair rendered as raw technical text — same precedent as the
+  already-untranslated `provider`/`model`/`name` cells in that table, not user-facing prose.
+  `ASSISTANT_ROUTING` added to settings as documented v1 data (every task gets the same chain,
+  mirroring `client.provider_chain()`'s default-key order) — `core.py` doesn't consume it yet, since
+  differentiating per-task models is T2.4's eval-gated job; it exists now so the breaker/trace layer
+  has a documented, per-task table to point at.
+- **Tests:** `tests/test_breaker.py` (unit — closed/open/half-open transitions, reset-on-success,
+  per-provider independence) + `tests/test_circuit_breaker.py` (integration against `gateway.core`
+  — open breaker skipped without a runner call, consecutive retryable failures open it, a permanent
+  error never does, half-open probe recovers it, all-breakers-open raises `AllProvidersDown` without
+  calling any runner, `AllProvidersDown` still satisfies `except AssistantUnavailableError`, stream
+  parity). New `tests/conftest.py` (`erp.assistant` package) clears Django's cache before/after every
+  test — cache isn't reset between tests the way the DB is, and breaker state is keyed only by
+  provider name, so one test's failures could otherwise leak into another's.
+- **Deviation from plan:** none structural; `ASSISTANT_ROUTING` is v1-uniform per task (see above)
+  rather than diverged per task, since T2.3's job was the breaker/format, not the eval-gated model
+  choice (that's T2.4, which needs Phase 1 evals as a prereq per its own task description).
+- **Accept:** `tests/test_breaker.py` + `tests/test_circuit_breaker.py` green (provider A hard-down
+  → calls flow to B, breaker opens after threshold, probe closes it after cooldown); ops view shows
+  skipped providers. 338 tests green (up from 323); `gate:all` 00–15 green (gate 15 eval pass rate
+  unchanged at 74.3%). Frontend: i18n parity, `tsc -b`, `gate03` (brand) all green; main bundle
+  249.9 kB gzip, inside the 250 kB budget but thin margin — flagged for whoever adds the next
+  eagerly-loaded string/import to main.
 - **Output:** provider outage ≠ product outage.
 
 ### [ ] T2.4 — Model routing by task class + eval-gated rollout

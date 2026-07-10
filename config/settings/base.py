@@ -264,6 +264,27 @@ ASSISTANT_TASK_TIMEOUTS = {
     "rerank": 10,
 }
 
+# Per-task-class failover chain (ai-reliability T2.3), ``{task: ["provider:model", ...fallbacks]}``.
+# v1: every task gets the SAME chain — today's default model first, then the other two providers'
+# nearest-capability model (all four are general-purpose vision-capable chat models; there is no
+# per-task best-model data yet). T2.4 (eval-gated rollout) will diverge this per task, moving the
+# cheap/obvious wins (suggest, digest, judge) onto a cheaper primary once their golden-set pass rate
+# proves it — until then this table exists so ``gateway/core.py`` and the circuit breaker have a
+# documented, per-task chain to walk, but it resolves to the exact chain ``client.provider_chain()``
+# already builds from configured keys. ``embed``/``rerank`` are excluded: ``embed_text`` is
+# Gemini-only today (no failover chain — see ``gateway/core.py``'s note on that seam).
+_ASSISTANT_CHAIN = [
+    "anthropic:claude-opus-4-8",
+    "gemini:gemini-2.5-flash",
+    "mistral:mistral-small-latest",
+    "groq:meta-llama/llama-4-scout-17b-16e-instruct",
+]
+ASSISTANT_ROUTING = {
+    task: list(_ASSISTANT_CHAIN)
+    for task in ("chat", "agent_plan", "agent_answer", "ask", "extract", "digest", "suggest",
+                 "judge", "eval")
+}
+
 # --- Workflow egress (SSRF guard) ---
 # Optional host-suffix allowlist for workflow REST/webhook nodes. Empty = any PUBLIC host (private/
 # loopback/link-local/metadata addresses are always blocked; see erp.workflow.adapters.egress).

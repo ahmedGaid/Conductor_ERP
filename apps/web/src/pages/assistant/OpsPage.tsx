@@ -66,35 +66,45 @@ function TraceRow({ trace, expanded, onToggle }: {
         <td className="latin muted">{formatCost(trace.cost_microcents)}</td>
         <td className="latin muted">{trace.steps.length}</td>
       </tr>
-      {expanded && trace.steps.length > 0 && (
+      {expanded && (trace.steps.length > 0 || (trace.meta.routing?.skipped.length ?? 0) > 0) && (
         <tr className="ops-trace-row__detail">
           <td colSpan={8}>
-            <table className="ops-step-table">
-              <thead>
-                <tr>
-                  <th>{t("ops.step.seq")}</th>
-                  <th>{t("ops.step.kind")}</th>
-                  <th>{t("ops.step.name")}</th>
-                  <th>{t("ops.step.latency")}</th>
-                  <th>{t("ops.step.status")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trace.steps.map((s) => (
-                  <tr key={s.seq}>
-                    <td className="latin muted">{s.seq}</td>
-                    <td>{t(`ops.stepKind.${s.kind}`)}</td>
-                    <td className="latin">{s.name || "—"}</td>
-                    <td className="latin muted">{s.latency_ms}ms</td>
-                    <td>
-                      <span className={`kpill kpill--${s.ok ? "ready" : "failed"}`}>
-                        {s.ok ? t("ops.status.ok") : t("ops.status.error")}
-                      </span>
-                    </td>
+            {trace.meta.routing && trace.meta.routing.skipped.length > 0 && (
+              <p className="ops-routing-skipped muted latin">
+                {t("ops.routing.skipped")}:{" "}
+                {trace.meta.routing.skipped
+                  .map((s) => `${s.provider} (${s.reason.replace(/_/g, " ")})`)
+                  .join(", ")}
+              </p>
+            )}
+            {trace.steps.length > 0 && (
+              <table className="ops-step-table">
+                <thead>
+                  <tr>
+                    <th>{t("ops.step.seq")}</th>
+                    <th>{t("ops.step.kind")}</th>
+                    <th>{t("ops.step.name")}</th>
+                    <th>{t("ops.step.latency")}</th>
+                    <th>{t("ops.step.status")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {trace.steps.map((s) => (
+                    <tr key={s.seq}>
+                      <td className="latin muted">{s.seq}</td>
+                      <td>{t(`ops.stepKind.${s.kind}`)}</td>
+                      <td className="latin">{s.name || "—"}</td>
+                      <td className="latin muted">{s.latency_ms}ms</td>
+                      <td>
+                        <span className={`kpill kpill--${s.ok ? "ready" : "failed"}`}>
+                          {s.ok ? t("ops.status.ok") : t("ops.status.error")}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </td>
         </tr>
       )}
