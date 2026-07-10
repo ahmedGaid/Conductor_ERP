@@ -266,23 +266,53 @@ ASSISTANT_TASK_TIMEOUTS = {
 
 # Per-task-class failover chain (ai-reliability T2.3), ``{task: ["provider:model", ...fallbacks]}``.
 # v1: every task gets the SAME chain — today's default model first, then the other two providers'
-# nearest-capability model (all four are general-purpose vision-capable chat models; there is no
-# per-task best-model data yet). T2.4 (eval-gated rollout) will diverge this per task, moving the
-# cheap/obvious wins (suggest, digest, judge) onto a cheaper primary once their golden-set pass rate
-# proves it — until then this table exists so ``gateway/core.py`` and the circuit breaker have a
-# documented, per-task chain to walk, but it resolves to the exact chain ``client.provider_chain()``
-# already builds from configured keys. ``embed``/``rerank`` are excluded: ``embed_text`` is
-# Gemini-only today (no failover chain — see ``gateway/core.py``'s note on that seam).
+# nearest-capability model (all four are general-purpose vision-capable chat models). ``core.py``
+# doesn't consume this table yet (it still walks ``client.provider_chain()`` filtered to configured
+# keys) — it exists so the breaker/trace layer has a documented, per-task chain to point at, and so
+# T2.4's promotion rule below has somewhere to land a change once one clears it.
+# ``embed``/``rerank`` are excluded: ``embed_text`` is Gemini-only today (no failover chain — see
+# ``gateway/core.py``'s note on that seam).
 _ASSISTANT_CHAIN = [
     "anthropic:claude-opus-4-8",
     "gemini:gemini-2.5-flash",
     "mistral:mistral-small-latest",
     "groq:meta-llama/llama-4-scout-17b-16e-instruct",
 ]
+# Promotion rule (ai-reliability T2.4, enforced by evals/routing_report.promotion_verdict): a
+# candidate may replace a task's primary only if its golden-set pass rate is within 2 points of the
+# current primary's AND its estimated cost/case is <= 60% of the current primary's — proven via
+# `manage.py eval_routing --task <task> --candidate <provider:model> --yes-live` (omit --yes-live to
+# score the baseline offline first; it never spends). Routing table changes are commits, reviewed
+# like any other, never a runtime toggle. Per-line status below:
 ASSISTANT_ROUTING = {
-    task: list(_ASSISTANT_CHAIN)
-    for task in ("chat", "agent_plan", "agent_answer", "ask", "extract", "digest", "suggest",
-                 "judge", "eval")
+    # "chat" isn't a golden-dataset feature (ask.py's streaming prose turn is covered indirectly by
+    # the "ask" eval below) — no eval file to justify moving it off the strongest model yet.
+    "chat": list(_ASSISTANT_CHAIN),
+    # agent.py's complete_json/complete_stream calls don't pass feature= yet (pre-existing gap,
+    # tracked separately — those calls are untraced today), so there's no live routing decision to
+    # make until that's wired. The golden dataset's "agent" cases are eval_routing-ready
+    # (`--task agent_plan`/`--task agent_answer` both map to them) once it is.
+    "agent_plan": list(_ASSISTANT_CHAIN),
+    "agent_answer": list(_ASSISTANT_CHAIN),
+    # Offline baseline scored (T2.4): pass_rate 71.5%, ~1023 microcents/case over 123 cases — see
+    # evals/results/routing_ask_groq_meta-llama_llama-4-scout-17b-16e-instruct.json. No candidate
+    # has been scored live yet, so it stays on the strongest model until one clears the rule above.
+    "ask": list(_ASSISTANT_CHAIN),
+    # Deliberately not a T2.4 candidate — stays on the strongest model per the roadmap; extraction
+    # accuracy work is Phase 5 territory, not an eval-gated cost cut.
+    "extract": list(_ASSISTANT_CHAIN),
+    # No call site passes feature="digest" to the gateway yet — nothing to score until one does.
+    "digest": list(_ASSISTANT_CHAIN),
+    # Golden cases exist (6) but no Python service backs this feature yet (see evals/runner.py's
+    # "no offline runner" note) — eval_routing can't even score a baseline until one does.
+    "suggest": list(_ASSISTANT_CHAIN),
+    # Unused by any call site — the real judge grader (evals/graders.py's
+    # `_default_judge_call`) hardcodes its own cheap cross-provider order (gemini, groq) rather
+    # than reading this table.
+    "judge": list(_ASSISTANT_CHAIN),
+    # Used only by `manage.py calibrate_judge`'s live judge calls (feature="eval") — a calibration
+    # accuracy question, not a cost-routing decision.
+    "eval": list(_ASSISTANT_CHAIN),
 }
 
 # --- Workflow egress (SSRF guard) ---

@@ -4,8 +4,8 @@ only module that dispatches across it. Everything else routes through ``gateway.
 A handful of files are allowlisted because they aren't provider *dispatch* — they read a config
 flag (``client.enabled()``) or haven't been migrated yet for a documented reason:
 
-- ``api/views.py``, ``management/commands/record_evals.py``, ``management/commands/calibrate_judge.py``
-  — only call ``client.enabled()``, a settings check, not a call.
+- ``api/views.py``, ``management/commands/record_evals.py``, ``management/commands/calibrate_judge.py``,
+  ``management/commands/eval_routing.py`` — only call ``client.enabled()``, a settings check, not a call.
 - ``services/extraction.py`` — its own single-provider (no failover) retry design, structurally
   different from the gateway's chain-walk; migrating it is future work, not a T2.1 rename.
 - ``services/knowledge.py`` — still calls ``client.embed_text`` directly (its tests monkeypatch
@@ -22,6 +22,7 @@ ALLOWED_DIRECT_CLIENT_IMPORTS = {
     "api/views.py",
     "management/commands/record_evals.py",
     "management/commands/calibrate_judge.py",
+    "management/commands/eval_routing.py",
     "services/extraction.py",
     "services/knowledge.py",
 }

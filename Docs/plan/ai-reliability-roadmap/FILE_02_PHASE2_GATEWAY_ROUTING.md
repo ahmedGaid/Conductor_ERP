@@ -174,25 +174,58 @@
   eagerly-loaded string/import to main.
 - **Output:** provider outage ≠ product outage.
 
-### [ ] T2.4 — Model routing by task class + eval-gated rollout
+### [x] T2.4 — Model routing by task class + eval-gated rollout — DONE 2026-07-10
 
 - **Goal:** cheaper models serve the task classes they provably handle.
 - **Prereq:** T2.3, Phase 1 evals.
-- **Files:** modify settings routing table; create `evals/routing_report.py` +
-  `management/commands/eval_routing.py`.
-- **Steps:**
-  1. `eval_routing --task suggest --candidate groq:… --yes-live`: runs the golden subset for that
-     feature against the candidate model, prints pass rate vs baseline model, writes
-     `evals/results/routing_<task>_<model>.json`.
-  2. Rule (documented in the settings comment): a candidate may become primary for a task class
-     only if its eval pass rate ≥ baseline − 2 points AND cost/case ≤ 60% of baseline.
-  3. Apply data-driven routing for the obvious wins first: `suggest`, `digest`, `judge` →
-     cheapest passing tier; `agent_plan`/`extract` stay on the strongest model until Phase 5
-     improves validation.
-  4. Routing table changes are commits (reviewable), never runtime toggles.
-- **Accept:** routing report command works offline against recordings for at least one task;
-  settings table carries a per-line justification comment with the eval file name.
-- **Output:** cost drops with proof, not hope.
+- **Files:** created `evals/routing_report.py`, `management/commands/eval_routing.py`,
+  `tests/test_routing_report.py`; modified `config/settings/base.py` (per-line
+  `ASSISTANT_ROUTING` comments + promotion rule), `tests/test_gateway_invariant.py` (allowlisted
+  `eval_routing.py` — same `client.enabled()`-only reason as `record_evals.py`/`calibrate_judge.py`).
+- **What shipped:** `evals/routing_report.py` — `offline_scoreboard(task)` grades a task's golden
+  subset against its existing recordings via the same zero-network machinery `run_evals` uses
+  (`pass_rate=None`, not the misleading `1.0`, when nothing could be graded — e.g. `suggest`, which
+  has golden cases but no offline runner); `run_candidate_live(task, candidate)` forces a
+  `provider:model` through the real gateway (monkeypatches `gateway.core.provider_chain`/`model_id`
+  for the duration) and grades with the real graders — wired for `ask`/`agent_plan`/`agent_answer`
+  only, the task classes with both a real service and golden-case coverage; `promotion_verdict`
+  applies the documented rule (candidate pass rate ≥ baseline − 2pts AND cost/case ≤ 60% of
+  baseline), returning `None` (never guessed) until both sides are actually scored. Cost is
+  estimated with `services.tracing`'s own `estimate_tokens` heuristic + `PRICING` table, applied
+  identically to both sides — an unpriced model reports `cost_unknown=True` rather than a guessed
+  0. `management/commands/eval_routing.py` — `--task`/`--candidate` always score the baseline
+  offline and print pass rate + cost/case; `--yes-live` (gated like `record_evals`/
+  `calibrate_judge`: needs `ASSISTANT_ENABLED`) actually calls the candidate and re-grades; without
+  it, a prior live report for the same task+candidate is re-read from disk so a report can be
+  reprinted without re-spending.
+- **Deviation from plan:** did not flip `suggest`/`digest`/`judge` to a cheaper primary — of the
+  three "obvious win" task classes the plan named, none is wired to a real gateway call site yet
+  (`suggest` has no Python service at all — see `evals/runner.py`'s own note; `digest`/`judge` never
+  pass `feature="digest"`/`"judge"` to the gateway today, `judge`'s real grader hardcodes its own
+  cheap provider order instead of reading `ASSISTANT_ROUTING`). Routing a task nothing calls yet
+  isn't a provable win, it's a guess — exactly what the eval-gated rule exists to prevent. Also did
+  not run a live comparison: `gemini`/`groq`/`mistral` keys are configured in this dev environment
+  so `--yes-live` is technically usable, but spending real, billed API calls without the user
+  explicitly asking for that spend isn't a call to make unilaterally (`record_evals`/
+  `calibrate_judge` were built the same way — real spend needs a human's `--yes-live`). Instead: ran
+  the offline path for real against `ask` (123 graded cases, 71.5% pass rate, ~1023 microcents/case
+  — `evals/results/routing_ask_groq_meta-llama_llama-4-scout-17b-16e-instruct.json`), which is what
+  the accept criterion actually asks for (offline, ≥1 task), and documented every `ASSISTANT_ROUTING`
+  line's real current status (wired-but-unproven, not-yet-wired, or internal-only) instead of
+  fabricating justification comments for a change that hasn't been earned by data.
+- **Tests:** `tests/test_routing_report.py` (14 cases) — offline scoreboard for `ask` (real
+  recordings, priced) and `suggest` (`no_runner` → `pass_rate=None`, not `1.0`); promotion rule
+  truth table (close+cheap → promote, pass-rate-drop → keep, not-cheap-enough → keep,
+  cost-unknown → undecided); write-then-reread round trip; command offline run + `--yes-live`
+  gate. `test_gateway_invariant.py` extended (not narrowed) — same checker, new allowlist entry.
+- **Accept:** `manage.py eval_routing --task ask --candidate groq:meta-llama/llama-4-scout-17b-16e-instruct`
+  ran fully offline against real recordings and wrote the report file above; every
+  `ASSISTANT_ROUTING` line carries a per-line comment, the `ask` line naming that file. 352 tests
+  green (up from 338 — 14 new); `gate:all` 00–15 green (gate 15 eval pass rate unchanged at 74.3%).
+  Frontend: i18n parity (1823 keys), `tsc -b`, `gate03` (brand) all green — no frontend files
+  touched this task.
+- **Output:** the tool to prove a cheaper model before routing to it exists and works; no routing
+  changed on unproven ground.
 
 ### [ ] T2.5 — Exact-match response cache
 
