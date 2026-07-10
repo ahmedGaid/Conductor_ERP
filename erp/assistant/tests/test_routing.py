@@ -107,11 +107,11 @@ def test_complete_json_raises_when_every_provider_fails(monkeypatch):
 @override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="g", GROQ_API_KEY="", MISTRAL_API_KEY="",
                    ASSISTANT_PROVIDER="")
 def test_complete_stream_falls_over_before_the_first_token(monkeypatch):
-    def down(messages, system, media, prov):
+    def down(messages, system, media, prov, **_kw):
         raise RuntimeError("down")
         yield  # pragma: no cover - marks this a generator
 
-    def good(messages, system, media, prov):
+    def good(messages, system, media, prov, **_kw):
         yield "hi"
         yield " there"
 
@@ -128,7 +128,7 @@ def test_complete_stream_falls_over_before_the_first_token(monkeypatch):
 def test_mistral_runner_parses_an_openai_shaped_body(monkeypatch):
     captured: dict = {}
 
-    def fake_chat(messages, *, model, max_tokens, json_mode=True):
+    def fake_chat(messages, *, model, max_tokens, json_mode=True, timeout=60.0):
         captured["model"] = model
         return {"choices": [{"message": {"content": '{"action": "answer"}'}}]}
 

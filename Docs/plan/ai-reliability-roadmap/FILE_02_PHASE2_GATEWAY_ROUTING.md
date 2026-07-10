@@ -80,21 +80,36 @@
   `services/knowledge.py`'s embed path are the two known remaining direct-`client` callers, each
   with a documented reason and a future task to close.
 
-### [ ] T2.2 — Retry policy + typed failures
+### [x] T2.2 — Retry policy + typed failures — DONE 2026-07-10
 
 - **Goal:** transient provider errors are retried predictably; permanent ones fail fast and typed.
 - **Prereq:** T2.1.
-- **Files:** create `gateway/retry.py`; modify `gateway/core.py`, `errors.py`.
-- **Steps:**
-  1. Classify provider exceptions per SDK: `retryable` (429, 5xx, connection, overloaded) vs
-     `permanent` (400 schema, 401/403 auth, content-policy). Table-driven, unit-tested.
-  2. Retry: max 2 retries, exponential backoff with jitter (0.5s base, cap 4s), only for
-     retryable. Streaming: retry only if zero bytes were yielded (mid-stream handling is T2.6).
-  3. Every retry recorded as a TraceStep (`kind="llm"`, `detail.retry=n`).
-  4. Timeouts: per-task-class ceiling in settings (chat 60s, digest 120s, embed 10s…), enforced
-     via SDK timeout params.
-- **Accept:** tests: 429 → retried then succeeds; 401 → immediate typed failure, no retry;
-  retries visible in trace; timeout maps to `error_class="timeout"`.
+- **Files:** created `gateway/retry.py`; modified `gateway/core.py`, `client.py`,
+  `services/tracing.py`, `config/settings/base.py`.
+- **What shipped:** `retry.is_retryable(exc)` — table-driven, checks permanent markers (401/403/400,
+  auth, content-policy) before retryable ones (429, 5xx, connection, timeout); unrecognized
+  exceptions fail fast rather than guess. `retry.backoff_seconds(attempt)` — exponential with full
+  jitter, 0.5s base, 4s cap. `complete_json`/`complete_stream` now check `is_retryable()` instead of
+  retrying every exception; the existing "only the last provider in the chain gets a multi-attempt
+  budget" fail-fast design (T2.1-era, kept as-is — a live fallback is always better than waiting out
+  a backoff) still applies, now gated by the retryable check. Every retry AND the final failure is
+  recorded as a TraceStep (`kind="llm"`, `detail.retry=n` or `detail.final=true`). Per-task-class
+  timeout ceilings (`ASSISTANT_TASK_TIMEOUTS` in settings, default `ASSISTANT_DEFAULT_TIMEOUT_S=60`)
+  thread through every runner (Anthropic/Gemini SDK `timeout=`, Groq/Mistral httpx `timeout=`) for
+  both JSON and streaming paths. **Deviation from plan:** `errors.py` untouched (its
+  `classify_exception` taxonomy answers a different question — ops bucket, not retry decision — so
+  a second, narrower table in `retry.py` was clearer than overloading one); `services/tracing.py`
+  gained one guard instead (`trace_call` no longer clobbers a `handle.error_class` a call site
+  already set via `fail_from_exception()` before re-raising a different, typed exception) — needed
+  so a timeout swallowed into the blame-free `AssistantUnavailableError` still lands as
+  `error_class="timeout"` on the Trace, not the generic wrapper's `"provider_error"`.
+- **Tests:** new `tests/test_retry.py` — classification table (parametrized transient/permanent
+  markers), backoff bounds, 429→retry→succeed, 401→immediate no-retry, timeout→`error_class`, and
+  the same retry budget on the streaming path before the first token. Existing runner-monkeypatch
+  fakes in `test_routing.py`/`test_tracing.py` updated to accept the new `timeout` kwarg (signature
+  change only, no assertion changes).
+- **Accept:** 323 tests green (up from 307); `gate:all` 00–15 green (gate 15 eval pass rate
+  unchanged at 74.3%, still above the Phase 1 baseline threshold).
 - **Output:** flaky networks stop paging anyone.
 
 ### [ ] T2.3 — Circuit breaker + failover chain

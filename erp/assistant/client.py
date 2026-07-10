@@ -84,23 +84,26 @@ def get_client():
     return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
-def get_gemini_client():
+def get_gemini_client(timeout_s: float | None = None):
     from google import genai  # deferred: package is only needed when this provider is active
     from google.genai import types
 
     # Disable the SDK's own retry: on a transient 429/503 its tenacity loop reuses an already-closed
     # httpx client and raises a misleading "client has been closed" RuntimeError. We retry at the
     # service layer with a fresh client instead (erp.assistant.services.extraction._extract_gemini).
-    http_options = None
+    http_kwargs: dict = {}
+    if timeout_s is not None:  # T2.2 per-task-class ceiling; None = SDK default (existing callers)
+        http_kwargs["timeout"] = int(timeout_s * 1000)  # SDK wants milliseconds
     try:
-        http_options = types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1))
+        http_kwargs["retry_options"] = types.HttpRetryOptions(attempts=1)
     except Exception:  # pragma: no cover - older SDK without retry_options
         pass
+    http_options = types.HttpOptions(**http_kwargs) if http_kwargs else None
     return genai.Client(api_key=settings.GEMINI_API_KEY, http_options=http_options)
 
 
 def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True,
-              feature: str | None = None, actor=None, conversation_id=None,
+              timeout: float = 60.0, feature: str | None = None, actor=None, conversation_id=None,
               prompt_ref: str = "") -> dict:
     """One OpenAI-compatible chat completion against Groq. Returns the parsed JSON response.
 
@@ -125,7 +128,7 @@ def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = 
             f"{GROQ_BASE_URL}/chat/completions",
             headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
             json=payload,
-            timeout=60.0,
+            timeout=timeout,
         )
         resp.raise_for_status()
         body = resp.json()
@@ -136,7 +139,8 @@ def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = 
         return body
 
 
-def mistral_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True) -> dict:
+def mistral_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True,
+                 timeout: float = 60.0) -> dict:
     """One OpenAI-compatible chat completion against Mistral. Same thin shape as ``groq_chat`` (no
     SDK, one monkeypatchable seam); raises on any non-2xx for the caller to map."""
     import httpx
@@ -148,7 +152,7 @@ def mistral_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool
         f"{MISTRAL_BASE_URL}/chat/completions",
         headers={"Authorization": f"Bearer {settings.MISTRAL_API_KEY}"},
         json=payload,
-        timeout=60.0,
+        timeout=timeout,
     )
     resp.raise_for_status()
     return resp.json()
@@ -192,12 +196,14 @@ def _inject_blocks(messages: list, media: list, block_for) -> list:
 
 
 def _stream_anthropic(messages: list, system: str | None, media: list | None = None,
-                      prov: str | None = None):
+                      prov: str | None = None, timeout: float | None = None):
     if media:
         messages = _inject_blocks(messages, media, _anthropic_media_block)
     kwargs = dict(model=model_id(prov), max_tokens=settings.ASSISTANT_MAX_TOKENS, messages=messages)
     if system:
         kwargs["system"] = system
+    if timeout is not None:  # T2.2 per-task-class ceiling
+        kwargs["timeout"] = timeout
     with get_client().messages.stream(**kwargs) as stream:
         for text in stream.text_stream:
             if text:
@@ -205,7 +211,7 @@ def _stream_anthropic(messages: list, system: str | None, media: list | None = N
 
 
 def _stream_gemini(messages: list, system: str | None, media: list | None = None,
-                   prov: str | None = None):
+                   prov: str | None = None, timeout: float | None = None):
     from google.genai import types
 
     cfg = dict(max_output_tokens=settings.ASSISTANT_MAX_TOKENS)
@@ -221,7 +227,7 @@ def _stream_gemini(messages: list, system: str | None, media: list | None = None
         contents.append(text)
     else:
         contents = [m["content"] for m in messages]
-    for chunk in get_gemini_client().models.generate_content_stream(
+    for chunk in get_gemini_client(timeout_s=timeout).models.generate_content_stream(
         model=model_id(prov), contents=contents, config=types.GenerateContentConfig(**cfg)
     ):
         text = getattr(chunk, "text", "") or ""
@@ -244,7 +250,7 @@ _mistral_media_block = _openai_image_block
 
 
 def _stream_openai_compatible(base_url: str, api_key: str, messages: list, system: str | None,
-                              media: list | None, prov: str | None):
+                              media: list | None, prov: str | None, timeout: float | None = None):
     """Shared SSE stream for the OpenAI-compatible providers (Groq, Mistral): same request shape,
     same ``choices[].delta.content`` deltas — only the base URL + key differ."""
     import json as _json
@@ -266,7 +272,7 @@ def _stream_openai_compatible(base_url: str, api_key: str, messages: list, syste
     with httpx.stream(
         "POST", f"{base_url}/chat/completions",
         headers={"Authorization": f"Bearer {api_key}"},
-        json=payload, timeout=60.0,
+        json=payload, timeout=timeout or 60.0,
     ) as resp:
         resp.raise_for_status()
         for line in resp.iter_lines():
@@ -284,15 +290,15 @@ def _stream_openai_compatible(base_url: str, api_key: str, messages: list, syste
 
 
 def _stream_groq(messages: list, system: str | None, media: list | None = None,
-                 prov: str | None = None):
+                 prov: str | None = None, timeout: float | None = None):
     yield from _stream_openai_compatible(
-        GROQ_BASE_URL, settings.GROQ_API_KEY, messages, system, media, prov)
+        GROQ_BASE_URL, settings.GROQ_API_KEY, messages, system, media, prov, timeout)
 
 
 def _stream_mistral(messages: list, system: str | None, media: list | None = None,
-                    prov: str | None = None):
+                    prov: str | None = None, timeout: float | None = None):
     yield from _stream_openai_compatible(
-        MISTRAL_BASE_URL, settings.MISTRAL_API_KEY, messages, system, media, prov)
+        MISTRAL_BASE_URL, settings.MISTRAL_API_KEY, messages, system, media, prov, timeout)
 
 
 _STREAM_RUNNERS = {

@@ -143,6 +143,9 @@ class _NullHandle:
     def fail(self, *a, **kw):
         pass
 
+    def fail_from_exception(self, *a, **kw):
+        pass
+
     def step(self, **kw):
         pass
 
@@ -156,10 +159,15 @@ def trace_call(feature: str, *, actor=None, conversation_id=None, prompt_ref: st
     try:
         yield handle
     except Exception as exc:
-        error_class = classify_exception(exc)
-        handle.status = _STATUS_BY_ERROR_CLASS.get(error_class, assistant_models.Trace.Status.ERROR)
-        handle.error_class = error_class
-        handle.meta.setdefault("raw_error_class", exc.__class__.__name__)
+        # A call site that already classified its own failure via handle.fail()/fail_from_exception()
+        # before re-raising a different, typed exception (T2.2: complete_json/complete_stream re-raise
+        # the real provider error as a blame-free AssistantUnavailableError) wins — don't clobber the
+        # specific reason with a generic classification of the wrapper exception.
+        if not handle.error_class:
+            error_class = classify_exception(exc)
+            handle.status = _STATUS_BY_ERROR_CLASS.get(error_class, assistant_models.Trace.Status.ERROR)
+            handle.error_class = error_class
+            handle.meta.setdefault("raw_error_class", exc.__class__.__name__)
         raise
     finally:
         _write(handle)

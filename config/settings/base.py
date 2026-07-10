@@ -245,6 +245,25 @@ ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="")  # "" = the provider's defa
 ASSISTANT_MAX_TOKENS = env.int("ASSISTANT_MAX_TOKENS", default=4096)  # per-request cost cap
 ASSISTANT_RAG_EMBEDDINGS = env.bool("ASSISTANT_RAG_EMBEDDINGS", default=False)  # off = FTS-only search
 
+# Per-task-class SDK timeout ceiling, in seconds (ai-reliability T2.2). Keys are the ``feature``
+# label callers already pass to gateway.complete_json/complete_stream — the task-class enum from
+# Docs/plan/ai-reliability-roadmap/FILE_02 (T2.3/T2.4 formalize routing per class; this just bounds
+# how long each waits). An unlisted or missing feature falls back to the default below.
+ASSISTANT_DEFAULT_TIMEOUT_S = env.int("ASSISTANT_DEFAULT_TIMEOUT_S", default=60)
+ASSISTANT_TASK_TIMEOUTS = {
+    "chat": 60,
+    "agent_plan": 60,
+    "agent_answer": 60,
+    "ask": 60,
+    "extract": 90,
+    "digest": 120,
+    "suggest": 30,
+    "judge": 30,
+    "eval": 30,
+    "embed": 10,
+    "rerank": 10,
+}
+
 # --- Workflow egress (SSRF guard) ---
 # Optional host-suffix allowlist for workflow REST/webhook nodes. Empty = any PUBLIC host (private/
 # loopback/link-local/metadata addresses are always blocked; see erp.workflow.adapters.egress).

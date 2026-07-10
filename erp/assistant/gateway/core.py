@@ -31,7 +31,8 @@ from ..client import (
     provider,
     provider_chain,
 )
-from ..errors import AssistantUnavailableError
+from . import retry
+from ..errors import AssistantUnavailableError, classify_exception
 from ..services.extraction import _gemini_schema  # reuse the strict→Gemini schema translation
 
 __all__ = ["complete_json", "complete_stream", "embed_text", "model_id", "provider",
@@ -46,7 +47,7 @@ def _schema_hint(schema: dict) -> str:
 
 
 def _anthropic(system: str, user: str, schema: dict, media: list | None = None,
-               model: str | None = None) -> str:
+               model: str | None = None, timeout: float | None = None) -> str:
     # Images/PDF precede the instruction text in the user turn (mirrors extraction._extract_anthropic).
     content = ([_anthropic_media_block(m) for m in media] if media else []) + [
         {"type": "text", "text": user}
@@ -57,6 +58,7 @@ def _anthropic(system: str, user: str, schema: dict, media: list | None = None,
         system=system,
         output_config={"format": {"type": "json_schema", "schema": schema}},
         messages=[{"role": "user", "content": content}],
+        **({"timeout": timeout} if timeout is not None else {}),
     )
     if getattr(resp, "stop_reason", None) not in ("end_turn", None):
         return ""
@@ -64,7 +66,7 @@ def _anthropic(system: str, user: str, schema: dict, media: list | None = None,
 
 
 def _gemini(system: str, user: str, schema: dict, media: list | None = None,
-            model: str | None = None) -> str:
+            model: str | None = None, timeout: float | None = None) -> str:
     from google.genai import types
 
     cfg = dict(
@@ -78,7 +80,7 @@ def _gemini(system: str, user: str, schema: dict, media: list | None = None,
     except Exception:  # pragma: no cover - older SDK/model without thinking support
         pass
     parts = [types.Part.from_bytes(data=m["data"], mime_type=m["media_type"]) for m in (media or [])]
-    resp = get_gemini_client().models.generate_content(
+    resp = get_gemini_client(timeout_s=timeout).models.generate_content(
         model=model or model_id("gemini"), contents=[*parts, user],
         config=types.GenerateContentConfig(**cfg),
     )
@@ -86,7 +88,8 @@ def _gemini(system: str, user: str, schema: dict, media: list | None = None,
 
 
 def _openai_compatible(chat, api_key_provider: str, system: str, user: str, schema: dict,
-                       media: list | None, model: str | None) -> str:
+                       media: list | None, model: str | None,
+                       timeout: float | None = None) -> str:
     """Shared JSON path for the OpenAI-compatible providers (Groq, Mistral): a vision image block per
     media item, the schema spelled into the system prompt (json-object mode only), one chat call."""
     blocks = [b for b in ((_groq_media_block(m)) for m in (media or [])) if b is not None]
@@ -95,6 +98,7 @@ def _openai_compatible(chat, api_key_provider: str, system: str, user: str, sche
         [{"role": "system", "content": system + _schema_hint(schema)},
          {"role": "user", "content": user_content}],
         model=model or model_id(api_key_provider), max_tokens=settings.ASSISTANT_MAX_TOKENS,
+        timeout=timeout or 60.0,
     )
     try:
         return body["choices"][0]["message"]["content"] or ""
@@ -103,20 +107,28 @@ def _openai_compatible(chat, api_key_provider: str, system: str, user: str, sche
 
 
 def _groq(system: str, user: str, schema: dict, media: list | None = None,
-          model: str | None = None) -> str:
-    return _openai_compatible(groq_chat, "groq", system, user, schema, media, model)
+          model: str | None = None, timeout: float | None = None) -> str:
+    return _openai_compatible(groq_chat, "groq", system, user, schema, media, model, timeout)
 
 
 def _mistral(system: str, user: str, schema: dict, media: list | None = None,
-             model: str | None = None) -> str:
-    return _openai_compatible(mistral_chat, "mistral", system, user, schema, media, model)
+             model: str | None = None, timeout: float | None = None) -> str:
+    return _openai_compatible(mistral_chat, "mistral", system, user, schema, media, model, timeout)
 
 
 _RUNNERS = {"anthropic": _anthropic, "gemini": _gemini, "groq": _groq, "mistral": _mistral}
 
 
+def _task_timeout(feature: str | None) -> float:
+    """The SDK timeout ceiling (seconds) for a task class (T2.2) — an unlisted or missing
+    ``feature`` (untraced calls, e.g. the agent loop) falls back to the settings default."""
+    timeouts = getattr(settings, "ASSISTANT_TASK_TIMEOUTS", {})
+    default = getattr(settings, "ASSISTANT_DEFAULT_TIMEOUT_S", 60)
+    return timeouts.get(feature, default)
+
+
 def complete_json(system: str, user: str, schema: dict, *, media: list | None = None,
-                  retries: int = 3, feature: str | None = None, actor=None,
+                  retries: int = retry.MAX_RETRIES + 1, feature: str | None = None, actor=None,
                   conversation_id=None, prompt_ref: str = "") -> dict:
     """One prompt → one parsed JSON dict, failing over across the provider chain.
 
@@ -135,6 +147,7 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
 
     cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
           if feature else null_trace())
+    timeout_s = _task_timeout(feature)
     with cm as handle:
         last_exc: Exception | None = None
         chain = provider_chain()
@@ -144,19 +157,32 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
             # Fail fast while a fallback remains: a provider that is down should hand off
             # immediately, not burn the whole retry+backoff budget first. Only the LAST provider
             # (no fallback left) gets the full retries — that's where waiting out a transient
-            # rate-limit is worth it.
+            # rate-limit is worth it. Within that budget, only errors retry.is_retryable() calls
+            # transient (429/5xx/connection/timeout) get a backoff+retry — a permanent error
+            # (401/403/400) fails this provider immediately (T2.2).
             attempts = retries if i == len(chain) - 1 else 1
             text = ""
+            succeeded = False
             for attempt in range(attempts):
+                _t0 = time.monotonic()
                 try:
-                    text = runner(system, user, schema, media, model)
+                    text = runner(system, user, schema, media, model, timeout=timeout_s)
+                    succeeded = True
                     break
-                except Exception as exc:  # network / auth / rate-limit — retry, then fail over
+                except Exception as exc:  # network / auth / rate-limit — maybe retry, then fail over
                     last_exc = exc
-                    if attempt < attempts - 1:
-                        time.sleep(1.5 * (attempt + 1))
-            else:
-                continue  # this provider exhausted its attempts — try the next in the chain
+                    latency_ms = int((time.monotonic() - _t0) * 1000)
+                    error_class = classify_exception(exc)
+                    if attempt < attempts - 1 and retry.is_retryable(exc):
+                        handle.step(kind="llm", name=prov, ok=False, latency_ms=latency_ms,
+                                    detail={"retry": attempt + 1, "error_class": error_class})
+                        time.sleep(retry.backoff_seconds(attempt))
+                        continue
+                    handle.step(kind="llm", name=prov, ok=False, latency_ms=latency_ms,
+                                detail={"error_class": error_class, "final": True})
+                    break
+            if not succeeded:
+                continue  # this provider exhausted its attempts (or hit a permanent error)
             if not text:
                 last_exc = AssistantUnavailableError(data={"reason": "empty_model_output"})
                 continue  # empty output — try the next provider rather than fail outright
@@ -169,6 +195,11 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
                          input_tokens=estimate_tokens(system + user),
                          output_tokens=estimate_tokens(text))
             return parsed
+        if last_exc is not None:
+            # Classify the real failure (e.g. "timeout", "rate_limited") onto the trace before it
+            # gets wrapped into the blame-free error below — trace_call won't overwrite a
+            # handle.error_class that's already set (see services.tracing.trace_call).
+            handle.fail_from_exception(last_exc)
         if isinstance(last_exc, AssistantUnavailableError):
             raise last_exc
         raise AssistantUnavailableError(
@@ -191,24 +222,53 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
     counts are estimated (see ``services.tracing.estimate_tokens`` — these providers' streaming
     paths don't return usage, only the final non-streamed call does). Omit ``feature`` and the
     call is untraced, exactly as before.
+
+    Zero-byte failures (before any token is yielded) get the same retry.is_retryable() backoff
+    budget as ``complete_json`` — only the last provider in the chain, per the same fail-fast-while-
+    a-fallback-remains rule (T2.2). Once a token is out, a mid-stream failure ends the answer
+    (never retried here; recovery is T2.6).
     """
     from ..services.tracing import estimate_tokens, null_trace, trace_call
 
     cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
           if feature else null_trace())
+    timeout_s = _task_timeout(feature)
     with cm as handle:
         out_parts: list[str] = []
         last_exc: Exception | None = None
-        for prov in provider_chain():
+        chain = provider_chain()
+        for i, prov in enumerate(chain):
             runner = _STREAM_RUNNERS.get(prov, _STREAM_RUNNERS["anthropic"])
-            gen = runner(messages, system, media, prov)
-            try:
-                first = next(gen)
-            except StopIteration:
-                return  # provider succeeded but produced nothing — an empty answer, not a failure
-            except Exception as exc:  # provider down before any token — fail over to the next one
-                last_exc = exc
-                continue
+            attempts = retry.MAX_RETRIES + 1 if i == len(chain) - 1 else 1
+            first = None
+            gen = None
+            empty = False
+            for attempt in range(attempts):
+                _t0 = time.monotonic()
+                gen = runner(messages, system, media, prov, timeout=timeout_s)
+                try:
+                    first = next(gen)
+                    break
+                except StopIteration:
+                    empty = True
+                    break  # provider succeeded but produced nothing — an empty answer, not a failure
+                except Exception as exc:  # provider down before any token — maybe retry, then fail over
+                    last_exc = exc
+                    first = None
+                    latency_ms = int((time.monotonic() - _t0) * 1000)
+                    error_class = classify_exception(exc)
+                    if attempt < attempts - 1 and retry.is_retryable(exc):
+                        handle.step(kind="llm", name=prov, ok=False, latency_ms=latency_ms,
+                                    detail={"retry": attempt + 1, "error_class": error_class})
+                        time.sleep(retry.backoff_seconds(attempt))
+                        continue
+                    handle.step(kind="llm", name=prov, ok=False, latency_ms=latency_ms,
+                                detail={"error_class": error_class, "final": True})
+                    break
+            if empty:
+                return
+            if first is None:
+                continue  # this provider exhausted its attempts (or hit a permanent error)
             handle.usage(provider=prov, model=model_id(prov))
             handle.mark_ttft()
             out_parts.append(first)
@@ -221,6 +281,8 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
             handle.usage(estimated=True, input_tokens=estimate_tokens(input_text),
                          output_tokens=estimate_tokens("".join(out_parts)))
             return
+        if last_exc is not None:
+            handle.fail_from_exception(last_exc)  # classify the real failure before the wrap below
         raise AssistantUnavailableError(
             data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"})
 

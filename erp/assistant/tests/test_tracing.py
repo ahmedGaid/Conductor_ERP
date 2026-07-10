@@ -200,7 +200,7 @@ def test_complete_json_traces_failure_when_every_provider_fails(monkeypatch):
 @override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="", GROQ_API_KEY="", MISTRAL_API_KEY="",
                    ASSISTANT_PROVIDER="")
 def test_complete_stream_traces_ttft_and_estimated_usage(monkeypatch):
-    def fake_stream(_messages, _system, _media, _prov):
+    def fake_stream(_messages, _system, _media, _prov, **_kw):
         yield "hello "
         yield "world"
 
@@ -221,7 +221,7 @@ def test_complete_stream_traces_ttft_and_estimated_usage(monkeypatch):
 @override_settings(ANTHROPIC_API_KEY="a", GEMINI_API_KEY="", GROQ_API_KEY="", MISTRAL_API_KEY="",
                    ASSISTANT_PROVIDER="")
 def test_complete_stream_untraced_when_no_feature(monkeypatch):
-    def fake_stream(_messages, _system, _media, _prov):
+    def fake_stream(_messages, _system, _media, _prov, **_kw):
         yield "hi"
 
     monkeypatch.setitem(client._STREAM_RUNNERS, "anthropic", fake_stream)
