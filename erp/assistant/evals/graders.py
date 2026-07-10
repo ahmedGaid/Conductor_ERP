@@ -13,9 +13,8 @@ from __future__ import annotations
 import json
 
 from ..errors import AssistantUnavailableError
-from ..services import llm as llm_service
+from ..gateway import core as llm_service
 from ..services.prompt_registry import get as get_prompt
-from .. import client as assistant_client
 
 _TYPE_MAP = {
     "string": str, "integer": int, "number": (int, float), "boolean": bool,
@@ -111,7 +110,7 @@ def _default_judge_call(system: str, user: str) -> dict:
         runner = llm_service._RUNNERS[prov]
         with trace_call("eval", prompt_ref=get_prompt("eval_judge").ref) as handle:
             try:
-                text = runner(system, user, _JUDGE_SCHEMA, None, assistant_client.model_id(prov))
+                text = runner(system, user, _JUDGE_SCHEMA, None, llm_service.model_id(prov))
             except Exception as exc:  # provider down/unauthenticated — try the next one
                 handle.fail_from_exception(exc)
                 last_exc = exc
@@ -123,7 +122,7 @@ def _default_judge_call(system: str, user: str) -> dict:
             except ValueError as exc:
                 last_exc = exc
                 continue
-            handle.usage(provider=prov, model=assistant_client.model_id(prov), estimated=True,
+            handle.usage(provider=prov, model=llm_service.model_id(prov), estimated=True,
                          input_tokens=estimate_tokens(system + user), output_tokens=estimate_tokens(text))
             return parsed
     raise AssistantUnavailableError(

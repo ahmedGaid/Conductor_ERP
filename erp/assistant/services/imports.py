@@ -30,9 +30,9 @@ from erp.inventory import contracts as inventory
 from erp.purchasing import contracts as purchasing
 from erp.sales import contracts as sales
 
+from ..gateway.core import complete_json
 from .actions import _can, _refused
 from .files import read_table
-from .llm import complete_json
 from .prompt_registry import get as get_prompt
 
 # How many sample rows the inspector shows the model (headers + these → a header→field mapping).

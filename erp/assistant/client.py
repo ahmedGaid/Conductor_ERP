@@ -211,7 +211,7 @@ def _stream_gemini(messages: list, system: str | None, media: list | None = None
     cfg = dict(max_output_tokens=settings.ASSISTANT_MAX_TOKENS)
     if system:
         cfg["system_instruction"] = system
-    try:  # thinking off — whole budget to the answer (mirrors services.llm._gemini)
+    try:  # thinking off — whole budget to the answer (mirrors gateway.core._gemini)
         cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
     except Exception:  # pragma: no cover - older SDK/model without thinking support
         pass
@@ -303,53 +303,9 @@ _STREAM_RUNNERS = {
 }
 
 
-def complete_stream(messages: list, *, system: str | None = None, media: list | None = None,
-                    feature: str | None = None, actor=None, conversation_id=None,
-                    prompt_ref: str = ""):
-    """Yield answer text chunks, failing over across the provider chain.
-
-    Each provider is tried in ``provider_chain()`` order; if one raises *before* its first token (down
-    / auth / rate-limit) the next is tried. Once a token has been yielded we are committed to that
-    provider — a mid-stream failure ends the answer (the caller persists the partial). ``media`` is a
-    list of ``{"media_type", "data": bytes}`` injected into the user turn for a vision provider.
-
-    ``feature`` (optional) opens a trace for this call, recording TTFT and total latency; token
-    counts are estimated (see ``services.tracing.estimate_tokens`` — these providers' streaming
-    paths don't return usage, only the final non-streamed call does). Omit ``feature`` and the
-    call is untraced, exactly as before.
-    """
-    from .errors import AssistantUnavailableError
-    from .services.tracing import estimate_tokens, null_trace, trace_call
-
-    cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
-          if feature else null_trace())
-    with cm as handle:
-        out_parts: list[str] = []
-        last_exc: Exception | None = None
-        for prov in provider_chain():
-            runner = _STREAM_RUNNERS.get(prov, _stream_anthropic)
-            gen = runner(messages, system, media, prov)
-            try:
-                first = next(gen)
-            except StopIteration:
-                return  # provider succeeded but produced nothing — an empty answer, not a failure
-            except Exception as exc:  # provider down before any token — fail over to the next one
-                last_exc = exc
-                continue
-            handle.usage(provider=prov, model=model_id(prov))
-            handle.mark_ttft()
-            out_parts.append(first)
-            yield first
-            for chunk in gen:  # a mid-stream error here propagates; the partial is already out
-                out_parts.append(chunk)
-                yield chunk
-            input_text = (system or "") + "".join(
-                m.get("content", "") for m in messages if isinstance(m.get("content"), str))
-            handle.usage(estimated=True, input_tokens=estimate_tokens(input_text),
-                         output_tokens=estimate_tokens("".join(out_parts)))
-            return
-        raise AssistantUnavailableError(
-            data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"})
+# The provider-chain dispatch loop that used to live here (``complete_stream``) moved to
+# ``gateway.core`` (Phase 2, T2.1) — it's dispatch logic, not a raw SDK call. ``_STREAM_RUNNERS``
+# and the per-provider runners above stay here as the raw seam the gateway calls.
 
 
 # --- knowledge-base embeddings (rag plan session 03) -------------------------------------------

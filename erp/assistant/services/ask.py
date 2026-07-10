@@ -1,7 +1,7 @@
 """Natural-language assistant over the user's *scoped* data (plan session 02, part 2).
 
 Two constrained model calls, provider-portable (works identically on Anthropic / Gemini / Groq
-because both use plain JSON mode — see ``llm.complete_json``):
+because both use plain JSON mode — see ``gateway.core.complete_json``):
 
 1. **Route** — given the question and the tool catalog, the model picks ONE typed tool + its args.
    It never sees the ORM or SQL; it only chooses from a fixed list (DECISIONS: tool-use, not
@@ -18,11 +18,10 @@ import json
 
 from erp.audit import services as audit
 
-from ..client import complete_stream
+from ..gateway.core import complete_json, complete_stream
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
 from . import context, files
-from .llm import complete_json
 from .prompt_registry import get as get_prompt
 
 # Longest question we will send to the model — a cheap per-request guard (Part 3 cost control).

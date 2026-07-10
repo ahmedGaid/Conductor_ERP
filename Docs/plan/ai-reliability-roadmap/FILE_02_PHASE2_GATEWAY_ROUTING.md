@@ -48,23 +48,37 @@
 
 ## Tasks
 
-### [ ] T2.1 — Gateway skeleton + call migration
+### [x] T2.1 — Gateway skeleton + call migration — DONE 2026-07-10
 
 - **Goal:** `gateway.complete/stream/embed` exists; every service calls it; behavior byte-identical.
 - **Prereq:** Phase 1 done (traces record routing later).
-- **Files:** create `erp/assistant/gateway/__init__.py`, `gateway/core.py`; modify `services/*.py`
-  callers.
-- **Steps:**
-  1. `core.py`: `complete(task, messages, *, system=None, media=None, actor=None, **kw)` — v1 just
-     resolves task → today's default model and delegates to `client.py` inside the traced seam
-     (move the `trace_call` wrapping here so it lives in exactly one place).
-  2. Same for `stream(...)` and `embed(...)`.
-  3. Migrate every caller in `services/` and `tools.py`; delete their direct `client` imports.
-  4. Add a lint-style test: AST/grep check that only `gateway/` imports `client` (guards the
-     invariant forever).
-- **Accept:** full `pytest erp/assistant` green with zero test edits except import paths; the
-  invariant test fails if a service imports `client` (verified by negative test).
-- **Output:** one front door.
+- **Files:** created `erp/assistant/gateway/__init__.py`, `gateway/core.py`; modified `ask.py`,
+  `agent.py`, `imports.py`, `knowledge.py`, `evals/graders.py`; deleted `services/llm.py` (moved
+  into `gateway/core.py`); removed `complete_stream` from `client.py` (moved into `gateway/core.py`,
+  which is dispatch logic, not the raw seam).
+- **What shipped:** `gateway/core.py` exposes `complete_json` (moved verbatim from `services/llm.py`),
+  `complete_stream` (moved verbatim from `client.py`), and a thin `embed_text` re-export. `feature`
+  stays the task-class label for now (v1 — no per-task routing table yet, matches "resolves to
+  today's default model"); T2.3/T2.4 formalize `task` when routing lands. `trace_call` wrapping now
+  lives in exactly one place (`gateway/core.py`).
+- **Invariant test:** `tests/test_gateway_invariant.py` — AST-based scan asserts only `gateway/`,
+  `client.py`, and a documented allowlist import `client` directly. Allowlist + reason:
+  `api/views.py` + both management commands (only call `client.enabled()`, a config check, not a
+  dispatch call); `services/extraction.py` (its own single-provider no-failover retry design —
+  structurally different from the gateway's chain-walk, migrating it is separate future work, not
+  a T2.1 rename); `services/knowledge.py` (still calls `client.embed_text` directly — its tests
+  monkeypatch `knowledge.client.embed_text`; tracked for the T2.8 embed-cache task). Negative tests
+  (`test_checker_flags_*`) prove the AST checker actually catches a violation, not just passes
+  vacuously.
+- **Test edits:** only import-path changes — `test_routing.py` and `test_tracing.py` now import
+  `erp.assistant.gateway.core as llm` instead of `erp.assistant.services.llm`, and their two direct
+  `client.complete_stream(...)` call sites became `llm.complete_stream(...)` since the function
+  moved. No behavior or assertion changed in any test.
+- **Accept:** `pytest erp/assistant` green (307 passed, up from 302 — the 5 new invariant tests);
+  `gate:all` 00–15 green.
+- **Output:** one front door for ask/agent/imports + chat streaming. `services/extraction.py` and
+  `services/knowledge.py`'s embed path are the two known remaining direct-`client` callers, each
+  with a documented reason and a future task to close.
 
 ### [ ] T2.2 — Retry policy + typed failures
 

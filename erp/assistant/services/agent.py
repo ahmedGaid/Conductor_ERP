@@ -22,13 +22,12 @@ import time
 
 from erp.audit import services as audit
 
-from ..client import complete_stream, model_id, provider
+from ..gateway.core import complete_json, complete_stream, model_id, provider
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
 from . import actions, context, files, imports, suggestions
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS, _answer_prompt_ref
-from .llm import complete_json
 from .prompt_registry import get as get_prompt
 from .tracing import NULL_HANDLE, estimate_tokens, mark_cancelled, trace_call
 

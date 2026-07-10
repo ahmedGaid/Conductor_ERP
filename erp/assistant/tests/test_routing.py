@@ -12,7 +12,7 @@ from django.test import override_settings
 
 from erp.assistant import client
 from erp.assistant.errors import AssistantUnavailableError
-from erp.assistant.services import llm
+from erp.assistant.gateway import core as llm
 
 pytestmark = pytest.mark.django_db
 
@@ -117,7 +117,7 @@ def test_complete_stream_falls_over_before_the_first_token(monkeypatch):
 
     monkeypatch.setitem(client._STREAM_RUNNERS, "anthropic", down)
     monkeypatch.setitem(client._STREAM_RUNNERS, "gemini", good)
-    out = list(client.complete_stream([{"role": "user", "content": "x"}]))
+    out = list(llm.complete_stream([{"role": "user", "content": "x"}]))
     assert "".join(out) == "hi there"
 
 

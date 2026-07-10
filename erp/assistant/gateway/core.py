@@ -1,12 +1,15 @@
-"""Shared text→JSON completion across the four providers (Anthropic / Gemini / Mistral / Groq).
+"""The AI gateway (Phase 2, T2.1): the ONLY module that calls ``client.py``.
 
-The document-extraction path (``extraction.py``) sends an image; the natural-language assistant
-(``ask.py``) sends text. Both need the same thing: a JSON object back from whichever provider is
-configured. This module is the single place that speaks each provider's JSON dialect for a *text*
-prompt, so callers stay provider-agnostic and tests monkeypatch one seam (``ask`` monkeypatches
-``complete_json`` directly, so gates never make a live call). ``complete_json`` fails over across the
-provider chain: if the preferred provider is down / rate-limited / returns garbage, the next
-available one is tried before the request is declared unavailable.
+Every service (``ask``, ``agent``, ``imports``, ``knowledge``, …) gets its provider access through
+``complete_json`` / ``complete_stream`` / ``embed_text`` here instead of importing ``client``
+directly — one front door for routing, retries, failover and caching to land in later T2.x tasks
+without touching every caller again. ``client.py`` stays the raw provider seam (SDK calls, the
+per-provider runners); this module owns the provider-chain dispatch loop and the traced seam
+(``trace_call`` wrapping lives in exactly one place: here).
+
+v1 (T2.1) is a pure relocation of ``services.llm.complete_json`` and ``client.complete_stream``:
+behavior is byte-identical, no routing table yet — ``feature`` is today's stand-in for the "task
+class" the architecture doc describes; T2.3/T2.4 formalize it into ``ASSISTANT_ROUTING``.
 """
 from __future__ import annotations
 
@@ -18,16 +21,24 @@ from django.conf import settings
 from ..client import (
     _anthropic_media_block,
     _groq_media_block,
+    _STREAM_RUNNERS,
+    embed_text,
     get_client,
     get_gemini_client,
     groq_chat,
     mistral_chat,
     model_id,
+    provider,
     provider_chain,
 )
 from ..errors import AssistantUnavailableError
-from .extraction import _gemini_schema  # reuse the strict→Gemini schema translation
+from ..services.extraction import _gemini_schema  # reuse the strict→Gemini schema translation
 
+__all__ = ["complete_json", "complete_stream", "embed_text", "model_id", "provider",
+           "provider_chain"]
+
+
+# --- JSON completion (moved from services.llm) --------------------------------------------------
 
 def _schema_hint(schema: dict) -> str:
     # Groq is JSON-object mode only (no schema param) — spell the shape out in the prompt instead.
@@ -120,7 +131,7 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
     ``feature`` (optional) opens a trace for this call — omit it and the call is untraced,
     exactly as before (see ``services.tracing``).
     """
-    from .tracing import estimate_tokens, null_trace, trace_call
+    from ..services.tracing import estimate_tokens, null_trace, trace_call
 
     cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
           if feature else null_trace())
@@ -162,3 +173,59 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
             raise last_exc
         raise AssistantUnavailableError(
             data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"}) from last_exc
+
+
+# --- streaming completion (moved from client.py) -------------------------------------------------
+
+def complete_stream(messages: list, *, system: str | None = None, media: list | None = None,
+                    feature: str | None = None, actor=None, conversation_id=None,
+                    prompt_ref: str = ""):
+    """Yield answer text chunks, failing over across the provider chain.
+
+    Each provider is tried in ``provider_chain()`` order; if one raises *before* its first token (down
+    / auth / rate-limit) the next is tried. Once a token has been yielded we are committed to that
+    provider — a mid-stream failure ends the answer (the caller persists the partial). ``media`` is a
+    list of ``{"media_type", "data": bytes}`` injected into the user turn for a vision provider.
+
+    ``feature`` (optional) opens a trace for this call, recording TTFT and total latency; token
+    counts are estimated (see ``services.tracing.estimate_tokens`` — these providers' streaming
+    paths don't return usage, only the final non-streamed call does). Omit ``feature`` and the
+    call is untraced, exactly as before.
+    """
+    from ..services.tracing import estimate_tokens, null_trace, trace_call
+
+    cm = (trace_call(feature, actor=actor, conversation_id=conversation_id, prompt_ref=prompt_ref)
+          if feature else null_trace())
+    with cm as handle:
+        out_parts: list[str] = []
+        last_exc: Exception | None = None
+        for prov in provider_chain():
+            runner = _STREAM_RUNNERS.get(prov, _STREAM_RUNNERS["anthropic"])
+            gen = runner(messages, system, media, prov)
+            try:
+                first = next(gen)
+            except StopIteration:
+                return  # provider succeeded but produced nothing — an empty answer, not a failure
+            except Exception as exc:  # provider down before any token — fail over to the next one
+                last_exc = exc
+                continue
+            handle.usage(provider=prov, model=model_id(prov))
+            handle.mark_ttft()
+            out_parts.append(first)
+            yield first
+            for chunk in gen:  # a mid-stream error here propagates; the partial is already out
+                out_parts.append(chunk)
+                yield chunk
+            input_text = (system or "") + "".join(
+                m.get("content", "") for m in messages if isinstance(m.get("content"), str))
+            handle.usage(estimated=True, input_tokens=estimate_tokens(input_text),
+                         output_tokens=estimate_tokens("".join(out_parts)))
+            return
+        raise AssistantUnavailableError(
+            data={"reason": last_exc.__class__.__name__ if last_exc else "no_provider"})
+
+
+# ``embed_text`` has no provider chain (Gemini-only) and is already one small monkeypatchable seam
+# on ``client`` — re-exported here (see ``__all__``) so ``gateway.embed_text`` exists per the T2.1
+# goal; callers may keep going through ``client.embed_text`` directly until they migrate (tracked:
+# ``services.knowledge`` still does, since its tests patch ``knowledge.client.embed_text``).

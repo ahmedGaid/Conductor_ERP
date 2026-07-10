@@ -11,8 +11,8 @@ from django.db.models import F, Q
 
 from erp.audit import services as audit
 
-from .. import client
-from ..client import complete_stream
+from .. import client  # only for client.embed_text (T2.1 exception — see gateway invariant test)
+from ..gateway.core import complete_stream
 from ..models import KnowledgeChunk, KnowledgeDocument
 from . import files
 

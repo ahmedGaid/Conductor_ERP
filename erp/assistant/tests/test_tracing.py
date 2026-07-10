@@ -12,8 +12,9 @@ from erp.assistant.errors import (
     AssistantUnavailableError,
     classify_exception,
 )
+from erp.assistant.gateway import core as llm
 from erp.assistant.models import Conversation, Trace, TraceStep
-from erp.assistant.services import agent, llm, tracing
+from erp.assistant.services import agent, tracing
 from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
@@ -205,7 +206,7 @@ def test_complete_stream_traces_ttft_and_estimated_usage(monkeypatch):
 
     monkeypatch.setitem(client._STREAM_RUNNERS, "anthropic", fake_stream)
     u = _user("trace_stream_user")
-    chunks = list(client.complete_stream(
+    chunks = list(llm.complete_stream(
         [{"role": "user", "content": "hi"}], feature="chat", actor=u,
     ))
     assert chunks == ["hello ", "world"]
@@ -224,7 +225,7 @@ def test_complete_stream_untraced_when_no_feature(monkeypatch):
         yield "hi"
 
     monkeypatch.setitem(client._STREAM_RUNNERS, "anthropic", fake_stream)
-    assert list(client.complete_stream([{"role": "user", "content": "hi"}])) == ["hi"]
+    assert list(llm.complete_stream([{"role": "user", "content": "hi"}])) == ["hi"]
     assert Trace.objects.count() == 0
 
 
