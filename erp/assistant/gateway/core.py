@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Callable
 
 from django.conf import settings
 
@@ -252,15 +253,20 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
 
 # --- streaming completion (moved from client.py) -------------------------------------------------
 
+_CONTINUE_INSTRUCTION = (
+    "Continue your answer from exactly where you left off. Do not repeat any earlier text or "
+    "acknowledge the interruption."
+)
+
+
 def complete_stream(messages: list, *, system: str | None = None, media: list | None = None,
                     feature: str | None = None, actor=None, conversation_id=None,
-                    prompt_ref: str = ""):
+                    prompt_ref: str = "", on_retry: Callable[[], None] | None = None):
     """Yield answer text chunks, failing over across the provider chain.
 
     Each provider is tried in ``provider_chain()`` order; if one raises *before* its first token (down
-    / auth / rate-limit) the next is tried. Once a token has been yielded we are committed to that
-    provider — a mid-stream failure ends the answer (the caller persists the partial). ``media`` is a
-    list of ``{"media_type", "data": bytes}`` injected into the user turn for a vision provider.
+    / auth / rate-limit) the next is tried. ``media`` is a list of ``{"media_type", "data": bytes}``
+    injected into the user turn for a vision provider.
 
     ``feature`` (optional) opens a trace for this call, recording TTFT and total latency; token
     counts are estimated (see ``services.tracing.estimate_tokens`` — these providers' streaming
@@ -269,8 +275,16 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
 
     Zero-byte failures (before any token is yielded) get the same retry.is_retryable() backoff
     budget as ``complete_json`` — only the last provider in the chain, per the same fail-fast-while-
-    a-fallback-remains rule (T2.2). Once a token is out, a mid-stream failure ends the answer
-    (never retried here; recovery is T2.6).
+    a-fallback-remains rule (T2.2).
+
+    T2.6: a failure *after* the first token (mid-stream) no longer ends the answer while a
+    provider remains. It's recorded as a TraceStep, ``on_retry()`` fires if given (a client-facing
+    caller uses it to surface a calm "retrying" notice; a caller that doesn't stream to a network
+    client may omit it), and the turn restarts on the next usable provider with the partial folded
+    in as an assistant turn plus an instruction to continue without repeating or narrating the
+    interruption. ``handle.meta["stream_recovered"]`` marks a trace that needed this. Exhausting
+    every remaining provider mid-stream still ends the answer — the partial already yielded is the
+    caller's to persist, same as before.
     """
     from ..services.tracing import estimate_tokens, null_trace, trace_call
 
@@ -290,7 +304,11 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
         if not usable:
             handle.fail("provider_error")
             raise AllProvidersDown(data={"reason": "all_providers_breaker_open"})
-        for i, prov in enumerate(usable):
+        turn_messages = messages
+        recovering = False
+        i = 0
+        while i < len(usable):
+            prov = usable[i]
             runner = _STREAM_RUNNERS.get(prov, _STREAM_RUNNERS["anthropic"])
             attempts = retry.MAX_RETRIES + 1 if i == len(usable) - 1 else 1
             first = None
@@ -299,7 +317,7 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
             provider_exc: Exception | None = None
             for attempt in range(attempts):
                 _t0 = time.monotonic()
-                gen = runner(messages, system, media, prov, timeout=timeout_s)
+                gen = runner(turn_messages, system, media, prov, timeout=timeout_s)
                 try:
                     first = next(gen)
                     break
@@ -329,16 +347,41 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
                     breaker.record_failure(prov)
                 skipped.append({"provider": prov,
                                 "reason": classify_exception(provider_exc) if provider_exc else "error"})
+                i += 1
                 continue  # this provider exhausted its attempts (or hit a permanent error)
             breaker.record_success(prov)
             routing["chosen"] = prov
             handle.usage(provider=prov, model=model_id(prov))
             handle.mark_ttft()
+            if recovering:
+                handle.step(kind="llm", name=prov, ok=True, detail={"recovered": True})
+                recovering = False
             out_parts.append(first)
             yield first
-            for chunk in gen:  # a mid-stream error here propagates; the partial is already out
-                out_parts.append(chunk)
-                yield chunk
+            try:
+                for chunk in gen:
+                    out_parts.append(chunk)
+                    yield chunk
+            except Exception as exc:  # mid-stream failure — recover onto the next provider (T2.6)
+                error_class = classify_exception(exc)
+                handle.step(kind="llm", name=prov, ok=False,
+                            detail={"error_class": error_class, "mid_stream": True})
+                if i + 1 >= len(usable):
+                    handle.fail_from_exception(exc)
+                    raise AllProvidersDown(data={"reason": exc.__class__.__name__}) from exc
+                handle.meta["stream_recovered"] = True
+                if on_retry is not None:
+                    try:
+                        on_retry()
+                    except Exception:
+                        pass
+                turn_messages = messages + [
+                    {"role": "assistant", "content": "".join(out_parts)},
+                    {"role": "user", "content": _CONTINUE_INSTRUCTION},
+                ]
+                recovering = True
+                i += 1
+                continue
             input_text = (system or "") + "".join(
                 m.get("content", "") for m in messages if isinstance(m.get("content"), str))
             handle.usage(estimated=True, input_tokens=estimate_tokens(input_text),

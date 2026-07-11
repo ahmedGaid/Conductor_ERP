@@ -246,7 +246,7 @@
   task never caches; ops summary exposes hit rate.
 - **Output:** recurring jobs approach zero marginal cost.
 
-### [ ] T2.6 — Streaming resilience (mid-stream failover)
+### [x] T2.6 — Streaming resilience (mid-stream failover)
 
 - **Goal:** a stream that dies mid-answer recovers without the user losing the turn.
 - **Prereq:** T2.3.

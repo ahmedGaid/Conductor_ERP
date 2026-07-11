@@ -507,9 +507,16 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             answer_system = _answer_system(actor, page, conversation)
             _t0 = time.monotonic()
             _first = True
+            _retrying = {"n": 0}
             for chunk in complete_stream(
                 [{"role": "user", "content": user}], system=answer_system, media=media,
+                on_retry=lambda: _retrying.__setitem__("n", _retrying["n"] + 1),
             ):
+                if _retrying["n"]:
+                    # T2.6: the provider dropped mid-answer and the gateway is restarting the turn
+                    # on the next chain model — a calm inline notice, never a raw error.
+                    yield {"type": "retrying"}
+                    _retrying["n"] = 0
                 if _first:
                     trace.mark_ttft()
                     _first = False
@@ -638,10 +645,15 @@ def resume_detour(*, actor, conversation, source_message, resolved):
             {"detour_return": note, "record": resolved, "proposal_ready": proposal is not None},
             ensure_ascii=False,
         )
+        _retrying = {"n": 0}
         for chunk in complete_stream(
             [{"role": "user", "content": user + "\n\n" + instruction}],
             system=_answer_system(actor, None, conversation),
+            on_retry=lambda: _retrying.__setitem__("n", _retrying["n"] + 1),
         ):
+            if _retrying["n"]:
+                yield {"type": "retrying"}
+                _retrying["n"] = 0
             parts.append(chunk)
             yield {"type": "token", "text": chunk}
         yield {"type": "citations", "citations": citations}

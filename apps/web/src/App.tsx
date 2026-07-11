@@ -55,7 +55,6 @@ import { QuotationDetailPage } from "./pages/sales/QuotationDetailPage";
 import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
 import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
 import { ImportInvoicePage } from "./pages/purchasing/ImportInvoicePage";
-import { AssistantPage } from "./pages/assistant/AssistantPage";
 import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
 import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
 import { SupplierDetailPage } from "./pages/purchasing/SupplierDetailPage";
@@ -98,6 +97,7 @@ const OrganizationPage = lazyPage(
 const UsersPage = lazyPage(() => import("./pages/admin/UsersPage"), "UsersPage");
 const UserDetailPage = lazyPage(() => import("./pages/admin/UserDetailPage"), "UserDetailPage");
 const RolesPage = lazyPage(() => import("./pages/admin/RolesPage"), "RolesPage");
+const AssistantPage = lazyPage(() => import("./pages/assistant/AssistantPage"), "AssistantPage");
 const KnowledgePage = lazyPage(() => import("./pages/assistant/KnowledgePage"), "KnowledgePage");
 const OpsPage = lazyPage(() => import("./pages/assistant/OpsPage"), "OpsPage");
 const RoleDetailPage = lazyPage(() => import("./pages/admin/RoleDetailPage"), "RoleDetailPage");

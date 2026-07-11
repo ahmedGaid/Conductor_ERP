@@ -56,6 +56,7 @@ export function ConversationView() {
   const [streaming, setStreaming] = useState(false);
   const [streamText, setStreamText] = useState("");
   const [streamSteps, setStreamSteps] = useState<ChatStep[]>([]);
+  const [streamNotice, setStreamNotice] = useState<string | null>(null);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -176,6 +177,7 @@ export function ConversationView() {
     setStreaming(true);
     setStreamText("");
     setStreamSteps([]);
+    setStreamNotice(null);
     setStreamError(null);
     const ac = new AbortController();
     abortRef.current = ac;
@@ -215,7 +217,12 @@ export function ConversationView() {
               );
             }
             setStreamSteps(steps);
+          } else if (e.type === "retrying") {
+            // T2.6: the provider dropped mid-answer — the gateway is already restarting the turn
+            // on the next chain model with the partial preserved. A calm notice, never an error.
+            setStreamNotice(t("assistant.streamRetrying"));
           } else if (e.type === "token" && e.text) {
+            setStreamNotice(null);
             acc += e.text;
             setStreamText(acc);
           } else if (e.type === "citations" && e.citations) {
@@ -268,6 +275,7 @@ export function ConversationView() {
       setStreaming(false);
       setStreamText("");
       setStreamSteps([]);
+      setStreamNotice(null);
       abortRef.current = null;
       refreshConversations();
     }
@@ -457,6 +465,7 @@ export function ConversationView() {
           streaming={streaming}
           streamText={streamText}
           streamSteps={streamSteps}
+          streamNotice={streamNotice}
           error={streamError}
           onRegenerate={() => void regenerate()}
           onEdit={editPrompt}

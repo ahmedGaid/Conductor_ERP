@@ -17,8 +17,7 @@ import { ActionFeedbackHost } from "./ActionFeedbackHost";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
 import { usePreferences } from "../preferences/PreferencesContext";
-import { AssistantProvider } from "../assistant/AssistantProvider";
-import { AssistantPanel } from "../assistant/AssistantPanel";
+import { AssistantProvider, AssistantPanelGate } from "../assistant/AssistantProvider";
 import { DetourPill } from "../assistant/DetourPill";
 import { pushRecentPage } from "../assistant/context";
 import "./AppShell.css";
@@ -112,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </PageActionsProvider>
             </main>
             <HelpCenter />
-            <AssistantPanel />
+            <AssistantPanelGate />
             <DetourPill />
             <ShortcutsHost />
             <Toaster />

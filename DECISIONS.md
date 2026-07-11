@@ -1406,7 +1406,18 @@ budget deliberately (edit the constant + this entry), never silently.
   (`Docs/plan/perceived-performance-plan.md`) — that pass should bring the budget back DOWN, the
   way the 230 kB pass did. The 235 → 250 bump is the last painless raise; the next breach should be
   fixed structurally, not bumped again.
-
+- **2026-07-12 — Frontend bundle fixed structurally, not bumped a third time (ai-reliability
+  T2.6).** T2.6's own frontend addition (a "retrying" SSE notice) was tiny, but main was already at
+  **249.9 kB gzip** (measured red on clean HEAD via stash) — any addition would have breached the
+  250 kB budget honoring the prior entry's "next breach should be fixed structurally" call. Code-
+  split the assistant panel instead of raising the budget: `AssistantProvider.tsx` now exports
+  `AssistantPanelGate`, a thin guard (`enabled && open`) around a `React.lazy` import of
+  `AssistantPanel` (`ConversationView`/`MessageList`/`Composer`/cards/`ThreadList`/`Markdown`);
+  `AppShell` renders the gate instead of the panel directly. `AssistantPage` (the `/assistant`
+  route) switched from an eager import to the existing `lazyPage` helper so both consumers share
+  one lazy chunk. `AssistantPanel` already returned `null` while closed, so this changes nothing
+  about mount/unmount — it only defers the chunk fetch to first open per session. Main chunk
+  **249.9 → 239.2 kB gzip** (10.7 kB of headroom recovered, not spent). Budget stays at 250 kB.
 ## AI 2026-07 — assistant architecture (session 02, part 1)
 
 The Claude-powered assistant is the headline feature, but it must never weaken the trust

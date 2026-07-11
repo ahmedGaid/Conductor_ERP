@@ -379,7 +379,16 @@ export function deleteConversation(id: number): Promise<void> {
 // `data:` JSON per event; sessions 09/10 add more event types to the same union.
 
 export interface ChatEvent {
-  type: "step" | "token" | "citations" | "done" | "error" | "proposal" | "suggestion" | "import";
+  type:
+    | "step"
+    | "token"
+    | "citations"
+    | "done"
+    | "error"
+    | "proposal"
+    | "suggestion"
+    | "import"
+    | "retrying";
   text?: string;
   citations?: AskCitation[];
   message_id?: number;

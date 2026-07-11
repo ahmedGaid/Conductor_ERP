@@ -52,6 +52,7 @@
     "placeholder": "Ask a question…",
     "ask": "Ask",
     "thinking": "Thinking…",
+    "streamRetrying": "Reconnecting — picking up where we left off…",
     "tryLabel": "Try asking",
     "sources": "From your records",
     "open": "Open assistant",

@@ -139,6 +139,7 @@ interface MessageListProps {
   streaming: boolean;
   streamText: string;
   streamSteps: ChatStep[];
+  streamNotice: string | null;
   error: string | null;
   onRegenerate: () => void;
   onEdit: (text: string) => void;
@@ -160,6 +161,7 @@ export function MessageList({
   streaming,
   streamText,
   streamSteps,
+  streamNotice,
   error,
   onRegenerate,
   onEdit,
@@ -324,6 +326,7 @@ export function MessageList({
           {streaming && (
             <li className="msg msg--assistant" aria-live="polite" aria-atomic="false">
               {streamSteps.length > 0 && <StepStack steps={streamSteps} />}
+              {streamNotice && <p className="conversation__hint" dir="auto">{streamNotice}</p>}
               {streamText ? (
                 <div className="msg__streaming">
                   <Markdown text={streamText} onNavigate={onNavigate} />

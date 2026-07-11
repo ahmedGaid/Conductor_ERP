@@ -1,5 +1,7 @@
 import {
   createContext,
+  lazy,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -197,4 +199,23 @@ export function useAssistant(): AssistantState {
   const ctx = useContext(AssistantContext);
   if (!ctx) throw new Error("useAssistant must be used within AssistantProvider");
   return ctx;
+}
+
+// The floating/docked panel (ConversationView, MessageList, Composer, cards, Markdown…) is a
+// substantial tree only ever needed once the user actually opens it — code-split so the main
+// bundle (scripts/check-bundle-size.mjs) doesn't carry it just for the trigger button + shortcut
+// to exist. `AssistantPanel` already returns null while closed, so this changes nothing about the
+// mount lifecycle — it only defers the chunk fetch to the first open of the session.
+const AssistantPanelLazy = lazy(() =>
+  import("./AssistantPanel").then((m) => ({ default: m.AssistantPanel })),
+);
+
+export function AssistantPanelGate() {
+  const { enabled, open } = useAssistant();
+  if (!enabled || !open) return null;
+  return (
+    <Suspense fallback={null}>
+      <AssistantPanelLazy />
+    </Suspense>
+  );
 }
