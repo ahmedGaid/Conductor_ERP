@@ -265,7 +265,7 @@
   and en; i18n parity + tsc + gate03 green.
 - **Output:** streams degrade gracefully, never blank.
 
-### [ ] T2.7 — Token & cost budgets
+### [x] T2.7 — Token & cost budgets
 
 - **Goal:** hard ceilings exist: per request, per user/day, per tenant/month.
 - **Prereq:** T2.1, tracing cost data.
@@ -285,6 +285,39 @@
 - **Accept:** tests: request over cap blocked pre-call; user/day exhausted → block with typed
   error; rollup math correct across day boundary; notify-mode logs but allows.
 - **Output:** cost runaway is structurally impossible.
+- **What shipped (2026-07-12):** `gateway/budgets.py` — `check(estimated_cost, actor)` gates
+  `complete_json`/`complete_stream` pre-call (after the T2.5 cache check in `complete_json`, so a
+  free cache hit never gets budget-blocked); `estimate_cost_microcents` uses real input tokens but
+  the FULL `max_tokens` ceiling for output — a deliberate over-estimate, since blocking a call that
+  would've cost less is safe and under-estimating a budget is not. `Budget` (one row per scope,
+  `request`/`user`/`org`, `limit_microcents` + `action` `block`/`notify`) and `SpendRollup`
+  (date-keyed, atomic `F()` increment, `period` = the calendar day for `user`, the 1st of the month
+  for `org` — the *same* row naturally accumulates within a month and resets across one) — new
+  migration `0006_budget_spendrollup` + a data migration `0007_seed_budgets` seeding all three
+  scopes from `ASSISTANT_BUDGET_*` settings (documented "10x a generous assumed heavy-usage volume"
+  reasoning inline — no real production traffic exists pre-launch to size these precisely against).
+  `record_spend()` hooks into `services/tracing.py`'s `_write()` (lazy-imported, mirroring how
+  `gateway/core.py` already lazy-imports `services.tracing` to break the same cycle) so every traced
+  call's real cost rolls up automatically, no separate call site to remember. `BudgetExceeded`
+  (`AI-007`, `errors.py`) joins the taxonomy as `budget_exceeded`. Frontend: the chat SSE error
+  event now carries `code` (both `except AppError` sites in `views.py`) so `ConversationView.tsx`
+  shows a designed ar/en line (`assistant.budgetExceeded`) for `AI-007` instead of the raw
+  (English-only) backend string — same "distinct code → distinct notice" precedent T2.6 set for
+  `streamRetrying`. Ops: `OpsSummaryView` gained a `budgets` array (`ops.py`); `OpsPage.tsx` renders
+  it as a spend-vs-limit list per scope (`request` shows no spend — a per-call check has nothing to
+  roll up; `org` is one directly-comparable aggregate; `user` shows the current top spender, the one
+  number comparable to a limit that applies equally to every user in v1 — there's no per-user
+  override).
+- **Deviation from plan:** none structural. `Budget` is one row per scope (not per-user/org-id) —
+  the plan's "protect against runaway, not against usage" framing implies a shared policy, not
+  per-tenant configuration, and this is still a single-tenant deployment.
+- **Tests:** new `tests/test_budgets.py` (11 cases) — request/user/org block pre-call with zero
+  provider calls made; per-user isolation; notify-mode logs (caplog) but still answers; rollup
+  atomic-increment and day/month-boundary correctness (old period row untouched, new period starts
+  at 0); ops summary exposes all three scopes with the right spend semantics per scope.
+- **Accept:** 376 tests green (up from 365 — 11 new); `gate:all` 00–15 green; i18n parity (1832
+  keys) + `tsc -b` green; no frontend files needed a brand-gate review beyond the existing ops list
+  pattern reused as-is.
 
 ### [ ] T2.8 — Semantic cache for knowledge Q&A
 

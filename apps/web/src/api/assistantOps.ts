@@ -41,6 +41,17 @@ export interface OpsSummary {
   // a call answered at cost 0 from the cache.
   cache: { lookups: number; hits: number; hit_rate: number };
   eval_scoreboard: OpsEvalScoreboard | null;
+  // Token & cost budgets (T2.7): one row per scope. ``limit_microcents``/``action`` are null when
+  // the scope has no configured row (never blocks). ``spend_microcents`` is null for "request"
+  // (a per-call estimate check, nothing rolled up) — see gateway/budgets.py::ops_summary.
+  budgets: OpsBudget[];
+}
+
+export interface OpsBudget {
+  scope: "request" | "user" | "org";
+  limit_microcents: number | null;
+  action: "block" | "notify" | null;
+  spend_microcents: number | null;
 }
 
 export function getOpsSummary(days = 7): Promise<OpsSummary> {

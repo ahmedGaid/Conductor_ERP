@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import SYSTEM_ADMIN
 
+from ..gateway import budgets as gateway_budgets
 from ..models import Trace, TraceStep
 
 # The ops view exposes cost, error detail and every user's activity — company-wide operational
@@ -148,6 +149,7 @@ class OpsSummaryView(APIView):
                 "hit_rate": (cache_hits / cache_lookups) if cache_lookups else 0.0,
             },
             "eval_scoreboard": _latest_scoreboard(),
+            "budgets": gateway_budgets.ops_summary(),
         })
 
 

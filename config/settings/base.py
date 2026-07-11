@@ -272,6 +272,23 @@ ASSISTANT_TASK_TIMEOUTS = {
 ASSISTANT_CACHE_TASKS = {"digest", "suggest", "judge"}
 ASSISTANT_CACHE_TTLS = {"digest": 20 * 3600, "suggest": 6 * 3600, "judge": None}
 
+# Token & cost budget defaults (ai-reliability T2.7), seeded into the ``assistant_budget`` table by
+# migration 0006 — protect against runaway spend, not against normal usage (a customer can raise
+# these; the migration only sets the day-one row). Values are microcents (same discipline as
+# ``Trace.cost_microcents`` / ``money.ts``). Phase 1 measured ~290 microcents/interaction avg on
+# eval-run traffic (BASELINE.md) — no real customer traffic exists pre-launch, so "10x observed
+# baseline" below is applied to a generous assumed heavy-usage volume, not a precise multiplier of
+# real production numbers:
+#   request: ~10x the worst realistic single call (ASSISTANT_MAX_TOKENS output on the most
+#            expensive priced model, plus a generous input allowance).
+#   user/day: ~10x a heavy user's Phase-1-rate day (200 interactions/day).
+#   org/month: ~10x a 20-user shop's Phase-1-rate month.
+ASSISTANT_BUDGET_REQUEST_MICROCENTS = env.int("ASSISTANT_BUDGET_REQUEST_MICROCENTS", default=50_000)
+ASSISTANT_BUDGET_USER_DAY_MICROCENTS = env.int("ASSISTANT_BUDGET_USER_DAY_MICROCENTS", default=500_000)
+ASSISTANT_BUDGET_ORG_MONTH_MICROCENTS = env.int(
+    "ASSISTANT_BUDGET_ORG_MONTH_MICROCENTS", default=300_000_000)
+ASSISTANT_BUDGET_ACTION_DEFAULT = env("ASSISTANT_BUDGET_ACTION_DEFAULT", default="block")
+
 # Per-task-class failover chain (ai-reliability T2.3), ``{task: ["provider:model", ...fallbacks]}``.
 # v1: every task gets the SAME chain — today's default model first, then the other two providers'
 # nearest-capability model (all four are general-purpose vision-capable chat models). ``core.py``

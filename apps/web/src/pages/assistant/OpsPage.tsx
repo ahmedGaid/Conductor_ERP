@@ -217,6 +217,20 @@ export function OpsPage() {
                 </ul>
               )}
 
+              <h2 className="ops-card__title ops-card__title--spaced">{t("ops.budgets.title")}</h2>
+              <ul className="ops-error-list">
+                {s.budgets.map((b) => (
+                  <li key={b.scope}>
+                    <span>{t(`ops.budgets.scope.${b.scope}`)}</span>
+                    <span className="latin muted">
+                      {b.limit_microcents == null
+                        ? t("ops.budgets.unconfigured")
+                        : `${b.spend_microcents == null ? "—" : formatCost(b.spend_microcents)} / ${formatCost(b.limit_microcents)}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
               <h2 className="ops-card__title ops-card__title--spaced">{t("ops.evalScoreboard")}</h2>
               {s.eval_scoreboard ? (
                 <div className="ops-eval">

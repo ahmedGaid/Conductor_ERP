@@ -68,6 +68,7 @@
     "editPrompt": "Edit question",
     "jumpNew": "New reply",
     "errorLine": "Something went wrong. Please try again.",
+    "budgetExceeded": "The AI assistant's spending limit has been reached for now. Ask an administrator to raise it.",
     "attach": "Attach files",
     "dropHint": "Drop files to attach",
     "uploading": "Uploading…",
@@ -350,6 +351,19 @@
     },
     "routing": {
       "skipped": "Skipped providers"
+    },
+    "budgets": {
+      "title": "Spend vs budget",
+      "scope": {
+        "request": "Per request",
+        "user": "Busiest user / day",
+        "org": "Organization / month"
+      },
+      "action": {
+        "block": "Blocks",
+        "notify": "Notifies only"
+      },
+      "unconfigured": "Not configured"
     },
     "col": {
       "time": "Time",

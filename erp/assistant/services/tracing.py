@@ -213,5 +213,11 @@ def _write(handle: TraceHandle) -> None:
                 )
                 for i, s in enumerate(handle.steps)
             )
+        if cost:
+            # T2.7: lazy import — gateway/core.py imports this module's functions lazily to avoid
+            # the reverse circular import, so budgets closes the loop the same way here.
+            from ..gateway import budgets as gateway_budgets
+
+            gateway_budgets.record_spend(actor=handle.actor, cost_microcents=cost)
     except Exception:
         logger.exception("tracing: write failed — AI call unaffected")

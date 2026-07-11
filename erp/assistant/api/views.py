@@ -269,7 +269,7 @@ class ChatView(APIView):
             except (BrokenPipeError, ConnectionResetError, GeneratorExit):
                 raise  # client cancelled — partial text already persisted; exit quietly
             except AppError as exc:
-                yield _sse({"type": "error", "message": exc.message})
+                yield _sse({"type": "error", "message": exc.message, "code": exc.code})
             except Exception:  # pragma: no cover - unexpected; never leak a trace to the client
                 logger.exception("assistant chat stream failed")
                 yield _sse({"type": "error", "message": AssistantUnavailableError.message})
@@ -379,7 +379,7 @@ class DetourResumeView(APIView):
             except (BrokenPipeError, ConnectionResetError, GeneratorExit):
                 raise  # client cancelled — partial welcome-back already persisted; exit quietly
             except AppError as exc:
-                yield _sse({"type": "error", "message": exc.message})
+                yield _sse({"type": "error", "message": exc.message, "code": exc.code})
             except Exception:  # pragma: no cover - unexpected; never leak a trace to the client
                 logger.exception("assistant detour resume failed")
                 yield _sse({"type": "error", "message": AssistantUnavailableError.message})

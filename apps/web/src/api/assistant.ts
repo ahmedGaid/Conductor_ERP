@@ -395,6 +395,9 @@ export interface ChatEvent {
   // Which data tool answered — the client maps it to curated follow-up questions (session 06).
   used_tool?: string | null;
   message?: string;
+  // `error` events (T2.7): the AppError catalog code, e.g. "AI-007" for a budget block — lets the
+  // client show a designed message instead of the raw (English-only) backend string.
+  code?: string;
   // `step` events (session 09): one tool call the agent is running / has finished.
   tool?: string;
   label?: string;

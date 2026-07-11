@@ -32,8 +32,8 @@ from ..client import (
     provider,
     provider_chain,
 )
-from . import breaker, cache, retry
-from ..errors import AllProvidersDown, AssistantUnavailableError, classify_exception
+from . import breaker, budgets, cache, retry
+from ..errors import AllProvidersDown, AssistantUnavailableError, BudgetExceeded, classify_exception
 
 __all__ = ["complete_json", "complete_stream", "embed_text", "model_id", "provider",
            "provider_chain"]
@@ -170,6 +170,16 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
                 handle.step(kind="llm", name="cache", detail={"cache": "exact"})
                 handle.usage(provider="cache")
                 return cached
+        # T2.7: a cache miss (or an uncached task) is about to cost real money — check the
+        # request/user-day/org-month budgets against the estimated cost of the chain head's model
+        # before any provider is tried. A cache hit above never reaches here (correctly free).
+        estimated_cost = budgets.estimate_cost_microcents(
+            model_id(chain[0]), estimate_tokens(system + user), settings.ASSISTANT_MAX_TOKENS)
+        try:
+            budgets.check(estimated_cost=estimated_cost, actor=actor)
+        except BudgetExceeded:
+            handle.fail("budget_exceeded")
+            raise
         # T2.3: a provider with 5 consecutive retryable failures in the last 60s is skipped for a
         # 30s cooldown rather than tried again (gateway/breaker.py). ``routing`` is a local dict
         # mutated in place as the walk progresses; it's only attached to the trace (handle.meta)
@@ -295,6 +305,17 @@ def complete_stream(messages: list, *, system: str | None = None, media: list | 
         out_parts: list[str] = []
         last_exc: Exception | None = None
         chain = provider_chain()
+        # T2.7: same pre-call budget gate as complete_json — no cache to check first here (the
+        # stream path is never cache-eligible), so this runs right after the chain is known.
+        stream_input_text = (system or "") + "".join(
+            m.get("content", "") for m in messages if isinstance(m.get("content"), str))
+        estimated_cost = budgets.estimate_cost_microcents(
+            model_id(chain[0]), estimate_tokens(stream_input_text), settings.ASSISTANT_MAX_TOKENS)
+        try:
+            budgets.check(estimated_cost=estimated_cost, actor=actor)
+        except BudgetExceeded:
+            handle.fail("budget_exceeded")
+            raise
         # T2.3: same breaker skip/record as complete_json — see the comment there.
         usable = [p for p in chain if not breaker.is_open(p)]
         skipped: list[dict] = [{"provider": p, "reason": "breaker_open"} for p in chain if p not in usable]

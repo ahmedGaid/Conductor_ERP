@@ -53,6 +53,16 @@ class ActionFailedError(AppError):
     message = "That could not be created just now"
 
 
+class BudgetExceeded(AppError):
+    """A cost/token budget (request, user/day, or org/month — ai-reliability T2.7) is exhausted;
+    the call was blocked before any provider was tried. Blame-free and distinct from a provider
+    outage: the fix is an admin raising the budget, not retrying."""
+
+    code = "AI-007"
+    status_code = 429
+    message = "This AI budget has been used up for now — ask an admin to raise it"
+
+
 # --- error taxonomy (ai-reliability T1.9) -------------------------------------------------------
 # Closed set every ``Trace.error_class`` value is mapped into at the tracing seam
 # (``services/tracing.py``) — ops aggregation (top error classes, alerts) reasons over a handful
@@ -66,6 +76,7 @@ ERROR_TAXONOMY = (
     "guardrail_blocked",
     "context_overflow",
     "cancelled",
+    "budget_exceeded",
     "unknown",
 )
 
@@ -85,6 +96,8 @@ def classify_exception(exc: BaseException) -> str:
         return "cancelled"
     if isinstance(exc, ActionForbiddenError):
         return "guardrail_blocked"
+    if isinstance(exc, BudgetExceeded):
+        return "budget_exceeded"
     if isinstance(exc, ActionFailedError):
         return "tool_error"
     if isinstance(exc, (ExtractionFailedError, AssistantUnavailableError)):

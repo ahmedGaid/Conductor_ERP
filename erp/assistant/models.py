@@ -227,3 +227,51 @@ class ResponseCacheVersion(models.Model):
 
     def __str__(self) -> str:
         return f"{self.task}@v{self.version}"
+
+
+class Budget(models.Model):
+    """A spend ceiling (ai-reliability T2.7): one row per scope. ``request`` is checked against a
+    single call's estimated cost; ``user`` and ``org`` are checked against ``SpendRollup`` (every
+    user shares the same per-user ceiling — there is no per-user override in v1, matching the
+    plan's "protect against runaway, not against usage" intent). ``action`` = ``block`` raises
+    ``BudgetExceeded``; ``notify`` only logs and lets the call through."""
+
+    class Scope(models.TextChoices):
+        REQUEST = "request"
+        USER = "user"
+        ORG = "org"
+
+    class Action(models.TextChoices):
+        BLOCK = "block"
+        NOTIFY = "notify"
+
+    scope = models.CharField(max_length=10, choices=Scope.choices, unique=True)
+    limit_microcents = models.BigIntegerField()
+    action = models.CharField(max_length=10, choices=Action.choices, default=Action.BLOCK)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.scope}<={self.limit_microcents}({self.action})"
+
+
+class SpendRollup(models.Model):
+    """Atomic running spend for a ``user`` or ``org`` scope over one period (ai-reliability T2.7).
+    ``period`` is date-keyed: the calendar day for ``user`` (resets at midnight), the first of the
+    month for ``org`` (resets on the 1st) — see ``gateway/budgets.py::_period_start``.
+    ``scope_key`` is the user id as a string for ``user`` rows, or the constant ``"org"`` for the
+    single org-wide row (single-tenant deployment — no real org id needed)."""
+
+    scope = models.CharField(max_length=10, choices=Budget.Scope.choices)
+    scope_key = models.CharField(max_length=64)
+    period = models.DateField()
+    spend_microcents = models.BigIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["scope", "scope_key", "period"],
+                                    name="uniq_spend_rollup_scope_key_period"),
+        ]
+        indexes = [models.Index(fields=["scope", "period"])]
+
+    def __str__(self) -> str:
+        return f"{self.scope}:{self.scope_key}@{self.period}={self.spend_microcents}"

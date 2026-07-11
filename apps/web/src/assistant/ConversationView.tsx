@@ -243,7 +243,10 @@ export function ConversationView() {
             usedTool = e.used_tool ?? null;
             if (e.message_id != null) messageId = e.message_id;
           } else if (e.type === "error") {
-            errMsg = e.message ?? t("assistant.errorLine");
+            // T2.7: a budget block gets its own designed ar/en line, not the raw backend string
+            // (which is English-only) — same "distinct code, distinct notice" precedent as T2.6's
+            // streamRetrying.
+            errMsg = e.code === "AI-007" ? t("assistant.budgetExceeded") : e.message ?? t("assistant.errorLine");
           }
         },
       );
