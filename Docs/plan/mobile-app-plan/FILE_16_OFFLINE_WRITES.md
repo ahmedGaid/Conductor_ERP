@@ -1,6 +1,6 @@
 # SESSION 16 — Offline Writes & Sync
-# Files: apps/mobile/src/offline/writeQueue.ts (new), erp/core or module API idempotency support
-#        (additive), FormScreen/action integration (surgical edits in existing screens)
+# Files: apps/mobile/lib/data/datasources/local/write_queue.dart (new), erp/core or module API
+#        idempotency support (additive), FormScreen/action integration (surgical edits)
 
 **Objective:** complete the offline story — mutations made on a dead network are queued durably,
 replayed exactly-once when connectivity returns, and conflicts are surfaced honestly (server
@@ -21,8 +21,11 @@ document number offline. This boundary is a FEATURE; write it into DECISIONS.
    queueable endpoints — additive, tested. Design it once in `erp/core` (or wherever
    cross-module API helpers live — READ the codebase's convention).
 3. Session 09/10 offline-blocked states — the screens this session upgrades.
-4. `expo-network` / NetInfo availability in the current SDK for connectivity signal (listener +
-   on-demand check; treat "connected" as a hint, only a successful replay as truth).
+4. Connectivity signal: the session-04 `NetworkInfo` HTTP probe (`flutter-lessons` issue 1) on
+   demand + a lifecycle-resume trigger. Treat "connected" as a hint; only a successful replay is
+   truth. NO background-execution dependency in v1 — foreground triggers (connectivity restored,
+   app resume, post-enqueue) are primary; a background isolate/WorkManager path is added later
+   ONLY if field measurement shows foreground replay isn't enough (then a DECISIONS entry).
 
 "Do not write anything yet."
 
@@ -36,26 +39,28 @@ document number offline. This boundary is a FEATURE; write it into DECISIONS.
    session's commit message). Tests: double-POST with same key = one record + identical
    response; different keys = two records; cross-user same key = isolated.
 
-## Task B — Write queue (`src/offline/writeQueue.ts`)
+## Task B — Write queue (drift `write_queue` table + runner)
 
-1. SQLite `write_queue(id, verb, endpoint, payload, idempotency_key, status, attempts,
-   created_at, error_key)`. Status: pending → sending → done | conflict | failed.
+1. drift table `write_queue(id, verb, endpoint, payload, idempotencyKey, chainId, status,
+   attempts, createdAt, errorKey)`. Status: pending → sending → done | conflict | failed.
+   Datasource uses the `_ready` init pattern (`flutter-lessons` issue 3).
 2. Runner: strictly FIFO per queue (ordering matters: create customer BEFORE the lead that
-   references it — same-session dependent writes share a `chain_id` and a chain stops on first
-   failure); triggers: connectivity restored, app foreground, post-enqueue. Single-flight (one
-   runner, ever). Backoff on 5xx/network; NO retry on 4xx (that's a conflict/validation outcome,
-   not a network problem).
+   references it — same-session dependent writes share a `chainId` and a chain stops on first
+   failure); triggers: connectivity restored, app resume, post-enqueue. Single-flight (one
+   runner, ever — a `Completer`-guarded singleton). Backoff on 5xx/network; NO retry on 4xx
+   (that's a conflict/validation outcome, not a network problem).
 3. Outcomes:
    - 2xx → done; invalidate affected cache keys; quiet toast if app foregrounded ("تم الحفظ —
      كان في انتظار الاتصال").
    - 409/validation → `conflict`: kept in an **Outbox** screen (More → "في الانتظار"): each row
      shows what was attempted, the server's translated reason, and actions — edit & retry
-     (reopens the FormScreen prefilled), or discard (Dialog). Server wins; the user decides the
-     retry. Nothing silent, nothing lost.
+     (reopens the FormScreen prefilled), or discard (AppDialog). Server wins; the user decides
+     the retry. Nothing silent, nothing lost.
 4. Optimistic reads: queued creates appear in lists from a cache overlay tagged "بانتظار
-   المزامنة" (StatusChip) so the field worker trusts the app; overlay resolves on replay.
+   المزامنة" (StatusChip) so the field worker trusts the app; overlay resolves on replay
+   (in-place list updates, `flutter-lessons` issue 5).
 
-## Task C — Screen integration + background sync
+## Task C — Screen integration
 
 1. FormScreen: when offline and the verb is queueable → submit becomes "سيُحفظ عند الاتصال"
    (designed, honest) → enqueue. Non-queueable verbs keep the session-09 online-required state.
@@ -63,10 +68,7 @@ document number offline. This boundary is a FEATURE; write it into DECISIONS.
    idempotent semantics AND staleness guards exist (send the document's version/updated_at;
    server rejects stale → conflict path). Otherwise they stay online-only — correctness over
    demo value.
-3. Background replay: `expo-background-task`/background-fetch (READ current Expo API name) —
-   opportunistic queue run when OS grants time; never depend on it, foreground triggers remain
-   primary.
-4. Outbox badge on More tab when non-empty; Outbox empty state is a designed "كل شيء متزامن".
+3. Outbox badge on More tab when non-empty; Outbox empty state is a designed "كل شيء متزامن".
 
 ---
 
@@ -82,7 +84,8 @@ document number offline. This boundary is a FEATURE; write it into DECISIONS.
 - [ ] Chain: offline customer + dependent record → both land, order preserved; force first to
       conflict → second waits, chain visible in Outbox
 - [ ] Invoice issue attempt offline → still the honest online-required state (boundary holds)
-- [ ] `pytest` green on idempotency tests; tsc + parity green; PARITY.md offline rows flipped
+- [ ] `pytest` green on idempotency tests; analyze + test + parity green; PARITY.md offline rows
+      flipped
 
 ## Risks
 

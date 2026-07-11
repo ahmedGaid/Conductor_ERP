@@ -7,18 +7,23 @@ TalkBack in Arabic, dynamic type, contrast, reduced motion. Nothing here is a re
 measurement pass with surgical fixes and budgets written down so regressions are visible.
 
 **Budgets (record in `PERF.md`, verified this session and re-verified in 21):**
-cold start → interactive dashboard ≤ 2.5 s on the low-end Android reference device (≤ 1.5 s on a
-current iPhone); list scroll 60 fps sustained on 1000-row cached lists; navigation transition
-start < 100 ms after tap; APK/IPA size noted with a stated ceiling; zero dropped-frame warnings
-in dev overlay on the six busiest screens.
+cold start → interactive cached dashboard ≤ 2.5 s on the low-end Android reference device
+(≤ 1.5 s on a current iPhone); **99th-percentile frame time ≤ 16 ms** (zero visible jank) on the
+six busiest screens, measured in profile mode via DevTools timeline; list scroll smooth on
+1000-row cached lists; navigation transition start < 100 ms after tap; APK (split-per-abi) and
+IPA sizes noted with a stated ceiling.
 
 ---
 
 ## Before You Start
 
 1. Acquire/emulate the low-end Android reference (define the exact model in PERF.md).
-2. Read current Expo/RN profiling guidance (release-mode profiling only — dev mode lies).
-3. List the six busiest screens from usage logic: dashboard, invoice list, invoice create,
+2. Read current Flutter profiling guidance (**profile/release mode only — debug mode lies**):
+   DevTools timeline, `PerformanceOverlay`, `SchedulerBinding.addTimingsCallback` for frame
+   stats.
+3. Confirm Impeller is the active renderer on both platforms for the pinned SDK; note any
+   platform still on Skia.
+4. List the six busiest screens from usage logic: dashboard, invoice list, invoice create,
    approvals inbox, assistant conversation, item list.
 
 "Do not write anything yet."
@@ -27,41 +32,47 @@ in dev overlay on the six busiest screens.
 
 ## Task A — Measure, then fix startup
 
-1. Measure release-build cold start on both reference devices; break down: JS bundle load →
-   first render → auth/hydration → dashboard data. Record baseline in PERF.md.
-2. Standard fixes AS MEASUREMENT DICTATES (not speculatively): Hermes confirmed on; deferred
-   requires/lazy route loading for heavy screens (assistant markdown, scanner, report table);
-   SecureStore/SQLite reads parallelized in the boot path; splash → skeleton dashboard
-   immediately (cached render is the whole point of session 04 — verify it actually renders
-   pre-network).
+1. Measure release-build cold start on both reference devices; break down: engine/runtime init →
+   first frame → auth/hydration → cached dashboard render. Record baseline in PERF.md.
+2. Standard fixes AS MEASUREMENT DICTATES (not speculatively): drift/secure-storage reads
+   parallelized in the boot path (one `Future.wait`); native splash hands off to the cached
+   skeleton dashboard immediately (cached render is the whole point of session 04 — verify it
+   actually renders pre-network); defer heavy construction (scanner, report table, assistant
+   markdown) to first use; check for accidental synchronous asset/JSON work on the UI isolate —
+   move heavy parsing to `compute()` only if measurement shows it matters.
 
-## Task B — Lists & memory
+## Task B — Frames, lists & memory
 
-1. FlashList audit on the six screens: stable `keyExtractor`, `getItemType` for mixed rows,
-   memoized row components, no anonymous closures in renderItem, image thumbnails sized (never
-   full-res decode into a 56 dp row). Fix violations.
-2. Memory: attachment viewer and scanner release on unmount (profile a 10-minute
-   scan-and-browse session; heap must plateau); SQLite cache eviction (session 04) verified
-   against its caps.
-3. Re-render hygiene: React DevTools highlight pass on the six screens; context providers split
-   if theme/auth/i18n churn re-renders the world (fix = split providers/selector hooks — a
-   session-02/05 refactor if needed, small and contained).
+1. Frame audit on the six screens (DevTools timeline, profile mode): hunt oversized rebuilds
+   (missing `const` constructors — the lint enforces most; `buildWhen` gaps re-checked), missing
+   `RepaintBoundary` around independently-animating regions (streaming bubbles!), shader-compile
+   jank (Impeller should remove it — verify on the low-end device; if any first-run stutter
+   remains, note it honestly in PERF.md).
+2. List audit: `ListView.builder` everywhere (no unbuilt `Column` of hundreds), `prototypeItem`/
+   `itemExtent` where rows are uniform, memoized row widgets, image thumbnails sized with
+   `cacheWidth`/`cacheHeight` (never full-res decode into a 56 dp row).
+3. Memory: attachment viewer and scanner release on close (profile a 10-minute scan-and-browse
+   session in DevTools memory view; heap must plateau — scanner controller disposal from session
+   11 verified); drift cache eviction (session 04) verified against its caps.
 
 ## Task C — Accessibility
 
 1. Screen readers: TalkBack + VoiceOver pass over the golden path (sign-in → dashboard → approve
-   → invoice create → assistant). Every Pressable gets `accessibilityRole` + Arabic
-   `accessibilityLabel` (labels are i18n keys — parity checker covers them); money values read
-   as amounts, not digit soup (format the label string); StatusChips announce the WORD (colour
-   was never the only carrier — brand rule pays off here); ScanSheet announces state changes.
-2. Dynamic type: OS font scale 130% and 200% — layouts reflow (no clipped Arabic ascenders, no
+   → invoice create → assistant). Every tappable gets a `Semantics` label in Arabic (labels are
+   i18n keys — parity checker covers them); money values read as amounts, not digit soup
+   (`Semantics.label` carries the formatted string); StatusChips announce the WORD (colour was
+   never the only carrier — brand rule pays off here); ScanSheet announces state changes
+   (`SemanticsService.announce`).
+2. Dynamic type: OS font scale 130% and 200% (`MediaQuery.textScaler` honoured — no
+   `textScaleFactor: 1` overrides anywhere) — layouts reflow (no clipped Arabic ascenders, no
    fixed-height rows that truncate), critical screens remain operable at 200%.
 3. Contrast: audit token pairs used on mobile against WCAG AA (the tokens came from web so this
    should pass — VERIFY, especially dark-mode secondary text; any failure is a tokens.css
    conversation, not a mobile fork).
-4. Reduced motion: full sweep — every animation consults `useReducedMotion` (grep for animation
-   entry points; the session-05 rule audited app-wide).
-5. Keyboard (iPad): tab order sane on FormScreens; cmd-K search; esc closes Sheets.
+4. Reduced motion: full sweep — every animation consults the session-05 `reducedMotion(context)`
+   helper (grep animation entry points; the rule audited app-wide).
+5. Keyboard (iPad): tab order sane on FormScreens (`FocusTraversalGroup`); cmd-K search; esc
+   closes Sheets.
 
 ---
 
@@ -70,13 +81,13 @@ in dev overlay on the six busiest screens.
 - [ ] PERF.md exists: device definitions, baseline vs. after numbers, all budgets met (or a
       written, justified exception per miss)
 - [ ] Low-end Android release build: cold start ≤ 2.5 s to interactive cached dashboard;
-      1000-row invoice list scrolls without visible jank
+      1000-row invoice list scrolls without visible jank; p99 frame ≤ 16 ms on the six screens
 - [ ] TalkBack, Arabic: complete an approval end-to-end eyes-closed (screen curtain on)
 - [ ] VoiceOver: same flow on iOS
 - [ ] 200% font scale: sign-in, dashboard, invoice create, approvals all operable
 - [ ] Reduced motion: zero animated transitions anywhere (spot-check 6 screens)
-- [ ] tsc + parity green; no behaviour regressions on the phase-2/3 smoke highlights (quick
-      re-run of session 09 + 10 golden paths)
+- [ ] analyze + test + goldens + parity green; no behaviour regressions on the phase-2/3 smoke
+      highlights (quick re-run of session 09 + 10 golden paths)
 
 ## Risks
 

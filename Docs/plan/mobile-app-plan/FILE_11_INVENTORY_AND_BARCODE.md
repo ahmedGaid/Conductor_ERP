@@ -1,6 +1,6 @@
 # SESSION 11 — Inventory & Barcode
-# Files: apps/mobile/app/(tabs)/more/inventory/**, apps/mobile/src/api/endpoints/inventory.ts (new),
-#        apps/mobile/src/scan/** (new)
+# Files: apps/mobile/lib/presentation/pages/more/inventory/**, inventory domain/data layers (new),
+#        apps/mobile/lib/presentation/widgets/scan/** (new)
 
 **Objective:** inventory on the phone — items, stock levels per warehouse, movements — plus the
 capability that makes mobile BETTER than desktop here: the camera as a barcode/QR scanner, wired
@@ -16,8 +16,8 @@ storekeeper walks the aisle scanning; the ERP follows.
    `erp/inventory` API serializers — if no barcode field exists, adding one is a BACKEND
    decision: additive nullable field + admin/web edit surface; do it properly or defer with a
    PARITY.md note; never a mobile-only hack).
-2. Read `expo-camera` current docs — barcode scanning API (`CameraView` barcode settings),
-   permission flow, torch control.
+2. Read `mobile_scanner` current docs — controller API, supported formats, permission flow,
+   torch control.
 3. Sessions 09/10 barcode stubs — the integration points you'll now fill.
 
 "Do not write anything yet."
@@ -29,21 +29,25 @@ storekeeper walks the aisle scanning; the ERP follows.
 1. Items ListScreen: server search, category/warehouse FilterSheet, stock-level column with
    low-stock emphasis EXACTLY as web renders it (word + colour pairing).
 2. Item RecordScreen: details, per-warehouse stock table, recent movements (paginated), price
-   info per pricing rules web shows, attachments stub, barcode display (renders the item's own
-   barcode/QR via `react-native-svg` — no new dep — so a phone can BE the label in a pinch).
+   info per pricing rules web shows, attachments stub, barcode display (render the item's own
+   barcode/QR with a small `CustomPainter` — EAN-13/Code128 bar geometry is simple math, QR only
+   if genuinely needed; no new dep — so a phone can BE the label in a pinch. If QR display turns
+   out to be required and painful, defer with a PARITY.md note rather than adding a dep silently).
 3. Item create/edit: FormScreen; barcode field fillable by scanning (Task B).
 4. Stock movements list + movement detail (read views; adjustments/transfers only if web has
    them — mirror exactly what exists, PARITY.md rows for anything deferred).
 
-## Task B — Scanner (`src/scan/`)
+## Task B — Scanner (`widgets/scan/`)
 
-1. `ScanSheet`: full-screen camera modal — permission ask with a designed pre-prompt (explain
-   WHY before the OS dialog; decline → designed fallback state with settings link), viewfinder
-   with a calm reticle (no laser-red gimmicks; monochrome, token-timed pulse honouring reduced
-   motion), torch toggle, haptic + brief highlight on successful decode. Debounce duplicate
-   reads (same code within 2 s = one event).
-2. Formats: EAN-13/8, Code128, QR (+ whatever the market needs — configurable constant).
-3. API: `scanOne(): Promise<string>` (resolve on first decode) and `scanMany(onCode)` (continuous
+1. `ScanSheet`: full-screen camera modal on `mobile_scanner` — permission ask with a designed
+   pre-prompt (explain WHY before the OS dialog; decline → designed fallback state with settings
+   link), viewfinder with a calm reticle (no laser-red gimmicks; monochrome, token-timed pulse
+   honouring reduced motion), torch toggle, haptic + brief highlight on successful decode.
+   Debounce duplicate reads (same code within 2 s = one event); dispose the controller on close
+   (camera must release — memory smoke in session 17 checks this).
+2. Formats: EAN-13/8, Code128, QR (+ whatever the market needs — configurable constant; restrict
+   the active format set for decode speed on cheap devices).
+3. API: `Future<String> scanOne()` (resolve on first decode) and `scanMany(onCode)` (continuous
    mode for receiving/counting: stays open, beep-haptic per code, running count chip).
 4. Wire-ups:
    - Items list header: scan icon → `scanOne` → lookup by barcode (server endpoint — add the
@@ -67,7 +71,8 @@ storekeeper walks the aisle scanning; the ERP follows.
 - [ ] Permission declined → designed fallback, app fully usable without camera
 - [ ] Low light: torch toggle works; scanning still succeeds
 - [ ] Stock levels match web for the same warehouse; movements paginate
-- [ ] RTL pass; reduced-motion reticle static; tsc + parity green; PARITY.md inventory rows flipped
+- [ ] RTL pass; reduced-motion reticle static; analyze + test + parity green; PARITY.md inventory
+      rows flipped
 
 ## Risks
 

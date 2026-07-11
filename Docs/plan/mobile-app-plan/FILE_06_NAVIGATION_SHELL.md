@@ -1,11 +1,12 @@
 # SESSION 6 — Navigation Shell & Deep Links
-# Files: apps/mobile/app/** (expo-router routes), apps/mobile/src/ui/shell/** (new),
-#        apps/mobile/src/navigation/links.ts (new)
+# Files: apps/mobile/lib/core/router/** (new), apps/mobile/lib/presentation/pages/shell/** (new),
+#        apps/mobile/lib/core/router/links.dart (new)
 
 **Objective:** the app's skeleton — tab + stack navigation mirroring the web nav's information
 architecture, monochrome chrome, a universal deep-link scheme (`conductor://`) that every
 notification and AI answer will use to land on exact records, and tablet split-view. Desktop
-concepts translate here: sidebar → tabs + "more" sheet; cmd-K → search screen; peek panel → Sheet.
+concepts translate here: sidebar → tabs + "more" sheet; cmd-K → search screen; peek panel →
+AppSheet.
 
 ---
 
@@ -15,28 +16,29 @@ concepts translate here: sidebar → tabs + "more" sheet; cmd-K → search scree
    order, and i18n keys of every section.
 2. Open web routing (find the router config) → inventory route patterns per module — deep links
    must map 1:1 to these so links can be shared across devices.
-3. Read current expo-router docs for: typed routes, linking config, and modal presentation.
-4. Open `PARITY.md` → the module rows define which tabs/stacks exist.
+3. Read current `go_router` docs for: `StatefulShellRoute.indexedStack` (tabs with per-tab
+   stacks), redirect guards, and deep-link handling.
+4. Recall `flutter-lessons` issue 7 — the router's auth redirect listens to the auth bloc, which
+   must be provided first.
+5. Open `PARITY.md` → the module rows define which tabs/stacks exist.
 
 "Do not write anything yet."
 
 ---
 
-## Task A — Route tree (`app/`)
+## Task A — Route tree (`lib/core/router/app_router.dart`)
 
 ```
-app/
-├── _layout.tsx            # providers: theme, auth guard, i18n dir; splash release
-├── (auth)/sign-in.tsx     # session 07 fills
-├── (tabs)/
-│   ├── _layout.tsx        # tab bar
-│   ├── home/              # dashboard stack (session 08)
-│   ├── sales/             # session 09
-│   ├── inbox/             # approvals + notifications (sessions 10, 15)
-│   ├── assistant/         # AI workspace (session 14)
-│   └── more/              # every remaining module, settings, devices — a designed list, not a dump
-├── search.tsx             # global search — full-screen modal, the cmd-K analogue
-└── [module]/[id].tsx      # record screens pushed onto whichever stack is active
+GoRouter
+├── /sign-in                      # session 07 fills
+├── StatefulShellRoute.indexedStack   # tab shell, per-tab navigation stacks
+│   ├── /home                     # dashboard branch (session 08)
+│   ├── /sales                    # session 09
+│   ├── /inbox                    # approvals + notifications (sessions 10, 15)
+│   ├── /assistant                # AI workspace (session 14)
+│   └── /more                     # every remaining module, settings, devices — a designed list, not a dump
+├── /search                       # global search — full-screen page, the cmd-K analogue
+└── /:module/:id                  # record screens pushed onto whichever branch is active
 ```
 
 Tab choice reasoning: the five things a user reaches hourly (home, sales, approvals inbox,
@@ -46,18 +48,19 @@ shift (never colour), labels from the same i18n keys web's nav uses.
 
 ## Task B — Chrome
 
-1. Headers: RN large-title feel via a shared `ScreenHeader` (Text `title` variant, back arrow
-   auto-flips in RTL — regression-test this explicitly; it was a real web bug).
-2. Android back button + iOS swipe-back both work on every stack (expo-router default — verify,
+1. Headers: a shared `ScreenHeader` (AppText `title` variant, back arrow auto-flips in RTL via
+   the directional icon wrapper — regression-test this explicitly; it was a real web bug).
+2. Android back button + iOS swipe-back both work on every stack (go_router default — verify,
    especially swipe-back in RTL which must come from the correct edge).
-3. Screen transitions: token durations via the navigator's animation config; reduced-motion →
-   fade-only.
+3. Screen transitions: custom `pageBuilder` using token durations from `TokenMotion`;
+   reduced-motion (`MediaQuery.disableAnimations`) → fade-only.
 
-## Task C — Deep links (`src/navigation/links.ts`)
+## Task C — Deep links (`lib/core/router/links.dart`)
 
-1. Register scheme `conductor` (done in app.json session 01) + associated domains/app links for
-   the future hosted domain (add the intent-filter/entitlement scaffolding now, values TBD).
-2. `linkFor(entity, id)` + `parseLink(url)` — canonical map `conductor://sales/invoices/123` ↔
+1. Register scheme `conductor` on both platforms (intent-filter / URL types — scaffolded in
+   session 01; verify) + App Links/Universal Links scaffolding for the future hosted domain
+   (values TBD).
+2. `linkFor(entity, id)` + `parseLink(uri)` — canonical map `conductor://sales/invoices/123` ↔
    web path `/sales/invoices/123`. One table drives both directions; unit-test round-trips.
 3. Cold-start handling: link arrives before auth/hydration → stash target, navigate after unlock
    (session 07 hooks in). Unknown/no-permission targets → designed "not available" state, never
@@ -67,11 +70,11 @@ shift (never colour), labels from the same i18n keys web's nav uses.
 
 1. Breakpoint from tokens (match web's sidebar breakpoint value): wide layout swaps tabs for a
    rail + two-pane (list | detail) using the same route tree — detail renders in the second pane
-   instead of pushing. Keep this mechanism simple: a `useIsWide()` hook + a `TwoPane` component
-   in `src/ui/shell/`; module sessions opt in per list screen.
+   instead of pushing. Keep this mechanism simple: an `isWide(context)` helper (MediaQuery) + a
+   `TwoPane` widget in `pages/shell/`; module sessions opt in per list screen.
 2. iPad: enable multitasking sizes (no locked orientation); Android foldables get the same
-   breakpoint behaviour for free. Hardware-keyboard basics on iPad: cmd-K opens search (RN
-   key events — keep minimal, just search for now).
+   breakpoint behaviour for free. Hardware-keyboard basics on iPad: cmd-K opens search
+   (`Shortcuts`/`Actions` widgets — keep minimal, just search for now).
 
 ---
 
@@ -79,15 +82,17 @@ shift (never colour), labels from the same i18n keys web's nav uses.
 
 - [ ] Arabic RTL: tab order mirrors, back arrows point right, swipe-back from the correct edge
 - [ ] Navigate every tab + a stub record screen; Android hardware back never exits unexpectedly
-- [ ] `npx uri-scheme open "conductor://sales/invoices/1" --android` (and iOS equivalent) →
-      app opens on the stub record screen; cold start (app killed) also works
+      (per-tab stacks pop correctly)
+- [ ] `adb shell am start -a android.intent.action.VIEW -d "conductor://sales/invoices/1"` (and
+      `xcrun simctl openurl booted ...` on iOS) → app opens on the stub record screen; cold start
+      (app killed) also works
 - [ ] Link to a bogus module → designed "not available" state
 - [ ] iPad/tablet emulator: wide layout shows rail + two panes; rotate → layout adapts live
-- [ ] Reduced motion → transitions fade; parity + tsc green; PARITY.md nav rows flipped
+- [ ] Reduced motion → transitions fade; parity + analyze + test green; PARITY.md nav rows flipped
 
 ## Risks
 
-- expo-router API drift → docs read is load-bearing.
+- go_router API drift → docs read is load-bearing.
 - RTL swipe-back edge cases on iOS → explicit smoke item; if broken, header back button is the
   guaranteed path and the issue is logged, not shipped silently.
 

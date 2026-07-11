@@ -65,7 +65,7 @@ reuse of a consumed refresh token revokes the whole device — token-theft tripw
 | `/api/mobile/auth/logout` | POST | revoke calling device (sets `revoked_at`, deletes live tokens). |
 | `/api/mobile/devices` | GET | current user's devices (name, platform, last seen) — powers "manage devices" on BOTH web and mobile settings. |
 | `/api/mobile/devices/<id>/revoke` | POST | remote logout of any of the user's own devices. Audit it. |
-| `/api/mobile/devices/push-token` | POST | store/replace the Expo push token for the calling device (session 15 consumes). |
+| `/api/mobile/devices/push-token` | POST | store/replace the FCM registration token for the calling device (session 15 consumes). |
 
 Add a DRF authentication class `MobileTokenAuthentication` (`Authorization: Bearer <token>`):
 hash lookup → live, unexpired, device not revoked → `request.user`. Append it to DRF's default

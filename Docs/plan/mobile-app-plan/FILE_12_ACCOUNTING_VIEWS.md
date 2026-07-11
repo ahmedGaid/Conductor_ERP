@@ -1,6 +1,6 @@
 # SESSION 12 — Accounting Views
-# Files: apps/mobile/app/(tabs)/more/accounting/**, apps/mobile/src/api/endpoints/accounting.ts (new),
-#        crm.ts + settings screens (new, small)
+# Files: apps/mobile/lib/presentation/pages/more/accounting/**, accounting + CRM domain/data
+#        layers (new), settings screens (new, small)
 
 **Objective:** the accountant's read surface — chart of accounts, ledger drill-down, trial
 balance, VAT position, bank reconciliation status — as fast, honest, RTL-perfect tables. Plus
@@ -37,7 +37,7 @@ make sensible on a phone (deferred rows documented, not hidden).
    lines list read-only. (Phase D of the roadmap — recon by photo — will land HERE later; leave
    an architecture note, not code.)
 
-## Task B — CRM + remaining reads (`more/`)
+## Task B — CRM + remaining reads (`pages/more/`)
 
 1. CRM: leads/contacts ListScreen + RecordScreen + create/edit FormScreen (CRM on the move is a
    real use case — calls/WhatsApp intents from records, same as customers).
@@ -63,18 +63,19 @@ reason** (e.g. "journal-entry composer — desktop-shaped; revisit on demand"). 
       deep-link hops, no dead ends
 - [ ] RTL ledger table: columns ordered correctly, debits/credits not mirrored into wrong columns
       (classic RTL-table bug — verify against web's RTL rendering)
-- [ ] Language switch in settings flips direction live without restart (or with one clean
-      designed restart — match what RN supports; no half-flipped UI)
+- [ ] Language switch in settings flips direction live without restart — Flutter rebuilds
+      `Directionality` from the new locale immediately; verify no half-flipped screen survives
+      (any stragglers = a physical-direction bug to fix, `flutter-lessons` issue 10)
 - [ ] Restricted user sees exactly what web shows them — nothing more (spot-check 2 screens)
 - [ ] PARITY.md: zero blank rows
-- [ ] tsc + parity script green
+- [ ] analyze + test + parity script green
 
 ## Risks
 
 - RTL numeric tables are subtle (digit shaping, column order, alignment) → budget the session's
   care here; compare against web's rendering, which already solved it.
-- Live direction flip is flaky in RN → the "clean designed restart" fallback is acceptable and
-  honest; half-flipped is not.
+- Stray physical-direction widgets only surface on live flip → the flip smoke item catches them;
+  fix the widget, never special-case the flip.
 
 ---
 
