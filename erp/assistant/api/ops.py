@@ -7,6 +7,7 @@ import json
 from datetime import timedelta
 from pathlib import Path
 
+from django.conf import settings
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -123,6 +124,13 @@ class OpsSummaryView(APIView):
             )
         ]
 
+        # Exact-match cache (T2.5): every call on a cache-enabled task is a lookup (one trace
+        # each); a hit carries the detail.cache="exact" step the gateway writes.
+        cache_tasks = sorted(getattr(settings, "ASSISTANT_CACHE_TASKS", set()))
+        cache_lookups = qs.filter(feature__in=cache_tasks).count()
+        cache_hits = TraceStep.objects.filter(
+            trace__created_at__gte=since, detail__cache="exact").count()
+
         return _envelope({
             "days": days,
             "total_calls": total,
@@ -134,6 +142,11 @@ class OpsSummaryView(APIView):
             "output_tokens": totals["output_tokens"] or 0,
             "cost_microcents": totals["cost_microcents"] or 0,
             "top_error_classes": top_errors,
+            "cache": {
+                "lookups": cache_lookups,
+                "hits": cache_hits,
+                "hit_rate": (cache_hits / cache_lookups) if cache_lookups else 0.0,
+            },
             "eval_scoreboard": _latest_scoreboard(),
         })
 

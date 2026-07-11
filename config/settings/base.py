@@ -264,6 +264,14 @@ ASSISTANT_TASK_TIMEOUTS = {
     "rerank": 10,
 }
 
+# Exact-match response cache (ai-reliability T2.5): only these task classes may cache — the
+# deterministic system tasks where identical input means an identical answer is correct.
+# chat/ask/agent_*/extract are hard-denied in gateway/cache.py regardless of this set. TTLs are
+# seconds; None (or an unlisted task) = no expiry — a judge grade of a fixed transcript never
+# goes stale, only a cache.bump("judge") invalidates it.
+ASSISTANT_CACHE_TASKS = {"digest", "suggest", "judge"}
+ASSISTANT_CACHE_TTLS = {"digest": 20 * 3600, "suggest": 6 * 3600, "judge": None}
+
 # Per-task-class failover chain (ai-reliability T2.3), ``{task: ["provider:model", ...fallbacks]}``.
 # v1: every task gets the SAME chain — today's default model first, then the other two providers'
 # nearest-capability model (all four are general-purpose vision-capable chat models). ``core.py``

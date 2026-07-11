@@ -31,9 +31,8 @@ from ..client import (
     provider,
     provider_chain,
 )
-from . import breaker, retry
+from . import breaker, cache, retry
 from ..errors import AllProvidersDown, AssistantUnavailableError, classify_exception
-from ..services.extraction import _gemini_schema  # reuse the strict→Gemini schema translation
 
 __all__ = ["complete_json", "complete_stream", "embed_text", "model_id", "provider",
            "provider_chain"]
@@ -68,6 +67,10 @@ def _anthropic(system: str, user: str, schema: dict, media: list | None = None,
 def _gemini(system: str, user: str, schema: dict, media: list | None = None,
             model: str | None = None, timeout: float | None = None) -> str:
     from google.genai import types
+
+    # Lazy: reuse the strict→Gemini schema translation without importing the services package at
+    # module load (services/__init__ imports agent, which imports this module back).
+    from ..services.extraction import _gemini_schema
 
     cfg = dict(
         system_instruction=system,
@@ -152,6 +155,20 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
     with cm as handle:
         last_exc: Exception | None = None
         chain = provider_chain()
+        # T2.5: deterministic system tasks (settings allowlist; chat/agent_*/extract hard-denied
+        # in gateway/cache.py) check the exact-match cache before any provider is tried. The key
+        # hashes the full input against the chain head's model — the routing intent, computed
+        # before breaker filtering so the key is stable across transient outages. A hit is a real
+        # answer at cost 0; the step marker makes the hit rate visible in ops.
+        cache_key = (cache.make_key(feature, prompt_ref, model_id(chain[0]), system, user,
+                                    schema, media)
+                     if cache.enabled(feature) else None)
+        if cache_key is not None:
+            cached = cache.get(feature, cache_key)
+            if cached is not None:
+                handle.step(kind="llm", name="cache", detail={"cache": "exact"})
+                handle.usage(provider="cache")
+                return cached
         # T2.3: a provider with 5 consecutive retryable failures in the last 60s is skipped for a
         # 30s cooldown rather than tried again (gateway/breaker.py). ``routing`` is a local dict
         # mutated in place as the walk progresses; it's only attached to the trace (handle.meta)
@@ -219,6 +236,8 @@ def complete_json(system: str, user: str, schema: dict, *, media: list | None = 
             handle.usage(provider=prov, model=model, estimated=True,
                          input_tokens=estimate_tokens(system + user),
                          output_tokens=estimate_tokens(text))
+            if cache_key is not None:
+                cache.put(feature, cache_key, parsed)
             return parsed
         if last_exc is not None:
             # Classify the real failure (e.g. "timeout", "rate_limited") onto the trace before it

@@ -37,6 +37,9 @@ export interface OpsSummary {
   // ERP ledger, just a finer unit since per-call cost is fractions of a cent.
   cost_microcents: number;
   top_error_classes: OpsErrorClassCount[];
+  // Exact-match response cache (T2.5): lookups = calls on cache-enabled task classes; a hit is
+  // a call answered at cost 0 from the cache.
+  cache: { lookups: number; hits: number; hit_rate: number };
   eval_scoreboard: OpsEvalScoreboard | null;
 }
 

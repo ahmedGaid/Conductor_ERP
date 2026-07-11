@@ -227,7 +227,7 @@
 - **Output:** the tool to prove a cheaper model before routing to it exists and works; no routing
   changed on unproven ground.
 
-### [ ] T2.5 — Exact-match response cache
+### [x] T2.5 — Exact-match response cache
 
 - **Goal:** deterministic system tasks stop re-paying for identical inputs.
 - **Prereq:** T2.1.

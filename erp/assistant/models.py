@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
 from django.db import models
+from django.utils import timezone
 
 
 class Conversation(models.Model):
@@ -193,3 +194,36 @@ class TraceStep(models.Model):
 
     def __str__(self) -> str:
         return f"{self.trace_id}#{self.seq}:{self.kind}"
+
+
+class ResponseCache(models.Model):
+    """Exact-match response cache (ai-reliability T2.5): one row per unique gateway input for a
+    cache-enabled task class. ``key`` hashes (task, prompt_ref, model, system, user, schema,
+    media hashes); ``input_version`` snapshots the task's version counter at write time, so a
+    ``gateway.cache.bump(task)`` makes every older row invisible without a delete sweep.
+    ``created_at`` is set explicitly on every (re)write — TTL counts from the latest write, not
+    the first insert."""
+
+    key = models.CharField(max_length=64, unique=True)
+    task = models.CharField(max_length=20)
+    response = models.JSONField()
+    created_at = models.DateTimeField(default=timezone.now)
+    hit_count = models.PositiveIntegerField(default=0)
+    input_version = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        indexes = [models.Index(fields=["task", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.task}:{self.key[:12]}"
+
+
+class ResponseCacheVersion(models.Model):
+    """Per-task version counter behind ``gateway.cache.bump`` — data-changing services bump it
+    to invalidate every cached response for that task at once (see gateway/cache.py)."""
+
+    task = models.CharField(max_length=20, unique=True)
+    version = models.PositiveIntegerField(default=0)
+
+    def __str__(self) -> str:
+        return f"{self.task}@v{self.version}"
