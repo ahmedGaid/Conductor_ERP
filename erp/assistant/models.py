@@ -229,6 +229,29 @@ class ResponseCacheVersion(models.Model):
         return f"{self.task}@v{self.version}"
 
 
+class SemanticCache(models.Model):
+    """Near-duplicate knowledge Q&A reuse (ai-reliability T2.8): one row per verified answer,
+    scoped to the asking user — answers are permission-scoped, never shared across users in v1.
+    ``knowledge_version`` snapshots ``ResponseCacheVersion(task="knowledge")`` at write time, so a
+    ``knowledge.ingest_document`` bump makes older rows invisible to lookup without a delete sweep
+    (same mechanism as ``ResponseCache.input_version``, see ``gateway/cache.py``)."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    question_text = models.CharField(max_length=500)
+    question_embedding = models.JSONField()
+    answer = models.TextField()
+    citations = models.JSONField(default=list)
+    knowledge_version = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    hit_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "knowledge_version"])]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}:{self.question_text[:30]}"
+
+
 class Budget(models.Model):
     """A spend ceiling (ai-reliability T2.7): one row per scope. ``request`` is checked against a
     single call's estimated cost; ``user`` and ``org`` are checked against ``SpendRollup`` (every

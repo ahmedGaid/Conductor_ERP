@@ -18,6 +18,8 @@ import json
 
 from erp.audit import services as audit
 
+from .. import client
+from ..gateway import cache as semantic_cache
 from ..gateway.core import complete_json, complete_stream
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
@@ -119,46 +121,61 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
             conversation.title = q[:60]
         conversation.save()  # also touches updated_at
 
-    route = complete_json(
-        _ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), q,
-        _ROUTER_SCHEMA, feature="ask", actor=actor,
-        conversation_id=conversation.id if conversation is not None else None,
-        prompt_ref=_router_prompt.ref,
-    )
-    name = route.get("tool") or "none"
-    tool = TOOLS.get(name)
+    # T2.8: a near-duplicate of a previously-answered knowledge question skips the router + answer
+    # model entirely — cheap, instant, scoped to this user at the current knowledge version.
+    q_embedding = client.embed_text(
+        q, actor=actor, conversation_id=conversation.id if conversation is not None else None)
+    cached = semantic_cache.semantic_lookup(actor, q_embedding)
 
-    if tool is None:
-        # No data tool fits — let the model reply conversationally, but still bound to "only DATA"
-        # (empty), so it explains what it can help with rather than inventing an answer.
-        result, citations, used = {}, [], None
+    if cached is not None:
+        answer, citations, used, from_cache = cached["answer"], cached["citations"], "search_documents", True
     else:
-        kwargs = {k: route[k] for k in _ARG_FIELDS if route.get(k) is not None and k in tool.args}
-        result = tool.run(actor, **kwargs)
-        citations = tool.cite(result)
-        used = name
+        from_cache = False
+        route = complete_json(
+            _ROUTER_SYSTEM.format(catalog=catalog_text(), query_grammar=query_grammar_text()), q,
+            _ROUTER_SCHEMA, feature="ask", actor=actor,
+            conversation_id=conversation.id if conversation is not None else None,
+            prompt_ref=_router_prompt.ref,
+        )
+        name = route.get("tool") or "none"
+        tool = TOOLS.get(name)
 
-    answer_obj = complete_json(
-        _answer_system(actor, page),
-        json.dumps({"question": q, "data": result}, ensure_ascii=False),
-        _ANSWER_SCHEMA, feature="ask", actor=actor,
-        conversation_id=conversation.id if conversation is not None else None,
-        prompt_ref=_answer_prompt_ref(),
-    )
-    answer = (answer_obj.get("answer") or "").strip()
+        if tool is None:
+            # No data tool fits — let the model reply conversationally, but still bound to "only
+            # DATA" (empty), so it explains what it can help with rather than inventing an answer.
+            result, citations, used = {}, [], None
+        else:
+            kwargs = {k: route[k] for k in _ARG_FIELDS if route.get(k) is not None and k in tool.args}
+            result = tool.run(actor, **kwargs)
+            citations = tool.cite(result)
+            used = name
+
+        answer_obj = complete_json(
+            _answer_system(actor, page),
+            json.dumps({"question": q, "data": result}, ensure_ascii=False),
+            _ANSWER_SCHEMA, feature="ask", actor=actor,
+            conversation_id=conversation.id if conversation is not None else None,
+            prompt_ref=_answer_prompt_ref(),
+        )
+        answer = (answer_obj.get("answer") or "").strip()
+
+        if used == "search_documents" and answer:
+            semantic_cache.semantic_put(
+                actor, question_text=q, embedding=q_embedding, answer=answer, citations=citations,
+            )
 
     if conversation is not None:
         conversation.messages.create(
             role="assistant", content=answer,
-            meta={"citations": citations, "used_tool": used},
+            meta={"citations": citations, "used_tool": used, "from_cache": from_cache},
         )
         conversation.save()  # touch updated_at after the reply lands
 
     audit.record(
         module="assistant", action="ask", entity_type="Question", entity_id=used or "none",
-        actor=actor, after={"tool": used, "citations": len(citations)},
+        actor=actor, after={"tool": used, "citations": len(citations), "from_cache": from_cache},
     )
-    return {"answer": answer, "citations": citations, "used_tool": used}
+    return {"answer": answer, "citations": citations, "used_tool": used, "from_cache": from_cache}
 
 
 def _route_and_run(question: str, actor, conversation_id=None):

@@ -319,7 +319,7 @@
   keys) + `tsc -b` green; no frontend files needed a brand-gate review beyond the existing ops list
   pattern reused as-is.
 
-### [ ] T2.8 — Semantic cache for knowledge Q&A
+### [x] T2.8 — Semantic cache for knowledge Q&A
 
 - **Goal:** near-duplicate knowledge questions reuse verified answers.
 - **Prereq:** T2.5, existing `knowledge.py` embeddings.
@@ -342,6 +342,29 @@
   invalidates; kill-switch bypasses. Eval: run citation golden cases through the cache path —
   groundedness unchanged.
 - **Output:** popular questions answer instantly and free.
+- **Implementation note:** new model `SemanticCache` (migration `0008_semanticcache`) + two
+  functions on the *existing* `gateway/cache.py` module (`semantic_lookup`/`semantic_put`) —
+  reuses that module's `current_version`/`bump` machinery with `task="knowledge"` rather than a
+  second version-counter table. `ask.answer_question` embeds every question up front (mirrors the
+  plan's "already free" framing — `embed_text` degrades to `None` with embeddings off, so this is
+  a no-op miss in the common case); a lookup hit short-circuits both the router AND the answer
+  model call. Only `used_tool == "search_documents"` answers are ever stored — a `sales_summary`
+  answer depends on the router's chosen period/filters, so blind reuse would be unsafe; this is a
+  narrower scope than "embed every question" might suggest, and is deliberate. `knowledge.py`
+  bumps `task="knowledge"` unconditionally on every successful ingest (no separate purge command
+  exists yet — stale rows sit inert, filtered out by the version check). `ask.py` needed a new
+  entry in `test_gateway_invariant.py`'s `ALLOWED_DIRECT_CLIENT_IMPORTS` (same exception already
+  granted to `knowledge.py` for `embed_text`). The "answered from recent history" ar/en affordance
+  is NOT wired into the frontend — `AskView`/`askAssistant()` currently has zero UI callers (the
+  live chat surface runs through `ChatView`/`agent.py`, out of this task's file scope per the
+  plan); the backend returns `from_cache: true` on the envelope, ready for whichever consumer
+  needs it.
+- **Tests:** new `tests/test_semantic_cache.py` (9 cases) — paraphrase hit, cross-user isolation,
+  ingestion-bump invalidation, kill-switch bypass, non-knowledge tool never cached, threshold miss,
+  cap eviction (oldest-first).
+- **Accept (actual):** 852 tests green repo-wide (assistant app: 383, up from 374 — 9 new);
+  `gate:all` 00–15 green; i18n parity (1832 keys, unchanged — no new frontend strings) + `tsc -b`
+  green.
 
 ### [ ] T2.9 — Degraded mode + status surface (phase acceptance)
 

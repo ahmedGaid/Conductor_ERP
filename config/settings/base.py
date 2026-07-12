@@ -272,6 +272,14 @@ ASSISTANT_TASK_TIMEOUTS = {
 ASSISTANT_CACHE_TASKS = {"digest", "suggest", "judge"}
 ASSISTANT_CACHE_TTLS = {"digest": 20 * 3600, "suggest": 6 * 3600, "judge": None}
 
+# Semantic cache for knowledge Q&A (ai-reliability T2.8): a near-duplicate question (cosine ≥
+# threshold, same user, current knowledge version) reuses a verified answer instead of re-running
+# the router + answer model. Independent of the exact-match cache above (gateway/cache.py). Kill
+# switch defaults ON in dev; cap is rows kept per user, oldest evicted first.
+ASSISTANT_SEMANTIC_CACHE = env.bool("ASSISTANT_SEMANTIC_CACHE", default=True)
+ASSISTANT_SEMANTIC_CACHE_THRESHOLD = 0.95
+ASSISTANT_SEMANTIC_CACHE_CAP = 500
+
 # Token & cost budget defaults (ai-reliability T2.7), seeded into the ``assistant_budget`` table by
 # migration 0006 — protect against runaway spend, not against normal usage (a customer can raise
 # these; the migration only sets the day-one row). Values are microcents (same discipline as

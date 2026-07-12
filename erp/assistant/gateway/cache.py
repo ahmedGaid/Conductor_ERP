@@ -106,3 +106,79 @@ def bump(task: str) -> None:
             version=F("version") + 1)
     except Exception:
         logger.exception("response cache: bump failed — cache not invalidated")
+
+
+# --- Semantic cache for knowledge Q&A (ai-reliability T2.8) ---------------------------------------
+#
+# Near-duplicate questions reuse a verified knowledge answer instead of re-running the router +
+# answer model. Independent of the exact-match cache above: keyed by cosine similarity over a
+# question embedding, scoped per user (answers are permission-scoped — never shared across users
+# in v1), and invalidated by the same task-version mechanism as ``bump``/``current_version``
+# (task="knowledge", bumped by ``services.knowledge.ingest_document`` on every successful ingest).
+
+SEMANTIC_CACHE_TASK = "knowledge"
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    na = sum(x * x for x in a) ** 0.5
+    nb = sum(y * y for y in b) ** 0.5
+    return dot / (na * nb) if na and nb else 0.0
+
+
+def semantic_enabled() -> bool:
+    return bool(getattr(settings, "ASSISTANT_SEMANTIC_CACHE", True))
+
+
+def semantic_lookup(actor, embedding: list[float] | None) -> dict | None:
+    """The best near-duplicate answer for this user at the current knowledge version, or None on
+    any miss (disabled, no embedding, no row clears the threshold, or a cache-layer error)."""
+    if not semantic_enabled() or not embedding:
+        return None
+    if actor is None or not getattr(actor, "is_authenticated", False):
+        return None
+    threshold = getattr(settings, "ASSISTANT_SEMANTIC_CACHE_THRESHOLD", 0.95)
+    try:
+        version = current_version(SEMANTIC_CACHE_TASK)
+        rows = assistant_models.SemanticCache.objects.filter(
+            user=actor, knowledge_version=version,
+        ).order_by("-created_at")[:500]
+        best_row, best_score = None, 0.0
+        for row in rows:
+            score = _cosine(embedding, row.question_embedding)
+            if score > best_score:
+                best_row, best_score = row, score
+        if best_row is None or best_score < threshold:
+            return None
+        assistant_models.SemanticCache.objects.filter(pk=best_row.pk).update(
+            hit_count=F("hit_count") + 1)
+        return {"answer": best_row.answer, "citations": best_row.citations}
+    except Exception:
+        logger.exception("semantic cache: lookup failed — treating as a miss")
+        return None
+
+
+def semantic_put(actor, *, question_text: str, embedding: list[float] | None, answer: str,
+                 citations: list) -> None:
+    """Store one verified knowledge answer for future near-duplicate reuse. Caps at
+    ``ASSISTANT_SEMANTIC_CACHE_CAP`` rows per user, evicting the oldest first — a pgvector index
+    in Phase 3 (T3.1) replaces this Python scan + cap; the interface here stays the same."""
+    if not semantic_enabled() or not embedding:
+        return
+    if actor is None or not getattr(actor, "is_authenticated", False):
+        return
+    try:
+        assistant_models.SemanticCache.objects.create(
+            user=actor, question_text=question_text[:500], question_embedding=embedding,
+            answer=answer, citations=citations,
+            knowledge_version=current_version(SEMANTIC_CACHE_TASK),
+        )
+        cap = getattr(settings, "ASSISTANT_SEMANTIC_CACHE_CAP", 500)
+        stale_ids = list(
+            assistant_models.SemanticCache.objects.filter(user=actor)
+            .order_by("-created_at").values_list("id", flat=True)[cap:]
+        )
+        if stale_ids:
+            assistant_models.SemanticCache.objects.filter(id__in=stale_ids).delete()
+    except Exception:
+        logger.exception("semantic cache: put failed — response not cached")

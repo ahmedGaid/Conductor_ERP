@@ -25,6 +25,7 @@ ALLOWED_DIRECT_CLIENT_IMPORTS = {
     "management/commands/eval_routing.py",
     "services/extraction.py",
     "services/knowledge.py",
+    "services/ask.py",  # T2.8: embed_text for the semantic-cache lookup — same exception as knowledge.py
 }
 
 _EXCLUDED_DIRS = {"gateway", "tests", "migrations", "__pycache__"}

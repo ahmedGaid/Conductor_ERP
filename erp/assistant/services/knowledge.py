@@ -12,6 +12,7 @@ from django.db.models import F, Q
 from erp.audit import services as audit
 
 from .. import client  # only for client.embed_text (T2.1 exception — see gateway invariant test)
+from ..gateway import cache as semantic_cache
 from ..gateway.core import complete_stream
 from ..models import KnowledgeChunk, KnowledgeDocument
 from . import files
@@ -117,6 +118,9 @@ def ingest_document(*, data: bytes, media_type: str, filename: str, title: str, 
     doc.status = "ready"
     doc.chunk_count = len(chunks)
     doc.save(update_fields=["status", "chunk_count", "updated_at"])
+    # T2.8: new content invalidates every cached knowledge-Q&A answer at once — cheaper than
+    # checking per-row relevance, and correct (an old answer may now be stale or incomplete).
+    semantic_cache.bump(semantic_cache.SEMANTIC_CACHE_TASK)
     audit.record(
         module="assistant", action="knowledge_ingest", entity_type="KnowledgeDocument",
         entity_id=doc.id, actor=actor, after={"title": title, "chunks": len(chunks)},
