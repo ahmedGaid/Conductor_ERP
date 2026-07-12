@@ -1252,6 +1252,18 @@ DESTRUCTIVE_KINDS = {"delete", "cancel", "approve", "post", "reverse", "close_pe
 
 
 @dataclass(frozen=True)
+class Effect:
+    """One declared consequence of an action — what entity it touches and how hard."""
+    entity: str          # "sales_order", "journal_entry", "customer", ...
+    verb: str            # "create" | "update"
+    gl: str = "none"     # GL impact class: "none" | "draft" | "posts"
+    stock: str = "none"  # stock impact class: "none" | "draft" | "moves"
+
+
+RISK_LEVELS = ("read", "draft", "post", "destructive")
+
+
+@dataclass(frozen=True)
 class Action:
     name: str
     description: str          # for the loop prompt
@@ -1261,6 +1273,13 @@ class Action:
     kind: str = "create"      # "create" | "update" | "delete" | "approve" | "post" | "reverse" |
                               # "cancel" | "close_period" | "bulk" | "adjust"
     requires_confirm: bool = True  # NO action may default to False
+    # --- L0 declared semantics (safe defaults keep undeclared actions working unchanged) ---------
+    requires: tuple[str, ...] = ()     # entity kinds that must exist first, e.g. ("customer", "item")
+    effects: tuple[Effect, ...] = ()   # what it creates/updates
+    invariants: tuple[str, ...] = ()   # verifier pack names to run after execute (FILE_02)
+    compensation: str | None = None    # action name that undoes this one; None = draft-delete suffices
+    risk: str = "draft"                # "read" | "draft" | "post" | "destructive"
+    idempotency: tuple[str, ...] = ()  # payload keys whose values form the natural retry key
 
 
 ACTIONS: dict[str, Action] = {a.name: a for a in [
@@ -1272,6 +1291,11 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
          "items": "list of {item (sku or name), quantity}",
          "warehouse": "optional warehouse code to sell from"},
         _build_sales_order, _execute_sales_order,
+        requires=("customer", "item", "warehouse"),
+        effects=(Effect("sales_order", "create", stock="draft"),),
+        invariants=("doc_totals", "period_open"),
+        risk="draft",
+        idempotency=("customer", "items"),
     ),
     Action(
         "create_purchase_request_draft",
@@ -1290,6 +1314,9 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         "<name>'. Warns if a similar customer already exists.",
         {"query": "the new customer's name"},
         _build_customer, _execute_customer,
+        effects=(Effect("customer", "create"),),
+        risk="draft",
+        idempotency=("query",),
     ),
     Action(
         "create_quotation_draft",
@@ -1352,6 +1379,11 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
          "from_warehouse": "source warehouse code",
          "to_warehouse": "destination warehouse code"},
         _build_stock_transfer, _execute_stock_transfer,
+        requires=("item", "warehouse"),
+        effects=(Effect("stock_transfer", "create", stock="draft"),),
+        invariants=("stock_non_negative",),
+        risk="draft",
+        idempotency=("item", "quantity", "from_warehouse", "to_warehouse"),
     ),
     Action(
         "create_stock_count_draft",
@@ -1382,6 +1414,11 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
          "date": "optional entry date (defaults to today)",
          "reference": "optional reference text"},
         _build_journal_entry, _execute_journal_entry,
+        requires=("account",),
+        effects=(Effect("journal_entry", "create", gl="draft"),),
+        invariants=("journal_balanced", "period_open"),
+        risk="draft",
+        idempotency=("lines", "date"),
     ),
     Action(
         "create_account",
@@ -1423,9 +1460,28 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
     ),
 ]}
 
+def _validate_action(a: Action) -> None:
+    """Import-time guard: an invalid declaration fails the module load, never a runtime call."""
+    assert a.requires_confirm or a.kind not in DESTRUCTIVE_KINDS, (
+        f"action {a.name}: destructive kind '{a.kind}' must require confirmation")
+    assert a.risk in RISK_LEVELS, f"action {a.name}: unknown risk '{a.risk}'"
+    assert a.requires_confirm or a.risk not in ("post", "destructive"), (
+        f"action {a.name}: risk '{a.risk}' must require confirmation")
+    for inv in a.invariants:
+        # Pack-existence check tightened in FILE_02 — until then only non-empty strings.
+        assert isinstance(inv, str) and inv.strip(), (
+            f"action {a.name}: invariant names must be non-empty strings")
+    assert a.compensation is None or a.compensation in ACTIONS, (
+        f"action {a.name}: compensation '{a.compensation}' is not a registered action")
+    if any(e.gl == "posts" or e.stock == "moves" for e in a.effects):
+        assert a.risk in ("post", "destructive"), (
+            f"action {a.name}: a posting/moving effect demands risk 'post' or higher")
+        assert a.invariants, (
+            f"action {a.name}: a posting/moving effect demands at least one invariant")
+
+
 for _a in ACTIONS.values():
-    assert _a.requires_confirm or _a.kind not in DESTRUCTIVE_KINDS, (
-        f"action {_a.name}: destructive kind '{_a.kind}' must require confirmation")
+    _validate_action(_a)
 
 # Which loop-decision fields can feed an action argument (each action gets only the args it declares).
 ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query",
@@ -1439,7 +1495,7 @@ def catalog_text() -> str:
     lines = ["Write actions you may PROPOSE (never execute — the user confirms a card):"]
     for a in ACTIONS.values():
         args = ", ".join(f"{k} ({v})" for k, v in a.args.items()) or "no arguments"
-        lines.append(f"- {a.name}: {a.description} Arguments: {args}")
+        lines.append(f"- {a.name}: {a.description} Arguments: {args} [risk: {a.risk}]")
     return "\n".join(lines)
 
 

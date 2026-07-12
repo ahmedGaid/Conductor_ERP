@@ -1034,3 +1034,49 @@ def test_log_activity_permission_refused_at_both_stages():
                         {"related_type": "opportunity", "related_ref": opp.number,
                          "subject": "A note", "type": "note"})
     assert Activity.objects.count() == 0
+
+
+# --- L0 action graph schema (os-foundations FILE_01) --------------------------------------------
+
+def _toy_action(**overrides) -> actions.Action:
+    fields = dict(name="toy_action", description="test only", args={},
+                  build_proposal=lambda actor, **_: {}, execute=lambda actor, payload: {})
+    fields.update(overrides)
+    return actions.Action(**fields)
+
+
+def test_validator_rejects_destructive_risk_without_confirm():
+    with pytest.raises(AssertionError):
+        actions._validate_action(_toy_action(risk="destructive", requires_confirm=False))
+
+
+def test_validator_rejects_posting_effect_with_draft_risk():
+    with pytest.raises(AssertionError):
+        actions._validate_action(_toy_action(
+            effects=(actions.Effect("journal_entry", "create", gl="posts"),), risk="draft"))
+
+
+def test_validator_rejects_unknown_risk_and_unregistered_compensation():
+    with pytest.raises(AssertionError):
+        actions._validate_action(_toy_action(risk="explosive"))
+    with pytest.raises(AssertionError):
+        actions._validate_action(_toy_action(compensation="no_such_action"))
+
+
+def test_every_action_passes_validation_and_archetypes_declare_semantics():
+    for action in actions.ACTIONS.values():
+        actions._validate_action(action)
+    so = actions.ACTIONS["create_sales_order_draft"]
+    assert so.effects[0].entity == "sales_order"
+    assert so.requires == ("customer", "item", "warehouse")
+    assert so.invariants == ("doc_totals", "period_open")
+    assert actions.ACTIONS["create_journal_entry_draft"].effects[0].gl == "draft"
+    assert actions.ACTIONS["create_stock_transfer_draft"].invariants == ("stock_non_negative",)
+    assert actions.ACTIONS["create_customer"].idempotency == ("query",)
+
+
+def test_catalog_text_carries_risk_class():
+    text = actions.catalog_text()
+    assert "[risk: draft]" in text
+    for line in text.splitlines()[1:]:
+        assert "[risk: " in line
