@@ -17,7 +17,7 @@ waiting for the planner.
 
 ## Tasks
 
-### [ ] T5.1 — `POST /api/assistant/simulate`
+### [x] T5.1 — `POST /api/assistant/simulate`
 
 - **Goal:** an authenticated endpoint takes `{steps: [{action, args}]}` and returns the FILE_04
   diff envelope.
@@ -34,7 +34,7 @@ waiting for the planner.
   → the step fails with the existing refusal, `ok: false`, nothing written.
 - **Output:** simulation reachable over HTTP.
 
-### [ ] T5.2 — The diff card component (ar/en, designed states)
+### [x] T5.2 — The diff card component (ar/en, designed states)
 
 - **Goal:** one web component renders the diff envelope; brand-true in both languages.
 - **Files:** NEW `apps/web/src/assistant/SimulationDiffCard.tsx` (+ its CSS module); wire it into
@@ -54,7 +54,7 @@ waiting for the planner.
   in EN.
 - **Output:** the reusable diff card — Phase A/B's preview surface.
 
-### [ ] T5.3 — Demo wiring (how a user reaches it today)
+### [x] T5.3 — Demo wiring (how a user reaches it today)
 
 - **Goal:** one real path to trigger a simulation without the L3 planner.
 - **Files:** assistant panel (`apps/web/src/assistant/`); i18n files.
@@ -67,7 +67,7 @@ waiting for the planner.
   confirm still works as before. Web gates green.
 - **Output:** the demoable moment; "see it before it happens" in the product.
 
-### [ ] T5.4 — Phase acceptance
+### [x] T5.4 — Phase acceptance
 
 - **Goal:** Phase W+ provably done.
 - **Steps:**

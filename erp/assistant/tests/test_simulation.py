@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import pytest
 
-from erp.assistant.services import simulation
+from erp.accounting.domain.models import JournalEntry
+from erp.accounting.tests.factories import make_coa
+from erp.assistant.services import actions, simulation
 from erp.assistant.services.simulation import PlanStep, simulate
 from erp.identity.models import User
 from erp.inventory.domain.models import Item, Warehouse
@@ -142,3 +144,49 @@ def test_simulate_row_counts_unchanged_across_watched_models():
 
     after = {m: m.objects.count() for m in watched}
     assert before == after
+
+
+# --- FILE_05 T5.4: phase exit test — the forecast holds -----------------------------------------
+
+def test_exit_simulation_predicts_what_the_real_confirms_create():
+    """Phase W+ exit test: a 3-step plan (customer → sales order → journal draft) simulated, then run
+    for real through the same build+execute path a confirm uses, must land the SAME rows and money.
+    The diff is a true forecast of the books — "see tomorrow's books before you post them"."""
+    admin = _admin("exit_admin")
+    _seed_sales()          # customer C-1, item SKU-1, warehouse WH-1
+    make_coa()             # chart of accounts (Rent Expense, Cash, …) for the journal step
+    _seed_open_period()    # open period covering today — the order + journal dates default to today
+
+    steps = [
+        PlanStep("create_customer", {"query": "Zeta Co"}),
+        PlanStep("create_sales_order_draft",
+                 {"customer": "Zeta Co", "items": [{"item": "SKU-1", "quantity": "2"}],
+                  "warehouse": "WH-1"}),
+        PlanStep("create_journal_entry_draft",
+                 {"lines": [{"account": "Rent Expense", "debit": 5000},
+                            {"account": "Cash", "credit": 5000}]}),
+    ]
+
+    diff = simulate(admin, steps)
+
+    assert diff["ok"] is True
+    assert diff["creates"] == {"customer": 1, "sales_order": 1, "journal_entry": 1}
+    # Draft-only plan: no receivables realised, no GL posted (a draft journal is unposted).
+    assert diff["money"] == {"receivables_delta_minor": 0, "payables_delta_minor": 0}
+    assert diff["gl"] == {"debit_delta_minor": 0, "credit_delta_minor": 0}
+    # The dry run persisted nothing.
+    assert Customer.objects.filter(name="Zeta Co").count() == 0
+    assert SalesOrder.objects.count() == 0
+    assert JournalEntry.objects.count() == 0
+
+    # Run the SAME plan for real, step by step, exactly as three confirms would.
+    for step in steps:
+        proposal = actions.build(admin, step.action, step.args)
+        assert "error" not in proposal and "blocker" not in proposal
+        actions.execute(admin, step.action, proposal["payload"])
+
+    # The forecast held: the same three rows now exist, and the books moved exactly as predicted
+    # (still zero posted, since all three are drafts).
+    assert Customer.objects.filter(name="Zeta Co").count() == 1
+    assert SalesOrder.objects.count() == 1
+    assert JournalEntry.objects.count() == 1

@@ -1921,3 +1921,43 @@ architecture decisions, made at plan creation so execution sessions inherit them
 rollback fully undoes them; declared `compensation` actions stay unused until a `post`-risk action
 ships (Phase B). Dedupe honoured: eval harness (ai-reliability FILE_01, done), answer
 self-verification (ai-reliability FILE_05 T5.8), L3 planner (later phase) — none rebuilt here.
+
+## os-foundations Phase W+ closed (L0–L2 built) — 2026-07-12
+
+FILE_01–05 all executed and `_done`. The three founder-approved decisions above (hybrid
+simulation, framework+slice retrofit, assistant-side registry) were built as planned. Phase-close
+specifics settled during execution:
+
+- **Action Graph schema v2 (L0)** shipped on the existing `Action` dataclass: `requires`,
+  `effects` (`Effect(entity, verb, gl, stock)`), `invariants`, `compensation`, `risk`,
+  `idempotency`, validated at import (`_validate_action`). Four archetypes carry full metadata;
+  the other 13 keep safe defaults.
+- **Verifier (L1)** runs declared invariant packs after every `execute()` in one atomic block;
+  a failed verdict rolls the write back (rollback-as-compensation, since all 17 actions are
+  `draft` risk) and is audited. `compensation` stays declared-but-unused until a `post`-risk
+  action ships (Phase B).
+- **Simulation (L2)** = `services/simulation.py::simulate(actor, steps)` — real build+execute per
+  step inside one `transaction.atomic()` that always rolls back, `sim_mode()` ContextVar stubbing
+  the 3 external choke points (none reached by current actions — inert future-proofing). Returns a
+  structured diff (`ok`, `steps`, `creates`, `gl`, `stock`, `money`).
+- **Diff-card endpoint scope (FILE_00 decision point 2):** `POST /api/assistant/simulate` is
+  **UI/confirm-flow triggered only** — the agent loop does NOT get a `simulate` tool this phase
+  (that hookup belongs to L3 planning). Gated on `IsAuthenticated` alone (no `client.enabled()` —
+  simulation needs no LLM). Two input shapes on one view: `{steps:[{action,args}]}` (generic,
+  Phase A/B's surface) and `{message_id}` (preview one pending proposal). The latter dry-runs the
+  proposal's **stored, already-built payload** — added a `PlanStep.payload` prebuilt path so
+  `simulate()` skips `build()`/re-resolution for it (a pending proposal stores the post-build
+  payload, not the pre-build args).
+- **Reusable diff card:** `apps/web/src/assistant/SimulationDiffCard.tsx` (ar/en, designed
+  loading/error/empty states) is the surface Phase A's import preview and Phase B's month-close
+  preview will reuse. Arabic: user-facing text uses only the معاينة (preview) family — **معاينة
+  الأثر** for the card — while محاكاة stays a backend/DECISIONS term, so the UI never shows two
+  Arabic words for one concept.
+- **Exit test** (`test_simulation.py::test_exit_simulation_predicts_what_the_real_confirms_create`):
+  a 3-step plan (customer → sales order → journal draft) simulated, then run for real via the same
+  build+execute path — same rows, same (zero, draft-only) money. The forecast holds.
+
+**Follow-up still open (unchanged):** the mechanical 13-action L0 metadata fan-out — a Haiku-fit
+task, not scheduled here.
+
+Claim earned: **"See tomorrow's books before you post them."**

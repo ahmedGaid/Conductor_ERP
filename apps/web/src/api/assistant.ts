@@ -318,6 +318,52 @@ export function executeAction(
   });
 }
 
+// --- Simulation (os-foundations FILE_05) -------------------------------------------------------
+// A dry-run of a plan of write-actions: every step runs for real inside one transaction that always
+// rolls back, so nothing persists. The diff is what WOULD happen — the "see it before it happens"
+// card. Phase A/B's preview surfaces render this same shape.
+
+// One step's outcome in the dry run. `ok` false = the step (or its post-write verifier) refused;
+// the plan stops there and `summary` carries the blame-free reason.
+export interface SimulationStep {
+  action: string;
+  summary: string | null;
+  ok: boolean;
+  // Present when the action declared invariants (FILE_02): which packs ran, and whether they held.
+  verifier?: { ok: boolean; packs: string[] };
+}
+
+export interface SimulationDiff {
+  ok: boolean;
+  steps: SimulationStep[];
+  // entity kind -> how many rows the plan would create, e.g. { customer: 3, sales_order: 14 }.
+  creates: Record<string, number>;
+  // Trial-balance movement the plan would post (minor units) — zero for draft-only plans.
+  gl: { debit_delta_minor: number; credit_delta_minor: number };
+  stock: { item: string; warehouse: string; delta: string }[];
+  money: { receivables_delta_minor: number; payables_delta_minor: number };
+}
+
+// Preview one pending proposal the agent prepared (its stored, already-built payload is dry-run as a
+// one-step plan). The server owns the payload — the client only names the message it rides on.
+export function simulateProposal(messageId: number): Promise<SimulationDiff> {
+  return apiFetch<SimulationDiff>("/assistant/simulate", {
+    method: "POST",
+    body: JSON.stringify({ message_id: messageId }),
+  });
+}
+
+// Dry-run an explicit plan (Phase A/B). Kept exported alongside the proposal path — the endpoint is
+// the same, only the input shape differs (≤10 steps, each an action + its build args).
+export function simulatePlan(
+  steps: { action: string; args?: Record<string, unknown> }[],
+): Promise<SimulationDiff> {
+  return apiFetch<SimulationDiff>("/assistant/simulate", {
+    method: "POST",
+    body: JSON.stringify({ steps }),
+  });
+}
+
 // Dry-run a mapped import — parse + duplicate check, nothing written (plan session 14). Keyed by the
 // import card's message; the server reads the file + target from its persisted meta, so the client
 // only sends the column mapping the user adjusted.

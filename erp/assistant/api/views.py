@@ -38,6 +38,7 @@ from ..errors import (
 from ..gateway import status as gateway_status
 from ..models import Attachment, Conversation, KnowledgeDocument, Message
 from ..services import actions, files, imports, knowledge
+from ..services.simulation import PlanStep, simulate
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
 from ..verifier import run as verify_run
@@ -402,6 +403,68 @@ class ActionExecuteView(APIView):
                      entity_id=(result.get("links") or [{}])[0].get("value"), actor=request.user,
                      after={"summary": result.get("summary"), "verifier": result.get("verifier")})
         return _envelope({"status": "confirmed", "followups": [], **result})
+
+
+# Simulation runs at most this many steps per call — a plan bigger than a screenful of changes
+# should be split, and the cap keeps one request's rolled-back transaction bounded.
+MAX_SIMULATION_STEPS = 10
+
+
+class SimulateView(APIView):
+    """Dry-run a plan of write-actions and return the FILE_04 diff — nothing is ever persisted
+    (``simulation.simulate`` runs every step inside one transaction that always rolls back).
+
+    Gated on ``IsAuthenticated`` ONLY — deliberately NOT on ``client.enabled()`` like the chat/ask
+    views: simulation is pure DB dry-run, no model hop, so it works with the AI layer switched off.
+    RBAC is not re-checked here either: ``actions.build``/``execute`` run as the caller, so the
+    simulation refuses exactly what a real confirm would refuse (a step the actor can't run comes
+    back ``ok: false`` with nothing written).
+
+    Two input shapes:
+    - ``{"steps": [{"action", "args"}, ...]}`` — a generic plan (Phase A/B's preview surface).
+    - ``{"message_id": int}`` — preview one pending proposal the agent already prepared (T5.3): its
+      stored, already-built payload is simulated directly as a one-step plan.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        message_id = request.data.get("message_id")
+        if message_id is not None:
+            steps = [self._step_from_proposal(request, message_id)]
+        else:
+            steps = self._steps_from_body(request.data.get("steps"))
+        return _envelope(simulate(request.user, steps))
+
+    def _step_from_proposal(self, request: Request, message_id) -> PlanStep:
+        # Own-check through the conversation: a foreign message is indistinguishable from absent.
+        message = get_object_or_404(
+            Message, pk=message_id, conversation__user=request.user,
+            role=Message.Role.ASSISTANT,
+        )
+        proposal = (message.meta or {}).get("proposal")
+        if not proposal:
+            raise Http404
+        name = proposal.get("action")
+        if name not in actions.ACTIONS:
+            raise ValidationError(f"There is no action named '{name}'.")
+        # The stored payload is post-build; hand it over as a prebuilt step so simulate() skips
+        # build() and dry-runs the exact confirm this card would execute.
+        return PlanStep(action=name, args={}, payload=proposal.get("payload") or {})
+
+    def _steps_from_body(self, raw) -> list[PlanStep]:
+        if not isinstance(raw, list) or not raw:
+            raise ValidationError("Provide at least one step to simulate.")
+        if len(raw) > MAX_SIMULATION_STEPS:
+            raise ValidationError(
+                f"A simulation runs at most {MAX_SIMULATION_STEPS} steps at once.")
+        steps: list[PlanStep] = []
+        for entry in raw:
+            name = (entry or {}).get("action") if isinstance(entry, dict) else None
+            if name not in actions.ACTIONS:
+                raise ValidationError(f"There is no action named '{name}'.")
+            steps.append(PlanStep(action=name, args=(entry.get("args") or {})))
+        return steps
 
 
 class DetourResumeView(APIView):

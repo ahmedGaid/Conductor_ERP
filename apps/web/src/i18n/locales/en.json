@@ -95,6 +95,7 @@
       "affected": "{{count}} records",
       "openDocument": "Open",
       "alreadyExecuted": "This was already handled.",
+      "previewImpact": "Preview impact",
       "titles": {
         "create_sales_order_draft": "Draft sales order",
         "create_purchase_request_draft": "Draft purchase request",
@@ -105,6 +106,24 @@
         "create_purchase_order_draft": "Draft purchase order",
         "convert_purchase_request": "Convert purchase request",
         "create_supplier": "New supplier"
+      }
+    },
+    "simulation": {
+      "title": "Impact preview",
+      "running": "Working out the impact…",
+      "verified": "checks passed ({{count}})",
+      "previewOnly": "Preview only — nothing is saved until you confirm.",
+      "nothingWritten": "Nothing was saved — this was only a preview.",
+      "creates": {
+        "customer": "{{count}} customers",
+        "sales_order": "{{count}} sales orders",
+        "stock_transfer": "{{count}} stock transfers",
+        "journal_entry": "{{count}} journal entries"
+      },
+      "money": {
+        "receivables": "Receivables",
+        "payables": "Payables",
+        "gl": "Posted to the ledger"
       }
     },
     "suggestions": {

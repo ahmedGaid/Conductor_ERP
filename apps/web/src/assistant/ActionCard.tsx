@@ -2,10 +2,17 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { executeAction, type ActionProposal, type ActionRecord } from "../api/assistant";
+import {
+  executeAction,
+  simulateProposal,
+  type ActionProposal,
+  type ActionRecord,
+  type SimulationDiff,
+} from "../api/assistant";
 import { NavIcon } from "../app/icons";
 import { Bdi } from "../components/Bdi";
 import { EntityLink } from "../components/EntityLink";
+import { SimulationDiffCard } from "./SimulationDiffCard";
 
 // Each proposable action's home-module icon (for record chips) and its human title key.
 const ACTION_ICON: Record<string, string> = {
@@ -82,6 +89,26 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
   const { t } = useTranslation();
   const [busy, setBusy] = useState<"confirm" | "dismiss" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The dry-run preview (T5.3): a degenerate one-step plan — this proposal simulated. Nothing is
+  // written; the card shows the would-be impact above Confirm. Re-runnable while the card is pending.
+  const [sim, setSim] = useState<
+    { loading: boolean; error: string | null; diff: SimulationDiff | null } | null
+  >(null);
+
+  async function preview() {
+    if (busy) return;
+    setSim({ loading: true, error: null, diff: null });
+    try {
+      const diff = await simulateProposal(messageId);
+      setSim({ loading: false, error: null, diff });
+    } catch (err) {
+      setSim({
+        loading: false,
+        error: err instanceof Error ? err.message : t("assistant.errorLine"),
+        diff: null,
+      });
+    }
+  }
 
   const title = t(`assistant.action.titles.${proposal.action}`);
   const icon = ACTION_ICON[proposal.action] ?? "sparkle";
@@ -193,6 +220,8 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
 
       {error && <p className="action-card__error" dir="auto">{error}</p>}
 
+      {sim && <SimulationDiffCard loading={sim.loading} error={sim.error} diff={sim.diff} />}
+
       <footer className="action-card__foot">
         <button
           type="button"
@@ -209,6 +238,16 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
           disabled={busy !== null}
         >
           {t("assistant.action.dismiss")}
+        </button>
+        {/* Quiet, tertiary: see the impact before committing — never competes with Confirm. */}
+        <button
+          type="button"
+          className="action-card__preview"
+          onClick={() => void preview()}
+          disabled={busy !== null || sim?.loading}
+        >
+          <NavIcon name="sparkle" />
+          {t("assistant.action.previewImpact")}
         </button>
       </footer>
     </div>

@@ -73,6 +73,10 @@ def sim_mode():
 class PlanStep:
     action: str   # registered action name
     args: dict    # what actions.build() takes as the decision
+    # An already-built execute payload. When set, ``build()`` is skipped and the confirm is
+    # simulated directly — this is how the UI "preview impact" affordance (FILE_05 T5.3) dry-runs
+    # a pending proposal, whose stored payload is post-build, not the pre-build ``args``.
+    payload: dict | None = None
 
 
 class _Rollback(Exception):
@@ -125,16 +129,21 @@ def simulate(actor, steps: list[PlanStep]) -> dict:
             with transaction.atomic():
                 tb_before = trial_balance()
                 for step in steps:
-                    proposal = actions.build(actor, step.action, step.args)
-                    if "error" in proposal or "blocker" in proposal:
-                        result_steps.append({"action": step.action,
-                                             "summary": _step_error_summary(proposal),
-                                             "ok": False})
-                        ok = False
-                        break
+                    if step.payload is not None:
+                        # Prebuilt payload (a pending proposal previewed from the UI): the confirm
+                        # is simulated directly — no build/resolution, just execute + verify.
+                        payload = step.payload
+                    else:
+                        proposal = actions.build(actor, step.action, step.args)
+                        if "error" in proposal or "blocker" in proposal:
+                            result_steps.append({"action": step.action,
+                                                 "summary": _step_error_summary(proposal),
+                                                 "ok": False})
+                            ok = False
+                            break
+                        payload = proposal["payload"]
 
                     action_def = actions.ACTIONS.get(step.action)
-                    payload = proposal["payload"]
                     touches_stock = action_def is not None and any(
                         e.stock == "moves" for e in action_def.effects
                     )

@@ -16,6 +16,7 @@ from .views import (
     ImportPreviewView,
     KnowledgeDetailView,
     KnowledgeView,
+    SimulateView,
 )
 
 urlpatterns = [
@@ -25,6 +26,7 @@ urlpatterns = [
     path("ask", AskView.as_view(), name="assistant-ask"),
     path("chat", ChatView.as_view(), name="assistant-chat"),
     path("actions/execute", ActionExecuteView.as_view(), name="assistant-action-execute"),
+    path("simulate", SimulateView.as_view(), name="assistant-simulate"),
     path("imports/inspect", ImportInspectView.as_view(), name="assistant-import-inspect"),
     path("imports/preview", ImportPreviewView.as_view(), name="assistant-import-preview"),
     path("imports/execute", ImportExecuteView.as_view(), name="assistant-import-execute"),

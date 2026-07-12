@@ -1285,8 +1285,33 @@
   background: var(--color-surface-alt);
   color: var(--color-text);
 }
+/* Tertiary "preview impact" affordance: text-only, muted, margin-inline-start pushes it clear of
+   the primary pair so it never reads as a third command competing with Confirm. */
+.action-card__preview {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.action-card__preview .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+.action-card__preview:hover:not(:disabled) {
+  color: var(--color-text);
+}
 .action-card__confirm:disabled,
-.action-card__dismiss:disabled {
+.action-card__dismiss:disabled,
+.action-card__preview:disabled {
   opacity: 0.6;
   cursor: default;
 }
@@ -1624,4 +1649,161 @@
   margin-block: var(--space-2);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+
+/* --- Simulation diff card (os-foundations FILE_05) --------------------------------------------- */
+/* The dry-run "see it before it happens" preview. Nothing here was written; the dashed border marks
+   it as provisional. Monochrome chrome — the only colour is a failed step (danger), always paired
+   with its flag icon. Sits above the proposal's Confirm button. */
+.sim-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-alt);
+  font-size: var(--font-size-sm);
+}
+.sim-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sim-card__spark {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+.sim-card__spark .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+.sim-card__title {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+}
+.sim-card__badge {
+  margin-inline-start: auto;
+  font-size: var(--font-size-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.sim-card__creates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.sim-card__create {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text);
+}
+.sim-card__create .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+.sim-card__money {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) 0;
+  border-block: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sim-card__money-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.sim-card__money-label {
+  color: var(--color-text-muted);
+}
+.sim-card__money-value {
+  color: var(--color-text);
+}
+.sim-card__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sim-card__step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-text);
+}
+.sim-card__step .navicon {
+  flex: none;
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  margin-block-start: 0.15rem;
+  color: var(--color-success);
+}
+.sim-card__step--bad {
+  color: var(--color-danger);
+}
+.sim-card__step--bad .navicon {
+  color: var(--color-danger);
+}
+.sim-card__step-text {
+  min-inline-size: 0;
+}
+.sim-card__verified {
+  margin-inline-start: var(--space-2);
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+.sim-card__nothing,
+.sim-card__safe {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.sim-card__nothing .navicon {
+  flex: none;
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+/* Loading + error states — designed, never bare. */
+.sim-card--loading,
+.sim-card--error {
+  flex-direction: row;
+  align-items: center;
+}
+.sim-card--loading .sim-card__spark {
+  animation: sim-card-pulse 1.4s var(--ease-out) infinite;
+}
+.sim-card__loading-line {
+  color: var(--color-text-muted);
+}
+.sim-card--error {
+  color: var(--color-danger);
+}
+.sim-card--error .navicon {
+  flex: none;
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+@keyframes sim-card-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sim-card--loading .sim-card__spark {
+    animation: none;
+  }
 }

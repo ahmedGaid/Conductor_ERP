@@ -95,6 +95,7 @@
       "affected": "{{count}} سجلات",
       "openDocument": "فتح",
       "alreadyExecuted": "تم التعامل مع هذا بالفعل.",
+      "previewImpact": "معاينة الأثر",
       "titles": {
         "create_sales_order_draft": "مسودة أمر بيع",
         "create_purchase_request_draft": "مسودة طلب شراء",
@@ -105,6 +106,24 @@
         "create_purchase_order_draft": "مسودة أمر شراء",
         "convert_purchase_request": "تحويل طلب شراء",
         "create_supplier": "مورد جديد"
+      }
+    },
+    "simulation": {
+      "title": "معاينة الأثر",
+      "running": "جارٍ حساب الأثر…",
+      "verified": "تم التحقق من القيود ({{count}})",
+      "previewOnly": "معاينة فقط — لا يُحفظ شيء حتى تؤكّد.",
+      "nothingWritten": "لم يُحفظ شيء — كانت هذه معاينة فقط.",
+      "creates": {
+        "customer": "{{count}} عملاء",
+        "sales_order": "{{count}} أوامر بيع",
+        "stock_transfer": "{{count}} تحويلات مخزون",
+        "journal_entry": "{{count}} قيود يومية"
+      },
+      "money": {
+        "receivables": "مستحقات لنا",
+        "payables": "مستحقات علينا",
+        "gl": "مُرحَّل إلى دفتر الأستاذ"
       }
     },
     "suggestions": {
