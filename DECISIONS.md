@@ -1897,3 +1897,27 @@ straight to `main` the same way.
 history):** create-from-image (fix f3181b0, re-smoked clean 2026-07-09), supplier CSV import
 execute path (fix 6c0e25c, smoked 2026-07-09), guided-detour workflow-resume (FILE_13, smoked
 2026-07-08).
+
+## os-foundations plan created (Phase W+, queue pos 7) — 2026-07-12
+
+`Docs/plan/os-foundations-plan/` FILE_00–05 written (deep vision L0–L2). Three founder-approved
+architecture decisions, made at plan creation so execution sessions inherit them:
+
+1. **Simulation fidelity = hybrid.** Real `actions.execute()` inside one `transaction.atomic`
+   that always rolls back; a sim-mode ContextVar stubs external side effects (notifications, ETA
+   submit, workflow external adapters). Doc sequences need no stub — every `_next_number()` is
+   SELECT-max+1 (verified: sales, quotations, purchasing, accounting, crm), so rollback restores
+   them. Rejected: proposal-level aggregation (misses mid-plan failures), unstubbed rollback
+   (leaks external calls).
+2. **Retrofit breadth = framework + representative slice.** Full L0 metadata (`requires/effects/
+   invariants/compensation/risk/idempotency`) on 4 archetype actions (sales-order draft, journal
+   draft, stock transfer, create-customer); the other 13 get safe defaults. The mechanical 13-action
+   fan-out is a logged Haiku-fit follow-up, not part of the phase.
+3. **Registry home = assistant-side.** Extend the existing `Action` dataclass + a
+   `@register_action` decorator in `erp/assistant`; module `contracts.py` signatures untouched.
+   The true contract-decorator (moat #1 "operable on day one") is a documented later path.
+
+**Rollback-as-compensation posture:** all 17 current actions are `draft` risk, so verifier-failure
+rollback fully undoes them; declared `compensation` actions stay unused until a `post`-risk action
+ships (Phase B). Dedupe honoured: eval harness (ai-reliability FILE_01, done), answer
+self-verification (ai-reliability FILE_05 T5.8), L3 planner (later phase) — none rebuilt here.
