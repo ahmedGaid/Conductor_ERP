@@ -19,6 +19,12 @@ class RestAdapter:
     kind = "rest"
 
     def call(self, call: AdapterCall) -> AdapterResult:
+        from erp.assistant.services.simulation import in_sim_mode, record_skip
+
+        if in_sim_mode():
+            # L2 dry run (os-foundations FILE_04): no outbound HTTP call.
+            record_skip("workflow_adapter")
+            return AdapterResult(ok=True, data={"simulated": True})
         cfg = call.config
         method = str(cfg.get("method", "GET")).upper()
         url = cfg["url"]

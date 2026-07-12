@@ -80,7 +80,7 @@ proposal-level aggregation could never catch, and why hybrid won.
 
 ## Tasks
 
-### [ ] T4.1 — `sim_mode` ContextVar + the stub sites
+### [x] T4.1 — `sim_mode` ContextVar + the stub sites
 
 - **Goal:** inside `sim_mode()`, the three external side-effect paths no-op and report skipped.
 - **Decision point (ask user before starting):** ContextVar in `simulation.py` (recommended) vs
@@ -94,7 +94,7 @@ proposal-level aggregation could never catch, and why hybrid won.
   shows the skip; outside, behaviour unchanged (regression test).
 - **Output:** dry-runs cannot leak side effects.
 
-### [ ] T4.2 — `simulate()` core: rolled-back execution + step results
+### [x] T4.2 — `simulate()` core: rolled-back execution + step results
 
 - **Goal:** a 2-step plan (create customer → create sales order for them) simulates end-to-end;
   DB row counts identical before/after.
@@ -107,7 +107,7 @@ proposal-level aggregation could never catch, and why hybrid won.
   the audit `simulate` record persists (written outside the atomic).
 - **Output:** the L2 engine — "see tomorrow's books" is now computable.
 
-### [ ] T4.3 — Diff collection
+### [x] T4.3 — Diff collection
 
 - **Goal:** the JSON shape above, filled from L0 effects + before/after snapshots.
 - **Files:** `simulation.py`; `test_simulation.py`.

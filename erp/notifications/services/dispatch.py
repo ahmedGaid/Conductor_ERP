@@ -32,6 +32,14 @@ def dispatch(
 ) -> Notification:
     """Send one message through a channel adapter and record the outcome. Never raises on a send
     failure — the failure is captured on the row and a ``Failed`` event is published instead."""
+    from erp.assistant.services.simulation import in_sim_mode, record_skip
+
+    if in_sim_mode():
+        # L2 dry run (os-foundations FILE_04): no channel send, no row, no audit, no event.
+        record_skip("notification")
+        return Notification(channel=channel, recipient=recipient, subject=subject, body=body,
+                            reference=reference, event_name=event_name,
+                            status=NotificationStatus.PENDING)
     note = Notification.objects.create(
         channel=channel, recipient=recipient, subject=subject, body=body,
         reference=reference, event_name=event_name, status=NotificationStatus.PENDING,

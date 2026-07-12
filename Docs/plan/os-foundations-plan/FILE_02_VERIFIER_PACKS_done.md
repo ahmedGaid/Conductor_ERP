@@ -59,7 +59,7 @@ Notes:
 
 ## Tasks
 
-### [ ] T2.1 — Framework: registry, `run()`, Report/Finding
+### [x] T2.1 — Framework: registry, `run()`, Report/Finding
 
 - **Goal:** `verifier.run(["trial_balance"], scope)` returns a `Report`; unknown names fail soft.
 - **Files:** NEW `erp/assistant/verifier/__init__.py`; NEW `erp/assistant/tests/test_verifier.py`.
@@ -72,7 +72,7 @@ Notes:
   exception escapes.
 - **Output:** the L1 skeleton every later phase calls.
 
-### [ ] T2.2 — Accounting packs: `trial_balance`, `journal_balanced`, `period_open`
+### [x] T2.2 — Accounting packs: `trial_balance`, `journal_balanced`, `period_open`
 
 - **Goal:** the three book-integrity packs pass on seeded books and catch planted corruption.
 - **Files:** `erp/assistant/verifier/packs.py`; `erp/assistant/tests/test_verifier.py`.
@@ -83,7 +83,7 @@ Notes:
   ≥1 catching test.
 - **Output:** book integrity is checkable on demand.
 
-### [ ] T2.3 — Document/stock packs: `stock_non_negative`, `sequence_unbroken`, `doc_totals`
+### [x] T2.3 — Document/stock packs: `stock_non_negative`, `sequence_unbroken`, `doc_totals`
 
 - **Goal:** same bar as T2.2 for the stock/document packs.
 - **Files:** same.

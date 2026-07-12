@@ -80,6 +80,12 @@ def record_invoice(data: EInvoiceInput, actor=None) -> ETAInvoice:
 @transaction.atomic
 def submit_invoice(eta: ETAInvoice, actor=None) -> ETAInvoice:
     """Submit a draft (or re-submit a submitted) e-invoice to ETA. Idempotent on the UUID."""
+    from erp.assistant.services.simulation import in_sim_mode, record_skip
+
+    if in_sim_mode():
+        # L2 dry run (os-foundations FILE_04): no ETA submission, no persisted status change.
+        record_skip("einvoice_submit")
+        return eta
     if eta.status not in (ETAStatus.DRAFT, ETAStatus.SUBMITTED):
         raise InvalidEInvoiceTransitionError(
             data={"invoice": eta.invoice_number, "status": eta.status, "expected": "draft|submitted"}

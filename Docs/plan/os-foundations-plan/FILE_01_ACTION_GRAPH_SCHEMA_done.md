@@ -52,7 +52,7 @@ Rules enforced at import time (extend the existing `DESTRUCTIVE_KINDS` assert bl
 
 ## Tasks
 
-### [ ] T1.1 — Schema fields + import-time validation
+### [x] T1.1 — Schema fields + import-time validation
 
 - **Goal:** `Action` carries the six L0 fields with safe defaults; invalid declarations fail at
   import, not at runtime.
@@ -69,7 +69,7 @@ Rules enforced at import time (extend the existing `DESTRUCTIVE_KINDS` assert bl
   test with `Effect(gl="posts")` and `risk="draft"` raises.
 - **Output:** schema v2 live, zero behaviour change.
 
-### [ ] T1.2 — Retrofit the 4 archetype actions
+### [x] T1.2 — Retrofit the 4 archetype actions
 
 - **Goal:** one fully-declared example of each archetype the later layers exercise.
 - **Files:** `erp/assistant/services/actions.py`.
@@ -91,7 +91,7 @@ Rules enforced at import time (extend the existing `DESTRUCTIVE_KINDS` assert bl
 - **Output:** the slice FILE_02–05 will test against. The other 13 stay default — the mechanical
   fan-out is a logged follow-up (Haiku-fit), NOT part of this phase.
 
-### [ ] T1.3 — Graph read API + registration decorator
+### [x] T1.3 — Graph read API + registration decorator
 
 - **Goal:** one place to ask "what does action X need/do" and one decorator so future actions
   register with semantics in a single statement.
@@ -114,7 +114,7 @@ Rules enforced at import time (extend the existing `DESTRUCTIVE_KINDS` assert bl
   rejects a bad one.
 - **Output:** the graph is queryable; new actions have a one-statement registration path.
 
-### [ ] T1.4 — Surface risk in the planner prompt
+### [x] T1.4 — Surface risk in the planner prompt
 
 - **Goal:** the loop prompt tells the model each action's risk class so proposals phrase
   themselves honestly ("this only prepares a draft").
