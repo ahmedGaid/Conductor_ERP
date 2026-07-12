@@ -23,7 +23,7 @@ const CHIP_ICONS = new Set(["sales", "purchasing", "inventory", "accounting", "c
 export function AssistantPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { enabled, open, mode, closePanel, setMode, contextDetached, setContextDetached,
+  const { enabled, open, mode, healthMode, closePanel, setMode, contextDetached, setContextDetached,
     setConversationId } = useAssistant();
   const panelRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -165,6 +165,15 @@ export function AssistantPanel() {
           </Tooltip>
         </div>
       </header>
+
+      {healthMode !== "full" && (
+        <p className={`assistant-panel__notice assistant-panel__notice--${healthMode}`} dir="auto">
+          <span className="assistant-panel__notice-icon" aria-hidden="true">
+            <NavIcon name="info" />
+          </span>
+          {t(healthMode === "down" ? "assistant.status.down" : "assistant.status.degraded")}
+        </p>
+      )}
 
       <div className="assistant-panel__body">
         {view === "threads" ? <ThreadList onPick={() => setView("chat")} /> : <ConversationView />}

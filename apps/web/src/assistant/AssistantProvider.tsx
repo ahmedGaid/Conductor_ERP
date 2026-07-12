@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { assistantStatus } from "../api/assistant";
+import { assistantStatus, type AssistantStatus } from "../api/assistant";
 import { readDetour, writeDetour, type Detour } from "./detour";
 
 // A resume the return-detection surface has requested: run against `conversationId`, replaying the
@@ -39,6 +39,9 @@ interface AssistantState {
   mode: AssistantMode;
   conversationId: number | null;
   enabled: boolean;
+  /** T2.9: the gateway's own read of its health (breaker + budget state) — "full" unless a
+   *  fallback chain or a blocked budget is in play. Panels show a calm degraded notice off this. */
+  healthMode: AssistantStatus["mode"];
   /** Bumps whenever the thread list changes; every ThreadList reloads off it (one source of truth). */
   conversationsNonce: number;
   /** A question handed off from elsewhere (e.g. the ⌘K fallthrough row) awaiting first send. */
@@ -89,6 +92,7 @@ const AssistantContext = createContext<AssistantState | null>(null);
 export function AssistantProvider({ children }: { children: ReactNode }) {
   // null = not yet known; keeps every surface hidden until /status answers.
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [healthMode, setHealthMode] = useState<AssistantStatus["mode"]>("full");
   const [open, setOpen] = useState<boolean>(() => localStorage.getItem(KEY_OPEN) === "1");
   const [mode, setModeState] = useState<AssistantMode>(readMode);
   const [conversationId, setConversationState] = useState<number | null>(readConversation);
@@ -104,7 +108,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let alive = true;
     assistantStatus()
-      .then((s) => alive && setEnabled(s.enabled))
+      .then((s) => {
+        if (!alive) return;
+        setEnabled(s.enabled);
+        setHealthMode(s.mode);
+      })
       .catch(() => alive && setEnabled(false));
     return () => {
       alive = false;
@@ -148,6 +156,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       mode,
       conversationId,
       enabled: enabled === true,
+      healthMode,
       conversationsNonce,
       pendingMessage,
       contextDetached,
@@ -169,6 +178,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     }),
     [
       enabled,
+      healthMode,
       open,
       mode,
       conversationId,

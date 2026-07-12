@@ -70,3 +70,32 @@ session, flagged here for the record, not fixed as part of T1.10.
       done in this session since T1.8 already shipped and accepted the page with its own RBAC +
       aggregation-math tests and a live ar/en review at the time.
 - [x] `BASELINE.md` committed with real measured numbers (this file).
+
+---
+
+# Phase 2 — measured 2026-07-12
+
+Same golden set (`golden_v1.jsonl`, 160 cases / 148 recorded), same offline harness
+(`manage.py run_evals`) — the only change is that `ask`/`agent`'s real service code now calls
+`gateway.complete_json` (T2.1) instead of the pre-gateway `services/llm.py`, so this run proves
+the gateway's caching/budget/breaker layers (T2.2–T2.8) didn't move the needle on answer quality.
+
+| Metric | Phase 1 baseline | Phase 2 (2026-07-12) | Note |
+|---|---|---|---|
+| Eval golden-set pass rate | 74.3% (110/148) | **74.3% (110/148)** | byte-identical result set — same failures, same case ids (`erp/assistant/evals/results/2026-07-12.json`) |
+| Exact-match cache hit rate (`digest`/`suggest`/`judge`) | n/a (didn't exist) | **not yet measurable** | no production traffic exists pre-launch in this customer-hosted, single-tenant deployment; the ≥60% target is a live-ops metric (`OpsSummaryView.cache.hit_rate`), proven mechanically instead by `tests/test_response_cache.py` (hit on repeat input, miss after TTL/version bump) |
+| Knowledge Q&A semantic cache hit rate | n/a (didn't exist) | **not yet measurable** | same reason; proven mechanically by `tests/test_semantic_cache.py` (9 cases — paraphrase hit ≥0.95 cosine, cross-user isolation, ingestion-bump invalidation) |
+| Provider-outage user impact | full outage (unchanged, Phase 1) | **no outage — automatic failover** | breaker + chain-walk (T2.3); drill below |
+| Failover drill date | — | **2026-07-12** | see FILE_02 "Phase 2 acceptance" section — breaker-level simulation (`full → degraded → down → full`); a live real-key run is a user-initiated follow-up (`--yes-live` posture, same as T2.4) |
+| `/api/assistant/status` mode surface | didn't exist | **shipped (T2.9)** | `full`/`degraded`/`down`, derived from breaker + budget state; ar/en panel notice |
+
+## Phase 2 acceptance checklist
+
+- [x] All Phase 2 tasks (T2.1–T2.9) checked off.
+- [x] `pytest` green — 859 tests (repo-wide, up from 852 at T2.8).
+- [x] `gate:all` (00–15) green.
+- [x] i18n parity (1834 keys) + `tsc -b` + `gate03` (brand) green; bundle budget green (239.4 kB
+      gzip main chunk, within the 250 kB budget).
+- [x] Golden evals re-run offline through the gateway — 74.3% (110/148), not below Phase 1.
+- [x] Staging failover drill documented (see FILE_02).
+- [x] This file committed with the Phase 2 columns above.

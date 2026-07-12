@@ -30,6 +30,7 @@ from ..errors import (
     ActionForbiddenError,
     AssistantUnavailableError,
 )
+from ..gateway import status as gateway_status
 from ..models import Attachment, Conversation, KnowledgeDocument, Message
 from ..services import actions, files, imports, knowledge
 from ..services.ask import MAX_QUESTION_CHARS
@@ -71,7 +72,11 @@ class AssistantStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> Response:
-        return _envelope({"enabled": client.enabled()})
+        enabled = client.enabled()
+        # Mode only means something once the feature is on — an unconfigured deployment
+        # is neither degraded nor down, it's simply off (the panel never renders either way).
+        mode = gateway_status.mode() if enabled else "full"
+        return _envelope({"enabled": enabled, "mode": mode})
 
 
 class ExtractDocumentView(APIView):

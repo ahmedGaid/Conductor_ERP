@@ -8,6 +8,10 @@ import type { PageContext } from "../assistant/context";
 
 export interface AssistantStatus {
   enabled: boolean;
+  // T2.9: "full" (every provider closed, no budget exhausted) · "degraded" (a fallback chain
+  // or a blocked budget is in play, but a usable provider remains) · "down" (every provider
+  // breaker-open — the next call would fail before trying).
+  mode: "full" | "degraded" | "down";
 }
 
 export interface SupplierCandidate {

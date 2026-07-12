@@ -101,9 +101,9 @@ def _post(client: APIClient, data: bytes = b"fake-image-bytes", name: str = "inv
 @override_settings(ASSISTANT_ENABLED=False)
 def test_status_reflects_flag():
     client = _client()
-    assert client.get(STATUS_URL).json()["data"] == {"enabled": False}
+    assert client.get(STATUS_URL).json()["data"] == {"enabled": False, "mode": "full"}
     with override_settings(ASSISTANT_ENABLED=True):
-        assert client.get(STATUS_URL).json()["data"] == {"enabled": True}
+        assert client.get(STATUS_URL).json()["data"] == {"enabled": True, "mode": "full"}
 
 
 @override_settings(ASSISTANT_ENABLED=False)

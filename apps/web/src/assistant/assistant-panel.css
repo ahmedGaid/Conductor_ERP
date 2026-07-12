@@ -131,6 +131,35 @@
   block-size: 0.8rem;
 }
 
+/* T2.9: a calm, blame-free line when the gateway is running on a fallback (degraded) or every
+   provider is breaker-open (down). Colour pairs with the icon + word, never colour alone. */
+.assistant-panel__notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline: var(--space-4);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+.assistant-panel__notice--degraded {
+  color: var(--color-status-waiting);
+  background: var(--color-status-waiting-bg);
+}
+.assistant-panel__notice--down {
+  color: var(--color-status-failed);
+  background: var(--color-status-failed-bg);
+}
+.assistant-panel__notice-icon {
+  display: inline-flex;
+  flex: none;
+}
+.assistant-panel__notice-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
 .assistant-panel__tools {
   display: inline-flex;
   align-items: center;

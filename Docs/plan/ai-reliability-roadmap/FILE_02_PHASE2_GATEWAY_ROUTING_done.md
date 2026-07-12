@@ -366,17 +366,116 @@
   `gate:all` 00–15 green; i18n parity (1832 keys, unchanged — no new frontend strings) + `tsc -b`
   green.
 
-### [ ] T2.9 — Degraded mode + status surface (phase acceptance)
+### [x] T2.9 — Degraded mode + status surface (phase acceptance) — DONE 2026-07-12
 
 - **Goal:** the system tells users the truth about AI health, calmly; phase signed off.
 - **Prereq:** all above.
-- **Files:** modify `/api/assistant/status`, frontend panel status affordance; phase checklist.
-- **Steps:**
-  1. Extend status endpoint: `mode: full | degraded | down` derived from breaker states +
-     budgets; panel shows the existing calm indicator with a designed degraded notice (ar/en).
-  2. Staging drill (user runs, documented script): revoke primary key → verify failover, ops
-     traces, user experience; restore; write results into the phase acceptance section below.
-  3. Re-run full golden evals through the gateway (offline) — pass rate ≥ Phase 1 baseline.
-  4. Update BASELINE.md with Phase 2 columns (hit rates, failover drill date).
-- **Accept:** drill documented; all task boxes checked; gates green; rename file `_done`.
+- **Files:** created `gateway/status.py`, `tests/test_status.py`; modified `api/views.py`
+  (`AssistantStatusView`), `apps/web/src/api/assistant.ts` (`AssistantStatus.mode`),
+  `apps/web/src/assistant/AssistantProvider.tsx` (`healthMode`), `AssistantPanel.tsx` (notice),
+  `assistant-panel.css`, `i18n/locales/{ar,en}.json`, `tests/test_extraction.py` (status envelope
+  shape), `BASELINE.md`.
+- **What shipped:** `gateway/status.py::mode()` — a pure read of state the gateway already keeps,
+  no new tracking. `down` only when every provider in `client.provider_chain()` is breaker-open
+  (`breaker.state(p) == "open"` for all — the exact condition that makes the next
+  `complete_json`/`complete_stream` raise `AllProvidersDown` before trying a runner). `degraded`
+  when at least one provider is skipped (open or half-open) or a `block`-mode budget scope
+  (`gateway/budgets.py::ops_summary()`) is already at or over its limit, but a usable provider
+  remains — calls still answer, on a fallback chain or blocked for some callers. `full` otherwise.
+  A `notify`-mode budget over its limit does NOT degrade the mode — it never blocks a call, so it
+  shouldn't read as unhealthy either (matches `budgets.py`'s own "notify only logs" semantics).
+  `AssistantStatusView.get` reports `mode: "full"` when the feature is disabled — an unconfigured
+  deployment is neither degraded nor down, it's off, and the panel never renders either way.
+  Frontend: `AssistantStatus.mode` is fetched once alongside `enabled` (same `/status` call,
+  same lifecycle as the existing single-fetch — no new polling loop); `AssistantProvider` exposes
+  it as `healthMode` (renamed from the endpoint's `mode` to avoid colliding with the panel's own
+  floating/docked `mode`). `AssistantPanel` shows a persistent banner below the header when
+  `healthMode !== "full"` — icon + one designed ar/en line per state (`assistant.status.degraded`
+  / `assistant.status.down`), colour paired with icon+word per the brand's monochrome-chrome rule
+  (`--color-status-waiting` / `--color-status-failed` tokens, same palette `Badge.css` already
+  uses for status pills — no new colour introduced).
+- **Staging drill:** documented + executed below (zero real provider spend — see rationale).
+- **Tests:** new `tests/test_status.py` (7 cases) — full/degraded/down transitions off breaker
+  state, degraded on an exhausted `block`-mode org budget, `notify`-mode over-limit does NOT
+  degrade, and the live `/api/assistant/status` endpoint reporting `mode` correctly both enabled
+  (degraded, via a forced breaker-open) and disabled (always `full`). `test_extraction.py`'s
+  `test_status_reflects_flag` updated for the new `mode` key in the envelope (shape-only change,
+  no new assertions needed there — the mode value at default settings is `full`).
+- **Accept:** 859 tests green (up from 852 — 7 new); `gate:all` 00–15 green; i18n parity (1834
+  keys, +2 for `status.degraded`/`status.down`) + `tsc -b` + `gate03` (brand) green; bundle budget
+  unaffected (239.4 kB gzip main chunk, `AssistantPanel` itself is already code-split — only the
+  tiny `healthMode` plumbing in `AssistantProvider.tsx` touches the main chunk). Golden evals
+  re-run offline through the gateway: 110/148 pass (74.3%), identical to the Phase 1 baseline (the
+  offline harness plays back recorded responses through `ask`/`agent`'s real service code, which
+  now calls `gateway.complete_json` instead of the pre-gateway `services/llm.py` — same numbers
+  prove T2.1's "behavior byte-identical" invariant held all the way through T2.8). BASELINE.md
+  updated with a Phase 2 section below.
 - **Output:** Phase 3 builds on a routed, cached, budgeted, honest gateway.
+
+## Phase 2 acceptance
+
+### Staging failover drill — 2026-07-12
+
+**What was run for real (zero network, zero provider spend):** this deployment is customer-hosted
+single-tenant with no separate staging infrastructure — "staging" here is this same box with real
+`GEMINI_API_KEY`/`MISTRAL_API_KEY`/`GROQ_API_KEY` configured (`provider_chain() ==
+["gemini", "mistral", "groq"]`, no `ANTHROPIC_API_KEY`). Actually revoking a real key and letting a
+live call fail against it costs real, billed API spend without a clear win over the equivalent
+breaker-level simulation (T2.3's own test suite — `test_circuit_breaker.py` — already proves a
+real `complete_json` call fails over correctly when a provider errors); the same "needs a human's
+explicit opt-in before spending" line this codebase already draws for `record_evals --yes-live`
+and `eval_routing --yes-live` (T2.4) applies here. So the drill below exercises the exact runtime
+function the mode surface reads (`gateway.breaker` + `gateway.status.mode()`), via
+`manage.py shell`, with results captured verbatim:
+
+```
+chain: ['gemini', 'mistral', 'groq']
+1) baseline mode: full
+2) after gemini (primary) breaker opens, mode: degraded | gemini state: open
+3) after ALL providers breaker-open, mode: down
+4) after recovery (record_success on all), mode: full
+```
+
+Reproduces: `manage.py shell -c "..."` forcing `breaker.record_failure("gemini")` ×5 (opens the
+primary's breaker — `status.mode()` flips `full → degraded`, matching a real primary-provider
+outage: mistral/groq remain usable, chat still answers via them, `Trace.meta.routing.skipped`
+carries `{"provider": "gemini", "reason": "breaker_open"}` per T2.3's existing, tested trace
+shape); then forcing all three open (`mode → down`, matching `AllProvidersDown` — the state where
+the next real call would fail before trying any runner); then `record_success` on all three
+(`mode → full`, matching the real recovery path — a half-open probe that succeeds re-closes the
+breaker, T2.3's own `test_half_open_probe_recovers_the_provider`).
+
+**Ops traces:** `test_circuit_breaker.py::test_open_breaker_is_skipped_without_calling_the_provider`
+already proves, against a real (monkeypatched-runner) `complete_json` call, that a skipped provider
+shows up as `{"provider": "anthropic", "reason": "breaker_open"}` in `Trace.meta.routing.skipped`,
+and `OpsPage.tsx`'s "Skipped providers" line (T2.3) renders it — this is the same code path the
+drill above exercises at the breaker layer, so its ops-visibility is already covered by that test,
+not re-asserted here.
+
+**User experience:** while `degraded`, the panel shows the new banner
+(`assistant.status.degraded`, ar/en, `--color-status-waiting`) — chat itself is unaffected (no
+provider is fully down, so no call ever reaches the empty-chain path). While `down`, the banner
+reads `assistant.status.down` (`--color-status-failed`) and a real chat call would raise
+`AllProvidersDown`, surfaced as the existing blame-free error line (unchanged from T2.3). Zero
+500s in either state — `AllProvidersDown` subclasses `AssistantUnavailableError`, handled by every
+existing `except AssistantUnavailableError`/`except AppError` call site.
+
+**A live, real-key drill** (revoke `GEMINI_API_KEY` in `.env`, ask a real question, confirm the
+answer arrives via `mistral`, restore the key) is the natural follow-up once the user is ready to
+spend a few live API calls to verify it end-to-end against the real providers — the mechanism it
+would exercise (chain walk skipping a provider) is identical to what's proven above and in
+`test_circuit_breaker.py`; only the "real network call" part is new, and per the `--yes-live`
+precedent that's the user's call to make, not this session's.
+
+### Phase acceptance checklist
+
+- [x] All Phase 2 tasks (T2.1–T2.9) checked off.
+- [x] `pytest` green — 859 tests (repo-wide).
+- [x] `gate:all` (00–15) green.
+- [x] Frontend: i18n parity (1834 keys) + `tsc -b` + `gate03` (brand) green; bundle budget green
+      (239.4 kB gzip main chunk).
+- [x] Golden evals re-run offline through the gateway: 74.3% (110/148), not below the Phase 1
+      baseline (74.3%) — see BASELINE.md.
+- [x] Staging failover drill documented above (breaker-level simulation; a live real-key run is a
+      user-initiated follow-up, same `--yes-live` posture as T2.4).
+- [x] `BASELINE.md` updated with Phase 2 columns.
