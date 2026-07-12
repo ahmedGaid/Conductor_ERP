@@ -53,6 +53,20 @@ def _seed_sales():
     Warehouse.objects.create(code="WH-1", name="Main")
 
 
+def _seed_open_period():
+    """An open fiscal period covering today — only the confirm-endpoint tests need this: since
+    FILE_03, ``period_open`` runs for real on every sales-order/journal confirm."""
+    import datetime as _dt
+
+    from erp.accounting.domain.models import FiscalYear, Period, PeriodStatus
+
+    today = _dt.date.today()
+    fy = FiscalYear.objects.create(code=f"{today.year}-VT", start_date=today.replace(month=1, day=1),
+                                   end_date=today.replace(month=12, day=31))
+    Period.objects.create(fiscal_year=fy, code=f"{today.year}-VT", start_date=fy.start_date,
+                          end_date=fy.end_date, status=PeriodStatus.OPEN)
+
+
 def _sales_decision():
     return {"customer": "Nile Traders", "items": [{"item": "SKU-1", "quantity": "3"}],
             "warehouse": "WH-1"}
@@ -144,6 +158,7 @@ def _proposal_message(user, payload_decision, action="create_sales_order_draft")
 def test_confirm_creates_draft_and_is_single_use():
     admin = _admin()
     _seed_sales()
+    _seed_open_period()
     msg = _proposal_message(admin, _sales_decision())
     client = APIClient()
     client.force_authenticate(user=admin)
@@ -1072,7 +1087,7 @@ def test_every_action_passes_validation_and_archetypes_declare_semantics():
     assert so.invariants == ("doc_totals", "period_open")
     assert actions.ACTIONS["create_journal_entry_draft"].effects[0].gl == "draft"
     assert actions.ACTIONS["create_stock_transfer_draft"].invariants == ("stock_non_negative",)
-    assert actions.ACTIONS["create_customer"].idempotency == ("query",)
+    assert actions.ACTIONS["create_customer"].idempotency == ("name",)
 
 
 def test_catalog_text_carries_risk_class():
@@ -1080,3 +1095,84 @@ def test_catalog_text_carries_risk_class():
     assert "[risk: draft]" in text
     for line in text.splitlines()[1:]:
         assert "[risk: " in line
+
+
+# --- verifier wiring (os-foundations FILE_03) ----------------------------------------------------
+
+from erp.assistant import verifier as verifier_module  # noqa: E402
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_confirm_runs_declared_invariants_and_reports_ok():
+    admin = _admin()
+    _seed_accounting()
+    msg = _proposal_message(admin, _journal_decision(), action="create_journal_entry_draft")
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm"}, format="json")
+    assert res.status_code == 200
+    body = res.json()["data"]
+    assert body["verifier"]["ok"] is True
+    assert set(body["verifier"]["packs"]) == {"journal_balanced", "period_open"}
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["verifier"]["ok"] is True
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_confirm_without_declared_invariants_carries_no_verifier_key():
+    """Regression (Accept c): an invariant-less action confirms exactly as before."""
+    admin = _admin()
+    msg = _proposal_message(admin, {"query": "Acme Corp"}, action="create_customer")
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm"}, format="json")
+    assert res.status_code == 200
+    assert "verifier" not in res.json()["data"]
+    msg.refresh_from_db()
+    assert "verifier" not in msg.meta["proposal"]
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_verifier_failure_rolls_back_write_and_leaves_proposal_pending(monkeypatch):
+    admin = _admin()
+    _seed_accounting()
+    msg = _proposal_message(admin, _journal_decision(), action="create_journal_entry_draft")
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    def _forced_failure(scope):
+        return verifier_module.Finding("journal_balanced", False, "forced failure for the test", {})
+    monkeypatch.setitem(verifier_module.PACKS, "journal_balanced", _forced_failure)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm"}, format="json")
+    assert res.status_code == 422
+    assert JournalEntry.objects.count() == 0  # the atomic write was undone
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "pending"  # reusable, never stamped confirmed
+    assert AuditEntry.objects.filter(module="assistant", action="verifier_failed").exists()
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_confirm_dedupes_repeat_of_same_action_across_two_cards():
+    admin = _admin()
+    _seed_sales()
+    _seed_open_period()
+    decision = _sales_decision()
+    msg1 = _proposal_message(admin, decision)
+    msg2 = _proposal_message(admin, decision)
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    first = client.post(EXEC_URL, {"message_id": msg1.id, "decision": "confirm"}, format="json")
+    assert first.status_code == 200
+    assert SalesOrder.objects.count() == 1
+
+    second = client.post(EXEC_URL, {"message_id": msg2.id, "decision": "confirm"}, format="json")
+    assert second.status_code == 200
+    assert second.json()["data"]["deduplicated"] is True
+    assert SalesOrder.objects.count() == 1  # the second card executed nothing
+    assert AuditEntry.objects.filter(module="assistant", action="confirm_deduplicated").exists()
+    msg2.refresh_from_db()
+    assert msg2.meta["proposal"]["status"] == "confirmed"

@@ -16,6 +16,8 @@ Two safety boundaries, both mirroring the read tools:
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
+import json
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from difflib import SequenceMatcher
@@ -1295,7 +1297,9 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         effects=(Effect("sales_order", "create", stock="draft"),),
         invariants=("doc_totals", "period_open"),
         risk="draft",
-        idempotency=("customer", "items"),
+        # Names match the EXECUTE payload (``_build_sales_order``'s "payload" key), not the build
+        # decision's arg names — ``idempotency_key`` hashes the payload the confirm actually runs.
+        idempotency=("customer_code", "lines"),
     ),
     Action(
         "create_purchase_request_draft",
@@ -1316,7 +1320,7 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         _build_customer, _execute_customer,
         effects=(Effect("customer", "create"),),
         risk="draft",
-        idempotency=("query",),
+        idempotency=("name",),  # execute payload key (build decision's arg is "query")
     ),
     Action(
         "create_quotation_draft",
@@ -1383,7 +1387,8 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         effects=(Effect("stock_transfer", "create", stock="draft"),),
         invariants=("stock_non_negative",),
         risk="draft",
-        idempotency=("item", "quantity", "from_warehouse", "to_warehouse"),
+        # Execute payload keys (build decision's args are item/from_warehouse/to_warehouse).
+        idempotency=("item_sku", "quantity", "source_code", "destination_code"),
     ),
     Action(
         "create_stock_count_draft",
@@ -1525,3 +1530,14 @@ def execute(actor, name: str, payload: dict) -> dict:
     if action is None:
         raise ValueError(f"unknown action {name}")
     return action.execute(actor, payload)
+
+
+def idempotency_key(name: str, payload: dict) -> str:
+    """The natural retry key for a confirm (FILE_03 T3.1): sha256 over the action name + the
+    payload values named by its declared ``idempotency`` tuple (L0). An action with no declared
+    tuple (the safe default) keys over the whole payload, so it dedupes only exact repeats."""
+    action = ACTIONS.get(name)
+    keys = action.idempotency if action is not None else ()
+    material = {k: payload.get(k) for k in keys} if keys else payload
+    blob = json.dumps(material, sort_keys=True, default=str)
+    return hashlib.sha256(f"{name}:{blob}".encode()).hexdigest()

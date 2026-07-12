@@ -90,6 +90,7 @@
       "dismiss": "Dismiss",
       "dismissed": "Dismissed",
       "executed": "Created",
+      "verified": "Checks passed ({{count}})",
       "risks": "Before you confirm",
       "affected": "{{count}} records",
       "openDocument": "Open",

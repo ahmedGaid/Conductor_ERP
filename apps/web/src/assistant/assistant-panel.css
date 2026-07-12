@@ -1321,6 +1321,20 @@
   inline-size: 0.9rem;
   block-size: 0.9rem;
 }
+.action-card__verified {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.action-card__verified .navicon {
+  flex: none;
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  color: var(--color-success);
+}
 
 /* Suggestion card (session 12) — a blocker's permitted ways out. Shares the action-card frame. */
 .suggest-card__options {

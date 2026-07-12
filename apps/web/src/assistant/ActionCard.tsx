@@ -96,7 +96,7 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
         ...proposal,
         status: res.status,
         ...(res.status === "confirmed" && res.summary
-          ? { result: { summary: res.summary, links: res.links ?? [] } }
+          ? { result: { summary: res.summary, links: res.links ?? [], verifier: res.verifier } }
           : {}),
       });
     } catch (err) {
@@ -115,6 +115,12 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
           <NavIcon name="checkCircle" />
           {result?.summary ?? t("assistant.action.executed")}
         </p>
+        {result?.verifier?.ok && (
+          <p className="action-card__verified" dir="auto">
+            <NavIcon name="check" />
+            {t("assistant.action.verified", { count: result.verifier.packs.length })}
+          </p>
+        )}
         {result?.links?.length ? (
           <ul className="assistant-cites">
             {result.links.map((r) => (

@@ -6,12 +6,16 @@ absent, the same posture as out-of-scope records — and the UI hides all AI sur
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
+from datetime import timedelta
 
+from django.db import transaction
 from django.db.models import Q
 from django.http import Http404, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -29,12 +33,18 @@ from ..errors import (
     ActionFailedError,
     ActionForbiddenError,
     AssistantUnavailableError,
+    VerifierFailed,
 )
 from ..gateway import status as gateway_status
 from ..models import Attachment, Conversation, KnowledgeDocument, Message
 from ..services import actions, files, imports, knowledge
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
+from ..verifier import run as verify_run
+
+# Cross-card idempotency window (FILE_03 T3.1): a confirm that repeats another confirmed proposal's
+# natural key within this window is deduplicated — nothing executes twice.
+DEDUPE_WINDOW = timedelta(minutes=10)
 
 logger = logging.getLogger(__name__)
 
@@ -323,22 +333,74 @@ class ActionExecuteView(APIView):
                          entity_id=name, actor=request.user)
             return _envelope({"status": "dismissed"})
 
+        payload = proposal.get("payload") or {}
+        key = actions.idempotency_key(name, payload)
+
+        # Cross-card dedupe (FILE_03 T3.1): a same-key proposal this user confirmed recently — the
+        # single-use guard above only stops replays of THIS card; this stops a second card (double
+        # propose, agent retry) from re-executing the same write.
+        cutoff = timezone.now() - DEDUPE_WINDOW
+        prior = (
+            Message.objects.filter(conversation__user=request.user, role=Message.Role.ASSISTANT,
+                                    created_at__gte=cutoff)
+            .exclude(pk=message.pk).order_by("-created_at")
+        )
+        for other in prior:
+            other_proposal = (other.meta or {}).get("proposal")
+            if (other_proposal and other_proposal.get("status") == "confirmed"
+                    and other_proposal.get("idempotency_key") == key):
+                result = other_proposal.get("result") or {}
+                proposal["status"] = "confirmed"
+                proposal["result"] = result
+                proposal["idempotency_key"] = key
+                message.save(update_fields=["meta"])
+                audit.record(module="assistant", action="confirm_deduplicated", entity_type="Action",
+                             entity_id=name, actor=request.user)
+                return _envelope({"status": "confirmed", "followups": [], "deduplicated": True,
+                                  **result})
+
+        action = actions.ACTIONS.get(name)
+        report = None
         try:
-            result = actions.execute(request.user, name, proposal.get("payload") or {})
+            with transaction.atomic():
+                result = actions.execute(request.user, name, payload)
+                if action is not None and action.invariants:
+                    scope = {"links": result.get("links") or [], "payload": payload,
+                             "actor": request.user}
+                    report = verify_run(action.invariants, scope)
+                    if not report.ok:
+                        # Rollback-as-compensation (FILE_03): every current action is draft risk, so
+                        # unwinding this atomic block fully undoes the write. `compensation` stays
+                        # declared-but-unused until a post-risk action ships (Phase B).
+                        raise VerifierFailed(
+                            data={"findings": [dataclasses.asdict(f) for f in report.findings]})
         except PermissionError:
             # The role lost create rights since the card was shown — calm refusal, proposal untouched.
             raise ActionForbiddenError
+        except VerifierFailed as exc:
+            # The write was rolled back — this is our bug, not the user's. The proposal stays
+            # pending and reusable; the audit trail records the failed verdicts.
+            audit.record(module="assistant", action="verifier_failed", entity_type="Action",
+                         entity_id=name, actor=request.user, result="failure",
+                         after=exc.data)
+            raise
         except AppError:
             raise  # module validation (unknown item, empty order…) — surface its blame-free message
         except Exception as exc:  # unexpected — never leak a trace; leave the proposal reusable
             raise ActionFailedError from exc
 
+        if report is not None:
+            result["verifier"] = {"ok": True, "packs": [f.pack for f in report.findings]}
+
         proposal["status"] = "confirmed"
         proposal["result"] = result
+        proposal["idempotency_key"] = key
+        if report is not None:
+            proposal["verifier"] = result["verifier"]
         message.save(update_fields=["meta"])
         audit.record(module="assistant", action=name or "action", entity_type="Action",
                      entity_id=(result.get("links") or [{}])[0].get("value"), actor=request.user,
-                     after={"summary": result.get("summary")})
+                     after={"summary": result.get("summary"), "verifier": result.get("verifier")})
         return _envelope({"status": "confirmed", "followups": [], **result})
 
 

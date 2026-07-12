@@ -36,7 +36,7 @@ Notes:
 
 ## Tasks
 
-### [ ] T3.1 — Idempotent confirms
+### [x] T3.1 — Idempotent confirms
 
 - **Goal:** replaying a confirm (double-click, network retry, agent retry) never writes twice.
 - **Files:** `erp/assistant/services/actions.py`; `erp/assistant/api/views.py`;
@@ -55,7 +55,7 @@ Notes:
   → one `SalesOrder` row, second response flagged `deduplicated`.
 - **Output:** agent retries are safe — the precondition for any future autonomy level.
 
-### [ ] T3.2 — Verify-after-execute + rollback on failure
+### [x] T3.2 — Verify-after-execute + rollback on failure
 
 - **Goal:** the contract block above, live for all 17 actions.
 - **Files:** `erp/assistant/api/views.py` (confirm path); NEW exception in
@@ -75,7 +75,7 @@ Notes:
 - **Output:** every agent write is checked or explicitly unchecked-by-declaration. Trust ledger
   (moat #3) starts accumulating verdicts.
 
-### [ ] T3.3 — Verdict on the card (web)
+### [x] T3.3 — Verdict on the card (web)
 
 - **Goal:** the proposal card shows the verifier outcome as one quiet line.
 - **Files:** `apps/web/src/assistant/` proposal-card component (locate via the existing

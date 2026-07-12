@@ -53,6 +53,16 @@ class ActionFailedError(AppError):
     message = "That could not be created just now"
 
 
+class VerifierFailed(AppError):
+    """A post-write invariant pack failed (os-foundations FILE_03) — the atomic write was rolled
+    back, so nothing persisted. Blame-free: it's our check that failed, not the user's input.
+    ``data["findings"]`` carries the pack verdicts verbatim for the card."""
+
+    code = "AI-008"
+    status_code = 422
+    message = "The draft could not be saved because a check failed. Nothing was written."
+
+
 class BudgetExceeded(AppError):
     """A cost/token budget (request, user/day, or org/month — ai-reliability T2.7) is exhausted;
     the call was blocked before any provider was tried. Blame-free and distinct from a provider

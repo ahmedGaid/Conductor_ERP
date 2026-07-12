@@ -170,8 +170,17 @@ export interface ActionProposal {
   total: string | null;
   affected: number;
   status: "pending" | "confirmed" | "dismissed";
-  // Present once confirmed: the created document's link + a success line.
-  result?: { summary: string; links: ActionRecord[] };
+  // Present once confirmed: the created document's link + a success line. `verifier` rides along
+  // when the action declared invariants (os-foundations FILE_03) — absent for undeclared actions,
+  // no behaviour change.
+  result?: { summary: string; links: ActionRecord[]; verifier?: ActionVerifier };
+}
+
+// One post-write check pass (os-foundations FILE_03 T3.2) — a failure never reaches the client as
+// this shape; it 422s instead and the card shows the blame-free error line.
+export interface ActionVerifier {
+  ok: true;
+  packs: string[];
 }
 
 // A near-match the user can pick when a reference was ambiguous (plan session 12).
@@ -295,6 +304,8 @@ export interface ActionResult {
   summary?: string;
   links?: ActionRecord[];
   followups?: string[];
+  verifier?: ActionVerifier;
+  deduplicated?: boolean;
 }
 
 export function executeAction(

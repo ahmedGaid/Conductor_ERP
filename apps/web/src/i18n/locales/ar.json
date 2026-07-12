@@ -90,6 +90,7 @@
       "dismiss": "تجاهل",
       "dismissed": "تم التجاهل",
       "executed": "تم الإنشاء",
+      "verified": "تم التحقق من القيود ({{count}})",
       "risks": "قبل التأكيد",
       "affected": "{{count}} سجلات",
       "openDocument": "فتح",
