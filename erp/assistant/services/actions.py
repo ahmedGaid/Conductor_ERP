@@ -1467,10 +1467,12 @@ def _validate_action(a: Action) -> None:
     assert a.risk in RISK_LEVELS, f"action {a.name}: unknown risk '{a.risk}'"
     assert a.requires_confirm or a.risk not in ("post", "destructive"), (
         f"action {a.name}: risk '{a.risk}' must require confirmation")
+    from erp.assistant.verifier import PACKS as _VERIFIER_PACKS
     for inv in a.invariants:
-        # Pack-existence check tightened in FILE_02 — until then only non-empty strings.
         assert isinstance(inv, str) and inv.strip(), (
             f"action {a.name}: invariant names must be non-empty strings")
+        assert inv in _VERIFIER_PACKS, (
+            f"action {a.name}: invariant '{inv}' is not a registered verifier pack")
     assert a.compensation is None or a.compensation in ACTIONS, (
         f"action {a.name}: compensation '{a.compensation}' is not a registered action")
     if any(e.gl == "posts" or e.stock == "moves" for e in a.effects):
