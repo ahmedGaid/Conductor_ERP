@@ -360,6 +360,13 @@ CORS_ALLOWED_ORIGINS = [
     f"http://127.0.0.1:{env('WEB_PORT', default='5173')}",
 ]
 
+# --- Smart Import Engine: per-entity defaults used when a row omits an optional field ---
+# (FILE_05 Task B). Keys are registry entity names; each inner dict's keys are FieldSpec names.
+IMPORTS_DEFAULTS: dict[str, dict] = {
+    "items": {"uom": "unit"},
+    "contacts": {"source": "other"},
+}
+
 # --- Logging: structured JSON only (no unstructured text logs) ---
 LOGGING = {
     "version": 1,

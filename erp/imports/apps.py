@@ -6,3 +6,6 @@ class ImportsConfig(AppConfig):
     name = "erp.imports"
     label = "imports"
     verbose_name = "Smart Import Engine"
+
+    def ready(self) -> None:
+        from . import adapters  # noqa: F401  (import registers every adapter)
