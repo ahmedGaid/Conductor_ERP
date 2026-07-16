@@ -30,16 +30,37 @@ split backend/UI into separate FILEs, so this costs nothing).
 ahmedgaid85 → B). So Claude Desktop opened at ERP resumes lane A; VS Code opened at ERP-B resumes
 lane B — automatically.
 
-## Setup (P0 — first agent to start, Either)
+## ⚠️ Incident 2026-07-16 — both agents ran in ONE checkout (fixed; rules below are now HARD)
 
-1. Push current `main` to origin (contains `dd2532f` + `aba5c02`).
-2. Agent B environment (one-time): `git worktree add C:\AhmedGaid\ERP-B -b feat/b-lane` →
-   in ERP-B: own `.venv` (`python -m venv .venv; pip install -r requirements.txt` — mirror root),
-   `npm install` in `apps/web` only if B ever runs web gates, own `.env` with **DB `erp_b`**
-   (`createdb`), Django port **8001**, Vite **5174**. Redis shared (or `/1`). This kills DB/test
-   collisions (`test_erp` vs `test_erp_b`) and port clashes.
-3. Branches: A on `feat/a-<task>`, B on `feat/b-<task>`, one branch per task or per wave; push
-   after every task; PR or ff-merge to `main` only at checkpoints, gate:all green first.
+What happened: ERP-B worktree was never created, so B executed in `C:\AhmedGaid\ERP` on A's
+branch. Wave-1 commits (A1 54a3662, A3 1b951c7, A2 14ca31a, B1 5e1d7d9) all landed mixed on
+`feat/a-partial-payments` (work itself valid — merge together at M1). Worse: both lanes shared
+test DB `test_erp`; concurrent pytest runs dropped it mid-run → 78 phantom "database does not
+exist" errors. Fix applied: worktree `C:\AhmedGaid\ERP-B` created on branch `feat/b-lane`
+(from `376a5c9`, contains all wave-1 work), own `.env` (DB `erp_b` → test DB `test_erp_b`,
+Redis `/1`), DB created, own venv.
+
+**HARD STOPS (both agents, before EVERY command batch — not just at session start):**
+1. `Get-Location` check: Agent B NEVER executes anything (pytest, gates, git commit, runserver,
+   npm) inside `C:\AhmedGaid\ERP`. Agent A NEVER inside `C:\AhmedGaid\ERP-B`. Wrong path →
+   STOP, tell the user to reopen the editor at the right folder. No exceptions, no "just this once".
+2. Branch prefix = identity: A commits only on `feat/a-*`, B only on `feat/b-*`. About to commit
+   on the other prefix → you are in the wrong checkout; stop.
+3. Test isolation is automatic ONLY via the right checkout (each `.env` carries its own
+   DATABASE_URL). Running pytest from the wrong folder silently attacks the other lane's test DB.
+
+## Setup (P0 — DONE 2026-07-16 during incident fix)
+
+1. ✅ `main` pushed to origin.
+2. ✅ Agent B environment: worktree `C:\AhmedGaid\ERP-B` on `feat/b-lane` (from `376a5c9`),
+   own `.venv`, own `.env` with **DB `erp_b`** (created, migrated), Redis **`/1`**, Django port
+   **8001**, Vite **5174**. `npm install` in `apps/web` only if B ever runs web gates (not done —
+   B shouldn't need it). Test DBs now disjoint: `test_erp` (A) vs `test_erp_b` (B).
+3. Branches: A stays on `feat/a-*` in ERP, B stays on `feat/b-*` in ERP-B, one branch per task or
+   per wave; push after every task; PR or ff-merge to `main` only at checkpoints, gate:all green
+   first. Wave-1 mixed branch `feat/a-partial-payments` merges as-is at M1; `feat/b-lane` starts
+   from its tip, so M1 = merge `feat/b-lane` (which will contain everything) or both, ff order
+   A-branch → B-branch.
 
 ## Task table
 
