@@ -125,11 +125,15 @@ by the upgrade-drill gate.
 git pull                                        # or deploy the new code drop
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 cd apps\web; npm ci; npm run build; cd ..\..
-.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py upgrade --yes   # migrates + applies pending release data
+                                                       # fixes (idempotent, safe to re-run) +
+                                                       # post-checks (system-check, trial balance)
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput
 .\deploy\windows\install-services.ps1          # re-register (idempotent) and start
 ```
-Always take a backup (§5) **before** `migrate` on an upgrade.
+Always take a backup (§5) **before** running `upgrade`. `upgrade` itself reminds you if you skip
+this step; pass `--skip-backup-check` once you've actually taken one. Re-running `upgrade` after
+everything is applied is a clean no-op — safe to run again if a step failed and you fixed the cause.
 
 ## 5. Backup & restore (the DECISIONS policy: nightly backups + periodic tested restores)
 

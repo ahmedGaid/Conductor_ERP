@@ -106,3 +106,22 @@ class IdempotencyKey(TimeStampedModel):
     class Meta:
         db_table = "core_idempotency_key"
         unique_together = [("endpoint", "key")]
+
+
+class AppliedUpgradeStep(models.Model):
+    """A release upgrade step (see `erp.core.upgrades`) that has already run — `manage.py
+    upgrade`'s at-most-once guard so a re-run skips completed steps and resumes at a failed one.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    version = models.CharField(max_length=32)
+    name = models.CharField(max_length=128)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "core_applied_upgrade_step"
+        unique_together = [("version", "name")]
+        ordering = ["applied_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.version}:{self.name}"
