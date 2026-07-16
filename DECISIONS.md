@@ -1349,6 +1349,15 @@ Executed `Docs/plan/00-security-hardening.md` on branch `feat/sec-hardening`. Th
 - **`check --deploy` clean** against `config.settings.prod` (given a real `DJANGO_SECRET_KEY`), and a
   **Content-Security-Policy** header ships in prod (`CSP_POLICY`, env-overridable; `'self'`-everything,
   inline allowed for styles only — everything is self-hosted, so no CDN carve-outs).
+- **Re-verified 2026-07-16 (delivery-track Phase 3 re-audit).** Confirmed the scope + SSRF work is
+  live and green: 25 scope/egress tests pass (`test_scoping.py` in sales/purchasing/inventory/crm/
+  einvoice/accounting + `workflow/tests/test_egress.py`), `gate:all` 00–15 exit 0, web `tsc -b` +
+  i18n parity clean. Pricing/masters remaining org-wide is **correct by design** (bullet above) — a
+  stale delivery-track NEXT ACTION had listed pricing scoping as a to-do; scoping it would break
+  cross-branch documents, so no change made. **User reaffirmed 2026-07-16: keep pricing org-wide** —
+  do not wrap it with `scope_queryset`. Added `erp/pricing/tests/test_scoping.py` (commit 45f2b0f,
+  branch `feat/sec-scope-pricing-invariant`) pinning that invariant as an executable regression
+  guard. Slice was already delivered in session 00; only the pricing invariant test is new.
 
 ## Perf budgets 2026-07 — session 01 of the master plan (2026-07-02)
 
@@ -1961,3 +1970,35 @@ specifics settled during execution:
 task, not scheduled here.
 
 Claim earned: **"See tomorrow's books before you post them."**
+
+## Delivery Phase 3 — env/config hardening (2026-07-16)
+First Phase 3 slice of the delivery-readiness track. `.env.example` was stale — it documented ~12
+keys while `config/settings/{base,prod}.py` read ~40, so a customer standing up prod had no template
+for the security, email, throttle, or workflow-egress vars. Rewrote `.env.example` into labelled
+sections (Django core · DB · Redis · Celery · storage · ports · security/HTTPS · DRF throttles ·
+workflow egress · email · optional AI), each key with its code default and a prod note; removed the
+dead `DEV_USER_*` keys (read nowhere in code — only old `files/` input specs). Verified
+`manage.py check --deploy --settings=config.settings.prod` reports **no issues** with a real
+50-char secret (the prod profile already sets HSTS 1y, strict CSP, secure cookies, SSL redirect).
+Pure docs/config change — no Python touched. Still owed in Phase 3: clean first-run seed
+(empty-tenant verification), the code-level scope/SSRF audit from `Docs/plan/00-security-hardening.md`,
+and DB-backup guidance in the RUNBOOK.
+
+## Delivery Phase 3 — clean first-run seed verified (2026-07-16)
+Second Phase 3 slice. Verified empirically (not by reading) that a customer's first-run tenant is
+clean. On a throwaway DB (`erp_seedtest`, created + dropped), `migrate` + `seed_identity` +
+`seed_accounting` yielded EMPTY BOOKS and zero demo business data: 0 JournalEntry, 0 JournalLine,
+0 Customer, 0 SalesOrder, 0 Item, 0 Supplier, 0 PurchaseOrder, 0 Lead, 0 PriceList. Only baseline
+scaffold present: 27 CoA Accounts, 1 FiscalYear + 12 Periods, 2 TaxCodes, 3 CostCenters, HQ Branch,
+RBAC (181 RolePermission + 9 ApprovalLimit), 3 Departments + 2 Teams, 3 assistant.Budget (AI, off
+without a key). `seed_accounting` is a thin wrapper over `seed_baseline_accounting()` — the exact
+provisioning the first-run setup wizard calls — so CLI and wizard produce an identical empty tenant.
+`seed_demo` confirmed a standalone script (`scripts/seed_demo.py`) wired into NO prod/setup path
+(only tests + gate01 call `seed_identity`); RUNBOOK already warns it is dev-only. No schema/code
+change — verification slice.
+FINDING (recommend before handover, deferred to its own slice): `seed_identity` also creates 3
+non-admin demo users (manager/accountant/auditor) sharing the known password `Dev12345!` — default-
+credential clutter on a customer tenant. Fix = a customer-safe provisioning path (admin-only, or a
+`--no-demo-users` flag / separate `provision_tenant` command) so a handover tenant ships with one
+admin whose password the customer sets. Deferred because changing `seed_identity` touches
+gate01 + `erp/identity/tests/test_access.py`, which must be updated in the same slice.

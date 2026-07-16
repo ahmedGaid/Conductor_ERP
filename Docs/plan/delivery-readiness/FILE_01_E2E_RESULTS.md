@@ -94,5 +94,107 @@ Phase 4 handover docs if partial supplier payments are needed.
 
 ---
 
-## Phase 1c — CRM + Pricing + Workflows — _not started_
-## Phase 1d — Identity + Setup — _not started_
+## Phase 1c — CRM + Pricing + Workflows (2026-07-16)
+
+**Drive:** create CRM opportunity + lead, edit a price list (add a tiered price line) + verify price
+resolution, and create + **run** a workflow automation — in the browser at `http://localhost:5173`
+as `admin`, Arabic/RTL UI. Verified side effects in Postgres via Django shell against a pre-drive
+baseline.
+
+**Baseline (pre-drive):** CRM Lead 2 · Opportunity 4 · Ticket 1 · Campaign 1 · Activity 0 ·
+Pricing PriceList 3 / PriceListLine 7 · Workflow all tables 0.
+(Note: CRM has **no separate Contact model** — leads/customers carry contact info; "contact" in the
+plan maps to the Lead entity. Confirmed with the module owner's model set.)
+
+| # | Step (UI action) | Result | Side effects verified |
+|---|---|---|---|
+| 1 | CRM → Pipeline → create opportunity (`Phase1c QA Opportunity`, ACME, WIDGET ×3 @ 100) | **PASS** | **OPP-2026-000005** created; amount 300.00 EGP, weighted 30.00 (10% Qualifying stage). Opportunity count 4→5 |
+| 2 | CRM → Leads → add lead (`Phase1c QA Lead`, QA Test Co, Referral) | **PASS** | **LEAD-2026-000003** created, stage New. Lead count 2→3 (All 2→3, New 1→2) |
+| 3 | Pricing → open STANDARD → add tiered price (GADGET, qty≥20 @ 250.00) | **PASS** | New PriceListLine added; STANDARD 5→6 lines. Row renders `GADGET / 20.0000 / 250.00 EGP / Always` |
+| 4 | Price resolve (tiering, via pricing contract) | **PASS** *(after fix — see FAIL below)* | GADGET q25→250.00, q5→300.00; WIDGET q3→150.00 — all `default_list` STANDARD, deterministic |
+| 5 | Workflows → create automation (start → script `2+3` → end) | **PASS** | Workflow **Phase1c QA Automation** v1 Active, 3 nodes; UI list + detail read back correctly |
+| 6 | Workflows → **Run** the automation (UI Run button) | **PASS** | Instance `bdee4a59` ran to **completed**; script node output `{sum:5}`, end `{outcome:completed}`; execution-timeline viewer shows start→calc→done with advance logs |
+
+### FAIL found + fixed — pricing had TWO default price lists (seed-integrity bug)
+
+**Symptom:** GADGET (priced only on STANDARD) resolved to `None` for every unassigned customer,
+while WIDGET resolved via a *different* list than expected.
+
+**Root cause:** both RETAIL and STANDARD had `is_default=True`. The resolver's tier-3 default lookup
+(`price_lists.default()` → `filter(is_default=True).first()`) then picks one arbitrarily (RETAIL),
+so STANDARD-only items are unreachable. Origin = `scripts/seed_demo.py` `seed_pricing()`: it forced
+STANDARD default with a raw `save()`, **not** the `set_single_default()` invariant, leaving RETAIL's
+flag set. (The live API create/patch paths *do* call `set_single_default` — only the seed bypassed
+it, same class as the Phase 0 "demo cash" seed artifact.)
+
+**Fix:**
+- `scripts/seed_demo.py` — `seed_pricing()` now calls `set_single_default(pl)` (demotes any other
+  default) instead of a raw `save()`.
+- Live DB cleaned: `set_single_default(STANDARD)` → single default = STANDARD.
+- Regression test `erp/pricing/tests/test_resolve.py::test_set_single_default_demotes_other_defaults`
+  — two-default scenario, asserts exactly one remains and a STANDARD-only item resolves
+  deterministically. `pytest erp/pricing/tests/test_resolve.py` → **10 passed** (was 9).
+
+**Post-fix resolve:** deterministic, single default STANDARD (see step 4).
+
+**Environment caveat (NOT a product defect):** the workflow visual builder is a React Flow canvas.
+In this headless browser, screenshots time out on the canvas, so coordinate clicks/drags (needed to
+wire node→node edges) are unavailable, and palette node-add only registers after a "Fit View" pane
+measure. Because of this the **create** graph was persisted via the `save_graph` service (the exact
+contract the canvas POSTs), then the **run** was driven through the real authenticated UI Run button
+(instance executed + timeline viewer confirmed). The workflow engine's create→start→run→decision
+lifecycle is independently green: `pytest erp/workflow/tests/test_api.py` → **8 passed**. The
+builder's server-side validation also works (it correctly rejected a 2-start-node graph with HTTP
+400). **Recommend a 2-minute human smoke of the visual builder** (drag start→end, Save, Run) before
+handover, since the canvas edge-drawing couldn't be exercised headlessly.
+
+**Verdict: Phase 1c CRM+Pricing+Workflows — PASS** (one seed-integrity bug found + fixed +
+regression-tested). Test artifacts left in demo DB: OPP-2026-000005, LEAD-2026-000003, STANDARD
+GADGET@250 line, Phase1c QA Automation workflow + one completed instance — harmless demo data,
+consistent with Phase 1a/1b artifacts. Ready to proceed to Phase 1d (Identity + Setup).
+
+---
+
+## Phase 1d — Identity + Setup (2026-07-16)
+
+**Drive:** create a user + assign a role (Identity), and edit organization config (Setup) — in the
+browser at `http://localhost:5173` as an admin (Ahmed Gaid, System Admin), Arabic/RTL UI. Verified
+side effects in Postgres via Django shell against a pre-drive baseline. (Note: the in-app browser was
+used this session — Claude-in-Chrome was disconnected; screenshots time out on this renderer, so the
+UI was driven via authenticated in-page events + network capture, exactly what the real controls
+POST/PATCH.)
+
+**Baseline (pre-drive):** Users 7 · Groups/roles 4 (System Admin, Branch Manager, Accountant,
+Auditor) · Branches 1 (Headquarters/HQ). OrgPreferences: company_name `Golden Eagle`, country
+`Egypt`, vat_number `12121`, einvoice_enabled `True`, order_cancel_until `confirmed`, language `ar`.
+(Note: **no Organization model** — the single tenant's editable config lives in `OrgPreferences`;
+Branch is a `core` model with **no create/edit UI** — seed-only, 1 row. So Setup's editable
+write-surface is the Organization settings page. Flagged, not a defect.)
+
+| # | Step (UI action) | Result | Side effects verified |
+|---|---|---|---|
+| 1 | Admin → Users → Invite user (`phase1d_qa`, phase1d.qa@golden.example, Role=Accountant, Dept=Finance) | **PASS** | POST `/api/identity/users` → **201**. User created, group `Accountant`, department Finance (id 1), status `invited`. User count 7→8 |
+| 2 | Users → select the new user → bulk **Activate** | **PASS** | POST `/api/identity/users/bulk` → **200**. Status `invited`→`active` |
+| 3 | Users → select user → **Assign role** = Auditor → Apply | **PASS** | POST `/api/identity/users/bulk` → **200** `{affected:1}`. Group `Accountant`→`Auditor` (role reassigned) |
+| 4 | Settings → Organization → E-invoicing toggle (on→off) | **PASS** | PATCH `/api/identity/org-preferences` → **200**. `einvoice_enabled` True→False |
+| 5 | Organization → Company name → `Golden Eagle QA` (blur-save) | **PASS** | PATCH → **200**, body `{company_name:"Golden Eagle QA"}` |
+| 6 | Organization → VAT number → `99887` (blur-save) | **PASS** | PATCH → **200**, `vat_number` 12121→99887 |
+| 7 | Organization → Order-cancel window segmented → `Drafts only` | **PASS** | PATCH → **200**, `order_cancel_until` confirmed→draft |
+| 8 | Restore org config to originals via UI (name, vat, order-cancel, einvoice) | **PASS** | 4× PATCH **200**; DB re-reads to baseline (`Golden Eagle` / `12121` / einvoice True / `confirmed`) |
+
+**No product FAIL found.** Two hiccups were in the *test harness*, not the app: (a) dispatching a
+non-bubbling `blur` event didn't reach React's delegated `focusout` listener — switching to a
+`focusout` event fired the blur-save PATCHes correctly (the app saves-on-blur as designed); (b) one
+mis-aimed click hit the bulk **Activate** button instead of **Assign role** — re-aimed at the button
+after the role select and the assign went through. Both are artifacts of headless scripting, not
+defects; every real control (invite, activate, assign-role, org-config save-on-change and
+save-on-blur) worked and persisted on the first correct interaction.
+
+**Verdict: Phase 1d Identity + Setup — PASS** (zero product bugs; no code changed → gates unchanged).
+Test artifact left in demo DB: user `phase1d_qa` (active, Auditor) — harmless, consistent with the
+Phase 1a–1c artifact policy; **suspend or delete before customer handover** if an extra admin-created
+login is unwanted. Org config restored to baseline (no config drift left behind).
+
+**Gap flagged for handover (not a Phase-1d defect):** there is **no UI to create or edit Branches**
+(the `core.Branch` model is seed-only, 1 HQ row). If the customer needs multi-branch setup, that's a
+missing setup surface — file under delivery backlog, not a write-flow FAIL.

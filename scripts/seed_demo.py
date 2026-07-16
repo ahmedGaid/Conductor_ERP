@@ -492,15 +492,16 @@ from erp.pricing.domain.models import PriceList as _PriceList  # noqa: E402
 
 def seed_pricing() -> None:
     from erp.pricing.domain.models import PriceListLine
+    from erp.pricing.services.management import set_single_default
 
     pl, _ = _PriceList.objects.get_or_create(
         code="STANDARD",
         defaults={"name": "Standard Prices", "currency": "EGP", "is_default": True, "is_active": True},
     )
-    # Ensure it is the default (handles the case where another list was set default earlier).
-    if not pl.is_default:
-        pl.is_default = True
-        pl.save()
+    # Make STANDARD the ONE default, demoting any list (e.g. RETAIL) that was set default earlier.
+    # Must go through the invariant helper — a raw save() would leave two defaults and make the
+    # resolver's default_list tier ambiguous (it picks .first() arbitrarily).
+    set_single_default(pl)
 
     LINES = [
         ("WIDGET", 150_00, 0),

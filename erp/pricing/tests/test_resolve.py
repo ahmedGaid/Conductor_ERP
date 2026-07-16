@@ -12,6 +12,7 @@ from erp.pricing.domain.models import (
     PriceList,
     PriceListLine,
 )
+from erp.pricing.services.management import set_single_default
 from erp.pricing.services.resolve import resolve_unit_price
 
 pytestmark = pytest.mark.django_db
@@ -103,3 +104,22 @@ def test_tax_inclusive_flag_propagates():
     PriceListLine.objects.create(price_list=base, item_sku="WIDGET", unit_price_minor=114_00)
     res = resolve_unit_price("ACME", "WIDGET", on=ON)
     assert res.tax_inclusive is True
+
+
+def test_set_single_default_demotes_other_defaults():
+    """Regression (Phase 1c): two lists both is_default=True made the resolver's default tier
+    ambiguous (.first() picked one arbitrarily), so items only on the *other* default resolved to
+    None. set_single_default must leave exactly one default. A raw save() (the old seed bug) did not.
+    """
+    retail = PriceList.objects.create(code="RETAIL", name="Retail", is_default=True)
+    PriceListLine.objects.create(price_list=retail, item_sku="WIDGET", unit_price_minor=100_00)
+    standard = PriceList.objects.create(code="STANDARD", name="Standard", is_default=True)
+    PriceListLine.objects.create(price_list=standard, item_sku="GADGET", unit_price_minor=300_00)
+
+    # Before: GADGET lives only on STANDARD; with two defaults it may be unreachable.
+    set_single_default(standard)
+
+    assert list(PriceList.objects.filter(is_default=True).values_list("code", flat=True)) == ["STANDARD"]
+    # GADGET (STANDARD-only) now resolves deterministically via the single default.
+    res = resolve_unit_price("ACME", "GADGET", on=ON)
+    assert res is not None and res.price_list_code == "STANDARD" and res.unit_price_minor == 300_00

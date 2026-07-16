@@ -47,9 +47,16 @@ class Issue:
     field: str
     code: str
     message: str  # i18n key or already-translated human line; blame-free (spec)
+    # Structured extra data for issues a later step must act on (session 06: "missing_ref" carries
+    # {"entity": ..., "value": ...} so session 08's auto-create-masters flow doesn't re-parse the
+    # message string). Empty for every other issue code — never required reading.
+    meta: dict = field(default_factory=dict)
 
-    def as_dict(self) -> dict[str, str]:
-        return {"field": self.field, "code": self.code, "message": self.message}
+    def as_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"field": self.field, "code": self.code, "message": self.message}
+        if self.meta:
+            d["meta"] = self.meta
+        return d
 
 
 @runtime_checkable
