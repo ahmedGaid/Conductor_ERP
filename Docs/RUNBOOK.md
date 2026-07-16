@@ -61,9 +61,9 @@ cd apps\web; npm ci; npm run build; cd ..\..
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput   # gathers admin/DRF static for WhiteNoise
 
 # Seed the baseline (identity roles/users + chart of accounts + fiscal periods)
-.\.venv\Scripts\python.exe manage.py seed_identity
+.\.venv\Scripts\python.exe manage.py seed_identity   # customer-safe: creates ONE admin user
 .\.venv\Scripts\python.exe manage.py seed_accounting
-# (seed_demo.py is DEV demo data only — do NOT run it on a real customer install)
+# (seed_demo.py + `seed_identity --demo-users` are DEV data only — do NOT run on a real customer install)
 
 # Register + start the three services (run from an elevated PowerShell)
 .\deploy\windows\install-services.ps1            # -Nssm <path> -BindHost 127.0.0.1 -Port 8000

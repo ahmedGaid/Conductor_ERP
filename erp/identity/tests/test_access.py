@@ -129,3 +129,31 @@ def test_seed_assigns_default_role_permissions(db):
     assert ApprovalLimit.objects.filter(
         role=accountant, document_type="journal", limit_minor__isnull=True
     ).exists()
+
+
+# --- Customer-safe seeding: default = admin only, demo users behind a flag -----------------------
+
+def test_seed_default_is_admin_only(db):
+    """Default seed_identity is customer-safe: one admin, no shared-password demo accounts."""
+    call_command("seed_identity", verbosity=0)
+    assert User.objects.filter(username="admin", is_superuser=True).exists()
+    for demo in ("manager", "accountant", "auditor"):
+        assert not User.objects.filter(username=demo).exists()
+
+
+def test_seed_demo_users_flag_creates_non_admin_accounts(db):
+    """--demo-users opts in to the non-admin demo accounts (dev convenience)."""
+    call_command("seed_identity", "--demo-users", verbosity=0)
+    assert User.objects.filter(username="admin", is_superuser=True).exists()
+    for demo in ("manager", "accountant", "auditor"):
+        user = User.objects.get(username=demo)
+        assert user.is_superuser is False
+        assert user.check_password("Dev12345!")
+
+
+def test_seed_demo_users_flag_is_idempotent(db):
+    """Re-running with the flag makes no duplicate demo users."""
+    call_command("seed_identity", "--demo-users", verbosity=0)
+    call_command("seed_identity", "--demo-users", verbosity=0)
+    for demo in ("manager", "accountant", "auditor"):
+        assert User.objects.filter(username=demo).count() == 1

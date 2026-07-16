@@ -38,16 +38,24 @@ def check() -> None:
             "Stage 1 tests failed:\n" + result.stdout[-2000:] + "\n" + result.stderr[-1000:]
         )
 
-    # 2. Default roles + demo users seed idempotently.
+    # 2. Default roles seed idempotently, and the DEFAULT seed is customer-safe.
     from django.core.management import call_command
 
     call_command("seed_identity", verbosity=0)
+    from django.contrib.auth import get_user_model
     from django.contrib.auth.models import Group
 
     from erp.identity.roles import DEFAULT_ROLES
 
     for role in DEFAULT_ROLES:
         _assert(Group.objects.filter(name=role).exists(), f"missing seeded role: {role}")
+
+    # The default seed always provisions the admin login. (The customer-safe invariant —
+    # that the default path creates NO shared-password demo users — is pinned by
+    # test_seed_default_is_admin_only, which runs on an isolated DB; asserting absence here
+    # would be unreliable against the persistent dev DB seeded by earlier --demo-users runs.)
+    User = get_user_model()
+    _assert(User.objects.filter(username="admin", is_superuser=True).exists(), "admin user not seeded")
 
     # 3. system-check includes the worker/queue component and isn't critical.
     from django.test import Client

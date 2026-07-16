@@ -59,7 +59,7 @@ if not exist "staticfiles" (
 )
 
 echo [setup] Seeding baseline users + chart of accounts ^(idempotent^)...
-"%PY%" manage.py seed_identity >nul
+"%PY%" manage.py seed_identity --demo-users >nul
 "%PY%" manage.py seed_accounting >nul
 
 echo.
