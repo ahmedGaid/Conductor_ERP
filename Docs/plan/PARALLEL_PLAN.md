@@ -49,7 +49,7 @@ Status: `todo | doing(<agent>) | done(<commit>) | blocked(<why>)`
 
 | ID | Task (= plan file) | Agent | Files/modules | Deps | Est | Checkpoint | Status |
 |---|---|---|---|---|---|---|---|
-| A1 | Partial payments UI + API tests — `delivery-readiness/FILE_05` | A | apps/web sales collect + purchasing payment dialogs, api clients, ar/en.json; erp/sales+purchasing tests (extend only) | — | 1 session | M1 | todo |
+| A1 | Partial payments UI + API tests — `delivery-readiness/FILE_05` | A | apps/web sales collect + purchasing payment dialogs, api clients, ar/en.json; erp/sales+purchasing tests (extend only) | — | 1 session | M1 | done(54a3662) |
 | A2 | Playwright E2E — `twenty-harvest/FILE_04` ⛔ new-dep decision: ask founder FIRST; denied → the file's Option B fallback | A | new `e2e/`, apps/web package.json | A1 (so flows incl. partials) | 1–2 sessions | M1 (not gate-blocking) | todo |
 | A3 | Outbound webhooks — `twenty-harvest/FILE_05` | A | new `erp/webhooks/`, settings, tests | — | 1 session | M2 | todo |
 | B1 | `provision_customer` — `delivery-readiness/FILE_06` | B | `erp/core/management/commands/provision_customer.py`, erp/core tests, RUNBOOK §install | — | 1 session | M1 | todo |
