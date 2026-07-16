@@ -113,6 +113,8 @@ cd apps\web; npm ci; npm run build; cd ..\..
 Always take a backup (§5) **before** `migrate` on an upgrade.
 
 ## 5. Backup & restore (the DECISIONS policy: nightly backups + periodic tested restores)
+
+### Automated backup (recommended)
 **Nightly automated backup** — register once, runs at 02:00:
 ```powershell
 .\deploy\backup\register-backup-task.ps1 -At 02:00 -OutDir C:\ConductorBackups -RetainDays 14
@@ -121,6 +123,23 @@ Start-ScheduledTask -TaskName ConductorNightlyBackup    # verify it runs now
 Each run writes `C:\ConductorBackups\<timestamp>\` with `db.dump` (pg_dump custom format),
 `storage.zip` (documents/reports, if any), and `MANIFEST.txt` (sizes + the exact restore command).
 Runs older than the retention window are pruned automatically.
+
+**Cadence:** Nightly at 02:00 (UTC+2 Cairo time by default, configurable via `-At`).
+**Retention:** 14 days (configurable via `-RetainDays`). Dumps older than the window are deleted.
+**Storage:** All backups land in `C:\ConductorBackups\`. Each timestamped folder contains the full database dump + metadata.
+
+### Manual backup via pg_dump (reference)
+If you need a one-off dump without the automation:
+```bash
+# Export the full database (custom format, highly compressible):
+pg_dump -h localhost -U erp -d erp --format=custom --file=backup.dump
+
+# Or as SQL (human-readable):
+pg_dump -h localhost -U erp -d erp --format=plain --file=backup.sql
+```
+The custom format is smaller and faster for large databases; plain SQL is useful for portability or version migration.
+
+### Restore procedures
 
 **Tested restore (do this periodically — an untested backup is not a backup):**
 ```powershell
@@ -138,6 +157,23 @@ Stop-Service Conductor-*                                 # stop all writes first
 # restore storage.zip back into STORAGE_ROOT if documents were affected
 Start-Service Conductor-*
 ```
+
+**Manual restore via pg_restore (reference):**
+```bash
+# For custom-format dumps (from pg_dump --format=custom):
+pg_restore -h localhost -U erp -d erp --format=custom backup.dump
+
+# For SQL dumps (from pg_dump --format=plain):
+psql -h localhost -U erp -d erp --file=backup.sql
+```
+
+### Restore drill checklist
+When testing a restore, verify:
+1. Dump file exists and has reasonable size (should be > 1 MB for any real data)
+2. Restore into a scratch database (never production) with `pg_restore` or `restore.ps1 -CreateDb`
+3. Run row counts: `SELECT COUNT(*) FROM <core_table>;` (chart_of_accounts, users, transactions, etc.)
+4. For a full drill: point a test `.env` at the restored DB and run `gate:all` against it
+5. Confirm business data integrity (sample transactions, accounts, roles)
 
 ### Docker deployments (`docker compose`)
 A stack started with `docker compose up` has the **same backup story in one command** — the
