@@ -117,7 +117,12 @@ git push && git push --tags
 # 4. Build (see "Upgrading to a new release" below for the full deploy steps)
 ```
 From gate16 onward (twenty-harvest FILE_03), also refresh the previous-release fixture dump used
-by the upgrade-drill gate.
+by the upgrade-drill gate: delete `scripts/gates/fixtures/prev_release.dump`, run
+`python scripts/gates/gate16.py` (it re-seeds a scratch DB at the version you're about to ship and
+re-dumps it), and commit the new fixture in the same commit as the release. Likewise, an
+intentional API change regenerates `scripts/gates/snapshots/api_schema.json`: delete it and
+re-run `python scripts/gates/gate17.py`, then commit the new snapshot — that diff in review IS
+the approval for the break.
 
 ### Upgrading to a new release
 ```powershell

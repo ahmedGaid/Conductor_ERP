@@ -1,0 +1,3566 @@
+{
+  "routes": [
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/accounts",
+      "view": "AccountListCreateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/assets",
+      "view": "FixedAssetListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/assets/<str:code>",
+      "view": "FixedAssetDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/accounting/assets/<str:code>/dispose",
+      "view": "FixedAssetDisposeView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/accounting/assets/depreciation-run",
+      "view": "DepreciationRunView"
+    },
+    {
+      "methods": [
+        "DELETE",
+        "POST"
+      ],
+      "path": "api/accounting/bank-statement-lines/<uuid:line_id>/match",
+      "view": "BankLineMatchView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/bank-statements",
+      "view": "BankStatementListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/bank-statements/<uuid:statement_id>",
+      "view": "BankStatementDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/accounting/bank-statements/<uuid:statement_id>/adjustment",
+      "view": "BankStatementAdjustmentView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/accounting/bank-statements/<uuid:statement_id>/auto-match",
+      "view": "BankStatementAutoMatchView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/bank-statements/<uuid:statement_id>/candidates",
+      "view": "BankStatementCandidatesView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/accounting/bank-statements/<uuid:statement_id>/reconcile",
+      "view": "BankStatementReconcileView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/budgets",
+      "view": "BudgetListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/budgets/<uuid:budget_id>",
+      "view": "BudgetDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/accounting/budgets/<uuid:budget_id>/lines",
+      "view": "BudgetLineSetView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/budgets/<uuid:budget_id>/variance",
+      "view": "BudgetVsActualView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/cost-centers",
+      "view": "CostCenterListCreateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/fiscal-years",
+      "view": "FiscalYearListCreateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/journals",
+      "view": "JournalListPostView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/journals/<uuid:entry_id>",
+      "view": "JournalDetailView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/periods",
+      "view": "PeriodListCreateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/accounting/periods/<str:code>/close",
+      "view": "PeriodCloseView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/accounting/report-definitions",
+      "view": "ReportDefinitionListCreateView"
+    },
+    {
+      "methods": [
+        "DELETE",
+        "GET"
+      ],
+      "path": "api/accounting/report-definitions/<uuid:definition_id>",
+      "view": "ReportDefinitionDetailView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/report-definitions/<uuid:definition_id>/run",
+      "view": "ReportDefinitionRunView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/reports/asset-register",
+      "view": "AssetRegisterView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/reports/balance-sheet",
+      "view": "BalanceSheetView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/reports/cash-flow",
+      "view": "CashFlowView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/reports/general-ledger",
+      "view": "GeneralLedgerView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/reports/income-statement",
+      "view": "IncomeStatementView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/reports/trial-balance",
+      "view": "TrialBalanceView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/reports/vat-return",
+      "view": "VatReturnView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/accounting/tax-codes",
+      "view": "TaxCodeListView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/actions/execute",
+      "view": "ActionExecuteView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/ask",
+      "view": "AskView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/attachments",
+      "view": "AttachmentsView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/chat",
+      "view": "ChatView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/assistant/conversations",
+      "view": "ConversationsView"
+    },
+    {
+      "methods": [
+        "DELETE",
+        "GET",
+        "PATCH"
+      ],
+      "path": "api/assistant/conversations/<int:pk>",
+      "view": "ConversationDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/detours/resume",
+      "view": "DetourResumeView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/extract-document",
+      "view": "ExtractDocumentView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/imports/execute",
+      "view": "ImportExecuteView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/imports/inspect",
+      "view": "ImportInspectView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/imports/preview",
+      "view": "ImportPreviewView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/assistant/knowledge",
+      "view": "KnowledgeView"
+    },
+    {
+      "methods": [
+        "DELETE"
+      ],
+      "path": "api/assistant/knowledge/<int:pk>",
+      "view": "KnowledgeDetailView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/assistant/ops/summary",
+      "view": "OpsSummaryView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/assistant/ops/traces",
+      "view": "OpsTracesView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/assistant/simulate",
+      "view": "SimulateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/assistant/status",
+      "view": "AssistantStatusView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/audit/history",
+      "view": "RecordHistoryView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/core/branches",
+      "view": "BranchListCreateView"
+    },
+    {
+      "methods": [
+        "PATCH"
+      ],
+      "path": "api/core/branches/<str:code>",
+      "view": "BranchDetailView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/core/resolve",
+      "view": "ResolveView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/core/search",
+      "view": "SearchView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/crm/activities",
+      "view": "ActivityListCreateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/activities/<uuid:activity_id>/complete",
+      "view": "ActivityCompleteView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/crm/campaigns",
+      "view": "CampaignListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/crm/campaigns/<uuid:campaign_id>",
+      "view": "CampaignDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/campaigns/<uuid:campaign_id>/status",
+      "view": "CampaignStatusView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/crm/leads",
+      "view": "LeadListCreateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/leads/<uuid:lead_id>/convert",
+      "view": "LeadConvertView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/leads/<uuid:lead_id>/status",
+      "view": "LeadStatusView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/crm/opportunities",
+      "view": "OppListCreateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "path": "api/crm/opportunities/<uuid:opp_id>",
+      "view": "OppDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/opportunities/<uuid:opp_id>/lose",
+      "view": "OppLoseView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/opportunities/<uuid:opp_id>/stage",
+      "view": "OppStageView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/opportunities/<uuid:opp_id>/win",
+      "view": "OppWinView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/crm/tickets",
+      "view": "TicketListCreateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/tickets-run-escalations",
+      "view": "TicketRunEscalationsView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/crm/tickets/<uuid:ticket_id>",
+      "view": "TicketDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/tickets/<uuid:ticket_id>/close",
+      "view": "TicketCloseView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/tickets/<uuid:ticket_id>/escalate",
+      "view": "TicketEscalateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/tickets/<uuid:ticket_id>/resolve",
+      "view": "TicketResolveView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/crm/tickets/<uuid:ticket_id>/start",
+      "view": "TicketStartView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/einvoice/invoices",
+      "view": "ETAInvoiceListView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/einvoice/invoices/<uuid:eta_id>",
+      "view": "ETAInvoiceDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/2fa/enable",
+      "view": "Enable2FAView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/2fa/provision",
+      "view": "Provision2FAView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/login",
+      "view": "LoginView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/logout",
+      "view": "LogoutView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/identity/me",
+      "view": "MeView"
+    },
+    {
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "path": "api/identity/org-preferences",
+      "view": "OrgPreferencesView"
+    },
+    {
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "path": "api/identity/preferences",
+      "view": "PreferencesView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/identity/preferences/effective",
+      "view": "EffectivePreferencesView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/identity/roles",
+      "view": "RolesView"
+    },
+    {
+      "methods": [
+        "DELETE",
+        "GET"
+      ],
+      "path": "api/identity/roles/<str:name>",
+      "view": "RoleDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/roles/<str:name>/approval-limit",
+      "view": "RoleApprovalLimitView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/roles/<str:name>/permission",
+      "view": "RolePermissionView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/identity/roles/registry",
+      "view": "RoleRegistryView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/identity/sample/finance",
+      "view": "FinanceSampleView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/identity/saved-views",
+      "view": "SavedViewsView"
+    },
+    {
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ],
+      "path": "api/identity/saved-views/<int:pk>",
+      "view": "SavedViewDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/saved-views/<int:pk>/default",
+      "view": "SavedViewDefaultView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/token/refresh",
+      "view": "CookieTokenRefreshView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/identity/users",
+      "view": "UsersView"
+    },
+    {
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "path": "api/identity/users/<int:pk>",
+      "view": "UserDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/users/<int:pk>/reset-password",
+      "view": "UserResetPasswordView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/users/<int:pk>/revoke-sessions",
+      "view": "UserRevokeSessionsView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/users/<int:pk>/sessions/<int:token_id>/revoke",
+      "view": "UserRevokeSessionView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/users/bulk",
+      "view": "UsersBulkView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/identity/users/org-units",
+      "view": "OrgUnitsView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/inventory/categories",
+      "view": "CategoryListCreateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/inventory/count-lines/<uuid:line_id>/set",
+      "view": "StockCountLineSetView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/inventory/counts",
+      "view": "StockCountListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/inventory/counts/<uuid:count_id>",
+      "view": "StockCountDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/inventory/counts/<uuid:count_id>/post",
+      "view": "StockCountPostView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/inventory/items",
+      "view": "ItemListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/inventory/items/<str:sku>",
+      "view": "ItemDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/inventory/items/import",
+      "view": "ItemImportView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/inventory/items/import/template",
+      "view": "ItemImportTemplateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/inventory/movements",
+      "view": "MovementListView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/inventory/movements/issue",
+      "view": "IssueView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/inventory/movements/receive",
+      "view": "ReceiveView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/inventory/movements/transfer",
+      "view": "TransferView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/inventory/reports/batches",
+      "view": "BatchesView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/inventory/reports/stock-on-hand",
+      "view": "StockOnHandView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/inventory/warehouses",
+      "view": "WarehouseListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/inventory/warehouses/<str:code>",
+      "view": "WarehouseDetailView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/notifications",
+      "view": "NotificationListView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/notifications/<uuid:note_id>/resend",
+      "view": "NotificationResendView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/notifications/inbox",
+      "view": "InboxListView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/notifications/inbox/<uuid:note_id>/read",
+      "view": "InboxMarkReadView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/notifications/inbox/read-all",
+      "view": "InboxMarkAllReadView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/notifications/webhooks",
+      "view": "WebhookSubscriptionListView"
+    },
+    {
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ],
+      "path": "api/notifications/webhooks/<uuid:subscription_id>",
+      "view": "WebhookSubscriptionDetailView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/notifications/webhooks/<uuid:subscription_id>/deliveries",
+      "view": "WebhookDeliveryListView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/notifications/webhooks/<uuid:subscription_id>/secret",
+      "view": "WebhookSecretRegenerateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/notifications/webhooks/deliveries/<uuid:delivery_id>/retry",
+      "view": "WebhookDeliveryRetryView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/notifications/webhooks/events",
+      "view": "WebhookEventCatalogView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/pricing/customer-assignments",
+      "view": "CustomerAssignmentListCreateView"
+    },
+    {
+      "methods": [
+        "DELETE"
+      ],
+      "path": "api/pricing/customer-assignments/<uuid:assignment_id>",
+      "view": "CustomerAssignmentDetailView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/pricing/customer-prices",
+      "view": "CustomerItemPriceListCreateView"
+    },
+    {
+      "methods": [
+        "DELETE"
+      ],
+      "path": "api/pricing/customer-prices/<uuid:price_id>",
+      "view": "CustomerItemPriceDetailView"
+    },
+    {
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ],
+      "path": "api/pricing/lines/<uuid:line_id>",
+      "view": "PriceListLineDetailView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/pricing/price-lists",
+      "view": "PriceListListCreateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "path": "api/pricing/price-lists/<uuid:list_id>",
+      "view": "PriceListDetailView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/pricing/price-lists/<uuid:list_id>/lines",
+      "view": "PriceListLinesView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/pricing/price-lists/<uuid:list_id>/lines/import",
+      "view": "PriceListLineImportView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/pricing/price-lists/<uuid:list_id>/lines/import/template",
+      "view": "PriceListLineImportTemplateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/pricing/price-lists/ensure-default",
+      "view": "EnsureDefaultView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/pricing/resolve",
+      "view": "ResolveView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/purchasing/orders",
+      "view": "POListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/purchasing/orders/<uuid:order_id>",
+      "view": "PODetailView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/purchasing/orders/<uuid:order_id>/history",
+      "view": "POHistoryView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/orders/<uuid:order_id>/payment",
+      "view": "POPaymentView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/orders/<uuid:order_id>/receive",
+      "view": "POReceiveView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/orders/<uuid:order_id>/return",
+      "view": "POReturnView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/purchasing/requests",
+      "view": "RequestListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/purchasing/requests/<uuid:req_id>",
+      "view": "RequestDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/requests/<uuid:req_id>/convert",
+      "view": "RequestConvertView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/requests/<uuid:req_id>/reject",
+      "view": "RequestRejectView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/purchasing/suppliers",
+      "view": "SupplierListCreateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/suppliers/import",
+      "view": "SupplierImportView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/purchasing/suppliers/import/template",
+      "view": "SupplierImportTemplateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/sales/customers",
+      "view": "CustomerListCreateView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/customers/import",
+      "view": "CustomerImportView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/sales/customers/import/template",
+      "view": "CustomerImportTemplateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/sales/orders",
+      "view": "OrderListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/sales/orders/<uuid:order_id>",
+      "view": "OrderDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/orders/<uuid:order_id>/deliver",
+      "view": "OrderDeliverView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/sales/orders/<uuid:order_id>/history",
+      "view": "OrderHistoryView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/orders/<uuid:order_id>/payment",
+      "view": "OrderPaymentView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/orders/<uuid:order_id>/return",
+      "view": "OrderReturnView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/sales/quotations",
+      "view": "QuotationListCreateView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/sales/quotations/<uuid:quote_id>",
+      "view": "QuotationDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/quotations/<uuid:quote_id>/convert",
+      "view": "QuotationConvertView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/quotations/<uuid:quote_id>/reject",
+      "view": "QuotationRejectView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/setup/chart-of-accounts",
+      "view": "SetupChartOfAccountsView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/setup/complete",
+      "view": "SetupCompleteView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/setup/status",
+      "view": "SetupStatusView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/setup/tax",
+      "view": "SetupTaxView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/setup/users",
+      "view": "SetupInviteUserView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/workflow/dashboard/metrics",
+      "view": "DashboardMetricsView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/workflow/instances",
+      "view": "InstanceListView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/workflow/instances/<uuid:instance_id>",
+      "view": "InstanceDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/workflow/instances/<uuid:instance_id>/decision",
+      "view": "InstanceDecisionView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/workflow/workflows",
+      "view": "WorkflowListCreateView"
+    },
+    {
+      "methods": [
+        "GET",
+        "PUT"
+      ],
+      "path": "api/workflow/workflows/<uuid:workflow_id>",
+      "view": "WorkflowDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/workflow/workflows/<uuid:workflow_id>/start",
+      "view": "WorkflowStartView"
+    }
+  ],
+  "serializers": {
+    "erp.accounting.api.serializers.AccountSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "is_cash": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "is_postable": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "parent_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "type": {
+        "required": true,
+        "type": "ChoiceField"
+      }
+    },
+    "erp.accounting.api.serializers.AssetDisposeSerializer": {
+      "disposed_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "proceeds_account_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "proceeds_minor": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.accounting.api.serializers.BankAdjustmentSerializer": {
+      "amount_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "contra_account_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "memo": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.BankLineInputSerializer": {
+      "amount_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "description": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.BankMatchSerializer": {
+      "journal_line_id": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.accounting.api.serializers.BankStatementCreateSerializer": {
+      "account_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "closing_balance_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "lines": {
+        "required": false,
+        "type": "ListSerializer[BankLineInputSerializer]"
+      },
+      "opening_balance_minor": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "reference": {
+        "required": false,
+        "type": "CharField"
+      },
+      "statement_date": {
+        "required": true,
+        "type": "DateField"
+      }
+    },
+    "erp.accounting.api.serializers.BudgetLineSetSerializer": {
+      "account_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "amount_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "period_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.BudgetSerializer": {
+      "fiscal_year_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.CostCenterSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.DepreciationRunSerializer": {
+      "date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "period_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.FiscalYearSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "end_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_closed": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "start_date": {
+        "required": true,
+        "type": "DateField"
+      }
+    },
+    "erp.accounting.api.serializers.FixedAssetCreateSerializer": {
+      "acquisition_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "category": {
+        "required": false,
+        "type": "CharField"
+      },
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "cost_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "funding_account_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "in_service_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "salvage_minor": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "useful_life_months": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.accounting.api.serializers.FixedAssetSerializer": {
+      "accumulated_depreciation_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "acquire_journal_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "acquisition_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "category": {
+        "required": true,
+        "type": "CharField"
+      },
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "cost_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "disposal_gain_loss_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "disposal_journal_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "disposal_proceeds_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "disposed_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "in_service_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "months_depreciated": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "net_book_value_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "salvage_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "useful_life_months": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.accounting.api.serializers.JournalEntrySerializer": {
+      "currency": {
+        "required": true,
+        "type": "CharField"
+      },
+      "date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "lines": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "memo": {
+        "required": true,
+        "type": "CharField"
+      },
+      "number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "party_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "party_type": {
+        "required": true,
+        "type": "CharField"
+      },
+      "period_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "posted_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "reference": {
+        "required": true,
+        "type": "CharField"
+      },
+      "source": {
+        "required": true,
+        "type": "CharField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.JournalLineInputSerializer": {
+      "account_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "cost_center_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "credit": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "debit": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "memo": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.JournalLineSerializer": {
+      "account_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "account_name": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "cost_center_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "credit": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "debit": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "memo": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.JournalPostSerializer": {
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "lines": {
+        "required": true,
+        "type": "ListSerializer[JournalLineInputSerializer]"
+      },
+      "memo": {
+        "required": false,
+        "type": "CharField"
+      },
+      "period_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "reference": {
+        "required": false,
+        "type": "CharField"
+      },
+      "source": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.accounting.api.serializers.PeriodSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "end_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "fiscal_year_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "start_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "status": {
+        "required": false,
+        "type": "ChoiceField"
+      }
+    },
+    "erp.accounting.api.serializers.ReportDefinitionSerializer": {
+      "account_codes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "account_type": {
+        "required": false,
+        "type": "CharField"
+      },
+      "date_from": {
+        "required": false,
+        "type": "DateField"
+      },
+      "date_to": {
+        "required": false,
+        "type": "DateField"
+      },
+      "group_by": {
+        "required": false,
+        "type": "ChoiceField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "last_run_at": {
+        "required": false,
+        "type": "DateTimeField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "schedule": {
+        "required": false,
+        "type": "ChoiceField"
+      }
+    },
+    "erp.crm.api.serializers.ActivityCreateSerializer": {
+      "due_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "owner": {
+        "required": false,
+        "type": "CharField"
+      },
+      "related_ref": {
+        "required": true,
+        "type": "CharField"
+      },
+      "related_type": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subject": {
+        "required": true,
+        "type": "CharField"
+      },
+      "type": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.ActivitySerializer": {
+      "done": {
+        "required": true,
+        "type": "BooleanField"
+      },
+      "due_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "notes": {
+        "required": true,
+        "type": "CharField"
+      },
+      "owner": {
+        "required": true,
+        "type": "CharField"
+      },
+      "related_ref": {
+        "required": true,
+        "type": "CharField"
+      },
+      "related_type": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subject": {
+        "required": true,
+        "type": "CharField"
+      },
+      "type": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.CampaignSerializer": {
+      "channel": {
+        "required": false,
+        "type": "CharField"
+      },
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "cost_minor": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "end_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "start_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "status": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.CampaignStatusSerializer": {
+      "status": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.LeadConvertSerializer": {
+      "customer_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "opportunity_name": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.LeadCreateSerializer": {
+      "campaign_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "company": {
+        "required": false,
+        "type": "CharField"
+      },
+      "email": {
+        "required": false,
+        "type": "CharField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "owner": {
+        "required": false,
+        "type": "CharField"
+      },
+      "phone": {
+        "required": false,
+        "type": "CharField"
+      },
+      "source": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.LeadSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "company": {
+        "required": true,
+        "type": "CharField"
+      },
+      "email": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "notes": {
+        "required": true,
+        "type": "CharField"
+      },
+      "owner": {
+        "required": true,
+        "type": "CharField"
+      },
+      "phone": {
+        "required": true,
+        "type": "CharField"
+      },
+      "source": {
+        "required": true,
+        "type": "CharField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.LeadStatusSerializer": {
+      "status": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.OppCreateSerializer": {
+      "campaign_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "customer_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "expected_close": {
+        "required": false,
+        "type": "DateField"
+      },
+      "lines": {
+        "required": false,
+        "type": "ListSerializer[OppLineInputSerializer]"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "probability": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "warehouse_code": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.OppLineInputSerializer": {
+      "description": {
+        "required": false,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_price": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.crm.api.serializers.OppLineSerializer": {
+      "description": {
+        "required": true,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "line_total_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_price_minor": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.crm.api.serializers.OppLoseSerializer": {
+      "reason": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.OppStageSerializer": {
+      "stage": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.OppUpdateSerializer": {
+      "name": {
+        "required": false,
+        "type": "CharField"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.OppWinSerializer": {
+      "create_sales_order": {
+        "required": false,
+        "type": "BooleanField"
+      }
+    },
+    "erp.crm.api.serializers.OpportunitySerializer": {
+      "amount_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "currency": {
+        "required": true,
+        "type": "CharField"
+      },
+      "customer_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "expected_close": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "lead_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "lines": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "notes": {
+        "required": true,
+        "type": "CharField"
+      },
+      "number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "probability": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "sales_order_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "stage": {
+        "required": true,
+        "type": "CharField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "weighted_minor": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.crm.api.serializers.TicketCreateSerializer": {
+      "customer_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "description": {
+        "required": false,
+        "type": "CharField"
+      },
+      "owner": {
+        "required": false,
+        "type": "CharField"
+      },
+      "priority": {
+        "required": false,
+        "type": "CharField"
+      },
+      "subject": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.TicketResolveSerializer": {
+      "resolution": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.crm.api.serializers.TicketSerializer": {
+      "customer_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "description": {
+        "required": true,
+        "type": "CharField"
+      },
+      "escalated_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "is_breached": {
+        "required": true,
+        "type": "BooleanField"
+      },
+      "is_escalated": {
+        "required": true,
+        "type": "BooleanField"
+      },
+      "number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "opened_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "owner": {
+        "required": true,
+        "type": "CharField"
+      },
+      "priority": {
+        "required": true,
+        "type": "CharField"
+      },
+      "resolved_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "sla_due_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subject": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.einvoice.api.serializers.ETAInvoiceSerializer": {
+      "currency": {
+        "required": true,
+        "type": "CharField"
+      },
+      "customer_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "customer_name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "document_hash": {
+        "required": true,
+        "type": "CharField"
+      },
+      "error_text": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "invoice_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "issue_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "net_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "order_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "tax_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "tax_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "total_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "uuid": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.inventory.api.serializers.CategorySerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.inventory.api.serializers.CountLineSetSerializer": {
+      "counted_quantity": {
+        "required": true,
+        "type": "DecimalField"
+      }
+    },
+    "erp.inventory.api.serializers.IssueSerializer": {
+      "date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "memo": {
+        "required": false,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "reference": {
+        "required": false,
+        "type": "CharField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.inventory.api.serializers.ItemSerializer": {
+      "category_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "reorder_point": {
+        "required": false,
+        "type": "DecimalField"
+      },
+      "sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "type": {
+        "required": false,
+        "type": "ChoiceField"
+      },
+      "uom": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.inventory.api.serializers.MovementSerializer": {
+      "batch_no": {
+        "required": true,
+        "type": "CharField"
+      },
+      "date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "dest_warehouse_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "expiry_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "item_sku": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "journal_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "memo": {
+        "required": true,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "reference": {
+        "required": true,
+        "type": "CharField"
+      },
+      "type": {
+        "required": true,
+        "type": "CharField"
+      },
+      "unit_cost_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "value_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "warehouse_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      }
+    },
+    "erp.inventory.api.serializers.ReceiveSerializer": {
+      "batch_no": {
+        "required": false,
+        "type": "CharField"
+      },
+      "date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "expiry_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "memo": {
+        "required": false,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "reference": {
+        "required": false,
+        "type": "CharField"
+      },
+      "unit_cost": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.inventory.api.serializers.StockCountCreateSerializer": {
+      "count_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "item_skus": {
+        "required": false,
+        "type": "ListField"
+      },
+      "memo": {
+        "required": false,
+        "type": "CharField"
+      },
+      "reference": {
+        "required": false,
+        "type": "CharField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.inventory.api.serializers.TransferSerializer": {
+      "date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "dest_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "memo": {
+        "required": false,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "reference": {
+        "required": false,
+        "type": "CharField"
+      },
+      "source_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.inventory.api.serializers.WarehouseSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.notifications.api.serializers.InboxSerializer": {
+      "body": {
+        "required": true,
+        "type": "CharField"
+      },
+      "created_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "event_name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "read_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "reference": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subject": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.notifications.api.serializers.NotificationSerializer": {
+      "body": {
+        "required": true,
+        "type": "CharField"
+      },
+      "channel": {
+        "required": true,
+        "type": "CharField"
+      },
+      "created_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "error_text": {
+        "required": true,
+        "type": "CharField"
+      },
+      "event_name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "provider_ref": {
+        "required": true,
+        "type": "CharField"
+      },
+      "recipient": {
+        "required": true,
+        "type": "CharField"
+      },
+      "reference": {
+        "required": true,
+        "type": "CharField"
+      },
+      "sent_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subject": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.notifications.api.serializers.WebhookDeliverySerializer": {
+      "attempts": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "created_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "event_name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "last_error": {
+        "required": true,
+        "type": "CharField"
+      },
+      "next_retry_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.notifications.api.serializers.WebhookSubscriptionSerializer": {
+      "created_at": {
+        "required": true,
+        "type": "DateTimeField"
+      },
+      "event_names": {
+        "required": true,
+        "type": "ListField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": true,
+        "type": "BooleanField"
+      },
+      "url": {
+        "required": true,
+        "type": "URLField"
+      }
+    },
+    "erp.pricing.api.serializers.CustomerItemPriceSerializer": {
+      "customer_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "min_quantity": {
+        "required": false,
+        "type": "DecimalField"
+      },
+      "tax_inclusive": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "unit_price_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "uom": {
+        "required": false,
+        "type": "CharField"
+      },
+      "valid_from": {
+        "required": false,
+        "type": "DateField"
+      },
+      "valid_to": {
+        "required": false,
+        "type": "DateField"
+      }
+    },
+    "erp.pricing.api.serializers.CustomerPriceListSerializer": {
+      "customer_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "price_list_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.pricing.api.serializers.PriceListLineSerializer": {
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "min_quantity": {
+        "required": false,
+        "type": "DecimalField"
+      },
+      "unit_price_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "uom": {
+        "required": false,
+        "type": "CharField"
+      },
+      "valid_from": {
+        "required": false,
+        "type": "DateField"
+      },
+      "valid_to": {
+        "required": false,
+        "type": "DateField"
+      }
+    },
+    "erp.pricing.api.serializers.PriceListSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "is_default": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "line_count": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      },
+      "tax_inclusive": {
+        "required": false,
+        "type": "BooleanField"
+      }
+    },
+    "erp.pricing.api.serializers.PriceListUpdateSerializer": {
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "is_default": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": false,
+        "type": "CharField"
+      },
+      "tax_inclusive": {
+        "required": false,
+        "type": "BooleanField"
+      }
+    },
+    "erp.purchasing.api.serializers.LineQtySerializer": {
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      }
+    },
+    "erp.purchasing.api.serializers.LinesActionSerializer": {
+      "lines": {
+        "required": false,
+        "type": "ListSerializer[LineQtySerializer]"
+      }
+    },
+    "erp.purchasing.api.serializers.POCreateSerializer": {
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "lines": {
+        "required": true,
+        "type": "ListSerializer[POLineInputSerializer]"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "order_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "supplier_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "tax_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.purchasing.api.serializers.POLineInputSerializer": {
+      "description": {
+        "required": false,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_cost": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.purchasing.api.serializers.POLineSerializer": {
+      "description": {
+        "required": true,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "line_total_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "received_qty": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "returned_qty": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_cost_minor": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.purchasing.api.serializers.POSerializer": {
+      "approved": {
+        "required": true,
+        "type": "BooleanField"
+      },
+      "bill_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "billed_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "currency": {
+        "required": true,
+        "type": "CharField"
+      },
+      "debit_note_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "lines": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "notes": {
+        "required": true,
+        "type": "CharField"
+      },
+      "number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "order_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "outstanding_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "paid_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "received_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "requires_approval": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "returned_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subtotal_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "supplier_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "supplier_name": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "tax_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "tax_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.purchasing.api.serializers.PaymentSerializer": {
+      "amount": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.purchasing.api.serializers.RejectSerializer": {
+      "reason": {
+        "required": false,
+        "type": "CharField"
+      }
+    },
+    "erp.purchasing.api.serializers.RequestCreateSerializer": {
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "lines": {
+        "required": true,
+        "type": "ListSerializer[RequestLineInputSerializer]"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "request_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "supplier_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.purchasing.api.serializers.RequestLineInputSerializer": {
+      "description": {
+        "required": false,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_cost": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.purchasing.api.serializers.RequestLineSerializer": {
+      "description": {
+        "required": true,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "line_total_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_cost_minor": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.purchasing.api.serializers.RequestSerializer": {
+      "converted_order_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "currency": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "lines": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "notes": {
+        "required": true,
+        "type": "CharField"
+      },
+      "number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "rejected_reason": {
+        "required": true,
+        "type": "CharField"
+      },
+      "request_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "requires_approval": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subtotal_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "supplier_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "supplier_name": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.purchasing.api.serializers.SupplierSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.sales.api.serializers.CustomerSerializer": {
+      "code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "credit_limit_minor": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "is_active": {
+        "required": false,
+        "type": "BooleanField"
+      },
+      "name": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.sales.api.serializers.LineQtySerializer": {
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      }
+    },
+    "erp.sales.api.serializers.LinesActionSerializer": {
+      "lines": {
+        "required": false,
+        "type": "ListSerializer[LineQtySerializer]"
+      }
+    },
+    "erp.sales.api.serializers.OrderCreateSerializer": {
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "customer_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "lines": {
+        "required": true,
+        "type": "ListSerializer[OrderLineInputSerializer]"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "order_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "tax_code": {
+        "required": false,
+        "type": "CharField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.sales.api.serializers.OrderLineInputSerializer": {
+      "description": {
+        "required": false,
+        "type": "CharField"
+      },
+      "discount": {
+        "required": false,
+        "type": "IntegerField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_price": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.sales.api.serializers.OrderLineSerializer": {
+      "delivered_qty": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "description": {
+        "required": true,
+        "type": "CharField"
+      },
+      "discount_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "line_total_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "returned_qty": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_price_minor": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.sales.api.serializers.OrderSerializer": {
+      "approved": {
+        "required": true,
+        "type": "BooleanField"
+      },
+      "credit_note_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "currency": {
+        "required": true,
+        "type": "CharField"
+      },
+      "customer_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "customer_name": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "invoice_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "invoiced_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "lines": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "notes": {
+        "required": true,
+        "type": "CharField"
+      },
+      "number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "order_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "outstanding_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "paid_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "requires_approval": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "returned_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subtotal_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "tax_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "tax_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.sales.api.serializers.PaymentSerializer": {
+      "amount": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.sales.api.serializers.QuotationCreateSerializer": {
+      "currency": {
+        "required": false,
+        "type": "CharField"
+      },
+      "customer_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "lines": {
+        "required": true,
+        "type": "ListSerializer[QuoteLineInputSerializer]"
+      },
+      "notes": {
+        "required": false,
+        "type": "CharField"
+      },
+      "quote_date": {
+        "required": false,
+        "type": "DateField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.sales.api.serializers.QuotationLineSerializer": {
+      "description": {
+        "required": true,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "line_no": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "line_total_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_price_minor": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.sales.api.serializers.QuotationSerializer": {
+      "converted_order_number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "currency": {
+        "required": true,
+        "type": "CharField"
+      },
+      "customer_code": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "customer_name": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "id": {
+        "required": true,
+        "type": "UUIDField"
+      },
+      "lines": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "notes": {
+        "required": true,
+        "type": "CharField"
+      },
+      "number": {
+        "required": true,
+        "type": "CharField"
+      },
+      "quote_date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "rejected_reason": {
+        "required": true,
+        "type": "CharField"
+      },
+      "requires_approval": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      },
+      "subtotal_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "warehouse_code": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
+    "erp.sales.api.serializers.QuoteLineInputSerializer": {
+      "description": {
+        "required": false,
+        "type": "CharField"
+      },
+      "item_sku": {
+        "required": true,
+        "type": "CharField"
+      },
+      "quantity": {
+        "required": true,
+        "type": "DecimalField"
+      },
+      "unit_price": {
+        "required": true,
+        "type": "IntegerField"
+      }
+    },
+    "erp.sales.api.serializers.RejectSerializer": {
+      "reason": {
+        "required": false,
+        "type": "CharField"
+      }
+    }
+  }
+}
