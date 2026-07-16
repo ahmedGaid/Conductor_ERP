@@ -104,8 +104,18 @@
      tool-call mix, language mix) vs prior month; > 2σ shifts flagged in the weekly report
      (informational — humans interpret).
   3. Rehearsal: seed a degraded recording set → drift alert fires — documented.
+  4. `[Twenty study 2026-07-16]` **Sampled live-turn grading** (Twenty's agent-monitor pattern,
+     adapted): a scheduled command grades a SAMPLE of real agent/chat turns (settings rate,
+     default 5%, dedicated budget line) with the cheapest routed model — score 0–100 + one-line
+     comment from the turn's question, answer, tool steps, and errors (steps/sizes from
+     TraceStep — never raw tool payloads, keeping the traces PII stance intact). Score lands in
+     `Trace.meta.grade`; weekly report + drift dashboard chart the rolling mean next to the
+     shadow-eval line. Heuristic fallback when no model is reachable (errors − missing answer),
+     flagged as such. This is the live complement to the offline shadow set: offline catches
+     model drift, live sampling catches real-usage drift (new question shapes, new modules).
 - **Accept:** command tests offline (seeded results → correct alerts); rehearsal documented;
-  weekly report shows the drift section.
+  weekly report shows the drift section + live-grade rolling mean; grading never stores tool
+  payloads (test asserts).
 - **Output:** the model changing under you becomes a Tuesday email, not a support fire.
 
 ### [ ] T8.4 — Feedback signals: thumbs + edit-rate

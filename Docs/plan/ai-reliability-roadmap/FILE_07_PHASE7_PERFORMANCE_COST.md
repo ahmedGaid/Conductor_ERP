@@ -74,6 +74,12 @@
   2. Each change: run full golden evals offline; ship only at pass rate ≥ baseline − 1 point;
      record token delta + eval delta pairs in `evals/results/diet_<change>.json`.
   3. Distill two more high-traffic page types (extend T3.8 registry) based on trace frequency.
+  4. `[Twenty study 2026-07-16]` Written trigger, not a task: if the tool catalog (read tools +
+     query entities + action catalog rendered into the prompt) exceeds ~30 entries or becomes a
+     top-3 envelope section here, adopt Twenty's progressive disclosure — catalog stays names-only
+     in the prompt; two meta-tools (`learn_tools` → schemas on demand, `execute_tool` → registry
+     dispatch) replace inline schemas. Verified pattern: `core-modules/tool-provider/tools/*` —
+     see `TWENTY_AI_STUDY.md` §3. Below that threshold the inline catalog is cheaper and simpler.
 - **Accept:** trace-measured median prompt tokens −30% per targeted feature; eval evidence files
   committed; no golden regression.
 - **Output:** the same answers for two-thirds of the tokens.
@@ -130,9 +136,18 @@
      cheapest tier (models improved in a year); promote per the T2.4 rule only.
   3. Exact-cache allowlist: any new deterministic task classes since Phase 2 (rerank, verify,
      judge) confirmed cached with sensible TTLs.
-  4. Update cost dashboards; record cost-per-conversation trend in BASELINE.md.
+  4. `[Twenty study 2026-07-16]` **Provider prompt caching** (the third cache tier, upstream of
+     ours): (a) Anthropic path — `cache_control` breakpoint after the stable envelope prefix
+     (T3.6 step 6 guarantees the prefix is byte-stable) in both `complete_json` and
+     `complete_stream`; Gemini implicit caching benefits from the same stability for free.
+     (b) The agent loop's per-round prompt is restructured so the system prompt + catalog are the
+     cached prefix and only `gathered` grows — target: round ≥ 2 input cost ≈ cache-read pricing.
+     (c) Capture cache-read/cache-write token counts from provider usage into
+     `Trace.meta.cache_tokens` — measured, not assumed (Twenty meters both; so do we).
+     (d) Evidence file: cache-hit token share per feature before/after.
+  5. Update cost dashboards; record cost-per-conversation trend in BASELINE.md.
 - **Accept:** evidence files for every threshold/routing change; cost metric trending to target;
-  no eval regression.
+  no eval regression; agent round-2+ cache-read share visible in traces.
 - **Output:** the cost curve bends with receipts.
 
 ### [ ] T7.6 — Data lifecycle: retention, indexes, growth

@@ -166,10 +166,22 @@
   3. Final composition into `Trace.meta.envelope` (tokens per section + trimmed flags).
   4. Replace all ad-hoc truncation currently in `context.py` with manager calls — grep for
      slicing/`[:n]` on context strings; each replaced site listed in the commit message.
+  5. `[Twenty study 2026-07-16]` Make context health VISIBLE: the `done` SSE event carries
+     `{conversation_tokens, budget_tokens}` (manager already measured both); the panel renders a
+     quiet meter (tokens only appear on hover — the bar is enough), and any trim/degrade emits one
+     calm, designed notice ("تم تلخيص أجزاء قديمة من المحادثة" / "Older parts of this conversation
+     were summarized") instead of silent truncation. Twenty ships this as message metadata +
+     a `data-compaction` event; same idea, our SSE protocol.
+  6. `[Twenty study 2026-07-16]` Section ORDER is part of the registry contract: stable sections
+     (system, persona, tool catalog) always render first and byte-identically across requests;
+     volatile sections (page, date, record snapshot) render last or ride the user turn. This is the
+     precondition for provider prompt caching (T7.5) — document it in `envelope.py`'s module
+     docstring so no later session reorders sections casually.
 - **Accept:** unit tests: over-budget input → correct trim order, never exceeds budget; empty
   sections skipped; trace records composition. Golden evals pass rate unchanged. Agent + ask
-  smoke green.
-- **Output:** `context_overflow` error class goes extinct.
+  smoke green. Meter + compaction notice: i18n parity, tsc, gate03, brand checklist.
+- **Output:** `context_overflow` error class goes extinct — and the user can see why the
+  assistant never loses the thread.
 
 ### [ ] T3.7 — Rolling conversation summaries
 

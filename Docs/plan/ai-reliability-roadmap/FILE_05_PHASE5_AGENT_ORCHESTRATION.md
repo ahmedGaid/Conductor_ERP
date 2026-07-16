@@ -11,6 +11,9 @@
    declarative task graphs with human gates — the "Agentic" in ARP, made real and safe.
 4. Agent quality is benchmarked per module with a task-completion suite; routing for agent task
    classes becomes eval-gated like everything else.
+5. `[Twenty study 2026-07-16]` Turns survive reality end-to-end: execution detaches from the
+   HTTP request (queue job + liveness + checkpoints + retry), and a pause for the user
+   (clarify/confirm) is a parked state, not a dead end. Grounding: `TWENTY_AI_STUDY.md`.
 
 ## Architecture decisions
 
@@ -33,6 +36,18 @@
   call receives ONLY the tool outputs (not the chat) + the drafted answer → flags numeric/entity
   mismatches → one silent regeneration with flags attached; still failing → the answer ships with
   a designed "check these figures" caveat rather than silent confidence. Fail-open, never blocks.
+- `[Twenty study 2026-07-16]` **Execution detaches from the request.** Chat/agent turns run in a
+  Celery worker (already in stack); the SSE view claims the conversation, subscribes to a Redis
+  channel, and relays chunks. Liveness = Redis heartbeat; a dead worker becomes a typed, retryable
+  failure, never a silent hang. Partial answers checkpoint to the Message row under an idempotent
+  id (derived from the run id) so job retries can't duplicate. The loop's SEMANTICS do not change —
+  only where it runs and how its output survives. (Twenty pattern, verified in
+  `stream-agent-chat.job.ts` / `agent-chat-streaming.service.ts`; details in `TWENTY_AI_STUDY.md`.)
+- `[Twenty study 2026-07-16]` **A pause is a parked state.** `clarify` emits a typed options card
+  (2–4 options, one recommended, free text always allowed) and parks the run exactly like
+  `waiting_confirm`; the answer resumes the SAME run with its gathered results intact — the planner
+  never restarts from scratch after asking. One rule everywhere: the agent never ends a turn with a
+  wall of text when a structured card can carry the decision.
 
 ## Decision points
 
@@ -46,6 +61,10 @@
   of the remainder.
 - Kill the worker mid-run in staging → run resumes to completion from checkpoint (drill documented).
 - Self-verification catches ≥ 90% of seeded numeric-mismatch cases at ≤ 1 extra cheap call per run.
+- `[Twenty study 2026-07-16]` Refresh-the-page drill: reload mid-answer → the partial answer is on
+  screen after reload and the turn finishes (or lands as a typed, retryable failure). No turn ends
+  as a spinner; every stop has a reason in `Trace.meta.stop`
+  (`answered | step_budget | budget | clarify | confirm | cancelled | interrupted | error`).
 
 ---
 
@@ -69,6 +88,47 @@
 - **Accept:** existing agent tests green unchanged; new test walks a monkeypatched 3-step run and
   asserts row states at each phase; a mid-run exception leaves an accurate `failed` row.
 - **Output:** runs you can inspect, resume, and audit.
+
+### [ ] T5.9 — Detached durable streaming `[Twenty study 2026-07-16 — NEW]`
+
+> Numbered T5.9 because T5.2–T5.8 are pinned by cross-references (DECISIONS.md, FILE_06/07/08,
+> os-foundations, agent-actions). **Executes HERE, second in the phase, right after T5.1.**
+
+- **Goal:** a chat/agent turn survives page refresh, network drop, and worker restart; no turn
+  ever ends as a silent hang.
+- **Prereq:** T5.1. Celery + Redis already operated (existing stack facts) — no new infra.
+- **Files:** modify `erp/assistant/api/views.py` (SSE endpoints become claim + subscribe + relay),
+  `services/agent.py` entry, `tasks.py` (new Celery task); new `services/stream_relay.py`
+  (Redis pub/sub publish/subscribe + heartbeat helpers); frontend panel reconnect handling.
+- **Steps:**
+  1. **Claim:** `Conversation` gains `active_stream_id` (+ `last_stream_error` JSON). Start turn =
+     optimistic UPDATE (`active_stream_id IS NULL → new id`). Busy → typed 409 the panel renders
+     calmly ("still answering — it will appear here"); v1 rejects rather than queues (queueing is a
+     follow-up if real usage demands it).
+  2. **Detach:** the generator (`agent.run` / `ask.stream_answer`) executes inside a Celery task on
+     a dedicated queue (`ai_stream`); every yielded SSE event publishes to Redis channel
+     `assistant:conv:{id}`. The HTTP view subscribes and relays — thin, stateless, reconnectable.
+  3. **Heartbeat + reap:** worker refreshes `assistant-stream-alive:{stream_id}` (TTL 30 s, refresh
+     5 s). Any read path finding a claim with no heartbeat → clear claim, set `last_stream_error`
+     (`interrupted`, blame-free ar/en message), emit `stream-error` event, `Trace.meta.stop =
+     "interrupted"`.
+  4. **Idempotent checkpoints:** partial answer upserts into the assistant Message row every ~2 s
+     under a deterministic id derived from the stream id — job retry can't duplicate; reload
+     mid-stream shows the partial via normal message fetch + a catch-up event on resubscribe.
+  5. **Retry affordance:** `POST .../retry-turn` re-enqueues the last failed turn (claim must hold
+     `last_stream_error`; deletes that turn's assistant message first). Panel shows a retry button
+     on the error state.
+  6. **Cancel:** stop button publishes on `assistant:cancel:{stream_id}`; worker checks between
+     rounds/chunks and closes with `stop="cancelled"` (persisting the partial, as today).
+  7. Settings flag `ASSISTANT_DETACHED_STREAMING` (default on in dev after the drill passes;
+     documented in RUNBOOK) — the in-request path remains as fallback for installs without a
+     running worker, chosen at view level.
+- **Accept:** drills documented + repeatable: (a) refresh mid-answer → partial visible after
+  reload, turn completes; (b) `kill -9` the worker mid-turn → reap fires, error card + retry
+  button, retry completes; (c) two rapid sends → second gets the calm busy response. Existing
+  agent/ask tests green (in-request path untouched); new tests for claim race (two claimants, one
+  wins), reap, idempotent checkpoint, retry. Gates green.
+- **Output:** Twenty-grade delivery mechanics under the existing loop — turns that cannot be lost.
 
 ### [ ] T5.2 — Typed planner
 
@@ -152,11 +212,49 @@
 - **Accept:** resume tests (confirm path, deny path, stale-id path, double-resume no-ops); drill
   documented in the phase record; ar/en strings; gates green.
 - **Output:** agent work that survives reality.
+- `[Twenty study 2026-07-16]` Note: with T5.9 landed, orphan detection in step 3 uses the stream
+  heartbeat (dead within ~30 s), not only the 10-minute staleness sweep — the sweep stays as the
+  backstop for installs running the in-request fallback.
+
+### [ ] T5.10 — Structured clarify + mid-turn cost stop `[Twenty study 2026-07-16 — NEW]`
+
+> Numbered T5.10 for the same cross-reference reason as T5.9. **Executes HERE, right after T5.5
+> and before the benchmark suite** (the bench must exercise both behaviors).
+
+- **Goal:** asking the user a question pauses the run instead of ending it, and a runaway turn
+  stops on budget between rounds instead of after the money is spent.
+- **Prereq:** T5.2 (plan objects), T5.5 (parking machinery). Read Twenty's `ask-questions.tool.ts`
+  contract in `TWENTY_AI_STUDY.md` §1 — adapt the shape, not the code.
+- **Files:** modify `services/agent.py` (clarify decision schema + parking), `services/actions.py`
+  (reuse card plumbing), api confirm/answer endpoint, panel clarify card component, prompts
+  (`agent_loop` clarify rules), `gateway/budgets.py` (round-level check helper).
+- **Steps:**
+  1. **Clarify schema:** the planner's `clarify` decision gains `options: [{label, description?,
+     recommended?}] (2–4, ≤1 recommended)` + `allow_free_text` (always true in UI). Free-text-only
+     clarify stays legal (not every question has options).
+  2. **Parking:** clarify with options parks the run (`waiting_clarify`, mirrors
+     `waiting_confirm`): gathered results + plan persist on the AgentRun; the card rides message
+     meta like proposals do. The user's pick (or typed answer) resumes the SAME run — the answer is
+     appended to `gathered` as `{tool: "user_answer", ...}`; the planner continues, it does not
+     restart.
+  3. **Prompt rules (imported from Twenty, verbatim intent):** never ask what a tool can look up;
+     never ask on trivial choices with an obvious default; at most a few focused questions; mark
+     one recommended option.
+  4. **Mid-turn budget:** between planner rounds, `budgets.check_round(actor, spent_so_far)` —
+     over → stop gathering, answer from what's gathered with a designed ar/en note, `Trace.meta
+     .stop = "budget"`. Never mid-sentence: the check sits at round boundaries only.
+  5. Stop-reason taxonomy unified in `Trace.meta.stop` (see phase success metrics) + ops tile
+     counting stops by reason.
+- **Accept:** parked clarify survives reload and resumes with prior results intact (test);
+  free-text answer path; budget stop test (fake spend → calm partial answer, correct stop reason);
+  prompt-rule eval cases (≥ 6, ar+en: 3 that MUST clarify with options, 3 that must NOT ask);
+  i18n parity + tsc + gate03 + brand checklist on the card.
+- **Output:** the conversational twin of the confirm card — decisions pause, money can't run away.
 
 ### [ ] T5.6 — Agent benchmark suite per module
 
 - **Goal:** task-completion rate per module is a tracked number.
-- **Prereq:** T5.2–T5.5.
+- **Prereq:** T5.2–T5.5, T5.9, T5.10 (the bench must cover parked-clarify and budget-stop paths).
 - **Files:** create `evals/datasets/agent_bench_v1.jsonl` + runner mode.
 - **Steps:**
   1. ≥ 40 benchmark tasks (≥ 60% ar) across purchasing, inventory, accounting, CRM, workflows:
@@ -184,6 +282,10 @@
   1. Spec schema: id, title (ar+en keys), steps [{id, tool | gate | subplan-goal, args template
      with `{placeholders}`, after: [ids], gate: bool}], version. Loader validates against
      JSON-schema; specs are code-reviewed files, not user-editable v1.
+     `[Twenty study 2026-07-16]` A spec MAY carry an `instructions` field: a versioned
+     prompt-registry doc (skill-style domain playbook — month-end close rules, VAT filing steps)
+     injected into the planner ONLY while that workflow runs — knowledge loaded on demand, never
+     resident in every prompt.
   2. Executor: translate spec → AgentRun plan (same tables, same UI, same confirm cards, same
      resume) — zero new execution machinery; gates park exactly like T5.5.
   3. Ship two specs end-to-end: **reorder review** (below-reorder items → supplier suggestions →
@@ -210,8 +312,10 @@
   3. Seeded eval: 15 cases with recordings containing deliberate draft/tool mismatches — verifier
      must catch ≥ 90%; 10 clean cases must not trigger (false-positive guard ≤ 10%).
   4. Fail-open: verifier error → answer ships unverified, trace `meta.verify="skipped"`.
-  5. Phase acceptance: bench suite ≥ targets, validity metric ≥ 97%, resume drill done, all boxes
-     checked, BASELINE.md updated, rename `_done`.
+  5. Phase acceptance: bench suite ≥ targets, validity metric ≥ 97%, resume drill done, T5.9
+     refresh/kill drills done, T5.10 clarify-park + budget-stop tests green, all boxes checked
+     (including T5.9 and T5.10 — they execute out of numeric order, see their placement notes),
+     BASELINE.md updated, rename `_done`.
 - **Accept:** seeded evals pass both directions; latency budget: verification adds ≤ 1.5s p95
   (cheap model, parallel with nothing — it's terminal); acceptance recorded.
 - **Output:** the agent double-checks its arithmetic like a careful accountant.

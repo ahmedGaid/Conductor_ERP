@@ -106,4 +106,13 @@ multitenancy work (`Docs/plan/06-saas-multitenancy.md`) has landed; if it hasn't
 park (marked in FILE_06). Nothing here blocks the product queue: linear-polish → unified-ui →
 ai-workspace 13–15 → smart-import finish first.
 
+## Amendments
+
+- **2026-07-16 — Twenty CRM AI study** (`TWENTY_AI_STUDY.md` in this folder): source-level study
+  of Twenty's AI system → FILE_05 gained T5.9 (detached durable streaming, executes after T5.1)
+  and T5.10 (structured clarify + mid-turn cost stop, executes after T5.5); FILE_03 T3.6 gained
+  the context meter + stable-prefix rule; FILE_07 T7.2/T7.5 gained the progressive-disclosure
+  trigger + provider prompt caching; FILE_08 T8.3 gained sampled live-turn grading. All marked
+  `[Twenty study 2026-07-16]` in place. T5.2–T5.8 numbering untouched (cross-referenced).
+
 *Generated 2026-07-08. Grounded in erp/assistant as of commit dc8ecc6.*
