@@ -1996,7 +1996,9 @@
         "disabled": "Never",
         "draft": "Drafts only",
         "confirmed": "Until confirmed"
-      }
+      },
+      "version": "Version",
+      "versionValue": "Version {{version}}"
     },
     "branches": {
       "adminOnly": "Only a System Admin can manage branches.",

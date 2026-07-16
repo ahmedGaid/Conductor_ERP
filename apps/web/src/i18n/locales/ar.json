@@ -1996,7 +1996,9 @@
         "disabled": "أبدًا",
         "draft": "المسودات فقط",
         "confirmed": "حتى التأكيد"
-      }
+      },
+      "version": "الإصدار",
+      "versionValue": "الإصدار {{version}}"
     },
     "branches": {
       "adminOnly": "مسؤول النظام فقط هو من يمكنه إدارة الفروع.",

@@ -7,6 +7,7 @@ import {
   patchOrgPreferences,
   type OrgPreferences,
 } from "../../api/identity";
+import { getHealth } from "../../api/monitoring";
 import { ACCENTS } from "../../prefs";
 import { Tooltip } from "../../components/Tooltip";
 import { useAsync } from "../../hooks/useAsync";
@@ -21,6 +22,7 @@ export function OrganizationPage() {
   const { t } = useTranslation();
   const { data: me } = useAsync(getMe, []);
   const { data: loaded } = useAsync(getOrgPreferences, []);
+  const { data: health } = useAsync(getHealth, []);
   const [org, setOrg] = useState<OrgPreferences | null>(null);
 
   useEffect(() => {
@@ -172,6 +174,10 @@ export function OrganizationPage() {
               </option>
             ))}
           </select>
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.version")}>
+          <span className="muted">{health ? t("settings.org.versionValue", { version: health.version }) : "—"}</span>
         </SettingRow>
       </div>
     </section>

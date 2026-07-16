@@ -104,6 +104,21 @@ Restart-Service Conductor-Web
 # Logs (rotating, ~10 MB): deploy\logs\Conductor-*.out.log / .err.log
 ```
 
+### Release (maintainer, before shipping a new version)
+```powershell
+# 1. Bump the version (single source of truth for /health, /system-check, and the UI's about line)
+"1.1.0" | Set-Content -NoNewline VERSION
+# 2. Add a `## v1.1.0 — YYYY-MM-DD` section to CHANGELOG.md summarizing what shipped
+# 3. Tag and push
+git add VERSION CHANGELOG.md
+git commit -m "chore(release): v1.1.0"
+git tag v1.1.0
+git push && git push --tags
+# 4. Build (see "Upgrading to a new release" below for the full deploy steps)
+```
+From gate16 onward (twenty-harvest FILE_03), also refresh the previous-release fixture dump used
+by the upgrade-drill gate.
+
 ### Upgrading to a new release
 ```powershell
 .\deploy\windows\uninstall-services.ps1        # or: Stop-Service Conductor-*  (stop writes first)
