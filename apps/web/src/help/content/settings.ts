@@ -128,3 +128,16 @@ export const settingsOrganizationGuide: HelpGuide = {
   },
   related: [{ to: "/settings/appearance", label: { en: "Appearance", ar: "المظهر" } }],
 };
+
+export const settingsBranchesGuide: HelpGuide = {
+  title: { en: "Branches", ar: "الفروع" },
+  purpose: {
+    en: "Administrator-only. Manage the company's branches — every user, and most business records, are scoped to one.",
+    ar: "للمسؤول فقط. إدارة فروع الشركة — كل مستخدم، وأغلب السجلات، مرتبطة بفرع واحد منها.",
+  },
+  howItWorks: {
+    en: "Add a branch with a short code and a name. Turning a branch off keeps its history but stops it from being assigned to new users or records. Only the System Admin can change this page.",
+    ar: "أضف فرعاً برمز مختصر واسم. إيقاف الفرع يحتفظ بسجله لكنه يمنع تعيينه لمستخدمين أو سجلات جديدة. ولا يمكن تغيير هذه الصفحة إلا لمسؤول النظام.",
+  },
+  related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
+};

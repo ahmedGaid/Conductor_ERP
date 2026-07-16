@@ -17,6 +17,8 @@ urlpatterns = [
     path("api/core/", include("erp.core.resolve_api")),
     # Universal entity search backing the ⌘K command palette (Charter R10).
     path("api/core/", include("erp.core.search_api")),
+    # Branch admin (list/create/edit company branches) — delivery-readiness Phase 1d gap.
+    path("api/core/", include("erp.core.branches_api")),
     # Workflow / instance API — Stage 4 (platform screens backend).
     path("api/workflow/", include("erp.workflow.urls")),
     # Accounting / GL API — Stage 5.

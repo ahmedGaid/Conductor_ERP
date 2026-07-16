@@ -43,6 +43,14 @@ export function SettingsNav() {
             {t("settings.tabs.organization")}
           </NavLink>
         )}
+        {isAdmin && (
+          <NavLink
+            to="/settings/branches"
+            className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
+          >
+            {t("settings.tabs.branches")}
+          </NavLink>
+        )}
       </nav>
     </header>
   );

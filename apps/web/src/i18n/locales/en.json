@@ -1862,7 +1862,8 @@
       "navigation": "Navigation",
       "notifications": "Notifications",
       "accessibility": "Accessibility",
-      "organization": "Organization"
+      "organization": "Organization",
+      "branches": "Branches"
     },
     "common": {
       "auto": "Auto"
@@ -1995,6 +1996,18 @@
         "draft": "Drafts only",
         "confirmed": "Until confirmed"
       }
+    },
+    "branches": {
+      "adminOnly": "Only a System Admin can manage branches.",
+      "lead": "Company branches. Every user is assigned to one; sales, inventory, and other records scope to it.",
+      "code": "Branch code",
+      "name": "Branch name",
+      "active": "Active",
+      "add": "Add branch",
+      "empty": "No branches yet.",
+      "emptyHint": "Add your first branch using the form above.",
+      "toastCreated": "Branch created",
+      "toastUpdated": "Branch updated"
     }
   },
   "admin": {

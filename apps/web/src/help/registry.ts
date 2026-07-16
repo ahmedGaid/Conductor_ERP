@@ -85,6 +85,7 @@ import {
 import {
   settingsAccessibilityGuide,
   settingsAppearanceGuide,
+  settingsBranchesGuide,
   settingsDashboardGuide,
   settingsNavigationGuide,
   settingsNotificationsGuide,
@@ -167,6 +168,7 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/settings/notifications": settingsNotificationsGuide,
   "/settings/accessibility": settingsAccessibilityGuide,
   "/settings/organization": settingsOrganizationGuide,
+  "/settings/branches": settingsBranchesGuide,
   "/admin/users": usersGuide,
   "/admin/users/:id": userDetailGuide,
   "/admin/roles": rolesGuide,
