@@ -56,27 +56,31 @@ notepad .env          # set DJANGO_SECRET_KEY, DATABASE_URL, DJANGO_ALLOWED_HOST
 # Build the frontend bundle (produces apps/web/dist, which Django then serves)
 cd apps\web; npm ci; npm run build; cd ..\..
 
-# Database + Django static
-.\.venv\Scripts\python.exe manage.py migrate
-.\.venv\Scripts\python.exe manage.py collectstatic --noinput   # gathers admin/DRF static for WhiteNoise
+# Django static (admin/DRF assets for WhiteNoise — collected once, before first start)
+.\.venv\Scripts\python.exe manage.py collectstatic --noinput
 
-# Seed the baseline (identity roles/users + chart of accounts + fiscal periods)
-.\.venv\Scripts\python.exe manage.py seed_identity   # customer-safe: creates ONE admin user
-.\.venv\Scripts\python.exe manage.py seed_accounting
-# (seed_demo.py + `seed_identity --demo-users` are DEV data only — do NOT run on a real customer install)
+# Provision: refuses anything but a brand-new, empty database. Migrates, seeds an admin-only
+# baseline (roles, HQ branch, chart of accounts, default price list), and sets the admin's real
+# password — never the dev default. Prompts for the password twice if you omit the env var.
+.\.venv\Scripts\python.exe manage.py provision_customer --admin-password-env ADMIN_PASSWORD
+# (seed_demo.py + `seed_identity --demo-users` are DEV data only — never run on a customer install)
 
 # Register + start the three services (run from an elevated PowerShell)
 .\deploy\windows\install-services.ps1            # -Nssm <path> -BindHost 127.0.0.1 -Port 8000
 Get-Service Conductor-*
 ```
 Then point IIS/Nginx (TLS) at `http://127.0.0.1:8000` and browse to `https://<your-host>/`.
-Sign in with the admin account created by `seed_identity` (change its password immediately).
+Sign in with the admin password `provision_customer` just set, then enroll two-factor
+authentication from Settings → Security before inviting other users.
 
 ### Smoke test
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8000/health           # service liveness
 Invoke-RestMethod http://127.0.0.1:8000/system-check     # db/redis/storage/workers
 # GET / should return the SPA shell (index.html); /api/... requires a JWT.
+
+# Before sign-off on a customer box: re-run the same go-live report, non-destructively.
+.\.venv\Scripts\python.exe manage.py provision_customer --verify
 ```
 
 ## 3. PostgreSQL / Redis prod notes
