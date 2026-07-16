@@ -67,5 +67,9 @@ class CustomerAdapter:
             return qs.filter(code=code).first()
         return qs.filter(name__iexact=(row.get("name") or "").strip()).first()
 
+    def existing_labels(self, actor):
+        qs = scope_queryset(actor, Customer.objects.all(), "sales.customer.view")
+        return list(qs.values_list("pk", "name"))
+
 
 register(CustomerAdapter())

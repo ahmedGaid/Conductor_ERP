@@ -85,6 +85,12 @@ class ImportAdapter(Protocol):
         """Fetch the existing record matching this row's natural key, or None."""
         ...
 
+    def existing_labels(self, actor: Any) -> list[tuple[Any, str]]:
+        """(pk, name) pairs for every existing record, RBAC/data-scoped like ``exists`` — the fuzzy
+        duplicate pass's one prefetch per entity (session 07). Empty for an entity with no
+        name-like field."""
+        ...
+
 
 # The live registry. Keyed by ``adapter.entity``.
 REGISTER: dict[str, ImportAdapter] = {}

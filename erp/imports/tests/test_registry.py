@@ -33,6 +33,9 @@ class _ExampleAdapter:
     def exists(self, actor, row):
         return None
 
+    def existing_labels(self, actor):
+        return []
+
 
 @pytest.fixture(autouse=True)
 def _clean_registry():

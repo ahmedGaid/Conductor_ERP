@@ -58,5 +58,8 @@ class SupplierAdapter:
             return Supplier.objects.filter(code=code).first()
         return Supplier.objects.filter(name__iexact=(row.get("name") or "").strip()).first()
 
+    def existing_labels(self, actor):
+        return list(Supplier.objects.values_list("pk", "name"))
+
 
 register(SupplierAdapter())

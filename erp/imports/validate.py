@@ -19,7 +19,9 @@ from .models import ImportBatch, ImportRow
 from .registry import Issue
 from .registry import get as get_adapter
 
-_NON_BLOCKING_CODES = frozenset({"duplicate_in_file"})
+# ``duplicate_in_file``/``probable_duplicate`` mark a row DUPLICATE, not ERROR — a duplicate is a
+# decision to make (session 07's ``apply_decision``), never a blocker on its own.
+_NON_BLOCKING_CODES = frozenset({"duplicate_in_file", "probable_duplicate"})
 
 # Codes ``normalize_row``/``analyze`` stamped onto the row that ``validate_row`` does NOT
 # recompute — carried over as-is. Everything else (``missing_ref``, any ``adapter.validate`` domain
@@ -129,6 +131,54 @@ def revalidate_rows(actor, batch: ImportBatch, row_ids: list[int]) -> dict:
         counts[row.status] = counts.get(row.status, 0) + 1
     ImportRow.objects.bulk_update(rows, ["normalized", "issues", "status"])
     return counts
+
+
+_DUPLICATE_DECISIONS = frozenset({"merge", "create", "ignore"})
+
+
+def apply_decision(actor, batch: ImportBatch, row_id: int, decision: dict) -> ImportRow:
+    """Record a human duplicate decision on one row — session 07's hard rule: the engine NEVER
+    merges without this explicit call.
+
+    ``decision`` is ``{"duplicate": "merge", "target_pk": ...}``, ``{"duplicate": "create"}``, or
+    ``{"duplicate": "ignore"}``. The row is re-validated first (so a bundled edit — e.g. fixing the
+    name — is reflected), then the decision's outcome is applied: ``ignore`` → ``skipped``;
+    ``merge`` → stays ``duplicate`` (the execution engine reads ``target_pk`` off ``decision``);
+    ``create`` needs no override — revalidation alone drops the fuzzy flag and the row lands on its
+    own merits (``valid`` unless something else is wrong with it).
+    """
+    kind = decision.get("duplicate")
+    if kind not in _DUPLICATE_DECISIONS:
+        raise ValueError(f"unknown duplicate decision: {decision!r}")
+    if kind == "merge" and not decision.get("target_pk"):
+        raise ValueError("merge decision requires target_pk")
+
+    row = ImportRow.objects.get(batch=batch, id=row_id)
+    row.decision = {**(row.decision or {}), **decision}
+    row.save(update_fields=["decision"])
+
+    revalidate_rows(actor, batch, [row.id])
+    row.refresh_from_db()
+
+    if kind == "ignore":
+        row.status = ImportRow.Status.SKIPPED
+        row.save(update_fields=["status"])
+    elif kind == "merge":
+        row.status = ImportRow.Status.DUPLICATE
+        row.save(update_fields=["status"])
+    return row
+
+
+def execute_status(row: ImportRow) -> str:
+    """Read-only: the status a row executes as, given its decision (or the safe default when
+    undecided). Never mutates the row — only ``apply_decision``/the execution engine (session 09)
+    write. A ``duplicate`` row with no ``merge``/``ignore`` decision defaults to ``skipped``: the
+    engine never imports — and never merges — an undecided probable duplicate."""
+    if row.status != ImportRow.Status.DUPLICATE:
+        return row.status
+    if (row.decision or {}).get("duplicate") == "merge":
+        return ImportRow.Status.DUPLICATE
+    return ImportRow.Status.SKIPPED
 
 
 def _issue_from_dict(d: dict) -> Issue:

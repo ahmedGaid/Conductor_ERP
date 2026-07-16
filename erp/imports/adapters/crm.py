@@ -86,5 +86,9 @@ class ContactAdapter:
             return qs.filter(email__iexact=email).first()
         return qs.filter(name__iexact=(row.get("name") or "").strip()).first()
 
+    def existing_labels(self, actor):
+        qs = scope_queryset(actor, Lead.objects.all(), "crm.lead.view")
+        return list(qs.values_list("pk", "name"))
+
 
 register(ContactAdapter())

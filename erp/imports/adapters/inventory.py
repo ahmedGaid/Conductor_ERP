@@ -73,5 +73,8 @@ class ItemAdapter:
     def exists(self, actor, row: dict):
         return Item.objects.filter(sku=(row.get("sku") or "").strip()).first()
 
+    def existing_labels(self, actor):
+        return list(Item.objects.values_list("pk", "name"))
+
 
 register(ItemAdapter())

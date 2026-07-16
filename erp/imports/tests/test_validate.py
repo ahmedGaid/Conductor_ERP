@@ -82,6 +82,9 @@ class _WidgetAdapter:
     def exists(self, actor, row: dict):
         return object() if row.get("code") in self.known_codes else None
 
+    def existing_labels(self, actor):
+        return []
+
 
 @pytest.fixture()
 def widget_adapter():
