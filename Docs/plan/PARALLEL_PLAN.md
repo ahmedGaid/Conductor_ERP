@@ -25,6 +25,11 @@ Cross-territory need → the OWNER does it, or the task waits for a checkpoint. 
 A-only until a checkpoint lands; B backend tasks must not add UI strings (plan files already
 split backend/UI into separate FILEs, so this costs nothing).
 
+**Resume command:** `/erp-resume` is lane-aware (skill step 0): checkout path decides —
+`C:\AhmedGaid\ERP` → Agent A, `C:\AhmedGaid\ERP-B` → Agent B (email tie-break: ahmedgaid14 → A,
+ahmedgaid85 → B). So Claude Desktop opened at ERP resumes lane A; VS Code opened at ERP-B resumes
+lane B — automatically.
+
 ## Setup (P0 — first agent to start, Either)
 
 1. Push current `main` to origin (contains `dd2532f` + `aba5c02`).
