@@ -110,6 +110,7 @@ def test_partial_payment_then_full():
 
     receive_payment(order, 1000_00)
     assert order.status == OrderStatus.PAID
+    assert trial_balance().is_balanced
 
 
 def test_overpayment_rejected():
@@ -120,6 +121,34 @@ def test_overpayment_rejected():
     invoice_order(order)
     with pytest.raises(OverpaymentError):
         receive_payment(order, 2000_00)
+
+
+def test_zero_payment_rejected():
+    customer, wh = _setup()
+    order = _order(customer, wh)
+    confirm_order(order)
+    deliver_order(order)
+    invoice_order(order)
+    with pytest.raises(OverpaymentError):
+        receive_payment(order, 0)
+
+
+def test_two_partial_payments_balance_the_ledger():
+    customer, wh = _setup()
+    order = _order(customer, wh)
+    confirm_order(order)
+    deliver_order(order)
+    invoice_order(order)
+
+    receive_payment(order, 500_00)
+    receive_payment(order, 700_00)
+    assert order.status == OrderStatus.INVOICED
+    assert order.outstanding_minor == 300_00
+    assert trial_balance().is_balanced
+
+    receive_payment(order, 300_00)
+    assert order.status == OrderStatus.PAID
+    assert trial_balance().is_balanced
 
 
 def test_unknown_item_rejected_on_create():

@@ -2167,7 +2167,16 @@
     "linkCopyFailed": "تعذّر نسخ الرابط",
     "completedOn": "اكتملت كل الخطوات في {{date}}",
     "cancelConfirmTitle": "إلغاء {{number}}؟",
-    "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء."
+    "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء.",
+    "paymentDialog": {
+      "amount": "المبلغ",
+      "outstandingNow": "المتبقي الآن",
+      "paying": "المسدد",
+      "willRemain": "سيتبقى",
+      "errorZero": "أدخل مبلغًا أكبر من صفر",
+      "errorExceeds": "المبلغ أكبر من المتبقي",
+      "confirm": "تسجيل"
+    }
   },
   "bulk": {
     "region": "العناصر المحددة",
@@ -2242,6 +2251,10 @@
         "paid": {
           "title": "تم سداد أمر البيع {{number}}",
           "context": "مدفوع بالكامل. لا يوجد إجراء آخر."
+        },
+        "partiallyPaid": {
+          "title": "تم تسجيل سداد جزئي لأمر البيع {{number}}",
+          "context": "سداد جزئي. المتبقي {{amount}}."
         },
         "returned": {
           "title": "تم تسجيل مرتجع أمر البيع {{number}}",
@@ -2379,6 +2392,10 @@
         "paid": {
           "title": "تم سداد أمر الشراء {{number}}",
           "context": "مدفوع بالكامل. لا شيء آخر."
+        },
+        "partiallyPaid": {
+          "title": "تم تسجيل سداد جزئي لأمر الشراء {{number}}",
+          "context": "سداد جزئي. المتبقي {{amount}}."
         },
         "returned": {
           "title": "تم إرجاع أمر الشراء {{number}}",

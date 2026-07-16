@@ -35,6 +35,7 @@ import { EntityLink } from "../../components/EntityLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { PaymentDialog } from "../../components/PaymentDialog";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
@@ -73,6 +74,7 @@ export function PurchaseOrderDetailPage() {
     `purchasing:order:${id}:history`,
   );
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
   const fb = useActionFeedback();
   const location = useLocation();
 
@@ -119,6 +121,21 @@ export function PurchaseOrderDetailPage() {
 
   const setStatus = (status: POStatus) => (order: PurchaseOrder): PurchaseOrder => ({ ...order, status });
 
+  // A partial payment leaves the order open with the remaining balance visible; only a payment
+  // that clears the full outstanding amount flips the order to paid.
+  function confirmPayment(amountMinor: number) {
+    if (!data) return;
+    const o = data;
+    act(
+      (x) => {
+        const paid = x.paid_minor + amountMinor;
+        return { ...x, paid_minor: paid, outstanding_minor: x.billed_minor - paid, status: paid >= x.billed_minor ? "paid" : x.status };
+      },
+      () => payPO(o.id, amountMinor),
+      amountMinor >= o.outstanding_minor ? "paid" : "partiallyPaid",
+    );
+  }
+
   // Map a receipt's recommended-next key back to the matching optimistic action.
   function runAction(key: POActionKey) {
     if (!data) return;
@@ -128,7 +145,7 @@ export function PurchaseOrderDetailPage() {
       case "confirm": act(setStatus("confirmed"), () => confirmPO(o.id), "confirmed"); break;
       case "receive": act(setStatus("received"), () => receivePO(o.id), "received"); break;
       case "bill": act(setStatus("billed"), () => billPO(o.id), "billed"); break;
-      case "pay": act(setStatus("paid"), () => payPO(o.id, o.outstanding_minor), "paid"); break;
+      case "pay": setPayDialogOpen(true); break;
       case "return": act(setStatus("returned"), () => returnPO(o.id), "returned"); break;
     }
   }
@@ -182,7 +199,7 @@ export function PurchaseOrderDetailPage() {
       return { label: t("purchasing.detail.bill"), onClick: () => act(setStatus("billed"), () => billPO(o.id), "billed") };
     }
     if (o.status === "billed") {
-      return { label: t("purchasing.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payPO(o.id, o.outstanding_minor), "paid") };
+      return { label: t("purchasing.detail.recordPayment"), onClick: () => setPayDialogOpen(true) };
     }
     if (o.status === "paid") {
       return { label: t("purchasing.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnPO(o.id), "returned") };
@@ -384,6 +401,16 @@ export function PurchaseOrderDetailPage() {
         danger
         onConfirm={() => act(setStatus("cancelled"), () => cancelPO(data.id), "cancelled")}
         onClose={() => setConfirmCancel(false)}
+      />
+
+      <PaymentDialog
+        open={payDialogOpen}
+        title={t("purchasing.detail.recordPayment")}
+        outstandingMinor={data.outstanding_minor}
+        currency={data.currency}
+        confirmLabel={t("document.paymentDialog.confirm")}
+        onConfirm={confirmPayment}
+        onClose={() => setPayDialogOpen(false)}
       />
     </section>
   );

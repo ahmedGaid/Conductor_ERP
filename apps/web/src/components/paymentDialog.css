@@ -1,0 +1,17 @@
+/* Amount summary + input inside PaymentDialog (shares .confirm shell from confirmDialog.css). */
+.payment-dialog__summary {
+  margin: var(--space-4) 0 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.payment-dialog__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+}
+.payment-dialog__field {
+  display: grid;
+  gap: var(--space-1);
+  margin-block-start: var(--space-4);
+}

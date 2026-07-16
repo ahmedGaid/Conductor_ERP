@@ -2167,7 +2167,16 @@
     "linkCopyFailed": "Couldn’t copy link",
     "completedOn": "All steps completed on {{date}}",
     "cancelConfirmTitle": "Cancel {{number}}?",
-    "cancelConfirmBody": "This can’t be undone."
+    "cancelConfirmBody": "This can’t be undone.",
+    "paymentDialog": {
+      "amount": "Amount",
+      "outstandingNow": "Outstanding now",
+      "paying": "Paying",
+      "willRemain": "Will remain",
+      "errorZero": "Enter an amount greater than zero",
+      "errorExceeds": "Amount is more than the outstanding balance",
+      "confirm": "Record"
+    }
   },
   "bulk": {
     "region": "Selected items",
@@ -2242,6 +2251,10 @@
         "paid": {
           "title": "Sales order {{number}} paid",
           "context": "Paid in full. Nothing more to do."
+        },
+        "partiallyPaid": {
+          "title": "Partial payment recorded for {{number}}",
+          "context": "Partially paid. {{amount}} remaining."
         },
         "returned": {
           "title": "Sales order {{number}} returned",
@@ -2379,6 +2392,10 @@
         "paid": {
           "title": "Purchase order {{number}} paid",
           "context": "Paid in full. Nothing more to do."
+        },
+        "partiallyPaid": {
+          "title": "Partial payment recorded for {{number}}",
+          "context": "Partially paid. {{amount}} remaining."
         },
         "returned": {
           "title": "Purchase order {{number}} returned",
