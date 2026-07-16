@@ -219,3 +219,32 @@ A build is a release candidate when **`gate:all` is green** end to end:
 ```
 Gate 13 specifically proves the deployment packaging is coherent: WhiteNoise is wired, the SPA is
 served at the root, and the deploy/backup kit + this runbook are present.
+
+## 8. Regression run before every release (Playwright E2E)
+
+`gate:all` is mechanical (types, lint, packaging); it doesn't drive a browser. The Playwright suite
+under `apps/web/e2e/` is the browser-level regression net (twenty-harvest-plan `FILE_04`) — it
+encodes the write-flow drives proven live in `Docs/plan/delivery-readiness/FILE_01_E2E_RESULTS.md`
+(sales, purchasing, accounting, CRM/pricing, workflow) as repeatable specs. It is a **release step,
+not a default gate** (it needs a live server, so it isn't in `scripts/gates/_run.py`), same as the
+gate16 upgrade drill.
+
+```powershell
+# 1. Seed the master data the specs assume (customers/suppliers/items/price list/tax code) —
+#    idempotent, safe to re-run:
+.\.venv\Scripts\python.exe manage.py seed_identity
+.\.venv\Scripts\python.exe manage.py seed_accounting
+.\.venv\Scripts\python.exe scripts\seed_demo.py
+
+# 2. Start the dev servers (Django :8000 + Vite :5173):
+.\run-dev.ps1
+
+# 3. Run the suite — ar project first (the product default), then en:
+cd apps\web
+npm run e2e
+```
+
+Override `E2E_BASE_URL` to point at a built bundle instead of the Vite dev server, and
+`E2E_ADMIN_USERNAME` / `E2E_ADMIN_PASSWORD` if a box isn't seeded with the default admin login.
+A trace is captured on first retry (`playwright-report/`, `test-results/` — gitignored); open it
+with `npx playwright show-report`.
