@@ -75,7 +75,7 @@ Status: `todo | doing(<agent>) | done(<commit>) | blocked(<why>)`
 | A3 | Outbound webhooks — `twenty-harvest/FILE_05` | A | erp/notifications (extend), settings, tests | — | 1 session | M2 | done(1b951c7) |
 | B1 | `provision_customer` — `delivery-readiness/FILE_06` | A (cross-lane, B idle) | `erp/core/management/commands/provision_customer.py`, erp/core tests, RUNBOOK §install | — | 1 session | M1 | done(5e1d7d9) |
 | B2 | Release versioning — `twenty-harvest/FILE_01` | A (cross-lane, B idle) | `VERSION`, `CHANGELOG.md`, version surface | — | 0.5 | M1 | done(9e2b422) |
-| B3 | `manage.py upgrade` — `twenty-harvest/FILE_02` | B | erp/core models+migration, upgrade command, tests, RUNBOOK §upgrade | B2 | 1 session | M1 | doing(B) |
+| B3 | `manage.py upgrade` — `twenty-harvest/FILE_02` | B | erp/core models+migration, upgrade command, tests, RUNBOOK §upgrade | B2 | 1 session | M1 | done(98f1af6) |
 | B4 | gate16 drill + gate17 API snapshot — `twenty-harvest/FILE_03` | B | `scripts/gates/gate16.py`, `gate17.py`, `_run.py`, snapshot | B3 | 1 session | M1 | todo |
 
 **M1 (sync):** merge A1 + B1–B4 to main → `gate:all` 00–17 green → **D7 = HANDOVER GATE**
