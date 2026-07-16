@@ -12,7 +12,8 @@ from erp.crm.events import TICKET_ESCALATED
 from erp.sales.events import ORDER_INVOICED
 
 from .domain.models import NotificationChannel
-from .services import dispatch
+from .services import dispatch, on_webhook_event
+from .webhook_catalog import WEBHOOK_EVENT_CATALOG
 
 
 def _on_order_invoiced(event) -> None:
@@ -63,3 +64,6 @@ def _on_ticket_escalated(event) -> None:
 def register() -> None:
     bus.subscribe(ORDER_INVOICED, _on_order_invoiced)
     bus.subscribe(TICKET_ESCALATED, _on_ticket_escalated)
+    # Outbound webhooks observe every catalog event — zero new emissions, just a fan-out listener.
+    for _name in WEBHOOK_EVENT_CATALOG:
+        bus.subscribe(_name, on_webhook_event)

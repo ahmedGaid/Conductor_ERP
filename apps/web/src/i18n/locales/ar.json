@@ -1863,7 +1863,8 @@
       "notifications": "الإشعارات",
       "accessibility": "إمكانية الوصول",
       "organization": "المؤسسة",
-      "branches": "الفروع"
+      "branches": "الفروع",
+      "webhooks": "الويب هوكس"
     },
     "common": {
       "auto": "تلقائي"
@@ -2008,6 +2009,37 @@
       "emptyHint": "أضف أول فرع باستخدام النموذج أعلاه.",
       "toastCreated": "تم إنشاء الفرع",
       "toastUpdated": "تم تحديث الفرع"
+    },
+    "webhooks": {
+      "adminOnly": "مسؤول النظام فقط هو من يمكنه إدارة الويب هوكس.",
+      "lead": "أرسل الأحداث إلى نظام خارجي كطلب HTTP موقّع فور حدوثها.",
+      "url": "الرابط",
+      "events": "الأحداث",
+      "active": "نشط",
+      "add": "إضافة ويب هوك",
+      "regenerateSecret": "تجديد المفتاح السري",
+      "delete": "حذف",
+      "empty": "لا توجد ويب هوكس بعد.",
+      "emptyHint": "أضف رابطًا واختر الأحداث المراد إرسالها باستخدام النموذج أعلاه.",
+      "toastCreated": "تم إنشاء الويب هوك",
+      "toastUpdated": "تم تحديث الويب هوك",
+      "toastDeleted": "تم حذف الويب هوك",
+      "secretRevealTitle": "المفتاح السري للتوقيع",
+      "secretRevealDesc": "يظهر مرة واحدة فقط — انسخه الآن. استخدمه للتحقق من ترويسة X-Conductor-Signature في كل إرسال.",
+      "secretRevealDismiss": "نسخته",
+      "deliveries": {
+        "title": "عمليات الإرسال",
+        "event": "الحدث",
+        "status": "الحالة",
+        "attempts": "المحاولات",
+        "retryNow": "إعادة المحاولة الآن",
+        "toastRetried": "تمت إعادة محاولة الإرسال",
+        "empty": "لا توجد عمليات إرسال بعد.",
+        "status_pending": "قيد الانتظار",
+        "status_delivered": "تم الإرسال",
+        "status_retrying": "إعادة المحاولة",
+        "status_failed": "فشل"
+      }
     }
   },
   "admin": {

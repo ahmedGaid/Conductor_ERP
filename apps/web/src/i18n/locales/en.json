@@ -1863,7 +1863,8 @@
       "notifications": "Notifications",
       "accessibility": "Accessibility",
       "organization": "Organization",
-      "branches": "Branches"
+      "branches": "Branches",
+      "webhooks": "Webhooks"
     },
     "common": {
       "auto": "Auto"
@@ -2008,6 +2009,37 @@
       "emptyHint": "Add your first branch using the form above.",
       "toastCreated": "Branch created",
       "toastUpdated": "Branch updated"
+    },
+    "webhooks": {
+      "adminOnly": "Only a System Admin can manage webhooks.",
+      "lead": "Relay events to an external system as a signed HTTP call the moment they happen.",
+      "url": "URL",
+      "events": "Events",
+      "active": "Active",
+      "add": "Add webhook",
+      "regenerateSecret": "Regenerate secret",
+      "delete": "Delete",
+      "empty": "No webhooks yet.",
+      "emptyHint": "Add a URL and pick the events to relay using the form above.",
+      "toastCreated": "Webhook created",
+      "toastUpdated": "Webhook updated",
+      "toastDeleted": "Webhook deleted",
+      "secretRevealTitle": "Signing secret",
+      "secretRevealDesc": "Shown once — copy it now. Use it to verify the X-Conductor-Signature header on each delivery.",
+      "secretRevealDismiss": "I've copied it",
+      "deliveries": {
+        "title": "Deliveries",
+        "event": "Event",
+        "status": "Status",
+        "attempts": "Attempts",
+        "retryNow": "Retry now",
+        "toastRetried": "Delivery retried",
+        "empty": "No deliveries yet.",
+        "status_pending": "Pending",
+        "status_delivered": "Delivered",
+        "status_retrying": "Retrying",
+        "status_failed": "Failed"
+      }
     }
   },
   "admin": {

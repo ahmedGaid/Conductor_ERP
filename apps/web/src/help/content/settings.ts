@@ -141,3 +141,16 @@ export const settingsBranchesGuide: HelpGuide = {
   },
   related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
 };
+
+export const settingsWebhooksGuide: HelpGuide = {
+  title: { en: "Webhooks", ar: "الويب هوكس" },
+  purpose: {
+    en: "Administrator-only. Relay any business event to an external system as a signed HTTP call the moment it happens — the cheapest way to connect Conductor to other tools.",
+    ar: "للمسؤول فقط. أرسل أي حدث في النظام إلى نظام خارجي كطلب HTTP موقّع فور حدوثه — أبسط طريقة لربط Conductor بأدوات أخرى.",
+  },
+  howItWorks: {
+    en: "Add a URL and pick which events it should receive. Each subscription gets a signing secret, shown once — use it to verify the X-Conductor-Signature header on every delivery. A failed delivery retries automatically on a backoff schedule; use \"Retry now\" to try immediately. Only the System Admin can manage subscriptions.",
+    ar: "أضف رابطًا واختر الأحداث التي يستقبلها. يحصل كل اشتراك على مفتاح توقيع يظهر مرة واحدة فقط — استخدمه للتحقق من ترويسة X-Conductor-Signature في كل إرسال. الإرسال الفاشل تُعاد محاولته تلقائيًا وفق جدول تأخير متصاعد؛ استخدم \"إعادة المحاولة الآن\" للمحاولة فورًا. لا يمكن إدارة الاشتراكات إلا لمسؤول النظام.",
+  },
+  related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
+};

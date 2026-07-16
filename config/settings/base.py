@@ -207,6 +207,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "assistant.send_ai_weekly_report",
         "schedule": crontab(hour=7, minute=30, day_of_week=1),  # Monday 07:30 Africa/Cairo
     },
+    "retry-due-webhooks": {
+        "task": "notifications.retry_due_webhooks",
+        "schedule": 60.0,  # seconds — check for elapsed backoff windows every minute
+    },
 }
 
 # Where scheduled report exports are written.
