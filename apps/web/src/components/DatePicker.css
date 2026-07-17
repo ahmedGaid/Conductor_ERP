@@ -1,0 +1,92 @@
+/* Calendar panel shown inside a Popover by components/DatePicker.tsx. The trigger reuses the shared
+   `.combobox-trigger` field styling (global.css); this file is only the calendar body. */
+.datepicker-popover {
+  padding: var(--space-2);
+  /* The whole calendar (grid + footer) should fit without an inner scrollbar — lift the shared
+     Popover's 22rem cap, still clamped to the viewport on short screens. */
+  max-block-size: min(26rem, 90vh);
+}
+.datepicker {
+  inline-size: 17rem;
+}
+
+.datepicker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-block-end: var(--space-2);
+}
+.datepicker__selects {
+  display: flex;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+/* The month/year ComboBox triggers sit inline in the header — compact, no full-field chrome. */
+.datepicker__month {
+  inline-size: 6.75rem;
+}
+.datepicker__year {
+  inline-size: 5.5rem;
+}
+.datepicker__nav {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+/* Prev/next point to the natural inline-start/end in both directions: mirror the glyphs in RTL. */
+[dir="rtl"] .datepicker__nav .navicon {
+  transform: scaleX(-1);
+}
+
+.datepicker__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.datepicker__weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  block-size: 2rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+.datepicker__day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.datepicker__day:hover {
+  background-color: var(--color-surface-hover);
+}
+.datepicker__day--outside {
+  color: var(--color-text-subtle);
+}
+.datepicker__day--today {
+  font-weight: var(--font-weight-medium);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+.datepicker__day--selected,
+.datepicker__day--selected:hover {
+  background-color: var(--color-brand);
+  color: var(--color-text-on-brand);
+  font-weight: var(--font-weight-medium);
+}
+
+.datepicker__footer {
+  display: flex;
+  gap: var(--space-1);
+  margin-block-start: var(--space-2);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--color-border);
+}

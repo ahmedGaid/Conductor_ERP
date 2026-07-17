@@ -29,6 +29,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -273,12 +274,12 @@ export function BankStatementDetailPage() {
               </label>
               <label className="acct-field">
                 <span>{t("accounting.bankRec.contraAccount")}</span>
-                <select className="latin" value={adjContra} onChange={(e) => setAdjContra(e.target.value)} required>
-                  <option value="">—</option>
-                  {contraAccounts.map((a) => (
-                    <option key={a.code} value={a.code}>{a.code} · {a.name}</option>
-                  ))}
-                </select>
+                <ComboBox
+                  value={adjContra}
+                  onChange={setAdjContra}
+                  placeholder={t("common.selectField", { field: t("accounting.bankRec.contraAccount") })}
+                  options={contraAccounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+                />
               </label>
               <label className="acct-field grow">
                 <span>{t("accounting.bankRec.memo")}</span>

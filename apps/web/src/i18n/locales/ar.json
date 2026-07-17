@@ -1624,7 +1624,12 @@
     "undo": "تراجع",
     "undone": "تم التراجع",
     "notFound": "تعذّر العثور على هذا السجل.",
-    "owner": "المسؤول"
+    "owner": "المسؤول",
+    "selectField": "اختر {{field}}",
+    "search": "بحث…",
+    "noResults": "لا نتائج",
+    "today": "اليوم",
+    "clear": "مسح"
   },
   "import": {
     "action": "استيراد CSV",

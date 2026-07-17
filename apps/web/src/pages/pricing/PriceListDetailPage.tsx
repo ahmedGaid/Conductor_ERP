@@ -30,6 +30,8 @@ import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
+import { DatePicker } from "../../components/DatePicker";
 import { EntityLink } from "../../components/EntityLink";
 import { InlineEdit } from "../../components/InlineEdit";
 import { ImportDialog } from "../../components/ImportDialog";
@@ -185,12 +187,12 @@ export function PriceListDetailPage() {
       <form ref={addFormRef} className="card pricing-toolbar" onSubmit={onAddLine}>
         <label className="pricing-field">
           <span>{t("pricing.detail.item")}</span>
-          <select value={sku} onChange={(e) => setSku(e.target.value)}>
-            <option value="">—</option>
-            {stockItems.map((it) => (
-              <option key={it.sku} value={it.sku}>{it.sku} · {it.name}</option>
-            ))}
-          </select>
+          <ComboBox
+            value={sku}
+            onChange={setSku}
+            placeholder={t("common.selectField", { field: t("pricing.detail.item") })}
+            options={stockItems.map((it) => ({ value: it.sku, label: `${it.sku} · ${it.name}` }))}
+          />
         </label>
         <label className="pricing-field">
           <span>{t("pricing.detail.unitPrice")}</span>
@@ -202,11 +204,11 @@ export function PriceListDetailPage() {
         </label>
         <label className="pricing-field">
           <span>{t("pricing.customers.validFrom")}</span>
-          <input className="latin" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+          <DatePicker value={validFrom} onChange={setValidFrom} />
         </label>
         <label className="pricing-field">
           <span>{t("pricing.customers.validTo")}</span>
-          <input className="latin" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+          <DatePicker value={validTo} onChange={setValidTo} />
         </label>
         <button className="btn btn--primary" type="submit">{t("pricing.detail.addLine")}</button>
         <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>

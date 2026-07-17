@@ -1624,7 +1624,12 @@
     "undo": "Undo",
     "undone": "Undone",
     "notFound": "We couldn’t find that record.",
-    "owner": "Owner"
+    "owner": "Owner",
+    "selectField": "Select {{field}}",
+    "search": "Search…",
+    "noResults": "No results",
+    "today": "Today",
+    "clear": "Clear"
   },
   "import": {
     "action": "Import CSV",

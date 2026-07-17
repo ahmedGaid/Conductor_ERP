@@ -228,10 +228,13 @@ h3 {
   block-size: 1.2rem;
 }
 
-/* ---- Form fields ---- */
+/* ---- Form fields ----
+   `.combobox-trigger` (components/ComboBox.tsx) joins this list so the searchable combobox reads
+   as the same field as a plain <select> — one shared rule, not a parallel style sheet. */
 input,
 select,
-textarea {
+textarea,
+.combobox-trigger {
   font-family: inherit;
   font-size: inherit;
   color: var(--color-text);
@@ -246,9 +249,16 @@ input::placeholder,
 textarea::placeholder {
   color: var(--color-text-subtle);
 }
+/* Empty-selection placeholder ("—") reads as an unset field, not a value — dim it like an
+   input placeholder instead of full-strength text. */
+select:has(> option[value=""]:checked) {
+  color: var(--color-text-subtle);
+}
 input:focus,
 select:focus,
-textarea:focus {
+textarea:focus,
+.combobox-trigger:focus,
+.combobox-trigger[aria-expanded="true"] {
   outline: none;
   border-color: var(--color-text);
   box-shadow: 0 0 0 3px var(--color-brand-subtle);

@@ -10,6 +10,8 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { DatePicker } from "../../components/DatePicker";
+import { ComboBox } from "../../components/ComboBox";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
 
@@ -100,7 +102,7 @@ export function JournalEntryPage() {
         <div className="acct-toolbar">
           <label className="acct-field">
             <span>{t("accounting.entry.date")}</span>
-            <input type="date" className="latin" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <DatePicker value={date} onChange={setDate} />
           </label>
           <label className="acct-field grow">
             <span>{t("accounting.entry.memo")}</span>
@@ -124,17 +126,12 @@ export function JournalEntryPage() {
               {lines.map((l, i) => (
                 <tr key={i}>
                   <td>
-                    <select
+                    <ComboBox
                       value={l.account_code}
-                      onChange={(e) => setLine(i, { account_code: e.target.value })}
-                    >
-                      <option value="">—</option>
-                      {postable.map((a) => (
-                        <option key={a.code} value={a.code}>
-                          {a.code} · {a.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => setLine(i, { account_code: v })}
+                      placeholder={t("common.selectField", { field: t("accounting.entry.account") })}
+                      options={postable.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+                    />
                   </td>
                   <td className="acct-table__num">
                     <input
@@ -153,17 +150,12 @@ export function JournalEntryPage() {
                     />
                   </td>
                   <td>
-                    <select
+                    <ComboBox
                       value={l.cost_center_code}
-                      onChange={(e) => setLine(i, { cost_center_code: e.target.value })}
-                    >
-                      <option value="">—</option>
-                      {activeCostCenters.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.code} · {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => setLine(i, { cost_center_code: v })}
+                      placeholder={t("common.selectField", { field: t("accounting.entry.costCenter") })}
+                      options={activeCostCenters.map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))}
+                    />
                   </td>
                   <td>
                     <input value={l.memo} onChange={(e) => setLine(i, { memo: e.target.value })} />

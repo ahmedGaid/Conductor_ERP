@@ -9,6 +9,7 @@ import {
   type ActiveFilter,
   type FilterField,
 } from "../lib/filters";
+import { DatePicker } from "./DatePicker";
 import { Popover } from "./Popover";
 import { Tooltip } from "./Tooltip";
 import { NavIcon } from "../app/icons";
@@ -245,13 +246,10 @@ function FilterChip<T>({
 
         {field.type === "date" && (
           <div className="popover__editor">
-            <input
-              type="date"
-              className="latin"
-              autoFocus
+            <DatePicker
               value={filter.values[0] ?? ""}
-              onChange={(e) => setValues(e.target.value ? [e.target.value] : [])}
-              aria-label={field.label}
+              onChange={(v) => setValues(v ? [v] : [])}
+              placeholder={field.label}
             />
           </div>
         )}

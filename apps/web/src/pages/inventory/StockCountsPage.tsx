@@ -16,6 +16,8 @@ import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
+import { ComboBox } from "../../components/ComboBox";
+import { DatePicker } from "../../components/DatePicker";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
@@ -127,16 +129,16 @@ export function StockCountsPage() {
       <form className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.counts.warehouse")}</span>
-          <select className="latin" value={warehouse} onChange={(e) => setWarehouse(e.target.value)} required>
-            <option value="">—</option>
-            {(warehouses ?? []).filter((w) => w.is_active).map((w) => (
-              <option key={w.code} value={w.code}>{w.code} · {w.name}</option>
-            ))}
-          </select>
+          <ComboBox
+            value={warehouse}
+            onChange={setWarehouse}
+            placeholder={t("common.selectField", { field: t("inventory.counts.warehouse") })}
+            options={(warehouses ?? []).filter((w) => w.is_active).map((w) => ({ value: w.code, label: `${w.code} · ${w.name}` }))}
+          />
         </label>
         <label className="inv-field">
           <span>{t("inventory.counts.date")}</span>
-          <input className="latin" type="date" value={countDate} onChange={(e) => setCountDate(e.target.value)} required />
+          <DatePicker value={countDate} onChange={setCountDate} />
         </label>
         <button className="btn btn--primary" type="submit" disabled={busy}>
           {t("inventory.counts.start")}

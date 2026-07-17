@@ -20,6 +20,7 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
 import { downloadExport } from "../../api/client";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -119,21 +120,21 @@ export function BudgetDetailPage() {
           <form className="acct-toolbar" onSubmit={onSetLine}>
             <label className="acct-field">
               <span>{t("accounting.budgets.account")}</span>
-              <select className="latin" value={account} onChange={(e) => setAccount(e.target.value)} required>
-                <option value="">—</option>
-                {pnlAccounts.map((a) => (
-                  <option key={a.code} value={a.code}>{a.code} · {a.name}</option>
-                ))}
-              </select>
+              <ComboBox
+                value={account}
+                onChange={setAccount}
+                placeholder={t("common.selectField", { field: t("accounting.budgets.account") })}
+                options={pnlAccounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+              />
             </label>
             <label className="acct-field">
               <span>{t("accounting.budgets.period")}</span>
-              <select className="latin" value={linePeriod} onChange={(e) => setLinePeriod(e.target.value)} required>
-                <option value="">—</option>
-                {(periods ?? []).map((p) => (
-                  <option key={p.code} value={p.code}>{p.code}</option>
-                ))}
-              </select>
+              <ComboBox
+                value={linePeriod}
+                onChange={setLinePeriod}
+                placeholder={t("common.selectField", { field: t("accounting.budgets.period") })}
+                options={(periods ?? []).map((p) => ({ value: p.code, label: p.code }))}
+              />
             </label>
             <label className="acct-field">
               <span>{t("accounting.budgets.amount")}</span>

@@ -15,6 +15,7 @@ import { normalizeSearch } from "../../lib/arabicSearch";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
+import { ComboBox } from "../../components/ComboBox";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
@@ -277,10 +278,12 @@ function InviteForm({
         </label>
         <label className="admin-field">
           <span>{t("admin.users.department")}</span>
-          <select value={department} onChange={(e) => setDepartment(e.target.value)}>
-            <option value="">—</option>
-            {org?.departments.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
-          </select>
+          <ComboBox
+            value={department}
+            onChange={setDepartment}
+            placeholder={t("common.selectField", { field: t("admin.users.department") })}
+            options={(org?.departments ?? []).map((d) => ({ value: d.code, label: d.name }))}
+          />
         </label>
       </div>
       {err && <p className="error-text">{err}</p>}

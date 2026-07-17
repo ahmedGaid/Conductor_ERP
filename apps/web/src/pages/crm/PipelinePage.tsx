@@ -26,6 +26,7 @@ import { BulkActionBar } from "../../components/BulkActionBar";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
 import { EmptyState } from "../../components/EmptyState";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -138,21 +139,21 @@ export function PipelinePage() {
           </label>
           <label className="crm-field">
             <span>{t("crm.opp.customer")}</span>
-            <select value={customer} onChange={(e) => setCustomer(e.target.value)}>
-              <option value="">—</option>
-              {(customers ?? []).map((c) => (
-                <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={customer}
+              onChange={setCustomer}
+              placeholder={t("common.selectField", { field: t("crm.opp.customer") })}
+              options={(customers ?? []).map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))}
+            />
           </label>
           <label className="crm-field">
             <span>{t("inventory.warehouse.label")}</span>
-            <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
-              <option value="">—</option>
-              {(warehouses ?? []).map((w) => (
-                <option key={w.code} value={w.code}>{w.code} · {w.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={warehouse}
+              onChange={setWarehouse}
+              placeholder={t("common.selectField", { field: t("inventory.warehouse.label") })}
+              options={(warehouses ?? []).map((w) => ({ value: w.code, label: `${w.code} · ${w.name}` }))}
+            />
           </label>
         </div>
 
@@ -173,12 +174,12 @@ export function PipelinePage() {
                 return (
                   <tr key={i}>
                     <td>
-                      <select value={l.item_sku} onChange={(e) => setLine(i, { item_sku: e.target.value })}>
-                        <option value="">—</option>
-                        {stockItems.map((it) => (
-                          <option key={it.sku} value={it.sku}>{it.sku} · {it.name}</option>
-                        ))}
-                      </select>
+                      <ComboBox
+                        value={l.item_sku}
+                        onChange={(v) => setLine(i, { item_sku: v })}
+                        placeholder={t("common.selectField", { field: t("sales.newOrder.item") })}
+                        options={stockItems.map((it) => ({ value: it.sku, label: `${it.sku} · ${it.name}` }))}
+                      />
                     </td>
                     <td className="crm-table__num">
                       <input className="latin" inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} />

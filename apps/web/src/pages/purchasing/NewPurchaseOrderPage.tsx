@@ -12,6 +12,7 @@ import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
 import { PurchasingNav } from "./PurchasingNav";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
@@ -115,21 +116,21 @@ export function NewPurchaseOrderPage() {
         <div className="pur-toolbar">
           <label className="pur-field">
             <span>{t("purchasing.orders.supplier")}</span>
-            <select value={supplier} onChange={(e) => setSupplier(e.target.value)}>
-              <option value="">—</option>
-              {(suppliers ?? []).map((s) => (
-                <option key={s.code} value={s.code}>{s.code} · {s.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={supplier}
+              onChange={setSupplier}
+              placeholder={t("common.selectField", { field: t("purchasing.orders.supplier") })}
+              options={(suppliers ?? []).map((s) => ({ value: s.code, label: `${s.code} · ${s.name}` }))}
+            />
           </label>
           <label className="pur-field">
             <span>{t("inventory.warehouse.label")}</span>
-            <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
-              <option value="">—</option>
-              {(warehouses ?? []).map((w) => (
-                <option key={w.code} value={w.code}>{w.code} · {w.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={warehouse}
+              onChange={setWarehouse}
+              placeholder={t("common.selectField", { field: t("inventory.warehouse.label") })}
+              options={(warehouses ?? []).map((w) => ({ value: w.code, label: `${w.code} · ${w.name}` }))}
+            />
           </label>
           <label className="pur-field">
             <span>{t("purchasing.newOrder.taxCode")}</span>
@@ -159,12 +160,12 @@ export function NewPurchaseOrderPage() {
                 return (
                   <tr key={i}>
                     <td>
-                      <select value={l.item_sku} onChange={(e) => setLine(i, { item_sku: e.target.value })}>
-                        <option value="">—</option>
-                        {stockItems.map((it) => (
-                          <option key={it.sku} value={it.sku}>{it.sku} · {it.name}</option>
-                        ))}
-                      </select>
+                      <ComboBox
+                        value={l.item_sku}
+                        onChange={(v) => setLine(i, { item_sku: v })}
+                        placeholder={t("common.selectField", { field: t("sales.newOrder.item") })}
+                        options={stockItems.map((it) => ({ value: it.sku, label: `${it.sku} · ${it.name}` }))}
+                      />
                     </td>
                     <td className="pur-table__num">
                       <input className="latin" inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} />
