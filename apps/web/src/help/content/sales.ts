@@ -193,6 +193,49 @@ export const newQuotationGuide: HelpGuide = {
     en: "Add the customer and lines just like an order; the totals preview what the eventual sale would be. Submit it to start the approval/convert flow.",
     ar: "أضف العميل والسطور كما في الطلب؛ تعرض المجاميع كيف سيكون البيع المحتمل. قدّمه لبدء مسار الموافقة/التحويل.",
   },
+  alerts: [
+    {
+      when: (s) => s.hasError === true,
+      tone: "warn",
+      title: { en: "Something needs fixing", ar: "هناك ما يحتاج تصحيحاً" },
+      body: {
+        en: "The red message above the button explains what's missing — fix that, then submit again.",
+        ar: "الرسالة الحمراء فوق الزر توضّح الناقص — صحّحها ثم أرسل مرة أخرى.",
+      },
+    },
+  ],
+  checklist: {
+    name: { en: "Build this quotation", ar: "أنشئ عرض السعر هذا" },
+    doneMessage: {
+      en: "Everything's filled in — review the total, then submit to start the approval flow.",
+      ar: "كل شيء مكتمل — راجع الإجمالي ثم قدّمه لبدء مسار الموافقة.",
+    },
+    steps: [
+      {
+        label: { en: "Pick who it's for", ar: "اختر لمن هذا العرض" },
+        detail: [
+          { en: "Open the Customer field and search by name.", ar: "افتح حقل العميل وابحث بالاسم." },
+        ],
+        hint: { en: "Customer set. Now pick a warehouse.", ar: "تم تحديد العميل. الآن اختر مخزناً." },
+        done: (s) => s.customerPicked === true,
+      },
+      {
+        label: { en: "Pick a warehouse", ar: "اختر مخزناً" },
+        detail: [
+          { en: "This is only for pricing/availability at this stage — nothing ships from a quotation.", ar: "هذا للتسعير والتوفر فقط في هذه المرحلة — لا شيء يُشحن من عرض السعر." },
+        ],
+        hint: { en: "Warehouse set. Now add what you're quoting.", ar: "تم تحديد المخزن. الآن أضف ما تعرض سعره." },
+        done: (s) => s.warehousePicked === true,
+      },
+      {
+        label: { en: "Add at least one item line", ar: "أضف سطر صنف واحد على الأقل" },
+        detail: [
+          { en: "Pick a product — its price fills in automatically if one's on file. Set the quantity.", ar: "اختر منتجاً — يُملأ سعره تلقائياً إن كان مسجلاً. حدّد الكمية." },
+        ],
+        done: (s) => s.lineReady === true,
+      },
+    ],
+  },
   related: [
     { to: "/sales/quotations", label: { en: "All quotations", ar: "كل العروض" } },
   ],

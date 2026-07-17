@@ -27,6 +27,7 @@ import type { ImportFieldInfo } from "../../api/imports";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./inventory.css";
 
 const ITEM_TYPES: ItemType[] = ["stock", "service"];
@@ -111,6 +112,13 @@ export function ItemsPage() {
   // ⌘/Ctrl+Enter submits the add form from any field (incl. the type select).
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    skuSet: sku.trim() !== "",
+    nameSet: name.trim() !== "",
+    itemCount: (data ?? []).length,
+  });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [

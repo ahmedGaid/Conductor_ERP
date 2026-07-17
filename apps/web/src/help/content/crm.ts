@@ -127,6 +127,35 @@ export const ticketsGuide: HelpGuide = {
   tips: [
     { en: "Each breach escalates only once, so running escalations repeatedly is safe.", ar: "كل تجاوز يُصعّد مرة واحدة فقط، لذا تكرار تشغيل التصعيدات آمن." },
   ],
+  checklist: {
+    name: { en: "Log your first ticket", ar: "سجّل أول تذكرة" },
+    doneMessage: {
+      en: "Ticket logged — its SLA clock starts now. Track it from this list until it's resolved.",
+      ar: "سُجّلت التذكرة — بدأ عدّاد مستوى الخدمة الآن. تابعها من هذه القائمة حتى حلّها.",
+    },
+    steps: [
+      {
+        label: { en: "Enter the subject", ar: "أدخل الموضوع" },
+        detail: [
+          { en: "A short line describing the issue — this is what shows in the list.", ar: "سطر قصير يصف المشكلة — هذا ما يظهر في القائمة." },
+        ],
+        hint: { en: "Subject set. Now link it to a customer.", ar: "تم إدخال الموضوع. الآن اربطه بعميل." },
+        done: (s) => s.subjectSet === true || (s.ticketCount as number) > 0,
+      },
+      {
+        label: { en: "Pick the customer", ar: "اختر العميل" },
+        detail: [
+          { en: "Search by name in the Customer field.", ar: "ابحث بالاسم في حقل العميل." },
+        ],
+        hint: { en: "Customer set. Priority defaults to Medium — raise it now if this is urgent.", ar: "تم تحديد العميل. الأولوية الافتراضية متوسطة — ارفعها الآن إن كانت عاجلة." },
+        done: (s) => s.customerPicked === true || (s.ticketCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add", ar: "اضغط «إضافة»" },
+        done: (s) => (s.ticketCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/notifications", label: { en: "Notifications", ar: "الإشعارات" } },
   ],

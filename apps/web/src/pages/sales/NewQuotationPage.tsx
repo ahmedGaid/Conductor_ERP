@@ -15,6 +15,7 @@ import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
@@ -89,6 +90,14 @@ export function NewQuotationPage() {
     const price = parseToMinor(l.unit_price) ?? 0;
     return s + Math.round(qty * price);
   }, 0);
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    customerPicked: customer !== "",
+    warehousePicked: warehouse !== "",
+    lineReady: lines.some((l) => l.item_sku && l.quantity && parseToMinor(l.unit_price) !== null),
+    hasError: error !== null,
+  });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
