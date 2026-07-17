@@ -27,7 +27,8 @@ def list_roles() -> list[dict]:
         rows.append({
             "name": g.name,
             "protected": is_protected(g.name),
-            "members": g.user_set.count(),
+            # Hidden API-key service principals aren't human members of this role.
+            "members": g.user_set.filter(api_key_principal__isnull=True).count(),
             "permission_count": g.role_permissions.count(),
             "modules": _modules_for(g),
         })
@@ -42,7 +43,7 @@ def role_detail(name: str) -> dict:
         "name": g.name,
         "protected": is_protected(g.name),
         "is_admin": g.name == SYSTEM_ADMIN,
-        "members": g.user_set.count(),
+        "members": g.user_set.filter(api_key_principal__isnull=True).count(),
         "permissions": perms,
         "approval_limits": limits,
         "modules": _modules_for(g),

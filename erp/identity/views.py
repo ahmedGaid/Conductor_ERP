@@ -267,7 +267,11 @@ class UsersView(APIView):
         return [IsAuthenticated(), _can("create" if self.request.method == "POST" else "view")()]
 
     def get(self, request: Request) -> Response:
-        qs = User.objects.select_related("branch", "department").order_by("username")
+        # Hidden API-key service principals (erp.identity.api_keys) are not human accounts — keep
+        # them off the human-facing Users admin list.
+        qs = User.objects.select_related("branch", "department").filter(
+            api_key_principal__isnull=True
+        ).order_by("username")
         p = request.query_params
         if p.get("search"):
             from django.db.models import Q

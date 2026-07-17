@@ -13,7 +13,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "*"]
 # proven by a dedicated test that re-enables a tiny rate via override_settings (see gate12).
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
-    "DEFAULT_THROTTLE_RATES": {"anon": None, "user": None, "login": None},
+    "DEFAULT_THROTTLE_RATES": {"anon": None, "user": None, "login": None, "api_key": None},
 }
 
 # Make jobs run inline unless a worker is explicitly wanted.

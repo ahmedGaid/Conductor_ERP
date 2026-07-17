@@ -155,6 +155,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "erp.identity.authentication.ApiKeyAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "EXCEPTION_HANDLER": "erp.core.exceptions.drf_exception_handler",
@@ -164,12 +165,16 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "erp.identity.authentication.ApiKeyRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("DRF_THROTTLE_ANON", default="60/min"),
         "user": env("DRF_THROTTLE_USER", default="1000/min"),
         # Dedicated brute-force cap for the login endpoint (per-IP; sits under the anon rate).
         "login": env("DRF_THROTTLE_LOGIN", default="5/min"),
+        # API keys are integration credentials, not interactive sessions — a distinct scope so one
+        # runaway integration can't be tuned by (or exhaust) the human user rate.
+        "api_key": env("DRF_THROTTLE_API_KEY", default="300/min"),
     },
 }
 

@@ -315,3 +315,40 @@ class SavedView(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.user_id}:{self.list_key}:{self.name}"
+
+
+# --- API keys (Increment: TH FILE_14) -----------------------------------------------------------
+#
+# A key is never broader than the role it carries: it authenticates as a dedicated, hidden
+# "principal" user added to the bound role's group, so it rides the exact same RBAC/scoping/audit
+# path a human login uses (no duplicate permission logic to keep in sync). The principal is never a
+# human — it has an unusable password (cannot log in) and is excluded from the human Users admin
+# list via its ``api_key_principal`` reverse relation. Only the hash of the secret is stored.
+
+
+class ApiKey(models.Model):
+    """An integration credential bound to exactly one role."""
+
+    name = models.CharField(max_length=120)
+    prefix = models.CharField(max_length=16, unique=True, db_index=True)
+    hashed_key = models.CharField(max_length=128, unique=True)
+    role = models.ForeignKey(
+        "auth.Group", on_delete=models.PROTECT, related_name="api_keys"
+    )
+    principal = models.OneToOneField(
+        "identity.User", on_delete=models.CASCADE, related_name="api_key_principal"
+    )
+    created_by = models.ForeignKey(
+        "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "identity_api_key"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.name} ({self.prefix})"
