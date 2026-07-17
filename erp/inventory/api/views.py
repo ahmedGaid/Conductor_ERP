@@ -13,6 +13,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.audit import services as audit
+from erp.core.custom_fields import custom_field_columns, validate_custom_data
+from erp.core.exports import EXPORT_FORMATS, Column, ReportTable, export_response
 from erp.core.idempotency import run_once
 from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
@@ -43,11 +46,37 @@ def _envelope(data, status: int = 200) -> Response:
     return Response({"data": data}, status=status)
 
 
+def _item_export_table(qs, lang: str) -> ReportTable:
+    extra = custom_field_columns("inventory.item", lang)
+    cols = [
+        Column("sku", "الكود" if lang == "ar" else "SKU"),
+        Column("name", "الاسم" if lang == "ar" else "Name"),
+        Column("uom", "الوحدة" if lang == "ar" else "UOM"),
+        Column("is_active", "نشط" if lang == "ar" else "Active"),
+        *extra,
+    ]
+    rows = []
+    for item in qs:
+        row = {
+            "sku": item.sku, "name": item.name, "uom": item.uom,
+            "is_active": ("نعم" if lang == "ar" else "Yes") if item.is_active else ("لا" if lang == "ar" else "No"),
+        }
+        row.update({col.key: item.custom_data.get(col.key, "") for col in extra})
+        rows.append(row)
+    return ReportTable(title="الأصناف" if lang == "ar" else "Items",
+                       columns=cols, rows=rows, rtl=(lang == "ar"))
+
+
 class ItemListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanStock]
 
     def get(self, request: Request) -> Response:
-        return _envelope(ItemSerializer(Item.objects.select_related("category"), many=True).data)
+        qs = Item.objects.select_related("category")
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = _item_export_table(qs, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "items")
+        return _envelope(ItemSerializer(qs, many=True).data)
 
     def post(self, request: Request) -> Response:
         s = ItemSerializer(data=request.data)
@@ -56,11 +85,18 @@ class ItemListCreateView(APIView):
         category = None
         if v.get("category_code"):
             category = Category.objects.filter(code=v["category_code"]).first()
+        custom_data = validate_custom_data("inventory.item", v.get("custom_data"))
         item = Item.objects.create(
             sku=v["sku"], name=v["name"], category=category,
             uom=v.get("uom", "unit"), type=v.get("type", "stock"),
             is_active=v.get("is_active", True), reorder_point=v.get("reorder_point", 0),
+            custom_data=custom_data,
             created_by=request.user if request.user.is_authenticated else None,
+        )
+        audit.record(
+            module="inventory", action="create_item", entity_type="Item",
+            entity_id=item.sku, actor=request.user,
+            after={"sku": item.sku, "name": item.name, "custom_data": item.custom_data},
         )
         return _envelope(ItemSerializer(item).data, status=201)
 

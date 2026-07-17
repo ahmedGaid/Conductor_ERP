@@ -19,6 +19,8 @@ urlpatterns = [
     path("api/core/", include("erp.core.search_api")),
     # Branch admin (list/create/edit company branches) — delivery-readiness Phase 1d gap.
     path("api/core/", include("erp.core.branches_api")),
+    # Custom field definitions (fields only, never objects) — twenty-harvest FILE_11.
+    path("api/core/", include("erp.core.custom_fields_api")),
     # Workflow / instance API — Stage 4 (platform screens backend).
     path("api/workflow/", include("erp.workflow.urls")),
     # Accounting / GL API — Stage 5.

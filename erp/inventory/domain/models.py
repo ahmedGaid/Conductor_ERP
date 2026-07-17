@@ -50,6 +50,8 @@ class Item(AuditedModel):
     type = models.CharField(max_length=16, choices=ItemType.choices, default=ItemType.STOCK)
     is_active = models.BooleanField(default=True)
     reorder_point = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    # Admin-defined extra fields (erp.core.custom_fields) — validated at write time.
+    custom_data = models.JSONField(default=dict, blank=True)
 
     class Meta:
         db_table = "inventory_item"

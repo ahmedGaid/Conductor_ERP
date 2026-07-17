@@ -17,6 +17,8 @@ class Customer(AuditedModel):
     # Credit limit in minor units; 0 means unlimited.
     credit_limit_minor = models.BigIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    # Admin-defined extra fields (erp.core.custom_fields) — validated at write time.
+    custom_data = models.JSONField(default=dict, blank=True)
 
     class Meta:
         db_table = "sales_customer"

@@ -125,3 +125,6 @@ class AppliedUpgradeStep(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.version}:{self.name}"
+
+
+from .custom_fields import CustomFieldDef  # noqa: E402, F401 — Django discovers models here

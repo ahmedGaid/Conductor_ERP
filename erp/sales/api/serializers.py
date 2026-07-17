@@ -12,6 +12,7 @@ class CustomerSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     credit_limit_minor = serializers.IntegerField(min_value=0, required=False, default=0)
     is_active = serializers.BooleanField(required=False, default=True)
+    custom_data = serializers.JSONField(required=False, default=dict)
 
     def to_representation(self, obj) -> dict:
         return {
@@ -20,6 +21,7 @@ class CustomerSerializer(serializers.Serializer):
             "name": obj.name,
             "credit_limit_minor": obj.credit_limit_minor,
             "is_active": obj.is_active,
+            "custom_data": obj.custom_data,
         }
 
 
