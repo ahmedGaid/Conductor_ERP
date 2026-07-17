@@ -218,9 +218,11 @@ def _execute_chunk(actor, adapter, batch: ImportBatch, row_ids: list) -> None:
             skipped += 1
             continue
 
-        action, result_ref = _dispatch(actor, adapter, batch, row)
+        action, result_ref, warnings = _dispatch(actor, adapter, batch, row)
         row.status = action
         row.result_ref = result_ref
+        if warnings:
+            row.issues = [*row.issues, *[w.as_dict() for w in warnings]]
         if action == ImportRow.Status.IMPORTED:
             imported += 1
             if result_ref.get("action") == "updated":
@@ -230,7 +232,7 @@ def _execute_chunk(actor, adapter, batch: ImportBatch, row_ids: list) -> None:
         else:
             skipped += 1
 
-    ImportRow.objects.bulk_update(rows, ["status", "result_ref"])
+    ImportRow.objects.bulk_update(rows, ["status", "result_ref", "issues"])
 
     batch.refresh_from_db()
     batch.processed_count = batch.processed_count + len(rows)
@@ -242,39 +244,49 @@ def _execute_chunk(actor, adapter, batch: ImportBatch, row_ids: list) -> None:
     )
 
 
-def _dispatch(actor, adapter, batch: ImportBatch, row: ImportRow) -> tuple[str, dict]:
+def _write_row(adapter, actor, normalized: dict) -> tuple[Any, list[Issue]]:
+    """Mirrors ``_dispatch_group``'s ``_write()`` helper — ``adapter.write`` may return the record
+    alone (every adapter built before this) or ``(record, warnings)`` (session 16b: a row-level
+    adapter that needs to flag something non-blocking, e.g. an unmatched payment)."""
+    result = adapter.write(actor, normalized)
+    if isinstance(result, tuple) and len(result) == 2:
+        return result
+    return result, []
+
+
+def _dispatch(actor, adapter, batch: ImportBatch, row: ImportRow) -> tuple[str, dict, list[Issue]]:
     if row.status == ImportRow.Status.DUPLICATE:  # merge-decided; readiness already verified support
         target_pk = (row.decision or {}).get("target_pk")
         record = adapter.update(actor, row.normalized, target_pk=target_pk)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated")
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated"), []
 
     existing = adapter.exists(actor, row.normalized)
     strategy = batch.strategy
 
     if strategy == ImportBatch.Strategy.CREATE_ONLY:
         if existing is not None:
-            return ImportRow.Status.SKIPPED, {}
-        record = adapter.write(actor, row.normalized)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created")
+            return ImportRow.Status.SKIPPED, {}, []
+        record, warnings = _write_row(adapter, actor, row.normalized)
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created"), warnings
 
     if strategy == ImportBatch.Strategy.UPDATE_ONLY:
         if existing is None:
-            return ImportRow.Status.SKIPPED, {}
+            return ImportRow.Status.SKIPPED, {}, []
         record = adapter.update(actor, row.normalized, target_pk=getattr(existing, "pk", None))
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated")
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated"), []
 
     if strategy == ImportBatch.Strategy.UPSERT:
         if existing is not None:
             record = adapter.update(actor, row.normalized, target_pk=getattr(existing, "pk", None))
-            return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated")
-        record = adapter.write(actor, row.normalized)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created")
+            return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated"), []
+        record, warnings = _write_row(adapter, actor, row.normalized)
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created"), warnings
 
     if strategy == ImportBatch.Strategy.SKIP_EXISTING:
         if existing is not None:
-            return ImportRow.Status.SKIPPED, {}
-        record = adapter.write(actor, row.normalized)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created")
+            return ImportRow.Status.SKIPPED, {}, []
+        record, warnings = _write_row(adapter, actor, row.normalized)
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created"), warnings
 
     raise ValueError(f"unknown strategy: {strategy!r}")  # pragma: no cover — model choices are exhaustive
 
