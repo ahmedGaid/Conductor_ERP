@@ -14,6 +14,7 @@ env/
 /staticfiles/
 /mediafiles/
 /storage/
+/assistant/
 
 # Env / secrets
 .env

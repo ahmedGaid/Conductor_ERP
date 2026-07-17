@@ -1,0 +1,47 @@
+name: Nightly demo reset
+
+# Wipes + reseeds the Render demo Postgres every night so the public sales
+# demo always starts the day clean (Docs/plan/demo-deploy-plan.md - Render
+# path). Render's free tier has no free cron job, so this uses GitHub
+# Actions' free scheduled runs instead, connecting to Render's Postgres over
+# its EXTERNAL connection string.
+#
+# Required repo secret:
+#   RENDER_DEMO_DATABASE_URL - Render dashboard -> your Postgres -> External
+#                              Database URL
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC daily
+  workflow_dispatch: {}
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      CELERY_TASK_ALWAYS_EAGER: "true"
+      DATABASE_URL: ${{ secrets.RENDER_DEMO_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install production dependencies
+        run: |
+          sed '/# Dev \/ test/q' requirements.txt > requirements.prod.txt
+          pip install -r requirements.prod.txt
+
+      - name: Wipe and reseed demo data
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Missing RENDER_DEMO_DATABASE_URL secret." >&2
+            exit 1
+          fi
+          python manage.py migrate --noinput
+          python manage.py flush --noinput
+          python manage.py seed_identity
+          python manage.py seed_accounting
+          python scripts/seed_demo.py
