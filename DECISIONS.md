@@ -2024,3 +2024,25 @@ credential clutter on a customer tenant. Fix = a customer-safe provisioning path
 `--no-demo-users` flag / separate `provision_tenant` command) so a handover tenant ships with one
 admin whose password the customer sets. Deferred because changing `seed_identity` touches
 gate01 + `erp/identity/tests/test_access.py`, which must be updated in the same slice.
+
+## Smart Import — background runner: DB-backed job queue, not Celery (2026-07-17)
+FILE_10's own text framed this as "no worker infra exists → Option 2 (Celery/RQ) is a NEW
+dependency". That premise was already stale: Celery is installed, configured
+(`config/celery.py`, `CELERY_BROKER_URL`/`CELERY_BEAT_SCHEDULE` in `config/settings/base.py`) and
+in active use (monitoring `check_workers`, notifications). Asked the founder with the corrected
+premise — Celery-as-a-task would NOT be a new dependency here. Founder chose **Option 1: DB-backed
+job queue + management command** anyway. `ImportBatch` IS the job row (`status` field already has
+`ready`/`running`/`paused`/`done`); `python manage.py run_imports [--once]` claims the oldest
+`ready` batch (or a `running` one with a stale — >5 min — heartbeat, for crash recovery) via
+`select_for_update(skip_locked=True)`, drives it through `engine.execute_batch`/`resume_batch`,
+and checks a `batch.stats["control"]` flag (`{"pause"|"cancel": true}`, set by
+`runner.request_pause/resume/cancel`) between every chunk. Runs under the same process supervisor
+as the dev/prod server — one more `Conductor-*` service in `Docs/RUNBOOK.md`, not a new one.
+Zero new dependencies, zero new infra. Phase C's scheduler (roadmap) can reuse the same
+claim/heartbeat pattern once it needs one — revisit Celery then only if concurrency genuinely
+becomes the bottleneck, not before.
+
+`engine.py` (FILE_09, same session cluster) gained one small, backward-compatible seam for this:
+`execute_batch`/`resume_batch` now accept an optional `on_chunk(batch) -> "pause"|"cancel"|None`
+callback, invoked after every committed chunk — the runner's only hook into the chunk loop.
+Existing callers (no `on_chunk` argument) are unaffected; FILE_09's own tests still pass unchanged.

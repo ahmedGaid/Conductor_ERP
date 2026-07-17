@@ -100,21 +100,28 @@ def _readiness_reasons(adapter, batch: ImportBatch) -> list[str]:
 
 
 # --- execute ---------------------------------------------------------------------------------
-def execute_batch(actor, batch: ImportBatch) -> dict:
-    """First-run entry point. Readiness gate, then run every pending row in chunks."""
-    return _run(actor, batch)
+def execute_batch(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
+    """First-run entry point. Readiness gate, then run every pending row in chunks.
+
+    ``on_chunk``, when given, is called with ``batch`` (freshly refreshed from the DB) after
+    every successfully committed chunk — the background runner's (FILE_10) hook for progress/
+    heartbeat and pause/cancel: return ``"pause"`` to stop after this chunk (``batch.status``
+    becomes ``paused``, resumable later) or ``"cancel"`` to stop and skip every remaining pending
+    row (``batch.status`` becomes ``done``). Anything else (``None``) continues to the next chunk.
+    """
+    return _run(actor, batch, on_chunk=on_chunk)
 
 
-def resume_batch(actor, batch: ImportBatch) -> dict:
+def resume_batch(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
     """Continue a ``paused`` (or interrupted ``running``) batch. Same readiness gate and chunk
     loop as ``execute_batch`` — pending-row selection is what makes re-running safe: already-
     imported/skipped rows are durable and are never touched again."""
     if batch.status not in (ImportBatch.Status.PAUSED, ImportBatch.Status.RUNNING):
         raise ReadinessError([f"batch is '{batch.status}', not paused/running — nothing to resume"])
-    return _run(actor, batch)
+    return _run(actor, batch, on_chunk=on_chunk)
 
 
-def _run(actor, batch: ImportBatch) -> dict:
+def _run(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
     adapter = get_adapter(batch.entity)
     reasons = _readiness_reasons(adapter, batch)
     if reasons:
@@ -148,11 +155,31 @@ def _run(actor, batch: ImportBatch) -> dict:
                 batch.status = ImportBatch.Status.PAUSED
                 batch.save(update_fields=["status"])
                 return build_report(batch)
+            continue
+
+        if on_chunk is not None:
+            batch.refresh_from_db()
+            signal = on_chunk(batch)
+            if signal == "cancel":
+                _cancel_remaining(batch)
+                batch.status = ImportBatch.Status.DONE
+                batch.save(update_fields=["status"])
+                return build_report(batch)
+            if signal == "pause":
+                batch.status = ImportBatch.Status.PAUSED
+                batch.save(update_fields=["status"])
+                return build_report(batch)
 
     batch.refresh_from_db()
     batch.status = ImportBatch.Status.DONE
     batch.save(update_fields=["status"])
     return build_report(batch)
+
+
+def _cancel_remaining(batch: ImportBatch) -> None:
+    batch.rows.filter(
+        status__in=(ImportRow.Status.VALID, ImportRow.Status.DUPLICATE)
+    ).update(status=ImportRow.Status.SKIPPED, result_ref={})
 
 
 def _execute_chunk(actor, adapter, batch: ImportBatch, row_ids: list) -> None:
