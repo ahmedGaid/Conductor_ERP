@@ -322,8 +322,10 @@ def test_blocked_finance_entities_are_not_registered():
     built ``erp.sales.services.pending_payments.create_pending_payment`` — the standalone,
     unallocated-payment write-path this guard's original reasoning said didn't exist — and
     registered a ``receipts`` adapter (``erp/imports/adapters/sales.py``) against it. ``payments``
-    (the purchasing mirror) has no such write-path yet and stays blocked."""
+    (the purchasing mirror) is also NO LONGER on this list: session 16b added
+    ``erp.purchasing.services.pending_payments.create_pending_payment`` and registered a
+    ``payments`` adapter (``erp/imports/adapters/purchasing.py``) against it."""
     registered = set(registry.entities())
-    assert {"journal_entries", "account_opening", "receipts"} <= registered
-    for blocked in ("payments", "inventory_opening", "inventory_transactions"):
+    assert {"journal_entries", "account_opening", "receipts", "payments"} <= registered
+    for blocked in ("inventory_opening", "inventory_transactions"):
         assert blocked not in registered

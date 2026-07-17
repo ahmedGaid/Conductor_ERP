@@ -28,16 +28,16 @@ Two grouped (document) adapters:
 DELIBERATELY NOT BUILT here (FILE_16 Before-You-Start STOP rule — no GL-correct, drafts-only module
 write-path exists, so building them would misstate a customer's books; recorded in ``erp-status``):
 
-* ``payments`` — the purchasing mirror of ``receipts`` below. ``purchasing.pay_order`` POSTs to the
-  GL immediately AND requires an already-billed order; there is still no standalone/unallocated
-  payment model on the purchasing side to land an import in, so this one stays blocked (see the
-  guard test, ``test_finance_adapters.test_blocked_finance_entities_are_not_registered``).
+* ``payments`` — the purchasing mirror of ``receipts`` below. This one is NO LONGER on this list:
+  session 16b added ``erp.purchasing.services.pending_payments.create_pending_payment`` — a
+  standalone, unallocated ``PendingPayment`` a payment can land in without touching the GL — and
+  built the ``payments`` adapter against it in ``erp/imports/adapters/purchasing.py`` (not here;
+  this file is ``erp.accounting`` adapters only).
 
-  ``receipts`` (the sales-side twin of this same reasoning) is NO LONGER on this list: session 16b
-  added ``erp.sales.services.pending_payments.create_pending_payment`` — a standalone, unallocated
-  ``PendingPayment`` a receipt can land in without touching the GL — and built the ``receipts``
-  adapter against it in ``erp/imports/adapters/sales.py`` (not here; this file is
-  ``erp.accounting`` adapters only).
+  ``receipts`` (the sales-side twin of this same reasoning) is also NO LONGER on this list: session
+  16b added ``erp.sales.services.pending_payments.create_pending_payment`` — a standalone,
+  unallocated ``PendingPayment`` a receipt can land in without touching the GL — and built the
+  ``receipts`` adapter against it in ``erp/imports/adapters/sales.py`` (not here).
 
 * ``inventory_opening`` / ``inventory_transactions`` — ``inventory.receive`` posts Dr Inventory /
   Cr GRNI (a supplier-bill liability, wrong for an opening) and ``adjust_stock`` posts the offset to

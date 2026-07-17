@@ -25,8 +25,9 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 from erp.inventory import contracts as inventory
 from erp.purchasing import contracts
-from erp.purchasing.domain.models import POStatus, PurchaseOrder, Supplier
+from erp.purchasing.domain.models import PendingPayment, PendingPaymentStatus, POStatus, PurchaseOrder, Supplier
 from erp.purchasing.services.orders import POLineInput
+from erp.purchasing.services.pending_payments import create_pending_payment
 
 from ..registry import FieldSpec, Issue, register
 from ._rbac import require_role
@@ -424,3 +425,111 @@ class PurchaseInvoiceAdapter:
 
 
 register(PurchaseInvoiceAdapter())
+
+
+# --- payments (session 16b — PendingPayment, drafts-only) ------------------------------------------
+def _find_order(actor, ref: str):
+    """Mirrors ``adapters.sales._find_order`` — see that function's docstring."""
+    ref = (ref or "").strip()
+    if not ref:
+        return None
+    qs = scope_queryset(actor, PurchaseOrder.objects.all(), "purchasing.order.view")
+    return qs.filter(number=ref).first() or qs.filter(notes__in=[f"import:{ref}", f"import-po:{ref}"]).first()
+
+
+_METHOD_TOKENS = {
+    "cash": "cash", "نقدي": "cash", "نقدا": "cash",
+    "transfer": "transfer", "bank transfer": "transfer", "تحويل": "transfer", "تحويل بنكي": "transfer",
+    "cheque": "cheque", "check": "cheque", "شيك": "cheque",
+}
+
+
+def _normalize_method(value) -> str:
+    token = str(value or "").strip().casefold()
+    return _METHOD_TOKENS.get(token, "")
+
+
+class PaymentAdapter:
+    """Supplier payments — mirrors ``adapters.sales.ReceiptAdapter`` exactly; see that class's
+    docstring for the drafts-only reasoning and the no-natural-key decision."""
+
+    entity = "payments"
+    label_key = "imports.entity.payments"
+    fields = [
+        FieldSpec(
+            name="supplier_ref", required=True, kind="ref", ref="suppliers",
+            synonyms_en=["supplier", "supplier code", "supplier name", "vendor"],
+            synonyms_ar=["المورد", "كود المورد", "اسم المورد"],
+        ),
+        FieldSpec(
+            name="amount_minor", required=True, kind="money",
+            synonyms_en=["amount", "payment amount", "paid"],
+            synonyms_ar=["المبلغ", "مبلغ الدفعة", "المدفوع"],
+        ),
+        FieldSpec(
+            name="date", required=True, kind="date",
+            synonyms_en=["date", "payment date"],
+            synonyms_ar=["التاريخ", "تاريخ الدفعة"],
+        ),
+        FieldSpec(
+            name="method", kind="text",
+            synonyms_en=["method", "payment method"],
+            synonyms_ar=["طريقة الدفع", "الطريقة"],
+        ),
+        FieldSpec(
+            name="order_ref", kind="text",
+            synonyms_en=["bill number", "invoice number", "order number"],
+            synonyms_ar=["رقم الفاتورة", "رقم الطلب"],
+        ),
+    ]
+    natural_key = []
+    group_by = None
+
+    @property
+    def defaults(self) -> dict:
+        return dict(getattr(settings, "IMPORTS_DEFAULTS", {}).get(self.entity, {}))
+
+    def lookup(self, actor, field, value):
+        if field == "supplier_ref":
+            return _find_supplier(value)
+        return None
+
+    def validate(self, actor, row: dict) -> list[Issue]:
+        return []
+
+    def write(self, actor, row: dict):
+        require_role(actor, BRANCH_MANAGER)
+        supplier = _find_supplier(row.get("supplier_ref"))
+        order = _find_order(actor, row.get("order_ref"))
+        pending = create_pending_payment(
+            order=order,
+            party_code=supplier.code if supplier else (row.get("supplier_ref") or "").strip(),
+            amount_minor=int(row["amount_minor"]),
+            date=_as_date(row.get("date")) or _dt.date.today(),
+            method=_normalize_method(row.get("method")),
+            source="import",
+            actor=actor,
+        )
+        if order is None:
+            return pending, [Issue(
+                field="order_ref", code="payment_unmatched", message="imports.issues.paymentUnmatched",
+                meta={"supplier_ref": row.get("supplier_ref"), "order_ref": row.get("order_ref")},
+            )]
+        return pending
+
+    def exists(self, actor, row: dict):
+        return None
+
+    def existing_labels(self, actor):
+        return []
+
+    def delete(self, actor, pk) -> None:
+        pending = PendingPayment.objects.filter(pk=pk).first()
+        if pending is None:
+            return
+        if pending.status != PendingPaymentStatus.PENDING:
+            raise ValueError(f"cannot delete pending payment {pending.pk}: status is {pending.status!r}, not pending")
+        pending.delete()
+
+
+register(PaymentAdapter())
