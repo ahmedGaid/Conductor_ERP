@@ -1841,6 +1841,7 @@
   },
   "help": {
     "button": "Help",
+    "buttonWithIssues": "Help — {{count}} to fix",
     "close": "Close help",
     "purpose": "What this page is for",
     "howItWorks": "How it works",

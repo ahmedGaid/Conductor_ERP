@@ -42,6 +42,9 @@ export function HelpCenter() {
   // A page opts into the Live tab by publishing signals AND its guide declaring alerts/checklist.
   const activeAlerts = (guide?.alerts ?? []).filter((a) => a.when(signals));
   const hasLive = Boolean(guide && (guide.alerts?.length || guide.checklist));
+  // The fab's red dot is specifically "you did something wrong, right now" — warn-tone alerts only.
+  // info/success alerts (a future "here's a tip" or the checklist's done banner) don't nag the fab.
+  const errorCount = activeAlerts.filter((a) => a.tone === "warn").length;
 
   // Which tab is showing. Default to Live when something needs attention *right now* (an alert is
   // active), otherwise the static Guide — the reference is the calm default, the live view earns
@@ -72,16 +75,26 @@ export function HelpCenter() {
   return (
     <>
       {!assistantOpen && (
-        <Tooltip label={t("help.button")} placement="top">
+        <Tooltip
+          label={errorCount > 0 ? t("help.buttonWithIssues", { count: errorCount }) : t("help.button")}
+          placement="top"
+        >
           <button
             type="button"
             className="help-fab"
             aria-haspopup="dialog"
             aria-expanded={open}
-            aria-label={t("help.button")}
+            aria-label={errorCount > 0 ? t("help.buttonWithIssues", { count: errorCount }) : t("help.button")}
             onClick={toggleHelp}
           >
             <span aria-hidden="true">?</span>
+            {/* Closed-drawer signal: something on this page needs fixing right now — mirrors the
+                notification bell's red-count badge so it reads as one family of "you have news". */}
+            {!open && errorCount > 0 && (
+              <span className="help-fab__badge" aria-hidden="true">
+                {errorCount > 9 ? "9+" : errorCount}
+              </span>
+            )}
           </button>
         </Tooltip>
       )}

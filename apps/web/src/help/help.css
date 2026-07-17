@@ -23,6 +23,25 @@
   background-color: var(--color-brand);
 }
 
+/* Closed-drawer "something's wrong" signal — same red-count badge shape as the notification bell,
+   so both read as one visual language for "you have something to look at". */
+.help-fab__badge {
+  position: absolute;
+  inset-block-start: -0.25rem;
+  inset-inline-end: -0.25rem;
+  min-inline-size: 1.125rem;
+  block-size: 1.125rem;
+  padding-inline: 0.25rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-danger);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.125rem;
+  text-align: center;
+  border: 2px solid var(--color-surface);
+}
+
 .help-scrim {
   position: fixed;
   inset: 0;

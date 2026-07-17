@@ -1841,6 +1841,7 @@
   },
   "help": {
     "button": "مساعدة",
+    "buttonWithIssues": "مساعدة — {{count}} يحتاج تصحيحاً",
     "close": "إغلاق المساعدة",
     "purpose": "الغرض من هذه الصفحة",
     "howItWorks": "كيف تعمل",
