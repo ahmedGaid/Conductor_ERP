@@ -81,6 +81,7 @@
   --color-danger: var(--palette-danger-600);
   --color-danger-strong: var(--palette-danger-700);
   --color-danger-subtle: var(--palette-danger-100);
+  --color-on-danger: #fff;
   --color-info: var(--palette-info-600);
   --color-info-subtle: var(--palette-info-100);
 
@@ -226,6 +227,7 @@
   --color-danger: #ef4444;
   --color-danger-strong: #f87171;
   --color-danger-subtle: rgba(220, 38, 38, 0.20);
+  --color-on-danger: #fff;
   --color-info: #22d3ee;
   --color-info-subtle: rgba(8, 145, 178, 0.20);
 
