@@ -99,6 +99,7 @@ A2/A3 merge at M1 if ready, else M2 — they never block the gate.
 | ID | Task | Agent | Files/modules | Deps | Status |
 |---|---|---|---|---|---|
 | B9 | Custom fields backend — `TH/FILE_11` | B | `erp/core/custom_fields.py` (+api), Customer/Item `custom_data`, sales+inventory API hooks | M1 | done(eab66b5) |
+| B10 | Activity timeline — Task A only (read API) — `TH/FILE_13` | B | `erp/audit/api`, `erp/audit/history.py` — Task B (tab UI) + Task C (verifiability link) deferred to A, apps/web+i18n untouched | B9 | done(1b0a9b2) — FILE_13 stays open, not `_done` |
 
 - **A:** TH FILE_09 approval node → FILE_10 AI agent node (erp/workflow + canvas UI) →
   FILE_12 custom-fields UI (needs B's FILE_11, done — see B9) → SI FILE_12–14 wizard/preview/report
