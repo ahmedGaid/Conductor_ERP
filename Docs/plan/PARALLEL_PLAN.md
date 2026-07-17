@@ -96,12 +96,15 @@ A2/A3 merge at M1 if ready, else M2 — they never block the gate.
 
 ### Wave 3+ — continuation by ownership (summarized; scope = each plan file, as written)
 
+| ID | Task | Agent | Files/modules | Deps | Status |
+|---|---|---|---|---|---|
+| B9 | Custom fields backend — `TH/FILE_11` | B | `erp/core/custom_fields.py` (+api), Customer/Item `custom_data`, sales+inventory API hooks | M1 | done(eab66b5) |
+
 - **A:** TH FILE_09 approval node → FILE_10 AI agent node (erp/workflow + canvas UI) →
-  FILE_12 custom-fields UI (needs B's FILE_11) → SI FILE_12–14 wizard/preview/report UI →
-  TH FILE_16–18 UX batch.
-- **B:** TH FILE_11 custom-fields backend (JSONB on Customer+Item) → TH FILE_13 activity
-  timeline backend → SI FILE_15/16 document+finance adapters → TH FILE_14 API keys, FILE_19
-  admin panel backend.
+  FILE_12 custom-fields UI (needs B's FILE_11, done — see B9) → SI FILE_12–14 wizard/preview/report
+  UI → TH FILE_16–18 UX batch.
+- **B:** TH FILE_13 activity timeline backend → SI FILE_15/16 document+finance adapters →
+  TH FILE_14 API keys, FILE_19 admin panel backend.
 - **M3:** TH Tier 2 merge after FILE_13; SI Phase-A demo merge after FILE_14. TH FILE_21 +
   SI FILE_17 acceptances run single-agent (Either) on merged main.
 
