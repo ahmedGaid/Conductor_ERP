@@ -1850,7 +1850,13 @@
     "tips": "Tips",
     "mistakes": "Common mistakes",
     "related": "Related pages",
-    "noGuide": "A guide for this page is coming soon."
+    "noGuide": "A guide for this page is coming soon.",
+    "tabsLabel": "Help view",
+    "tabGuide": "Guide",
+    "tabLive": "Live",
+    "live": {
+      "calm": "Nothing needs your attention on this page right now."
+    }
   },
   "export": {
     "csv": "CSV",

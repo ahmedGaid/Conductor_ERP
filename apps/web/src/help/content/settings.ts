@@ -214,5 +214,58 @@ export const settingsWebhooksGuide: HelpGuide = {
     { en: "Assuming delivery is instant and exactly-once — retries mean your endpoint may see the same event twice. Key your processing off the payload's id so a repeat is harmless.", ar: "افتراض أن الإرسال فوري ويحدث مرة واحدة فقط — إعادة المحاولة تعني أن نقطتك قد ترى نفس الحدث مرتين. اجعل معالجتك مبنية على id السجل حتى يكون التكرار غير ضار." },
     { en: "Testing against localhost — it will always fail Conductor's public-URL check. Use webhook.site or a tunnel first, then swap in your real endpoint.", ar: "الاختبار على localhost — سيفشل دائماً في فحص الرابط العام في Conductor. استخدم webhook.site أو نفقاً أولاً، ثم استبدله برابطك الحقيقي." },
   ],
+  // --- Live tab: reacts to what the Webhooks page publishes via useSetHelpSignals ---
+  alerts: [
+    {
+      when: (s) => s.subCount === 0,
+      tone: "info",
+      title: { en: "No webhooks yet", ar: "لا يوجد ويب هوك بعد" },
+      body: {
+        en: "Nothing is connected. Add a URL above — the checklist below walks you through sending yourself a real test delivery in a few minutes.",
+        ar: "لا شيء متصل. أضف رابطاً أعلاه — القائمة أدناه ترشدك لإرسال إرسالية تجريبية حقيقية لنفسك خلال دقائق.",
+      },
+    },
+    {
+      when: (s) => s.secretJustShown === true,
+      tone: "warn",
+      title: { en: "Copy your secret now", ar: "انسخ مفتاحك الآن" },
+      body: {
+        en: "The signing secret on screen is shown only this once. Copy it before you close this — Conductor can't show it again, only regenerate a new one.",
+        ar: "مفتاح التوقيع الظاهر على الشاشة يُعرض هذه المرة فقط. انسخه قبل الإغلاق — لا يستطيع Conductor عرضه مجدداً، بل توليد مفتاح جديد فقط.",
+      },
+    },
+    {
+      when: (s) => s.hasFailedDelivery === true,
+      tone: "warn",
+      title: { en: "A delivery failed", ar: "فشلت إرسالية" },
+      body: {
+        en: "One of your endpoints didn't answer with a success. It retries on its own (1m, 5m, 30m, 2h). Open Deliveries on that row to see the error and Retry now — usually the URL is down, or your signature check is rejecting it.",
+        ar: "أحد نقاطك لم يستجب بنجاح. تُعاد المحاولة تلقائياً (دقيقة، 5، 30، ساعتان). افتح «الإرساليات» في ذلك الصف لرؤية الخطأ و«إعادة المحاولة الآن» — غالباً الرابط متوقف أو فحص توقيعك يرفضه.",
+      },
+    },
+  ],
+  checklist: {
+    name: { en: "Send yourself a test webhook", ar: "أرسل لنفسك ويب هوك تجريبي" },
+    steps: [
+      {
+        label: {
+          en: "Add a webhook URL (try a webhook.site address)",
+          ar: "أضف رابط ويب هوك (جرّب عنواناً من webhook.site)",
+        },
+        done: (s) => (s.subCount as number) > 0,
+      },
+      {
+        label: { en: "Copy the signing secret shown once", ar: "انسخ مفتاح التوقيع الذي يظهر مرة واحدة" },
+        done: (s) => s.secretEverShown === true,
+      },
+      {
+        label: {
+          en: "Trigger the event, then check Deliveries",
+          ar: "شغّل الحدث ثم افتح «الإرساليات»",
+        },
+        done: (s) => s.hasDelivery === true,
+      },
+    ],
+  },
   related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
 };

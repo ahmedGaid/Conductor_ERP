@@ -34,8 +34,34 @@ export interface HelpLink {
   label: L;
 }
 
+/** Live facts a page publishes about its own state, for the drawer's Live tab to react to.
+ *  Deliberately a flat bag of primitives: the page knows nothing about help, it just states what
+ *  is true right now ({ subCount: 0, hasFailed: true }), and the guide's predicates read it. */
+export type HelpSignals = Record<string, string | number | boolean>;
+
+/** A message shown at the top of the Live tab only while `when(signals)` holds — the "right now"
+ *  thing, ahead of the static prose. Tone maps to the existing status vocabulary. */
+export interface HelpAlert {
+  when: (s: HelpSignals) => boolean;
+  tone: "info" | "warn" | "success";
+  title: L;
+  body: L;
+}
+
+/** A task whose steps tick themselves off as the user actually does them — `done(signals)` decides,
+ *  so progress is observed, never self-reported. */
+export interface HelpChecklist {
+  name: L;
+  steps: { label: L; done: (s: HelpSignals) => boolean }[];
+}
+
 /** The full guide for one page. Only `title`, `purpose`, and `howItWorks` are required so a guide
- *  can start small and grow; the gate only checks that every route HAS a guide, not its depth. */
+ *  can start small and grow; the gate only checks that every route HAS a guide, not its depth.
+ *
+ *  Everything above `alerts` is the Guide tab: static reference prose, the same on every visit.
+ *  `alerts` + `checklist` are the Live tab, which reads what the page published via
+ *  `useSetHelpSignals`. A guide with neither is Guide-only and the drawer hides the tab switch —
+ *  so existing guides render exactly as before. */
 export interface HelpGuide {
   title: L;
   purpose: L;
@@ -46,4 +72,6 @@ export interface HelpGuide {
   tips?: L[];
   mistakes?: L[];
   related?: HelpLink[];
+  alerts?: HelpAlert[];
+  checklist?: HelpChecklist;
 }

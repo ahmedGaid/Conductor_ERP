@@ -1,13 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAssistant } from "../assistant/AssistantProvider";
 import { Tooltip } from "../components/Tooltip";
+import { SegmentedControl } from "../components/SegmentedControl";
+import { NavIcon } from "../app/icons";
 import { resolveGuide } from "./registry";
 import { useHelp } from "./HelpContext";
-import type { HelpGuide, L } from "./types";
+import { useHelpSignals } from "./HelpSignalsContext";
+import type { HelpGuide, HelpSignals, L } from "./types";
 import "./help.css";
+
+type HelpTab = "guide" | "live";
+const ALERT_ICON: Record<"info" | "warn" | "success", string> = {
+  info: "info",
+  warn: "flag",
+  success: "checkCircle",
+};
 
 /** Floating "?" button + the slide-in guide drawer. Mounted once in the app shell, so every page
  *  gets context help automatically — the guide shown is chosen from the current route. The open
@@ -20,6 +30,7 @@ export function HelpCenter() {
   const navigate = useNavigate();
   const { open, openHelp, closeHelp, toggleHelp } = useHelp();
   const { open: assistantOpen } = useAssistant();
+  const signals = useHelpSignals();
   const setOpen = (v: boolean) => (v ? openHelp() : closeHelp());
 
   // Pick the right language for guide content from the active locale.
@@ -28,8 +39,22 @@ export function HelpCenter() {
 
   const guide: HelpGuide | undefined = resolveGuide(location.pathname);
 
+  // A page opts into the Live tab by publishing signals AND its guide declaring alerts/checklist.
+  const activeAlerts = (guide?.alerts ?? []).filter((a) => a.when(signals));
+  const hasLive = Boolean(guide && (guide.alerts?.length || guide.checklist));
+
+  // Which tab is showing. Default to Live when something needs attention *right now* (an alert is
+  // active), otherwise the static Guide — the reference is the calm default, the live view earns
+  // the front seat only when it has news. Recomputed per open via the effect below.
+  const [tab, setTab] = useState<HelpTab>("guide");
+
   // Close the drawer on navigation and on Escape.
   useEffect(() => setOpen(false), [location.pathname]);
+  // On each open, pick the tab that serves the moment: Live if it has an active alert, else Guide.
+  useEffect(() => {
+    if (open) setTab(hasLive && activeAlerts.length > 0 ? "live" : "guide");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -82,10 +107,52 @@ export function HelpCenter() {
               </button>
             </header>
 
+            {hasLive && (
+              <div className="help-drawer__tabs">
+                <SegmentedControl<HelpTab>
+                  value={tab}
+                  onChange={setTab}
+                  ariaLabel={t("help.tabsLabel")}
+                  options={[
+                    {
+                      value: "guide",
+                      label: (
+                        <span className="help-tab-label">
+                          <NavIcon name="knowledge" />
+                          {t("help.tabGuide")}
+                        </span>
+                      ),
+                    },
+                    {
+                      value: "live",
+                      label: (
+                        <span className="help-tab-label">
+                          <NavIcon name="sparkle" />
+                          {t("help.tabLive")}
+                          {activeAlerts.length > 0 && <span className="help-tab-dot" aria-hidden="true" />}
+                        </span>
+                      ),
+                    },
+                  ]}
+                />
+              </div>
+            )}
+
             <div className="help-drawer__body">
               {!guide && <p className="help-empty">{t("help.noGuide")}</p>}
 
-              {guide && (
+              {guide && hasLive && tab === "live" && (
+                <LiveTab
+                  guide={guide}
+                  signals={signals}
+                  activeAlerts={activeAlerts}
+                  lang={lang}
+                  tr={tr}
+                  t={t}
+                />
+              )}
+
+              {guide && (!hasLive || tab === "guide") && (
                 <>
                   <section className="help-block">
                     <h3 className="help-block__title">{t("help.purpose")}</h3>
@@ -187,6 +254,78 @@ export function HelpCenter() {
             </div>
           </aside>
         </>
+      )}
+    </>
+  );
+}
+
+/** The Live tab: page-state alerts pinned on top, then a checklist whose steps tick themselves off
+ *  as the page's published signals report each one done. Both read `signals`, never self-report. */
+function LiveTab({
+  guide,
+  signals,
+  activeAlerts,
+  lang,
+  tr,
+  t,
+}: {
+  guide: HelpGuide;
+  signals: HelpSignals;
+  activeAlerts: NonNullable<HelpGuide["alerts"]>;
+  lang: keyof L;
+  tr: (s: L | undefined) => string;
+  t: (key: string) => string;
+}) {
+  const checklist = guide.checklist;
+  const doneCount = checklist ? checklist.steps.filter((s) => s.done(signals)).length : 0;
+
+  return (
+    <>
+      {activeAlerts.length === 0 && !checklist && (
+        <p className="help-empty">{t("help.live.calm")}</p>
+      )}
+
+      {activeAlerts.map((alert, idx) => (
+        <div className={`help-alert help-alert--${alert.tone}`} key={idx} role="status">
+          <span className="help-alert__icon" aria-hidden="true">
+            <NavIcon name={ALERT_ICON[alert.tone]} />
+          </span>
+          <div className="help-alert__text">
+            <p className="help-alert__title">{tr(alert.title)}</p>
+            <p className="help-alert__body">{tr(alert.body)}</p>
+          </div>
+        </div>
+      ))}
+
+      {checklist && (
+        <section className="help-block">
+          <h3 className="help-block__title">
+            {tr(checklist.name)}
+            <span className="help-checklist__count">
+              {doneCount}/{checklist.steps.length}
+            </span>
+          </h3>
+          <ol className="help-checklist">
+            {checklist.steps.map((step, idx) => {
+              const done = step.done(signals);
+              // The first not-yet-done step is the one to do next — highlight it, dim the rest.
+              const isNext = !done && checklist.steps.slice(0, idx).every((s) => s.done(signals));
+              const cls = done
+                ? "help-checkstep help-checkstep--done"
+                : isNext
+                  ? "help-checkstep help-checkstep--next"
+                  : "help-checkstep";
+              return (
+                <li className={cls} key={idx}>
+                  <span className="help-checkstep__icon" aria-hidden="true">
+                    <NavIcon name={done ? "checkCircle" : "clock"} />
+                  </span>
+                  <span className="help-checkstep__label">{step.label[lang]}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
       )}
     </>
   );

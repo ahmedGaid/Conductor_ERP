@@ -77,6 +77,27 @@
   background-color: var(--color-surface-alt);
 }
 
+.help-drawer__tabs {
+  padding-inline: var(--space-5);
+  padding-block: var(--space-3);
+  border-block-end: 1px solid var(--color-border);
+}
+.help-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+.help-tab-label svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+.help-tab-dot {
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-warning, var(--color-brand-strong));
+}
+
 .help-drawer__body {
   flex: 1;
   overflow-y: auto;
@@ -85,6 +106,93 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+}
+
+/* Live-tab alert: the "right now" banner pinned above everything. Tone maps to status colours,
+   accented on the inline-start edge only (so no rounded single-sided border — full radius off). */
+.help-alert {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+}
+.help-alert__icon svg {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+.help-alert__title {
+  margin: 0 0 var(--space-0-5);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+.help-alert__body {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+.help-alert--info {
+  border-color: var(--color-accent);
+}
+.help-alert--info .help-alert__icon {
+  color: var(--color-accent);
+}
+.help-alert--warn {
+  border-color: var(--color-warning, var(--color-brand-strong));
+}
+.help-alert--warn .help-alert__icon {
+  color: var(--color-warning, var(--color-brand-strong));
+}
+.help-alert--success {
+  border-color: var(--color-positive, var(--color-accent));
+}
+.help-alert--success .help-alert__icon {
+  color: var(--color-positive, var(--color-accent));
+}
+
+/* Live-tab checklist: steps that tick themselves as the page reports each one done. */
+.help-checklist__count {
+  margin-inline-start: var(--space-2);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+}
+.help-checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2-5);
+}
+.help-checkstep {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+.help-checkstep__icon svg {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+.help-checkstep--done {
+  color: var(--color-text-muted);
+}
+.help-checkstep--done .help-checkstep__icon {
+  color: var(--color-positive, var(--color-accent));
+}
+.help-checkstep--done .help-checkstep__label {
+  text-decoration: line-through;
+}
+.help-checkstep .help-checkstep__icon {
+  color: var(--color-text-muted);
+}
+.help-checkstep--next {
+  font-weight: var(--font-weight-medium);
+}
+.help-checkstep--next .help-checkstep__icon {
+  color: var(--color-accent);
 }
 
 .help-empty {
