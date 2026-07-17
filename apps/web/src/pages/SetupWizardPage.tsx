@@ -15,6 +15,7 @@ import {
 import { LanguageSwitcher } from "../app/LanguageSwitcher";
 import { ThemeToggle } from "../app/ThemeToggle";
 import { SegmentedControl } from "../components/SegmentedControl";
+import { ComboBox } from "../components/ComboBox";
 import { useAsync } from "../hooks/useAsync";
 import { SYSTEM_ADMIN } from "./settings/roles";
 import "./SetupWizardPage.css";
@@ -321,14 +322,12 @@ export function SetupWizardPage({
                 </label>
                 <label className="setup__field">
                   <span>{t("admin.users.role")}</span>
-                  <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
-                    <option value="">{t("admin.invite.noRole")}</option>
-                    {status.available_roles.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
+                  <ComboBox
+                    value={inviteRole}
+                    onChange={setInviteRole}
+                    placeholder={t("admin.invite.noRole")}
+                    options={[{ value: "", label: t("admin.invite.noRole") }, ...status.available_roles.map((r) => ({ value: r, label: r }))]}
+                  />
                 </label>
                 <div className="setup__invite-foot">
                   {pendingInvite && (

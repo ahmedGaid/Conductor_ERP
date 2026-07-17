@@ -240,16 +240,16 @@ export function BankStatementDetailPage() {
                             )}
                           </span>
                         ) : stmt.status === "open" ? (
-                          <select
+                          <ComboBox
                             className="latin"
                             value=""
-                            onChange={(e) => e.target.value && matchLine(l.id, Number(e.target.value))}
-                          >
-                            <option value="">{lineCandidates.length ? t("accounting.bankRec.pickLedgerLine") : t("accounting.bankRec.noCandidate")}</option>
-                            {lineCandidates.map((c) => (
-                              <option key={c.id} value={c.id}>{c.entry_number} · {c.date} · {formatMinor(c.amount_minor)}</option>
-                            ))}
-                          </select>
+                            onChange={(v) => v && matchLine(l.id, Number(v))}
+                            placeholder={lineCandidates.length ? t("accounting.bankRec.pickLedgerLine") : t("accounting.bankRec.noCandidate")}
+                            options={lineCandidates.map((c) => ({
+                              value: String(c.id),
+                              label: `${c.entry_number} · ${c.date} · ${formatMinor(c.amount_minor)}`,
+                            }))}
+                          />
                         ) : (
                           <span className="muted">—</span>
                         )}

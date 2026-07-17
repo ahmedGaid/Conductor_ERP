@@ -9,6 +9,7 @@ import { Bdi } from "../../components/Bdi";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { ComboBox } from "../../components/ComboBox";
 import "./accounting.css";
 
 export function TrialBalancePage() {
@@ -26,14 +27,13 @@ export function TrialBalancePage() {
       <div className="acct-toolbar">
         <label className="acct-field">
           <span>{t("accounting.report.period")}</span>
-          <select className="latin" value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="">{t("accounting.report.allPeriods")}</option>
-            {(periods ?? []).map((p) => (
-              <option key={p.code} value={p.code}>
-                {p.code}
-              </option>
-            ))}
-          </select>
+          <ComboBox
+            className="latin"
+            value={period}
+            onChange={setPeriod}
+            placeholder={t("accounting.report.allPeriods")}
+            options={[{ value: "", label: t("accounting.report.allPeriods") }, ...(periods ?? []).map((p) => ({ value: p.code, label: p.code }))]}
+          />
         </label>
         {data && (
           <span className={data.is_balanced ? "acct-balanced" : "acct-unbalanced"}>

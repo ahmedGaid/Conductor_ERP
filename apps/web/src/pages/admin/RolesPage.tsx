@@ -13,6 +13,7 @@ import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { ComboBox } from "../../components/ComboBox";
 import "./admin.css";
 
 export function RolesPage() {
@@ -180,10 +181,12 @@ function NewRoleForm({
         </label>
         <label className="admin-field">
           <span>{t("admin.roles.copyFrom")}</span>
-          <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)}>
-            <option value="">{t("admin.roles.copyBlank")}</option>
-            {roles.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
-          </select>
+          <ComboBox
+            value={copyFrom}
+            onChange={setCopyFrom}
+            placeholder={t("admin.roles.copyBlank")}
+            options={[{ value: "", label: t("admin.roles.copyBlank") }, ...roles.map((r) => ({ value: r.name, label: r.name }))]}
+          />
         </label>
       </div>
       <div className="admin-invite__foot">

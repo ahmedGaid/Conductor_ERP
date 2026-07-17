@@ -113,14 +113,20 @@ export function UsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={role} onChange={(e) => setRole(e.target.value)} aria-label={t("admin.users.role")}>
-          <option value="">{t("admin.users.allRoles")}</option>
-          {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <select value={department} onChange={(e) => setDepartment(e.target.value)} aria-label={t("admin.users.department")}>
-          <option value="">{t("admin.users.allDepartments")}</option>
-          {org?.departments.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
-        </select>
+        <ComboBox
+          value={role}
+          onChange={setRole}
+          placeholder={t("admin.users.allRoles")}
+          options={[{ value: "", label: t("admin.users.allRoles") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+          aria-label={t("admin.users.role")}
+        />
+        <ComboBox
+          value={department}
+          onChange={setDepartment}
+          placeholder={t("admin.users.allDepartments")}
+          options={[{ value: "", label: t("admin.users.allDepartments") }, ...(org?.departments.map((d) => ({ value: d.code, label: d.name })) ?? [])]}
+          aria-label={t("admin.users.department")}
+        />
         <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label={t("admin.users.status")}>
           <option value="">{t("admin.users.allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(`admin.status.${s}`)}</option>)}
@@ -195,14 +201,13 @@ export function UsersPage() {
         <button className="btn btn--sm" onClick={() => runBulk("activate")}>{t("admin.action.activate")}</button>
         <button className="btn btn--sm" onClick={() => runBulk("suspend")}>{t("admin.action.suspend")}</button>
         <button className="btn btn--sm" onClick={() => runBulk("archive")}>{t("admin.action.archive")}</button>
-        <select
+        <ComboBox
           value={assignRoleTo}
-          onChange={(e) => setAssignRoleTo(e.target.value)}
+          onChange={setAssignRoleTo}
+          placeholder={t("admin.action.assignRole")}
+          options={[{ value: "", label: t("admin.action.assignRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
           aria-label={t("admin.action.assignRole")}
-        >
-          <option value="">{t("admin.action.assignRole")}</option>
-          {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
+        />
         <button className="btn btn--sm" disabled={!assignRoleTo} onClick={() => runBulk("assign_role")}>
           {t("admin.action.apply")}
         </button>
@@ -271,10 +276,12 @@ function InviteForm({
         </label>
         <label className="admin-field">
           <span>{t("admin.users.role")}</span>
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="">{t("admin.invite.noRole")}</option>
-            {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+          <ComboBox
+            value={role}
+            onChange={setRole}
+            placeholder={t("admin.invite.noRole")}
+            options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+          />
         </label>
         <label className="admin-field">
           <span>{t("admin.users.department")}</span>

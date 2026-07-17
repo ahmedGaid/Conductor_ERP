@@ -150,12 +150,13 @@ export function BudgetDetailPage() {
       <div className="acct-toolbar">
         <label className="acct-field">
           <span>{t("accounting.budgets.period")}</span>
-          <select className="latin" value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="">{t("accounting.budgets.wholeYear")}</option>
-            {(periods ?? []).map((p) => (
-              <option key={p.code} value={p.code}>{p.code}</option>
-            ))}
-          </select>
+          <ComboBox
+            className="latin"
+            value={period}
+            onChange={setPeriod}
+            placeholder={t("accounting.budgets.wholeYear")}
+            options={[{ value: "", label: t("accounting.budgets.wholeYear") }, ...(periods ?? []).map((p) => ({ value: p.code, label: p.code }))]}
+          />
         </label>
       </div>
 

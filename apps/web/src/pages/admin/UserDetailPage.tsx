@@ -189,10 +189,12 @@ export function UserDetailPage() {
           <h2>{t("admin.detail.roleAccess")}</h2>
           <label className="admin-field">
             <span>{t("admin.detail.assignedRole")}</span>
-            <select value={current.role ?? ""} onChange={(e) => patch({ role: e.target.value })}>
-              <option value="">{t("admin.invite.noRole")}</option>
-              {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <ComboBox
+              value={current.role ?? ""}
+              onChange={(v) => patch({ role: v })}
+              placeholder={t("admin.invite.noRole")}
+              options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+            />
           </label>
           <label className="admin-field">
             <span>{t("admin.users.status")}</span>

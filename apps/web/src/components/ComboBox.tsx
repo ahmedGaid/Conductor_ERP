@@ -17,6 +17,7 @@ interface ComboBoxProps {
   placeholder: string;
   className?: string;
   disabled?: boolean;
+  "aria-label"?: string;
 }
 
 /**
@@ -26,7 +27,15 @@ interface ComboBoxProps {
  * Filters client-side on `label`; the emitted value is still the option's `value` (a code), same
  * contract as the native <select> it replaces.
  */
-export function ComboBox({ options, value, onChange, placeholder, className, disabled }: ComboBoxProps) {
+export function ComboBox({
+  options,
+  value,
+  onChange,
+  placeholder,
+  className,
+  disabled,
+  "aria-label": ariaLabel,
+}: ComboBoxProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -53,6 +62,7 @@ export function ComboBox({ options, value, onChange, placeholder, className, dis
         className={className ? `combobox-trigger ${className}` : "combobox-trigger"}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={ariaLabel}
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
       >
