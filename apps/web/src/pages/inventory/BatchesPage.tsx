@@ -14,6 +14,8 @@ import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
@@ -37,6 +39,7 @@ export function BatchesPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "inventory:batches", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((b) => matchesAllFilters(b, fields, filters)) : data),
     [data, fields, filters],
@@ -76,6 +79,7 @@ export function BatchesPage() {
 
       {data && data.length > 0 && (
         <div className="inv-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

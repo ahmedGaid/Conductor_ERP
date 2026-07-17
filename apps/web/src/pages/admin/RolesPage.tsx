@@ -12,6 +12,8 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { ComboBox } from "../../components/ComboBox";
 import "./admin.css";
@@ -39,6 +41,7 @@ export function RolesPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "admin:roles", fields, filters, setFilters });
   const filtered = useMemo(
     () => (roles ? roles.filter((r) => matchesAllFilters(r, fields, filters)) : roles),
     [roles, fields, filters],
@@ -92,6 +95,7 @@ export function RolesPage() {
 
       {roles && roles.length > 0 && (
         <div className="admin-filterbar">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

@@ -22,6 +22,8 @@ import { useReportPageActions } from "../../hooks/useReportPageActions";
 import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -58,6 +60,7 @@ export function FixedAssetsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "accounting:assets", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((a) => matchesAllFilters(a, fields, filters)) : data),
     [data, fields, filters],
@@ -230,6 +233,7 @@ export function FixedAssetsPage() {
       {data && data.length > 0 && (
         <>
           <div className="acct-toolbar-row">
+            <SavedViews api={savedViews} />
             <FilterBar fields={fields} filters={filters} onChange={setFilters} />
           </div>
           {filtered && (

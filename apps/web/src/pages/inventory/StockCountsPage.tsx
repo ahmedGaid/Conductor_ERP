@@ -21,6 +21,8 @@ import { DatePicker } from "../../components/DatePicker";
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -56,6 +58,7 @@ export function StockCountsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "inventory:counts", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((c) => matchesAllFilters(c, fields, filters)) : data),
     [data, fields, filters],
@@ -158,6 +161,7 @@ export function StockCountsPage() {
 
       {data && data.length > 0 && (
         <div className="inv-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

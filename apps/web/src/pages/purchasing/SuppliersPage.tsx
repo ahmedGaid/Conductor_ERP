@@ -22,6 +22,8 @@ import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { RowActions } from "../../components/RowActions";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
@@ -44,6 +46,7 @@ export function SuppliersPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "purchasing:suppliers", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((s) => matchesAllFilters(s, fields, filters)) : data),
     [data, fields, filters],
@@ -167,6 +170,7 @@ export function SuppliersPage() {
 
       {data && data.length > 0 && (
         <div className="pur-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

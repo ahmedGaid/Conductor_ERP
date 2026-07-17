@@ -19,6 +19,8 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -38,6 +40,7 @@ export function BudgetsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "accounting:budgets", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((b) => matchesAllFilters(b, fields, filters)) : data),
     [data, fields, filters],
@@ -123,6 +126,7 @@ export function BudgetsPage() {
 
       {data && data.length > 0 && (
         <div className="acct-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

@@ -20,6 +20,8 @@ import { StatusRing } from "../../components/StatusRing";
 import { journalTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -37,6 +39,7 @@ export function JournalListPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "accounting:journals", fields, filters, setFilters });
 
   const filtered = useMemo(
     () => (data ? data.filter((e) => matchesAllFilters(e, fields, filters)) : data),
@@ -83,7 +86,12 @@ export function JournalListPage() {
     <section className="acct-page">
       <AccountingNav />
       <div className="acct-page__head">
-        {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
+        {data && data.length > 0 && (
+          <>
+            <SavedViews api={savedViews} />
+            <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+          </>
+        )}
       </div>
 
       {loading && (

@@ -12,6 +12,8 @@ import type { CsvColumn } from "../lib/csvExport";
 import { Bdi } from "../components/Bdi";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar } from "../components/FilterBar";
+import { SavedViews } from "../components/SavedViews";
+import { useSavedViews } from "../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../components/StatusTabs";
 import { ListSkeleton } from "../components/ListSkeleton";
 import "./WorkflowListPage.css";
@@ -37,6 +39,7 @@ export function WorkflowListPage() {
       },
     ];
   }, [t, data]);
+  const savedViews = useSavedViews({ listKey: "workflows", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((w) => matchesAllFilters(w, fields, filters)) : data),
     [data, fields, filters],
@@ -87,7 +90,12 @@ export function WorkflowListPage() {
         <p className="module-head__desc">{t("moduleIntro.workflows")}</p>
       </header>
       <div className="wf-list__head">
-        {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
+        {data && data.length > 0 && (
+          <>
+            <SavedViews api={savedViews} />
+            <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+          </>
+        )}
       </div>
 
       {loading && (

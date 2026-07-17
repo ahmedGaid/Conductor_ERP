@@ -26,6 +26,8 @@ import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
@@ -65,6 +67,7 @@ export function LeadsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "crm:leads", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((l) => matchesAllFilters(l, fields, filters)) : data),
     [data, fields, filters],
@@ -237,6 +240,7 @@ export function LeadsPage() {
 
       {data && data.length > 0 && (
         <div className="crm-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

@@ -13,6 +13,8 @@ import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -40,6 +42,7 @@ export function ChartOfAccountsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "accounting:accounts", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((a) => matchesAllFilters(a, fields, filters)) : data),
     [data, fields, filters],
@@ -143,6 +146,7 @@ export function ChartOfAccountsPage() {
 
       {data && data.length > 0 && (
         <div className="acct-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

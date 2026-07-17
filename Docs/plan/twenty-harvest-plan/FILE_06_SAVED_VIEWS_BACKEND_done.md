@@ -1,4 +1,14 @@
-# SESSION 6 — Saved Views (Backend)
+# SESSION 6 — Saved Views (Backend) — DONE 2026-07-18
+
+**Overlap-audit finding (2026-07-18):** already fully built, in `erp/identity` not `erp/core` —
+`saved_views.py` (service), `models.SavedView`, migration `0010_savedview`, DRF views/serializers/
+urls at `/api/identity/saved-views`, `erp/identity/tests/test_saved_views.py` (12 tests, all pass).
+Narrower than this plan's original shape (no `is_shared`/org-wide sharing, config is a flat
+`list_key`+`query`-string pair — the list's URL query string — not a structured
+filters/sort/columns/density JSON), but it's the real, tested, wired-in implementation the frontend
+(`apps/web/src/hooks/useSavedViews.ts`, `api/savedViews.ts`) already consumes. Superseded rather
+than rebuilt: no code changes needed for this file, just recognizing prior work and closing it out.
+
 # Files: erp/core/saved_views.py (new: model+service), erp/core/api/ (extend), migrations, erp/core/tests/test_saved_views.py (new)
 
 Twenty reference: views are first-class records (filters, sorts, visible fields, groups per

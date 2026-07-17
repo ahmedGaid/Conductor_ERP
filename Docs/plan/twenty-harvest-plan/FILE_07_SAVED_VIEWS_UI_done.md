@@ -1,4 +1,21 @@
-# SESSION 7 — Saved Views (UI)
+# SESSION 7 — Saved Views (UI) — DONE 2026-07-18 (reduced scope, see note)
+
+**Finding (2026-07-18):** the UI already existed (`SavedViews.tsx`/`useSavedViews.ts`, built against
+FILE_06's real `erp/identity` API), but wired into only 2/22 unified list pages (sales>orders,
+inventory>items). This session did **Task C only**: extended the exact same component/hook to the
+remaining 20 list pages (workflows, all inventory/purchasing/crm/accounting/sales/admin/einvoice
+list pages) — 3-line addition per page (import, `useSavedViews` call, `<SavedViews>` render),
+verified via `npx tsc -b` (clean) + i18n parity (clean) + gate03 (clean) + live browser check
+(`/api/identity/saved-views?list_key=...` returns 200 on newly-wired pages).
+
+**Tasks A/B (tabs-row redesign, sharing/`is_shared`, "unsaved changes" dot, save-as-new/reset) were
+NOT built** — the shipped `SavedViews` component is a simpler dropdown-style control (owner-only,
+no sharing) that predates this plan file and was evidently already accepted as the product's saved-
+view design. Building the richer Twenty-style tabs+sharing UI this plan describes would be a genuine
+redesign of an existing, working, already-reviewed component — out of scope for a rollout session;
+flagging here rather than silently expanding scope. If sharing is wanted later, it needs its own
+plan (model change: `is_shared` field + owner/admin-edit rule + second-user visibility test).
+
 # Files: apps/web/src (unified table kit + new api/views.ts + list pages), i18n locales
 
 Twenty reference: saved views render as TABS above every list — the user's own workspaces

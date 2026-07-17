@@ -12,6 +12,8 @@ import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterFie
 import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
@@ -36,6 +38,7 @@ export function StockOnHandPage() {
   // Seed the filter chips from the URL once, so a drill-in link (an item row → `/inventory?sku=…`)
   // opens this list pre-filtered; the chip is then freely editable like any other.
   const [filters, setFilters] = useState<ActiveFilter[]>(() => filtersFromParams(searchParams, fields));
+  const savedViews = useSavedViews({ listKey: "inventory:stock-on-hand", fields, filters, setFilters });
   const rows = useMemo(
     () => (data ? data.rows.filter((r) => matchesAllFilters(r, fields, filters)) : []),
     [data, fields, filters],
@@ -64,7 +67,12 @@ export function StockOnHandPage() {
     <section className="inv-page">
       <InventoryNav />
       <div className="inv-page__head">
-        {data && data.rows.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
+        {data && data.rows.length > 0 && (
+          <>
+            <SavedViews api={savedViews} />
+            <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+          </>
+        )}
       </div>
 
       {loading && (
