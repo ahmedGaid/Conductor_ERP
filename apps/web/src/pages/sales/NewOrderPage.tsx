@@ -190,12 +190,12 @@ export function NewOrderPage() {
           </label>
           <label className="sales-field">
             <span>{t("sales.newOrder.taxCode")}</span>
-            <select value={taxCode} onChange={(e) => setTaxCode(e.target.value)}>
-              <option value="">{t("sales.newOrder.noTax")}</option>
-              {(taxCodes ?? []).map((c) => (
-                <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={taxCode}
+              onChange={setTaxCode}
+              placeholder={t("sales.newOrder.noTax")}
+              options={[{ value: "", label: t("sales.newOrder.noTax") }, ...(taxCodes ?? []).map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))]}
+            />
           </label>
         </div>
 

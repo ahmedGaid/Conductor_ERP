@@ -365,12 +365,12 @@ export function ImportInvoicePage() {
             </label>
             <label className="pur-field">
               <span>{t("purchasing.newOrder.taxCode")}</span>
-              <select value={taxCode} onChange={(e) => setTaxCode(e.target.value)}>
-                <option value="">{t("purchasing.newOrder.noTax")}</option>
-                {(taxCodes ?? []).map((c) => (
-                  <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
-                ))}
-              </select>
+              <ComboBox
+                value={taxCode}
+                onChange={setTaxCode}
+                placeholder={t("purchasing.newOrder.noTax")}
+                options={[{ value: "", label: t("purchasing.newOrder.noTax") }, ...(taxCodes ?? []).map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))]}
+              />
               {(proposal.invoice.vat_minor ?? 0) > 0 && (
                 <span className="pur-import-extracted">
                   {t("purchasing.importInvoice.vatOnInvoice")}: <Bdi>{formatMinor(proposal.invoice.vat_minor!)}</Bdi>
