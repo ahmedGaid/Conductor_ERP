@@ -7,12 +7,15 @@ books; recorded as blockers in ``erp-status``, trivial to add once each module g
 * Master data (FILE_05): ``item_categories`` / ``warehouses`` (``erp.inventory`` only has inline
   ``Model.objects.create`` in its API view, no contract function), ``price_lists`` (same in
   ``erp.pricing``), ``units`` (no ``UnitOfMeasure`` model — ``Item.uom`` is free text).
-* Finance (FILE_16): ``payments`` / ``receipts`` (only order-attached write-paths, which POST to
-  the GL and need an already-invoiced/billed order — no standalone/unallocated payment model), and
-  ``inventory_opening`` / ``inventory_transactions`` (no draft inventory-opening service;
-  ``receive``/``adjust`` post immediately and would double-count the Inventory control account
-  ``account_opening`` books, and weighted-average costing has no as-of-date for backdated
+* Finance (FILE_16): ``inventory_opening`` / ``inventory_transactions`` (no draft inventory-opening
+  service; ``receive``/``adjust`` post immediately and would double-count the Inventory control
+  account ``account_opening`` books, and weighted-average costing has no as-of-date for backdated
   movements). See ``adapters/accounting.py`` for the full reasoning.
+
+  ``payments`` / ``receipts`` are NO LONGER on this list (session 16b): a standalone,
+  unallocated ``PendingPayment`` draft (``erp.sales``/``erp.purchasing`` ``services.
+  pending_payments``) closed the gap — see ``adapters/sales.py`` (``ReceiptAdapter``) and
+  ``adapters/purchasing.py`` (``PaymentAdapter``).
 """
 from __future__ import annotations
 
