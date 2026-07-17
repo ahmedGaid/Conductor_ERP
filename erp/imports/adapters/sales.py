@@ -1,13 +1,19 @@
-"""Import adapters: customers + sales invoices (``erp.sales``).
+"""Import adapters: customers + sales documents (``erp.sales``).
 
 Customers write through ``erp.sales.contracts.create_customer`` — the exact same code-based,
-no-ORM-leak entry point the AI assistant's import path already uses. Sales invoices (FILE_15 Task B)
-write through ``erp.sales.contracts.create_order`` (re-exported straight from
-``services.orders`` — the module's real write-path; ``contracts.place_order`` doesn't expose
-``tax_code``, the one param this adapter needs that the thinner wrapper omits). Both adapters never
-touch ``Customer``/``SalesOrder`` directly for WRITES; ``SalesInvoiceAdapter.delete`` is the one
-exception (see its docstring) — a plain ORM delete of a still-DRAFT order, which has posted nothing
-anywhere yet, so there is no other module write-path to route a reversal through.
+no-ORM-leak entry point the AI assistant's import path already uses. The three document adapters
+(FILE_15 Task B) never touch ``Quotation``/``SalesOrder`` directly for WRITES; each adapter's
+``delete`` is the one exception (see its docstring) — a plain ORM delete of a still-DRAFT
+document, which has posted nothing anywhere yet, so there is no other module write-path to route
+a reversal through.
+
+``sales_orders`` and ``sales_invoices`` both create a **DRAFT ``SalesOrder``** — this codebase has
+no separate "order" vs "invoice" model; invoicing is a status transition
+(``services.orders.invoice_order``) that imports deliberately never trigger (STRATEGY §3 mechanic
+3: imports create DRAFTS, posting stays on module screens). The two adapters are distinguished only
+by a ``notes`` tag prefix (``import-so:`` vs ``import:``) so their natural-key matching (``exists``/
+rollback) never collides on the shared ``SalesOrder`` table. ``sales_quotations`` is the one genuinely distinct
+document — it targets the real ``Quotation`` model/service, which carries no tax fields at all.
 """
 from __future__ import annotations
 
@@ -21,8 +27,9 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 from erp.inventory import contracts as inventory
 from erp.sales import contracts
-from erp.sales.domain.models import Customer, OrderStatus, SalesOrder
+from erp.sales.domain.models import Customer, OrderStatus, Quotation, QuotationStatus, SalesOrder
 from erp.sales.services.orders import OrderLineInput
+from erp.sales.services.quotations import QuoteLineInput
 
 from ..registry import FieldSpec, Issue, register
 from ._rbac import require_role
@@ -86,7 +93,7 @@ class CustomerAdapter:
 register(CustomerAdapter())
 
 
-# --- sales invoices (FILE_15 Task B) --------------------------------------------------------------
+# --- sales quotations, sales orders, sales invoices (FILE_15 Task B) ------------------------------
 def _as_date(value) -> _dt.date | None:
     """``kind="date"`` fields round-trip through ``ImportRow.normalized`` (a JSONField) as ISO
     strings (``analyze._json_safe``) — never a live ``datetime.date`` by the time ``write`` sees
@@ -121,6 +128,321 @@ def _resolve_tax_code(value) -> str | None:
         tax_code = TaxCode.objects.filter(rate_bps=token.rate * 100, is_active=True).first()
         return tax_code.code if tax_code else None
     return None
+
+
+class SalesQuotationAdapter:
+    """Flat-Excel quotation sheets: one row per LINE, header fields repeated or filled only on the
+    group's first row — same shape as ``SalesInvoiceAdapter``. Writes a DRAFT ``Quotation`` via
+    ``contracts.create_quotation``; the model carries no tax fields, so unlike the order/invoice
+    adapters there is no ``tax_token`` here. The quotation number is server-assigned
+    (``QUO-YYYY-NNNNNN``), so the source file's number is kept in ``notes`` as
+    ``"import:<doc_number>"`` — a different table than ``SalesOrder``, so no prefix clash with the
+    other two sales adapters is possible.
+    """
+
+    entity = "sales_quotations"
+    label_key = "imports.entity.salesQuotations"
+    fields = [
+        # --- header (one per document; blank on continuation rows of the same group) ---
+        FieldSpec(
+            name="doc_number", kind="text",
+            synonyms_en=["quotation number", "quote number", "quote no"],
+            synonyms_ar=["رقم عرض السعر", "رقم العرض"],
+        ),
+        FieldSpec(
+            name="customer_ref", kind="ref", ref="customers",
+            synonyms_en=["customer", "customer code", "customer name", "bill to"],
+            synonyms_ar=["العميل", "كود العميل", "اسم العميل"],
+        ),
+        FieldSpec(
+            name="date", kind="date",
+            synonyms_en=["date", "quote date", "quotation date"],
+            synonyms_ar=["التاريخ", "تاريخ العرض"],
+        ),
+        FieldSpec(
+            name="currency", kind="text",
+            synonyms_en=["currency"],
+            synonyms_ar=["العملة"],
+        ),
+        FieldSpec(
+            name="warehouse_ref", kind="text",
+            synonyms_en=["warehouse", "warehouse code"],
+            synonyms_ar=["المخزن", "كود المخزن"],
+        ),
+        FieldSpec(
+            name="file_total_minor", kind="money",
+            synonyms_en=["total", "grand total", "quote total"],
+            synonyms_ar=["الإجمالي", "إجمالي العرض"],
+        ),
+        # --- line (every row) ---
+        FieldSpec(
+            name="item_ref", required=True, kind="ref", ref="items",
+            synonyms_en=["item", "sku", "item code"],
+            synonyms_ar=["الصنف", "كود الصنف"],
+        ),
+        FieldSpec(
+            name="quantity", required=True, kind="number",
+            synonyms_en=["qty", "quantity"],
+            synonyms_ar=["الكمية"],
+        ),
+        FieldSpec(
+            name="unit_price_minor", required=True, kind="money",
+            synonyms_en=["unit price", "price"],
+            synonyms_ar=["سعر الوحدة", "السعر"],
+        ),
+    ]
+    natural_key = ["doc_number"]
+    group_by = "doc_number"
+    header_fields = ["doc_number", "customer_ref", "date", "currency", "warehouse_ref", "file_total_minor"]
+
+    @property
+    def defaults(self) -> dict:
+        return dict(getattr(settings, "IMPORTS_DEFAULTS", {}).get(self.entity, {}))
+
+    def lookup(self, actor, field, value):
+        if field == "customer_ref":
+            return _find_customer(actor, value)
+        if field == "item_ref":
+            return inventory.find_item(value)
+        return None
+
+    def validate(self, actor, row: dict) -> list[Issue]:
+        return []
+
+    def write(self, actor, group: dict):
+        require_role(actor, BRANCH_MANAGER)
+        customer = _find_customer(actor, group.get("customer_ref"))
+        if customer is None:
+            raise ValueError(f"unknown customer: {group.get('customer_ref')!r}")
+
+        warehouse_code = (
+            (group.get("warehouse_ref") or "").strip()
+            or self.defaults.get("warehouse_code")
+            or inventory.default_warehouse_code()
+            or ""
+        )
+        doc_number = (group.get("doc_number") or "").strip()
+
+        lines = [
+            QuoteLineInput(
+                item_sku=(line.get("item_ref") or "").strip(),
+                quantity=Decimal(str(line["quantity"])),
+                unit_price_minor=int(line["unit_price_minor"]),
+            )
+            for line in group["lines"]
+        ]
+        quote = contracts.create_quotation(
+            customer=customer,
+            warehouse_code=warehouse_code,
+            lines=lines,
+            quote_date=_as_date(group.get("date")) or _dt.date.today(),
+            currency=group.get("currency") or self.defaults.get("currency", "EGP"),
+            notes=f"import:{doc_number}",
+            actor=actor,
+        )
+
+        warnings: list[Issue] = []
+        file_total = group.get("file_total_minor")
+        if file_total is not None and int(file_total) != quote.subtotal_minor:
+            warnings.append(Issue(
+                field="file_total_minor", code="total_mismatch",
+                message="imports.issues.totalMismatch",
+                meta={"file_total_minor": int(file_total), "computed_total_minor": quote.subtotal_minor},
+            ))
+        return quote, warnings
+
+    def exists(self, actor, group: dict):
+        doc_number = (group.get("doc_number") or "").strip()
+        if not doc_number:
+            return None
+        qs = scope_queryset(actor, Quotation.objects.all(), "sales.quotation.view")
+        return qs.filter(notes=f"import:{doc_number}").first()
+
+    def delete(self, actor, pk) -> None:
+        """Rollback support — see ``SalesInvoiceAdapter.delete``: a DRAFT quotation has posted
+        nothing anywhere yet, so a plain delete is a true, side-effect-free reversal."""
+        quote = Quotation.objects.filter(pk=pk).first()
+        if quote is None:
+            return  # already gone — rollback is idempotent
+        if quote.status != QuotationStatus.DRAFT:
+            raise ValueError(f"cannot delete quotation {quote.number}: status is {quote.status!r}, not draft")
+        quote.delete()
+
+    def existing_labels(self, actor):
+        qs = scope_queryset(
+            actor, Quotation.objects.filter(notes__startswith="import:"), "sales.quotation.view",
+        )
+        return list(qs.values_list("pk", "number"))
+
+
+register(SalesQuotationAdapter())
+
+
+class SalesOrderAdapter:
+    """Flat-Excel order sheets: one row per LINE, same shape as ``SalesInvoiceAdapter`` — see that
+    class's docstring for the "no distinct invoice document" reasoning, which applies here in
+    reverse (this adapter is the "order" side of the same ``SalesOrder`` table). Both create a
+    DRAFT ``SalesOrder`` via the identical ``contracts.create_order`` write-path; the only
+    difference is the ``notes`` tag prefix (``import-so:`` here vs ``import:`` for
+    ``SalesInvoiceAdapter``) so the two entities' natural-key matching never collides on rows the
+    other one wrote.
+    """
+
+    entity = "sales_orders"
+    label_key = "imports.entity.salesOrders"
+    fields = [
+        # --- header (one per document; blank on continuation rows of the same group) ---
+        FieldSpec(
+            name="doc_number", kind="text",
+            synonyms_en=["order number", "order no", "order #"],
+            synonyms_ar=["رقم الطلب", "رقم أمر البيع"],
+        ),
+        FieldSpec(
+            name="customer_ref", kind="ref", ref="customers",
+            synonyms_en=["customer", "customer code", "customer name", "bill to"],
+            synonyms_ar=["العميل", "كود العميل", "اسم العميل"],
+        ),
+        FieldSpec(
+            name="date", kind="date",
+            synonyms_en=["date", "order date"],
+            synonyms_ar=["التاريخ", "تاريخ الطلب"],
+        ),
+        FieldSpec(
+            name="currency", kind="text",
+            synonyms_en=["currency"],
+            synonyms_ar=["العملة"],
+        ),
+        FieldSpec(
+            name="warehouse_ref", kind="text",
+            synonyms_en=["warehouse", "warehouse code"],
+            synonyms_ar=["المخزن", "كود المخزن"],
+        ),
+        FieldSpec(
+            name="tax_token", kind="ref", ref="tax_codes",
+            synonyms_en=["tax", "vat", "tax rate"],
+            synonyms_ar=["الضريبة", "ضريبة القيمة المضافة"],
+        ),
+        FieldSpec(
+            name="file_total_minor", kind="money",
+            synonyms_en=["total", "grand total", "order total"],
+            synonyms_ar=["الإجمالي", "إجمالي الطلب"],
+        ),
+        # --- line (every row) ---
+        FieldSpec(
+            name="item_ref", required=True, kind="ref", ref="items",
+            synonyms_en=["item", "sku", "item code"],
+            synonyms_ar=["الصنف", "كود الصنف"],
+        ),
+        FieldSpec(
+            name="quantity", required=True, kind="number",
+            synonyms_en=["qty", "quantity"],
+            synonyms_ar=["الكمية"],
+        ),
+        FieldSpec(
+            name="unit_price_minor", required=True, kind="money",
+            synonyms_en=["unit price", "price"],
+            synonyms_ar=["سعر الوحدة", "السعر"],
+        ),
+        FieldSpec(
+            name="discount_minor", kind="money",
+            synonyms_en=["discount"],
+            synonyms_ar=["خصم"],
+        ),
+    ]
+    natural_key = ["doc_number"]
+    group_by = "doc_number"
+    header_fields = [
+        "doc_number", "customer_ref", "date", "currency", "warehouse_ref",
+        "tax_token", "file_total_minor",
+    ]
+
+    @property
+    def defaults(self) -> dict:
+        return dict(getattr(settings, "IMPORTS_DEFAULTS", {}).get(self.entity, {}))
+
+    def lookup(self, actor, field, value):
+        if field == "customer_ref":
+            return _find_customer(actor, value)
+        if field == "item_ref":
+            return inventory.find_item(value)
+        if field == "tax_token":
+            code = _resolve_tax_code(value)
+            return code if code is not None else None
+        return None
+
+    def validate(self, actor, row: dict) -> list[Issue]:
+        return []
+
+    def write(self, actor, group: dict):
+        require_role(actor, BRANCH_MANAGER)
+        customer = _find_customer(actor, group.get("customer_ref"))
+        if customer is None:
+            raise ValueError(f"unknown customer: {group.get('customer_ref')!r}")
+
+        warehouse_code = (
+            (group.get("warehouse_ref") or "").strip()
+            or self.defaults.get("warehouse_code")
+            or inventory.default_warehouse_code()
+            or ""
+        )
+        tax_code = _resolve_tax_code(group.get("tax_token")) or ""
+        doc_number = (group.get("doc_number") or "").strip()
+
+        lines = [
+            OrderLineInput(
+                item_sku=(line.get("item_ref") or "").strip(),
+                quantity=Decimal(str(line["quantity"])),
+                unit_price_minor=int(line["unit_price_minor"]),
+                discount_minor=int(line.get("discount_minor") or 0),
+            )
+            for line in group["lines"]
+        ]
+        order = contracts.create_order(
+            customer=customer,
+            warehouse_code=warehouse_code,
+            lines=lines,
+            order_date=_as_date(group.get("date")) or _dt.date.today(),
+            currency=group.get("currency") or self.defaults.get("currency", "EGP"),
+            notes=f"import-so:{doc_number}",
+            tax_code=tax_code,
+            actor=actor,
+        )
+
+        warnings: list[Issue] = []
+        file_total = group.get("file_total_minor")
+        if file_total is not None and int(file_total) != order.subtotal_minor:
+            warnings.append(Issue(
+                field="file_total_minor", code="total_mismatch",
+                message="imports.issues.totalMismatch",
+                meta={"file_total_minor": int(file_total), "computed_total_minor": order.subtotal_minor},
+            ))
+        return order, warnings
+
+    def exists(self, actor, group: dict):
+        doc_number = (group.get("doc_number") or "").strip()
+        if not doc_number:
+            return None
+        qs = scope_queryset(actor, SalesOrder.objects.all(), "sales.order.view")
+        return qs.filter(notes=f"import-so:{doc_number}").first()
+
+    def delete(self, actor, pk) -> None:
+        """Rollback support — see ``SalesInvoiceAdapter.delete``: a DRAFT order has posted nothing
+        anywhere yet, so a plain delete is a true, side-effect-free reversal."""
+        order = SalesOrder.objects.filter(pk=pk).first()
+        if order is None:
+            return  # already gone — rollback is idempotent
+        if order.status != OrderStatus.DRAFT:
+            raise ValueError(f"cannot delete order {order.number}: status is {order.status!r}, not draft")
+        order.delete()
+
+    def existing_labels(self, actor):
+        qs = scope_queryset(
+            actor, SalesOrder.objects.filter(notes__startswith="import-so:"), "sales.order.view",
+        )
+        return list(qs.values_list("pk", "number"))
+
+
+register(SalesOrderAdapter())
 
 
 class SalesInvoiceAdapter:

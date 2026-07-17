@@ -1,11 +1,15 @@
-"""Document adapters: sales_invoices + purchase_invoices, and the engine's group-by support they
-exercise (FILE_15 Task A/B, PARTIAL scope — quotations/orders/purchase_orders adapters deferred).
+"""Document adapters: all five FILE_15 adapters (sales_quotations, sales_orders, sales_invoices,
+purchase_orders, purchase_invoices), and the engine's group-by support they exercise.
 
 Flat-Excel reality: one row per LINE, header fields (customer, date, …) repeated or filled only on
 the group's first row (the merged-cell export pattern). These tests build ``ImportRow`` fixtures
 directly with the shape ``analyze``/``normalize_row`` would have produced — same convention
 ``test_engine.py`` already uses — so they exercise ``engine.execute_batch``/``rollback_batch``
-without needing a real uploaded file.
+without needing a real uploaded file. The group-engine mechanics (header consistency, atomicity,
+blank-group-key handling, rollback) are exercised once in depth against ``sales_invoices`` below;
+``sales_quotations``/``sales_orders``/``purchase_orders`` add only what's adapter-specific — draft
+creation + totals, and (for orders) the ``notes`` prefix that keeps them from colliding with their
+``_invoices`` sibling on the same table.
 """
 from __future__ import annotations
 
@@ -20,7 +24,7 @@ from erp.imports import engine
 from erp.imports.models import ImportBatch, ImportRow
 from erp.inventory.domain.models import Item, Warehouse
 from erp.purchasing.domain.models import PurchaseOrder, Supplier
-from erp.sales.domain.models import Customer, SalesOrder
+from erp.sales.domain.models import Customer, Quotation, SalesOrder
 
 pytestmark = pytest.mark.django_db
 
@@ -227,3 +231,92 @@ def test_purchase_invoice_path_creates_draft_purchase_order_supplier_side():
     lines = list(order.lines.order_by("line_no"))
     assert [str(l.quantity) for l in lines] == ["5.0000", "1.0000"]
     assert order.subtotal_minor == 6 * 8_00
+
+
+# --- sales_quotations (no tax fields on Quotation) -----------------------------------------------
+def test_sales_quotation_path_creates_draft_quotation(sales_world):
+    actor = _manager("sq1")
+    batch = _batch("sales_quotations")
+    header = {
+        "doc_number": "QUOTE-1", "customer_ref": "C1", "date": "2026-06-01",
+        "currency": "EGP", "warehouse_ref": "MAIN",
+    }
+    _row(batch, 1, {**header, **_sales_line(quantity="2")})
+    _row(batch, 2, _sales_line(item_ref="WIDGET", quantity="1"))  # continuation row
+
+    report = engine.execute_batch(actor, batch)
+
+    assert report["created"] == 2  # two rows imported (report counts rows, not documents)
+    assert Quotation.objects.count() == 1
+    quote = Quotation.objects.get(notes="import:QUOTE-1")
+    assert quote.customer.code == "C1"
+    assert quote.status == "draft"
+    lines = list(quote.lines.order_by("line_no"))
+    assert [str(l.quantity) for l in lines] == ["2.0000", "1.0000"]
+    assert quote.subtotal_minor == 3 * 10_00
+
+
+def test_sales_quotation_total_mismatch_produces_a_warning_not_an_error(sales_world):
+    actor = _manager("sq2")
+    batch = _batch("sales_quotations")
+    _row(batch, 1, {
+        "doc_number": "QUOTE-2", "customer_ref": "C1", "date": "2026-06-01",
+        "currency": "EGP", "warehouse_ref": "MAIN", "file_total_minor": 1_00,
+        **_sales_line(quantity="1", unit_price_minor=10_00),
+    })
+
+    report = engine.execute_batch(actor, batch)
+
+    assert report["created"] == 1
+    row = batch.rows.get(row_number=1)
+    assert row.status == ImportRow.Status.IMPORTED
+    issue = next(i for i in row.issues if i["code"] == "total_mismatch")
+    assert issue["meta"] == {"file_total_minor": 1_00, "computed_total_minor": 10_00}
+
+
+# --- sales_orders (shares SalesOrder table with sales_invoices — prefix keeps them apart) --------
+def test_sales_order_path_creates_draft_order_with_distinct_prefix_from_invoices(sales_world):
+    actor = _manager("so1")
+    batch = _batch("sales_orders")
+    _row(batch, 1, {**_sales_header(doc_number="SO-1"), **_sales_line(quantity="4")})
+
+    report = engine.execute_batch(actor, batch)
+
+    assert report["created"] == 1
+    order = SalesOrder.objects.get(notes="import-so:SO-1")
+    assert order.customer.code == "C1"
+    assert order.status == "draft"
+    assert order.subtotal_minor == 4 * 10_00
+
+    # Same doc_number imported as an invoice must not collide with the order's row (different
+    # notes prefix -> different natural key on the same SalesOrder table).
+    batch2 = _batch("sales_invoices")
+    _row(batch2, 1, {**_sales_header(doc_number="SO-1"), **_sales_line(quantity="1")})
+    report2 = engine.execute_batch(actor, batch2)
+
+    assert report2["created"] == 1
+    assert SalesOrder.objects.filter(notes="import:SO-1").exists()
+    assert SalesOrder.objects.filter(notes="import-so:SO-1").exists()
+    assert SalesOrder.objects.count() == 2
+
+
+# --- purchase_orders (shares PurchaseOrder table with purchase_invoices) -------------------------
+def test_purchase_order_path_creates_draft_order_with_distinct_prefix_from_invoices():
+    Warehouse.objects.create(code="MAIN", name="Main")
+    Item.objects.create(sku="WIDGET", name="Widget", type="stock")
+    Supplier.objects.create(code="S1", name="Globex Supplies")
+    actor = _manager("po1")
+    batch = _batch("purchase_orders")
+    header = {
+        "doc_number": "PO-1", "supplier_ref": "S1", "date": "2026-06-01",
+        "currency": "EGP", "warehouse_ref": "MAIN",
+    }
+    _row(batch, 1, {**header, "item_ref": "WIDGET", "quantity": "5", "unit_price_minor": 8_00})
+
+    report = engine.execute_batch(actor, batch)
+
+    assert report["created"] == 1
+    order = PurchaseOrder.objects.get(notes="import-po:PO-1")
+    assert order.supplier.code == "S1"
+    assert order.status == "draft"
+    assert order.subtotal_minor == 5 * 8_00

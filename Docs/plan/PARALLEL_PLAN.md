@@ -100,14 +100,13 @@ A2/A3 merge at M1 if ready, else M2 — they never block the gate.
 |---|---|---|---|---|---|
 | B9 | Custom fields backend — `TH/FILE_11` | B | `erp/core/custom_fields.py` (+api), Customer/Item `custom_data`, sales+inventory API hooks | M1 | done(eab66b5) |
 | B10 | Activity timeline — Task A only (read API) — `TH/FILE_13` | B | `erp/audit/api`, `erp/audit/history.py` — Task B (tab UI) + Task C (verifiability link) deferred to A, apps/web+i18n untouched | B9 | done(1b0a9b2) — FILE_13 stays open, not `_done` |
-| B11 | Document adapters — PARTIAL: Task A (group-by engine) + Task B `sales_invoices`/`purchase_invoices` only — `SI/FILE_15` | B | `erp/imports/engine.py`, `registry.py`, `adapters/sales.py`, `adapters/purchasing.py`, `tests/test_document_adapters.py` — `sales_quotations`/`sales_orders`/`purchase_orders` adapters NOT built | B10 | done(03791cc) — FILE_15 stays open, not `_done`, 2/5 adapters |
+| B11 | Document adapters — Task A (group-by engine) + Task B all five adapters — `SI/FILE_15` | B | `erp/imports/engine.py`, `registry.py`, `adapters/sales.py`, `adapters/purchasing.py`, `tests/test_document_adapters.py` | B10 | done(03791cc) then done(HEAD) — 5/5 adapters, `pytest erp/imports` green (305 passed), gate:all 00-02/04-17 green (gate03 N/A on B — no apps/web node_modules). FILE_15 stays open, not `_done` — smoke test's "preview UI shows grouped document" bullet is apps/web, A's territory, unverified by B |
 
 - **A:** TH FILE_09 approval node → FILE_10 AI agent node (erp/workflow + canvas UI) →
   FILE_12 custom-fields UI (needs B's FILE_11, done — see B9) → SI FILE_12–14 wizard/preview/report
   UI → TH FILE_16–18 UX batch.
-- **B:** TH FILE_13 activity timeline backend → SI FILE_15 remainder (3 adapters: `sales_quotations`,
-  `sales_orders`, `purchase_orders` — see B11) → SI FILE_16 finance adapters → TH FILE_14 API keys,
-  FILE_19 admin panel backend.
+- **B:** TH FILE_13 activity timeline backend (done, B10) → SI FILE_15 all 5 adapters (done, B11) →
+  **next: SI FILE_16 finance adapters** → TH FILE_14 API keys, FILE_19 admin panel backend.
 - **M3:** TH Tier 2 merge after FILE_13; SI Phase-A demo merge after FILE_14. TH FILE_21 +
   SI FILE_17 acceptances run single-agent (Either) on merged main.
 
