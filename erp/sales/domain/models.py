@@ -159,3 +159,45 @@ class QuotationLine(models.Model):
         db_table = "sales_quotation_line"
         ordering = ["quotation", "line_no"]
         unique_together = [("quotation", "line_no")]
+
+
+class PendingPaymentStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPLIED = "applied", "Applied"
+    DISCARDED = "discarded", "Discarded"
+
+
+class PendingPayment(AuditedModel):
+    """A draftable customer receipt: staged by an import (or, later, the AI assistant) instead of
+    posting to the GL immediately. ``order`` is null until a human matches it (or the source file
+    already carried a resolvable invoice reference). Applying calls the existing
+    ``services.orders.receive_payment`` exactly as the module screen does — no second write path.
+    """
+
+    order = models.ForeignKey(
+        SalesOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="pending_payments",
+    )
+    party_code = models.CharField(max_length=32)
+    amount_minor = models.BigIntegerField()
+    date = models.DateField()
+    method = models.CharField(max_length=16, blank=True, default="")
+    source = models.CharField(max_length=16, default="import")
+    status = models.CharField(
+        max_length=16, choices=PendingPaymentStatus.choices, default=PendingPaymentStatus.PENDING,
+    )
+    batch_ref = models.CharField(max_length=64, blank=True, default="")
+    applied_by = models.ForeignKey(
+        "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+    )
+    applied_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sales_pending_payment"
+        ordering = ["-date", "-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["order"]),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.party_code} {self.amount_minor} ({self.status})"

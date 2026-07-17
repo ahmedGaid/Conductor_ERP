@@ -92,3 +92,9 @@ class ApprovalLimitExceededError(AppError):
     code = "SAL-015"
     status_code = 422
     message = "This amount exceeds your approval limit for this document"
+
+
+class PendingPaymentStateError(AppError):
+    code = "SAL-016"
+    status_code = 422
+    message = "Pending payment is not in a state that allows this action"
