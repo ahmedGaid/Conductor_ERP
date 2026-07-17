@@ -145,12 +145,74 @@ export const settingsBranchesGuide: HelpGuide = {
 export const settingsWebhooksGuide: HelpGuide = {
   title: { en: "Webhooks", ar: "الويب هوكس" },
   purpose: {
-    en: "Administrator-only. Relay any business event to an external system as a signed HTTP call the moment it happens — the cheapest way to connect Conductor to other tools.",
-    ar: "للمسؤول فقط. أرسل أي حدث في النظام إلى نظام خارجي كطلب HTTP موقّع فور حدوثه — أبسط طريقة لربط Conductor بأدوات أخرى.",
+    en: "Administrator-only. The moment something happens in Conductor — an order confirmed, a payment received, a journal posted — send that event as an HTTP request to a URL you control. This is how you connect Conductor to Zapier, Make, Slack, a spreadsheet, or your own server, without Conductor needing to know that system exists.",
+    ar: "للمسؤول فقط. لحظة حدوث شيء في Conductor — تأكيد طلب، استلام دفعة، ترحيل قيد — يُرسَل هذا الحدث كطلب HTTP إلى رابط تتحكم فيه أنت. بهذه الطريقة تربط Conductor بـ Zapier أو Make أو Slack أو جدول بيانات أو خادمك الخاص، دون أن يعرف Conductor شيئاً عن ذلك النظام.",
   },
   howItWorks: {
-    en: "Add a URL and pick which events it should receive. Each subscription gets a signing secret, shown once — use it to verify the X-Conductor-Signature header on every delivery. A failed delivery retries automatically on a backoff schedule; use \"Retry now\" to try immediately. Only the System Admin can manage subscriptions.",
-    ar: "أضف رابطًا واختر الأحداث التي يستقبلها. يحصل كل اشتراك على مفتاح توقيع يظهر مرة واحدة فقط — استخدمه للتحقق من ترويسة X-Conductor-Signature في كل إرسال. الإرسال الفاشل تُعاد محاولته تلقائيًا وفق جدول تأخير متصاعد؛ استخدم \"إعادة المحاولة الآن\" للمحاولة فورًا. لا يمكن إدارة الاشتراكات إلا لمسؤول النظام.",
+    en: "Paste a URL, tick the events it should fire on, and click Add. You'll see a signing secret exactly once — copy it now, Conductor never shows it again. From then on, every matching event becomes one POST to that URL, with a JSON body and two headers: X-Conductor-Event (the event name) and X-Conductor-Signature (a signature you can verify — see \"Verify the signature\" in Examples below). If the URL doesn't answer, delivery retries on its own; use \"Retry now\" under Deliveries to force an attempt immediately.",
+    ar: "الصق رابطاً، اختر الأحداث التي تُشغّله، ثم اضغط «أضف». يظهر مفتاح التوقيع مرة واحدة فقط — انسخه الآن، لن يعرضه Conductor مجدداً. بعدها كل حدث مطابق يصبح طلب POST واحداً إلى ذلك الرابط، بمحتوى JSON وترويستين: X-Conductor-Event (اسم الحدث) وX-Conductor-Signature (توقيع يمكنك التحقق منه — انظر «التحقق من التوقيع» ضمن الأمثلة أدناه). إذا لم يستجب الرابط، تُعاد المحاولة تلقائياً؛ استخدم «إعادة المحاولة الآن» ضمن الإرساليات لإجبار محاولة فورية.",
   },
+  sections: [
+    {
+      heading: { en: "What's in the request", ar: "ماذا يحتوي الطلب" },
+      body: {
+        en: "Every delivery is one HTTP POST with a JSON body shaped like this:",
+        ar: "كل إرسال هو طلب POST واحد بمحتوى JSON بهذا الشكل:",
+      },
+      items: [
+        { term: { en: "event", ar: "event" }, desc: { en: "The event name you subscribed to, e.g. sales.OrderConfirmed.", ar: "اسم الحدث الذي اشتركت فيه، مثل sales.OrderConfirmed." } },
+        { term: { en: "occurred_at", ar: "occurred_at" }, desc: { en: "ISO timestamp of the moment it happened.", ar: "طابع زمني ISO للحظة وقوع الحدث." } },
+        { term: { en: "entity / id", ar: "entity / id" }, desc: { en: "What kind of record and which one, e.g. sales_order / SO-2026-000037 — enough to look it up without parsing data.", ar: "نوع السجل ومعرّفه، مثل sales_order / SO-2026-000037 — يكفي لإيجاده دون تحليل data." } },
+        { term: { en: "data", ar: "data" }, desc: { en: "The full record as Conductor holds it at that moment.", ar: "السجل الكامل كما يحفظه Conductor في تلك اللحظة." } },
+      ],
+    },
+    {
+      heading: { en: "The two headers", ar: "الترويستان" },
+      items: [
+        { term: { en: "X-Conductor-Event", ar: "X-Conductor-Event" }, desc: { en: "Same value as the payload's event field — lets you route the request before touching the body.", ar: "نفس قيمة حقل event في المحتوى — يتيح لك توجيه الطلب دون لمس المحتوى." } },
+        { term: { en: "X-Conductor-Signature", ar: "X-Conductor-Signature" }, desc: { en: "sha256=<hex> — an HMAC-SHA256 of the raw request body, signed with your subscription's secret. Recompute it yourself and compare; if it doesn't match, the request didn't come from Conductor.", ar: "sha256=<hex> — توقيع HMAC-SHA256 لمحتوى الطلب الخام، موقّع بمفتاح اشتراكك. أعد حسابه بنفسك وقارنه؛ إن لم يتطابق فالطلب لم يأتِ من Conductor." } },
+      ],
+    },
+  ],
+  tasks: [
+    {
+      name: { en: "Send yourself a real test webhook (5 minutes)", ar: "أرسل لنفسك ويب هوك تجريبي حقيقي (5 دقائق)" },
+      steps: [
+        { en: "Open webhook.site (or any similar request-catcher tool) in a new tab — it gives you a free, unique URL and shows every request it receives, live.", ar: "افتح موقع webhook.site (أو أي أداة مشابهة لالتقاط الطلبات) في تبويب جديد — يمنحك رابطاً فريداً مجانياً ويعرض كل طلب يصله لحظياً." },
+        { en: "Copy that URL, paste it into the URL field above, tick one event you can trigger easily — e.g. sales.OrderConfirmed — and click Add.", ar: "انسخ ذلك الرابط، الصقه في حقل الرابط أعلاه، اختر حدثاً واحداً يسهل تشغيله — مثل sales.OrderConfirmed — ثم اضغط «أضف»." },
+        { en: "Copy the signing secret shown once — you'll need it if you try the signature-verification example below.", ar: "انسخ مفتاح التوقيع الذي يظهر مرة واحدة — ستحتاجه إن جرّبت مثال التحقق من التوقيع أدناه." },
+        { en: "Go trigger that event for real — e.g. confirm a sales order — then come back here and open Deliveries next to your subscription.", ar: "اذهب وشغّل ذلك الحدث فعلياً — مثل تأكيد طلب بيع — ثم عد إلى هنا وافتح «الإرساليات» بجانب اشتراكك." },
+        { en: "Switch to the webhook.site tab: the POST has landed, with the X-Conductor-Event / X-Conductor-Signature headers and the JSON body you just read about above.", ar: "انتقل إلى تبويب webhook.site: سيكون طلب POST قد وصل، بترويستَي X-Conductor-Event / X-Conductor-Signature والمحتوى JSON الذي شرحناه أعلاه." },
+      ],
+    },
+  ],
+  examples: [
+    {
+      en: "Example payload for sales.OrderConfirmed: {\"event\": \"sales.OrderConfirmed\", \"occurred_at\": \"2026-07-17T10:22:04Z\", \"entity\": \"sales_order\", \"id\": \"SO-2026-000037\", \"data\": { \"code\": \"SO-2026-000037\", \"customer\": \"ACME\", \"total_minor\": 85500 }}",
+      ar: "مثال محتوى لحدث sales.OrderConfirmed: {\"event\": \"sales.OrderConfirmed\", \"occurred_at\": \"2026-07-17T10:22:04Z\", \"entity\": \"sales_order\", \"id\": \"SO-2026-000037\", \"data\": { \"code\": \"SO-2026-000037\", \"customer\": \"ACME\", \"total_minor\": 85500 }}",
+    },
+    {
+      en: "Verify the signature in Python: expected = \"sha256=\" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest() — then compare it to the X-Conductor-Signature header with hmac.compare_digest, not ==.",
+      ar: "التحقق من التوقيع بـ Python: expected = \"sha256=\" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest() — ثم قارنه بترويسة X-Conductor-Signature باستخدام hmac.compare_digest، وليس ==.",
+    },
+    {
+      en: "Verify the signature in Node.js: const expected = \"sha256=\" + crypto.createHmac(\"sha256\", secret).update(rawBody).digest(\"hex\"); then compare with crypto.timingSafeEqual.",
+      ar: "التحقق من التوقيع بـ Node.js: const expected = \"sha256=\" + crypto.createHmac(\"sha256\", secret).update(rawBody).digest(\"hex\"); ثم قارنه باستخدام crypto.timingSafeEqual.",
+    },
+    {
+      en: "No-code option: point the URL at a Zapier \"Catch Hook\" trigger or a Make.com webhook module — each hands you the parsed fields to build the rest of your automation with, no server of your own required.",
+      ar: "خيار بلا برمجة: وجّه الرابط إلى مشغّل «Catch Hook» في Zapier أو وحدة ويب هوك في Make.com — كلاهما يمنحك الحقول جاهزة لبناء بقية الأتمتة دون الحاجة لخادم خاص بك.",
+    },
+  ],
+  tips: [
+    { en: "The secret is shown only once, right after you add or regenerate a subscription — copy it immediately.", ar: "يظهر المفتاح مرة واحدة فقط، فور إضافة الاشتراك أو إعادة توليده — انسخه فوراً." },
+    { en: "A failed delivery retries on its own at 1 minute, 5 minutes, 30 minutes, then 2 hours — after 5 attempts it's marked Failed and stops retrying. \"Retry now\" skips the wait.", ar: "الإرسال الفاشل تُعاد محاولته تلقائياً بعد دقيقة، 5 دقائق، 30 دقيقة، ثم ساعتين — بعد 5 محاولات يُعلَّم «فشل» وتتوقف إعادة المحاولة. «إعادة المحاولة الآن» تتخطى الانتظار." },
+    { en: "The URL must be public — Conductor refuses localhost and private-network addresses. For local development, use a tunnel (e.g. ngrok) or a public catcher like webhook.site first.", ar: "يجب أن يكون الرابط عاماً — يرفض Conductor عناوين localhost والشبكات الخاصة. للتطوير المحلي استخدم نفقاً (مثل ngrok) أو أداة التقاط عامة مثل webhook.site أولاً." },
+  ],
+  mistakes: [
+    { en: "Trusting the body without checking the signature — anyone who finds your URL can POST fake events to it. Always verify X-Conductor-Signature before acting on a delivery.", ar: "الوثوق بالمحتوى دون التحقق من التوقيع — أي شخص يعرف رابطك يمكنه إرسال أحداث مزيفة إليه. تحقق دائماً من X-Conductor-Signature قبل التصرف بناءً على أي إرسال." },
+    { en: "Assuming delivery is instant and exactly-once — retries mean your endpoint may see the same event twice. Key your processing off the payload's id so a repeat is harmless.", ar: "افتراض أن الإرسال فوري ويحدث مرة واحدة فقط — إعادة المحاولة تعني أن نقطتك قد ترى نفس الحدث مرتين. اجعل معالجتك مبنية على id السجل حتى يكون التكرار غير ضار." },
+    { en: "Testing against localhost — it will always fail Conductor's public-URL check. Use webhook.site or a tunnel first, then swap in your real endpoint.", ar: "الاختبار على localhost — سيفشل دائماً في فحص الرابط العام في Conductor. استخدم webhook.site أو نفقاً أولاً، ثم استبدله برابطك الحقيقي." },
+  ],
   related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
 };
