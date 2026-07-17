@@ -18,40 +18,57 @@ Both post to the GL immediately and require the order already `INVOICED`/`BILLED
 by this same import engine land `DRAFT`, so at import time there is usually nothing to pay against
 yet, and even when there is, posting immediately breaks drafts-only.
 
-**Model** (new, `erp/accounting` — shared home; sales and purchasing both use it):
-- `module`: `"sales" | "purchasing"`
-- `order_number`: nullable — set once a file's invoice/order reference resolves to a real order;
-  blank for an unallocated payment
-- `party_type`, `party_code`, `amount_minor`, `date`, `method` (`cash|transfer|cheque`, normalized
-  incl. Arabic نقدي/تحويل/شيك)
-- `source`: `"import"` today, `"agent"` reserved for a future agent-actions caller
-- `status`: `pending | applied | discarded`
-- `applied_by`, `applied_at`, `batch_ref`
+**Architecture correction (found while planning, before any code): no shared model.**
+`erp/accounting` has zero imports from `erp.sales`/`erp.purchasing` today (confirmed by grep) —
+it's a dependency-free foundation module; `sales`/`purchasing` depend on `accounting`, never the
+reverse. A shared `PendingPayment` in `erp/accounting` that needed to call `receive_payment`
+(sales) or `pay_order` (purchasing) would invert that and create a circular import. The codebase
+also already mirrors payment concerns per-module rather than sharing them (`PaymentSerializer`
+exists separately in `erp/sales/api/serializers.py` and `erp/purchasing/api/serializers.py`;
+`receive_payment`/`pay_order` are two independent implementations, not one shared function). This
+design follows that established convention: **two mirrored models**, one per module.
+
+**Models** (new, additive):
+- `erp.sales.domain.models.PendingPayment` (`AuditedModel` — UUID pk, branch/department/team
+  scoping, audit fields, all free): `order` — real FK to `SalesOrder`, `null=True, blank=True,
+  on_delete=models.PROTECT` (null = unallocated); `party_code`, `amount_minor`, `date`, `method`
+  (`cash|transfer|cheque`, normalized incl. Arabic نقدي/تحويل/شيك); `source` (`"import"` today,
+  `"agent"` reserved for a future agent-actions caller); `status`
+  (`TextChoices`: `pending|applied|discarded`); `applied_by` (FK `identity.User`, nullable),
+  `applied_at`, `batch_ref`.
+- `erp.purchasing.domain.models.PendingPayment` — identical shape, FK to `PurchaseOrder` instead.
 
 **Services** (new, additive — `sales.receive_payment` / `purchasing.pay_order` signatures
-untouched):
+untouched), one file per module (`erp/sales/services/pending_payments.py`,
+`erp/purchasing/services/pending_payments.py`, mirroring each other exactly):
 - `create_pending_payment(...)`
-- `apply_pending_payment(pending, actor)` — resolves `module` + `order_number` to the real order
-  and calls the **existing** `receive_payment`/`pay_order` exactly as the module screen does, so
-  every current guard (overpayment, approval limit, order status) applies unchanged. This is the
-  human-in-the-loop "post" step; nothing in this design creates a second GL write-path — applying
-  a pending payment *is* calling the one sanctioned write-path, just deferred until a human
-  confirms it.
+- `apply_pending_payment(pending, actor)` — calls the module's **own, existing**
+  `receive_payment`/`pay_order` via that module's `contracts` (already exported — no new export
+  needed) exactly as the module screen does, so every current guard (overpayment, approval limit,
+  order status) applies unchanged. This is the human-in-the-loop "post" step; nothing in this
+  design creates a second GL write-path — applying a pending payment *is* calling the one
+  sanctioned write-path, just deferred until a human confirms it. Raises if `pending.order` is
+  still `None` (must `match` first).
 - `discard_pending_payment(pending, actor)`
-- `match_pending_payment(pending, order_number, actor)` — for the unallocated case, a human
-  supplies the order later.
+- `match_pending_payment(pending, order, actor)` — for the unallocated case, a human supplies the
+  order later.
 
-**Import adapter** (`erp/imports/adapters`, two entities: `payments`, `receipts`). Row-level, not
-grouped — one row is one payment. Party resolution reuses the existing `_find_customer` (
-`adapters/sales.py`) / `_find_supplier` (`adapters/purchasing.py`) helpers already used by the
-document adapters — no new lookup logic. Always creates a `PendingPayment`; never calls
+**Import adapters** (`erp/imports/adapters`, two entities: `receipts` → sales, `payments` →
+purchasing — mirrors how the module split already works everywhere else in this file). Row-level,
+not grouped — one row is one payment. Party resolution reuses the existing `_find_customer`
+(`adapters/sales.py`) / `_find_supplier` (`adapters/purchasing.py`) helpers already used by the
+document adapters — no new lookup logic; order resolution is a new small `_find_order`/
+`_find_purchase_order` by number, same shape. Always creates a `PendingPayment`; never calls
 `receive_payment`/`pay_order` at import time. Reference resolves → pre-matched row. Reference
 absent/unresolved → unmatched + a `warning` issue, per the original plan text ("import unallocated
-+ warning (allocation is a human step)").
++ warning (allocation is a human step)"). No GL posting of any kind happens until a human applies
+it — so, unlike `account_opening`, this sub-project needs **no suspense account or
+`IMPORTS_DEFAULTS` entry**.
 
-**API** (new, small): list (filterable by module / matched-state), apply, discard, match. Consumed
-by a future review screen — **out of scope for this backend session**, same split already used for
-`TH FILE_14/19/20` (B ships backend + tests, file stays open until Agent A ships the UI).
+**API** (new, small, mirrored per module under each module's existing `api/` package): list
+(filterable by matched-state), apply, discard, match. Consumed by a future review screen — **out
+of scope for this backend session**, same split already used for `TH FILE_14/19/20` (B ships
+backend + tests, file stays open until Agent A ships the UI).
 
 **Tests**: linked payment applies and reproduces today's `receive_payment`/`pay_order` behavior
 exactly (including its guards); unmatched payment stays pending with the warning surfaced; apply
