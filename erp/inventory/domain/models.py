@@ -23,6 +23,17 @@ class MovementType(models.TextChoices):
     RETURN_IN = "return_in", "Customer return (in)"
     RETURN_OUT = "return_out", "Supplier return (out)"
     ADJUSTMENT = "adjustment", "Count adjustment"
+    OPENING = "opening", "Opening balance"
+
+
+class PendingStockEntryStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPLIED = "applied", "Applied"
+    DISCARDED = "discarded", "Discarded"
+
+
+class PendingStockEntryType(models.TextChoices):
+    OPENING = "opening", "Opening balance"
 
 
 class Category(TimeStampedModel):
@@ -189,3 +200,44 @@ class StockCountLine(TimeStampedModel):
         db_table = "inventory_stock_count_line"
         ordering = ["count", "item__sku"]
         unique_together = [("count", "item")]
+
+
+class PendingStockEntry(AuditedModel):
+    """A draftable inventory opening balance: staged by an import (or, later, the AI assistant)
+    instead of posting immediately. ``receive_stock`` can't be reused for an opening — it posts
+    Dr Inventory / Cr GRNI (a goods-received-not-invoiced liability, wrong for an opening) and would
+    double-count the Inventory control account ``account_opening`` already books from the trial
+    balance. Applying calls ``services.pending_stock.apply_pending_stock_opening``, which posts to
+    ``suspense_account`` instead of GRNI. See DESIGN_PENDING_PAYMENTS_AND_STOCK.md sub-project 2.
+    """
+
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="pending_stock_entries")
+    warehouse = models.ForeignKey(
+        Warehouse, on_delete=models.PROTECT, related_name="pending_stock_entries"
+    )
+    quantity = models.DecimalField(max_digits=18, decimal_places=4)
+    unit_cost_minor = models.BigIntegerField()
+    date = models.DateField()
+    type = models.CharField(
+        max_length=16, choices=PendingStockEntryType.choices, default=PendingStockEntryType.OPENING,
+    )
+    status = models.CharField(
+        max_length=16, choices=PendingStockEntryStatus.choices, default=PendingStockEntryStatus.PENDING,
+    )
+    # The suspense account resolved at creation time (from IMPORTS_DEFAULTS) — applying uses this
+    # value, not a fresh settings lookup, so a later config change never changes an already-staged
+    # entry's posting.
+    suspense_account = models.CharField(max_length=32, blank=True, default="")
+    batch_ref = models.CharField(max_length=64, blank=True, default="")
+    applied_by = models.ForeignKey(
+        "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+    )
+    applied_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_pending_stock_entry"
+        ordering = ["-date", "-created_at"]
+        indexes = [models.Index(fields=["status"])]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.item_id} {self.warehouse_id} {self.quantity} ({self.status})"

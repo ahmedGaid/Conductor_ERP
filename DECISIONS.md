@@ -2079,3 +2079,39 @@ record and is unaffected (opt-in, guarded by an `isinstance(result, tuple)` chec
 **Full spec:** `Docs/plan/smart-import-plan/DESIGN_PENDING_PAYMENTS_AND_STOCK.md`. Sub-project 2
 (reconciled inventory opening) is specced there too but not yet built — still a documented blocker
 in `adapters/accounting.py`.
+
+## Reconciled inventory opening — PendingStockEntry + double-book guard (smart-import FILE_16 sub-project 2, 2026-07-17)
+
+`inventory_opening` was the other half of `FILE_16_FINANCE_ADAPTERS.md` Task C left unbuilt:
+`inventory.receive_stock` posts Dr Inventory / Cr GRNI immediately — GRNI is a supplier-bill
+liability, factually wrong for an opening balance — and would double-count the Inventory control
+account that `account_opening` already books as one aggregate line from the trial balance.
+
+**Fix:** a new `erp.inventory.domain.models.PendingStockEntry` (mirrors `PendingPayment`'s
+pending/applied/discarded lifecycle), staged by the import instead of posted. A human applies it
+later (`erp.inventory.services.pending_stock.apply_pending_stock_opening`), which posts Dr
+Inventory / Cr a **dedicated opening-suspense account** (`3110 Inventory Opening Balance` —
+`IMPORTS_DEFAULTS['inventory_opening']['suspense_account']`), distinct from both GRNI (2150) and
+`account_opening`'s own suspense (3100 Retained Earnings), so the two opening flows stay separately
+traceable on the balance sheet. Updates `StockBalance` with the exact weighted-average math
+`receive_stock` uses (`erp.inventory.domain.costing.receipt_value`) — no second inventory write
+path, no GRNI leg. A new `MovementType.OPENING` records it on the `StockMovement` history
+(additive choice; existing types unchanged).
+
+**Double-count guard, not a shared model.** `account_opening`'s `validate_group`
+(`erp/imports/adapters/accounting.py`) now blocks with a new `inventory_double_booked` issue when a
+TB file's lines include account 1200 (Inventory) while an `inventory_opening` batch exists and
+wasn't rolled back — checked via `erp.imports.models.ImportBatch`, NOT by importing
+`erp.inventory` ORM: `erp.inventory` already depends on `erp.accounting` (`stock.py` calls
+`contracts.post_journal`), so the reverse import would be circular. The guard fires independently
+of whether the entry balances — a human must drop the 1200 line from the TB file or skip
+item-level opening; never silently import both.
+
+**`inventory_transactions` (historic movements) stays the documented blocker, not built** —
+unchanged from the original FILE_16 finding: weighted-average costing has no as-of-date, so
+replaying a backdated movement costs it against the CURRENT balance, silently corrupting COGS.
+
+**Out of scope (matches B12–B15/B16 precedent):** any `apps/web` review/apply screen — Agent A's
+territory; `FILE_16_FINANCE_ADAPTERS.md` renamed `_done` anyway since both remaining Task
+B/C halves are now either shipped (payments/receipts, inventory_opening) or explicitly descoped
+(inventory_transactions) — nothing left to build against this file.

@@ -35,6 +35,7 @@ COA = [
     ("3", "Equity", AccountType.EQUITY, False, None),
     ("3000", "Share Capital", AccountType.EQUITY, True, "3"),
     ("3100", "Retained Earnings", AccountType.EQUITY, True, "3"),
+    ("3110", "Inventory Opening Balance", AccountType.EQUITY, True, "3"),
     ("4", "Income", AccountType.INCOME, False, None),
     ("4000", "Sales Revenue", AccountType.INCOME, True, "4"),
     ("4090", "Sales Returns", AccountType.INCOME, True, "4"),

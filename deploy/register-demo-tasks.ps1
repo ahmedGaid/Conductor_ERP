@@ -21,6 +21,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+  Write-Error "Not running elevated. Right-click PowerShell -> Run as administrator, then re-run this script."
+  exit 1
+}
+
 $RepoRoot   = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $WatchPs1   = Join-Path $RepoRoot "deploy\demo-watch-and-deploy.ps1"
 $ResetPs1   = Join-Path $RepoRoot "deploy\demo-nightly-reset.ps1"
@@ -33,20 +40,28 @@ $settings  = New-ScheduledTaskSettingsSet -StartWhenAvailable -DontStopOnIdleEnd
 $watchAction  = New-ScheduledTaskAction -Execute "powershell.exe" `
   -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$WatchPs1`""
 $watchTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
-  -RepetitionInterval (New-TimeSpan -Minutes $WatchMinutes) -RepetitionDuration ([TimeSpan]::MaxValue)
+  -RepetitionInterval (New-TimeSpan -Minutes $WatchMinutes) -RepetitionDuration (New-TimeSpan -Days 3650)
 
-Register-ScheduledTask -TaskName "ConductorDemoWatchDeploy" -Action $watchAction -Trigger $watchTrigger `
-  -Principal $principal -Settings $settings -Force | Out-Null
-Write-Host "Registered 'ConductorDemoWatchDeploy' (every $WatchMinutes min)."
+try {
+  Register-ScheduledTask -TaskName "ConductorDemoWatchDeploy" -Action $watchAction -Trigger $watchTrigger `
+    -Principal $principal -Settings $settings -Force -ErrorAction Stop | Out-Null
+  Write-Host "Registered 'ConductorDemoWatchDeploy' (every $WatchMinutes min)."
+} catch {
+  Write-Error "FAILED to register 'ConductorDemoWatchDeploy': $_"
+}
 
 # --- Nightly reset ---
 $resetAction  = New-ScheduledTaskAction -Execute "powershell.exe" `
   -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ResetPs1`""
 $resetTrigger = New-ScheduledTaskTrigger -Daily -At $ResetAt
 
-Register-ScheduledTask -TaskName "ConductorDemoNightlyReset" -Action $resetAction -Trigger $resetTrigger `
-  -Principal $principal -Settings $settings -Force | Out-Null
-Write-Host "Registered 'ConductorDemoNightlyReset' (daily at $ResetAt)."
+try {
+  Register-ScheduledTask -TaskName "ConductorDemoNightlyReset" -Action $resetAction -Trigger $resetTrigger `
+    -Principal $principal -Settings $settings -Force -ErrorAction Stop | Out-Null
+  Write-Host "Registered 'ConductorDemoNightlyReset' (daily at $ResetAt)."
+} catch {
+  Write-Error "FAILED to register 'ConductorDemoNightlyReset': $_"
+}
 
 Write-Host ""
 Write-Host "Verify either one now with, e.g.:  Start-ScheduledTask -TaskName ConductorDemoWatchDeploy"

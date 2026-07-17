@@ -389,6 +389,10 @@ IMPORTS_DEFAULTS: dict[str, dict] = {
     # line to (3100 Retained Earnings — the conventional opening-balance-equity offset). Never
     # inserted without explicit human approval; see ``imports/adapters/accounting.py``.
     "account_opening": {"suspense_account": "3100"},
+    # sub-project 2 (DESIGN_PENDING_PAYMENTS_AND_STOCK.md): a dedicated opening-suspense account for
+    # item-level opening stock, distinct from GRNI (2150) and from account_opening's 3100 so the two
+    # opening flows stay separately traceable; see ``erp/inventory/services/pending_stock.py``.
+    "inventory_opening": {"suspense_account": "3110"},
 }
 # Upload size ceiling for the Smart Import Engine (FILE_11 Task C) — bigger than the plain-CSV
 # `erp.core.import_api.MAX_UPLOAD_BYTES` (5 MB) since this engine targets messy, wide workbooks.

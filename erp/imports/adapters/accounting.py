@@ -25,27 +25,31 @@ Two grouped (document) adapters:
   delivered human-in-the-loop. Rendering that proposal and collecting the approval is the preview/
   creation-plan panel (apps/web — Agent A's territory); this file delivers the backend it reads.
 
+Both entities also carry an ``inventory_double_booked`` guard (session 16c, sub-project 2 of
+``DESIGN_PENDING_PAYMENTS_AND_STOCK.md``): if the TB file lines include the Inventory control
+account (1200) while an ``inventory_opening`` import has ALSO staged item-level opening stock,
+``account_opening`` blocks rather than double-counting Inventory on the balance sheet — see
+``_inventory_opening_imported()`` below and ``erp/imports/adapters/inventory.py``.
+
 DELIBERATELY NOT BUILT here (FILE_16 Before-You-Start STOP rule — no GL-correct, drafts-only module
 write-path exists, so building them would misstate a customer's books; recorded in ``erp-status``):
 
-* ``payments`` — the purchasing mirror of ``receipts`` below. This one is NO LONGER on this list:
-  session 16b added ``erp.purchasing.services.pending_payments.create_pending_payment`` — a
-  standalone, unallocated ``PendingPayment`` a payment can land in without touching the GL — and
-  built the ``payments`` adapter against it in ``erp/imports/adapters/purchasing.py`` (not here;
-  this file is ``erp.accounting`` adapters only).
+* ``payments``/``receipts`` — NO LONGER on this list: session 16b added
+  ``erp.{purchasing,sales}.services.pending_payments.create_pending_payment`` — a standalone,
+  unallocated ``PendingPayment`` a payment/receipt can land in without touching the GL — and built
+  adapters against them in ``erp/imports/adapters/{purchasing,sales}.py`` (not here; this file is
+  ``erp.accounting`` adapters only).
 
-  ``receipts`` (the sales-side twin of this same reasoning) is also NO LONGER on this list: session
-  16b added ``erp.sales.services.pending_payments.create_pending_payment`` — a standalone,
-  unallocated ``PendingPayment`` a receipt can land in without touching the GL — and built the
-  ``receipts`` adapter against it in ``erp/imports/adapters/sales.py`` (not here).
+* ``inventory_opening`` — NO LONGER on this list: session 16c added
+  ``erp.inventory.services.pending_stock.create_pending_stock_opening`` — a standalone
+  ``PendingStockEntry`` that applies to a dedicated opening-suspense account (never GRNI) — and
+  built an adapter against it in ``erp/imports/adapters/inventory.py`` (not here).
 
-* ``inventory_opening`` / ``inventory_transactions`` — ``inventory.receive`` posts Dr Inventory /
-  Cr GRNI (a supplier-bill liability, wrong for an opening) and ``adjust_stock`` posts the offset to
-  a P&L variance account; both post immediately and would DOUBLE-COUNT the Inventory control account
-  that ``account_opening`` already books. Weighted-average costing carries no as-of-date, so
-  replaying backdated historic movements computes cost against the CURRENT balance and corrupts
-  COGS. No draft
-  inventory-opening / sub-ledger-load service exists to import against.
+* ``inventory_transactions`` (historic movements) — STILL BLOCKED: weighted-average costing carries
+  no as-of-date, so replaying a backdated movement after later movements already happened computes
+  its cost against the CURRENT balance, silently corrupting COGS. Fixing this needs an event-sourced
+  / date-ordered cost recomputation — out of proportion for this design; see
+  ``DESIGN_PENDING_PAYMENTS_AND_STOCK.md``.
 """
 from __future__ import annotations
 
@@ -58,8 +62,14 @@ from erp.accounting.domain.models import EntryStatus, JournalEntry
 from erp.identity.roles import ACCOUNTANT
 from erp.identity.scoping import scope_queryset
 
+from ..models import ImportBatch
 from ..registry import FieldSpec, Issue, register
 from ._rbac import require_role
+
+# Mirrors ``erp.inventory.services.stock.INVENTORY_ACCOUNT`` — not imported directly: ``erp.inventory``
+# depends on ``erp.accounting`` (via ``contracts.post_journal``), so the reverse import here would be
+# circular. Used only by the ``inventory_double_booked`` guard below.
+_INVENTORY_ACCOUNT_CODE = "1200"
 
 
 # --- shared line/account resolution --------------------------------------------------------------
@@ -115,6 +125,15 @@ def _totals(lines: list[dict]) -> tuple[int, int]:
     total_debit = sum(int(line.get("debit_minor") or 0) for line in lines)
     total_credit = sum(int(line.get("credit_minor") or 0) for line in lines)
     return total_debit, total_credit
+
+
+def _inventory_opening_imported() -> bool:
+    """True when an ``inventory_opening`` import has run and wasn't rolled back — item-level opening
+    stock exists (or will, once applied), so a TB line on the Inventory control account would
+    double-count it. See sub-project 2, ``DESIGN_PENDING_PAYMENTS_AND_STOCK.md``."""
+    return ImportBatch.objects.filter(entity="inventory_opening").exclude(
+        status=ImportBatch.Status.ROLLED_BACK
+    ).exists()
 
 
 def _write_entry(actor, group: dict, *, ref_prefix: str, source: str, group_key_field: str):
@@ -322,11 +341,26 @@ class AccountOpeningAdapter:
         """Balanced → proceed. Imbalanced → record the proposed suspense line in
         ``batch.stats['opening_correction']`` (what the creation-plan panel renders) and either
         BLOCK with ``opening_imbalance`` (until a human sets ``approved``) or, once approved, inject
-        the balancing line into ``payload['lines']`` so ``write`` posts a balanced opening entry."""
-        total_debit, total_credit = _totals(payload["lines"])
+        the balancing line into ``payload['lines']`` so ``write`` posts a balanced opening entry.
+
+        Independently: if the file carries a line on the Inventory control account (1200) AND an
+        ``inventory_opening`` import has already staged item-level opening stock, importing this
+        entry too would double-count Inventory on the balance sheet — block with
+        ``inventory_double_booked`` regardless of whether the entry balances (sub-project 2)."""
+        issues: list[Issue] = []
+        lines = payload["lines"]
+        if (any(_find_account_code(line.get("account_ref")) == _INVENTORY_ACCOUNT_CODE
+                for line in lines)
+                and _inventory_opening_imported()):
+            issues.append(Issue(
+                field="", code="inventory_double_booked",
+                message="imports.issues.inventoryDoubleBooked",
+            ))
+
+        total_debit, total_credit = _totals(lines)
         diff = total_debit - total_credit
         if diff == 0:
-            return []
+            return issues
         suspense = self.defaults.get("suspense_account") or "3100"
         if diff > 0:  # debits exceed credits → the balancing line is a CREDIT
             proposal = {"account_ref": suspense, "debit_minor": 0, "credit_minor": diff}
@@ -335,13 +369,14 @@ class AccountOpeningAdapter:
 
         approved = _record_correction(batch, total_debit, total_credit, diff, suspense, proposal)
         if not approved:
-            return [Issue(
+            issues.append(Issue(
                 field="", code="opening_imbalance", message="imports.issues.openingImbalance",
                 meta={"difference_minor": diff, "suspense_account": suspense,
                       "proposed_line": proposal},
-            )]
-        payload["lines"].append(proposal)  # human-approved correction, consumed by write
-        return []
+            ))
+            return issues
+        lines.append(proposal)  # human-approved correction, consumed by write
+        return issues
 
     def write(self, actor, group: dict):
         require_role(actor, ACCOUNTANT)

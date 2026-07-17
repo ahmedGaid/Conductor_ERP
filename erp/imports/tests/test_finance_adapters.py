@@ -313,20 +313,73 @@ def test_approved_opening_trial_balance_stays_balanced_after_posting(coa):
     assert tb.total_debit == tb.total_credit == 800_00
 
 
-# --- guard: payments + inventory openings stay unbuilt (blocker, by design) -----------------------
+# --- guard: inventory_transactions (historic movements) stays unbuilt (blocker, by design) --------
 def test_blocked_finance_entities_are_not_registered():
     """FILE_16 STOP decision: no GL-correct drafts-only write-path exists for these, so registering
     an adapter would misstate a customer's books. Pin it so a later session re-reads the reasoning
     (adapters/accounting.py) before adding one.
 
-    ``receipts`` (sales customer receipts) is deliberately NOT in this list any more: session 16b
-    built ``erp.sales.services.pending_payments.create_pending_payment`` — the standalone,
-    unallocated-payment write-path this guard's original reasoning said didn't exist — and
-    registered a ``receipts`` adapter (``erp/imports/adapters/sales.py``) against it. ``payments``
-    (the purchasing mirror) is also NO LONGER on this list: session 16b added
-    ``erp.purchasing.services.pending_payments.create_pending_payment`` and registered a
-    ``payments`` adapter (``erp/imports/adapters/purchasing.py``) against it."""
+    ``receipts``/``payments`` are deliberately NOT in this list any more: session 16b built
+    ``erp.{sales,purchasing}.services.pending_payments.create_pending_payment`` — the standalone,
+    unallocated-payment write-paths this guard's original reasoning said didn't exist — and
+    registered adapters against them. ``inventory_opening`` is also NO LONGER on this list: session
+    16c built ``erp.inventory.services.pending_stock.create_pending_stock_opening`` (posts to a
+    dedicated suspense account, never GRNI) and registered an adapter against it
+    (``erp/imports/adapters/inventory.py``) — see ``test_inventory_opening_adapter.py`` and the
+    ``inventory_double_booked`` guard tests below. ``inventory_transactions`` (historic movements)
+    remains blocked: weighted-average costing has no as-of-date, so backdating would corrupt COGS
+    (documented architecture blocker, not a TODO — see DESIGN_PENDING_PAYMENTS_AND_STOCK.md)."""
     registered = set(registry.entities())
-    assert {"journal_entries", "account_opening", "receipts", "payments"} <= registered
-    for blocked in ("inventory_opening", "inventory_transactions"):
-        assert blocked not in registered
+    assert {"journal_entries", "account_opening", "receipts", "payments",
+            "inventory_opening"} <= registered
+    assert "inventory_transactions" not in registered
+
+
+# --- guard: account_opening + inventory_opening double-booking the Inventory control account ------
+def test_account_opening_flags_double_booked_when_inventory_opening_already_imported(coa):
+    """A TB file that includes the Inventory control account (1200) while item-level opening rows
+    have ALSO been imported would double-count Inventory on the balance sheet — one aggregate line
+    from the TB, one built up from item quantities. The human must drop the 1200 line from the TB
+    file or skip item-level opening; never silently import both."""
+    from erp.imports.models import ImportBatch as IB
+
+    IB.objects.create(entity="inventory_opening", status=IB.Status.DONE)
+    actor = _manager("ao5")
+    batch = _batch("account_opening")
+    _opening_rows(batch, [("1000", 500_00, 0), ("1200", 300_00, 0), ("3000", 0, 800_00)])
+
+    report = engine.execute_batch(actor, batch)
+
+    assert report["created"] == 0
+    assert not JournalEntry.objects.exists()
+    for row in batch.rows.all():
+        assert any(i["code"] == "inventory_double_booked" for i in row.issues)
+
+
+def test_account_opening_without_inventory_opening_imports_1200_normally(coa):
+    """Regression: when no ``inventory_opening`` batch exists, a TB file's 1200 line imports exactly
+    as before (existing behavior, session 16c must not change it)."""
+    actor = _manager("ao6")
+    batch = _batch("account_opening")
+    _opening_rows(batch, [("1000", 500_00, 0), ("1200", 300_00, 0), ("3000", 0, 800_00)])
+
+    report = engine.execute_batch(actor, batch)
+
+    assert report["created"] == 3
+    assert JournalEntry.objects.filter(reference="import-open:opening").exists()
+
+
+def test_account_opening_ignores_a_rolled_back_inventory_opening_batch(coa):
+    """A rolled-back inventory_opening import means nothing was actually kept — the TB's 1200 line
+    is not a double-count, so it must import normally."""
+    from erp.imports.models import ImportBatch as IB
+
+    IB.objects.create(entity="inventory_opening", status=IB.Status.ROLLED_BACK)
+    actor = _manager("ao7")
+    batch = _batch("account_opening")
+    _opening_rows(batch, [("1000", 500_00, 0), ("1200", 300_00, 0), ("3000", 0, 800_00)])
+
+    report = engine.execute_batch(actor, batch)
+
+    assert report["created"] == 3
+    assert JournalEntry.objects.filter(reference="import-open:opening").exists()
