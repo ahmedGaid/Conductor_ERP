@@ -47,6 +47,21 @@ Translating the five qualities above into rules we can actually build and check 
   first screen. The 80% path is front and centre.
 - Calm surfaces: thin `--color-border` dividers and `--shadow-xs/sm`, not heavy boxes and drop
   shadows. Whitespace (the `--space-*` scale) does the grouping.
+- **Standard field inputs (one control per job — added 2026-07-17).** So the same task feels the
+  same on every screen:
+  - **Empty choice reads as unset, never a value.** A `<select>` with nothing chosen shows a dimmed
+    "Select <field>" (`common.selectField`), styled like an input placeholder — never a bare "—".
+  - **Long or dynamic list → `ComboBox`** (`components/ComboBox.tsx`): a select-shaped trigger that
+    opens a searchable, checkmarked list. Use it for anything the user scrolls or searches —
+    customers, suppliers, items, accounts, cost centers, warehouses, price lists.
+  - **Short static list (≤ ~7 fixed options) → native `<select>`.** A search box there is noise.
+  - **Every date → `DatePicker`** (`components/DatePicker.tsx`): a calendar field on our
+    tokens/icons — Month + Year ComboBoxes, prev/next steppers, day grid, Today / Clear. Never a raw
+    `<input type="date">` in a form. Latin digits both locales; RTL week starts Saturday; the calendar
+    always fits without an inner scrollbar and stays open while its month/year lists scroll.
+  - These are the on-brand equivalents of Twenty's combobox + calendar, rebuilt with **no new
+    dependency** (Twenty pulls react-datepicker + IMask; we do not). Rollout tracked in
+    `Docs/plan/field-primitives-rollout/`.
 
 ### 4. Readability — built for long workdays
 - Generous line-height (`--line-height-ui`), comfortable density, and a strict type scale. Numbers use

@@ -36,6 +36,7 @@ import { EntityLink } from "../../components/EntityLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { PaymentDialog } from "../../components/PaymentDialog";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
@@ -74,6 +75,7 @@ export function OrderDetailPage() {
   // so it doesn't need to follow in-page optimistic flips (it refreshes on the next visit/reload).
   const { data: history } = useAsync(() => getOrderHistory(id as string), [id], `sales:order:${id}:history`);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
 
   useSetDocumentCrumb(data?.number);
 
@@ -123,6 +125,21 @@ export function OrderDetailPage() {
 
   const setStatus = (status: OrderStatus) => (order: SalesOrder): SalesOrder => ({ ...order, status });
 
+  // A partial payment leaves the order open with the remaining balance visible; only a payment
+  // that clears the full outstanding amount flips the order to paid.
+  function confirmPayment(amountMinor: number) {
+    if (!data) return;
+    const o = data;
+    act(
+      (x) => {
+        const paid = x.paid_minor + amountMinor;
+        return { ...x, paid_minor: paid, outstanding_minor: x.invoiced_minor - paid, status: paid >= x.invoiced_minor ? "paid" : x.status };
+      },
+      () => payOrder(o.id, amountMinor),
+      amountMinor >= o.outstanding_minor ? "paid" : "partiallyPaid",
+    );
+  }
+
   // Surface this order in the ⌘K "Recent" list under its number once it has loaded.
   useRecentEntity(data?.number);
 
@@ -135,7 +152,7 @@ export function OrderDetailPage() {
       case "confirm": act(setStatus("confirmed"), () => confirmOrder(o.id), "confirmed"); break;
       case "deliver": act(setStatus("delivered"), () => deliverOrder(o.id), "delivered"); break;
       case "invoice": act(setStatus("invoiced"), () => invoiceOrder(o.id), "invoiced"); break;
-      case "pay": act(setStatus("paid"), () => payOrder(o.id, o.outstanding_minor), "paid"); break;
+      case "pay": setPayDialogOpen(true); break;
       case "return": act(setStatus("returned"), () => returnOrder(o.id), "returned"); break;
     }
   }
@@ -164,7 +181,10 @@ export function OrderDetailPage() {
     if (s === "invoiced") {
       pageActions.push({ id: "pay", label: t("sales.detail.recordPayment"), run: () => runAction("pay") });
     }
-    if (s === "invoiced" || s === "paid") {
+    // "return" is NOT pushed here while invoiced — it's already mirrored from barMenu below
+    // (useSetPageActions), so adding it here too would duplicate the palette row. Once paid, it
+    // falls off barMenu (menu only covers "invoiced"), so it still needs registering here.
+    if (s === "paid") {
       pageActions.push({ id: "return", label: t("sales.detail.return"), run: () => runAction("return") });
     }
   }
@@ -190,7 +210,7 @@ export function OrderDetailPage() {
       return { label: t("sales.detail.invoice"), onClick: () => act(setStatus("invoiced"), () => invoiceOrder(o.id), "invoiced") };
     }
     if (o.status === "invoiced") {
-      return { label: t("sales.detail.recordPayment"), onClick: () => act(setStatus("paid"), () => payOrder(o.id, o.outstanding_minor), "paid") };
+      return { label: t("sales.detail.recordPayment"), onClick: () => setPayDialogOpen(true) };
     }
     if (o.status === "paid") {
       return { label: t("sales.detail.return"), icon: "rotate", onClick: () => act(setStatus("returned"), () => returnOrder(o.id), "returned") };
@@ -428,6 +448,16 @@ export function OrderDetailPage() {
         danger
         onConfirm={() => act(setStatus("cancelled"), () => cancelOrder(data.id), "cancelled")}
         onClose={() => setConfirmCancel(false)}
+      />
+
+      <PaymentDialog
+        open={payDialogOpen}
+        title={t("sales.detail.recordPayment")}
+        outstandingMinor={data.outstanding_minor}
+        currency={data.currency}
+        confirmLabel={t("document.paymentDialog.confirm")}
+        onConfirm={confirmPayment}
+        onClose={() => setPayDialogOpen(false)}
       />
     </section>
   );

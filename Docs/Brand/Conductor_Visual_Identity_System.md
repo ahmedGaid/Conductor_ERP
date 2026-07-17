@@ -201,6 +201,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Trial balance | ميزان المراجعة | — |
 | Ledger | دفتر الأستاذ | — |
 | Payment | دفعة / سداد | — |
+| Partial payment (less than the full outstanding balance) | سداد جزئي | دفعة جزئية (reserve **سداد** for the settlement action per the Payment row above; **جزئي** marks it partial, 2026-07-16) |
 | Receivables | المبالغ المستحقة (لنا) | الذمم المدينة (too technical for the 80% user) |
 | Approval / Approve | موافقة | اعتماد (unified to **موافقة** app-wide, 2026-06-23) |
 | Draft | مسودة | — |
@@ -220,6 +221,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Overdue (a money doc past its due date) | متأخر | فائت / متجاوز (use **متأخر** — the collections word Egyptian SMBs say; the due-date meta marker, 2026-07-07) |
 | Due soon (nearing its due date) | يستحق قريبًا | قريب الاستحقاق (use the verbal **يستحق قريبًا** — reads as natural business Arabic beside the date, 2026-07-07) |
 | Owner (record assignee — the rep responsible, e.g. a ticket/lead) | المسؤول | مالك (reserve **مالك** for business/asset ownership — a different concept, 2026-07-09) |
+| Webhook (outbound event subscription that calls an external URL) | ويب هوك (plural: الويب هوكس) | تكامل (too broad — a webhook is one *kind* of integration; the term stays Latin-derived like "API", 2026-07-16) |
 
 ### 6.2 Status & action voice (Arabic)
 Human-language statuses (Directive — "Waiting for Finance approval") must read as **natural Egyptian
@@ -328,6 +330,12 @@ fast-and-rough (Brief §6, value 5).
 
 ## 11. Change log
 
+- **2026-07-16 — Lexicon §6.1 extended (outbound webhooks, twenty-harvest FILE_05).** Added
+  **Webhook → ويب هوك** (plural **الويب هوكس**), governed here before shipping the Settings →
+  Webhooks subscription UI.
+- **2026-07-16 — Lexicon §6.1 extended (partial payments, delivery-readiness FILE_05).** Added
+  **Partial payment → سداد جزئي**, governed here before shipping the sales/purchasing payment
+  dialogs' amount-entry flow.
 - **2026-07-09 — Lexicon §6.1 extended (unified-ui meta rollout, FILE_08).** Added **Owner →
   المسؤول** (reserve **مالك** for business/asset ownership) as the canonical term for a record's
   assigned rep, governed here before shipping the OwnerChip column on tickets/leads.

@@ -30,16 +30,37 @@ split backend/UI into separate FILEs, so this costs nothing).
 ahmedgaid85 → B). So Claude Desktop opened at ERP resumes lane A; VS Code opened at ERP-B resumes
 lane B — automatically.
 
-## Setup (P0 — first agent to start, Either)
+## ⚠️ Incident 2026-07-16 — both agents ran in ONE checkout (fixed; rules below are now HARD)
 
-1. Push current `main` to origin (contains `dd2532f` + `aba5c02`).
-2. Agent B environment (one-time): `git worktree add C:\AhmedGaid\ERP-B -b feat/b-lane` →
-   in ERP-B: own `.venv` (`python -m venv .venv; pip install -r requirements.txt` — mirror root),
-   `npm install` in `apps/web` only if B ever runs web gates, own `.env` with **DB `erp_b`**
-   (`createdb`), Django port **8001**, Vite **5174**. Redis shared (or `/1`). This kills DB/test
-   collisions (`test_erp` vs `test_erp_b`) and port clashes.
-3. Branches: A on `feat/a-<task>`, B on `feat/b-<task>`, one branch per task or per wave; push
-   after every task; PR or ff-merge to `main` only at checkpoints, gate:all green first.
+What happened: ERP-B worktree was never created, so B executed in `C:\AhmedGaid\ERP` on A's
+branch. Wave-1 commits (A1 54a3662, A3 1b951c7, A2 14ca31a, B1 5e1d7d9) all landed mixed on
+`feat/a-partial-payments` (work itself valid — merge together at M1). Worse: both lanes shared
+test DB `test_erp`; concurrent pytest runs dropped it mid-run → 78 phantom "database does not
+exist" errors. Fix applied: worktree `C:\AhmedGaid\ERP-B` created on branch `feat/b-lane`
+(from `376a5c9`, contains all wave-1 work), own `.env` (DB `erp_b` → test DB `test_erp_b`,
+Redis `/1`), DB created, own venv.
+
+**HARD STOPS (both agents, before EVERY command batch — not just at session start):**
+1. `Get-Location` check: Agent B NEVER executes anything (pytest, gates, git commit, runserver,
+   npm) inside `C:\AhmedGaid\ERP`. Agent A NEVER inside `C:\AhmedGaid\ERP-B`. Wrong path →
+   STOP, tell the user to reopen the editor at the right folder. No exceptions, no "just this once".
+2. Branch prefix = identity: A commits only on `feat/a-*`, B only on `feat/b-*`. About to commit
+   on the other prefix → you are in the wrong checkout; stop.
+3. Test isolation is automatic ONLY via the right checkout (each `.env` carries its own
+   DATABASE_URL). Running pytest from the wrong folder silently attacks the other lane's test DB.
+
+## Setup (P0 — DONE 2026-07-16 during incident fix)
+
+1. ✅ `main` pushed to origin.
+2. ✅ Agent B environment: worktree `C:\AhmedGaid\ERP-B` on `feat/b-lane` (from `376a5c9`),
+   own `.venv`, own `.env` with **DB `erp_b`** (created, migrated), Redis **`/1`**, Django port
+   **8001**, Vite **5174**. `npm install` in `apps/web` only if B ever runs web gates (not done —
+   B shouldn't need it). Test DBs now disjoint: `test_erp` (A) vs `test_erp_b` (B).
+3. Branches: A stays on `feat/a-*` in ERP, B stays on `feat/b-*` in ERP-B, one branch per task or
+   per wave; push after every task; PR or ff-merge to `main` only at checkpoints, gate:all green
+   first. Wave-1 mixed branch `feat/a-partial-payments` merges as-is at M1; `feat/b-lane` starts
+   from its tip, so M1 = merge `feat/b-lane` (which will contain everything) or both, ff order
+   A-branch → B-branch.
 
 ## Task table
 
@@ -49,11 +70,11 @@ Status: `todo | doing(<agent>) | done(<commit>) | blocked(<why>)`
 
 | ID | Task (= plan file) | Agent | Files/modules | Deps | Est | Checkpoint | Status |
 |---|---|---|---|---|---|---|---|
-| A1 | Partial payments UI + API tests — `delivery-readiness/FILE_05` | A | apps/web sales collect + purchasing payment dialogs, api clients, ar/en.json; erp/sales+purchasing tests (extend only) | — | 1 session | M1 | todo |
-| A2 | Playwright E2E — `twenty-harvest/FILE_04` ⛔ new-dep decision: ask founder FIRST; denied → the file's Option B fallback | A | new `e2e/`, apps/web package.json | A1 (so flows incl. partials) | 1–2 sessions | M1 (not gate-blocking) | todo |
-| A3 | Outbound webhooks — `twenty-harvest/FILE_05` | A | new `erp/webhooks/`, settings, tests | — | 1 session | M2 | todo |
-| B1 | `provision_customer` — `delivery-readiness/FILE_06` | B | `erp/core/management/commands/provision_customer.py`, erp/core tests, RUNBOOK §install | — | 1 session | M1 | todo |
-| B2 | Release versioning — `twenty-harvest/FILE_01` | B | `VERSION`, `CHANGELOG.md`, version surface | — | 0.5 | M1 | todo |
+| A1 | Partial payments UI + API tests — `delivery-readiness/FILE_05` | A | apps/web sales collect + purchasing payment dialogs, api clients, ar/en.json; erp/sales+purchasing tests (extend only) | — | 1 session | M1 | done(54a3662) |
+| A2 | Playwright E2E — `twenty-harvest/FILE_04` ⛔ new-dep decision: ask founder FIRST; denied → the file's Option B fallback | A | new `e2e/`, apps/web package.json | A1 (so flows incl. partials) | 1–2 sessions | M1 (not gate-blocking) | done(14ca31a) |
+| A3 | Outbound webhooks — `twenty-harvest/FILE_05` | A | erp/notifications (extend), settings, tests | — | 1 session | M2 | done(1b951c7) |
+| B1 | `provision_customer` — `delivery-readiness/FILE_06` | A (cross-lane, B idle) | `erp/core/management/commands/provision_customer.py`, erp/core tests, RUNBOOK §install | — | 1 session | M1 | done(5e1d7d9) |
+| B2 | Release versioning — `twenty-harvest/FILE_01` | A (cross-lane, B idle) | `VERSION`, `CHANGELOG.md`, version surface | — | 0.5 | M1 | done(9e2b422) |
 | B3 | `manage.py upgrade` — `twenty-harvest/FILE_02` | B | erp/core models+migration, upgrade command, tests, RUNBOOK §upgrade | B2 | 1 session | M1 | todo |
 | B4 | gate16 drill + gate17 API snapshot — `twenty-harvest/FILE_03` | B | `scripts/gates/gate16.py`, `gate17.py`, `_run.py`, snapshot | B3 | 1 session | M1 | todo |
 
@@ -67,7 +88,7 @@ A2/A3 merge at M1 if ready, else M2 — they never block the gate.
 |---|---|---|---|---|---|---|---|
 | A4 | Saved views backend — `TH/FILE_06` | A | erp/core SavedView model+API (**coordinate: B is out of erp/core after B4**) | M1 | 1 | M2 | todo |
 | A5 | Saved views UI — `TH/FILE_07` | A | apps/web list pages, ar/en.json | A4 | 1 | **M2 = TH Tier 1 merge** | todo |
-| A6 | ⌘K actions — `TH/FILE_08` | A | apps/web command menu | A5 | 1 | M3 | todo |
+| A6 | ⌘K actions — `TH/FILE_08` | A (started ahead of A5 — founder override, palette/registry/role-filter/context-inject already shipped by unified-ui; this session found+fixed a duplicate-action bug across 5 detail pages) | apps/web command menu | A5 | 1 | M3 | done(32c054b) |
 | B5 | Auto-masters — `SI/FILE_08` | B | erp/imports | M1 (queue priority only — may start early if B-lane idles in wave 1) | 1 | M2 | todo |
 | B6 | Execution engine — `SI/FILE_09` | B | erp/imports | B5 | 1 | M2 | todo |
 | B7 | Background runner — `SI/FILE_10` | B | erp/imports + Celery task | B6 | 1 | **M2 = SI engine merge** | todo |

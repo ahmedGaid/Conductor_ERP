@@ -6,6 +6,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { DatePicker } from "../../components/DatePicker";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -38,11 +39,11 @@ export function VatReturnPage() {
       <div className="acct-toolbar">
         <label className="acct-field">
           <span>{t("accounting.report.from")}</span>
-          <input className="latin" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <DatePicker value={from} onChange={setFrom} />
         </label>
         <label className="acct-field">
           <span>{t("accounting.report.to")}</span>
-          <input className="latin" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <DatePicker value={to} onChange={setTo} />
         </label>
       </div>
 

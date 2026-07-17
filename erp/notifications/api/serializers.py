@@ -30,3 +30,23 @@ class InboxSerializer(serializers.Serializer):
     event_name = serializers.CharField()
     read_at = serializers.DateTimeField()
     created_at = serializers.DateTimeField()
+
+
+class WebhookSubscriptionSerializer(serializers.Serializer):
+    """Never includes ``secret`` — that is only ever returned once, on create/regenerate."""
+
+    id = serializers.UUIDField()
+    url = serializers.URLField()
+    event_names = serializers.ListField(child=serializers.CharField())
+    is_active = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+
+
+class WebhookDeliverySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    event_name = serializers.CharField()
+    status = serializers.CharField()
+    attempts = serializers.IntegerField()
+    last_error = serializers.CharField()
+    next_retry_at = serializers.DateTimeField(allow_null=True)
+    created_at = serializers.DateTimeField()

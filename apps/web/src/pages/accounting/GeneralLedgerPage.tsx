@@ -13,6 +13,7 @@ import { PartyLink, type PartyType } from "../../components/PartyLink";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { ComboBox } from "../../components/ComboBox";
 import "./accounting.css";
 
 export function GeneralLedgerPage() {
@@ -25,6 +26,19 @@ export function GeneralLedgerPage() {
   // Party filter encoded as "type:code" (e.g. "customer:CUST001"); "" = all parties.
   const [party, setParty] = useState("");
   const [partyType, partyCode] = party ? party.split(":") : ["", ""];
+
+  const accountOptions = postable.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }));
+  const partyOptions = [
+    { value: "", label: t("accounting.report.allParties") },
+    ...(customers ?? []).map((c) => ({
+      value: `customer:${c.code}`,
+      label: `${t("accounting.report.customers")} · ${c.code} · ${c.name}`,
+    })),
+    ...(suppliers ?? []).map((s) => ({
+      value: `supplier:${s.code}`,
+      label: `${t("accounting.report.suppliers")} · ${s.code} · ${s.name}`,
+    })),
+  ];
 
   const { data, loading, error, reload } = useAsync(
     () => (account ? generalLedger(account, { partyType, party: partyCode }) : Promise.resolve(null)),
@@ -44,38 +58,21 @@ export function GeneralLedgerPage() {
       <div className="acct-toolbar">
         <label className="acct-field">
           <span>{t("accounting.entry.account")}</span>
-          <select value={account} onChange={(e) => setAccount(e.target.value)}>
-            <option value="">{t("accounting.report.pickAccount")}</option>
-            {postable.map((a) => (
-              <option key={a.code} value={a.code}>
-                {a.code} · {a.name}
-              </option>
-            ))}
-          </select>
+          <ComboBox
+            options={accountOptions}
+            value={account}
+            onChange={setAccount}
+            placeholder={t("accounting.report.pickAccount")}
+          />
         </label>
         <label className="acct-field">
           <span>{t("accounting.report.party")}</span>
-          <select value={party} onChange={(e) => setParty(e.target.value)}>
-            <option value="">{t("accounting.report.allParties")}</option>
-            {(customers ?? []).length > 0 && (
-              <optgroup label={t("accounting.report.customers")}>
-                {(customers ?? []).map((c) => (
-                  <option key={`c:${c.code}`} value={`customer:${c.code}`}>
-                    {c.code} · {c.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {(suppliers ?? []).length > 0 && (
-              <optgroup label={t("accounting.report.suppliers")}>
-                {(suppliers ?? []).map((s) => (
-                  <option key={`s:${s.code}`} value={`supplier:${s.code}`}>
-                    {s.code} · {s.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
+          <ComboBox
+            options={partyOptions}
+            value={party}
+            onChange={setParty}
+            placeholder={t("accounting.report.allParties")}
+          />
         </label>
         {partyCode && (
           <PartyLink type={partyType as PartyType} code={partyCode} className="acct-link">

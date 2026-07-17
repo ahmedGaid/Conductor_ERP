@@ -1624,7 +1624,12 @@
     "undo": "Undo",
     "undone": "Undone",
     "notFound": "We couldn’t find that record.",
-    "owner": "Owner"
+    "owner": "Owner",
+    "selectField": "Select {{field}}",
+    "search": "Search…",
+    "noResults": "No results",
+    "today": "Today",
+    "clear": "Clear"
   },
   "import": {
     "action": "Import CSV",
@@ -1836,6 +1841,7 @@
   },
   "help": {
     "button": "Help",
+    "buttonWithIssues": "Help — {{count}} to fix",
     "close": "Close help",
     "purpose": "What this page is for",
     "howItWorks": "How it works",
@@ -1845,7 +1851,13 @@
     "tips": "Tips",
     "mistakes": "Common mistakes",
     "related": "Related pages",
-    "noGuide": "A guide for this page is coming soon."
+    "noGuide": "A guide for this page is coming soon.",
+    "tabsLabel": "Help view",
+    "tabGuide": "Guide",
+    "tabLive": "Live",
+    "live": {
+      "calm": "Nothing needs your attention on this page right now."
+    }
   },
   "export": {
     "csv": "CSV",
@@ -1863,7 +1875,8 @@
       "notifications": "Notifications",
       "accessibility": "Accessibility",
       "organization": "Organization",
-      "branches": "Branches"
+      "branches": "Branches",
+      "webhooks": "Webhooks"
     },
     "common": {
       "auto": "Auto"
@@ -1995,7 +2008,9 @@
         "disabled": "Never",
         "draft": "Drafts only",
         "confirmed": "Until confirmed"
-      }
+      },
+      "version": "Version",
+      "versionValue": "Version {{version}}"
     },
     "branches": {
       "adminOnly": "Only a System Admin can manage branches.",
@@ -2008,6 +2023,37 @@
       "emptyHint": "Add your first branch using the form above.",
       "toastCreated": "Branch created",
       "toastUpdated": "Branch updated"
+    },
+    "webhooks": {
+      "adminOnly": "Only a System Admin can manage webhooks.",
+      "lead": "Relay events to an external system as a signed HTTP call the moment they happen.",
+      "url": "URL",
+      "events": "Events",
+      "active": "Active",
+      "add": "Add webhook",
+      "regenerateSecret": "Regenerate secret",
+      "delete": "Delete",
+      "empty": "No webhooks yet.",
+      "emptyHint": "Add a URL and pick the events to relay using the form above.",
+      "toastCreated": "Webhook created",
+      "toastUpdated": "Webhook updated",
+      "toastDeleted": "Webhook deleted",
+      "secretRevealTitle": "Signing secret",
+      "secretRevealDesc": "Shown once — copy it now. Use it to verify the X-Conductor-Signature header on each delivery.",
+      "secretRevealDismiss": "I've copied it",
+      "deliveries": {
+        "title": "Deliveries",
+        "event": "Event",
+        "status": "Status",
+        "attempts": "Attempts",
+        "retryNow": "Retry now",
+        "toastRetried": "Delivery retried",
+        "empty": "No deliveries yet.",
+        "status_pending": "Pending",
+        "status_delivered": "Delivered",
+        "status_retrying": "Retrying",
+        "status_failed": "Failed"
+      }
     }
   },
   "admin": {
@@ -2167,7 +2213,16 @@
     "linkCopyFailed": "Couldn’t copy link",
     "completedOn": "All steps completed on {{date}}",
     "cancelConfirmTitle": "Cancel {{number}}?",
-    "cancelConfirmBody": "This can’t be undone."
+    "cancelConfirmBody": "This can’t be undone.",
+    "paymentDialog": {
+      "amount": "Amount",
+      "outstandingNow": "Outstanding now",
+      "paying": "Paying",
+      "willRemain": "Will remain",
+      "errorZero": "Enter an amount greater than zero",
+      "errorExceeds": "Amount is more than the outstanding balance",
+      "confirm": "Record"
+    }
   },
   "bulk": {
     "region": "Selected items",
@@ -2242,6 +2297,10 @@
         "paid": {
           "title": "Sales order {{number}} paid",
           "context": "Paid in full. Nothing more to do."
+        },
+        "partiallyPaid": {
+          "title": "Partial payment recorded for {{number}}",
+          "context": "Partially paid. {{amount}} remaining."
         },
         "returned": {
           "title": "Sales order {{number}} returned",
@@ -2379,6 +2438,10 @@
         "paid": {
           "title": "Purchase order {{number}} paid",
           "context": "Paid in full. Nothing more to do."
+        },
+        "partiallyPaid": {
+          "title": "Partial payment recorded for {{number}}",
+          "context": "Partially paid. {{amount}} remaining."
         },
         "returned": {
           "title": "Purchase order {{number}} returned",

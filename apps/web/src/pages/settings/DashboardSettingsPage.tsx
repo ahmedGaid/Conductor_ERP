@@ -5,6 +5,7 @@ import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { SettingRow, Toggle } from "./controls";
 import { DASHBOARD_WIDGETS } from "./dashboardWidgets";
+import { ComboBox } from "../../components/ComboBox";
 
 const LANDING_OPTIONS = ["/", "/sales", "/purchasing", "/inventory", "/accounting", "/crm", "/workflows"];
 
@@ -53,17 +54,15 @@ export function DashboardSettingsPage() {
           desc={t("settings.dashboard.landingDesc")}
           htmlFor="ds-landing"
         >
-          <select
-            id="ds-landing"
+          <ComboBox
             value={prefs.default_landing || "/"}
-            onChange={(e) => update({ default_landing: e.target.value })}
-          >
-            {LANDING_OPTIONS.map((to) => (
-              <option key={to} value={to}>
-                {t(`settings.dashboard.landingOptions.${to === "/" ? "dashboard" : to.slice(1)}`)}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => update({ default_landing: v })}
+            placeholder={t("settings.dashboard.landingOptions.dashboard")}
+            options={LANDING_OPTIONS.map((to) => ({
+              value: to,
+              label: t(`settings.dashboard.landingOptions.${to === "/" ? "dashboard" : to.slice(1)}`),
+            }))}
+          />
         </SettingRow>
 
         <div className="setrow setrow--block">

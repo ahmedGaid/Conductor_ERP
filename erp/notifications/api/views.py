@@ -11,15 +11,23 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.errors import NotFoundError, ValidationError
 from erp.core.exports import EXPORT_FORMATS, Column, ReportTable, export_response
 from erp.identity.permissions import HasAnyRole
-from erp.identity.roles import BRANCH_MANAGER
+from erp.identity.roles import BRANCH_MANAGER, SYSTEM_ADMIN
 
 from .. import services
 from ..domain.models import Notification
-from .serializers import InboxSerializer, NotificationSerializer
+from ..webhook_catalog import WEBHOOK_EVENT_CATALOG
+from .serializers import (
+    InboxSerializer,
+    NotificationSerializer,
+    WebhookDeliverySerializer,
+    WebhookSubscriptionSerializer,
+)
 
 _CanResend = HasAnyRole.require(BRANCH_MANAGER)
+_IsAdmin = HasAnyRole.require(SYSTEM_ADMIN)
 
 
 def _envelope(data, status: int = 200) -> Response:
@@ -101,3 +109,95 @@ class InboxMarkAllReadView(APIView):
     def post(self, request: Request) -> Response:
         count = services.mark_all_read(request.user)
         return _envelope({"count": count})
+
+
+# --- Outbound webhooks: admin-only subscription management + delivery log ---
+
+class WebhookEventCatalogView(APIView):
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(WEBHOOK_EVENT_CATALOG)
+
+
+class WebhookSubscriptionListView(APIView):
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def get(self, request: Request) -> Response:
+        subs = services.list_webhook_subscriptions()
+        return _envelope(WebhookSubscriptionSerializer(subs, many=True).data)
+
+    def post(self, request: Request) -> Response:
+        try:
+            sub = services.create_webhook_subscription(
+                url=request.data.get("url", ""),
+                event_names=request.data.get("event_names") or [],
+                actor=request.user,
+            )
+        except ValidationError as exc:
+            return _envelope({"detail": exc.message}, status=400)
+        data = dict(WebhookSubscriptionSerializer(sub).data)
+        data["secret"] = sub.secret  # shown exactly once — the caller must record it now
+        return _envelope(data, status=201)
+
+
+class WebhookSubscriptionDetailView(APIView):
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def patch(self, request: Request, subscription_id) -> Response:
+        try:
+            sub = services.update_webhook_subscription(
+                subscription_id,
+                url=request.data.get("url"),
+                event_names=request.data.get("event_names"),
+                is_active=request.data.get("is_active"),
+                actor=request.user,
+            )
+        except NotFoundError:
+            return _envelope({"detail": "not found"}, status=404)
+        except ValidationError as exc:
+            return _envelope({"detail": exc.message}, status=400)
+        return _envelope(WebhookSubscriptionSerializer(sub).data)
+
+    def delete(self, request: Request, subscription_id) -> Response:
+        try:
+            services.delete_webhook_subscription(subscription_id)
+        except NotFoundError:
+            return _envelope({"detail": "not found"}, status=404)
+        return Response(status=204)
+
+
+class WebhookSecretRegenerateView(APIView):
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def post(self, request: Request, subscription_id) -> Response:
+        try:
+            sub = services.regenerate_webhook_secret(subscription_id)
+        except NotFoundError:
+            return _envelope({"detail": "not found"}, status=404)
+        data = dict(WebhookSubscriptionSerializer(sub).data)
+        data["secret"] = sub.secret
+        return _envelope(data)
+
+
+class WebhookDeliveryListView(APIView):
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def get(self, request: Request, subscription_id) -> Response:
+        try:
+            deliveries = services.list_webhook_deliveries(subscription_id)
+        except NotFoundError:
+            return _envelope({"detail": "not found"}, status=404)
+        return _envelope(WebhookDeliverySerializer(deliveries, many=True).data)
+
+
+class WebhookDeliveryRetryView(APIView):
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def post(self, request: Request, delivery_id) -> Response:
+        from ..domain.models import WebhookDelivery
+
+        if not WebhookDelivery.objects.filter(id=delivery_id).exists():
+            return _envelope({"detail": "not found"}, status=404)
+        delivery = services.retry_webhook_now(delivery_id)
+        return _envelope(WebhookDeliverySerializer(delivery).data)

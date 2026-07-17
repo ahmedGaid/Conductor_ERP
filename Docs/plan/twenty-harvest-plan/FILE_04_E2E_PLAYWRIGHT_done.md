@@ -58,10 +58,10 @@ step, like the gate16 drill.
 
 ## Smoke Test
 
-- [ ] DECISIONS entry written (A or B) BEFORE any install
-- [ ] (A) `npm run e2e` green on the seeded dev env, ar project first
-- [ ] (A) One deliberate UI break (local, reverted) fails the right spec with a readable trace
-- [ ] `npx tsc -b` still green; no new prod dependency in the bundle
+- [x] DECISIONS entry written (A or B) BEFORE any install
+- [x] (A) `npm run e2e` green on the seeded dev env, ar project first
+- [x] (A) One deliberate UI break (local, reverted) fails the right spec with a readable trace
+- [x] `npx tsc -b` still green; no new prod dependency in the bundle
 
 ---
 

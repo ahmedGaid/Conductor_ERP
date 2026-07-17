@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { usePreferences } from "../preferences/PreferencesContext";
 import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
+import { modKey, modKeyCombo } from "../lib/keyboard";
 import { useInbox } from "../hooks/useInbox";
 import { useAssistant } from "../assistant/AssistantProvider";
 import { Tooltip } from "../components/Tooltip";
@@ -74,7 +75,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
       >
         <span className="commandbar__search-icon" aria-hidden="true"><NavIcon name="search" /></span>
         <span className="commandbar__search-text">{t("shell.commandPlaceholder")}</span>
-        <kbd className="commandbar__kbd latin">⌘K</kbd>
+        <kbd className="commandbar__kbd latin">{modKeyCombo("K")}</kbd>
       </button>
 
       <div className="commandbar__actions">
@@ -89,7 +90,7 @@ export function CommandBar({ onMenu }: { onMenu?: () => void }) {
           </button>
         </Tooltip>
         {assistantEnabled && (
-          <Tooltip label={t("assistant.open")} placement="bottom" shortcut={["⌘", "J"]}>
+          <Tooltip label={t("assistant.open")} placement="bottom" shortcut={[modKey(), "J"]}>
             <button
               type="button"
               className="btn btn--ghost btn--icon"

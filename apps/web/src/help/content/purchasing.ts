@@ -37,6 +37,66 @@ export const newPurchaseOrderGuide: HelpGuide = {
     en: "Pick the supplier and destination warehouse, then add lines (item + quantity + cost). Choose a tax code if the purchase carries recoverable VAT.",
     ar: "اختر المورد ومخزن الوجهة، ثم أضف السطور (صنف + كمية + تكلفة). اختر رمزاً ضريبياً إن كانت المشتريات تحمل ضريبة قابلة للاسترداد.",
   },
+  alerts: [
+    {
+      when: (s) => s.hasError === true,
+      tone: "warn",
+      title: { en: "Something needs fixing", ar: "هناك ما يحتاج تصحيحاً" },
+      body: {
+        en: "The red message above the button explains what's missing — fix that, then submit again.",
+        ar: "الرسالة الحمراء فوق الزر توضّح الناقص — صحّحها ثم أرسل مرة أخرى.",
+      },
+    },
+  ],
+  checklist: {
+    name: { en: "Build this purchase order", ar: "أنشئ أمر الشراء هذا" },
+    doneMessage: {
+      en: "Everything's filled in — review the total, then click Create order.",
+      ar: "كل شيء مكتمل — راجع الإجمالي ثم اضغط «إنشاء الطلب».",
+    },
+    steps: [
+      {
+        label: { en: "Pick the supplier", ar: "اختر المورد" },
+        detail: [
+          {
+            en: "Open the Supplier field and search by name — start typing and the list narrows.",
+            ar: "افتح حقل المورد وابحث بالاسم — ابدأ الكتابة وتضيق القائمة.",
+          },
+        ],
+        hint: { en: "Supplier set. Now pick the destination.", ar: "تم تحديد المورد. الآن اختر الوجهة." },
+        done: (s) => s.supplierPicked === true,
+      },
+      {
+        label: { en: "Pick the destination warehouse", ar: "اختر مخزن الوجهة" },
+        detail: [
+          {
+            en: "Open the Warehouse field — pick the one the goods will arrive at.",
+            ar: "افتح حقل المخزن — اختر الذي ستصل إليه البضاعة.",
+          },
+        ],
+        hint: { en: "Warehouse set. Now add what you're ordering.", ar: "تم تحديد المخزن. الآن أضف ما تطلبه." },
+        done: (s) => s.warehousePicked === true,
+      },
+      {
+        label: { en: "Add at least one item line", ar: "أضف سطر صنف واحد على الأقل" },
+        detail: [
+          {
+            en: "In the item row, search and pick a product.",
+            ar: "في سطر الصنف، ابحث واختر منتجاً.",
+          },
+          {
+            en: "Set the quantity and the cost you're paying per unit.",
+            ar: "حدّد الكمية والتكلفة التي تدفعها لكل وحدة.",
+          },
+          {
+            en: "Click Add line for a second item, or leave it at one.",
+            ar: "اضغط «إضافة سطر» لصنف ثانٍ، أو اتركه بصنف واحد.",
+          },
+        ],
+        done: (s) => s.lineReady === true,
+      },
+    ],
+  },
   related: [
     { to: "/purchasing", label: { en: "All purchase orders", ar: "كل أوامر الشراء" } },
   ],
@@ -118,6 +178,51 @@ export const newPurchaseRequestGuide: HelpGuide = {
     en: "Add the items and quantities you need. Submit it to start the approval flow; once approved it can be converted to a purchase order.",
     ar: "أضف الأصناف والكميات التي تحتاجها. قدّمه لبدء مسار الموافقة؛ وبعد الاعتماد يمكن تحويله إلى أمر شراء.",
   },
+  alerts: [
+    {
+      when: (s) => s.hasError === true,
+      tone: "warn",
+      title: { en: "Can't submit yet", ar: "لا يمكن التقديم بعد" },
+      body: { en: "Check the message below the form — usually a missing supplier, warehouse, or line.", ar: "راجع الرسالة أسفل النموذج — عادة مورّد أو مخزن أو سطر ناقص." },
+    },
+  ],
+  checklist: {
+    name: { en: "Submit your first request", ar: "قدّم أول طلب" },
+    doneMessage: {
+      en: "Request submitted — it's now waiting for approval. Once approved, convert it to a purchase order.",
+      ar: "قُدّم الطلب — وهو الآن ينتظر الموافقة. بعد الاعتماد حوّله إلى أمر شراء.",
+    },
+    steps: [
+      {
+        label: { en: "Pick the supplier", ar: "اختر المورّد" },
+        detail: [
+          { en: "Search by code or name in the Supplier field.", ar: "ابحث بالكود أو الاسم في حقل المورّد." },
+        ],
+        hint: { en: "Supplier set. Now pick the warehouse it should arrive at.", ar: "تم تحديد المورّد. الآن اختر المخزن الذي سيصل إليه." },
+        done: (s) => s.supplierPicked === true,
+      },
+      {
+        label: { en: "Pick the warehouse", ar: "اختر المخزن" },
+        detail: [
+          { en: "This is where the goods will be received once the request becomes an order.", ar: "هنا تُستلم البضاعة بعد أن يصبح الطلب أمر شراء." },
+        ],
+        hint: { en: "Warehouse set. Now add at least one item.", ar: "تم تحديد المخزن. الآن أضف صنفاً واحداً على الأقل." },
+        done: (s) => s.warehousePicked === true,
+      },
+      {
+        label: { en: "Add a line: item, quantity, cost", ar: "أضف سطراً: صنف وكمية وتكلفة" },
+        detail: [
+          { en: "Pick the item, type the quantity, and type the expected unit cost.", ar: "اختر الصنف واكتب الكمية واكتب التكلفة المتوقعة للوحدة." },
+        ],
+        hint: { en: "Line ready. Click Submit request.", ar: "السطر جاهز. اضغط «تقديم الطلب»." },
+        done: (s) => s.lineReady === true,
+      },
+      {
+        label: { en: "Click Submit request", ar: "اضغط «تقديم الطلب»" },
+        done: (s) => s.lineReady === true && s.supplierPicked === true && s.warehousePicked === true,
+      },
+    ],
+  },
   related: [
     { to: "/purchasing/requests", label: { en: "All requests", ar: "كل الطلبات" } },
   ],
@@ -147,6 +252,32 @@ export const suppliersGuide: HelpGuide = {
   howItWorks: {
     en: "Set up suppliers here so you can select them on purchase orders and track what you owe each one.",
     ar: "هيّئ الموردين هنا لتختارهم في أوامر الشراء وتتابع ما عليك لكل منهم.",
+  },
+  checklist: {
+    name: { en: "Add your first supplier", ar: "أضف أول مورّد" },
+    doneMessage: {
+      en: "Supplier added — pick them on any new purchase order or request.",
+      ar: "أُضيف المورّد — اختره في أي أمر شراء أو طلب جديد.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a code", ar: "أدخل كوداً" },
+        detail: [
+          { en: "A short unique code you'll recognize in lists — letters/numbers, e.g. SUP-001.", ar: "كود قصير مميّز تتعرف عليه في القوائم — حروف/أرقام، مثل SUP-001." },
+        ],
+        hint: { en: "Code set. Now enter the name.", ar: "تم إدخال الكود. الآن أدخل الاسم." },
+        done: (s) => s.codeSet === true || (s.supplierCount as number) > 0,
+      },
+      {
+        label: { en: "Enter the name", ar: "أدخل الاسم" },
+        hint: { en: "Name set. Click Add.", ar: "تم إدخال الاسم. اضغط «إضافة»." },
+        done: (s) => s.nameSet === true || (s.supplierCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add", ar: "اضغط «إضافة»" },
+        done: (s) => (s.supplierCount as number) > 0,
+      },
+    ],
   },
   related: [
     { to: "/purchasing", label: { en: "Purchase orders", ar: "أوامر الشراء" } },

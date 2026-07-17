@@ -14,6 +14,8 @@ import { useToast } from "../../app/ToastContext";
 import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
 
@@ -89,6 +91,14 @@ export function NewQuotationPage() {
     return s + Math.round(qty * price);
   }, 0);
 
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    customerPicked: customer !== "",
+    warehousePicked: warehouse !== "",
+    lineReady: lines.some((l) => l.item_sku && l.quantity && parseToMinor(l.unit_price) !== null),
+    hasError: error !== null,
+  });
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -134,21 +144,21 @@ export function NewQuotationPage() {
         <div className="sales-toolbar">
           <label className="sales-field">
             <span>{t("sales.orders.customer")}</span>
-            <select value={customer} onChange={(e) => setCustomer(e.target.value)}>
-              <option value="">—</option>
-              {(customers ?? []).map((c) => (
-                <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={customer}
+              onChange={setCustomer}
+              placeholder={t("common.selectField", { field: t("sales.orders.customer") })}
+              options={(customers ?? []).map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))}
+            />
           </label>
           <label className="sales-field">
             <span>{t("inventory.warehouse.label")}</span>
-            <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
-              <option value="">—</option>
-              {(warehouses ?? []).map((w) => (
-                <option key={w.code} value={w.code}>{w.code} · {w.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={warehouse}
+              onChange={setWarehouse}
+              placeholder={t("common.selectField", { field: t("inventory.warehouse.label") })}
+              options={(warehouses ?? []).map((w) => ({ value: w.code, label: `${w.code} · ${w.name}` }))}
+            />
           </label>
         </div>
 
@@ -169,12 +179,12 @@ export function NewQuotationPage() {
                 return (
                   <tr key={i}>
                     <td>
-                      <select value={l.item_sku} onChange={(e) => void onPickItem(i, e.target.value)}>
-                        <option value="">—</option>
-                        {stockItems.map((it) => (
-                          <option key={it.sku} value={it.sku}>{it.sku} · {it.name}</option>
-                        ))}
-                      </select>
+                      <ComboBox
+                        value={l.item_sku}
+                        onChange={(v) => void onPickItem(i, v)}
+                        placeholder={t("common.selectField", { field: t("sales.newOrder.item") })}
+                        options={stockItems.map((it) => ({ value: it.sku, label: `${it.sku} · ${it.name}` }))}
+                      />
                     </td>
                     <td className="sales-table__num">
                       <input className="latin" inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} />

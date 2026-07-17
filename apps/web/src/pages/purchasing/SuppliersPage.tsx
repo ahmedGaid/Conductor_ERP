@@ -27,6 +27,7 @@ import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./purchasing.css";
 
 export function SuppliersPage() {
@@ -84,6 +85,13 @@ export function SuppliersPage() {
   // ⌘/Ctrl+Enter submits the add form from any field.
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    codeSet: code.trim() !== "",
+    nameSet: name.trim() !== "",
+    supplierCount: (data ?? []).length,
+  });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [

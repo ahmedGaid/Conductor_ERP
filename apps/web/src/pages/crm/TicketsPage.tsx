@@ -33,6 +33,7 @@ import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import "./crm.css";
 
@@ -87,6 +88,13 @@ export function TicketsPage() {
   // ⌘/Ctrl+Enter submits the add-ticket form from any field (incl. the priority select).
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    subjectSet: subject.trim() !== "",
+    customerPicked: customer !== "",
+    ticketCount: (data ?? []).length,
+  });
 
   // Optimistic create: open the new ticket row instantly and clear the form for the next entry; the
   // server row (with its number + SLA flags) replaces the placeholder on settle, or it rolls back + toasts.

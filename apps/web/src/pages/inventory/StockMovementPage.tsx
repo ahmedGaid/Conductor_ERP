@@ -21,6 +21,8 @@ import { BulkActionBar } from "../../components/BulkActionBar";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
+import { DatePicker } from "../../components/DatePicker";
 import { EntityLink } from "../../components/EntityLink";
 import { InventoryNav } from "./InventoryNav";
 import "./inventory.css";
@@ -147,33 +149,33 @@ export function StockMovementPage() {
         <div className="inv-toolbar">
           <label className="inv-field">
             <span>{t("inventory.item.sku")}</span>
-            <select value={itemSku} onChange={(e) => setItemSku(e.target.value)}>
-              <option value="">—</option>
-              {(items ?? []).filter((i) => i.type === "stock").map((i) => (
-                <option key={i.sku} value={i.sku}>{i.sku} · {i.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={itemSku}
+              onChange={setItemSku}
+              placeholder={t("common.selectField", { field: t("inventory.item.sku") })}
+              options={(items ?? []).filter((i) => i.type === "stock").map((i) => ({ value: i.sku, label: `${i.sku} · ${i.name}` }))}
+            />
           </label>
 
           <label className="inv-field">
             <span>{mode === "transfer" ? t("inventory.movement.from") : t("inventory.warehouse.code")}</span>
-            <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)}>
-              <option value="">—</option>
-              {(warehouses ?? []).map((w) => (
-                <option key={w.code} value={w.code}>{w.code} · {w.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={warehouse}
+              onChange={setWarehouse}
+              placeholder={mode === "transfer" ? t("inventory.movement.from") : t("common.selectField", { field: t("inventory.warehouse.code") })}
+              options={(warehouses ?? []).map((w) => ({ value: w.code, label: `${w.code} · ${w.name}` }))}
+            />
           </label>
 
           {mode === "transfer" && (
             <label className="inv-field">
               <span>{t("inventory.movement.to")}</span>
-              <select value={dest} onChange={(e) => setDest(e.target.value)}>
-                <option value="">—</option>
-                {(warehouses ?? []).map((w) => (
-                  <option key={w.code} value={w.code}>{w.code} · {w.name}</option>
-                ))}
-              </select>
+              <ComboBox
+                value={dest}
+                onChange={setDest}
+                placeholder={t("inventory.movement.to")}
+                options={(warehouses ?? []).map((w) => ({ value: w.code, label: `${w.code} · ${w.name}` }))}
+              />
             </label>
           )}
 
@@ -199,7 +201,7 @@ export function StockMovementPage() {
           {mode === "receipt" && (
             <label className="inv-field">
               <span>{t("inventory.movement.expiry")}</span>
-              <input className="latin" type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
+              <DatePicker value={expiry} onChange={setExpiry} />
             </label>
           )}
 

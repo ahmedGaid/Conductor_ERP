@@ -7,6 +7,7 @@ import {
   patchOrgPreferences,
   type OrgPreferences,
 } from "../../api/identity";
+import { getHealth } from "../../api/monitoring";
 import { ACCENTS } from "../../prefs";
 import { Tooltip } from "../../components/Tooltip";
 import { useAsync } from "../../hooks/useAsync";
@@ -14,6 +15,7 @@ import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { SYSTEM_ADMIN } from "./roles";
 import { Segmented, SettingRow } from "./controls";
+import { ComboBox } from "../../components/ComboBox";
 
 const LANDING_OPTIONS = ["/", "/sales", "/purchasing", "/inventory", "/accounting", "/crm", "/workflows"];
 
@@ -21,6 +23,7 @@ export function OrganizationPage() {
   const { t } = useTranslation();
   const { data: me } = useAsync(getMe, []);
   const { data: loaded } = useAsync(getOrgPreferences, []);
+  const { data: health } = useAsync(getHealth, []);
   const [org, setOrg] = useState<OrgPreferences | null>(null);
 
   useEffect(() => {
@@ -161,17 +164,19 @@ export function OrganizationPage() {
         </SettingRow>
 
         <SettingRow title={t("settings.org.landing")} desc={t("settings.org.landingDesc")} htmlFor="org-landing">
-          <select
-            id="org-landing"
+          <ComboBox
             value={org.default_landing || "/"}
-            onChange={(e) => save({ default_landing: e.target.value })}
-          >
-            {LANDING_OPTIONS.map((to) => (
-              <option key={to} value={to}>
-                {t(`settings.dashboard.landingOptions.${to === "/" ? "dashboard" : to.slice(1)}`)}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => save({ default_landing: v })}
+            placeholder={t("settings.dashboard.landingOptions.dashboard")}
+            options={LANDING_OPTIONS.map((to) => ({
+              value: to,
+              label: t(`settings.dashboard.landingOptions.${to === "/" ? "dashboard" : to.slice(1)}`),
+            }))}
+          />
+        </SettingRow>
+
+        <SettingRow title={t("settings.org.version")}>
+          <span className="muted">{health ? t("settings.org.versionValue", { version: health.version }) : "—"}</span>
         </SettingRow>
       </div>
     </section>

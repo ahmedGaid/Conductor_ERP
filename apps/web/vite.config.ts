@@ -10,6 +10,8 @@ export default defineConfig({
     proxy: {
       // Dev convenience: forward API calls to the Django backend.
       "/api": "http://localhost:8000",
+      "/health": "http://localhost:8000",
+      "/system-check": "http://localhost:8000",
     },
   },
   // `vite preview` (production-build smoke test) needs its own proxy — server.proxy is dev-only.
@@ -17,6 +19,8 @@ export default defineConfig({
     port: 4173,
     proxy: {
       "/api": "http://localhost:8000",
+      "/health": "http://localhost:8000",
+      "/system-check": "http://localhost:8000",
     },
   },
   build: {

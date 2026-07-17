@@ -16,6 +16,7 @@ import { useToast } from "../../app/ToastContext";
 import { useUndoableAction } from "../../lib/useUndoableAction";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { DatePicker } from "../../components/DatePicker";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
@@ -132,11 +133,11 @@ export function ReportBuilderPage() {
         </label>
         <label className="acct-field">
           <span>{t("accounting.report.from")}</span>
-          <input className="latin" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <DatePicker value={from} onChange={setFrom} />
         </label>
         <label className="acct-field">
           <span>{t("accounting.report.to")}</span>
-          <input className="latin" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <DatePicker value={to} onChange={setTo} />
         </label>
         <label className="acct-field">
           <span>{t("accounting.reportBuilder.groupBy")}</span>

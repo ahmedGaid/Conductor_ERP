@@ -56,27 +56,31 @@ notepad .env          # set DJANGO_SECRET_KEY, DATABASE_URL, DJANGO_ALLOWED_HOST
 # Build the frontend bundle (produces apps/web/dist, which Django then serves)
 cd apps\web; npm ci; npm run build; cd ..\..
 
-# Database + Django static
-.\.venv\Scripts\python.exe manage.py migrate
-.\.venv\Scripts\python.exe manage.py collectstatic --noinput   # gathers admin/DRF static for WhiteNoise
+# Django static (admin/DRF assets for WhiteNoise — collected once, before first start)
+.\.venv\Scripts\python.exe manage.py collectstatic --noinput
 
-# Seed the baseline (identity roles/users + chart of accounts + fiscal periods)
-.\.venv\Scripts\python.exe manage.py seed_identity   # customer-safe: creates ONE admin user
-.\.venv\Scripts\python.exe manage.py seed_accounting
-# (seed_demo.py + `seed_identity --demo-users` are DEV data only — do NOT run on a real customer install)
+# Provision: refuses anything but a brand-new, empty database. Migrates, seeds an admin-only
+# baseline (roles, HQ branch, chart of accounts, default price list), and sets the admin's real
+# password — never the dev default. Prompts for the password twice if you omit the env var.
+.\.venv\Scripts\python.exe manage.py provision_customer --admin-password-env ADMIN_PASSWORD
+# (seed_demo.py + `seed_identity --demo-users` are DEV data only — never run on a customer install)
 
 # Register + start the three services (run from an elevated PowerShell)
 .\deploy\windows\install-services.ps1            # -Nssm <path> -BindHost 127.0.0.1 -Port 8000
 Get-Service Conductor-*
 ```
 Then point IIS/Nginx (TLS) at `http://127.0.0.1:8000` and browse to `https://<your-host>/`.
-Sign in with the admin account created by `seed_identity` (change its password immediately).
+Sign in with the admin password `provision_customer` just set, then enroll two-factor
+authentication from Settings → Security before inviting other users.
 
 ### Smoke test
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8000/health           # service liveness
 Invoke-RestMethod http://127.0.0.1:8000/system-check     # db/redis/storage/workers
 # GET / should return the SPA shell (index.html); /api/... requires a JWT.
+
+# Before sign-off on a customer box: re-run the same go-live report, non-destructively.
+.\.venv\Scripts\python.exe manage.py provision_customer --verify
 ```
 
 ## 3. PostgreSQL / Redis prod notes
@@ -99,6 +103,21 @@ Get-Service Conductor-*
 Restart-Service Conductor-Web
 # Logs (rotating, ~10 MB): deploy\logs\Conductor-*.out.log / .err.log
 ```
+
+### Release (maintainer, before shipping a new version)
+```powershell
+# 1. Bump the version (single source of truth for /health, /system-check, and the UI's about line)
+"1.1.0" | Set-Content -NoNewline VERSION
+# 2. Add a `## v1.1.0 — YYYY-MM-DD` section to CHANGELOG.md summarizing what shipped
+# 3. Tag and push
+git add VERSION CHANGELOG.md
+git commit -m "chore(release): v1.1.0"
+git tag v1.1.0
+git push && git push --tags
+# 4. Build (see "Upgrading to a new release" below for the full deploy steps)
+```
+From gate16 onward (twenty-harvest FILE_03), also refresh the previous-release fixture dump used
+by the upgrade-drill gate.
 
 ### Upgrading to a new release
 ```powershell
@@ -219,3 +238,32 @@ A build is a release candidate when **`gate:all` is green** end to end:
 ```
 Gate 13 specifically proves the deployment packaging is coherent: WhiteNoise is wired, the SPA is
 served at the root, and the deploy/backup kit + this runbook are present.
+
+## 8. Regression run before every release (Playwright E2E)
+
+`gate:all` is mechanical (types, lint, packaging); it doesn't drive a browser. The Playwright suite
+under `apps/web/e2e/` is the browser-level regression net (twenty-harvest-plan `FILE_04`) — it
+encodes the write-flow drives proven live in `Docs/plan/delivery-readiness/FILE_01_E2E_RESULTS.md`
+(sales, purchasing, accounting, CRM/pricing, workflow) as repeatable specs. It is a **release step,
+not a default gate** (it needs a live server, so it isn't in `scripts/gates/_run.py`), same as the
+gate16 upgrade drill.
+
+```powershell
+# 1. Seed the master data the specs assume (customers/suppliers/items/price list/tax code) —
+#    idempotent, safe to re-run:
+.\.venv\Scripts\python.exe manage.py seed_identity
+.\.venv\Scripts\python.exe manage.py seed_accounting
+.\.venv\Scripts\python.exe scripts\seed_demo.py
+
+# 2. Start the dev servers (Django :8000 + Vite :5173):
+.\run-dev.ps1
+
+# 3. Run the suite — ar project first (the product default), then en:
+cd apps\web
+npm run e2e
+```
+
+Override `E2E_BASE_URL` to point at a built bundle instead of the Vite dev server, and
+`E2E_ADMIN_USERNAME` / `E2E_ADMIN_PASSWORD` if a box isn't seeded with the default admin login.
+A trace is captured on first retry (`playwright-report/`, `test-results/` — gitignored); open it
+with `npx playwright show-report`.

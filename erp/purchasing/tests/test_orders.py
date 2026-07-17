@@ -108,3 +108,31 @@ def test_partial_then_full_payment():
     assert order.outstanding_minor == 600_00
     pay_order(order, 600_00)
     assert order.status == POStatus.PAID
+
+
+def test_zero_payment_rejected():
+    supplier, wh = _setup()
+    order = _po(supplier, wh)
+    confirm_order(order)
+    receive_order(order)
+    bill_order(order)
+    with pytest.raises(OverpaymentError):
+        pay_order(order, 0)
+
+
+def test_two_partial_payments_balance_the_ledger():
+    supplier, wh = _setup()
+    order = _po(supplier, wh)
+    confirm_order(order)
+    receive_order(order)
+    bill_order(order)
+
+    pay_order(order, 300_00)
+    pay_order(order, 400_00)
+    assert order.status == POStatus.BILLED
+    assert order.outstanding_minor == 300_00
+    assert trial_balance().is_balanced
+
+    pay_order(order, 300_00)
+    assert order.status == POStatus.PAID
+    assert trial_balance().is_balanced

@@ -24,6 +24,7 @@ export type POEvent =
   | "received"
   | "billed"
   | "paid"
+  | "partiallyPaid"
   | "returned"
   | "cancelled"
   | "converted";

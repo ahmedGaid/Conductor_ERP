@@ -25,6 +25,7 @@ export type OrderEvent =
   | "delivered"
   | "invoiced"
   | "paid"
+  | "partiallyPaid"
   | "returned"
   | "cancelled"
   | "completed"

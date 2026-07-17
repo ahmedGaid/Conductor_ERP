@@ -126,10 +126,8 @@ export function QuotationDetailPage() {
     if (s === "approved") {
       pageActions.push({ id: "convert", label: t("sales.quotations.convert"), run: () => onConvert(data) });
     }
-    if (s === "submitted" || s === "approved") {
-      pageActions.push({ id: "reject", label: t("sales.quotations.reject"),
-        run: () => act("rejected", () => rejectQuotation(data.id, ""), "rejected") });
-    }
+    // "reject" is NOT pushed here — it's already mirrored from barMenu below (useSetPageActions)
+    // under the identical condition, so adding it here too would duplicate the palette row.
   }
   usePaletteActions("quotation-detail", pageActions);
 

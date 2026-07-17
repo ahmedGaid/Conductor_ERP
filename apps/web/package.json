@@ -6,6 +6,7 @@
   "description": "ERP frontend — React + TS + Vite, Arabic/RTL-first, i18n key-parity enforced.",
   "scripts": {
     "dev": "vite",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
     "check:i18n": "node scripts/check-i18n-parity.mjs",
     "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/check-i18n-parity.mjs",
@@ -26,6 +27,7 @@
     "react-router-dom": "^7.1.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

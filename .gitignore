@@ -32,6 +32,14 @@ node_modules/
 apps/web/dist/
 apps/web/.vite/
 
+# Playwright E2E (twenty-harvest FILE_04) — saved logins + run artifacts, not source.
+# Paths below are relative to CWD (apps/web, where `npm run e2e` runs), NOT the config file's own
+# directory — Playwright resolves `storageState` and reporter output that way, unlike `outputDir`.
+apps/web/.auth/
+apps/web/playwright-report/
+apps/web/blob-report/
+apps/web/e2e/test-results/
+
 # Logs / runtime
 *.log
 /logs/

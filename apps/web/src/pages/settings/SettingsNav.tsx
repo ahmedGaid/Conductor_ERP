@@ -51,6 +51,14 @@ export function SettingsNav() {
             {t("settings.tabs.branches")}
           </NavLink>
         )}
+        {isAdmin && (
+          <NavLink
+            to="/settings/webhooks"
+            className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
+          >
+            {t("settings.tabs.webhooks")}
+          </NavLink>
+        )}
       </nav>
     </header>
   );

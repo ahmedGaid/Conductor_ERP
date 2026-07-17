@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from django.db import models
 
-from erp.core.models import AuditedModel
+from erp.core.models import AuditedModel, TimeStampedModel
 
 
 class NotificationChannel(models.TextChoices):
@@ -53,3 +53,51 @@ class Notification(AuditedModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Notification[{self.channel}->{self.recipient} {self.status}]"
+
+
+class WebhookSubscription(AuditedModel):
+    """An admin-configured relay: any subscribed domain event fans out as a signed HTTP POST to
+    ``url``. The cheapest external-integration primitive — see ``erp.notifications.services.webhooks``
+    for delivery + signing, and ``erp.notifications.webhook_catalog`` for the subscribable events."""
+
+    url = models.URLField(max_length=500)
+    event_names = models.JSONField(default=list)
+    secret = models.CharField(max_length=64)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "notifications_webhook_subscription"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"WebhookSubscription[{self.url}]"
+
+
+class WebhookDeliveryStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    DELIVERED = "delivered", "Delivered"
+    RETRYING = "retrying", "Retrying"
+    FAILED = "failed", "Failed"
+
+
+class WebhookDelivery(TimeStampedModel):
+    """One attempt log for one event fanned out to one subscription. Every delivery — success or
+    failure — leaves exactly one row, updated in place across retries (mirrors ``Notification``)."""
+
+    subscription = models.ForeignKey(WebhookSubscription, on_delete=models.CASCADE,
+                                     related_name="deliveries")
+    event_name = models.CharField(max_length=64)
+    payload = models.JSONField(default=dict)
+    status = models.CharField(max_length=16, choices=WebhookDeliveryStatus.choices,
+                              default=WebhookDeliveryStatus.PENDING)
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.CharField(max_length=255, blank=True, default="")
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "notifications_webhook_delivery"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["status"]), models.Index(fields=["subscription"])]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"WebhookDelivery[{self.event_name}->{self.subscription_id} {self.status}]"

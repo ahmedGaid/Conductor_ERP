@@ -17,6 +17,7 @@ import { downloadCsv, rowsToCsv } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
+import { DatePicker } from "../../components/DatePicker";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
@@ -194,7 +195,7 @@ export function FixedAssetsPage() {
           </label>
           <label className="acct-field">
             <span>{t("accounting.assets.acquired")}</span>
-            <input className="latin" type="date" value={acqDate} onChange={(e) => setAcqDate(e.target.value)} required />
+            <DatePicker value={acqDate} onChange={setAcqDate} />
           </label>
           <button className="btn btn--primary" type="submit" disabled={busy}>
             {t("accounting.assets.add")}
@@ -208,7 +209,7 @@ export function FixedAssetsPage() {
           </label>
           <label className="acct-field">
             <span>{t("accounting.assets.runDate")}</span>
-            <input className="latin" type="date" value={runDate} onChange={(e) => setRunDate(e.target.value)} required />
+            <DatePicker value={runDate} onChange={setRunDate} />
           </label>
           <button className="btn" type="submit" disabled={runBusy}>
             {t("accounting.assets.runDepreciation")}

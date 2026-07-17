@@ -101,17 +101,14 @@ export function OpportunityDetailPage() {
 
   // Stage actions mirrored into the ⌘K "This page" group, gated by stage exactly as the buttons
   // are (advance / win / lose only while the deal is open).
+  // "advance"/"lose" are NOT pushed here — both are already mirrored from barMenu below
+  // (useSetPageActions) under the identical stage gating, so adding them here too would
+  // duplicate the palette row. "win" is also the bar's primary action, but primaries aren't
+  // mirrored into the palette, so it still needs registering here.
   const pageActions: PaletteAction[] = [];
   if (data && (data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation")) {
-    const next = NEXT_STAGE[data.stage];
-    if (next) {
-      pageActions.push({ id: "advance", label: t("crm.detail.advanceTo", { stage: t(`crm.stage.${next}`) }),
-        run: () => advance(next) });
-    }
     pageActions.push({ id: "win", label: t("crm.detail.win"),
       run: () => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon")) });
-    pageActions.push({ id: "lose", label: t("crm.detail.lose"),
-      run: () => act((o) => ({ ...o, stage: "lost" }), () => loseOpportunity(data.id), t("crm.toast.oppLost")) });
   }
   usePaletteActions("opportunity-detail", pageActions);
 

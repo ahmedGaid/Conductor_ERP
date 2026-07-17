@@ -1624,7 +1624,12 @@
     "undo": "تراجع",
     "undone": "تم التراجع",
     "notFound": "تعذّر العثور على هذا السجل.",
-    "owner": "المسؤول"
+    "owner": "المسؤول",
+    "selectField": "اختر {{field}}",
+    "search": "بحث…",
+    "noResults": "لا نتائج",
+    "today": "اليوم",
+    "clear": "مسح"
   },
   "import": {
     "action": "استيراد CSV",
@@ -1836,6 +1841,7 @@
   },
   "help": {
     "button": "مساعدة",
+    "buttonWithIssues": "مساعدة — {{count}} يحتاج تصحيحاً",
     "close": "إغلاق المساعدة",
     "purpose": "الغرض من هذه الصفحة",
     "howItWorks": "كيف تعمل",
@@ -1845,7 +1851,13 @@
     "tips": "نصائح",
     "mistakes": "أخطاء شائعة",
     "related": "صفحات ذات صلة",
-    "noGuide": "دليل هذه الصفحة قيد الإعداد."
+    "noGuide": "دليل هذه الصفحة قيد الإعداد.",
+    "tabsLabel": "طريقة عرض المساعدة",
+    "tabGuide": "الدليل",
+    "tabLive": "مباشر",
+    "live": {
+      "calm": "لا شيء يحتاج انتباهك في هذه الصفحة الآن."
+    }
   },
   "export": {
     "csv": "CSV",
@@ -1863,7 +1875,8 @@
       "notifications": "الإشعارات",
       "accessibility": "إمكانية الوصول",
       "organization": "المؤسسة",
-      "branches": "الفروع"
+      "branches": "الفروع",
+      "webhooks": "الويب هوكس"
     },
     "common": {
       "auto": "تلقائي"
@@ -1995,7 +2008,9 @@
         "disabled": "أبدًا",
         "draft": "المسودات فقط",
         "confirmed": "حتى التأكيد"
-      }
+      },
+      "version": "الإصدار",
+      "versionValue": "الإصدار {{version}}"
     },
     "branches": {
       "adminOnly": "مسؤول النظام فقط هو من يمكنه إدارة الفروع.",
@@ -2008,6 +2023,37 @@
       "emptyHint": "أضف أول فرع باستخدام النموذج أعلاه.",
       "toastCreated": "تم إنشاء الفرع",
       "toastUpdated": "تم تحديث الفرع"
+    },
+    "webhooks": {
+      "adminOnly": "مسؤول النظام فقط هو من يمكنه إدارة الويب هوكس.",
+      "lead": "أرسل الأحداث إلى نظام خارجي كطلب HTTP موقّع فور حدوثها.",
+      "url": "الرابط",
+      "events": "الأحداث",
+      "active": "نشط",
+      "add": "إضافة ويب هوك",
+      "regenerateSecret": "تجديد المفتاح السري",
+      "delete": "حذف",
+      "empty": "لا توجد ويب هوكس بعد.",
+      "emptyHint": "أضف رابطًا واختر الأحداث المراد إرسالها باستخدام النموذج أعلاه.",
+      "toastCreated": "تم إنشاء الويب هوك",
+      "toastUpdated": "تم تحديث الويب هوك",
+      "toastDeleted": "تم حذف الويب هوك",
+      "secretRevealTitle": "المفتاح السري للتوقيع",
+      "secretRevealDesc": "يظهر مرة واحدة فقط — انسخه الآن. استخدمه للتحقق من ترويسة X-Conductor-Signature في كل إرسال.",
+      "secretRevealDismiss": "نسخته",
+      "deliveries": {
+        "title": "عمليات الإرسال",
+        "event": "الحدث",
+        "status": "الحالة",
+        "attempts": "المحاولات",
+        "retryNow": "إعادة المحاولة الآن",
+        "toastRetried": "تمت إعادة محاولة الإرسال",
+        "empty": "لا توجد عمليات إرسال بعد.",
+        "status_pending": "قيد الانتظار",
+        "status_delivered": "تم الإرسال",
+        "status_retrying": "إعادة المحاولة",
+        "status_failed": "فشل"
+      }
     }
   },
   "admin": {
@@ -2167,7 +2213,16 @@
     "linkCopyFailed": "تعذّر نسخ الرابط",
     "completedOn": "اكتملت كل الخطوات في {{date}}",
     "cancelConfirmTitle": "إلغاء {{number}}؟",
-    "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء."
+    "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء.",
+    "paymentDialog": {
+      "amount": "المبلغ",
+      "outstandingNow": "المتبقي الآن",
+      "paying": "المسدد",
+      "willRemain": "سيتبقى",
+      "errorZero": "أدخل مبلغًا أكبر من صفر",
+      "errorExceeds": "المبلغ أكبر من المتبقي",
+      "confirm": "تسجيل"
+    }
   },
   "bulk": {
     "region": "العناصر المحددة",
@@ -2242,6 +2297,10 @@
         "paid": {
           "title": "تم سداد أمر البيع {{number}}",
           "context": "مدفوع بالكامل. لا يوجد إجراء آخر."
+        },
+        "partiallyPaid": {
+          "title": "تم تسجيل سداد جزئي لأمر البيع {{number}}",
+          "context": "سداد جزئي. المتبقي {{amount}}."
         },
         "returned": {
           "title": "تم تسجيل مرتجع أمر البيع {{number}}",
@@ -2379,6 +2438,10 @@
         "paid": {
           "title": "تم سداد أمر الشراء {{number}}",
           "context": "مدفوع بالكامل. لا شيء آخر."
+        },
+        "partiallyPaid": {
+          "title": "تم تسجيل سداد جزئي لأمر الشراء {{number}}",
+          "context": "سداد جزئي. المتبقي {{amount}}."
         },
         "returned": {
           "title": "تم إرجاع أمر الشراء {{number}}",

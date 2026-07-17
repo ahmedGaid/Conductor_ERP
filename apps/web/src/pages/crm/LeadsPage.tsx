@@ -31,6 +31,7 @@ import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useFormKeys } from "../../hooks/useFormKeys";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./crm.css";
 
 const LEAD_STATUSES = ["new", "contacted", "qualified", "unqualified", "converted"] as const;
@@ -86,6 +87,9 @@ export function LeadsPage() {
   // ⌘/Ctrl+Enter submits the add-lead form from any field (incl. the source select).
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({ leadCount: (data ?? []).length });
 
   // Multi-select for bulk qualify (mirrors the per-row "qualify" on a new lead).
   const selection = useRowSelection<Lead>({

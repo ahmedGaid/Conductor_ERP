@@ -1,0 +1,49 @@
+name: Deploy demo
+
+# Every push to main re-deploys the free public sales-demo (see
+# Docs/plan/demo-deploy-plan.md). Pure SSH — no third-party marketplace action,
+# so nothing here depends on an external action version.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   DEMO_SSH_HOST  - VM public hostname/IP (the Cloudflare Tunnel box)
+#   DEMO_SSH_USER  - SSH user on that VM
+#   DEMO_SSH_KEY   - private key for a dedicated deploy key (not your personal key)
+# Optional:
+#   DEMO_APP_DIR   - path to the repo clone on the VM (default: /opt/conductor-erp-demo)
+#
+# NOTE: this is the Oracle/VM path. If deploying on Render instead, Render's
+# own auto-deploy-on-push already covers this — this workflow is unused.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy
+        env:
+          SSH_HOST: ${{ secrets.DEMO_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEMO_SSH_USER }}
+          SSH_KEY: ${{ secrets.DEMO_SSH_KEY }}
+          APP_DIR: ${{ secrets.DEMO_APP_DIR }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ]; then
+            echo "Missing DEMO_SSH_HOST/DEMO_SSH_USER/DEMO_SSH_KEY secrets — see comment at top of this file." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          REMOTE_DIR="${APP_DIR:-/opt/conductor-erp-demo}"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" \
+            "bash -lc 'cd \"$REMOTE_DIR\" && ./deploy/demo-redeploy.sh'"

@@ -52,6 +52,9 @@ export function Popover({ open, onClose, anchorRef, children, className, ariaLab
     if (top + h > window.innerHeight - 8 && a.top - h - 4 >= 8) {
       top = a.top - h - 4;
     }
+    // Keep the whole panel inside the viewport so a tall panel (e.g. the date-picker calendar)
+    // never runs off the bottom edge with its footer clipped.
+    top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
     setCoords({ left, top });
   }, [anchorRef]);
 
@@ -68,19 +71,31 @@ export function Popover({ open, onClose, anchorRef, children, className, ariaLab
     function onPointer(e: PointerEvent) {
       const target = e.target as Node;
       if (panelRef.current?.contains(target) || anchorRef.current?.contains(target)) return;
+      // A click inside another popover layered over this one (a ComboBox list opened inside the
+      // date picker) is not an "outside" click — both are portalled siblings under <body>.
+      if (target instanceof Element && target.closest(".popover")) return;
       onClose();
     }
     const onReflow = () => onClose();
+    // Scrolling *inside* the panel (e.g. a long combobox list) must not close it — only scroll
+    // elsewhere on the page, which would leave the panel floating away from its anchor. Scrolls
+    // inside *another* popover layered over this one (a ComboBox list opened inside the date
+    // picker) also count as "inside", since both are portalled siblings under <body>.
+    const onScroll = (e: Event) => {
+      const target = e.target as Node;
+      if (panelRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest(".popover")) return;
+      onClose();
+    };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPointer, true);
     window.addEventListener("resize", onReflow);
-    // Capture scroll anywhere (incl. inner scroll areas) so the panel never floats away.
-    window.addEventListener("scroll", onReflow, true);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointer, true);
       window.removeEventListener("resize", onReflow);
-      window.removeEventListener("scroll", onReflow, true);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open, onClose, anchorRef]);
 

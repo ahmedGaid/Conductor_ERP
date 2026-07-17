@@ -27,7 +27,11 @@ if _env_file.exists():
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
-APP_VERSION = env("APP_VERSION", default="0.0.0")
+# VERSION is the single source of truth; APP_VERSION env var can still override (e.g. a hotfix
+# build without bumping the file) but normally just mirrors it.
+_version_file = BASE_DIR / "VERSION"
+_file_version = _version_file.read_text().strip() if _version_file.exists() else "0.0.0"
+APP_VERSION = env("APP_VERSION", default=_file_version)
 IP_WHITELIST = env("DJANGO_IP_WHITELIST")  # empty list => allow all (dev)
 CSP_POLICY = ""  # off by default; prod sets a real policy (see settings/prod.py)
 
@@ -206,6 +210,10 @@ CELERY_BEAT_SCHEDULE = {
     "send-ai-weekly-report": {
         "task": "assistant.send_ai_weekly_report",
         "schedule": crontab(hour=7, minute=30, day_of_week=1),  # Monday 07:30 Africa/Cairo
+    },
+    "retry-due-webhooks": {
+        "task": "notifications.retry_due_webhooks",
+        "schedule": 60.0,  # seconds — check for elapsed backoff windows every minute
     },
 }
 

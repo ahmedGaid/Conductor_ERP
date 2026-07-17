@@ -4,6 +4,28 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Playwright E2E suite — new dev-dependency approved (twenty-harvest FILE_04, 2026-07-16)
+
+**Decision gate (team rule 7 — no new dependency without asking):** founder chose **Option A** —
+add `@playwright/test` as a **dev-only** dependency (never shipped to customers; not in the
+production bundle) and write a real Playwright suite under `apps/web/e2e/`, closing the "no JS
+regression net" gap by encoding the delivery-track browser drives (`delivery-readiness/FILE_01_E2E_RESULTS.md`)
+as repeatable specs. Rejected Option B (formalize `E2E_MASTER_PROMPT.md` only, no new dep) —
+founder preferred an automatable, CI-friendly net over the agent-driven manual prompt.
+
+Design notes for future maintainers:
+- Specs create their own data via the real UI (new order/PO/PR/lead each run) rather than relying
+  on `scripts/seed_demo.py`'s one-shot seeded numbers, so the suite is safe to re-run against any
+  DB state (seeded or not) — the seed script only creates its demo rows once (`if
+  SalesOrder.objects.exists(): skip`), so hard-coding seeded order numbers would make the suite
+  non-idempotent.
+- `workflow.spec.ts` creates its workflow graph via a direct API call (the same `save_graph`
+  contract the canvas POSTs) rather than dragging React Flow edges in the canvas UI, then drives
+  the real **Run** button and asserts completion. This mirrors the documented Phase-1c workaround
+  in `FILE_01_E2E_RESULTS.md` (headless canvas edge-drawing was unreliable there); a real browser
+  under Playwright could likely drag edges directly, but reusing the already-proven contract is
+  lower-risk for a first regression net. A follow-up could add a canvas drag-drop spec later.
+
 ## Agent actions — drafts-only standing decision reaffirmed (agent-actions FILE_06, 2026-07-09)
 
 **Deferred choice on posting actions** — the 17 write actions shipped in FILE_01–05 all create *drafts* (unposted journal, draft order, draft count, draft transfer, draft PO, draft quotation). No action posts/receives/pays/approves/reverses — the human finishes each on the normal module screen. This is the standing decision from ai-workspace FILE_10 and is reaffirmed:
