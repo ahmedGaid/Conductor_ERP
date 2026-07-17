@@ -312,12 +312,18 @@ def test_approved_opening_trial_balance_stays_balanced_after_posting(coa):
     assert tb.total_debit == tb.total_credit == 800_00
 
 
-# --- guard: payments/receipts + inventory openings stay unbuilt (blocker, by design) -------------
+# --- guard: payments + inventory openings stay unbuilt (blocker, by design) -----------------------
 def test_blocked_finance_entities_are_not_registered():
     """FILE_16 STOP decision: no GL-correct drafts-only write-path exists for these, so registering
     an adapter would misstate a customer's books. Pin it so a later session re-reads the reasoning
-    (adapters/accounting.py) before adding one."""
+    (adapters/accounting.py) before adding one.
+
+    ``receipts`` (sales customer receipts) is deliberately NOT in this list any more: session 16b
+    built ``erp.sales.services.pending_payments.create_pending_payment`` — the standalone,
+    unallocated-payment write-path this guard's original reasoning said didn't exist — and
+    registered a ``receipts`` adapter (``erp/imports/adapters/sales.py``) against it. ``payments``
+    (the purchasing mirror) has no such write-path yet and stays blocked."""
     registered = set(registry.entities())
-    assert {"journal_entries", "account_opening"} <= registered
-    for blocked in ("payments", "receipts", "inventory_opening", "inventory_transactions"):
+    assert {"journal_entries", "account_opening", "receipts"} <= registered
+    for blocked in ("payments", "inventory_opening", "inventory_transactions"):
         assert blocked not in registered

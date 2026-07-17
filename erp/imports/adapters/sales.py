@@ -27,8 +27,11 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 from erp.inventory import contracts as inventory
 from erp.sales import contracts
-from erp.sales.domain.models import Customer, OrderStatus, Quotation, QuotationStatus, SalesOrder
+from erp.sales.domain.models import (
+    Customer, OrderStatus, PendingPayment, PendingPaymentStatus, Quotation, QuotationStatus, SalesOrder,
+)
 from erp.sales.services.orders import OrderLineInput
+from erp.sales.services.pending_payments import create_pending_payment
 from erp.sales.services.quotations import QuoteLineInput
 
 from ..registry import FieldSpec, Issue, register
@@ -618,3 +621,128 @@ class SalesInvoiceAdapter:
 
 
 register(SalesInvoiceAdapter())
+
+
+# --- receipts (session 16b — PendingPayment, drafts-only) -----------------------------------------
+def _find_order(actor, ref: str):
+    """An existing SalesOrder by its ERP-native ``number`` (a human re-keying what they see on
+    screen) or by the import-tag ``notes`` a prior document import left (``import:<doc>`` /
+    ``import-so:<doc>`` — the source system's own invoice/order number, the common case for a
+    cutover payments file)."""
+    ref = (ref or "").strip()
+    if not ref:
+        return None
+    qs = scope_queryset(actor, SalesOrder.objects.all(), "sales.order.view")
+    return qs.filter(number=ref).first() or qs.filter(notes__in=[f"import:{ref}", f"import-so:{ref}"]).first()
+
+
+_METHOD_TOKENS = {
+    "cash": "cash", "نقدي": "cash", "نقدا": "cash",
+    "transfer": "transfer", "bank transfer": "transfer", "تحويل": "transfer", "تحويل بنكي": "transfer",
+    "cheque": "cheque", "check": "cheque", "شيك": "cheque",
+}
+
+
+def _normalize_method(value) -> str:
+    token = str(value or "").strip().casefold()
+    return _METHOD_TOKENS.get(token, "")
+
+
+class ReceiptAdapter:
+    """Customer receipts — always stages a ``sales.PendingPayment`` (drafts-only; see
+    ``adapters/accounting.py`` for why the direct write-path ``receive_payment`` can't be used from
+    an import). A resolvable ``order_ref`` pre-matches the row; otherwise it imports unmatched with
+    a ``payment_unmatched`` warning (never blocks) — applying/matching is a human review-screen
+    action (``erp.sales.services.pending_payments``), out of scope here.
+
+    No natural key: a flat receipts file rarely carries a stable per-row id, so ``exists`` always
+    returns ``None`` — every import run creates new pending rows. True duplicates are a human's call
+    on the (future) review screen, same as any other data-entry double-check.
+    """
+
+    entity = "receipts"
+    label_key = "imports.entity.receipts"
+    fields = [
+        FieldSpec(
+            name="customer_ref", required=True, kind="ref", ref="customers",
+            synonyms_en=["customer", "customer code", "customer name"],
+            synonyms_ar=["العميل", "كود العميل", "اسم العميل"],
+        ),
+        FieldSpec(
+            name="amount_minor", required=True, kind="money",
+            synonyms_en=["amount", "payment amount", "received"],
+            synonyms_ar=["المبلغ", "مبلغ الدفعة", "المحصل"],
+        ),
+        FieldSpec(
+            name="date", required=True, kind="date",
+            synonyms_en=["date", "payment date", "received date"],
+            synonyms_ar=["التاريخ", "تاريخ الدفعة"],
+        ),
+        FieldSpec(
+            name="method", kind="text",
+            synonyms_en=["method", "payment method"],
+            synonyms_ar=["طريقة الدفع", "الطريقة"],
+        ),
+        # Deliberately NOT kind="ref" — an unresolved order must import unmatched (warning), never
+        # trigger the missing_ref/auto-create-master flow (there's nothing sane to auto-create for
+        # a stray invoice number).
+        FieldSpec(
+            name="order_ref", kind="text",
+            synonyms_en=["invoice number", "invoice ref", "order number"],
+            synonyms_ar=["رقم الفاتورة", "رقم الطلب"],
+        ),
+    ]
+    natural_key = []
+    group_by = None
+
+    @property
+    def defaults(self) -> dict:
+        return dict(getattr(settings, "IMPORTS_DEFAULTS", {}).get(self.entity, {}))
+
+    def lookup(self, actor, field, value):
+        if field == "customer_ref":
+            return _find_customer(actor, value)
+        return None
+
+    def validate(self, actor, row: dict) -> list[Issue]:
+        return []
+
+    def write(self, actor, row: dict):
+        require_role(actor, BRANCH_MANAGER)
+        customer = _find_customer(actor, row.get("customer_ref"))
+        order = _find_order(actor, row.get("order_ref"))
+        pending = create_pending_payment(
+            order=order,
+            party_code=customer.code if customer else (row.get("customer_ref") or "").strip(),
+            amount_minor=int(row["amount_minor"]),
+            date=_as_date(row.get("date")) or _dt.date.today(),
+            method=_normalize_method(row.get("method")),
+            source="import",
+            actor=actor,
+        )
+        if order is None:
+            return pending, [Issue(
+                field="order_ref", code="payment_unmatched", message="imports.issues.paymentUnmatched",
+                meta={"customer_ref": row.get("customer_ref"), "order_ref": row.get("order_ref")},
+            )]
+        return pending
+
+    def exists(self, actor, row: dict):
+        return None
+
+    def existing_labels(self, actor):
+        return []
+
+    def delete(self, actor, pk) -> None:
+        """Rollback support: a still-PENDING row has posted nothing anywhere, so a plain delete is
+        a true reversal. Refuses once applied/discarded — never deletes a row a human already
+        acted on."""
+        pending = PendingPayment.objects.filter(pk=pk).first()
+        if pending is None:
+            return
+        if pending.status != PendingPaymentStatus.PENDING:
+            raise ValueError(f"cannot delete pending payment {pending.pk}: status is {pending.status!r}, not pending")
+        pending.delete()
+
+
+register(ReceiptAdapter())
