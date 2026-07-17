@@ -86,3 +86,9 @@ class ApprovalLimitExceededError(AppError):
     code = "PUR-014"
     status_code = 422
     message = "This amount exceeds your approval limit for this document"
+
+
+class PendingPaymentStateError(AppError):
+    code = "PUR-015"
+    status_code = 422
+    message = "Pending payment is not in a state that allows this action"

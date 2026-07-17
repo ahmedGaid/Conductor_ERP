@@ -1,297 +1,348 @@
-# Conductor ERP (ARP) — Project Status
+# Conductor ERP (ERP-B lane) — Project Status
 
-![Status](https://img.shields.io/badge/status-active--development-brightgreen)
-![Progress](https://img.shields.io/badge/progress-90%25-blue)
-![Stack](https://img.shields.io/badge/stack-Django%20%2B%20React-informational)
+![Status](https://img.shields.io/badge/status-active_development-brightgreen)
+![Progress](https://img.shields.io/badge/progress-85%25-blue)
+![Stack](https://img.shields.io/badge/stack-Django%205.1%20%2B%20React%2018%2FTS-informational)
 
-> **Last Updated:** 2026-07-16 · **Updated By:** agent · **Branch analyzed:** main
+> **Last Updated:** 2026-07-17 · **Updated By:** agent · **Branch analyzed:** `feat/b-lane`
 > 🤖 **AI agents:** read [Executive Summary](#executive-summary) +
 > [AI Agent Quick Context](#ai-agent-quick-context) first — 2 minutes gets you 90% of the picture.
-> **Live truth is the `erp-status` skill** (recall via `/erp-resume`); this file is the umbrella
-> summary, not a second source of truth — when they differ, `erp-status` wins.
 
 ## Executive Summary
 
-Conductor is a customer-hosted, single-tenant **ERP for Egyptian SMBs**, internally categorized as
-**ARP — Agentic Resource Planning** (AI-native ERP). Django modular monolith (Python 3.13 + DRF) +
-React 18/TS/Vite frontend, **Arabic/RTL-first** and bilingual. Quality bar: "Linear's craft,
-Telegram's calm." The core ERP is **built and gate-green**: five business modules
-(Accounting, Inventory, Sales, Purchasing, CRM) plus accounting/ops depth, Egyptian VAT + ETA
-e-invoicing, reports, notifications, workflow/forms engine, RBAC, an AI assistant, and a unified
-Linear-grade UI. All machine gates 00–15 pass. **As of 2026-07-15 the team is on a DELIVERY TRACK**
-(founder pivot): hand the app to a real customer to run as a live business — every non-AI feature
-verified end-to-end (drive → fix → report), with the strategic roadmap queue **paused**. Phase 0
-(ground-truth) and Phase 1a (Sales+Inventory E2E) are done and all-PASS; **next is Phase 1b
-(Purchasing+Accounting E2E)**. AI/reliability and smart-import work is parked mid-stream behind the
-delivery track.
+Conductor ERP ("ARP — Agentic Resource Planning") is a customer-hosted, single-tenant ERP for
+Egyptian SMBs: Django modular-monolith backend + React/TS frontend, Arabic/RTL-first, bilingual.
+Core modules (Sales, Purchasing, Inventory, Accounting, CRM) plus VAT, Egyptian e-invoicing (ETA),
+workflow engine, AI assistant, RBAC, and audit trail are built and gated green (`v1.0.0`,
+2026-07-16). **This specific checkout is `C:\AhmedGaid\ERP-B`** — a separate git worktree
+(`feat/b-lane`) used by "Agent B" to run backend work in parallel with "Agent A" (main checkout
+`C:\AhmedGaid\ERP`, `feat/a-*` branches) against the same GitHub repo. Current focus: the
+pre-handover hardening set, then the "twenty-harvest" (Twenty CRM parity) and "smart-import"
+(zero-prep Excel migration) plans. Next priority: continue B's lane on twenty-harvest FILE_19+
+per the parallel execution board.
 
 ## AI Agent Quick Context
 
-- **Current goal:** DELIVERY TRACK Phase 1b — drive Purchasing+Accounting write-flows E2E in the browser (PR→PO→receive→invoice→3-way match→payment + manual journal + trial balance re-check). See `Docs/plan/delivery-readiness/FILE_00_ASSESSMENT.md` + `FILE_01_E2E_RESULTS.md`.
-- **Architecture:** Django modular monolith (`erp/<module>` apps, `config/` project) + DRF API; React 18 + TS + Vite SPA (`apps/web`) behind WhiteNoise; PostgreSQL 16; Redis + Celery; JWT auth. Arabic/RTL-first, bilingual, integer-minor-unit money.
-- **Hard constraints (build-blocking):** i18n ar/en key-parity; tokens only (raw hex only in `apps/web/src/styles/tokens.css`); logical CSS only (`inline-start/end`, never `left/right`); monochrome app chrome (colour lives inside pages, always paired with word/icon); one type voice (IBM Plex Sans Arabic + Inter) + one own icon set, no CDN/imported icon libs; one canonical Arabic word per concept; money = integer minor units on the wire; **no new dependencies without asking.**
-- **Key conventions:** writes go through the module **service contract** (`create_customer`/`create_item`/…), never raw ORM `.create()`; AI uses tool-calls (never free-text-to-SQL), human-in-the-loop, runs as the user; every empty/error/loading state is designed; settled motion only. Frontend has no JS unit runner — gates are parity + `tsc`.
-- **Do NOT:** reopen a `_done` plan file; skip ahead in a plan; blindly paste a plan snippet that contradicts live code (intent wins, note the drift); add a dependency, a second Arabic word, or a physical-direction CSS rule; grow the `erp-status` banners.
-- **Current priorities:** (1) delivery-track E2E phases (roadmap queue PAUSED), (2) when resumed: queue pos 8 smart-import FILE_06, then arp-roadmap phases. `Docs/plan/EXECUTION_ORDER.md` is the queue authority.
-- **How to continue safely:** recall `erp-status` (via `/erp-resume`) → it names the exact NEXT ACTION + any blocker; load the target plan's `FILE_00_INDEX.md` + one `FILE_NN` only; run gates before "done" (`scripts/gates/_run.py all`; `apps/web`: `check-i18n-parity.mjs` + `tsc -b`). One file = one session.
-- **Likely next files to touch:** `Docs/plan/delivery-readiness/FILE_01_E2E_RESULTS.md` (append PASS/FAIL), plus whatever `erp/purchasing/` or `erp/accounting/` code a failure root-causes.
-- **Deeper truth lives in:** `erp-status` skill (live NEXT ACTION/blockers), `Docs/plan/EXECUTION_ORDER.md` (queue), `Docs/ARP_STRATEGY.md` (category/scope authority), `DECISIONS.md` (why, 150KB+ decision log), `erp-history` skill (how each module was built), `erp-frontend` + `conductor-brand` skills (UI + brand rules), `Docs/RUNBOOK.md`.
+- **Current goal:** Ship customer handover readiness, then work down the twenty-harvest +
+  smart-import backend queues in lane B while lane A (separate worktree) does frontend/workflow.
+- **Architecture:** Django 5.1 + DRF modular monolith (`erp/*` apps) + React 18/TS/Vite
+  (`apps/web`), Postgres 16, Redis (Celery broker + throttling), Arabic/RTL-first, JWT auth.
+- **⚠️ You are in a worktree, not the primary checkout.** `C:\AhmedGaid\ERP-B` is Agent B's lane
+  (own `.venv`, own `.env` → DB `erp_b`/test DB `test_erp_b`, Redis db `/1`, Django port 8001,
+  Vite 5174). The sibling checkout `C:\AhmedGaid\ERP` is Agent A's lane (DB `erp`/`test_erp`,
+  ports 8000/5173). **Never run pytest/gates/git commit/runserver/npm from the wrong checkout** —
+  a 2026-07-16 incident had both agents in one checkout and it corrupted the shared test DB.
+- **Lane B territory (this checkout should mainly touch):** `erp/core/**`, `erp/imports/**`,
+  `scripts/gates/**`, `VERSION`, `CHANGELOG.md`, `Docs/RUNBOOK.md`. Lane A owns `apps/web/**`
+  (incl. i18n keys) and `erp/workflow/**`/`erp/webhooks/**`. Cross-territory edits wait for a
+  merge checkpoint — see `Docs/plan/PARALLEL_PLAN.md`.
+- **Hard constraints:** raw hex colour only in `apps/web/src/styles/tokens.css`; logical CSS only
+  (no physical left/right); every user string in BOTH `ar.json`/`en.json`; money as integer minor
+  units on the wire; no new dependencies without asking; no third font/icon library/CDN assets.
+- **Key conventions:** one plan `FILE_NN.md` = one task = one session; a done file gets `_done`
+  appended and is never reopened; every session ends with a "How to test" block + an
+  `erp-status`-skill update at merge checkpoints only.
+- **Do NOT:** touch `apps/web/**` from this lane without a coordination note on the board; reopen
+  a `_done` plan file (fix forward in code instead); run destructive git ops on `main`.
+- **Current priorities:** finish the pre-handover set (delivery-readiness FILE_07 handover gate),
+  then twenty-harvest Tier 2 backend (FILE_19 admin panel backend is next per the board).
+- **How to continue safely:** read `Docs/plan/PARALLEL_PLAN.md` (board) and
+  `Docs/plan/EXECUTION_ORDER.md` (queue authority) first; recall the `erp-status` skill for live
+  state; run `pytest erp/<app>` + `.\.venv\Scripts\python.exe scripts\gates\_run.py all`.
+- **Likely next files to edit:** `erp/core/**` (admin panel backend, TH FILE_19),
+  `Docs/plan/twenty-harvest-plan/FILE_19_*.md`.
+- **Deeper truth lives in:** `erp-status` skill (live pointer), `DECISIONS.md` (160K, full
+  rationale log), `Docs/plan/EXECUTION_ORDER.md` (queue order), `Docs/plan/PARALLEL_PLAN.md`
+  (this lane's board), `Docs/ARP_STRATEGY.md` (category/scope), `Docs/Brand/*` (brand triad).
 
 ## What Is This Project?
 
-Conductor is an Arabic-first, single-tenant ERP that a customer hosts themselves (no SaaS
-multi-tenancy). It targets Egyptian small/medium businesses and covers the standard ERP surface —
-general ledger accounting, inventory, sales, purchasing, CRM — with Egypt-specific compliance
-(VAT, ETA / e-invoicing "einvoice"). The differentiator is the **ARP thesis**: an embedded AI
-assistant that can read and *act on* the business (draft documents, simulate the effect of a
-posting before it's committed, import messy Excel data with zero prep), always human-in-the-loop
-and running as the user. The bar is Linear-grade craft with a calm, trustworthy, monochrome feel.
+Conductor ERP is a Django-based, single-tenant, customer-hosted ERP built for Egyptian SMBs, with
+an Arabic-first bilingual UI. It bundles accounting, inventory, sales, purchasing, and CRM with
+Egyptian tax/e-invoicing (ETA) compliance, plus an AI assistant that can answer questions and
+propose scoped actions over the business's own data. Internally the product category is "ARP —
+Agentic Resource Planning" (adopted 2026-07-02); externally still marketed as an Arabic-first ERP
+until the claims gate opens.
 
-**Maturity:** beta / pre-handover — core modules built and gate-green; now being hardened
-end-to-end for a first real customer via the delivery track. Not yet running a live business.
+**Maturity:** beta / pre-launch — v1.0.0 tagged 2026-07-16, all core-module gates green, currently
+in a "delivery-readiness" hardening pass before the first real customer handover.
 
 ## Progress Overview
 
-> ⚠️ Percentages are **estimates** inferred from module completeness, gates, and plan position — not measurements.
+> ⚠️ Percentages are **estimates** inferred from plan-file `_done` status, gate count, and
+> `erp-status`/DECISIONS.md — not measurements.
 
 | Area | Progress | Status |
 |---|---|---|
-| **Overall** | `█████████░ 90%` | Core ERP + AI + unified UI built and gate-green; delivery-track E2E hardening + remaining roadmap phases outstanding |
-| Backend (Django modules) | `█████████░ 92%` | 5 business modules + accounting/ops depth + VAT/ETA + workflow/forms all built; imports (smart-import) 4/8 adapters |
-| Frontend (`apps/web`) | `█████████░ 90%` | React/TS SPA, unified Linear-grade UI, assistant surface, RTL/bilingual; some polish follow-ups shelved |
-| Accounting / VAT / ETA | `█████████░ 90%` | GL, journals, trial balance, Egyptian VAT + e-invoice (einvoice) module built; E2E verify in progress |
-| AI Assistant (ARP) | `████████░░ 80%` | Assistant, tool-actions, RAG knowledge, reliability gateway (routing/failover/caching/budgets), simulation engine; long reliability track (FILE_03–08) pending |
-| Smart Import | `███░░░░░░░ 35%` | FILE_01–05 done (reader, detection, cleaning, 4/8 master adapters); FILE_06–17 pending (paused for delivery track) |
-| Auth / RBAC | `██████████ 100%` | JWT + TOTP 2FA, roles/permissions, immutable audit trail |
-| API | `█████████░ 90%` | DRF across modules; 48/48 non-AI endpoints verified correct in Phase 0 |
-| Testing | `███████░░░ 75%` | pytest per module (206 imports tests alone) + machine gates 00–15 green; **no JS unit runner**; E2E regression harness exists, live E2E in progress |
-| i18n (ar/en) | `██████████ 100%` | Key-parity enforced + build-blocking |
-| Deployment | `██████░░░░ 60%` | Docker + docker-compose + WhiteNoise/Waitress; customer-hosted; not yet on a live customer box |
-| Documentation | `█████████░ 90%` | Strategy, decisions (150KB+), per-plan FILE_NN, runbook, growth plan, owner manual, status skills all maintained |
+| **Overall** | `████████░░ 85%` | Core ERP done; hardening + Twenty-parity/import backlog in progress |
+| Backend (Django/DRF) | `█████████░ 90%` | 5 core modules + accounting depth + workflow + identity/RBAC done; imports & admin-panel backend ongoing |
+| Frontend (React/TS) | `████████░░ 80%` | Core UI + Linear-polish (undo/keyboard/views/inbox) done; Twenty-harvest UI (saved views, ⌘K, custom fields UI) partial |
+| Database | `█████████░ 90%` | Postgres 16, migrations current per app; no known pending schema debt |
+| Infrastructure | `████████░░ 80%` | Docker/Compose + `provision_customer` go-live command done; production hardening ongoing |
+| Authentication | `█████████░ 90%` | JWT + HttpOnly refresh cookie, 2FA, RBAC, API keys (backend done, keys UI pending) |
+| API | `████████░░ 80%` | DRF surface broad + gate17 API-schema snapshot; import/admin-panel endpoints still landing |
+| Testing | `████████░░ 80%` | pytest + pytest-django, ~1300 tests reported green in `erp-status`; Playwright E2E for Tier-1 flows done; **no JS unit-test runner** |
+| Documentation | `█████████░ 90%` | Extensive `Docs/plan/*`, `DECISIONS.md`, brand docs, RUNBOOK |
+| Deployment | `███████░░░ 70%` | Dockerfile + waitress/whitenoise prod profile; handover gate (FILE_07) not yet run on a real customer box |
+| AI Integration | `███████░░░ 70%` | AI workspace (chat/actions/tool catalog) done; AI-reliability roadmap Phases 3–8 (retrieval v2, memory, orchestration, guardrails) not started |
 
 ## Architecture & Stack
 
-**Stack:** Python 3.13, Django 5.1 + Django REST Framework 3.15, PostgreSQL 16 (`psycopg` 3),
-Celery 5.4 + Redis 5, `pydantic` 2, `djangorestframework-simplejwt` (JWT), `pyotp` (TOTP 2FA),
-`whitenoise` + `waitress` (serve the built SPA behind Django, Windows-friendly), `openpyxl` (XLSX),
-`anthropic` + `google-genai` (AI assistant providers — optional at runtime, off without an API
-key). Frontend: React 18.3, TypeScript 5.7, Vite 6, `react-router-dom` 7, `i18next`,
-`@xyflow/react` (workflow canvas), self-hosted `@fontsource` fonts (no CDN).
+**Stack:** Python 3.13, Django 5.1, DRF 3.15, Postgres 16 (via psycopg 3), Celery 5.4 + Redis 5,
+Pydantic 2.8, Argon2 password hashing, SimpleJWT, pyotp (2FA); React 18.3 + TypeScript 5.7 + Vite
+6, react-router-dom 7, i18next/react-i18next, `@xyflow/react` (workflow canvas), Playwright (E2E).
+AI: `anthropic` + `google-genai` SDKs, optional at runtime (off without an API key).
 
-- **Modular monolith:** each business/platform concern is a Django app under `erp/`; `config/` holds settings (split: `config.settings.dev`), urls, wsgi/asgi, celery.
-- **Service-contract writes:** callers (including AI actions and import adapters) go through module service functions (`create_customer`, `create_item`, `create_lead`, …), never raw ORM `.create()`; RBAC is enforced at that layer.
-- **AI:** tool-use only (never free-text-to-SQL), propose → confirm → execute, human-in-the-loop, runs as the user; reliability gateway adds routing/failover/caching/token+cost budgets; a simulation engine shows "tomorrow's books before you post them."
-- **Money:** integer minor units on the wire; format/parse only at the edge (`apps/web/src/lib/money.ts`).
-- **Frontend:** single React SPA, Arabic/RTL default (LTR must read identically), design tokens + logical CSS + monochrome chrome enforced by gates; optimistic updates, toasts, hover-prefetch, keyboard/⌘K primitives.
-- **Gates as definition-of-done:** `scripts/gates/gateNN.py` (00–15) — scaffold/health, brand (gate03), module gates; a phase can't advance until its gate exits 0.
-- **Observability:** correlation IDs, structured JSON logging, health + system-check endpoints, monitoring app, immutable audit trail.
+- Modular monolith: each business domain is a Django app under `erp/`, isolated by app boundary,
+  not microservices.
+- `erp/core` is the cross-cutting kernel: correlation IDs, structured logging, error catalog,
+  events, repository base, custom-fields engine, import/export/search APIs.
+- Background work: DB-backed job queue for Smart Import (`ImportBatch` row + `manage.py
+  run_imports`), Celery used elsewhere (monitoring, notifications) — deliberately NOT reused for
+  imports (see `DECISIONS.md` 2026-07-17 entry).
+- Machine gates (`scripts/gates/gate00.py` … `gate17.py`) are the definition-of-done per stage;
+  `_run.py all` runs every implemented gate in order.
+- Frontend: Arabic/RTL-first, logical CSS only, design tokens in `apps/web/src/styles/tokens.css`,
+  single icon set (`apps/web/src/app/icons.tsx`), i18n key-parity enforced by a checked-in script.
 
 ### Folder Structure
 
 ```
-config/           Django project — settings split, urls, wsgi/asgi, celery
-erp/              modular monolith (one Django app per concern)
-  core/           cross-cutting: correlation IDs, logging, errors, events, repository base
-  identity/       auth, users, RBAC, TOTP 2FA
-  audit/          immutable audit trail
-  monitoring/     health + system-check
-  accounting/     GL, journals, trial balance, VAT
-  einvoice/       Egyptian ETA e-invoicing
-  inventory/  sales/  purchasing/  crm/   the five business modules
-  pricing/        price lists / pricing resolution
-  workflow/  forms/   workflow + dynamic-forms engine
-  assistant/      AI assistant (gateway, actions, RAG, simulation)
-  imports/        smart-import engine (readers, detection, cleaning, adapters, registry)
-  notifications/  setup/                    supporting modules
-apps/web/         React + TS + Vite SPA (api/ app/ assistant/ auth/ components/ pages/ i18n/ lib/ …)
-scripts/gates/    machine gates 00–15 (_run.py orchestrates)
-architecture/     auto-maintained docs (modules, events, database, api, error-catalog)
-deploy/           deployment configs;  Dockerfile + docker-compose.yml at root
-Docs/
-  plan/           EXECUTION_ORDER.md (queue authority) + per-program FILE_NN plans
-                  (delivery-readiness/, smart-import-plan/, ai-reliability-roadmap/, arp-roadmap.md, …)
-  ARP_STRATEGY.md · ARP_DEEP_VISION.md · Brand/ · RUNBOOK.md · testing/E2E_MASTER_PROMPT.md
-DECISIONS.md      150KB+ decision + rejected-paths log (the project's "why")
+config/          Django project: settings split (base/dev/prod), urls, wsgi/asgi, celery.py
+erp/             modular-monolith apps: core, identity, audit, monitoring, workflow, forms,
+                 accounting, inventory, sales, purchasing, crm, notifications, pricing, setup,
+                 einvoice, imports, assistant (AI)
+apps/web/        React + TS frontend (src/app shell, api, auth, pages, i18n, styles, hooks)
+apps/web/e2e/    Playwright E2E suite
+scripts/gates/   gate00.py .. gate17.py — machine-checked definition of done per stage
+scripts/sql/     DB bootstrap SQL
+Docs/plan/       every feature plan, one FILE_NN.md per session-scoped task
+Docs/Brand/      brand triad: Brief (words), Directive (in-app behaviour), Visual Identity System
+architecture/    auto/maintained docs (modules, events, database, api, error-catalog)
+storage/         runtime file storage root (reports, exports; STORAGE_ROOT env-configurable)
 ```
 
 ### Main Modules
 
-- `erp/core` — cross-cutting foundation (events, errors, correlation IDs, repository base).
-- `erp/identity`, `erp/audit`, `erp/monitoring` — auth/RBAC/2FA, immutable audit, health.
-- `erp/accounting`, `erp/einvoice`, `erp/pricing` — ledger/VAT, ETA e-invoicing, pricing resolution.
-- `erp/inventory`, `erp/sales`, `erp/purchasing`, `erp/crm` — the five business modules.
-- `erp/workflow`, `erp/forms` — the workflow + dynamic-forms engine (frontend canvas via `@xyflow/react`).
-- `erp/assistant` — the AI/ARP surface: gateway, tool-actions, RAG knowledge, simulation engine.
-- `erp/imports` — smart-import: streaming xlsx/csv reader, dataset detection, cleaning, master adapters, registry.
-- `apps/web` — the React SPA consuming all of the above.
+- `erp/core` — cross-cutting kernel (correlation, logging, errors, events, custom fields, imports
+  glue, search/resolve/export APIs).
+- `erp/identity` — auth, users, RBAC, 2FA, branches, API keys (`ApiKeyAuthentication`).
+- `erp/imports` — Smart Import engine: parsing, mapping, dedupe, auto-masters, adapters
+  (sales/purchasing/finance documents), execution engine, job runner.
+- `erp/accounting`, `erp/inventory`, `erp/sales`, `erp/purchasing`, `erp/crm` — the five core
+  business modules.
+- `erp/workflow` — workflow/automation engine + webhooks (Agent A territory).
+- `erp/assistant` — AI chat/actions backend (conversations, tool catalog, safe actions).
+- `erp/audit` — immutable audit trail + activity timeline read API.
+- `apps/web/src/app` — app shell (AppShell, CommandPalette/CommandBar, InboxPanel, action
+  feedback/receipt UI).
 
 ### Central Files (handle with care)
 
 | File | Why it matters | Safe to edit casually? |
 |---|---|---|
-| `Docs/plan/EXECUTION_ORDER.md` | The queue authority — what to work on and in what order | ⚠️ No (edited in the same commit that adds a plan) |
-| `DECISIONS.md` | 150KB+ log of decisions + rejected paths — the project memory | ⚠️ No (append, never rewrite) |
-| `Docs/ARP_STRATEGY.md` | Category + scope (build/remove) authority — read before scoping anything | ⚠️ No |
-| `apps/web/src/styles/tokens.css` | The ONLY place raw hex is allowed; everything else uses `var(--color-*)` | ⚠️ No |
-| `apps/web/src/app/icons.tsx` | The single own icon set — no imported icon library allowed | ⚠️ No |
-| `config/settings/*` | Django settings split (`dev`/prod); env-driven | ⚠️ No |
-| `requirements.txt` / `apps/web/package.json` | No new dependencies without asking | ⚠️ No |
-| `erp/*/services*` (service contracts) | All writes route here; bypassing them skips RBAC | ⚠️ No |
+| `DECISIONS.md` (160K) | Full rationale log for every non-obvious call — read before re-deciding something | ✅ append-only, don't rewrite history |
+| `Docs/plan/EXECUTION_ORDER.md` | Queue authority — what to work on next, in what order | ⚠️ only at plan-session boundaries |
+| `Docs/plan/PARALLEL_PLAN.md` | This lane's coordination board vs. Agent A | ⚠️ flip status in the same commit as the work |
+| `apps/web/src/styles/tokens.css` | Only place raw hex colour is allowed | ⚠️ No |
+| `config/settings/base.py` / `prod.py` | Security posture (CSP, HSTS, cookies, CORS) | ⚠️ No |
+| `.env` (gitignored) | DB/Redis URLs, ports — differ per lane (`erp` vs `erp_b`) | ⚠️ No — never commit |
 
 ## Features
 
 ### ✅ Completed
-- [x] Platform foundation — Django modular monolith, core (events/errors/correlation IDs), config split, gates 00+
-- [x] Identity — JWT auth, RBAC roles/permissions, TOTP 2FA, immutable audit trail
-- [x] Accounting — GL, journals, trial balance, Egyptian VAT
-- [x] Inventory, Sales, Purchasing, CRM — the five business modules (create/confirm/deliver/invoice/collect flows)
-- [x] Egyptian ETA e-invoicing (`einvoice`), pricing/price-lists (`pricing`)
-- [x] Workflow + dynamic-forms engine (backend + React canvas)
-- [x] Reports + XLSX export, notifications
-- [x] React/TS frontend — unified Linear-grade UI (sticky header bar, unified print/export/share, meta columns), RTL/bilingual, optimistic/toast/prefetch/keyboard/⌘K primitives
-- [x] AI assistant (ARP) — assistant surface, tool-actions (per-module drafts), RAG knowledge base, reliability gateway (retry/circuit-breaker/failover/caching/token+cost budgets), os-foundations (action graph v2, verifier packs, simulation engine + diff card)
-- [x] Smart-import FILE_01–05 — imports app + adapter registry, streaming xlsx/csv reader, dataset detection + header mapping, data-cleaning normalizers, 4/8 master adapters (customers/suppliers/items/contacts)
-- [x] Delivery track Phase 0 (ground-truth: gates green, 48/48 non-AI endpoints correct, frontend boots) + Phase 1a (Sales+Inventory E2E, all PASS)
+- [x] Core modules — Sales, Purchasing, Inventory, Accounting, CRM
+- [x] VAT + Egyptian e-invoicing (ETA)
+- [x] Workflow engine + outbound webhooks
+- [x] AI assistant (chat/ask over scoped business data, safe actions)
+- [x] Identity — JWT + HttpOnly refresh cookie, 2FA, RBAC, branches, API keys (backend)
+- [x] Arabic/RTL-first UI, full ar/en parity, light/dark theming
+- [x] Audit trail + activity timeline (read API)
+- [x] Custom fields backend (fields only, not objects)
+- [x] Partial payments (UI + API)
+- [x] `provision_customer` go-live command
+- [x] Release versioning (`VERSION`, `manage.py upgrade` command, upgrade-drill + API-schema
+      snapshot gates)
+- [x] Playwright E2E for Tier-1 write flows
+- [x] Smart Import: parsing/mapping/dedupe/auto-masters/execution-engine/background runner/REST
+      API/document adapters (sales, purchasing docs) + finance adapters (journal entries,
+      account opening)
 
 ### 🟡 Partially Complete
-- [ ] Smart Import — FILE_06–17 pending (analyze/validate, import, rollback, dedupe, documents/finance, UI, acceptance); paused for delivery track. 4 of 8 master adapters built (item_categories/warehouses/price_lists/units blocked — no module service create-path exists yet)
-- [ ] Delivery track — Phase 1b (Purchasing+Accounting E2E) next; later phases decide smart-import defer-vs-finish
-- [ ] AI reliability long track — FILE_03–08 (retrieval v2, memory, agent orchestration v2, guardrails/security, perf/cost, production hardening) not started
-- [ ] Deployment — Docker/compose ready; not yet running on a live customer box
+- [ ] Smart Import finance adapters — journal entries + opening entries done; payments/receipts
+      and inventory-opening/transactions are documented blockers (no unallocated-payment model,
+      no as-of-date WAC) — see `DECISIONS.md`
+- [ ] Twenty-harvest FILE_14 API keys — backend done (this lane); Settings → Developers keys UI +
+      reference page not built (Agent A territory)
+- [ ] Twenty-harvest FILE_13 activity timeline — read API done; tab UI + verifiability link
+      deferred to Agent A
+- [ ] Twenty-harvest FILE_15/16 import adapters — backend done; preview UI / suspense-approval
+      panel (apps/web) unbuilt/unverified from this lane
+- [ ] Delivery-readiness FILE_07 HANDOVER GATE — not yet run on a real customer box
 
 ### ⬜ Not Started
-- [ ] arp-roadmap strategic phases A2, B, B2, C–F (gated behind queue positions 1–8)
-- [ ] Mobile app — plan rebuilt on Flutter (2026-07-10, drift/dio/bloc, store-only, FCM); needs a DECISIONS entry to activate (shelved)
-- [ ] master-roadmap reservoir (13-domain blueprint) — floor tasks slot into gaps as founder paces
+- [ ] Twenty-harvest FILE_19+ (admin panel backend — next task for this lane) through FILE_21
+- [ ] AI-reliability roadmap Phases 3–8 (retrieval v2, memory, agent orchestration v2,
+      guardrails/security, perf/cost, production hardening)
+- [ ] ARP roadmap phases A2, B, B2, C–F (strategic roadmap, gated behind queue positions 1–10)
+- [ ] Mobile app plan (shelved)
 
 ## Roadmap & Next Steps
 
-Queue authority: [`Docs/plan/EXECUTION_ORDER.md`](Docs/plan/EXECUTION_ORDER.md). Live NEXT ACTION:
-the `erp-status` skill. **The strategic queue is currently PAUSED for the delivery track.**
+Authority: `Docs/plan/EXECUTION_ORDER.md` (global queue) + `Docs/plan/PARALLEL_PLAN.md` (this
+lane's board). Do not reorder without reading both.
 
-**High Priority (delivery track — active)**
-1. Phase 1b — Purchasing+Accounting write-flow E2E (drive in browser as admin; append PASS/FAIL to `Docs/plan/delivery-readiness/FILE_01_E2E_RESULTS.md`)
-2. Remaining delivery-track phases per `FILE_00_ASSESSMENT.md`
-3. Clean the demo cash −1.1M EGP seed artifact before customer handover (books still balance; flagged in Phase 0)
+**High Priority**
+1. Twenty-harvest FILE_19 admin panel backend (this lane's next claimed task)
+2. Delivery-readiness FILE_07 HANDOVER GATE (founder + either agent, needs a real customer box)
 
-**Medium Priority (roadmap — resumes when delivery track done)**
-1. Queue pos 8 — smart-import FILE_06 (analyze/validate; Opus-fit) → FILE_07–17
-2. Queue pos 9 — arp-roadmap phases A2/B/B2/C–F
-3. Queue pos 10 — ai-reliability FILE_03–08
+**Medium Priority**
+1. Twenty-harvest FILE_20–21 (Tier 3 polish + acceptance)
+2. Smart-import FILE_12–14 (wizard/preview/report UI — Agent A territory, depends on this lane's
+   adapters)
 
-**Low Priority / Shelved**
-1. Mobile app (Flutter) — needs a DECISIONS entry to activate
-2. unified-ui follow-ups; perceived-performance plan; business-cycles harvest
+**Low Priority**
+1. ARP roadmap phases A2/B/B2/C–F (after queue positions 1–10 are fully `_done`)
+2. AI-reliability roadmap Phases 3–8
 
-**Current blockers:** none active (per `erp-status`). Standing dev note: Redis must be running
-(`Get-Service Redis` → `Start-Service Redis`; `redis-cli ping` → PONG). Smart-import's remaining
-4 adapters are blocked on module owners adding service create-paths for
-item_categories/warehouses/price_lists/units (STOP-rule, not this session's work).
+**Current blockers:** none active. Historical: 2026-07-16 both-agents-one-checkout incident
+(fixed — worktrees now separate, see Hard Constraints above).
 
 ## Recent Work
 
-- 2026-07-15 — feat(imports): smart-import FILE_05 — master adapters (customers/suppliers/items/contacts) (`fd2be96` / `87d1208`)
-- 2026-07-1x — feat(imports): FILE_04 data-cleaning normalizers (`61a2e7d`); FILE_03 dataset detection + header mapping (`0fc17b6`); FILE_02 streaming xlsx/csv reader (`9f6d332`); FILE_01 imports app + adapter registry (`a2680e6`)
-- 2026-07-12 — feat(assistant): os-foundations L2 — diff card + phase W+ acceptance (`82eeb86`); L2 simulation engine (`9af03c2`); L1 verifier wired (`c245db5`); L1 verifier packs (`a8f8b1c`); L0 action graph v2 schema (`f245020`)
-- 2026-07-1x — feat(assistant): ai-reliability Phase 2 close — degraded mode (`4c3be91`), semantic cache (`4e24e0c`), token/cost budgets (`93c275e`), streaming resilience (`56de701`), exact-match cache (`13cdec1`), model routing report (`2b0876c`), circuit breaker/failover (`d96befe`)
-- 2026-07-10 — docs(mobile): rebuild mobile-app-plan on Flutter (`80149c1`)
-- earlier: ai-reliability Phase 1 (traces/eval harness/ops view), agent-actions FILE_01–06, unified-ui, linear-polish, rag-knowledge, ai-workspace (see `erp-history` skill for the full build history).
+- 2026-07-17 — API keys backend: model + `ApiKeyAuthentication` + service (`e64191d`)
+- 2026-07-17 — Finance import adapters: journal_entries + account_opening (`e877d6d`)
+- 2026-07-17 — Document import adapters finished: sales_quotations, sales_orders, purchase_orders
+  (`b385831`)
+- 2026-07-17 — Document import adapters: group-by engine + sales/purchase invoices (`03791cc`)
+- 2026-07-16 — Activity timeline read API (Task A only) (`1b0a9b2`)
+- 2026-07-16 — Custom fields backend (fields only) (`eab66b5`)
+- 2026-07-16 — Smart Import REST API + deterministic autofix (`91da71a`)
+- 2026-07-16 — Smart Import background runner: DB-backed job queue, `manage.py run_imports`
+  (`b1a3a70`)
+- 2026-07-16 — Smart Import execution engine: strategies, chunked commits, resume, rollback
+  (`68642c3`)
+- 2026-07-16 — Release versioning: `VERSION` single source of truth (`9e2b422`)
 
 **Recent architectural changes:**
-1. Smart-import adapters call the real module service contract (`create_*`), never ORM `.create()`; a shared `_rbac.require_role` gates `write()` because contract fns don't self-check permission.
-2. AI reliability gateway inserted in front of all model calls — retry policy + typed failures, circuit breaker + failover chain, exact-match + semantic caching, token/cost budgets, degraded mode.
-3. os-foundations Action Graph v2 + verifier packs + simulation engine — "see tomorrow's books before you post them"; smart-import preview UI is meant to reuse `SimulationDiffCard`.
-4. Delivery-track program added (2026-07-15) — E2E-verify every non-AI feature for a real customer; roadmap queue paused.
+1. Smart Import background jobs use a DB-backed queue (`ImportBatch` status + `manage.py
+   run_imports`), not Celery — deliberate choice despite Celery already being installed/in-use
+   elsewhere (2026-07-17).
+2. `execute_batch`/`resume_batch` gained an `on_chunk` callback seam for pause/cancel control,
+   backward-compatible with existing callers.
+3. Two-worktree parallel-agent setup (`C:\AhmedGaid\ERP` = lane A, `C:\AhmedGaid\ERP-B` = lane B)
+   with disjoint DBs/ports/Redis-db, established 2026-07-16 after a shared-checkout incident.
+4. API keys authenticate as a hidden auto-created "principal" user riding existing RBAC/scoping/
+   audit — no parallel permission system.
 
 ## Known Issues & Technical Debt
 
-- **Smart-import is mid-stream** — 4 of 8 master adapters built; item_categories/warehouses/price_lists are model-only (inline `Model.objects.create` in API views, no service fn), `units` has no model (`Item.uom` is free text), "contacts" mapped to `crm.Lead` (no Contact model). Blocked until module owners add service create-paths.
-- **Zero live customer usage yet** — the delivery track exists precisely because most write-flows haven't been driven E2E on real data; only Sales+Inventory (Phase 1a) verified so far.
-- **No JS unit-test runner** — frontend correctness rests on `tsc`, i18n parity, the brand gate, and manual/E2E checks. A green gate = "not mechanically off-brand," not "correct."
-- **Demo seed artifact:** demo cash shows −1.1M EGP (books balance) — must be cleaned before handover.
-- **Backlog (filed, not scheduled):** `ask.py` router blind to attachments; `sales._next_customer_code` max mis-detect on non-numeric codes (low pri); business-cycles harvest; perceived-performance plan; live-data grounding sliver (accepted gap).
-- **Two identical FILE_05 commits** (`fd2be96`, `87d1208`) in history — cosmetic, no action needed.
-- **Uncommitted / untracked at analysis time:** `Docs/plan/EXECUTION_ORDER.md` + `erp/imports/registry.py` modified (working tree); untracked `Docs/plan/delivery-readiness/` (new program docs — likely to commit), a `.modeer/` dir, and a large pile of `assistant/2026/07/data*.csv` import-test artifacts (cruft — should be gitignored/cleaned, not committed).
-- **Docs vs code:** README's build-plan link points at a local `~/.claude/plans` path that won't resolve for other agents — the real plan authority is `Docs/plan/EXECUTION_ORDER.md`.
+- Smart Import finance adapters: payments/receipts and inventory-opening/transactions are
+  explicitly unbuilt (documented blockers, not forgotten — see `DECISIONS.md`).
+- `erp/workflow/tests/test_api.py` — pre-existing broken test flagged separately in `erp-status`
+  (excluded from the "1146/1146 green" count as of 2026-07-16).
+- `seed_identity` creates 3 demo users with a shared known password (`Dev12345!`) — fine for dev,
+  flagged as needing a customer-safe provisioning path (no demo users) before real handover.
+- `ask.py` router is blind to attachments (filed, not scheduled).
+- `sales._next_customer_code` can mis-detect the max on non-numeric codes (filed, low priority).
+- No `TODO`/`FIXME`/`HACK` markers found in `erp/` — debt is tracked in `DECISIONS.md`/plan files
+  instead of code comments.
+- **Uncommitted local noise:** ~430 untracked `assistant/2026/07/data_*.csv` files at repo root
+  (small generated CSVs, e.g. import/export test artifacts) — not part of the tracked project;
+  worth `.gitignore`-ing or cleaning up, not a functional issue.
 
 ## Design Decisions & Business Rules
 
-_Full log: `DECISIONS.md` (150KB+). Highlights:_
-
-- **Category = ARP (Agentic Resource Planning)** — internal until the claims gate opens; publicly still "Arabic-first ERP." Scope authority = `Docs/ARP_STRATEGY.md`.
-- **Customer-hosted, single-tenant** — not SaaS multi-tenancy; customer runs their own box (WhiteNoise/Waitress serve the SPA behind Django; no CDN, fonts/icons self-hosted).
-- **AI = tool-use, never free-text-to-SQL; writes are human-in-the-loop; the AI runs AS the user** (its actions respect the user's RBAC). Optional at runtime — the app works with no API key.
-- **Service-contract writes** — all mutations go through module service fns so RBAC + validation live in one place; import adapters and AI actions both obey this.
-- **Money = integer minor units** on the wire; format/parse only at the edge.
-- **Brand is build-blocking, not cosmetic:** tokens-only, logical-CSS-only, monochrome chrome (colour only inside pages, paired with word/icon), one type voice + one icon set, one canonical Arabic word per concept, designed states, settled motion, reduced-motion honoured.
-- **Zero new dependencies without asking.**
-- **One file = one session; a `_done` plan file is never reopened;** the plan folders are the progress bar (no separate tracker). Queue yields to the user always, then resumes where it was.
-- **Delivery track supersedes the roadmap queue** while active (founder pivot 2026-07-15): ship to a real customer first, AI out of scope for now.
+Full log: `DECISIONS.md` (160K, append-only). Highlights relevant to this lane:
+- **ARP category** adopted 2026-07-02 as the internal product category name; public-facing copy
+  still says "Arabic-first ERP" until a claims gate opens (`Docs/ARP_STRATEGY.md`).
+- **Delivery-readiness pivot** (user, 2026-07-15): roadmap queue paused in favor of hardening for
+  a real customer handover; AI explicitly out of scope for that track.
+- **Two-agent parallel lanes**: `ERP-B` worktree exists solely to let Agent B work backend
+  (`erp/core`, `erp/imports`, gates) concurrently with Agent A's frontend/workflow work, without
+  sharing a checkout or test DB. Territory boundaries and merge checkpoints are in
+  `Docs/plan/PARALLEL_PLAN.md` — treat that file, not tribal knowledge, as authoritative.
+- **Import job queue**: DB-backed (`ImportBatch` + `run_imports` command), not Celery, per founder
+  decision even though Celery was already available (2026-07-17).
+- Money: integer minor units on the wire; format/parse only at the edges.
+- One canonical Arabic word per business concept (see Identity System §6 in `Docs/Brand/`).
 
 ## How to Build / Run / Test / Deploy
 
-```powershell
-# --- Backend (repo root, venv Python 3.13) ---
-.\.venv\Scripts\python -m pip install -r requirements.txt
-.\.venv\Scripts\python manage.py migrate
-.\.venv\Scripts\python manage.py seed_identity --demo-users; .\.venv\Scripts\python manage.py seed_accounting
-.\.venv\Scripts\python scripts\seed_demo.py
+```bash
+# Build (frontend)
+cd apps/web && npm run build          # tsc -b && vite build (+ i18n-parity and bundle-size checks)
 
-# Run the full live dev env (Django :8000 + Vite :5173)
-.\run-dev.ps1                     # login admin / Dev12345!
+# Run (dev) — from repo root
+.\.venv\Scripts\python.exe manage.py runserver 8001   # this lane uses port 8001
+cd apps/web && npm run dev                              # this lane's Vite runs on 5174 per board
+# convenience script (Agent A's default ports 8000/5173):
+run-dev.ps1
 
-# --- Frontend (apps/web) ---
-npm install
-npm run dev                       # Vite
-npm run build                     # tsc -b && vite build  (prebuild runs i18n parity)
+# Test
+.\.venv\Scripts\python.exe -m pytest erp/<app>          # per-app; full suite before merge checkpoints
+cd apps/web && npx playwright test -c e2e/playwright.config.ts   # Tier-1 E2E (no JS unit runner exists)
 
-# --- Gates (definition of done) ---
-.\.venv\Scripts\python scripts\gates\_run.py all      # backend gates 00-15, must exit 0
-cd apps\web; node scripts\check-i18n-parity.mjs; npx tsc -b   # frontend gates (use -b, not --noEmit)
-python scripts\gates\gate03.py    # mechanical brand gate (repo root)
-pytest erp\<app>                  # per-module backend tests
+# Gates (definition of done per stage)
+.\.venv\Scripts\python.exe scripts\gates\_run.py all     # 00–17, must be green before merging
+cd apps/web && node scripts/check-i18n-parity.mjs && npx tsc -b
+python scripts/gates/gate03.py                           # brand gate (repo root)
 
-# --- Deploy ---
-# Docker: Dockerfile + docker-compose.yml at repo root (customer-hosted, single-tenant)
+# Deploy
+# manual — see Docs/RUNBOOK.md; Dockerfile + docker-compose.yml for containerized deploy,
+# waitress + whitenoise for the pure-Windows-friendly prod profile
 ```
 
-**Environment requirements:** Windows dev box. Python 3.13 venv at `.venv`; Django settings
-`config.settings.dev`. PostgreSQL 16 service `postgresql-x64-16` (app DB `erp`, role `erp`). Redis
-at `redis://localhost:6379/0` (winget `Redis.Redis` or Memurai; must be running). Node 24 / npm 11.
-`.env` at repo root (gitignored) — key NAMES: `DATABASE_URL`, `REDIS_URL`, `ANTHROPIC_API_KEY`
-(optional), `GEMINI_API_KEY` (optional), JWT/2FA secrets. Demo login: `admin` / `Dev12345!`.
+**Environment requirements:** Python 3.13, Node LTS (24/npm 11), PostgreSQL 16, Redis-compatible
+service (Memurai on Windows). Required env vars (names only, see `.env.example`):
+`DJANGO_SETTINGS_MODULE`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`,
+`DATABASE_URL`, `REDIS_URL`, `CELERY_TASK_ALWAYS_EAGER`, `STORAGE_ROOT`, `API_PORT`, `WEB_PORT`,
+`DJANGO_COOKIE_SECURE`, `DJANGO_SSL_REDIRECT`, `DJANGO_CSP_POLICY`, `DRF_THROTTLE_*`,
+`WORKFLOW_EGRESS_ALLOWLIST`, `EMAIL_*`. This lane's `.env` points at DB `erp_b` (test DB
+`test_erp_b`), Redis logical db `/1` — do not copy Agent A's `.env`.
 
 ## Integrations & Services
 
-- **PostgreSQL 16** — primary datastore (`psycopg` 3).
-- **Redis + Celery** — task queue / async jobs / caching.
-- **Egyptian Tax Authority (ETA)** — e-invoicing via the `erp/einvoice` module (VAT compliance).
-- **Anthropic Claude + Google Gemini** — AI assistant providers, selected via API-key env vars; entirely optional (app runs fully without AI).
-- **Cloudflare "Workers Builds"** — appears red on PRs #12/#13 but is pre-existing/ignored per `erp-status`.
+- **Anthropic / Google Gemini** — AI assistant providers, optional at runtime, off without an API
+  key (`anthropic`, `google-genai` SDKs).
+- **Egyptian Tax Authority (ETA)** — e-invoicing integration (`erp/einvoice`).
+- **Celery + Redis** — background tasks (monitoring, notifications); NOT used for Smart Import
+  jobs (deliberate — DB-backed queue instead).
+- **Outbound webhooks** — workflow engine can call external HTTP endpoints
+  (`WORKFLOW_EGRESS_ALLOWLIST` gates destinations).
 
 ## Database Overview
 
-**Engine:** PostgreSQL 16 (Django ORM, `psycopg` 3). Schema is per-module (Django migrations in each
-`erp/<app>/migrations/`). Core entities span the modules: users/roles/permissions (identity),
-chart of accounts + journals + VAT (accounting), items/warehouses/stock (inventory),
-customers/sales-orders/invoices (sales), suppliers/POs/GRNI (purchasing), leads (crm),
-price lists (pricing), e-invoices (einvoice), workflows/forms definitions, immutable audit log.
-Writes flow through module service contracts, not raw ORM. Money stored as integer minor units.
+PostgreSQL 16. Each `erp/<app>` owns its own Django models/migrations (modular monolith, one
+schema). Core cross-cutting tables live in `erp/core` (custom fields, events). No ORM sharding —
+single-tenant per deployment (customer-hosted). Migrations tracked per-app under
+`erp/<app>/migrations/`; `manage.py upgrade` is the registry-driven release-step runner for
+customer upgrades (not raw `migrate`).
 
 ## Auth & API
 
-- **Auth:** JWT (`djangorestframework-simplejwt`) + TOTP 2FA (`pyotp`); RBAC roles/permissions in `erp/identity`, enforced at the service-contract layer (`require_role` / `HasAnyRole`). AI actions run under the acting user's permissions.
-- **API:** Django REST Framework across all modules; 48/48 non-AI endpoints verified correct in delivery-track Phase 0. Health (`GET /health` → `{ok:true}`) + `GET /system-check` (DB/Redis/storage).
-- **API surface detail:** per-module DRF viewsets/routers under each `erp/<app>/`; the React SPA (`apps/web/src/api`) is the primary consumer.
+- **Authentication:** JWT (SimpleJWT) with HttpOnly refresh cookie; TOTP 2FA (`pyotp`); API keys
+  authenticate as a hidden auto-created principal user riding the same RBAC path as a human login.
+- **Authorization:** role-based (RBAC) — roles, permissions, approval limits, branches; scoped
+  per-module.
+- **API surface:** DRF, one router/viewset set per `erp/<app>`; `gate17.py` snapshots the API
+  schema to catch accidental breaking changes.
 
 ## Quality: Testing, Performance, Security
 
-- **Testing:** pytest + pytest-django per module (e.g. 206 imports tests); machine gates 00–15 (`scripts/gates/`) are the definition-of-done and are green. **No JS unit runner** — frontend rests on `tsc -b`, i18n parity, the brand gate, and the E2E harness (`Docs/testing/E2E_MASTER_PROMPT.md`, self-maintaining, runs daily). Live E2E verification is the current delivery-track focus.
-- **Performance:** Redis caching + Celery async; AI gateway adds response caching (exact-match + semantic) and token/cost budgets; a `perceived-performance-plan` is filed (backlog). Frontend uses optimistic updates + hover-prefetch.
-- **Security:** JWT + 2FA, RBAC at the service layer, immutable audit trail, correlation-ID structured logging, human-in-the-loop AI (no autonomous writes), tool-use only (no free-text-to-SQL). Secrets via gitignored `.env` (names only in `.env.example`). No secrets found in tracked files during this scan.
+- **Testing status:** pytest + pytest-django, ~1300 backend tests reported green as of 2026-07-16
+  (per `erp-status`, excluding one pre-existing broken workflow test); Playwright E2E covers
+  Tier-1 write flows. **No JS unit-test runner** — frontend correctness relies on `tsc`, i18n
+  parity check, and manual/E2E verification.
+- **Performance:** no known open performance issues recorded; bundle-size gate
+  (`check-bundle-size.mjs`) runs on every frontend build.
+- **Security:** prod settings profile sets HSTS (1y), strict CSP, secure cookies, SSL redirect;
+  `manage.py check --deploy --settings=config.settings.prod` reports no issues (verified
+  2026-07-16). Argon2 password hashing, DRF throttling on anon/user/login. Outstanding:
+  code-level scope/SSRF audit from `Docs/plan/00-security-hardening.md` still owed; demo-user
+  default-credential cleanup still owed before real customer handover.
 
 ---
 
-> 📄 Maintained by the `ag-project-md` skill. The **`erp-status` skill is the live source of
-> truth** (recall via `/erp-resume`) — update it after meaningful changes; this file is the
-> umbrella summary. Manual edits welcome; the skill preserves them.
+> 📄 Maintained by the `ag-project-md` skill. Update it after meaningful changes —
+> stale status is worse than no status. Manual edits welcome; the skill preserves them.

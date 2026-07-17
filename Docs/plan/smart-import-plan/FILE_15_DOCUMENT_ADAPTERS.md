@@ -1,5 +1,12 @@
 # SESSION 15 — Document Adapters: Sales & Purchasing
 # Files: erp/imports/adapters/sales.py, adapters/purchasing.py (extend), erp/imports/engine.py (group support), erp/imports/tests/test_document_adapters.py (new)
+#
+# STATUS: Task A (group engine) + Task B (all 5 adapters) + Task C (tests) done, pytest green.
+# Not renamed _done — the smoke test's "preview UI shows grouped document" bullet is apps/web
+# (Agent A territory) and unverified by this (backend-only) session. sales_orders/purchase_orders
+# reuse the sales_invoices/purchase_invoices draft-create path (no separate order/invoice model
+# exists), distinguished only by a notes tag prefix (import-so:/import-po: vs import:) so natural-key
+# matching never collides on the shared table.
 
 ---
 

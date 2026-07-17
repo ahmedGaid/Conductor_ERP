@@ -24,6 +24,12 @@ from .requests import (  # noqa: F401
     requires_approval,
     submit_request,
 )
+from .pending_payments import (  # noqa: F401
+    apply_pending_payment,
+    create_pending_payment,
+    discard_pending_payment,
+    match_pending_payment,
+)
 
 __all__ = [
     "ORDER_APPROVAL_THRESHOLD_MINOR",
@@ -45,4 +51,8 @@ __all__ = [
     "reject_request",
     "requires_approval",
     "submit_request",
+    "apply_pending_payment",
+    "create_pending_payment",
+    "discard_pending_payment",
+    "match_pending_payment",
 ]

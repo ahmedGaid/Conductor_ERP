@@ -154,3 +154,42 @@ class PurchaseRequestLine(models.Model):
         db_table = "purchasing_request_line"
         ordering = ["request", "line_no"]
         unique_together = [("request", "line_no")]
+
+
+class PendingPaymentStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPLIED = "applied", "Applied"
+    DISCARDED = "discarded", "Discarded"
+
+
+class PendingPayment(AuditedModel):
+    """A draftable supplier payment — mirrors ``erp.sales.domain.models.PendingPayment`` exactly;
+    see that class's docstring. Applying calls the existing ``services.orders.pay_order``."""
+
+    order = models.ForeignKey(
+        PurchaseOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="pending_payments",
+    )
+    party_code = models.CharField(max_length=32)
+    amount_minor = models.BigIntegerField()
+    date = models.DateField()
+    method = models.CharField(max_length=16, blank=True, default="")
+    source = models.CharField(max_length=16, default="import")
+    status = models.CharField(
+        max_length=16, choices=PendingPaymentStatus.choices, default=PendingPaymentStatus.PENDING,
+    )
+    batch_ref = models.CharField(max_length=64, blank=True, default="")
+    applied_by = models.ForeignKey(
+        "identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+    )
+    applied_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "purchasing_pending_payment"
+        ordering = ["-date", "-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["order"]),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.party_code} {self.amount_minor} ({self.status})"

@@ -1,6 +1,11 @@
 """Inventory application services (public within the module)."""
 from __future__ import annotations
 
+from .pending_stock import (  # noqa: F401
+    apply_pending_stock_opening,
+    create_pending_stock_opening,
+    discard_pending_stock_opening,
+)
 from .reports import BalanceRow, BatchRow, StockValuation, batches, stock_on_hand  # noqa: F401
 from .stock import adjust_stock, issue_stock, receive_stock, transfer_stock  # noqa: F401
 from .stock_count import (  # noqa: F401
@@ -24,4 +29,7 @@ __all__ = [
     "create_count",
     "post_count",
     "set_counted",
+    "create_pending_stock_opening",
+    "apply_pending_stock_opening",
+    "discard_pending_stock_opening",
 ]

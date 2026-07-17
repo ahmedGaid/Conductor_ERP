@@ -12,6 +12,7 @@ class CustomerSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     credit_limit_minor = serializers.IntegerField(min_value=0, required=False, default=0)
     is_active = serializers.BooleanField(required=False, default=True)
+    custom_data = serializers.JSONField(required=False, default=dict)
 
     def to_representation(self, obj) -> dict:
         return {
@@ -20,6 +21,7 @@ class CustomerSerializer(serializers.Serializer):
             "name": obj.name,
             "credit_limit_minor": obj.credit_limit_minor,
             "is_active": obj.is_active,
+            "custom_data": obj.custom_data,
         }
 
 
@@ -43,6 +45,29 @@ class OrderCreateSerializer(serializers.Serializer):
 
 class PaymentSerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=1)  # minor units
+
+
+class PendingPaymentSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    order_id = serializers.SerializerMethodField()
+    order_number = serializers.SerializerMethodField()
+    party_code = serializers.CharField()
+    amount_minor = serializers.IntegerField()
+    date = serializers.DateField()
+    method = serializers.CharField()
+    source = serializers.CharField()
+    status = serializers.CharField()
+    batch_ref = serializers.CharField()
+
+    def get_order_id(self, obj) -> str | None:
+        return str(obj.order_id) if obj.order_id else None
+
+    def get_order_number(self, obj) -> str | None:
+        return obj.order.number if obj.order_id else None
+
+
+class MatchPendingPaymentSerializer(serializers.Serializer):
+    order_id = serializers.UUIDField()
 
 
 class LineQtySerializer(serializers.Serializer):

@@ -25,6 +25,12 @@ from .quotations import (  # noqa: F401
     requires_approval,
     submit_quotation,
 )
+from .pending_payments import (  # noqa: F401
+    apply_pending_payment,
+    create_pending_payment,
+    discard_pending_payment,
+    match_pending_payment,
+)
 
 __all__ = [
     "ORDER_APPROVAL_THRESHOLD_MINOR",
@@ -47,4 +53,8 @@ __all__ = [
     "reject_quotation",
     "requires_approval",
     "submit_quotation",
+    "apply_pending_payment",
+    "create_pending_payment",
+    "discard_pending_payment",
+    "match_pending_payment",
 ]

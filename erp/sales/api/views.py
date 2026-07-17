@@ -11,22 +11,27 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.audit import services as audit
 from erp.audit.history import order_history
+from erp.core.custom_fields import custom_field_columns, validate_custom_data
+from erp.core.exports import EXPORT_FORMATS, Column, ReportTable, export_response
 from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
-from ..domain.models import Customer, Quotation, SalesOrder
+from ..domain.models import Customer, PendingPayment, Quotation, SalesOrder
 from ..imports import CUSTOMER_IMPORT
 from ..repositories import customers as customer_repo
 from .serializers import (
     CustomerSerializer,
     LinesActionSerializer,
+    MatchPendingPaymentSerializer,
     OrderCreateSerializer,
     OrderSerializer,
     PaymentSerializer,
+    PendingPaymentSerializer,
     QuotationCreateSerializer,
     QuotationSerializer,
     RejectSerializer,
@@ -50,21 +55,55 @@ def _scoped_orders(request: Request, base=None):
     return scope_queryset(request.user, base if base is not None else _order_qs(), "sales.order.view")
 
 
+def _customer_export_table(qs, lang: str) -> ReportTable:
+    extra = custom_field_columns("sales.customer", lang)
+    cols = [
+        Column("code", "الكود" if lang == "ar" else "Code"),
+        Column("name", "الاسم" if lang == "ar" else "Name"),
+        Column("credit_limit_minor", "حد الائتمان" if lang == "ar" else "Credit limit",
+               kind="money", align="end"),
+        Column("is_active", "نشط" if lang == "ar" else "Active"),
+        *extra,
+    ]
+    rows = []
+    for c in qs:
+        row = {
+            "code": c.code, "name": c.name, "credit_limit_minor": c.credit_limit_minor,
+            "is_active": ("نعم" if lang == "ar" else "Yes") if c.is_active else ("لا" if lang == "ar" else "No"),
+        }
+        row.update({col.key: c.custom_data.get(col.key, "") for col in extra})
+        rows.append(row)
+    return ReportTable(title="العملاء" if lang == "ar" else "Customers",
+                       columns=cols, rows=rows, rtl=(lang == "ar"))
+
+
 class CustomerListCreateView(APIView):
     permission_classes = [IsAuthenticated, _CanSell]
 
     def get(self, request: Request) -> Response:
-        return _envelope(CustomerSerializer(Customer.objects.all(), many=True).data)
+        qs = Customer.objects.all()
+        fmt = request.query_params.get("export")
+        if fmt in EXPORT_FORMATS:
+            table = _customer_export_table(qs, request.query_params.get("lang", "en"))
+            return export_response(table, fmt, "customers")
+        return _envelope(CustomerSerializer(qs, many=True).data)
 
     def post(self, request: Request) -> Response:
         s = CustomerSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         v = s.validated_data
+        custom_data = validate_custom_data("sales.customer", v.get("custom_data"))
         customer = Customer.objects.create(
             code=v["code"], name=v["name"],
             credit_limit_minor=v.get("credit_limit_minor", 0),
             is_active=v.get("is_active", True),
+            custom_data=custom_data,
             created_by=request.user if request.user.is_authenticated else None,
+        )
+        audit.record(
+            module="sales", action="create_customer", entity_type="Customer",
+            entity_id=customer.code, actor=request.user,
+            after={"code": customer.code, "name": customer.name, "custom_data": customer.custom_data},
         )
         return _envelope(CustomerSerializer(customer).data, status=201)
 
@@ -222,6 +261,55 @@ class OrderPaymentView(APIView):
         s.is_valid(raise_exception=True)
         services.receive_payment(order, s.validated_data["amount"], actor=request.user)
         return _envelope(OrderSerializer(_order_qs().get(id=order.id)).data)
+
+
+def _pending_qs():
+    return PendingPayment.objects.select_related("order")
+
+
+def _scoped_pending(request: Request):
+    return scope_queryset(request.user, _pending_qs(), "sales.order.view")
+
+
+class PendingPaymentListView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def get(self, request: Request) -> Response:
+        qs = _scoped_pending(request).order_by("-date", "-created_at")
+        status_param = request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param)
+        return _envelope(PendingPaymentSerializer(qs, many=True).data)
+
+
+class PendingPaymentApplyView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request, pk) -> Response:
+        pending = get_object_or_404(_scoped_pending(request), id=pk)
+        services.apply_pending_payment(pending, actor=request.user)
+        return _envelope(PendingPaymentSerializer(pending).data)
+
+
+class PendingPaymentDiscardView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request, pk) -> Response:
+        pending = get_object_or_404(_scoped_pending(request), id=pk)
+        services.discard_pending_payment(pending, actor=request.user)
+        return _envelope(PendingPaymentSerializer(pending).data)
+
+
+class PendingPaymentMatchView(APIView):
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def post(self, request: Request, pk) -> Response:
+        pending = get_object_or_404(_scoped_pending(request), id=pk)
+        s = MatchPendingPaymentSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        order = get_object_or_404(_scoped_orders(request), id=s.validated_data["order_id"])
+        services.match_pending_payment(pending, order, actor=request.user)
+        return _envelope(PendingPaymentSerializer(pending).data)
 
 
 # --- Quotations ------------------------------------------------------------------------------

@@ -117,7 +117,12 @@ git push && git push --tags
 # 4. Build (see "Upgrading to a new release" below for the full deploy steps)
 ```
 From gate16 onward (twenty-harvest FILE_03), also refresh the previous-release fixture dump used
-by the upgrade-drill gate.
+by the upgrade-drill gate: delete `scripts/gates/fixtures/prev_release.dump`, run
+`python scripts/gates/gate16.py` (it re-seeds a scratch DB at the version you're about to ship and
+re-dumps it), and commit the new fixture in the same commit as the release. Likewise, an
+intentional API change regenerates `scripts/gates/snapshots/api_schema.json`: delete it and
+re-run `python scripts/gates/gate17.py`, then commit the new snapshot — that diff in review IS
+the approval for the break.
 
 ### Upgrading to a new release
 ```powershell
@@ -125,11 +130,15 @@ by the upgrade-drill gate.
 git pull                                        # or deploy the new code drop
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 cd apps\web; npm ci; npm run build; cd ..\..
-.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py upgrade --yes   # migrates + applies pending release data
+                                                       # fixes (idempotent, safe to re-run) +
+                                                       # post-checks (system-check, trial balance)
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput
 .\deploy\windows\install-services.ps1          # re-register (idempotent) and start
 ```
-Always take a backup (§5) **before** `migrate` on an upgrade.
+Always take a backup (§5) **before** running `upgrade`. `upgrade` itself reminds you if you skip
+this step; pass `--skip-backup-check` once you've actually taken one. Re-running `upgrade` after
+everything is applied is a clean no-op — safe to run again if a step failed and you fixed the cause.
 
 ## 5. Backup & restore (the DECISIONS policy: nightly backups + periodic tested restores)
 

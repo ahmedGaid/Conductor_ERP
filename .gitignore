@@ -14,6 +14,7 @@ env/
 /staticfiles/
 /mediafiles/
 /storage/
+/assistant/
 
 # Env / secrets
 .env
@@ -70,3 +71,6 @@ erp_questionnaire_v4.html
 
 # Start-Conductor.cmd runtime log (local launcher)
 conductor-dev.log
+
+# Demo docker-compose override — hardcodes DJANGO_SECRET_KEY + DB password, local-only
+docker-compose.demo.yml

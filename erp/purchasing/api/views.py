@@ -18,13 +18,15 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
-from ..domain.models import PurchaseOrder, PurchaseRequest, Supplier
+from ..domain.models import PendingPayment, PurchaseOrder, PurchaseRequest, Supplier
 from ..imports import SUPPLIER_IMPORT
 from .serializers import (
     LinesActionSerializer,
+    MatchPendingPaymentSerializer,
     POCreateSerializer,
     POSerializer,
     PaymentSerializer,
+    PendingPaymentSerializer,
     RejectSerializer,
     RequestCreateSerializer,
     RequestSerializer,
@@ -204,6 +206,55 @@ class POPaymentView(APIView):
         s.is_valid(raise_exception=True)
         services.pay_order(order, s.validated_data["amount"], actor=request.user)
         return _envelope(POSerializer(_po_qs().get(id=order.id)).data)
+
+
+def _pending_qs():
+    return PendingPayment.objects.select_related("order")
+
+
+def _scoped_pending(request: Request):
+    return scope_queryset(request.user, _pending_qs(), "purchasing.order.view")
+
+
+class PendingPaymentListView(APIView):
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def get(self, request: Request) -> Response:
+        qs = _scoped_pending(request).order_by("-date", "-created_at")
+        status_param = request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param)
+        return _envelope(PendingPaymentSerializer(qs, many=True).data)
+
+
+class PendingPaymentApplyView(APIView):
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def post(self, request: Request, pk) -> Response:
+        pending = get_object_or_404(_scoped_pending(request), id=pk)
+        services.apply_pending_payment(pending, actor=request.user)
+        return _envelope(PendingPaymentSerializer(pending).data)
+
+
+class PendingPaymentDiscardView(APIView):
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def post(self, request: Request, pk) -> Response:
+        pending = get_object_or_404(_scoped_pending(request), id=pk)
+        services.discard_pending_payment(pending, actor=request.user)
+        return _envelope(PendingPaymentSerializer(pending).data)
+
+
+class PendingPaymentMatchView(APIView):
+    permission_classes = [IsAuthenticated, _CanBuy]
+
+    def post(self, request: Request, pk) -> Response:
+        pending = get_object_or_404(_scoped_pending(request), id=pk)
+        s = MatchPendingPaymentSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        order = get_object_or_404(_scoped_pos(request), id=s.validated_data["order_id"])
+        services.match_pending_payment(pending, order, actor=request.user)
+        return _envelope(PendingPaymentSerializer(pending).data)
 
 
 # --- Purchase requests -----------------------------------------------------------------------

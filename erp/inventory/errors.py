@@ -50,3 +50,9 @@ class InvalidCountError(AppError):
     code = "INV-008"
     status_code = 422
     message = "Counted quantity is invalid"
+
+
+class PendingStockEntryStateError(AppError):
+    code = "INV-009"
+    status_code = 422
+    message = "Pending stock entry is not in a state that allows this action"

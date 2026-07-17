@@ -23,6 +23,7 @@ class ItemSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=ItemType.choices, required=False, default=ItemType.STOCK)
     is_active = serializers.BooleanField(required=False, default=True)
     reorder_point = serializers.DecimalField(max_digits=18, decimal_places=4, required=False, default=0)
+    custom_data = serializers.JSONField(required=False, default=dict)
 
     def to_representation(self, obj) -> dict:
         return {
@@ -34,6 +35,7 @@ class ItemSerializer(serializers.Serializer):
             "type": obj.type,
             "is_active": obj.is_active,
             "reorder_point": str(obj.reorder_point),
+            "custom_data": obj.custom_data,
         }
 
 

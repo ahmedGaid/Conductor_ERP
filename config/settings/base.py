@@ -149,12 +149,18 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGE_ROOT = Path(env("STORAGE_ROOT", default=str(BASE_DIR / "storage")))
 
+# Optional: where nightly backups land (register-backup-task.ps1 -OutDir, or the docker
+# backup.sh out-dir). Empty = "not configured" in the system status panel (FILE_19) — the app
+# never writes here itself, it only reads timestamps off whatever the backup job already wrote.
+BACKUP_DIR = env("BACKUP_DIR", default="")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- DRF ---
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "erp.identity.authentication.ApiKeyAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "EXCEPTION_HANDLER": "erp.core.exceptions.drf_exception_handler",
@@ -164,12 +170,16 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "erp.identity.authentication.ApiKeyRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("DRF_THROTTLE_ANON", default="60/min"),
         "user": env("DRF_THROTTLE_USER", default="1000/min"),
         # Dedicated brute-force cap for the login endpoint (per-IP; sits under the anon rate).
         "login": env("DRF_THROTTLE_LOGIN", default="5/min"),
+        # API keys are integration credentials, not interactive sessions — a distinct scope so one
+        # runaway integration can't be tuned by (or exhaust) the human user rate.
+        "api_key": env("DRF_THROTTLE_API_KEY", default="300/min"),
     },
 }
 
@@ -373,7 +383,20 @@ CORS_ALLOWED_ORIGINS = [
 IMPORTS_DEFAULTS: dict[str, dict] = {
     "items": {"uom": "unit"},
     "contacts": {"source": "other"},
+    "sales_invoices": {"currency": "EGP"},
+    "purchase_invoices": {"currency": "EGP"},
+    # FILE_16: the suspense account an out-of-balance opening-balance import proposes a correcting
+    # line to (3100 Retained Earnings — the conventional opening-balance-equity offset). Never
+    # inserted without explicit human approval; see ``imports/adapters/accounting.py``.
+    "account_opening": {"suspense_account": "3100"},
+    # sub-project 2 (DESIGN_PENDING_PAYMENTS_AND_STOCK.md): a dedicated opening-suspense account for
+    # item-level opening stock, distinct from GRNI (2150) and from account_opening's 3100 so the two
+    # opening flows stay separately traceable; see ``erp/inventory/services/pending_stock.py``.
+    "inventory_opening": {"suspense_account": "3110"},
 }
+# Upload size ceiling for the Smart Import Engine (FILE_11 Task C) — bigger than the plain-CSV
+# `erp.core.import_api.MAX_UPLOAD_BYTES` (5 MB) since this engine targets messy, wide workbooks.
+IMPORTS_MAX_FILE_MB = env.int("IMPORTS_MAX_FILE_MB", default=50)
 
 # --- Logging: structured JSON only (no unstructured text logs) ---
 LOGGING = {
