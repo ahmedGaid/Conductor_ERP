@@ -92,7 +92,7 @@ A2/A3 merge at M1 if ready, else M2 — they never block the gate.
 | B5 | Auto-masters — `SI/FILE_08` | B | erp/imports | M1 (queue priority only — may start early if B-lane idles in wave 1) | 1 | M2 | done(849a30f) |
 | B6 | Execution engine — `SI/FILE_09` | B | erp/imports | B5 | 1 | M2 | done(68642c3) |
 | B7 | Background runner — `SI/FILE_10` | B | erp/imports (DB-backed queue, not Celery — see DECISIONS.md) | B6 | 1 | **M2 = SI engine merge (NOT yet merged — needs Agent A coordination + gate:all)** | done(b1a3a70) |
-| B8 | Import API — `SI/FILE_11` | B | erp/imports/api | B7 | 1 | M3 | todo |
+| B8 | Import API — `SI/FILE_11` | B | erp/imports/api | B7 | 1 | M3 | done(91da71a) |
 
 ### Wave 3+ — continuation by ownership (summarized; scope = each plan file, as written)
 
