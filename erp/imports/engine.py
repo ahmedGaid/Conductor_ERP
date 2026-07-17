@@ -377,6 +377,23 @@ def _group_payload(header_fields: list[str], rows: list[ImportRow]) -> dict:
     return {**header, "lines": [row.normalized for row in rows]}
 
 
+def _validate_group(adapter, actor, batch: ImportBatch, payload: dict) -> list[Issue]:
+    """Optional pre-write, group-level validation for a document adapter — duck-typed via
+    ``getattr`` exactly like ``header_fields``/``update``/``delete``, so a master adapter or a
+    document adapter that doesn't need it simply omits it (unchanged behaviour for every adapter
+    built before FILE_16). ``validate_group(actor, payload, batch) -> list[Issue]`` runs AFTER the
+    group's payload is assembled and BEFORE ``adapter.write``: a non-empty return errors the whole
+    document (its rows → ERROR carrying those issues) and the write never runs — the balanced-entry
+    guard the finance adapters need, which ``write`` raising can only ever express as a generic
+    ``group_write_failed``. The hook may also MUTATE ``payload`` in place to inject engine-approved
+    generated lines (``account_opening``'s human-approved suspense correction) that ``write`` then
+    consumes; it is handed ``batch`` so it can read/record an approval decision in ``batch.stats``."""
+    hook = getattr(adapter, "validate_group", None)
+    if hook is None:
+        return []
+    return hook(actor, payload, batch)
+
+
 def _dispatch_group(actor, adapter, batch: ImportBatch, payload: dict) -> tuple[str, dict, list[Issue]]:
     """Same strategy dispatch as ``_dispatch``, scoped to one document's payload instead of one
     row. ``adapter.write`` may return either the record alone, or ``(record, warnings)`` — the
@@ -446,6 +463,17 @@ def _execute_chunk_grouped(
             continue
 
         payload = _group_payload(header_fields, rows)
+
+        group_issues = _validate_group(adapter, actor, batch, payload)
+        if group_issues:
+            issue_dicts = [gi.as_dict() for gi in group_issues]
+            for row in rows:
+                row.status = ImportRow.Status.ERROR
+                row.issues = [*row.issues, *issue_dicts]
+            ImportRow.objects.bulk_update(rows, ["status", "issues"])
+            errored += len(rows)
+            continue
+
         try:
             with transaction.atomic():
                 action, result_ref, warnings = _dispatch_group(actor, adapter, batch, payload)
@@ -501,6 +529,7 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
     # document, many rows). Revert that pk once; every other row of the same document just follows
     # its status without a second delete call or a second count.
     reverted_pks: set[tuple] = set()
+    cannot_pks: set[tuple] = set()  # a created document whose delete already failed — report it once
 
     rows = list(batch.rows.filter(status=ImportRow.Status.IMPORTED).order_by("-row_number"))
     for row in rows:
@@ -510,11 +539,14 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
         if action == "created" and dedupe_key in reverted_pks:
             row.status = ImportRow.Status.REVERTED
             continue
+        if action == "created" and dedupe_key in cannot_pks:
+            continue  # sibling row of a document already reported cannot_revert — don't re-report it
         if action == "created" and hasattr(adapter, "delete"):
             try:
                 adapter.delete(actor, ref.get("pk"))
             except Exception as exc:  # noqa: BLE001
                 cannot.append({"row": row.row_number, "pk": ref.get("pk"), "reason": str(exc)})
+                cannot_pks.add(dedupe_key)
                 continue
             row.status = ImportRow.Status.REVERTED
             reverted += 1

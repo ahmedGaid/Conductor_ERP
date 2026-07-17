@@ -375,6 +375,10 @@ IMPORTS_DEFAULTS: dict[str, dict] = {
     "contacts": {"source": "other"},
     "sales_invoices": {"currency": "EGP"},
     "purchase_invoices": {"currency": "EGP"},
+    # FILE_16: the suspense account an out-of-balance opening-balance import proposes a correcting
+    # line to (3100 Retained Earnings — the conventional opening-balance-equity offset). Never
+    # inserted without explicit human approval; see ``imports/adapters/accounting.py``.
+    "account_opening": {"suspense_account": "3100"},
 }
 # Upload size ceiling for the Smart Import Engine (FILE_11 Task C) — bigger than the plain-CSV
 # `erp.core.import_api.MAX_UPLOAD_BYTES` (5 MB) since this engine targets messy, wide workbooks.
