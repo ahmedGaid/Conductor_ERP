@@ -59,6 +59,37 @@ export const leadsGuide: HelpGuide = {
       ],
     },
   ],
+  checklist: {
+    name: { en: "Add your first lead", ar: "أضف أول عميل محتمل" },
+    doneMessage: {
+      en: "Lead added — it now shows in the list with status New. Qualify it once you've assessed it.",
+      ar: "تمت إضافة العميل المحتمل — يظهر الآن في القائمة بحالة «جديد». أهّله بعد تقييمه.",
+    },
+    steps: [
+      {
+        label: { en: "Enter the lead's name", ar: "أدخل اسم العميل المحتمل" },
+        detail: [
+          {
+            en: "Type a name in the Name field of the add-lead row above the list.",
+            ar: "اكتب اسماً في حقل الاسم بصف الإضافة أعلى القائمة.",
+          },
+          {
+            en: "Company, email, and source are optional — fill in what you know, leave the rest.",
+            ar: "الشركة والبريد والمصدر اختيارية — املأ ما تعرفه واترك الباقي.",
+          },
+        ],
+        hint: { en: "Name set. Now add it.", ar: "تم إدخال الاسم. الآن أضفه." },
+        done: (s) => (s.leadCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add lead", ar: "اضغط «إضافة»" },
+        detail: [
+          { en: "It appears at the top of the list instantly, with status New.", ar: "يظهر أعلى القائمة فوراً بحالة «جديد»." },
+        ],
+        done: (s) => (s.leadCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/crm/pipeline", label: { en: "Pipeline", ar: "خط المبيعات" } },
     { to: "/crm/campaigns", label: { en: "Campaigns", ar: "الحملات" } },

@@ -16,6 +16,7 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { ComboBox } from "../../components/ComboBox";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
@@ -245,6 +246,18 @@ function InviteForm({
   const [department, setDepartment] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Sticky once true — set right before onClose() so the Live tab's last step still reads as done
+  // even after the form closes and this component starts returning null (it stays mounted).
+  const [submitted, setSubmitted] = useState(false);
+
+  // Publish the page's live facts for the Help drawer's Live tab. Must run before the `if (!open)`
+  // return below — hooks can't be conditional — so signals persist through the close.
+  useSetHelpSignals({
+    inviteOpen: open,
+    usernameSet: username.trim() !== "",
+    emailSet: email.trim() !== "",
+    submitted,
+  });
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -252,6 +265,7 @@ function InviteForm({
     setErr(null);
     try {
       const created = await createUser({ username, email, role: role || undefined, department: department || undefined });
+      setSubmitted(true);
       onCreated(t("admin.invite.done", { name: username, password: created.temp_password ?? "" }));
       setUsername(""); setEmail(""); setRole(""); setDepartment(""); onClose();
     } catch (e2) {
