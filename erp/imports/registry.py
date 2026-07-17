@@ -117,3 +117,29 @@ def get(entity: str) -> ImportAdapter:
 def entities() -> list[str]:
     """All registered entity keys, sorted — for the wizard's entity picker / API listing."""
     return sorted(REGISTER)
+
+
+# --- grouping (document adapters — FILE_15) ------------------------------------------------------
+# A document adapter (``group_by`` set — e.g. ``sales_invoices``) also carries an optional
+# ``header_fields: list[str]`` — the field NAMES that are one-per-document (customer, date,
+# currency, …) rather than one-per-line (item, qty, price). It is duck-typed via ``getattr`` in
+# ``engine.py``, exactly like ``supports_update``/``update``/``delete`` above: no adapter without
+# ``group_by`` needs it, so it is never added to the ``ImportAdapter`` Protocol itself (that would
+# force every throwaway test adapter and every master adapter to declare an empty list for no
+# reason). Absent ``header_fields`` on a grouped adapter simply means the engine skips the
+# header-consistency check (every field free to vary row-to-row) — a lesser guarantee, not a crash.
+
+
+def group_key(adapter, normalized: dict) -> Any | None:
+    """The row's group key for a grouped (document) adapter, or ``None`` when ``adapter.group_by``
+    is unset (every master adapter today) or the row's group column is blank/whitespace.
+
+    A blank key is never treated as its own key — the engine reads that as "continuation row of
+    whatever group came before it" (the flat-Excel merged-cell export pattern: document fields
+    filled only on the first line of each document)."""
+    if not adapter.group_by:
+        return None
+    value = normalized.get(adapter.group_by)
+    if isinstance(value, str):
+        value = value.strip()
+    return value or None

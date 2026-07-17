@@ -22,10 +22,16 @@ duplicate decision fail the readiness gate by design, and every rollback of a cr
 reports ``cannot_revert`` — both exercised here against a small in-memory fake adapter (same
 "throwaway test adapter" pattern the rest of this plan uses for not-yet-built capabilities), plus
 one end-to-end pass against the real ``customers`` adapter.
+
+Grouped (document) adapters set ``adapter.group_by`` (FILE_15): rows bucket into one write call per
+document (``_build_groups``/``_execute_chunk_grouped``) instead of one per row — see those
+functions' docstrings. Every adapter with ``group_by = None`` (every master today) runs the
+original one-row-one-write path unchanged.
 """
 from __future__ import annotations
 
 from collections import Counter
+from typing import Any
 
 from django.db import transaction
 
@@ -33,7 +39,9 @@ from erp.audit.models import AuditEntry
 from erp.audit.services import record as audit_record
 
 from .models import ImportBatch, ImportRow
+from .registry import Issue
 from .registry import get as get_adapter
+from .registry import group_key as _group_key
 from .validate import execute_status
 
 CHUNK = 200  # rows per transaction — small enough to keep locks short, big enough to be fast
@@ -136,11 +144,28 @@ def _run(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
     )
     continue_after_errors = bool((batch.stats or {}).get("continue_after_errors"))
 
-    for i in range(0, len(row_ids), CHUNK):
-        chunk_ids = row_ids[i : i + CHUNK]
+    # Ungrouped (every master adapter): one unit == one row, exactly as before. Grouped (a document
+    # adapter — FILE_15): one unit == one document's rows, bucketed by ``adapter.group_by`` — a
+    # group-level failure errors only that document, never the surrounding chunk (see
+    # ``_execute_chunk_grouped``).
+    if adapter.group_by:
+        ordered_rows = list(ImportRow.objects.filter(id__in=row_ids).order_by("row_number"))
+        units: list[tuple[list[int], Issue | None]] = [
+            ([row.id for row in group["rows"]], group["issue"])
+            for group in _build_groups(adapter, ordered_rows)
+        ]
+    else:
+        units = [([rid], None) for rid in row_ids]
+
+    for i in range(0, len(units), CHUNK):
+        chunk_units = units[i : i + CHUNK]
+        chunk_ids = [rid for ids, _issue in chunk_units for rid in ids]
         try:
             with transaction.atomic():
-                _execute_chunk(actor, adapter, batch, chunk_ids)
+                if adapter.group_by:
+                    _execute_chunk_grouped(actor, adapter, batch, chunk_units)
+                else:
+                    _execute_chunk(actor, adapter, batch, chunk_ids)
         except Exception as exc:  # noqa: BLE001
             stats = dict(batch.stats or {})
             stats["last_error"] = str(exc)
@@ -221,7 +246,7 @@ def _dispatch(actor, adapter, batch: ImportBatch, row: ImportRow) -> tuple[str, 
     if row.status == ImportRow.Status.DUPLICATE:  # merge-decided; readiness already verified support
         target_pk = (row.decision or {}).get("target_pk")
         record = adapter.update(actor, row.normalized, target_pk=target_pk)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row, record, "updated")
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated")
 
     existing = adapter.exists(actor, row.normalized)
     strategy = batch.strategy
@@ -230,46 +255,236 @@ def _dispatch(actor, adapter, batch: ImportBatch, row: ImportRow) -> tuple[str, 
         if existing is not None:
             return ImportRow.Status.SKIPPED, {}
         record = adapter.write(actor, row.normalized)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row, record, "created")
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created")
 
     if strategy == ImportBatch.Strategy.UPDATE_ONLY:
         if existing is None:
             return ImportRow.Status.SKIPPED, {}
         record = adapter.update(actor, row.normalized, target_pk=getattr(existing, "pk", None))
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row, record, "updated")
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated")
 
     if strategy == ImportBatch.Strategy.UPSERT:
         if existing is not None:
             record = adapter.update(actor, row.normalized, target_pk=getattr(existing, "pk", None))
-            return ImportRow.Status.IMPORTED, _result_ref(adapter, row, record, "updated")
+            return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "updated")
         record = adapter.write(actor, row.normalized)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row, record, "created")
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created")
 
     if strategy == ImportBatch.Strategy.SKIP_EXISTING:
         if existing is not None:
             return ImportRow.Status.SKIPPED, {}
         record = adapter.write(actor, row.normalized)
-        return ImportRow.Status.IMPORTED, _result_ref(adapter, row, record, "created")
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, row.normalized, record, "created")
 
     raise ValueError(f"unknown strategy: {strategy!r}")  # pragma: no cover — model choices are exhaustive
 
 
-def _result_ref(adapter, row: ImportRow, record, action: str) -> dict:
+def _result_ref(adapter, normalized: dict, record, action: str) -> dict:
     """A rollback/report anchor for whatever ``adapter.write``/``update`` returned. Several real
     adapters (customers/items/suppliers) return a lightweight ``*Info`` dataclass keyed by business
     code, not a Django model instance — there's no ``.pk``/``.id`` to read. Falls back to the
-    adapter's own natural-key field on the record, then on the row, before giving up."""
+    adapter's own natural-key field on the record, then on ``normalized`` (a row's ``.normalized``,
+    or a document group's header+lines payload), before giving up."""
     pk = getattr(record, "pk", None)
     if pk is None:
         pk = getattr(record, "id", None)
     if pk is None and adapter.natural_key:
         key_field = adapter.natural_key[0]
-        pk = getattr(record, key_field, None) or row.normalized.get(key_field)
+        pk = getattr(record, key_field, None) or normalized.get(key_field)
     return {
         "model": f"{type(record).__module__}.{type(record).__name__}",
         "pk": None if pk is None else str(pk),
         "action": action,
     }
+
+
+# --- execute — grouped (document adapters, ``adapter.group_by`` set — FILE_15) ------------------
+def _build_groups(adapter, rows: list[ImportRow]) -> list[dict]:
+    """Bucket ``rows`` (ordered by ``row_number``, already VALID/DUPLICATE) into documents by
+    ``registry.group_key``. A blank-key row attaches to whichever group came right before it in
+    file order UNLESS it still carries its own header data (``adapter.header_fields`` all blank is
+    the merged-cell signal; any of them non-blank on a blank-key row is ambiguous, never guessed
+    at) — that case, and a blank-key row with no group open yet, becomes its own one-row "orphan"
+    group carrying a ``missing_group_key`` issue. Returns ``[{"rows": [...], "issue": Issue|None}]``
+    in first-seen order (orphans last); ``issue`` set means the whole group errors without ever
+    calling ``adapter.write``."""
+    header_fields = getattr(adapter, "header_fields", [])
+    buckets: dict[Any, list[ImportRow]] = {}
+    order: list[Any] = []
+    orphans: list[ImportRow] = []
+    current_key: Any = None
+
+    for row in rows:
+        key = _group_key(adapter, row.normalized)
+        if key is None:
+            has_header_data = any(row.normalized.get(f) not in (None, "") for f in header_fields)
+            if current_key is None or has_header_data:
+                orphans.append(row)
+                continue
+            key = current_key
+        else:
+            current_key = key
+        if key not in buckets:
+            buckets[key] = []
+            order.append(key)
+        buckets[key].append(row)
+
+    groups = [
+        {"rows": buckets[key], "issue": _header_conflict_issue(header_fields, buckets[key])}
+        for key in order
+    ]
+    if orphans:
+        groups.append({
+            "rows": orphans,
+            "issue": Issue(
+                field=adapter.group_by, code="missing_group_key",
+                message="imports.issues.missingGroupKey",
+            ),
+        })
+    return groups
+
+
+def _header_conflict_issue(header_fields: list[str], rows: list[ImportRow]) -> Issue | None:
+    """The first header field that carries two different non-blank values across ``rows`` — a
+    dirty-data case (e.g. two customer names under one invoice number), never silently resolved."""
+    for field_name in header_fields:
+        seen = None
+        for row in rows:
+            value = row.normalized.get(field_name)
+            if value in (None, ""):
+                continue
+            if seen is None:
+                seen = value
+            elif value != seen:
+                return Issue(
+                    field=field_name, code="inconsistent_document",
+                    message="imports.issues.inconsistentDocument",
+                )
+    return None
+
+
+def _group_payload(header_fields: list[str], rows: list[ImportRow]) -> dict:
+    """One document's write payload: each header field taken from the first row that has it
+    (the merged-cell pattern — normally the group's first row), plus every row's normalized values
+    as ``lines``."""
+    header: dict = {}
+    for field_name in header_fields:
+        for row in rows:
+            value = row.normalized.get(field_name)
+            if value not in (None, ""):
+                header[field_name] = value
+                break
+    return {**header, "lines": [row.normalized for row in rows]}
+
+
+def _dispatch_group(actor, adapter, batch: ImportBatch, payload: dict) -> tuple[str, dict, list[Issue]]:
+    """Same strategy dispatch as ``_dispatch``, scoped to one document's payload instead of one
+    row. ``adapter.write`` may return either the record alone, or ``(record, warnings)`` — the
+    latter lets a document adapter attach a non-blocking issue (e.g. ``total_mismatch``) without
+    changing the return contract every master adapter already relies on."""
+
+    def _write() -> tuple[Any, list[Issue]]:
+        result = adapter.write(actor, payload)
+        if isinstance(result, tuple) and len(result) == 2:
+            return result
+        return result, []
+
+    existing = adapter.exists(actor, payload)
+    strategy = batch.strategy
+
+    if strategy == ImportBatch.Strategy.CREATE_ONLY:
+        if existing is not None:
+            return ImportRow.Status.SKIPPED, {}, []
+        record, warnings = _write()
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, payload, record, "created"), warnings
+
+    if strategy == ImportBatch.Strategy.UPDATE_ONLY:
+        if existing is None:
+            return ImportRow.Status.SKIPPED, {}, []
+        record = adapter.update(actor, payload, target_pk=getattr(existing, "pk", None))
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, payload, record, "updated"), []
+
+    if strategy == ImportBatch.Strategy.UPSERT:
+        if existing is not None:
+            record = adapter.update(actor, payload, target_pk=getattr(existing, "pk", None))
+            return ImportRow.Status.IMPORTED, _result_ref(adapter, payload, record, "updated"), []
+        record, warnings = _write()
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, payload, record, "created"), warnings
+
+    if strategy == ImportBatch.Strategy.SKIP_EXISTING:
+        if existing is not None:
+            return ImportRow.Status.SKIPPED, {}, []
+        record, warnings = _write()
+        return ImportRow.Status.IMPORTED, _result_ref(adapter, payload, record, "created"), warnings
+
+    raise ValueError(f"unknown strategy: {strategy!r}")  # pragma: no cover — model choices are exhaustive
+
+
+def _execute_chunk_grouped(
+    actor, adapter, batch: ImportBatch, chunk_units: list[tuple[list[int], Issue | None]],
+) -> None:
+    """One transaction (savepoint scope from the caller's ``transaction.atomic()``) covering
+    several documents. Each document's write runs in its OWN nested ``transaction.atomic()`` — a
+    savepoint — so one bad document (a pre-flagged header conflict, or ``adapter.write`` raising)
+    rolls back only that document's rows to ERROR and the rest of the chunk's documents still
+    commit; the whole-chunk abort-and-pause behaviour ``_execute_chunk`` relies on for masters would
+    turn "one dirty invoice" into "the whole file didn't import" — never what FILE_15 asks for."""
+    header_fields = getattr(adapter, "header_fields", [])
+    imported = created = updated = skipped = errored = 0
+
+    for row_ids, issue in chunk_units:
+        rows = list(ImportRow.objects.select_for_update().filter(id__in=row_ids).order_by("row_number"))
+        if not rows:
+            continue  # pragma: no cover — defensive; every unit is built from real row ids
+
+        if issue is not None:
+            for row in rows:
+                row.status = ImportRow.Status.ERROR
+                row.issues = [*row.issues, issue.as_dict()]
+            ImportRow.objects.bulk_update(rows, ["status", "issues"])
+            errored += len(rows)
+            continue
+
+        payload = _group_payload(header_fields, rows)
+        try:
+            with transaction.atomic():
+                action, result_ref, warnings = _dispatch_group(actor, adapter, batch, payload)
+        except Exception as exc:  # noqa: BLE001 — isolate to this document only, see docstring
+            fail_issue = Issue(field="", code="group_write_failed", message=str(exc)).as_dict()
+            for row in rows:
+                row.status = ImportRow.Status.ERROR
+                row.issues = [*row.issues, fail_issue]
+            ImportRow.objects.bulk_update(rows, ["status", "issues"])
+            errored += len(rows)
+            continue
+
+        warning_dicts = [w.as_dict() for w in warnings]
+        for row in rows:
+            row.status = action
+            row.result_ref = result_ref
+            if warning_dicts:
+                row.issues = [*row.issues, *warning_dicts]
+        ImportRow.objects.bulk_update(rows, ["status", "result_ref", "issues"] if warning_dicts else
+                                       ["status", "result_ref"])
+        if action == ImportRow.Status.IMPORTED:
+            imported += len(rows)
+            if result_ref.get("action") == "updated":
+                updated += len(rows)
+            else:
+                created += len(rows)
+        else:
+            skipped += len(rows)
+
+    batch.refresh_from_db()
+    batch.processed_count = batch.processed_count + sum(len(ids) for ids, _issue in chunk_units)
+    batch.save(update_fields=["processed_count"])
+
+    audit_record(
+        module="imports", action="execute_chunk", entity_type=batch.entity, entity_id=str(batch.pk),
+        actor=actor,
+        after={"imported": imported, "created": created, "updated": updated,
+               "skipped": skipped, "errored": errored},
+    )
 
 
 # --- rollback --------------------------------------------------------------------------------
@@ -282,11 +497,19 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
     adapter = get_adapter(batch.entity)
     reverted = skipped = 0
     cannot: list[dict] = []
+    # A grouped document's rows (FILE_15) all share one ``result_ref`` (same pk — one write call per
+    # document, many rows). Revert that pk once; every other row of the same document just follows
+    # its status without a second delete call or a second count.
+    reverted_pks: set[tuple] = set()
 
     rows = list(batch.rows.filter(status=ImportRow.Status.IMPORTED).order_by("-row_number"))
     for row in rows:
         ref = row.result_ref or {}
         action = ref.get("action")
+        dedupe_key = (action, ref.get("pk"))
+        if action == "created" and dedupe_key in reverted_pks:
+            row.status = ImportRow.Status.REVERTED
+            continue
         if action == "created" and hasattr(adapter, "delete"):
             try:
                 adapter.delete(actor, ref.get("pk"))
@@ -295,6 +518,7 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
                 continue
             row.status = ImportRow.Status.REVERTED
             reverted += 1
+            reverted_pks.add(dedupe_key)
         elif action == "created":
             cannot.append({
                 "row": row.row_number, "pk": ref.get("pk"),

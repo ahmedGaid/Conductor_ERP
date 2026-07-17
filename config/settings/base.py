@@ -373,6 +373,8 @@ CORS_ALLOWED_ORIGINS = [
 IMPORTS_DEFAULTS: dict[str, dict] = {
     "items": {"uom": "unit"},
     "contacts": {"source": "other"},
+    "sales_invoices": {"currency": "EGP"},
+    "purchase_invoices": {"currency": "EGP"},
 }
 # Upload size ceiling for the Smart Import Engine (FILE_11 Task C) — bigger than the plain-CSV
 # `erp.core.import_api.MAX_UPLOAD_BYTES` (5 MB) since this engine targets messy, wide workbooks.
