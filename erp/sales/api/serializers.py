@@ -47,6 +47,29 @@ class PaymentSerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=1)  # minor units
 
 
+class PendingPaymentSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    order_id = serializers.SerializerMethodField()
+    order_number = serializers.SerializerMethodField()
+    party_code = serializers.CharField()
+    amount_minor = serializers.IntegerField()
+    date = serializers.DateField()
+    method = serializers.CharField()
+    source = serializers.CharField()
+    status = serializers.CharField()
+    batch_ref = serializers.CharField()
+
+    def get_order_id(self, obj) -> str | None:
+        return str(obj.order_id) if obj.order_id else None
+
+    def get_order_number(self, obj) -> str | None:
+        return obj.order.number if obj.order_id else None
+
+
+class MatchPendingPaymentSerializer(serializers.Serializer):
+    order_id = serializers.UUIDField()
+
+
 class LineQtySerializer(serializers.Serializer):
     line_no = serializers.IntegerField(min_value=1)
     quantity = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal("0"))
