@@ -12,6 +12,7 @@ import { useToast } from "../../app/ToastContext";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { PurchasingNav } from "./PurchasingNav";
 import "./purchasing.css";
 
@@ -62,6 +63,14 @@ export function NewPurchaseRequestPage() {
     const cost = parseToMinor(l.unit_cost) ?? 0;
     return s + Math.round(qty * cost);
   }, 0);
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    supplierPicked: supplier !== "",
+    warehousePicked: warehouse !== "",
+    lineReady: lines.some((l) => l.item_sku && l.quantity && parseToMinor(l.unit_cost) !== null),
+    hasError: error !== null,
+  });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

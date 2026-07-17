@@ -266,6 +266,32 @@ export const customersGuide: HelpGuide = {
     en: "A customer's credit limit caps how much they can owe at once; the system blocks confirming an order that would exceed it. Set customers up here before selling to them.",
     ar: "يحدّ الحدّ الائتماني للعميل أقصى ما يمكن أن يدين به دفعة واحدة؛ ويمنع النظام تأكيد طلب يتجاوزه. هيّئ العملاء هنا قبل البيع لهم.",
   },
+  checklist: {
+    name: { en: "Add your first customer", ar: "أضف أول عميل" },
+    doneMessage: {
+      en: "Customer added — pick them on any new order or quotation.",
+      ar: "أُضيف العميل — اختره في أي طلب أو عرض سعر جديد.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a code", ar: "أدخل كوداً" },
+        detail: [
+          { en: "A short unique code you'll recognize in lists — letters/numbers, e.g. CUST-001.", ar: "كود قصير مميّز تتعرف عليه في القوائم — حروف/أرقام، مثل CUST-001." },
+        ],
+        hint: { en: "Code set. Now enter the name.", ar: "تم إدخال الكود. الآن أدخل الاسم." },
+        done: (s) => s.codeSet === true || (s.customerCount as number) > 0,
+      },
+      {
+        label: { en: "Enter the name", ar: "أدخل الاسم" },
+        hint: { en: "Name set. Credit limit is optional — leave it blank for unlimited.", ar: "تم إدخال الاسم. الحد الائتماني اختياري — اتركه فارغاً لحد غير محدود." },
+        done: (s) => s.nameSet === true || (s.customerCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add", ar: "اضغط «إضافة»" },
+        done: (s) => (s.customerCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/sales", label: { en: "Sales orders", ar: "طلبات المبيعات" } },
   ],

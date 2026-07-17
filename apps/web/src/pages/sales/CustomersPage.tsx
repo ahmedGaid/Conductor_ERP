@@ -28,6 +28,7 @@ import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import { SalesNav } from "./SalesNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./sales.css";
 
 export function CustomersPage() {
@@ -90,6 +91,13 @@ export function CustomersPage() {
   // ⌘/Ctrl+Enter submits the add form from any field (incl. the credit-limit input).
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    codeSet: code.trim() !== "",
+    nameSet: name.trim() !== "",
+    customerCount: (data ?? []).length,
+  });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [
