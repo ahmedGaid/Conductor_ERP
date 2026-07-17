@@ -746,6 +746,127 @@
     },
     {
       "methods": [
+        "GET"
+      ],
+      "path": "api/imports/",
+      "view": "BatchListView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/imports/<uuid:pk>",
+      "view": "BatchDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/autofix",
+      "view": "AutofixPreviewView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/autofix/apply",
+      "view": "AutofixApplyView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/cancel",
+      "view": "CancelView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/creation-plan",
+      "view": "CreationPlanView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/execute",
+      "view": "ExecuteView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/mapping",
+      "view": "MappingView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/pause",
+      "view": "PauseView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/imports/<uuid:pk>/report",
+      "view": "ReportView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/resume",
+      "view": "ResumeView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/<uuid:pk>/rollback",
+      "view": "RollbackView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/imports/<uuid:pk>/rows",
+      "view": "BatchRowsView"
+    },
+    {
+      "methods": [
+        "PATCH"
+      ],
+      "path": "api/imports/<uuid:pk>/rows/<int:row_number>",
+      "view": "RowDetailView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/imports/profiles",
+      "view": "ProfilesView"
+    },
+    {
+      "methods": [
+        "DELETE"
+      ],
+      "path": "api/imports/profiles/<uuid:pk>",
+      "view": "ProfileDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/imports/upload",
+      "view": "UploadView"
+    },
+    {
+      "methods": [
         "GET",
         "POST"
       ],

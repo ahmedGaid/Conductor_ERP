@@ -374,6 +374,9 @@ IMPORTS_DEFAULTS: dict[str, dict] = {
     "items": {"uom": "unit"},
     "contacts": {"source": "other"},
 }
+# Upload size ceiling for the Smart Import Engine (FILE_11 Task C) — bigger than the plain-CSV
+# `erp.core.import_api.MAX_UPLOAD_BYTES` (5 MB) since this engine targets messy, wide workbooks.
+IMPORTS_MAX_FILE_MB = env.int("IMPORTS_MAX_FILE_MB", default=50)
 
 # --- Logging: structured JSON only (no unstructured text logs) ---
 LOGGING = {
