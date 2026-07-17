@@ -2046,3 +2046,36 @@ becomes the bottleneck, not before.
 `execute_batch`/`resume_batch` now accept an optional `on_chunk(batch) -> "pause"|"cancel"|None`
 callback, invoked after every committed chunk — the runner's only hook into the chunk loop.
 Existing callers (no `on_chunk` argument) are unaffected; FILE_09's own tests still pass unchanged.
+
+## Draftable payments — PendingPayment, mirrored per module (smart-import FILE_16 follow-up, 2026-07-17)
+
+`FILE_16_FINANCE_ADAPTERS.md` Task B (payments/receipts) was left unbuilt because the only
+existing write-paths (`sales.receive_payment`, `purchasing.pay_order`) post to the GL immediately —
+violating the drafts-only standing decision (reaffirmed above, 2026-07-09) — and require an
+already-invoiced order, which a freshly-imported order never is yet.
+
+**Fix:** a new `PendingPayment` model, staged by the import (or, later, the AI assistant) instead
+of posting. A human applies it later from a review screen (not yet built — `apps/web`, Agent A),
+which calls the **existing, unmodified** `receive_payment`/`pay_order` — no second write path, just
+deferred by a human confirmation, matching the `agent-actions` drafts-only pattern already used for
+orders/POs/journal entries.
+
+**Not a shared model.** `erp.accounting` has zero imports from `erp.sales`/`erp.purchasing`
+(accounting is dependency-free; sales/purchasing depend on it, never the reverse). Two mirrored
+models — `erp.sales.domain.models.PendingPayment`, `erp.purchasing.domain.models.PendingPayment` —
+avoid inverting that and match the codebase's existing convention of duplicating payment concerns
+per module rather than sharing them (`PaymentSerializer` was already separate per module).
+
+**Unmatched payments never touch the GL.** No suspense-account posting happens for an unresolved
+invoice reference (unlike `account_opening`'s imbalance correction) — the row just stays
+`order=None` with a `payment_unmatched` warning until a human matches it. Nothing is booked until
+`apply_pending_payment` runs, so there is no "cash without a home" GL entry to reconcile later.
+
+**Engine extended, not modified:** `erp.imports.engine._dispatch` (row-level/ungrouped adapters)
+now accepts `adapter.write` returning `(record, warnings)`, mirroring what `_dispatch_group`
+already supported for grouped adapters. Every adapter built before this session returns a bare
+record and is unaffected (opt-in, guarded by an `isinstance(result, tuple)` check).
+
+**Full spec:** `Docs/plan/smart-import-plan/DESIGN_PENDING_PAYMENTS_AND_STOCK.md`. Sub-project 2
+(reconciled inventory opening) is specced there too but not yet built — still a documented blocker
+in `adapters/accounting.py`.

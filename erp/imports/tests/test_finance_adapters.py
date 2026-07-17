@@ -7,10 +7,11 @@ fixtures directly (the shape ``analyze``/``normalize_row`` would have produced) 
 hook: the per-entry balance guard (``journal_entries``) and the human-in-the-loop suspense
 correction (``account_opening``).
 
-The payments/receipts + inventory-opening adapters are deliberately NOT built (no GL-correct
-drafts-only write-path exists — see ``adapters/accounting.py`` and ``adapters/__init__.py``); a
-guard test below pins that decision so a future session doesn't silently register a books-misstating
-payment adapter.
+``payments``/``receipts`` now ship too (session 16b) — see ``erp/imports/tests/
+test_receipt_adapter.py`` and ``test_payment_adapter.py``, and ``erp.sales``/``erp.purchasing``'s
+own ``pending_payments`` service tests; not repeated here. The inventory-opening adapters are still
+deliberately NOT built (see ``adapters/accounting.py`` and ``DESIGN_PENDING_PAYMENTS_AND_STOCK.md``)
+— the guard test below pins that decision.
 """
 from __future__ import annotations
 
