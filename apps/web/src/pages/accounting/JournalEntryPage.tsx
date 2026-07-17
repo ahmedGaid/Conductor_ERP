@@ -12,6 +12,7 @@ import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { DatePicker } from "../../components/DatePicker";
 import { ComboBox } from "../../components/ComboBox";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
 
@@ -55,6 +56,13 @@ export function JournalEntryPage() {
   const totalDebit = lines.reduce((s, l) => s + (parseToMinor(l.debit) ?? 0), 0);
   const totalCredit = lines.reduce((s, l) => s + (parseToMinor(l.credit) ?? 0), 0);
   const balanced = totalDebit === totalCredit && totalDebit > 0;
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    hasLines: lines.filter((l) => l.account_code).length >= 2,
+    balanced,
+    hasError: error !== null,
+  });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

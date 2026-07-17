@@ -17,6 +17,7 @@ import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { SalesNav } from "./SalesNav";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
@@ -118,6 +119,14 @@ export function NewOrderPage() {
   }, 0);
   const taxRateBps = (taxCodes ?? []).find((c) => c.code === taxCode)?.rate_bps ?? 0;
   const vat = Math.round((subtotal * taxRateBps) / 10000);
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    customerPicked: customer !== "",
+    warehousePicked: warehouse !== "",
+    lineReady: lines.some((l) => l.item_sku && l.quantity && parseToMinor(l.unit_price) !== null),
+    hasError: error !== null,
+  });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

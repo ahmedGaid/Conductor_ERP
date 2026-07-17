@@ -50,6 +50,66 @@ export const newOrderGuide: HelpGuide = {
   mistakes: [
     { en: "If a customer is over their credit limit, confirming the order will be blocked.", ar: "إذا تجاوز العميل حدّه الائتماني، يُمنع تأكيد الطلب." },
   ],
+  alerts: [
+    {
+      when: (s) => s.hasError === true,
+      tone: "warn",
+      title: { en: "Something needs fixing", ar: "هناك ما يحتاج تصحيحاً" },
+      body: {
+        en: "The red message above the button explains what's missing — fix that, then submit again.",
+        ar: "الرسالة الحمراء فوق الزر توضّح الناقص — صحّحها ثم أرسل مرة أخرى.",
+      },
+    },
+  ],
+  checklist: {
+    name: { en: "Build this order", ar: "أنشئ هذا الطلب" },
+    doneMessage: {
+      en: "Everything's filled in — review the total, then click Create order.",
+      ar: "كل شيء مكتمل — راجع الإجمالي ثم اضغط «إنشاء الطلب».",
+    },
+    steps: [
+      {
+        label: { en: "Pick who's buying", ar: "اختر من يشتري" },
+        detail: [
+          {
+            en: "Open the Customer field and search by name — start typing and the list narrows.",
+            ar: "افتح حقل العميل وابحث بالاسم — ابدأ الكتابة وتضيق القائمة.",
+          },
+        ],
+        hint: { en: "Customer set. Now pick where it ships from.", ar: "تم تحديد العميل. الآن اختر مصدر الشحن." },
+        done: (s) => s.customerPicked === true,
+      },
+      {
+        label: { en: "Pick the shipping warehouse", ar: "اختر مخزن الشحن" },
+        detail: [
+          {
+            en: "Open the Warehouse field — pick the one that actually holds the stock you're selling.",
+            ar: "افتح حقل المخزن — اختر الذي يحتفظ فعلاً بالبضاعة التي تبيعها.",
+          },
+        ],
+        hint: { en: "Warehouse set. Now add what they're buying.", ar: "تم تحديد المخزن. الآن أضف ما يشتريه." },
+        done: (s) => s.warehousePicked === true,
+      },
+      {
+        label: { en: "Add at least one item line", ar: "أضف سطر صنف واحد على الأقل" },
+        detail: [
+          {
+            en: "In the item row, search and pick a product — its price fills in automatically if one's on file.",
+            ar: "في سطر الصنف، ابحث واختر منتجاً — يُملأ سعره تلقائياً إن كان مسجلاً.",
+          },
+          {
+            en: "Set the quantity. Adjust the price or add a discount if this order needs it.",
+            ar: "حدّد الكمية. عدّل السعر أو أضف خصماً إن احتاج هذا الطلب ذلك.",
+          },
+          {
+            en: "Click Add line for a second item, or leave it at one.",
+            ar: "اضغط «إضافة سطر» لصنف ثانٍ، أو اتركه بصنف واحد.",
+          },
+        ],
+        done: (s) => s.lineReady === true,
+      },
+    ],
+  },
   related: [
     { to: "/sales", label: { en: "All orders", ar: "كل الطلبات" } },
   ],
