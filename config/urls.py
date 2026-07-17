@@ -11,6 +11,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # Health / monitoring (no auth) — Stage 0.
     path("", include("erp.monitoring.urls")),
+    # System status panel (admin-only) — twenty-harvest FILE_19.
+    path("api/system/", include("erp.monitoring.status_api")),
     # Identity / auth API — Stage 1 (skeleton mounted now).
     path("api/identity/", include("erp.identity.urls")),
     # Cross-module helpers (business-key → id resolver for universal entity links).

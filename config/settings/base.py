@@ -149,6 +149,11 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGE_ROOT = Path(env("STORAGE_ROOT", default=str(BASE_DIR / "storage")))
 
+# Optional: where nightly backups land (register-backup-task.ps1 -OutDir, or the docker
+# backup.sh out-dir). Empty = "not configured" in the system status panel (FILE_19) — the app
+# never writes here itself, it only reads timestamps off whatever the backup job already wrote.
+BACKUP_DIR = env("BACKUP_DIR", default="")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- DRF ---
