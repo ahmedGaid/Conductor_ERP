@@ -16,10 +16,20 @@ component of this gate, not a substitute.
 
 ## B. Verification on the dev box (Claude + founder)
 
-- [ ] `python scripts/gates/_run.py all` green (now incl. 16/17)
-- [ ] Delivery E2E drives re-pass after FILE_05 changes (sales + purchasing flows especially)
+- [x] `python scripts/gates/_run.py all` green (now incl. 16/17) — 2026-07-18, gates 00-17 PASSED
+- [x] Delivery E2E drives re-pass after FILE_05 changes (sales + purchasing flows especially) —
+      2026-07-18: found+fixed a dev-DB migration gap (`sales.0008/0009`, `inventory.0007/0008`,
+      `purchasing.0008`, `core.0003/0004` were unapplied on the `erp` dev DB, causing 500s on
+      customers/orders/items — `manage.py migrate` fixed it; this is a dev-box-only state issue,
+      not a code bug). Then drove fresh order SO-2026-000038 (create→confirm→deliver→invoice→
+      partial-collect 100/150 EGP, outstanding→50, DB-verified paid_minor=10000) and PO-2026-000002
+      partial-pay (800/2000 EGP, outstanding→1200). Trial balance Dr=Cr=214,469,476 post-drive. PASS.
 - [ ] Workflow canvas 2-minute HUMAN smoke test (mouse drag node→node, Save, Run) — the one
-      thing headless E2E could not exercise (FILE_03 known issue)
+      thing headless E2E could not exercise (FILE_03 known issue). **Not verifiable by a Claude
+      browser-pane session**: the pane tab runs backgrounded (`document.visibilityState ===
+      'hidden'`), which suspends the rAF-gated code React Flow uses to flip nodes from
+      `visibility:hidden` to visible after measurement — nodes never render, so no genuine mouse
+      interaction is possible here. Needs a human at a real foreground browser.
 - [ ] Partial-payments question ASKED to the customer; answer recorded here: __________
 
 ## C. On the REAL customer machine (founder, with the customer)
