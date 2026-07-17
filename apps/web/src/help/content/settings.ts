@@ -245,24 +245,91 @@ export const settingsWebhooksGuide: HelpGuide = {
     },
   ],
   checklist: {
-    name: { en: "Send yourself a test webhook", ar: "أرسل لنفسك ويب هوك تجريبي" },
+    name: { en: "Send yourself your first webhook", ar: "أرسل لنفسك أول ويب هوك" },
+    doneMessage: {
+      en: "Done — you have a live webhook receiving real events. Point the URL at your own tool when you're ready, and delete this test one.",
+      ar: "تم — لديك ويب هوك حيّ يستقبل أحداثاً حقيقية. وجّه الرابط إلى أداتك الخاصة حين تجهز، واحذف هذا التجريبي.",
+    },
     steps: [
       {
-        label: {
-          en: "Add a webhook URL (try a webhook.site address)",
-          ar: "أضف رابط ويب هوك (جرّب عنواناً من webhook.site)",
-        },
+        label: { en: "Get a test URL to catch the webhook", ar: "احصل على رابط تجريبي يلتقط الويب هوك" },
+        detail: [
+          {
+            en: "Open webhook.site in a new browser tab. It's free and needs no sign-up.",
+            ar: "افتح webhook.site في تبويب جديد. مجاني ولا يحتاج تسجيلاً.",
+          },
+          {
+            en: "It instantly shows you a unique URL near the top, like https://webhook.site/abc-123. That page will display every request it receives, live.",
+            ar: "يعرض لك فوراً رابطاً فريداً قرب الأعلى، مثل https://webhook.site/abc-123. وستعرض تلك الصفحة كل طلب يصلها لحظياً.",
+          },
+          {
+            en: "Copy that URL, then come back to this page and paste it into the URL box above.",
+            ar: "انسخ ذلك الرابط، ثم عد إلى هذه الصفحة والصقه في حقل الرابط أعلاه.",
+          },
+        ],
+        hint: { en: "URL set. Now pick what should reach it.", ar: "تم ضبط الرابط. الآن اختر ما يصله." },
+        done: (s) => s.urlTyped === true || (s.subCount as number) > 0,
+      },
+      {
+        label: { en: "Choose one event to listen for", ar: "اختر حدثاً واحداً لتتابعه" },
+        detail: [
+          {
+            en: "In the Events list above, tick a single event you can trigger yourself easily — sales.OrderConfirmed is a good first choice.",
+            ar: "في قائمة الأحداث أعلاه، اختر حدثاً واحداً يسهل عليك تشغيله — sales.OrderConfirmed خيار أول جيد.",
+          },
+          {
+            en: "Start with just one. You can always add more events to this webhook later.",
+            ar: "ابدأ بواحد فقط. يمكنك دائماً إضافة أحداث أخرى لهذا الويب هوك لاحقاً.",
+          },
+        ],
+        hint: { en: "Event chosen. Ready to create the webhook.", ar: "تم اختيار الحدث. جاهز لإنشاء الويب هوك." },
+        done: (s) => s.eventsPicked === true || (s.subCount as number) > 0,
+      },
+      {
+        label: { en: "Create the webhook", ar: "أنشئ الويب هوك" },
+        detail: [
+          {
+            en: "Click the Add webhook button to save it. It becomes active straight away.",
+            ar: "اضغط زر «إضافة ويب هوك» لحفظه. يصبح فعّالاً على الفور.",
+          },
+        ],
         done: (s) => (s.subCount as number) > 0,
       },
       {
-        label: { en: "Copy the signing secret shown once", ar: "انسخ مفتاح التوقيع الذي يظهر مرة واحدة" },
+        label: { en: "Copy your signing secret", ar: "انسخ مفتاح التوقيع" },
+        detail: [
+          {
+            en: "A signing secret appears in a card right after you add the webhook — this is shown only once.",
+            ar: "يظهر مفتاح توقيع في بطاقة فور إضافة الويب هوك — يُعرض مرة واحدة فقط.",
+          },
+          {
+            en: "Copy it now and keep it somewhere safe. You'll use it later to check that a delivery really came from Conductor.",
+            ar: "انسخه الآن واحفظه في مكان آمن. ستستخدمه لاحقاً للتأكد أن الإرسالية جاءت فعلاً من Conductor.",
+          },
+          {
+            en: "Lost it? You can't see it again, but Regenerate secret on the row gives you a fresh one.",
+            ar: "فقدته؟ لا يمكنك رؤيته مجدداً، لكن «تجديد المفتاح السري» في الصف يمنحك واحداً جديداً.",
+          },
+        ],
+        hint: { en: "Secret saved. Now make it fire.", ar: "تم حفظ المفتاح. الآن اجعله ينطلق." },
         done: (s) => s.secretEverShown === true,
       },
       {
-        label: {
-          en: "Trigger the event, then check Deliveries",
-          ar: "شغّل الحدث ثم افتح «الإرساليات»",
-        },
+        label: { en: "Trigger it and watch it arrive", ar: "شغّله وراقب وصوله" },
+        detail: [
+          {
+            en: "Go do the thing that fires your event — for sales.OrderConfirmed, open a sales order and confirm it.",
+            ar: "اذهب وافعل ما يُطلق حدثك — لحدث sales.OrderConfirmed، افتح طلب بيع وأكّده.",
+          },
+          {
+            en: "Come back here and click Deliveries on your webhook's row to see the attempt and its status.",
+            ar: "عد إلى هنا واضغط «الإرساليات» في صف الويب هوك لرؤية المحاولة وحالتها.",
+          },
+          {
+            en: "Switch to your webhook.site tab: the POST has landed there, with the X-Conductor-Event and X-Conductor-Signature headers and the JSON body.",
+            ar: "انتقل إلى تبويب webhook.site: سيكون طلب POST قد وصل، بترويستَي X-Conductor-Event وX-Conductor-Signature ومحتوى JSON.",
+          },
+        ],
         done: (s) => s.hasDelivery === true,
       },
     ],

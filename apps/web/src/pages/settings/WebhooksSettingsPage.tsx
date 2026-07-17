@@ -151,8 +151,12 @@ export function WebhooksSettingsPage() {
   }, []);
 
   // Publish the page's live facts for the Help drawer's Live tab (alerts + self-ticking checklist).
+  // urlTyped/eventsPicked let the checklist tick as the user fills the form, before they even click
+  // Add — the "leading by the hand" bit-by-bit feel.
   useSetHelpSignals({
     subCount: data?.length ?? 0,
+    urlTyped: url.trim().length > 0,
+    eventsPicked: selectedEvents.length > 0,
     secretJustShown: revealedSecret !== null,
     secretEverShown,
     hasDelivery: Object.values(deliveryStats).some((s) => s.count > 0),

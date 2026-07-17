@@ -48,11 +48,24 @@ export interface HelpAlert {
   body: L;
 }
 
-/** A task whose steps tick themselves off as the user actually does them — `done(signals)` decides,
- *  so progress is observed, never self-reported. */
+/** One step of a live checklist. `done(signals)` decides whether it's ticked (observed, never
+ *  self-reported). `detail` is the bit-by-bit walkthrough for reaching it — shown expanded while
+ *  this is the current step, so the user is led one micro-action at a time, then collapses once
+ *  done. `hint` is a single reassuring line shown under a done step (what just happened / what's
+ *  next), optional. */
+export interface HelpChecklistStep {
+  label: L;
+  detail?: L[];
+  hint?: L;
+  done: (s: HelpSignals) => boolean;
+}
+
+/** A task whose steps tick themselves off as the user actually does them. `done` on the whole
+ *  checklist (optional) is the celebration line shown when every step is complete. */
 export interface HelpChecklist {
   name: L;
-  steps: { label: L; done: (s: HelpSignals) => boolean }[];
+  steps: HelpChecklistStep[];
+  doneMessage?: L;
 }
 
 /** The full guide for one page. Only `title`, `purpose`, and `howItWorks` are required so a guide

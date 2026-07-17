@@ -305,26 +305,54 @@ function LiveTab({
               {doneCount}/{checklist.steps.length}
             </span>
           </h3>
+          {/* A thin progress bar so "how far am I" reads at a glance. */}
+          <div className="help-progress" aria-hidden="true">
+            <div
+              className="help-progress__fill"
+              style={{ inlineSize: `${(doneCount / checklist.steps.length) * 100}%` }}
+            />
+          </div>
           <ol className="help-checklist">
             {checklist.steps.map((step, idx) => {
               const done = step.done(signals);
-              // The first not-yet-done step is the one to do next — highlight it, dim the rest.
+              // The first not-yet-done step is the one to do next — expand it, dim the ones after.
               const isNext = !done && checklist.steps.slice(0, idx).every((s) => s.done(signals));
               const cls = done
                 ? "help-checkstep help-checkstep--done"
                 : isNext
                   ? "help-checkstep help-checkstep--next"
-                  : "help-checkstep";
+                  : "help-checkstep help-checkstep--todo";
               return (
                 <li className={cls} key={idx}>
-                  <span className="help-checkstep__icon" aria-hidden="true">
-                    <NavIcon name={done ? "checkCircle" : "clock"} />
-                  </span>
-                  <span className="help-checkstep__label">{step.label[lang]}</span>
+                  <div className="help-checkstep__row">
+                    <span className="help-checkstep__icon" aria-hidden="true">
+                      <NavIcon name={done ? "checkCircle" : isNext ? "arrowBack" : "clock"} />
+                    </span>
+                    <span className="help-checkstep__label">{step.label[lang]}</span>
+                  </div>
+                  {/* Lead the user through the current step, one micro-action at a time. */}
+                  {isNext && step.detail && step.detail.length > 0 && (
+                    <ol className="help-checkstep__detail">
+                      {step.detail.map((d, j) => (
+                        <li key={j}>{d[lang]}</li>
+                      ))}
+                    </ol>
+                  )}
+                  {done && step.hint && <p className="help-checkstep__hint">{step.hint[lang]}</p>}
                 </li>
               );
             })}
           </ol>
+          {doneCount === checklist.steps.length && checklist.doneMessage && (
+            <div className="help-alert help-alert--success" role="status">
+              <span className="help-alert__icon" aria-hidden="true">
+                <NavIcon name="checkCircle" />
+              </span>
+              <div className="help-alert__text">
+                <p className="help-alert__body">{tr(checklist.doneMessage)}</p>
+              </div>
+            </div>
+          )}
         </section>
       )}
     </>
