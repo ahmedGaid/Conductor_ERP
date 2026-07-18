@@ -10,6 +10,7 @@ export interface DashboardLayout {
 // `key` maps to a panel in DashboardPage; `labelKey` is the i18n key for the settings list.
 export const DASHBOARD_WIDGETS: { key: string; labelKey: string }[] = [
   { key: "attention", labelKey: "settings.dashboard.widgets.attention" },
+  { key: "confidence", labelKey: "settings.dashboard.widgets.confidence" },
   { key: "expenses", labelKey: "settings.dashboard.widgets.expenses" },
   { key: "cashflow", labelKey: "settings.dashboard.widgets.cashflow" },
   { key: "journals", labelKey: "settings.dashboard.widgets.journals" },

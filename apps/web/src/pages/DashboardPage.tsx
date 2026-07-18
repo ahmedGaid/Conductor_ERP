@@ -16,11 +16,13 @@ import { listOrders, type SalesOrder } from "../api/sales";
 import { listPurchaseOrders, type PurchaseOrder } from "../api/purchasing";
 import { listTickets, type Ticket } from "../api/crm";
 import { listNotifications, type Notification } from "../api/notifications";
+import { getConfidence, type ConfidenceSignal } from "../api/confidence";
 import { currentPeriod, pctChange, previousPeriod } from "../lib/dates";
 import { formatMinor } from "../lib/money";
 import { useAsync } from "../hooks/useAsync";
 import { ErrorState } from "../components/ErrorState";
 import { GettingStarted } from "./GettingStarted";
+import { MilestoneBanner } from "./MilestoneBanner";
 import { StatCard } from "../components/StatCard";
 import { NavIcon } from "../app/icons";
 import { Bdi } from "../components/Bdi";
@@ -40,10 +42,11 @@ interface DashboardData {
   pos: PurchaseOrder[];
   tickets: Ticket[];
   failedNotifs: Notification[];
+  confidence: ConfidenceSignal[];
 }
 
 async function loadDashboard(): Promise<DashboardData> {
-  const [me, current, previous, cash, journals, orders, pos, tickets, failedNotifs] =
+  const [me, current, previous, cash, journals, orders, pos, tickets, failedNotifs, confidence] =
     await Promise.all([
       getMe(),
       incomeStatement({ period: currentPeriod() }),
@@ -54,8 +57,9 @@ async function loadDashboard(): Promise<DashboardData> {
       listPurchaseOrders().catch(() => [] as PurchaseOrder[]),
       listTickets().catch(() => [] as Ticket[]),
       listNotifications({ status: "failed" }).catch(() => [] as Notification[]),
+      getConfidence().then((r) => r.signals).catch(() => [] as ConfidenceSignal[]),
     ]);
-  return { username: me.username, current, previous, cash, journals, orders, pos, tickets, failedNotifs };
+  return { username: me.username, current, previous, cash, journals, orders, pos, tickets, failedNotifs, confidence };
 }
 
 function greetingKey(): "morning" | "afternoon" | "evening" {
@@ -94,6 +98,7 @@ export function DashboardPage() {
       </div>
 
       <GettingStarted />
+      <MilestoneBanner />
 
       {loading && (
         <ListSkeleton />
@@ -131,10 +136,11 @@ export function DashboardPage() {
           </div>
 
           {widgets.includes("attention") && <AttentionPanel data={data} />}
+          {widgets.includes("confidence") && <ConfidencePanel signals={data.confidence} />}
 
           <div className="dash__row">
             {widgets
-              .filter((w) => w !== "attention")
+              .filter((w) => w !== "attention" && w !== "confidence")
               .map((w) => {
                 switch (w) {
                   case "expenses":
@@ -221,6 +227,51 @@ function AttentionPanel({ data }: { data: DashboardData }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+const CONFIDENCE_META: Record<ConfidenceSignal["key"], { icon: string; to: string }> = {
+  books: { icon: "accounting", to: "/accounting/trial-balance" },
+  vat: { icon: "einvoice", to: "/accounting/vat-return" },
+  backups: { icon: "archive", to: "/settings" },
+  stock: { icon: "inventory", to: "/inventory" },
+  assistant: { icon: "sparkle", to: "/assistant" },
+};
+
+// System Confidence panel — the reassurance complement to "Needs attention today": a calm,
+// positive strip. Every signal shows regardless of state (ok or warn) so it reads as a true
+// checklist, not a filtered highlight reel; colour always pairs with the word ok/warn, never
+// colour alone (monochrome-chrome rule).
+function ConfidencePanel({ signals }: { signals: ConfidenceSignal[] }) {
+  const { t } = useTranslation();
+  if (signals.length === 0) return null;
+
+  return (
+    <div className="card dash__panel dash__confidence">
+      <div className="dash__panel-head">
+        <h2>{t("dashboard.confidence.title")}</h2>
+      </div>
+      <ul className="dash__confidence-list">
+        {signals.map((s) => {
+          const meta = CONFIDENCE_META[s.key];
+          return (
+            <li key={s.key}>
+              <Link
+                className={`dash__confidence-item dash__confidence-item--${s.status}`}
+                to={meta.to}
+              >
+                <span className="dash__confidence-icon" aria-hidden="true">
+                  <NavIcon name={s.status === "ok" ? "checkCircle" : meta.icon} />
+                </span>
+                <span className="dash__confidence-text">
+                  {t(`dashboard.confidence.${s.key}.${s.status}`)}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

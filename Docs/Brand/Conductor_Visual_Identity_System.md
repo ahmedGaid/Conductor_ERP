@@ -238,6 +238,41 @@ business Arabic**, not enum transliteration:
   a settled Arabic one exists. ❌ No literal word-for-word translation from the English string — write
   Arabic *as Arabic* (Brief §11). ✅ One concept, one word, everywhere.
 
+### 6.4 The English product-vocabulary canon (added 2026-07-19, arp-roadmap track P)
+
+The Arabic lexicon above is the moat; English needs the same discipline for the same reason —
+drift makes a product feel like a pile of features instead of one considered thing. Prefer a human
+word over generic enterprise-software jargon ("Master Data", "Utilities", "Configuration") wherever
+a human word fits; same governance as §6.1 — register the term here **before** it ships, then a
+light rename + i18n pass. An audit against this rule at registration time (2026-07-19) found the
+app already mostly clean — one drift fixed (below); everything else was already a human word.
+
+| Concept | Canonical English | Not (avoid drift) |
+|---|---|---|
+| Assistant (the AI surface, chat/ask/agent) | Assistant | AI Chat / Copilot / Bot |
+| Assistant health (admin diagnostics: calls, cost, errors, evals) | Assistant health | AI ops / AI Operations (renamed 2026-07-19 — read as internal tooling jargon, not what the page is for) |
+| Knowledge base (documents the assistant searches/quotes) | Knowledge base | Documents / Library (reserve for a future generic document store, a different concept — mirrors the Arabic §6.1 entry) |
+| Activity (per-record activity feed; full name **Activity timeline**) | Activity | History / Audit log (superseded — see `TH/FILE_13`) |
+| Developers (settings section: API keys + endpoint reference) | Developers | Integrations / API (too broad — mirrors the Arabic §6.1 entry) |
+| Custom fields (admin-defined extra fields on customers/items/suppliers) | Custom fields | Extra fields / Custom objects (fields only, never custom *objects* — `Docs/ARP_STRATEGY.md` §5) |
+| Saved view (a named list filter preset) | Saved view | Filter preset / View (bare "View" is ambiguous with a page view) |
+| System confidence (the dashboard's positive health strip — `craft-trust-polish/FILE_01`) | System confidence | Health check / Status (too generic — this is reassurance UX, not a diagnostics page) |
+| Webhook (outbound event subscription) | Webhook | stays Latin-derived, like "API" — mirrors the Arabic §6.1 entry |
+
+**Reserved, not yet registered** (named in the founder's CPO review as future concepts — per
+governance, no name is picked until the feature actually ships, so this table doesn't get ahead of
+the product):
+- **Insights** — no standalone surface with this name exists yet.
+- **Workspace** — used today only as an internal CSS/component name for the Assistant page's
+  fullscreen layout (`assistant-page--workspace`), never a user-facing label — not a registered
+  product noun yet.
+- **The daily brief's name** — Phase C (proactive AI, `arp-roadmap.md`) hasn't shipped; naming it
+  now would be inventing a feature that doesn't exist.
+
+**Refusals** (mirrors §6.3): ❌ generic enterprise nouns where a human word fits. ❌ two English
+names for one concept across screens. ❌ naming a feature that hasn't shipped. ✅ one concept, one
+word, everywhere — audit this table whenever a new top-level surface or settings section ships.
+
 ---
 
 ## 7. Motion character

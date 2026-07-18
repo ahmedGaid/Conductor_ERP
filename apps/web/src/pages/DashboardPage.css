@@ -123,6 +123,103 @@
   font-size: var(--font-size-sm);
 }
 
+/* System confidence — the calm, positive complement to "Needs attention today" */
+.dash__confidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dash__confidence-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.dash__confidence-item:hover {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.dash__confidence-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.dash__confidence-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.dash__confidence-item--ok .dash__confidence-icon {
+  background-color: var(--color-success-subtle);
+  color: var(--color-success-strong);
+}
+
+.dash__confidence-item--warn .dash__confidence-icon {
+  background-color: var(--color-warning-subtle);
+  color: var(--color-warning-strong);
+}
+
+.dash__confidence-text {
+  font-weight: var(--font-weight-medium);
+}
+
+/* Calm milestone moments — a quiet, dismissible one-line acknowledgment */
+.dash__milestone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dash__milestone-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-success-subtle);
+  color: var(--color-success-strong);
+  flex-shrink: 0;
+}
+.dash__milestone-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.dash__milestone-text {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  flex: 1;
+}
+
+.dash__milestone-dismiss {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.dash__milestone-dismiss:hover {
+  color: var(--color-text);
+}
+
 /* Getting started — the post-setup "what to do next" checklist */
 .dash__start-dismiss {
   background: none;

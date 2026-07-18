@@ -13,6 +13,10 @@ urlpatterns = [
     path("", include("erp.monitoring.urls")),
     # System status panel (admin-only) — twenty-harvest FILE_19.
     path("api/system/", include("erp.monitoring.status_api")),
+    # System Confidence panel (any authenticated user) — arp-roadmap track P.
+    path("api/dashboard/", include("erp.monitoring.confidence")),
+    # Calm milestone moments (any authenticated user) — arp-roadmap track P.
+    path("api/dashboard/", include("erp.monitoring.milestones")),
     # Identity / auth API — Stage 1 (skeleton mounted now).
     path("api/identity/", include("erp.identity.urls")),
     # Cross-module helpers (business-key → id resolver for universal entity links).

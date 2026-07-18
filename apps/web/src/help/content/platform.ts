@@ -71,7 +71,7 @@ export const knowledgeGuide: HelpGuide = {
 };
 
 export const opsGuide: HelpGuide = {
-  title: { en: "AI ops", ar: "عمليات الذكاء الاصطناعي" },
+  title: { en: "Assistant health", ar: "صحة المساعد" },
   purpose: {
     en: "What the assistant did, what it cost, and whether it's healthy.",
     ar: "ما فعله المساعد الذكي، وتكلفته، ومدى سلامته.",

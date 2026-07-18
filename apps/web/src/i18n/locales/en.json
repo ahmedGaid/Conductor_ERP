@@ -40,7 +40,7 @@
     "usersAdmin": "Users",
     "rolesAdmin": "Roles",
     "knowledgeAdmin": "Knowledge base",
-    "opsAdmin": "AI ops",
+    "opsAdmin": "Assistant health",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar"
   },
@@ -321,7 +321,7 @@
     "fileType": "File type not supported"
   },
   "ops": {
-    "title": "AI ops",
+    "title": "Assistant health",
     "subtitle": "What the assistant did, what it cost, and whether it's healthy.",
     "daysOption": "{{n}} days",
     "totalCalls": "Total calls",
@@ -567,6 +567,19 @@
       "payables": "{{amount}} in supplier bills to pay across {{count}} orders",
       "breachedTickets": "{{count}} support tickets past their SLA",
       "failedMessages": "{{count}} messages failed to send"
+    },
+    "confidence": {
+      "title": "System confidence",
+      "books": { "ok": "Books balanced", "warn": "Books need review" },
+      "vat": { "ok": "VAT ready", "warn": "VAT period needs setup" },
+      "backups": { "ok": "Backups up to date", "warn": "Backups not confirmed" },
+      "stock": { "ok": "Stock health good", "warn": "Some items running low" },
+      "assistant": { "ok": "Assistant connected", "warn": "Assistant not connected" }
+    },
+    "milestone": {
+      "invoiceCount": "You've invoiced {{count}} orders — nice milestone.",
+      "firstProfitableMonth": "This month is profitable — your first. Well done.",
+      "dismiss": "Dismiss"
     },
     "vsLastMonth": "vs last month",
     "asOfNow": "as of now",
@@ -2024,6 +2037,7 @@
       "widgetsDesc": "Reorder or hide the panels on your home dashboard.",
       "widgets": {
         "attention": "Needs attention",
+        "confidence": "System confidence",
         "expenses": "Top expenses",
         "cashflow": "Cash flow",
         "journals": "Recent journals",

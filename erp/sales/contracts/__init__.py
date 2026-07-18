@@ -12,7 +12,7 @@ from django.db.models import Count, Q, Sum
 
 from erp.identity.scoping import scope_queryset
 
-from ..domain.models import Customer, Quotation, SalesOrder
+from ..domain.models import Customer, OrderStatus, Quotation, SalesOrder
 from ..events import ORDER_CONFIRMED, ORDER_DELIVERED, ORDER_INVOICED, PAYMENT_RECEIVED
 from ..repositories import customers as _customers
 from ..services.orders import (
@@ -294,6 +294,14 @@ def customer_profile(actor, *, query: str) -> dict:
     }
 
 
+def invoiced_order_count() -> int:
+    """Company-wide count of orders that reached at least the Invoiced stage (never scoped —
+    a company-wide milestone counter, not a per-user record view)."""
+    return SalesOrder.objects.filter(
+        status__in=(OrderStatus.INVOICED, OrderStatus.PAID)
+    ).count()
+
+
 __all__ = [
     "OrderLineInput",
     "CustomerInfo",
@@ -308,6 +316,7 @@ __all__ = [
     "find_customers",
     "find_quotations",
     "customer_profile",
+    "invoiced_order_count",
     "place_order",
     "update_draft_order",
     "create_order",
