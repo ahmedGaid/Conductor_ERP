@@ -134,8 +134,22 @@ and push per-task, never straight to local `main`** — that's what let this dri
   page deferred to A) → TH FILE_19 admin panel backend (done, B14 — Task A+C only, System page UI
   deferred to A) → TH FILE_20 AI usage/cost backend (done, B15 — Task A+C only, Settings → AI page
   UI deferred to A) → B16 draftable payments (done — see above) → B17 reconciled inventory opening
-  (done — see above) → **next: check board for a new task (smart-import/twenty-harvest wave 3+
-  queue, or coordinate an M-checkpoint merge with Agent A).**
+  (done — see above) → **B-lane now IDLE (2026-07-18 M3 sync).**
+
+**M3 sync (2026-07-18, B session):** re-audited every plan folder pos 1–10 for undone (non-`_done`)
+files. Pos 1–7 + ★agent-actions + os-foundations: fully `_done`. Pos 8 (delivery-readiness) FILE_07
+sections C/D/E: founder + real customer machine only, not solo. Pos 9/10 (twenty-harvest,
+smart-import): every remaining undone file is `apps/web` — A's territory exclusively (locale keys,
+canvas UI, Settings pages). **Conclusion: B has zero eligible backend-only task left in the active
+queue.** Ran full B-lane gate suite as a checkpoint sanity pass: gate:all 00-02/04-17 green on
+`feat/b-lane` tip (gate03 N/A — no `apps/web/node_modules` on B), Redis/DB/venv healthy. No code
+changes this session — docs-only sync. `main` has moved ahead via the standing E2E job (⟳) plus A
+committing fix/test passes straight to main (`13358b2`, `c89de0e`, `83d4a59`, `96a517f`, `699a7c8`
+— assistant language-adherence, mobile reliability); board/erp-status now reflect that tip.
+**Drift noted for A:** `twenty-harvest/FILE_10_AI_AGENT_NODE.md` is done in substance (per
+erp-status, `b832ba7`) but was never renamed `_done` on disk.
+**B's next move:** wait for A/founder to open new pos-9/10 backend work, or take a direct
+assignment. Do not cross into `apps/web` without a territory hand-off recorded here first.
 - **M3:** TH Tier 2 merge after FILE_13; SI Phase-A demo merge after FILE_14. TH FILE_21 +
   SI FILE_17 acceptances run single-agent (Either) on merged main.
 
