@@ -156,6 +156,21 @@ UI — apps/web, A's territory) unless the founder extends the frontend hand-off
 new backend-only work. `apps/web/node_modules` now exists in B's worktree (installed for A7) —
 harmless to leave, but B still has no standing reason to run JS gates day-to-day.
 
+**A7 follow-up (2026-07-18, same session):** founder delegated whether to widen custom-fields
+scope beyond customer/item; B added `purchasing.supplier` as a third entity (Customer's exact
+structural mirror — see DECISIONS.md "Custom fields: Supplier added as a third entity"), deliberately
+stopped there (leads/orders stay out — scope brake). `erp/purchasing` suite green, i18n+tsc+gate03
+green, live API round-trip verified. Commits `cca1093`/`ddacdce`, already an ancestor of
+`origin/main` (tip `71d64d9` after A's subsequent merges/fixes). **B-lane still idle** — no new
+backend-only task opened by this.
+
+**B health check (2026-07-18, later same day):** ran `gate:all` on `feat/b-lane` tip (`ddacdce`,
+= `origin/main` ancestor). 00–02 + 04–17 all PASSED. **Gate 03 FAILED** — main chunk
+`index-*.js` 251.8 kB gzip > 250 kB budget (was green at A7's check). apps/web bundle-chunking,
+A's territory (gate03 surface) — flagging here, not fixing; A is concurrently mid-session on
+A8 (unpushed) so didn't touch the shared erp-status skill for this. Needs a route-split/
+lazy-import pass whenever A picks it up.
+
 **A7 pushed straight to `origin/main`** (2026-07-18, founder asked to see it on main): `feat/b-lane`
 was a clean 1-commit fast-forward ahead of `origin/main`, so B pushed
 `feat/b-lane:main` directly (remote ref only — **A's local `main` in `C:\AhmedGaid\ERP` was never
