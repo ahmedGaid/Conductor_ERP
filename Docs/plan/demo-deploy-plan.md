@@ -34,6 +34,45 @@ shelved). Files for each path, so it's clear what's active:
 - **VM path (shelved):** `.github/workflows/deploy-demo.yml`, `deploy/demo-redeploy.sh`,
   `deploy/demo-nightly-reset.sh`, `deploy/.env.demo.example`.
 
+## STATUS (2026-07-18): running, from a DEDICATED worktree — not ERP or ERP-B
+Live at `https://wellington-economies-equations-convenience.trycloudflare.com` (Cloudflare quick
+tunnel — hostname changes if the `cloudflared` process ever restarts). Login `admin` / `Dev12345!`.
+
+Two real mistakes made + fixed while first setting this up, both worth knowing if this ever needs
+touching again:
+1. **First build ran from `C:\AhmedGaid\ERP-B` on branch `feat/b-lane`**, not `main` — the user's
+   pushed updates weren't visible because the demo was never on `main` to begin with. Worse: the
+   original `demo-redeploy.ps1` did `git reset --hard origin/main` on a schedule, which — had it
+   run inside `ERP-B` — would eventually have hard-reset Agent B's live feature branch and wiped
+   uncommitted lane work. **Fix:** the demo now runs from its own dedicated worktree,
+   `C:\AhmedGaid\ERP-demo`, detached at `origin/main` (`git worktree add --detach`) — never a
+   branch name, never shared with either agent's dev lane. `ERP` and `ERP-B` keep their own copies
+   of the deploy scripts as reference/templates only; they are not what's actually running.
+2. **`main`'s frontend bundle is 3.6kB over its own 250kB gzip size budget**
+   (`apps/web/scripts/check-bundle-size.mjs`, budgets recorded in `DECISIONS.md` "Perf budgets
+   2026-07"), so the real `Dockerfile`'s `npm run build` fails outright. That gate has no bypass
+   flag by design. User chose "bypass for the demo build only, don't touch the real pipeline" —
+   `C:\AhmedGaid\ERP-demo\Dockerfile.demo` exists ONLY in that worktree (untracked, never
+   committed): identical to the real `Dockerfile` except it runs
+   `npm run prebuild && npx tsc -b && npx vite build` directly instead of `npm run build`, keeping
+   the i18n parity gate but skipping the postbuild bundle-size check.
+   `docker-compose.demo.yml` points `web`/`worker`/`beat` at `Dockerfile.demo` via a `build:`
+   override. **This is real, live technical debt on `main`** — someone should route-split
+   (`React.lazy`) whatever recently got heavy and get back under budget; the demo bypass doesn't
+   fix it, it just routes around it for sales-demo purposes.
+
+**Operational note:** every compose invocation against the live demo MUST include
+`--env-file deploy/.env.demo -f docker-compose.yml -f docker-compose.demo.yml` — the plain
+`docker-compose.yml` alone has no `POSTGRES_PASSWORD` (comes from `.env.demo`) and uses the real
+`Dockerfile` (fails the bundle-size gate). `demo-redeploy.ps1` / `demo-nightly-reset.ps1` in
+`ERP-demo` already do this; if either script is ever regenerated from the `ERP`/`ERP-B` template
+copies, re-add the `$ComposeArgs` array first.
+
+**Still pending:** `deploy\register-demo-tasks.ps1` needs to be run from
+`C:\AhmedGaid\ERP-demo\deploy\` in an elevated PowerShell (Docker/Task Scheduler access needs the
+logged-in user's session — an unelevated tool session can't do this, confirmed by two real
+"Access is denied" failures, not a script bug).
+
 ## PC path (ACTIVE)
 1. Install Docker Desktop (free, no card) if not already present; set it to start at login.
 2. Install `cloudflared` (`winget install --id Cloudflare.cloudflared.cloudflared`). Two options:
