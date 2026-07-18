@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>عرض سعر — Conductor</title>
+<style>
+  :root{
+    --ink:#14161a; --ink-soft:#4a4f57; --line:#e4e6ea; --paper:#ffffff;
+    --num:"Inter","IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif;
+    --edit:#c8ccd2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#f2f3f5;color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  html[lang="ar"] body{font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,system-ui,sans-serif}
+  html[lang="en"] body{font-family:"Inter","Segoe UI",system-ui,sans-serif}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ---- toolbar (never prints) ---- */
+  .bar{position:sticky;top:0;z-index:9;background:var(--ink);color:#fff;
+    display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 20px;font-size:13px}
+  .bar .hint{color:#aeb3bb;margin-inline-start:auto}
+  .bar button,.bar label{font:inherit;font-weight:600;cursor:pointer;
+    background:#fff;color:var(--ink);border:0;border-radius:8px;padding:8px 14px}
+  .bar label,.bar #langBtn{background:transparent;color:#fff;border:1px solid #444a54}
+
+  .bar input[type=file]{display:none}
+
+  /* ---- editable affordance (screen only) ---- */
+  .edit{outline:none;border-radius:3px;box-shadow:inset 0 -1px 0 var(--edit);padding:0 2px;
+    transition:box-shadow .12s,background .12s}
+  .edit:hover{box-shadow:inset 0 -1px 0 var(--ink-soft)}
+  .edit:focus{background:#eef2ff;box-shadow:inset 0 -2px 0 var(--ink)}
+
+  /* ---- page ---- */
+  .page{max-width:820px;margin:24px auto 60px;background:var(--paper);
+    padding:60px 64px 48px;border:1px solid var(--line)}
+
+  .top{display:flex;justify-content:space-between;align-items:flex-start;
+    padding-block-end:28px;border-block-end:1px solid var(--line);gap:24px}
+  .brand{display:flex;flex-direction:column;gap:6px}
+  #logoImg{max-height:64px;max-width:240px;object-fit:contain}
+  .brand .wm{font-size:22px;font-weight:700;letter-spacing:.2px}
+  .brand small{font-size:13px;font-weight:500;color:var(--ink-soft)}
+  .doc{text-align:start;font-size:13px;color:var(--ink-soft);white-space:nowrap}
+  .doc .label{font-weight:700;color:var(--ink);font-size:15px;margin-block-end:4px}
+
+  .meta{display:flex;gap:48px;flex-wrap:wrap;margin-block:28px}
+  .meta .k{color:var(--ink-soft);font-size:12px;margin-block-end:2px}
+  .meta .v{font-weight:500;font-size:14px}
+
+  .lead{font-size:16px;margin-block:20px 32px;max-width:62ch}
+
+  .lines{border:1px solid var(--line)}
+  .line{display:flex;justify-content:space-between;align-items:baseline;padding:22px 28px;gap:24px}
+  .line + .line{border-block-start:1px solid var(--line)}
+  .line .desc b{font-size:17px;font-weight:700;display:block;margin-block-end:2px}
+  .line .desc span{font-size:13px;color:var(--ink-soft)}
+  .line .amt{font-family:var(--num);font-size:25px;font-weight:700;white-space:nowrap;text-align:end}
+  .line .amt .unit{font-size:12.5px;font-weight:500;color:var(--ink-soft);display:block;margin-block-start:2px}
+  .line.sub .amt{font-size:22px}
+
+  /* ---- totals ---- */
+  .totals{width:340px;margin-inline-start:auto;margin-block-start:20px}
+  .trow{display:flex;justify-content:space-between;padding:8px 4px;font-size:14px}
+  .trow b{font-family:var(--num)}
+  .trow.grand{border-block-start:2px solid var(--ink);border-block-end:1px solid var(--line);
+    font-weight:700;font-size:17px;padding-block:12px}
+  .trow.split{color:var(--ink-soft)}
+
+  .terms{margin-block-start:32px;font-size:12.5px;color:var(--ink-soft)}
+  .terms h4{font-size:12px;font-weight:700;color:var(--ink);margin-block-end:8px}
+  .terms ul{list-style:none}
+  .terms li{padding-inline-start:16px;position:relative;margin-block-end:4px}
+  .terms li::before{content:"—";position:absolute;inset-inline-start:0;color:var(--edit)}
+
+  .foot{margin-block-start:40px;padding-block-start:20px;border-block-start:1px solid var(--line);
+    display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);gap:24px}
+  .sign{min-width:200px}
+  .sign .rule{margin-block-start:36px;border-block-start:1px solid var(--ink);padding-block-start:6px;color:var(--ink-soft)}
+
+  @media print{
+    .bar{display:none}
+    .edit{box-shadow:none;background:none!important;padding:0}
+    html,body{background:#fff}
+    .page{margin:0;border:0;max-width:none;padding:36px 40px}
+    .trow.zero{display:none}
+    @page{size:A4;margin:14mm}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button id="langBtn">English</button>
+  <button id="newCust" data-ar="عميل جديد" data-en="New customer">عميل جديد</button>
+  <label data-ar="رفع شعار الشركة" data-en="Upload company logo">رفع شعار الشركة<input id="logoInput" type="file" accept="image/*"></label>
+  <button id="logoClear" data-ar="إزالة الشعار" data-en="Remove logo">إزالة الشعار</button>
+  <button id="vatMode">الأسعار غير شاملة الضريبة</button>
+  <button id="printBtn" data-ar="حفظ PDF / طباعة" data-en="Save PDF / Print">حفظ PDF / طباعة</button>
+  <span class="hint" data-ar="انقر أي نص أو رقم لتعديله · الشعار والأرقام تُحفظ داخل الـ PDF" data-en="Click any text or number to edit · logo & numbers are saved into the PDF">انقر أي نص أو رقم لتعديله · الشعار والأرقام تُحفظ داخل الـ PDF</span>
+</div>
+
+<div class="page">
+
+  <div class="top">
+    <div class="brand">
+      <img id="logoImg" alt="logo" hidden>
+      <span class="wm">Conductor</span>
+      <small data-ar="نظام إدارة موارد الشركة" data-en="Business management system">نظام إدارة موارد الشركة</small>
+    </div>
+    <div class="doc">
+      <div class="label" data-ar="عرض سعر" data-en="Quotation">عرض سعر</div>
+      <div><span data-ar="رقم العرض:" data-en="Quote No:">رقم العرض:</span> <span class="edit num shared" id="qNo">2026-001</span></div>
+      <div><span data-ar="التاريخ:" data-en="Date:">التاريخ:</span> <span class="edit num shared" id="qDate">18 / 07 / 2026</span></div>
+    </div>
+  </div>
+
+  <div class="meta">
+    <div>
+      <div class="k" data-ar="مقدَّم إلى" data-en="Prepared for">مقدَّم إلى</div>
+      <div class="v"><span class="edit shared" id="cust">[اسم الشركة / العميل]</span></div>
+    </div>
+    <div>
+      <div class="k" data-ar="عدد المستخدمين" data-en="Number of users">عدد المستخدمين</div>
+      <div class="v"><span class="edit num shared" id="userCount">[العدد]</span> <span data-ar="مستخدم" data-en="users">مستخدم</span></div>
+    </div>
+    <div>
+      <div class="k" data-ar="التشغيل" data-en="Deployment">التشغيل</div>
+      <div class="v"><span class="edit" data-ar="على سيرفر العميل" data-en="On customer's server">على سيرفر العميل</span></div>
+    </div>
+  </div>
+
+  <p class="lead edit"
+     data-ar="نظام Conductor لإدارة الشركة — المحاسبة والمخازن والمبيعات والمشتريات والفاتورة الإلكترونية، جاهز للتشغيل الفعلي. العرض شامل التركيب والتدريب."
+     data-en="Conductor business management system — accounting, inventory, sales, purchasing and e-invoicing, ready for live use. This offer includes installation and training.">نظام Conductor لإدارة الشركة — المحاسبة والمخازن والمبيعات والمشتريات والفاتورة الإلكترونية، جاهز للتشغيل الفعلي. العرض شامل التركيب والتدريب.</p>
+
+  <div class="lines">
+    <div class="line">
+      <div class="desc">
+        <b class="edit" data-ar="الترخيص + التركيب + التدريب" data-en="License + installation + training">الترخيص + التركيب + التدريب</b>
+        <span class="edit" data-ar="ترخيص دائم للنظام، تركيبه على سيرفركم، وتدريب الفريق." data-en="Perpetual license, installed on your server, with team training.">ترخيص دائم للنظام، تركيبه على سيرفركم، وتدريب الفريق.</span>
+      </div>
+      <div class="amt"><span class="edit num shared" id="licenseAmt">180,000</span>
+        <span class="unit edit" data-ar="جنيه · مرة واحدة" data-en="EGP · one-time">جنيه · مرة واحدة</span></div>
+    </div>
+
+    <div class="line sub">
+      <div class="desc">
+        <b class="edit" data-ar="الدعم والتحديثات" data-en="Support & updates">الدعم والتحديثات</b>
+        <span class="edit" data-ar="دعم فني وتحديثات مستمرة — منها توافق الفاتورة الإلكترونية مع مصلحة الضرائب." data-en="Technical support and ongoing updates — including e-invoicing compliance with the Tax Authority.">دعم فني وتحديثات مستمرة — منها توافق الفاتورة الإلكترونية مع مصلحة الضرائب.</span>
+      </div>
+      <div class="amt"><span class="edit num shared">30,000</span>
+        <span class="unit edit" data-ar="جنيه / سنة · السنة الأولى مجاناً" data-en="EGP / year · first year free">جنيه / سنة · السنة الأولى مجاناً</span></div>
+    </div>
+
+    <div class="line sub">
+      <div class="desc">
+        <b class="edit" data-ar="خدمات الذكاء الاصطناعي" data-en="AI services">خدمات الذكاء الاصطناعي</b>
+        <span class="edit" data-ar="المساعد الذكي والأتمتة داخل النظام — اشتراك اختياري." data-en="Smart assistant and in-app automation — optional subscription.">المساعد الذكي والأتمتة داخل النظام — اشتراك اختياري.</span>
+      </div>
+      <div class="amt"><span class="edit num shared">2,000</span>
+        <span class="unit edit" data-ar="جنيه / شهرياً" data-en="EGP / monthly">جنيه / شهرياً</span></div>
+    </div>
+  </div>
+
+  <div class="totals">
+    <div class="trow split zero" id="discRow">
+      <span data-ar="خصم" data-en="Discount">خصم</span>
+      <b class="num">−<span class="edit num" id="discountAmt">0</span></b>
+    </div>
+    <div class="trow split">
+      <span data-ar="الإجمالي قبل الضريبة" data-en="Subtotal (before VAT)">الإجمالي قبل الضريبة</span>
+      <b class="num" id="totNet">180,000</b>
+    </div>
+    <div class="trow split">
+      <span><span data-ar="ضريبة القيمة المضافة" data-en="VAT">ضريبة القيمة المضافة</span> (<span class="edit num" id="vatRate">14</span>%)</span>
+      <b class="num" id="totVat">25,200</b>
+    </div>
+    <div class="trow grand">
+      <span data-ar="الإجمالي شامل الضريبة (مرة واحدة)" data-en="Total incl. VAT (one-time)">الإجمالي شامل الضريبة (مرة واحدة)</span>
+      <b class="num" id="totOnce">205,200</b>
+    </div>
+    <div class="trow split">
+      <span><span data-ar="دفعة مقدمة" data-en="Upfront">دفعة مقدمة</span> (<span class="edit num" id="pct">50</span>%)</span>
+      <b class="num" id="totUp">102,600</b>
+    </div>
+    <div class="trow split">
+      <span data-ar="الباقي عند التشغيل" data-en="Balance on go-live">الباقي عند التشغيل</span>
+      <b class="num" id="totBal">102,600</b>
+    </div>
+  </div>
+
+  <div class="terms">
+    <h4 data-ar="شروط العرض" data-en="Offer terms">شروط العرض</h4>
+    <ul>
+      <li class="edit" data-ar="الترخيص دائم لعدد المستخدمين المذكور أعلاه، على موقع واحد." data-en="Perpetual license for the number of users above, single site.">الترخيص دائم لعدد المستخدمين المذكور أعلاه، على موقع واحد.</li>
+      <li class="edit" data-ar="الدفع: 50% مقدَّم، والباقي عند تشغيل النظام على سيرفركم." data-en="Payment: 50% upfront, balance on go-live on your server.">الدفع: 50% مقدَّم، والباقي عند تشغيل النظام على سيرفركم.</li>
+      <li class="edit" data-ar="الدعم والتحديثات اشتراك سنوي يبدأ بعد السنة الأولى المجانية." data-en="Support & updates is an annual subscription starting after the free first year.">الدعم والتحديثات اشتراك سنوي يبدأ بعد السنة الأولى المجانية.</li>
+      <li class="edit" data-ar="خدمات الذكاء الاصطناعي اشتراك منفصل، شهري أو سنوي، يُفعَّل عند الطلب." data-en="AI services is a separate subscription, monthly or annual, activated on request.">خدمات الذكاء الاصطناعي اشتراك منفصل، شهري أو سنوي، يُفعَّل عند الطلب.</li>
+      <li class="edit" data-ar="الخدمات الإضافية (تطوير خاص، تقارير، تكاملات) تُسعَّر عند الطلب." data-en="Additional services (custom development, reports, integrations) priced on request.">الخدمات الإضافية (تطوير خاص، تقارير، تكاملات) تُسعَّر عند الطلب.</li>
+      <li><span data-ar="هذا العرض صالح حتى" data-en="This offer is valid until">هذا العرض صالح حتى</span> <span class="edit num shared" id="validDate">[التاريخ]</span></li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div dir="ltr" style="text-align:start">Conductor · <span class="edit shared" id="coPhone">+20 1XX XXX XXXX</span> · <span class="edit shared" id="coEmail">name@company.com</span></div>
+    <div class="sign"><div class="rule" data-ar="التوقيع والاعتماد" data-en="Signature & approval">التوقيع والاعتماد</div></div>
+  </div>
+
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  let cur = 'ar';
+
+  // enable inline editing on every .edit element
+  document.querySelectorAll('.edit').forEach(el => { el.setAttribute('contenteditable','true'); el.spellcheck = false; });
+
+  // persist per-language edits back into the data-* store so a language switch keeps them
+  document.querySelectorAll('[data-ar].edit').forEach(el => {
+    el.addEventListener('input', () => el.setAttribute('data-' + cur, el.textContent));
+  });
+
+  // ---- totals (with VAT) ----
+  const toInt = el => parseInt((el.textContent || '').replace(/[^\d]/g,''), 10) || 0;
+  const fmt = n => n.toLocaleString('en-US');
+  let vatIncl = false;   // false = prices exclude VAT (added on top); true = prices already include VAT
+  function vatLabel(){
+    $('#vatMode').textContent = (cur === 'ar')
+      ? (vatIncl ? 'الأسعار شاملة الضريبة' : 'الأسعار غير شاملة الضريبة')
+      : (vatIncl ? 'Prices incl. VAT'      : 'Prices excl. VAT');
+  }
+  function recompute(){
+    const license  = toInt($('#licenseAmt'));
+    const discount = toInt($('#discountAmt'));
+    const rate = Math.min(100, Math.max(0, toInt($('#vatRate')))) / 100;
+    let net, vat, grand;
+    if (vatIncl){
+      const pv = Math.round(license / (1 + rate));           // pre-VAT value of the entered price
+      if (discount <= 0){ net = pv; vat = license - pv; grand = license; }
+      else { net = Math.max(0, pv - discount); vat = Math.round(net * rate); grand = net + vat; }
+    } else {
+      net = Math.max(0, license - discount); vat = Math.round(net * rate); grand = net + vat;
+    }
+    const pct = Math.min(100, Math.max(0, toInt($('#pct'))));
+    const up = Math.round(grand * pct / 100);
+    $('#discRow').classList.toggle('zero', discount <= 0);   // hidden on print when 0
+    $('#totNet').textContent  = fmt(net);
+    $('#totVat').textContent  = fmt(vat);
+    $('#totOnce').textContent = fmt(grand);
+    $('#totUp').textContent   = fmt(up);
+    $('#totBal').textContent  = fmt(grand - up);
+  }
+  ['#licenseAmt','#discountAmt','#vatRate','#pct'].forEach(s => $(s).addEventListener('input', recompute));
+  $('#vatMode').addEventListener('click', () => { vatIncl = !vatIncl; vatLabel(); recompute(); });
+
+  // ---- language switch ----
+  function setLang(l){
+    cur = l;
+    document.documentElement.lang = l;
+    document.documentElement.dir  = (l === 'ar') ? 'rtl' : 'ltr';
+    document.querySelectorAll('[data-ar]').forEach(el => {
+      if (el === document.activeElement) return;   // don't clobber a field being edited
+      el.textContent = el.getAttribute('data-' + l);
+    });
+    $('#langBtn').textContent = (l === 'ar') ? 'English' : 'العربية';
+    vatLabel();
+  }
+  $('#langBtn').addEventListener('click', () => setLang(cur === 'ar' ? 'en' : 'ar'));
+
+  // ---- logo: upload, persist across sessions (localStorage), remove ----
+  const LOGO_KEY = 'conductor_offer_logo';
+  const applyLogo = src => { const img = $('#logoImg'); img.src = src; img.hidden = false; };
+  try { const saved = localStorage.getItem(LOGO_KEY); if (saved) applyLogo(saved); } catch (_) {}
+  $('#logoInput').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => { applyLogo(ev.target.result); try { localStorage.setItem(LOGO_KEY, ev.target.result); } catch (_) {} };
+    r.readAsDataURL(f);
+  });
+  $('#logoClear').addEventListener('click', () => {
+    const img = $('#logoImg'); img.hidden = true; img.removeAttribute('src');
+    try { localStorage.removeItem(LOGO_KEY); } catch (_) {}
+  });
+
+  // ---- print → PDF, filename follows customer name + current language ----
+  const cust = $('#cust');
+  function setTitle(){
+    const t = (cur === 'ar') ? 'عرض سعر — ' : 'Quotation — ';
+    document.title = t + (cust.textContent.trim() || 'Conductor');
+  }
+  cust.addEventListener('input', setTitle);
+  $('#printBtn').addEventListener('click', () => { setTitle(); window.print(); });
+
+  // ---- auto dates: quote date = today, valid-until = +14 days ----
+  const pad = n => String(n).padStart(2, '0');
+  const fmtDate = d => `${pad(d.getDate())} / ${pad(d.getMonth() + 1)} / ${d.getFullYear()}`;
+  const today = new Date();
+  $('#qDate').textContent = fmtDate(today);
+  const vUntil = new Date(today); vUntil.setDate(vUntil.getDate() + 14);
+  $('#validDate').textContent = fmtDate(vUntil);
+
+  // ---- company profile: persist phone/email across sessions ----
+  [['#coPhone','conductor_offer_phone'], ['#coEmail','conductor_offer_email']].forEach(([sel, key]) => {
+    const el = $(sel);
+    try { const v = localStorage.getItem(key); if (v) el.textContent = v; } catch (_) {}
+    el.addEventListener('input', () => { try { localStorage.setItem(key, el.textContent); } catch (_) {} });
+  });
+
+  // ---- quote number sequence + new-customer reset ----
+  const SEQ_KEY = 'conductor_offer_seq';
+  const seqStr = s => `${new Date().getFullYear()}-${String(s).padStart(3, '0')}`;
+  let seq = 1;
+  try { seq = parseInt(localStorage.getItem(SEQ_KEY), 10) || 1; } catch (_) {}
+  $('#qNo').textContent = seqStr(seq);
+  $('#newCust').addEventListener('click', () => {
+    seq += 1;
+    try { localStorage.setItem(SEQ_KEY, seq); } catch (_) {}
+    $('#qNo').textContent = seqStr(seq);
+    $('#cust').textContent      = (cur === 'ar') ? '[اسم الشركة / العميل]' : '[Company / Client name]';
+    $('#userCount').textContent = (cur === 'ar') ? '[العدد]' : '[count]';
+    setTitle();
+  });
+
+  vatLabel();
+  recompute();
+</script>
+</body>
+</html>
