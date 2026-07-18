@@ -26,8 +26,10 @@ interface PopoverProps {
 /**
  * A floating panel anchored beneath a trigger. Portalled to <body> with `position: fixed`, so it is
  * never clipped by an `overflow` ancestor (toolbars, table wrappers) and needs no per-call z-index.
- * Closes on Escape, on a click outside, and on scroll/resize (which would otherwise leave it
- * detached from its anchor). Direction-aware: the panel's inline-start edge lines up with the
+ * Closes on Escape, on a click outside, or when an item is picked. On scroll / resize / mobile
+ * keyboard it re-anchors to the trigger rather than closing (a soft keyboard opening fires a
+ * resize — closing there would dismiss the panel the instant the keyboard appears).
+ * Direction-aware: the panel's inline-start edge lines up with the
  * trigger's inline-start edge, so it opens the natural way in both RTL (default) and LTR.
  */
 export function Popover({ open, onClose, anchorRef, children, className, ariaLabel }: PopoverProps) {
@@ -76,28 +78,35 @@ export function Popover({ open, onClose, anchorRef, children, className, ariaLab
       if (target instanceof Element && target.closest(".popover")) return;
       onClose();
     }
-    const onReflow = () => onClose();
-    // Scrolling *inside* the panel (e.g. a long combobox list) must not close it — only scroll
-    // elsewhere on the page, which would leave the panel floating away from its anchor. Scrolls
-    // inside *another* popover layered over this one (a ComboBox list opened inside the date
-    // picker) also count as "inside", since both are portalled siblings under <body>.
+    // Scrolling *inside* the panel (e.g. a long combobox list) leaves it where it is — only a
+    // page scroll re-anchors it to the trigger. Scrolls inside *another* popover layered over this
+    // one (a ComboBox list opened inside the date picker) also count as "inside", since both are
+    // portalled siblings under <body>.
     const onScroll = (e: Event) => {
       const target = e.target as Node;
       if (panelRef.current?.contains(target)) return;
       if (target instanceof Element && target.closest(".popover")) return;
-      onClose();
+      position();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPointer, true);
-    window.addEventListener("resize", onReflow);
+    // Re-anchor on layout changes instead of closing. On mobile the on-screen keyboard fires a
+    // window resize (Android) or shrinks only the visual viewport (iOS) — either would otherwise
+    // dismiss the popover and its autofocused search field the moment the keyboard opens.
+    window.addEventListener("resize", position);
     window.addEventListener("scroll", onScroll, true);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", position);
+    vv?.addEventListener("scroll", position);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointer, true);
-      window.removeEventListener("resize", onReflow);
+      window.removeEventListener("resize", position);
       window.removeEventListener("scroll", onScroll, true);
+      vv?.removeEventListener("resize", position);
+      vv?.removeEventListener("scroll", position);
     };
-  }, [open, onClose, anchorRef]);
+  }, [open, onClose, anchorRef, position]);
 
   if (!open) return null;
 
