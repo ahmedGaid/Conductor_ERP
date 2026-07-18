@@ -94,10 +94,22 @@ _LOOP_SCHEMA = {
 }
 
 
-def _answer_system(actor, page: dict | None, conversation=None) -> str:
+def _answer_system(actor, page: dict | None, conversation=None, question: str = "") -> str:
     # Same envelope + data-answering constraints as the single-shot path; DATA now holds every
-    # round's result rather than one.
-    return context.build_system_prompt(actor, page, conversation) + "\n\n" + _ANSWER_TONE
+    # round's result rather than one. The computed reply-language directive closes it, as in ask.
+    return "\n\n".join((
+        context.build_system_prompt(actor, page, conversation),
+        _ANSWER_TONE,
+        context.answer_language_directive(question),
+    ))
+
+
+def _last_user_text(conversation) -> str:
+    """The most recent thing the user typed — the language signal for turns we generate ourselves."""
+    if conversation is None:
+        return ""
+    message = conversation.messages.filter(role="user").order_by("-created_at").first()
+    return message.content if message else ""
 
 
 def _recent_turns(conversation, exclude_id: int | None) -> list[dict]:
@@ -504,7 +516,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                          "after they fix it you will continue"
                          + (f" ({suggestion['resume']})" if suggestion.get("resume") else "")
                          + ". Do NOT claim anything was created or fixed yet.")
-            answer_system = _answer_system(actor, page, conversation)
+            answer_system = _answer_system(actor, page, conversation, q)
             _t0 = time.monotonic()
             _first = True
             _retrying = {"n": 0}
@@ -648,7 +660,9 @@ def resume_detour(*, actor, conversation, source_message, resolved):
         _retrying = {"n": 0}
         for chunk in complete_stream(
             [{"role": "user", "content": user + "\n\n" + instruction}],
-            system=_answer_system(actor, None, conversation),
+            # A detour has no new question of its own — the reply language follows the last thing
+            # the user actually wrote in this conversation.
+            system=_answer_system(actor, None, conversation, _last_user_text(conversation)),
             on_retry=lambda: _retrying.__setitem__("n", _retrying["n"] + 1),
         ):
             if _retrying["n"]:
