@@ -88,3 +88,29 @@ export interface HelpGuide {
   alerts?: HelpAlert[];
   checklist?: HelpChecklist;
 }
+
+/** One thing that can go wrong on a journey, and its blame-free fix — never "error", always the
+ *  concrete next action ("re-enter the amount", not "invalid input"). */
+export interface JourneyPitfall {
+  problem: L;
+  fix: L;
+}
+
+/** A cross-page, task-based walkthrough for the standalone User Guide (`/help/guide`) — distinct
+ *  from a `HelpGuide`, which is one page's contextual reference. A journey follows the user's goal
+ *  ("create your first invoice") across however many screens that takes, in plain numbered steps. */
+export interface Journey {
+  id: string;
+  title: L;
+  summary: L;
+  steps: L[];
+  pitfalls?: JourneyPitfall[];
+  related?: HelpLink[];
+}
+
+/** One glossary entry. Mirrors Identity System §6.1 one-to-one — the term/definition pair a user
+ *  looks up when they hit unfamiliar Arabic product vocabulary. */
+export interface GlossaryEntry {
+  term: L;
+  desc: L;
+}

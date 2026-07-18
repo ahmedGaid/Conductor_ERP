@@ -25,6 +25,18 @@ export const assistantGuide: HelpGuide = {
   ],
 };
 
+export const userGuideGuide: HelpGuide = {
+  title: { en: "User Guide", ar: "دليل الاستخدام" },
+  purpose: {
+    en: "A task-based walkthrough of the app's core daily flows, plus a glossary of every Arabic product term — works fully offline, no images to rot.",
+    ar: "شرح خطوة بخطوة لأهم مسارات العمل اليومية في التطبيق، مع قاموس لكل مصطلح عربي في المنتج — يعمل بلا اتصال بالإنترنت، وبلا صور قد تتقادم.",
+  },
+  howItWorks: {
+    en: "Pick a journey from the list to see its numbered steps and what can go wrong; pick the glossary entry to look up any term used elsewhere in the app.",
+    ar: "اختر مسارًا من القائمة لترى خطواته المرقّمة وما قد يحدث خطأ فيه؛ اختر المصطلحات لتبحث عن أي كلمة تراها في التطبيق.",
+  },
+};
+
 export const knowledgeGuide: HelpGuide = {
   title: { en: "Knowledge base", ar: "قاعدة المعرفة" },
   purpose: {

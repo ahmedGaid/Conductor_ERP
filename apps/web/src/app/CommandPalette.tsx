@@ -4,13 +4,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { searchEntities } from "../api/core";
 import { useAssistant } from "../assistant/AssistantProvider";
+import { JOURNEYS } from "../help/content/journeys";
+import type { L } from "../help/types";
 import { normalizeSearch } from "../lib/arabicSearch";
 import { getRecents, recordRecent } from "../lib/recents";
 import { usePaletteActionList } from "./PaletteActionsContext";
 import { NavIcon } from "./icons";
 import "./CommandPalette.css";
 
-type Group = "page" | "results" | "recent" | "create" | "go" | "ask";
+type Group = "page" | "results" | "recent" | "create" | "go" | "help" | "ask";
 
 interface Command {
   id: string;
@@ -39,7 +41,8 @@ export function CommandPalette({
   onClose: () => void;
   einvoiceEnabled?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang: keyof L = i18n.language?.startsWith("ar") ? "ar" : "en";
   const navigate = useNavigate();
   const location = useLocation();
   const { enabled: assistantEnabled, openPanelWithMessage } = useAssistant();
@@ -80,8 +83,16 @@ export function CommandPalette({
       { id: "go-general-ledger", label: t("command.generalLedger"), to: "/accounting/general-ledger", group: "go" },
       { id: "go-income", label: t("command.incomeStatement"), to: "/accounting/income-statement", group: "go" },
       { id: "go-balance", label: t("command.balanceSheet"), to: "/accounting/balance-sheet", group: "go" },
+      // User Guide journeys — deep-link straight to the matching page of the standalone guide
+      // (FILE_15 Task C: ⌘K is one of the guide's three reachability roads).
+      ...JOURNEYS.map((j) => ({
+        id: `help-journey-${j.id}`,
+        label: t("command.helpJourney", { title: j.title[lang] }),
+        to: `/help/guide/${j.id}`,
+        group: "help" as const,
+      })),
     ] as Command[]).filter((cmd) => einvoiceEnabled || cmd.id !== "go-einvoice"),
-    [t, einvoiceEnabled],
+    [t, einvoiceEnabled, lang],
   );
 
   // Contextual actions the current page has registered ("Approve", "Confirm", …), surfaced as a
@@ -249,7 +260,9 @@ export function CommandPalette({
           ? t("command.groupCreate")
           : g === "go"
             ? t("command.groupGo")
-            : null; // "ask" renders as a bare final row, no group header
+            : g === "help"
+              ? t("command.groupHelp")
+              : null; // "ask" renders as a bare final row, no group header
 
   // Render order: page actions, live results, recents, create, go, then the AI fallthrough —
   // matching the `flat` sequence so arrow-key navigation flows top-to-bottom across the groups.
@@ -260,6 +273,7 @@ export function CommandPalette({
     { key: "recent", rows: recent },
     { key: "create", rows: visible.filter((c) => c.group === "create" && !recentIds.has(c.id)) },
     { key: "go", rows: visible.filter((c) => c.group === "go" && !recentIds.has(c.id)) },
+    { key: "help", rows: visible.filter((c) => c.group === "help") },
     { key: "ask", rows: askAi ? [askAi] : [] },
   ];
   const sections = allSections.filter((s) => s.rows.length > 0);

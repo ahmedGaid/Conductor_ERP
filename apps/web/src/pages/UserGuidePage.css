@@ -1,0 +1,72 @@
+/* Standalone User Guide (FILE_15) — a two-pane layout: journey/glossary nav + content. Logical
+   properties only so the nav sits on the correct side in both RTL and LTR. */
+
+.userguide-layout {
+  display: grid;
+  grid-template-columns: 15rem 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 44rem) {
+  .userguide-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.userguide-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  position: sticky;
+  inset-block-start: var(--space-4);
+}
+.userguide-nav__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.userguide-nav__item {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  text-align: start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.4;
+}
+.userguide-nav__item:hover {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+}
+.userguide-nav__item--active {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+.userguide-nav__sep {
+  border-block-start: 1px solid var(--color-border);
+  margin-block: var(--space-2);
+}
+
+.userguide-content {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.userguide-content__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+.userguide-content__summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
