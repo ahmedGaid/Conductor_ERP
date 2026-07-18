@@ -1,6 +1,22 @@
 // Shapes mirrored from the Django workflow API (erp/workflow/serializers.py).
 
-export type NodeType = "start" | "api_call" | "approval" | "condition" | "script" | "end";
+export type NodeType =
+  | "start"
+  | "api_call"
+  | "approval"
+  | "assistant_action"
+  | "condition"
+  | "script"
+  | "end";
+
+/** One entry of the assistant action catalog an `assistant_action` node may be pointed at. */
+export interface AssistantActionOption {
+  name: string;
+  description: string;
+  kind: string;
+  risk: string;
+  args: string[];
+}
 
 export type InstanceStatus =
   | "pending"

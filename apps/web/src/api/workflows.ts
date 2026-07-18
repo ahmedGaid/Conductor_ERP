@@ -1,6 +1,7 @@
 // Typed wrappers around the workflow API endpoints.
 import { apiFetch } from "./client";
 import type {
+  AssistantActionOption,
   DashboardMetrics,
   GraphEdge,
   GraphNode,
@@ -20,6 +21,11 @@ export interface GraphPayload {
 
 export function getMetrics(): Promise<DashboardMetrics> {
   return apiFetch<DashboardMetrics>("/workflow/dashboard/metrics");
+}
+
+/** The catalog an assistant-action step may be pointed at (draft actions only, by design). */
+export function listAssistantActions(): Promise<AssistantActionOption[]> {
+  return apiFetch<AssistantActionOption[]>("/workflow/assistant-actions");
 }
 
 export function listWorkflows(): Promise<WorkflowListItem[]> {

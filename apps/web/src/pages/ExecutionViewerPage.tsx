@@ -130,6 +130,10 @@ function RunCard({ run }: { run: NodeRun }) {
         <StatusPill status={run.status} />
       </div>
 
+      {run.node_type === "assistant_action" && run.status === "completed" && (
+        <AssistantStepSummary output={run.output} />
+      )}
+
       {(run.input != null || run.output != null) && (
         <div className="runcard__io">
           {run.input != null && (
@@ -154,6 +158,55 @@ function RunCard({ run }: { run: NodeRun }) {
         </ul>
       )}
     </li>
+  );
+}
+
+interface AssistantStepOutput {
+  action?: string;
+  summary?: string;
+  links?: { type: string; value: string; label: string }[];
+  trace_id?: string;
+}
+
+/**
+ * What the assistant step actually produced, read as a sentence rather than JSON: the draft it
+ * created, the records it links to, and the trace the AI usage page prices. An `output_key` on the
+ * node nests the same shape one level down, so we unwrap that case too.
+ */
+function AssistantStepSummary({ output }: { output: unknown }) {
+  const { t } = useTranslation();
+  if (output == null || typeof output !== "object") return null;
+  const raw = output as Record<string, unknown>;
+  const step: AssistantStepOutput =
+    typeof raw.action === "string"
+      ? (raw as AssistantStepOutput)
+      : ((Object.values(raw).find(
+          (v) => v != null && typeof v === "object" && "action" in (v as object),
+        ) as AssistantStepOutput | undefined) ?? {});
+  if (!step.action) return null;
+
+  return (
+    <div className="runcard__assistant">
+      <p>
+        <span className="muted">{t("instance.assistant.ran")}</span>{" "}
+        <span className="latin">{step.action}</span>
+      </p>
+      {step.summary && <p>{step.summary}</p>}
+      {step.links && step.links.length > 0 && (
+        <ul className="runcard__assistant-links">
+          {step.links.map((link) => (
+            <li key={`${link.type}-${link.value}`}>
+              {link.label} <span className="muted latin">{link.value}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {step.trace_id && (
+        <p className="muted">
+          {t("instance.assistant.trace")} <span className="latin">{step.trace_id}</span>
+        </p>
+      )}
+    </div>
   );
 }
 

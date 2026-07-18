@@ -86,8 +86,8 @@ A2/A3 merge at M1 if ready, else M2 — they never block the gate.
 
 | ID | Task | Agent | Files/modules | Deps | Est | Checkpoint | Status |
 |---|---|---|---|---|---|---|---|
-| A4 | Saved views backend — `TH/FILE_06` | A | erp/core SavedView model+API (**coordinate: B is out of erp/core after B4**) | M1 | 1 | M2 | todo |
-| A5 | Saved views UI — `TH/FILE_07` | A | apps/web list pages, ar/en.json | A4 | 1 | **M2 = TH Tier 1 merge** | todo |
+| A4 | Saved views backend — `TH/FILE_06` | A | erp/core SavedView model+API (**coordinate: B is out of erp/core after B4**) | M1 | 1 | M2 | done(c4c8e0d) |
+| A5 | Saved views UI — `TH/FILE_07` | A | apps/web list pages, ar/en.json | A4 | 1 | **M2 = TH Tier 1 merge** | done(c4c8e0d) |
 | A6 | ⌘K actions — `TH/FILE_08` | A (started ahead of A5 — founder override, palette/registry/role-filter/context-inject already shipped by unified-ui; this session found+fixed a duplicate-action bug across 5 detail pages) | apps/web command menu | A5 | 1 | M3 | done(32c054b) |
 | B5 | Auto-masters — `SI/FILE_08` | B | erp/imports | M1 (queue priority only — may start early if B-lane idles in wave 1) | 1 | M2 | done(849a30f) |
 | B6 | Execution engine — `SI/FILE_09` | B | erp/imports | B5 | 1 | M2 | done(68642c3) |

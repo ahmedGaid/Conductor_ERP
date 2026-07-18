@@ -36,15 +36,29 @@ type WfEdgeData = { condition: unknown | null; ordering: number; [k: string]: un
 type WfNode = Node<WfNodeData>;
 type WfEdge = Edge<WfEdgeData>;
 
-const PALETTE: NodeType[] = ["start", "approval", "condition", "api_call", "script", "end"];
+const PALETTE: NodeType[] = [
+  "start",
+  "approval",
+  "assistant_action",
+  "condition",
+  "api_call",
+  "script",
+  "end",
+];
 
 function edgeId(source: string, target: string, ordering: number): string {
   return `${source}__${target}__${ordering}`;
 }
 
 function nodeLabel(node: GraphNode): string {
-  const label = (node.config as { label?: unknown })?.label;
-  return typeof label === "string" && label ? label : node.key;
+  const config = node.config as { label?: unknown; action?: unknown };
+  if (typeof config?.label === "string" && config.label) return config.label;
+  // An assistant step reads by what it does, with the AI mark carried in the label itself —
+  // custom node-card rendering is a separate canvas decision (see FILE_09).
+  if (node.type === "assistant_action" && typeof config?.action === "string" && config.action) {
+    return `AI · ${config.action}`;
+  }
+  return node.key;
 }
 
 function toRf(nodes: GraphNode[], edges: GraphEdge[]): { nodes: WfNode[]; edges: WfEdge[] } {

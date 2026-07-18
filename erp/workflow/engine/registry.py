@@ -8,6 +8,7 @@ from types import MappingProxyType
 
 from ..executors.api_call import ApiCallExecutor
 from ..executors.approval import ApprovalExecutor
+from ..executors.assistant_action import AssistantActionExecutor
 from ..executors.condition import ConditionExecutor
 from ..executors.end import EndExecutor
 from ..executors.script import ScriptExecutor
@@ -20,6 +21,7 @@ _REGISTRY = MappingProxyType(
         NodeType.START: StartExecutor(),
         NodeType.API_CALL: ApiCallExecutor(),
         NodeType.APPROVAL: ApprovalExecutor(),
+        NodeType.ASSISTANT_ACTION: AssistantActionExecutor(),
         NodeType.CONDITION: ConditionExecutor(),
         NodeType.SCRIPT: ScriptExecutor(),
         NodeType.END: EndExecutor(),
