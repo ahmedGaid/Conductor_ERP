@@ -369,8 +369,15 @@
       "methods": [
         "GET"
       ],
-      "path": "api/audit/history",
-      "view": "RecordHistoryView"
+      "path": "api/assistant/usage",
+      "view": "UsageView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/audit/timeline/",
+      "view": "RecordTimelineView"
     },
     {
       "methods": [
@@ -386,6 +393,28 @@
       ],
       "path": "api/core/branches/<str:code>",
       "view": "BranchDetailView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/core/custom-fields",
+      "view": "CustomFieldDefListCreateView"
+    },
+    {
+      "methods": [
+        "PATCH"
+      ],
+      "path": "api/core/custom-fields/<int:pk>",
+      "view": "CustomFieldDefDetailView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/core/custom-fields/<int:pk>/deactivate",
+      "view": "CustomFieldDefDeactivateView"
     },
     {
       "methods": [
@@ -574,6 +603,28 @@
       ],
       "path": "api/identity/2fa/provision",
       "view": "Provision2FAView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/identity/api-docs",
+      "view": "ApiDocsView"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "api/identity/api-keys",
+      "view": "ApiKeysView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/identity/api-keys/<int:pk>/revoke",
+      "view": "ApiKeyRevokeView"
     },
     {
       "methods": [
@@ -1202,6 +1253,34 @@
     },
     {
       "methods": [
+        "GET"
+      ],
+      "path": "api/purchasing/pending-payments",
+      "view": "PendingPaymentListView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/pending-payments/<uuid:pk>/apply",
+      "view": "PendingPaymentApplyView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/pending-payments/<uuid:pk>/discard",
+      "view": "PendingPaymentDiscardView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/purchasing/pending-payments/<uuid:pk>/match",
+      "view": "PendingPaymentMatchView"
+    },
+    {
+      "methods": [
         "GET",
         "POST"
       ],
@@ -1318,6 +1397,34 @@
     },
     {
       "methods": [
+        "GET"
+      ],
+      "path": "api/sales/pending-payments",
+      "view": "PendingPaymentListView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/pending-payments/<uuid:pk>/apply",
+      "view": "PendingPaymentApplyView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/pending-payments/<uuid:pk>/discard",
+      "view": "PendingPaymentDiscardView"
+    },
+    {
+      "methods": [
+        "POST"
+      ],
+      "path": "api/sales/pending-payments/<uuid:pk>/match",
+      "view": "PendingPaymentMatchView"
+    },
+    {
+      "methods": [
         "GET",
         "POST"
       ],
@@ -1379,6 +1486,20 @@
       ],
       "path": "api/setup/users",
       "view": "SetupInviteUserView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/system/status/",
+      "view": "SystemStatusView"
+    },
+    {
+      "methods": [
+        "GET"
+      ],
+      "path": "api/workflow/assistant-actions",
+      "view": "AssistantActionCatalogView"
     },
     {
       "methods": [
@@ -2518,6 +2639,10 @@
         "required": false,
         "type": "CharField"
       },
+      "custom_data": {
+        "required": false,
+        "type": "JSONField"
+      },
       "id": {
         "required": false,
         "type": "UUIDField"
@@ -2999,6 +3124,12 @@
         "type": "ListSerializer[LineQtySerializer]"
       }
     },
+    "erp.purchasing.api.serializers.MatchPendingPaymentSerializer": {
+      "order_id": {
+        "required": true,
+        "type": "UUIDField"
+      }
+    },
     "erp.purchasing.api.serializers.POCreateSerializer": {
       "currency": {
         "required": false,
@@ -3177,6 +3308,48 @@
         "type": "IntegerField"
       }
     },
+    "erp.purchasing.api.serializers.PendingPaymentSerializer": {
+      "amount_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "batch_ref": {
+        "required": true,
+        "type": "CharField"
+      },
+      "date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "method": {
+        "required": true,
+        "type": "CharField"
+      },
+      "order_id": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "order_number": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "party_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "source": {
+        "required": true,
+        "type": "CharField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
+      }
+    },
     "erp.purchasing.api.serializers.RejectSerializer": {
       "reason": {
         "required": false,
@@ -3316,6 +3489,10 @@
         "required": true,
         "type": "CharField"
       },
+      "custom_data": {
+        "required": false,
+        "type": "JSONField"
+      },
       "id": {
         "required": false,
         "type": "UUIDField"
@@ -3337,6 +3514,10 @@
       "credit_limit_minor": {
         "required": false,
         "type": "IntegerField"
+      },
+      "custom_data": {
+        "required": false,
+        "type": "JSONField"
       },
       "id": {
         "required": false,
@@ -3365,6 +3546,12 @@
       "lines": {
         "required": false,
         "type": "ListSerializer[LineQtySerializer]"
+      }
+    },
+    "erp.sales.api.serializers.MatchPendingPaymentSerializer": {
+      "order_id": {
+        "required": true,
+        "type": "UUIDField"
       }
     },
     "erp.sales.api.serializers.OrderCreateSerializer": {
@@ -3547,6 +3734,48 @@
       "amount": {
         "required": true,
         "type": "IntegerField"
+      }
+    },
+    "erp.sales.api.serializers.PendingPaymentSerializer": {
+      "amount_minor": {
+        "required": true,
+        "type": "IntegerField"
+      },
+      "batch_ref": {
+        "required": true,
+        "type": "CharField"
+      },
+      "date": {
+        "required": true,
+        "type": "DateField"
+      },
+      "id": {
+        "required": false,
+        "type": "UUIDField"
+      },
+      "method": {
+        "required": true,
+        "type": "CharField"
+      },
+      "order_id": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "order_number": {
+        "required": false,
+        "type": "SerializerMethodField"
+      },
+      "party_code": {
+        "required": true,
+        "type": "CharField"
+      },
+      "source": {
+        "required": true,
+        "type": "CharField"
+      },
+      "status": {
+        "required": true,
+        "type": "CharField"
       }
     },
     "erp.sales.api.serializers.QuotationCreateSerializer": {
