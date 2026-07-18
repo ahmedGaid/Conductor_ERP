@@ -70,6 +70,9 @@ class TraceHandle:
         self.error_class = ""
         self.meta: dict = {}
         self.steps: list[dict] = []
+        # Set by _write on exit — lets a call site record which Trace row observed it (the
+        # workflow assistant-action node stores it on the run step so the run links to the trace).
+        self.trace_id: str = ""
         self._start = time.monotonic()
         self._ttft_recorded = False
 
@@ -133,6 +136,8 @@ class TraceHandle:
 
 class _NullHandle:
     """No-op stand-in used when a call site has no ``feature`` (tracing off for that call)."""
+
+    trace_id = ""
 
     def usage(self, **kw):
         pass
@@ -205,6 +210,7 @@ def _write(handle: TraceHandle) -> None:
             latency_ms=latency_ms, cost_microcents=cost, status=handle.status,
             error_class=handle.error_class, meta=meta,
         )
+        handle.trace_id = str(trace.id)
         if handle.steps:
             assistant_models.TraceStep.objects.bulk_create(
                 assistant_models.TraceStep(

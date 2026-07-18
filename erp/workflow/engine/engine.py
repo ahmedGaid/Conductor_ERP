@@ -98,6 +98,10 @@ def _step(instance_id, runtime: dict) -> bool:
 
     external = is_external_write(node)
     effective_runtime = dict(runtime or {})
+    # The run's TRIGGERING actor, for executors that act on someone's behalf (assistant_action).
+    # Never a system superuser: a run started without a user simply has no actor, and any
+    # executor that needs one fails with an actionable message instead of escalating.
+    effective_runtime["actor"] = instance.started_by
     cached = None
     idem_key = None
     if external:

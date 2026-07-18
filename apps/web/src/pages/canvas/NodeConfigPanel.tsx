@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { NodeType } from "../../api/types";
+import { listAssistantActions } from "../../api/workflows";
+import type { AssistantActionOption, NodeType } from "../../api/types";
+import { ComboBox } from "../../components/ComboBox";
 
 export interface SelectedNode {
   kind: "node";
@@ -91,6 +93,12 @@ export function NodeConfigPanel({ selection, onNodeConfigChange, onEdgeChange, o
               onChange={(config) => onNodeConfigChange(selection.key, config)}
             />
           )}
+          {selection.nodeType === "assistant_action" && (
+            <AssistantActionFields
+              config={selection.config}
+              onChange={(config) => onNodeConfigChange(selection.key, config)}
+            />
+          )}
           <label className="canvas__field">
             <span>{t("canvas.config")}</span>
             <textarea
@@ -138,6 +146,105 @@ export function NodeConfigPanel({ selection, onNodeConfigChange, onEdgeChange, o
         </button>
       </div>
     </aside>
+  );
+}
+
+/**
+ * Structured fields for the assistant step: which catalog action runs, and where each of its
+ * inputs comes from. Every input is a template over the run — `{{ ctx.customer }}` reads the
+ * run's context, `{{ in.code }}` reads the previous step's output — so the mapping is written
+ * once by the author and resolved per run.
+ *
+ * The step runs as whoever *starts* the run, with their permissions checked then; the note below
+ * the picker says so, which is why the list itself is not filtered by the author's own roles.
+ */
+function AssistantActionFields({
+  config,
+  onChange,
+}: {
+  config: Record<string, unknown>;
+  onChange: (config: Record<string, unknown>) => void;
+}) {
+  const { t } = useTranslation();
+  const [catalog, setCatalog] = useState<AssistantActionOption[]>([]);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    listAssistantActions()
+      .then((rows) => active && setCatalog(rows))
+      .catch(() => active && setFailed(true));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedName = (config.action as string) ?? "";
+  const options = useMemo(
+    () => catalog.map((a) => ({ value: a.name, label: a.name })),
+    [catalog],
+  );
+  const selected = catalog.find((a) => a.name === selectedName);
+  const inputs = (config.inputs as Record<string, string>) ?? {};
+
+  function setAction(name: string) {
+    // Keep only the mappings the newly chosen action actually takes — a stale input from the
+    // previous action would be silently ignored at run time, which reads as a bug.
+    const next = catalog.find((a) => a.name === name);
+    const kept = Object.fromEntries(
+      Object.entries(inputs).filter(([key]) => next?.args.includes(key)),
+    );
+    onChange({ ...config, action: name, inputs: kept });
+  }
+
+  function setInput(arg: string, value: string) {
+    onChange({ ...config, inputs: { ...inputs, [arg]: value } });
+  }
+
+  return (
+    <>
+      <label className="canvas__field">
+        <span>{t("canvas.assistant.action")}</span>
+        {failed ? (
+          <p className="error-text">{t("canvas.assistant.catalogFailed")}</p>
+        ) : (
+          <ComboBox
+            options={options}
+            value={selectedName}
+            onChange={setAction}
+            placeholder={t("canvas.assistant.actionPlaceholder")}
+            className="latin"
+            aria-label={t("canvas.assistant.action")}
+          />
+        )}
+      </label>
+
+      {selected && <p className="muted canvas__hint">{selected.description}</p>}
+
+      {selected?.args.map((arg) => (
+        <label className="canvas__field" key={arg}>
+          <span className="latin">{arg}</span>
+          <input
+            className="latin"
+            value={inputs[arg] ?? ""}
+            onChange={(e) => setInput(arg, e.target.value)}
+            placeholder={t("canvas.assistant.inputPlaceholder")}
+          />
+        </label>
+      ))}
+
+      <label className="canvas__field">
+        <span>{t("canvas.assistant.outputKey")}</span>
+        <input
+          className="latin"
+          value={(config.output_key as string) ?? ""}
+          onChange={(e) => onChange({ ...config, output_key: e.target.value })}
+          placeholder={t("canvas.assistant.outputKeyPlaceholder")}
+        />
+      </label>
+
+      <p className="muted canvas__hint">{t("canvas.assistant.permissionNote")}</p>
+    </>
   );
 }
 

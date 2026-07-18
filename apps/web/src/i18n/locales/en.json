@@ -654,6 +654,7 @@
     "start": "Start",
     "api_call": "API call",
     "approval": "Approval",
+    "assistant_action": "Assistant step",
     "condition": "Condition",
     "script": "Script",
     "end": "End"
@@ -680,6 +681,15 @@
       "message": "Message",
       "approverRole": "Approver role",
       "approverRolePlaceholder": "e.g. finance_manager — leave empty for any user"
+    },
+    "assistant": {
+      "action": "What this step does",
+      "actionPlaceholder": "Choose an action",
+      "inputPlaceholder": "Fixed text, or {{ ctx.field }} from the run",
+      "outputKey": "Save the result under",
+      "outputKeyPlaceholder": "Leave empty to use the step's own name",
+      "permissionNote": "The step runs as whoever starts the run, with their permissions. It only prepares a draft — a person still approves it.",
+      "catalogFailed": "The action list could not be loaded. Reload the page to try again."
     }
   },
   "instance": {
@@ -697,7 +707,11 @@
     "noRuns": "No execution steps yet.",
     "attempt": "Attempt",
     "input": "Input",
-    "output": "Output"
+    "output": "Output",
+    "assistant": {
+      "ran": "The assistant ran",
+      "trace": "AI trace"
+    }
   },
   "accounting": {
     "toast": {

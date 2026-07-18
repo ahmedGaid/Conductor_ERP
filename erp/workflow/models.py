@@ -32,6 +32,7 @@ class NodeType(models.TextChoices):
     START = "start"
     API_CALL = "api_call"
     APPROVAL = "approval"
+    ASSISTANT_ACTION = "assistant_action"
     CONDITION = "condition"
     SCRIPT = "script"
     END = "end"
@@ -69,7 +70,8 @@ class WorkflowNode(models.Model):
     workflow = models.ForeignKey(Workflow, on_delete=models.CASCADE, related_name="nodes")
     # Stable per-workflow key used in definitions/seeds (e.g. "check_budget").
     key = models.CharField(max_length=64)
-    type = models.CharField(max_length=16, choices=NodeType.choices)
+    # 32, not 16: "assistant_action" is exactly 16 characters — no headroom for the next node type.
+    type = models.CharField(max_length=32, choices=NodeType.choices)
     config = models.JSONField(default=dict)
     position = models.JSONField(default=dict)  # { x, y }
 

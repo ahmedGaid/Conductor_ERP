@@ -654,6 +654,7 @@
     "start": "بداية",
     "api_call": "استدعاء API",
     "approval": "موافقة",
+    "assistant_action": "خطوة المساعد",
     "condition": "شرط",
     "script": "سكربت",
     "end": "نهاية"
@@ -680,6 +681,15 @@
       "message": "الرسالة",
       "approverRole": "دور المعتمِد",
       "approverRolePlaceholder": "مثال: finance_manager — اتركه فارغًا لأي مستخدم"
+    },
+    "assistant": {
+      "action": "ما تفعله هذه الخطوة",
+      "actionPlaceholder": "اختر إجراءً",
+      "inputPlaceholder": "نص ثابت، أو ‎{{ ctx.field }}‎ من التشغيل",
+      "outputKey": "احفظ النتيجة باسم",
+      "outputKeyPlaceholder": "اتركه فارغًا لاستخدام اسم الخطوة",
+      "permissionNote": "تعمل الخطوة باسم من يبدأ التشغيل وبصلاحياته. تُجهّز مسودة فقط — تبقى الموافقة بيد إنسان.",
+      "catalogFailed": "تعذّر تحميل قائمة الإجراءات. أعد تحميل الصفحة للمحاولة."
     }
   },
   "instance": {
@@ -697,7 +707,11 @@
     "noRuns": "لا توجد خطوات تنفيذ بعد.",
     "attempt": "محاولة",
     "input": "المدخلات",
-    "output": "المخرجات"
+    "output": "المخرجات",
+    "assistant": {
+      "ran": "شغّل المساعد",
+      "trace": "أثر الذكاء الاصطناعي"
+    }
   },
   "accounting": {
     "toast": {
