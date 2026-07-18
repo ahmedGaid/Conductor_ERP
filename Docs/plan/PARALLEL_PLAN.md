@@ -195,7 +195,15 @@ conclusion reached twice in parallel (all 5 tasks pre-existing from the 2026-07-
 commits 945f9ee/46010f1/84264a8/8e10b08/c446a9a/97af941/03f0216, re-verified 2026-07-16 and again
 here: 31 scope/egress/auth + 7 pricing import tests green, `check --deploy` clean, zero code
 changes). Merged `origin/main` into `feat/sec-hardening`, folded the result into the B18 row
-above instead of leaving two write-ups.
+above instead of leaving two write-ups. Pushed straight to `origin/main`.
+
+**Gate17 snapshot was stale (2026-07-18, same session):** post-merge `gate:all` sanity pass found
+`api_schema.json` hadn't been regenerated since `91da71a` — flagged `api/audit/history`'s
+intentional replacement by `api/audit/timeline/` (TH FILE_13) as a false-positive break, and was
+silently missing every route added since (custom fields, API keys, system status, AI usage,
+pending payments/stock). Regenerated and committed (`98c8878`) — gate maintenance is B's
+territory per the ownership map above. Gates 00–02, 04–17 all green on the merged tip; gate03
+still red on the known pre-existing bundle-budget regression (253.2 kB gzip, A's territory).
 
 **A7 pushed straight to `origin/main`** (2026-07-18, founder asked to see it on main): `feat/b-lane`
 was a clean 1-commit fast-forward ahead of `origin/main`, so B pushed
