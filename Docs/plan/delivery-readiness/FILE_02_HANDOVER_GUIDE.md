@@ -71,3 +71,9 @@ English from the command bar (⌘K) at the top.
 ### Security note
 Never share the admin password. Every staff member should have their own account scoped to their
 role.
+
+---
+
+*Internal (not customer-facing): gate-suite proof for this handover package —
+[`gate-runs/gate-all-2026-07-19.log`](gate-runs/gate-all-2026-07-19.log) (all gates 00–17 PASSED,
+i18n parity 2033 keys, `tsc -b` clean).*

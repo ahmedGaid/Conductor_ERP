@@ -1,0 +1,32 @@
+﻿GATE 00 PASSED
+identity seeded: roles, HQ branch, admin user, role permissions
+GATE 01 PASSED
+GATE 02 PASSED
+GATE 03 PASSED
+GATE 04 PASSED
+GATE 05 PASSED
+GATE 06 PASSED
+GATE 07 PASSED
+GATE 08 PASSED
+GATE 09 PASSED
+GATE 10 PASSED
+GATE 11 PASSED
+GATE 12 PASSED
+GATE 13 PASSED
+GATE 14 PASSED
+GATE 15 eval smoke: 117/147 pass (79.6%), threshold 69.3% (baseline 74.3% - 5%)
+GATE 15 PASSED
+GATE 16: upgrade drill OK � row counts {'sales_customer': 3, 'inventory_item': 3, 'sales_order': 7}
+GATE 16 PASSED
+GATE 17: 3 new route(s) (non-breaking): ['api/dashboard/confidence/', 'api/dashboard/milestones/', 'api/dashboard/milestones/<str:key>/dismiss/']
+GATE 17: API schema check OK
+GATE 17 PASSED
+
+GATE SUITE EXIT: 0
+
+=== apps/web checks ===
+i18n parity OK — 2033 keys present in all 2 locales (ar, en).
+
+i18n parity exit: 0
+
+tsc -b exit: 0

@@ -305,3 +305,70 @@ export const notificationsGuide: HelpGuide = {
     { to: "/crm/tickets", label: { en: "Support tickets", ar: "تذاكر الدعم" } },
   ],
 };
+
+export const customFieldsGuide: HelpGuide = {
+  title: { en: "Custom fields", ar: "الحقول المخصّصة" },
+  purpose: {
+    en: "Add your own fields to customers, items, or suppliers — they show up on the form, the table, and the record page without any code change.",
+    ar: "أضف حقولك الخاصة للعملاء أو الأصناف أو الموردين — تظهر في النموذج والجدول وصفحة السجلّ دون أي تعديل برمجي.",
+  },
+  howItWorks: {
+    en: "Only a System Admin can add or edit custom fields. Pick the entity, give the field a key and a bilingual label, choose its type, then save — it appears immediately on that entity's form and table. Deactivating a field hides it from new entries but keeps the values already saved on existing records.",
+    ar: "فقط مسؤول النظام يمكنه إضافة أو تعديل الحقول المخصّصة. اختر الكيان، أعطِ الحقل مفتاحاً وتسمية بلغتين، اختر نوعه، ثم احفظ — يظهر فوراً في نموذج وجدول ذلك الكيان. تعطيل حقل يخفيه عن الإدخالات الجديدة لكنه يبقي القيم المحفوظة على السجلات الحالية.",
+  },
+  sections: [
+    {
+      heading: { en: "Field types", ar: "أنواع الحقول" },
+      items: [
+        { term: { en: "Text / Number / Date", ar: "نص / رقم / تاريخ" }, desc: { en: "Free-entry values of that type.", ar: "قيم حرة من ذلك النوع." } },
+        { term: { en: "Choice", ar: "اختيار" }, desc: { en: "A fixed list of options you define.", ar: "قائمة ثابتة من الخيارات تحددها." } },
+        { term: { en: "Money", ar: "مبلغ مالي" }, desc: { en: "A currency amount, formatted like any other money field.", ar: "مبلغ مالي، منسّق كأي حقل مالي آخر." } },
+      ],
+    },
+  ],
+  tasks: [
+    {
+      name: { en: "Add a field", ar: "أضف حقلاً" },
+      steps: [
+        { en: "Choose the entity (Customers, Items, or Suppliers).", ar: "اختر الكيان (عملاء، أصناف، أو موردون)." },
+        { en: "Enter a key, both labels, and pick a type, then click 'Add field'.", ar: "أدخل مفتاحاً وكلا التسميتين واختر النوع، ثم انقر 'إضافة حقل'." },
+      ],
+    },
+  ],
+  related: [
+    { to: "/settings/developers", label: { en: "Developers", ar: "المطوّرون" } },
+  ],
+};
+
+export const developersGuide: HelpGuide = {
+  title: { en: "Developers", ar: "المطوّرون" },
+  purpose: {
+    en: "Create role-bound API keys for integrations, and browse a truthful reference of every route a key can reach.",
+    ar: "أنشئ مفاتيح API مرتبطة بدور للتكاملات، وتصفّح مرجعاً دقيقاً لكل مسار يمكن لمفتاح الوصول إليه.",
+  },
+  howItWorks: {
+    en: "Only a System Admin can manage API keys. A key authenticates as the role it's bound to — nothing more. The secret is shown once at creation; copy it immediately, it can't be retrieved again. Revoking a key is immediate and permanent — anything using it starts getting 401 Unauthorized right away.",
+    ar: "فقط مسؤول النظام يمكنه إدارة مفاتيح API. يوثّق المفتاح باسم الدور المرتبط به فقط. يُعرض السر مرة واحدة عند الإنشاء — انسخه فوراً، فلا يمكن استرجاعه لاحقاً. إلغاء مفتاح فوري ودائم — كل ما يستخدمه يبدأ بتلقي خطأ 401 غير مصرح فوراً.",
+  },
+  tasks: [
+    {
+      name: { en: "Create a key", ar: "أنشئ مفتاحاً" },
+      steps: [
+        { en: "Click 'Create key', name it, and choose the role it authenticates as.", ar: "انقر 'إنشاء مفتاح'، سمِّه، واختر الدور الذي يوثّق باسمه." },
+        { en: "Copy the secret shown — it won't be shown again.", ar: "انسخ السر المعروض — لن يظهر مرة أخرى." },
+      ],
+    },
+    {
+      name: { en: "Revoke a key", ar: "ألغِ مفتاحاً" },
+      steps: [
+        { en: "Click 'Revoke' on the row and confirm.", ar: "انقر 'إلغاء' في الصف وأكّد." },
+      ],
+    },
+  ],
+  mistakes: [
+    { en: "Lost the secret and didn't copy it? There's no way to recover it — revoke the key and create a new one.", ar: "فقدت السر ولم تنسخه؟ لا سبيل لاسترجاعه — ألغِ المفتاح وأنشئ آخر." },
+  ],
+  related: [
+    { to: "/settings/custom-fields", label: { en: "Custom fields", ar: "الحقول المخصّصة" } },
+  ],
+};

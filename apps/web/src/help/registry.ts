@@ -11,7 +11,9 @@ import { matchPath } from "react-router-dom";
 import type { HelpGuide } from "./types";
 import {
   assistantGuide,
+  customFieldsGuide,
   dashboardGuide,
+  developersGuide,
   einvoiceGuide,
   entityLinkGuide,
   executionViewerGuide,
@@ -174,6 +176,8 @@ export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/settings/organization": settingsOrganizationGuide,
   "/settings/branches": settingsBranchesGuide,
   "/settings/webhooks": settingsWebhooksGuide,
+  "/settings/custom-fields": customFieldsGuide,
+  "/settings/developers": developersGuide,
   "/admin/users": usersGuide,
   "/admin/users/:id": userDetailGuide,
   "/admin/roles": rolesGuide,
