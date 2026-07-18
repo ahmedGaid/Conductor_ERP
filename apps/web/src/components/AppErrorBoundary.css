@@ -1,0 +1,43 @@
+.app-error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding-block: var(--space-8);
+  padding-inline: var(--space-5);
+  min-block-size: 100vh;
+  justify-content: center;
+}
+
+.app-error-boundary__icon {
+  display: grid;
+  place-items: center;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-subtle);
+}
+
+.app-error-boundary__icon svg {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.app-error-boundary__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.app-error-boundary__hint {
+  margin: 0;
+  max-inline-size: 28rem;
+  color: var(--color-text-muted);
+}
+
+.app-error-boundary__action {
+  margin-block-start: var(--space-2);
+}

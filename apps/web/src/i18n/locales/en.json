@@ -2358,6 +2358,11 @@
     "selectRow": "Select row",
     "exportCsv": "Export CSV"
   },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "hint": "This page hit a snag. Reloading usually fixes it.",
+    "reload": "Reload page"
+  },
   "feedback": {
     "relatedLabel": "Related records",
     "fact": {

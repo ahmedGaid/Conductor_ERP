@@ -2358,6 +2358,11 @@
     "selectRow": "تحديد الصف",
     "exportCsv": "تصدير CSV"
   },
+  "errorBoundary": {
+    "title": "حدث خطأ ما",
+    "hint": "واجهت هذه الصفحة مشكلة. عادةً تحل إعادة التحميل الأمر.",
+    "reload": "إعادة تحميل الصفحة"
+  },
   "feedback": {
     "relatedLabel": "سجلات ذات صلة",
     "fact": {

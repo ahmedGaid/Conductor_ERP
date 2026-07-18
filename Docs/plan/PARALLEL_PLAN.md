@@ -49,6 +49,44 @@ so B can run `tsc -b`/gate03 there.
 - Reversion: if B's queue empties again or founder says otherwise, ownership map row above
   resumes as written.
 
+### ⚠️ Founder override (2026-07-18, evening) — B is now PRIMARY lane for the QA-audit plans
+
+Reason: **A hits its usage limit sooner than B.** Founder wants the four new QA-audit plans
+(`pre-handover-hardening`, `einvoice-eta-live`, `post-handover-v1_1`, `brand-philosophy-review`)
+carried by **B**, so work continues after A is spent. This SUPERSEDES both rows above for these
+plans until reversed.
+
+**Handoff precondition (do FIRST, before B takes apps/web work):** A commits + pushes any in-flight
+`apps/web` work and tells B; B `git pull` in its worktree so it owns a clean frontend base. While A
+still has budget it does only interrupts/bugs; once A is spent, **B is solo on everything**. The
+A-only locale-key rule is LIFTED for these plans — B owns `ar.json`/`en.json` edits here (no
+concurrent A editing them). HARD STOPS unchanged: B stays in `C:\AhmedGaid\ERP-B` on `feat/b-*`,
+never in A's checkout.
+
+**Assignments (all → B unless noted):**
+
+| Task (= plan file) | Agent | Files | Status / note |
+|---|---|---|---|
+| pre-handover-hardening FILE_01 ETA decision | A | DECISIONS.md | done 2026-07-18 (Branch A) |
+| pre-handover-hardening FILE_02 CI safety net | A | `.github/workflows/ci.yml` | done 2026-07-18 (main red = bundle-size, see below) |
+| **bundle-size fix** (blocks CI green) | ~~B~~ **A** | `apps/web` route-split/lazy-import | done 2026-07-18 by A (user-directed session) — main chunk 260.7kB → 203.4kB gzip, gate03 green |
+| pre-handover-hardening FILE_03 error boundary | ~~B~~ **A** | `apps/web` + ar/en.json | done 2026-07-18 by A — B: `git pull` before continuing to FILE_04 |
+| pre-handover-hardening FILE_04 gate-run artifact | **B** | run gates, save log | needs green gate03 first |
+| pre-handover-hardening FILE_05 LICENSE+terms | **B** | root `LICENSE`, README, pyproject | founder picks license (FILE_05 asks) |
+| pre-handover-hardening FILE_06 loose ends | **B** coord | DB user delete = B; canvas smoke + partial-pay Q = **human/founder** (not an agent task) | |
+| einvoice-eta-live FILE_01→05 | **B** | `erp/einvoice/**` (B's native territory) | ⛔ STOP-gated: needs customer ETA creds + tax profile before FILE_01 there starts |
+| post-handover-v1_1 FILE_01→05 | **B** | CI/backend + one `apps/web` (FILE_04 Vitest) | after handover; FILE_04 needs new-dep OK (Vitest) — ask founder |
+| brand-philosophy-review sessions A→H | **B** | read-only UI review; appends to `scorecard.html` + findings | low conflict (no product-code edits in the review pass) |
+
+**A keeps:** live interrupts/bugs, `erp/workflow`+`erp/webhooks` first-refusal (cross-territory
+rule holds), and the paused dynamic-help rollout (H) only if A has spare budget. Otherwise A idles.
+
+**Anti-conflict:** since A is winding down, B being sole owner of `apps/web` removes the concurrent-
+edit risk entirely — the split above is about SEQUENCING B's own sessions (one FILE per session),
+not about A/B contention. B still `git pull` before each session in case A pushed an interrupt fix.
+
+**Reversion:** founder says so, or A's budget refreshes and founder rebalances.
+
 **Resume command:** `/erp-resume` is lane-aware (skill step 0): checkout path decides —
 `C:\AhmedGaid\ERP` → Agent A, `C:\AhmedGaid\ERP-B` → Agent B (email tie-break: ahmedgaid14 → A,
 ahmedgaid85 → B). So Claude Desktop opened at ERP resumes lane A; VS Code opened at ERP-B resumes

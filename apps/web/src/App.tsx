@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { AppShell } from "./app/AppShell";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { PeekProvider } from "./components/PeekCard";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { PreferencesProvider, usePreferences } from "./preferences/PreferencesContext";
@@ -10,57 +11,7 @@ import { useAsync } from "./hooks/useAsync";
 import { ListSkeleton } from "./components/ListSkeleton";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
-import { WorkflowListPage } from "./pages/WorkflowListPage";
-import { ExecutionViewerPage } from "./pages/ExecutionViewerPage";
-import { ChartOfAccountsPage } from "./pages/accounting/ChartOfAccountsPage";
-import { JournalListPage } from "./pages/accounting/JournalListPage";
-import { JournalEntryPage } from "./pages/accounting/JournalEntryPage";
-import { JournalDetailPage } from "./pages/accounting/JournalDetailPage";
-import { TrialBalancePage } from "./pages/accounting/TrialBalancePage";
-import { GeneralLedgerPage } from "./pages/accounting/GeneralLedgerPage";
-import { IncomeStatementPage } from "./pages/accounting/IncomeStatementPage";
-import { BalanceSheetPage } from "./pages/accounting/BalanceSheetPage";
-import { CashFlowStatementPage } from "./pages/accounting/CashFlowStatementPage";
-import { VatReturnPage } from "./pages/accounting/VatReturnPage";
-import { FixedAssetsPage } from "./pages/accounting/FixedAssetsPage";
-import { FixedAssetDetailPage } from "./pages/accounting/FixedAssetDetailPage";
-import { CostCentersPage } from "./pages/accounting/CostCentersPage";
-import { BankReconciliationPage } from "./pages/accounting/BankReconciliationPage";
-import { BankStatementDetailPage } from "./pages/accounting/BankStatementDetailPage";
-import { BudgetsPage } from "./pages/accounting/BudgetsPage";
-import { BudgetDetailPage } from "./pages/accounting/BudgetDetailPage";
-import { EInvoicesPage } from "./pages/einvoice/EInvoicesPage";
-import { NotificationsPage } from "./pages/notifications/NotificationsPage";
-import { StockOnHandPage } from "./pages/inventory/StockOnHandPage";
-import { ItemsPage } from "./pages/inventory/ItemsPage";
-import { ItemDetailPage } from "./pages/inventory/ItemDetailPage";
-import { WarehousesPage } from "./pages/inventory/WarehousesPage";
-import { WarehouseDetailPage } from "./pages/inventory/WarehouseDetailPage";
 import { ResolveRedirect } from "./app/ResolveRedirect";
-import { PriceListsPage } from "./pages/pricing/PriceListsPage";
-import { PriceListDetailPage } from "./pages/pricing/PriceListDetailPage";
-import { CustomerPricingPage } from "./pages/pricing/CustomerPricingPage";
-import { StockMovementPage } from "./pages/inventory/StockMovementPage";
-import { StockCountsPage } from "./pages/inventory/StockCountsPage";
-import { StockCountDetailPage } from "./pages/inventory/StockCountDetailPage";
-import { BatchesPage } from "./pages/inventory/BatchesPage";
-import { OrdersPage } from "./pages/sales/OrdersPage";
-import { NewOrderPage } from "./pages/sales/NewOrderPage";
-import { OrderDetailPage } from "./pages/sales/OrderDetailPage";
-import { CustomersPage } from "./pages/sales/CustomersPage";
-import { CustomerDetailPage } from "./pages/sales/CustomerDetailPage";
-import { QuotationsPage } from "./pages/sales/QuotationsPage";
-import { NewQuotationPage } from "./pages/sales/NewQuotationPage";
-import { QuotationDetailPage } from "./pages/sales/QuotationDetailPage";
-import { PurchaseOrdersPage } from "./pages/purchasing/PurchaseOrdersPage";
-import { NewPurchaseOrderPage } from "./pages/purchasing/NewPurchaseOrderPage";
-import { ImportInvoicePage } from "./pages/purchasing/ImportInvoicePage";
-import { PurchaseOrderDetailPage } from "./pages/purchasing/PurchaseOrderDetailPage";
-import { SuppliersPage } from "./pages/purchasing/SuppliersPage";
-import { SupplierDetailPage } from "./pages/purchasing/SupplierDetailPage";
-import { PurchaseRequestsPage } from "./pages/purchasing/PurchaseRequestsPage";
-import { NewPurchaseRequestPage } from "./pages/purchasing/NewPurchaseRequestPage";
-import { PurchaseRequestDetailPage } from "./pages/purchasing/PurchaseRequestDetailPage";
 import type { ReactNode } from "react";
 
 // Heavy or rarely-visited screens load on demand so the main chunk stays inside the bundle
@@ -112,6 +63,97 @@ const CampaignsPage = lazyPage(() => import("./pages/crm/CampaignsPage"), "Campa
 const CampaignDetailPage = lazyPage(
   () => import("./pages/crm/CampaignDetailPage"), "CampaignDetailPage");
 const UserGuidePage = lazyPage(() => import("./pages/UserGuidePage"), "UserGuidePage");
+const WorkflowListPage = lazyPage(() => import("./pages/WorkflowListPage"), "WorkflowListPage");
+const ExecutionViewerPage = lazyPage(
+  () => import("./pages/ExecutionViewerPage"), "ExecutionViewerPage");
+const ChartOfAccountsPage = lazyPage(
+  () => import("./pages/accounting/ChartOfAccountsPage"), "ChartOfAccountsPage");
+const JournalListPage = lazyPage(
+  () => import("./pages/accounting/JournalListPage"), "JournalListPage");
+const JournalEntryPage = lazyPage(
+  () => import("./pages/accounting/JournalEntryPage"), "JournalEntryPage");
+const JournalDetailPage = lazyPage(
+  () => import("./pages/accounting/JournalDetailPage"), "JournalDetailPage");
+const TrialBalancePage = lazyPage(
+  () => import("./pages/accounting/TrialBalancePage"), "TrialBalancePage");
+const GeneralLedgerPage = lazyPage(
+  () => import("./pages/accounting/GeneralLedgerPage"), "GeneralLedgerPage");
+const IncomeStatementPage = lazyPage(
+  () => import("./pages/accounting/IncomeStatementPage"), "IncomeStatementPage");
+const BalanceSheetPage = lazyPage(
+  () => import("./pages/accounting/BalanceSheetPage"), "BalanceSheetPage");
+const CashFlowStatementPage = lazyPage(
+  () => import("./pages/accounting/CashFlowStatementPage"), "CashFlowStatementPage");
+const VatReturnPage = lazyPage(
+  () => import("./pages/accounting/VatReturnPage"), "VatReturnPage");
+const FixedAssetsPage = lazyPage(
+  () => import("./pages/accounting/FixedAssetsPage"), "FixedAssetsPage");
+const FixedAssetDetailPage = lazyPage(
+  () => import("./pages/accounting/FixedAssetDetailPage"), "FixedAssetDetailPage");
+const CostCentersPage = lazyPage(
+  () => import("./pages/accounting/CostCentersPage"), "CostCentersPage");
+const BankReconciliationPage = lazyPage(
+  () => import("./pages/accounting/BankReconciliationPage"), "BankReconciliationPage");
+const BankStatementDetailPage = lazyPage(
+  () => import("./pages/accounting/BankStatementDetailPage"), "BankStatementDetailPage");
+const BudgetsPage = lazyPage(() => import("./pages/accounting/BudgetsPage"), "BudgetsPage");
+const BudgetDetailPage = lazyPage(
+  () => import("./pages/accounting/BudgetDetailPage"), "BudgetDetailPage");
+const EInvoicesPage = lazyPage(() => import("./pages/einvoice/EInvoicesPage"), "EInvoicesPage");
+const NotificationsPage = lazyPage(
+  () => import("./pages/notifications/NotificationsPage"), "NotificationsPage");
+const StockOnHandPage = lazyPage(
+  () => import("./pages/inventory/StockOnHandPage"), "StockOnHandPage");
+const ItemsPage = lazyPage(() => import("./pages/inventory/ItemsPage"), "ItemsPage");
+const ItemDetailPage = lazyPage(
+  () => import("./pages/inventory/ItemDetailPage"), "ItemDetailPage");
+const WarehousesPage = lazyPage(
+  () => import("./pages/inventory/WarehousesPage"), "WarehousesPage");
+const WarehouseDetailPage = lazyPage(
+  () => import("./pages/inventory/WarehouseDetailPage"), "WarehouseDetailPage");
+const PriceListsPage = lazyPage(() => import("./pages/pricing/PriceListsPage"), "PriceListsPage");
+const PriceListDetailPage = lazyPage(
+  () => import("./pages/pricing/PriceListDetailPage"), "PriceListDetailPage");
+const CustomerPricingPage = lazyPage(
+  () => import("./pages/pricing/CustomerPricingPage"), "CustomerPricingPage");
+const StockMovementPage = lazyPage(
+  () => import("./pages/inventory/StockMovementPage"), "StockMovementPage");
+const StockCountsPage = lazyPage(
+  () => import("./pages/inventory/StockCountsPage"), "StockCountsPage");
+const StockCountDetailPage = lazyPage(
+  () => import("./pages/inventory/StockCountDetailPage"), "StockCountDetailPage");
+const BatchesPage = lazyPage(() => import("./pages/inventory/BatchesPage"), "BatchesPage");
+const OrdersPage = lazyPage(() => import("./pages/sales/OrdersPage"), "OrdersPage");
+const NewOrderPage = lazyPage(() => import("./pages/sales/NewOrderPage"), "NewOrderPage");
+const OrderDetailPage = lazyPage(
+  () => import("./pages/sales/OrderDetailPage"), "OrderDetailPage");
+const CustomersPage = lazyPage(() => import("./pages/sales/CustomersPage"), "CustomersPage");
+const CustomerDetailPage = lazyPage(
+  () => import("./pages/sales/CustomerDetailPage"), "CustomerDetailPage");
+const QuotationsPage = lazyPage(
+  () => import("./pages/sales/QuotationsPage"), "QuotationsPage");
+const NewQuotationPage = lazyPage(
+  () => import("./pages/sales/NewQuotationPage"), "NewQuotationPage");
+const QuotationDetailPage = lazyPage(
+  () => import("./pages/sales/QuotationDetailPage"), "QuotationDetailPage");
+const PurchaseOrdersPage = lazyPage(
+  () => import("./pages/purchasing/PurchaseOrdersPage"), "PurchaseOrdersPage");
+const NewPurchaseOrderPage = lazyPage(
+  () => import("./pages/purchasing/NewPurchaseOrderPage"), "NewPurchaseOrderPage");
+const ImportInvoicePage = lazyPage(
+  () => import("./pages/purchasing/ImportInvoicePage"), "ImportInvoicePage");
+const PurchaseOrderDetailPage = lazyPage(
+  () => import("./pages/purchasing/PurchaseOrderDetailPage"), "PurchaseOrderDetailPage");
+const SuppliersPage = lazyPage(
+  () => import("./pages/purchasing/SuppliersPage"), "SuppliersPage");
+const SupplierDetailPage = lazyPage(
+  () => import("./pages/purchasing/SupplierDetailPage"), "SupplierDetailPage");
+const PurchaseRequestsPage = lazyPage(
+  () => import("./pages/purchasing/PurchaseRequestsPage"), "PurchaseRequestsPage");
+const NewPurchaseRequestPage = lazyPage(
+  () => import("./pages/purchasing/NewPurchaseRequestPage"), "NewPurchaseRequestPage");
+const PurchaseRequestDetailPage = lazyPage(
+  () => import("./pages/purchasing/PurchaseRequestDetailPage"), "PurchaseRequestDetailPage");
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, restoring } = useAuth();
@@ -274,13 +316,15 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/*" element={<Protected />} />
-        </Routes>
-      </HashRouter>
-    </AuthProvider>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/*" element={<Protected />} />
+          </Routes>
+        </HashRouter>
+      </AuthProvider>
+    </AppErrorBoundary>
   );
 }
