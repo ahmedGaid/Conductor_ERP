@@ -14,6 +14,6 @@
     }
   ],
   "stream_responses": [
-    "Customer profile\n- Code: CUS-0301\n- Name: Rahma Store\n- Outstanding balance: 2,200.00 EGP\n\nRecent orders\n- SO-2026-0900 (500.00 EGP)"
+    "Customer profile for Rahma Store:\n\n- Code: CUS-0301\n- Name: Rahma Store\n- Outstanding balance: 2,200.00 EGP\n\nRecent orders:\n- SO-2026-0900 (500.00 EGP)"
   ]
 }

@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "لم يتم تقديم سبب توقف سير الموافقة في السجلات. الخطوة الحالية هي مراجعة المدير منذ 2026-07-06 09:00. قد يكون السبب عدم الموافقة أو عدم استكمال الخطوات السابقة وفقاً للسياسات. نحتاج إلى مراجعة سجلات المدير أو سياسة الموافقة وفقاً لمستند سياسة الموافقة على أوامر الشراء."
+      "answer": "The workflow instance WF-0091 for purchase order PO-2026-0044 is currently waiting for approval at the manager review step. The last recorded action was the manager review initiated on 2026-07-06 at 09:00:00. No further progress has been recorded since then."
     }
   ],
   "stream_responses": []

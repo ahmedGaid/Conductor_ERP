@@ -2,37 +2,26 @@
   "json_responses": [
     {
       "action": "tool",
-      "why": "بحث عن أمر شراء وحالة الأصناف",
+      "why": "بحث حالة أمر شراء",
       "intent": "lookup",
-      "tool": "query_data",
-      "entity": "purchase_order",
-      "filters": [
-        {
-          "field": "number",
-          "op": "eq",
-          "value": "PO-2026-0022"
-        }
-      ],
-      "group_by": [],
-      "aggregate": "list",
-      "metric": null,
+      "tool": "open_purchase_orders",
+      "query": "PO-2026-0022",
       "limit": 1
     },
     {
       "action": "tool",
-      "why": "التحقق من وجود أمر الشراء",
+      "why": "بحث أصناف منخفضة المخزون",
       "intent": "lookup",
-      "tool": "find_orders",
-      "query": "PO-2026-0022"
+      "tool": "low_stock",
+      "limit": 20
     },
     {
-      "action": "suggest",
-      "why": "لم يتم العثور على أمر الشراء",
-      "resume": "سأقوم بفتح طلب شراء جديد إذا رغبتم بذلك",
+      "action": "answer",
+      "why": "الإجابة الكاملة للسؤال",
       "intent": "lookup"
     }
   ],
   "stream_responses": [
-    "Conductor لا يملك بيانات لأمر شراء برقم PO-2026-0022."
+    "حالة أمر الشراء **PO-2026-0022** هي **\"تم الاستلام\"** (subtotal: 3,000.00 EGP، pending: 1,000.00 EGP).\n\nأصناف أمر الشراء:\n- لا يوجد أصناف تابعة لأمر الشراء **PO-2026-0022** منخفضة المخزون في السجل الحالي.\n\nأصناف منخفضة المخزون (خارج أمر الشراء):\n- **علب كرتون** (ITM-0031): 3 وحدات متوفرة (نقطة إعادة الطلب 15 وحدة)."
   ]
 }

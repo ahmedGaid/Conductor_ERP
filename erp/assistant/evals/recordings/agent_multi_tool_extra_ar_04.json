@@ -2,25 +2,46 @@
   "json_responses": [
     {
       "action": "tool",
+      "why": "بحث عن صنف زيت الطهي",
       "intent": "lookup",
-      "tool": "stock_on_hand",
-      "why": "Checking item stock",
-      "query": "زيت الطهي"
+      "tool": "query_data",
+      "entity": "item",
+      "filters": [
+        {
+          "field": "name",
+          "op": "contains",
+          "value": "زيت الطهي"
+        }
+      ],
+      "group_by": [],
+      "aggregate": null,
+      "metric": null,
+      "limit": 1
     },
     {
       "action": "tool",
-      "tool": "stock_movements",
-      "why": "Retrieving recent stock movements",
-      "query": "زيت طهي 1 لتر",
-      "limit": 10
+      "why": "البحث عن صنف زيت الطهي في المخزون",
+      "intent": "lookup",
+      "tool": "query_data",
+      "entity": "item",
+      "filters": [
+        {
+          "field": "name",
+          "op": "contains",
+          "value": "زيت الطهي"
+        }
+      ],
+      "group_by": null,
+      "aggregate": null,
+      "metric": null,
+      "limit": 20
     },
     {
-      "action": "answer",
-      "intent": "mixed",
-      "why": "Stock check and movements retrieved"
+      "action": "clarify",
+      "why": "لم يتم العثور على صنف زيت الطهي",
+      "question": "ما هو الكود أو الاسم الدقيق للصنف الذي تبحث عنه؟",
+      "intent": "lookup"
     }
   ],
-  "stream_responses": [
-    "المخزون الحالي لصنف زيت الطهي: 18 وحدة، بقيمة 540.00 EGP. آخر حركة مسجلة لصنف زيت الطهي كانت استلام 20 وحدة في 2026-07-01T10:00:00."
-  ]
+  "stream_responses": []
 }

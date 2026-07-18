@@ -4,7 +4,7 @@
       "tool": "stock_on_hand",
       "period": null,
       "query": "أرز أبيض 5 كجم",
-      "limit": null,
+      "limit": 1,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "الكمية المتوفرة من صنف أرز أبيض 5 كجم هي 42 وحدة في المخزون."
+      "answer": "الكمية المتوفرة من صنف \"أرز أبيض 5 كجم\" في المخزون هي 42 وحدة."
     }
   ],
   "stream_responses": []

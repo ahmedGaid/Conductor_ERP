@@ -16,7 +16,7 @@
     },
     {
       "action": "answer",
-      "why": "Provide the requested comparison",
+      "why": "Compare sales vs supplier balances",
       "intent": "report"
     }
   ],

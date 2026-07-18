@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "عميلان متأخران في السداد:\n- باراكا كو (CUS-0043): 1,500.00 EGP\n- راجا فاونديشن (CUS-0044): 1,300.00 EGP\n\nإجمالي المبالغ المتأخرة: 2,800.00 EGP"
+      "answer": "Two customers are overdue on payment:\n\n| Customer Code | Customer Name     | Outstanding Amount |\n|---------------|-------------------|--------------------|\n| CUS-0043      | Baraka Co         | 1,500.00 EGP       |\n| CUS-0044      | Raja Foundation   | 1,300.00 EGP       |\n\nTotal outstanding: 2,800.00 EGP."
     }
   ],
   "stream_responses": []

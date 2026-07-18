@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "عميلان متأخران في السداد:\n- **Paradise Restaurant** (كود: CUS-0040) - 1,500.00 EGP\n- **Asala Store** (كود: CUS-0041) - 1,300.00 EGP\n\nإجمالي المبالغ المتأخرة: 2,800.00 EGP"
+      "answer": "The following customers have overdue payments:\n\n| Customer Code | Customer Name       | Outstanding Amount |\n|---------------|---------------------|--------------------|\n| CUS-0040      | Paradise Restaurant | 1,500.00 EGP       |\n| CUS-0041      | Asala Store         | 1,300.00 EGP       |\n\nTotal outstanding: 2,800.00 EGP."
     }
   ],
   "stream_responses": []

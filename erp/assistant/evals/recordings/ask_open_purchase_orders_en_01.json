@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "لا يوجد طلبات شراء مفتوحة حالياً. الطلب الوحيد المفتوح (PO-2026-0044) تم إصدار فاتورة له بمبلغ مستحق قدره 1,000.00 EGP."
+      "answer": "Conductor does not have a report for open purchase orders yet. The only purchase order retrieved is PO-2026-0044 with supplier مورد تجريبي, which is already billed and has an outstanding balance of 1,000.00 EGP."
     }
   ],
   "stream_responses": []

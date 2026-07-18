@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "لا يوجد صنف عند نقطة إعادة الطلب أو أقل منها حالياً. الصنف الوحيد الذي يقترب من نقطة إعادة الطلب هو:Cooking Oil 1L (ITM-0044) بمخزون حالي 3 وحدات، بينما نقطة إعادة الطلب 9 وحدات."
+      "answer": "Cooking Oil 1L (ITM-0044) is at or below reorder point (on hand: 3, reorder point: 9)."
     }
   ],
   "stream_responses": []

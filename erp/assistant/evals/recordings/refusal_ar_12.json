@@ -2,7 +2,7 @@
   "json_responses": [
     {
       "action": "clarify",
-      "why": "Need competitor name to search",
+      "why": "طلب تفاصيل خارج النظام",
       "question": "ما اسم الشركة المنافسة؟",
       "intent": "lookup"
     }

@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "Top customers by sales in the current period:\n\n| عميل | إجمالي المبيعات (EGP) |\n|------|---------------------|\n| Nile Restaurants | 3,000.00 |\n| Amana Supermarket | 2,600.00 |\n| Fajr Trading Co | 2,200.00 |"
+      "answer": "Top customers by sales:\n1. Nile Restaurants — 3,000.00 EGP\n2. Amana Supermarket — 2,600.00 EGP\n3. Fajr Trading Co — 2,200.00 EGP"
     }
   ],
   "stream_responses": []

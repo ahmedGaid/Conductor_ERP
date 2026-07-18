@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "Top customers by sales for the current period:\n\n| Customer Code | Customer Name      | Total Sales |\n|---------------|--------------------|-------------|\n| CUS-0016       | Al Nour Co         | 3,000.00 EGP|\n| CUS-0017       | Amal Foundation    | 2,600.00 EGP|\n| CUS-0018       | Quality Expo       | 2,200.00 EGP|"
+      "answer": "Top customers by sales:\n1. Al Nour Co — 3,000.00 EGP\n2. Amal Foundation — 2,600.00 EGP\n3. Quality Expo — 2,200.00 EGP"
     }
   ],
   "stream_responses": []

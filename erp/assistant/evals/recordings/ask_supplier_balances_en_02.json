@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "According to live ERP data, Golden Eagle owes money to the following supplier:\n\n| الكود | المورد | المبلغ المتبقي (ج.م) |\n|------|--------|---------------------|\n| SUP-0021 | Gamma Supplies | 600.00 EGP |"
+      "answer": "According to live ERP data, Golden Eagle owes money to the following supplier:\n\n| Supplier Code | Supplier Name     | Amount Outstanding |\n|---------------|-------------------|--------------------|\n| SUP-0021       | Gamma Supplies    | 600.00 EGP         |"
     }
   ],
   "stream_responses": []

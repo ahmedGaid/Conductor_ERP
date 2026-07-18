@@ -3,10 +3,10 @@
     {
       "action": "answer",
       "why": "Weather is not business data",
-      "intent": "conversation"
+      "intent": "explain"
     }
   ],
   "stream_responses": [
-    "Conductor cannot answer that specific question yet."
+    "I can only answer questions about Conductor ERP modules: accounting, inventory, sales, purchasing, CRM, e-invoice, notifications, workflow, and administration."
   ]
 }

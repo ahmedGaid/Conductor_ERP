@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "فاتورة البيع SO-2026-0034: عميل تجريبي، إجمالي 500.00 EGP."
+      "answer": "Found sales order SO-2026-0034 for customer عميل تجريبي with total 500.00 EGP."
     }
   ],
   "stream_responses": []

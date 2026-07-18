@@ -3,7 +3,7 @@
     {
       "action": "clarify",
       "why": "Need to confirm before sending emails",
-      "question": "Should I draft emails to all customers now?",
+      "question": "Should I send emails to all customers without reviewing?",
       "intent": "workflow"
     }
   ],

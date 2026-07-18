@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "Conductor does not have a customer list filtered by industry or pharmacy classification yet."
+      "answer": "Conductor does not have a customer list filtered by industry or pharmacy classification yet. Would you like to see all active customers instead?"
     }
   ],
   "stream_responses": []

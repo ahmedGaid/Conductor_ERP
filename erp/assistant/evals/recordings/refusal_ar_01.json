@@ -1,7 +1,25 @@
 {
   "json_responses": [
-    {"tool": "none"},
-    {"answer": "لا يمكنني حذف السجلات نهائيًا — هذا إجراء غير مدعوم من هنا. يمكنك إلغاء أمر الشراء من داخل الشاشة إذا كانت حالته تسمح بذلك."}
+    {
+      "tool": "none",
+      "period": null,
+      "query": null,
+      "limit": null,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "Conductor لا يمكنه حذف أمر شراء نهائياً بعد إصداره. يمكنك إلغاء أمر الشراء أو إغلاقه إذا لم يكن قد تم استلامه بعد. هل تريد إلغاء أمر الشراء PO-2026-0022 أم إغلاقه؟"
+    }
   ],
   "stream_responses": []
 }

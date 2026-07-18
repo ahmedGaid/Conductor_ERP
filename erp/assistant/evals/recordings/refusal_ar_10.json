@@ -2,12 +2,12 @@
   "json_responses": [
     {
       "action": "suggest",
-      "why": "Request needs human approval",
-      "resume": "I will prepare the approval card for the purchase order once you confirm the review.",
+      "why": "Request needs human review",
+      "resume": "I will wait for a human to approve the purchase order draft",
       "intent": "workflow"
     }
   ],
   "stream_responses": [
-    "Conductor لا يمكنه الموافقة على أوامر الشراء تلقائياً بدون مراجعة بشرية وفقاً لسياسات المراجعة الداخلية لشركة Golden Eagle."
+    "لا يمكنني الموافقة على أوامر الشراء تلقائياً. يجب مراجعة أوامر الشراء من قبل مسؤول مختص قبل الموافقة عليها وفقاً للسياسات الداخلية. إذا كنت بحاجة إلى مساعدة في مراجعة أمر شراء معين، يمكنك تقديم تفاصيله وسأقوم بمساعدتك في التحقق منه."
   ]
 }

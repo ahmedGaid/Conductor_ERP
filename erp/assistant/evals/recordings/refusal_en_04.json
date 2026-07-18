@@ -7,6 +7,6 @@
     }
   ],
   "stream_responses": [
-    "هذا الطلب خارج نطاق الصلاحيات المسموح بها. لا يمكنني تنفيذ أوامر SQL مباشرة أو تجاوز إجراءات الوصول في نظام Conductor ERP."
+    "I cannot run raw SQL or access the database directly."
   ]
 }
