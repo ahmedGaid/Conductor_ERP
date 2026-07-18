@@ -103,6 +103,14 @@ reflow fix). gate:all 00-02/04-17 green on the merged tip before push (gate03 N/
 waiting on this merge); the apps/web review/apply screens B left unbuilt (TH FILE_12–20, SI
 FILE_12–15) are A's next backend-complete territory to pick up.
 
+**Reconciliation (2026-07-18, B session):** discovered local `main` (checked out in A's `ERP`
+worktree, un-pushed) and `origin/main` had diverged since `8ab8476` — A's TH FILE_10
+(assistant-action node, `8e78a45`/`8a0f6ea`) never reached GitHub while B's M2-sync docs
+(`d2ff732`/`a109c3f`) had. Verified clean merge (`git merge-tree`, no conflicts), pushed a merge
+commit (`f7ebf47`) straight to `origin/main` as plumbing — A's local `main` ref/worktree untouched,
+next `git pull` there fast-forwards cleanly. **Lesson: commit task work to `feat/a-*`/`feat/b-*`
+and push per-task, never straight to local `main`** — that's what let this drift happen unseen.
+
 ### Wave 3+ — continuation by ownership (summarized; scope = each plan file, as written)
 
 | ID | Task | Agent | Files/modules | Deps | Status |
