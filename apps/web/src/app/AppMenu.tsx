@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { useHelp } from "../help/HelpContext";
 import { Popover } from "../components/Popover";
@@ -17,6 +18,7 @@ import "./AppMenu.css";
  */
 export function AppMenu() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { openHelp } = useHelp();
   const { openShortcuts } = useShortcuts();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -78,6 +80,9 @@ export function AppMenu() {
         </button>
         <button className="appmenu__item" type="button" onClick={() => act(openHelp)}>
           {t("shell.help")}
+        </button>
+        <button className="appmenu__item" type="button" onClick={() => act(() => navigate("/help/guide"))}>
+          {t("shell.userGuide")}
         </button>
       </Popover>
     </>

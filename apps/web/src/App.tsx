@@ -111,6 +111,7 @@ const TicketsPage = lazyPage(() => import("./pages/crm/TicketsPage"), "TicketsPa
 const CampaignsPage = lazyPage(() => import("./pages/crm/CampaignsPage"), "CampaignsPage");
 const CampaignDetailPage = lazyPage(
   () => import("./pages/crm/CampaignDetailPage"), "CampaignDetailPage");
+const UserGuidePage = lazyPage(() => import("./pages/UserGuidePage"), "UserGuidePage");
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, restoring } = useAuth();
@@ -252,6 +253,8 @@ function AppRoutes() {
           <Route path="/assistant/knowledge" element={<KnowledgePage />} />
           <Route path="/assistant/ops" element={<OpsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/help/guide" element={<UserGuidePage />} />
+          <Route path="/help/guide/:journeyId" element={<UserGuidePage />} />
           {/* Universal entity links resolve a business number → its UUID detail route. */}
           <Route path="/go/:type/:key" element={<ResolveRedirect />} />
           <Route path="/crm" element={<PipelinePage />} />
