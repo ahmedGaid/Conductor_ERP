@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { createCustomer, listCustomers, type Customer } from "../../api/sales";
+import { listCustomFieldDefs } from "../../api/customFields";
+import { buildCustomData, formatCustomFieldValue, validateCustomFieldValues, type CustomFieldValues } from "../../lib/customFields";
+import { CustomFieldsForm } from "../../components/CustomFieldsForm";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
@@ -34,10 +37,16 @@ import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./sales.css";
 
 export function CustomersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.resolvedLanguage?.startsWith("ar") ?? true;
   const toast = useToast();
   const fb = useActionFeedback();
   const { data, loading, error, reload, mutate } = useAsync(listCustomers, [], "sales:customers");
+  const { data: customFieldDefs } = useAsync(
+    () => listCustomFieldDefs("sales.customer"),
+    [],
+    "settings:customFields:sales.customer",
+  );
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Customer>[]>(
@@ -90,6 +99,8 @@ export function CustomersPage() {
   const [name, setName] = useState(prefill.name ?? "");
   const [limit, setLimit] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [customValues, setCustomValues] = useState<CustomFieldValues>({});
+  const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
 
   // ⌘/Ctrl+Enter submits the add form from any field (incl. the credit-limit input).
   const formRef = useRef<HTMLFormElement>(null);
@@ -119,12 +130,20 @@ export function CustomersPage() {
     const c = code.trim();
     const n = name.trim();
     if (!c || !n) return;
+    const defs = customFieldDefs ?? [];
+    const errors = validateCustomFieldValues(defs, customValues);
+    if (Object.keys(errors).length > 0) {
+      setCustomErrors(errors);
+      return;
+    }
+    setCustomErrors({});
     const credit = parseToMinor(limit) ?? 0;
+    const custom_data = buildCustomData(defs, customValues);
     void optimisticCreate<Customer>({
       current: data ?? [],
       mutate,
-      placeholder: (id) => ({ id, code: c, name: n, credit_limit_minor: credit }) as Customer,
-      request: () => createCustomer({ code: c, name: n, credit_limit_minor: credit }),
+      placeholder: (id) => ({ id, code: c, name: n, credit_limit_minor: credit, custom_data }) as Customer,
+      request: () => createCustomer({ code: c, name: n, credit_limit_minor: credit, custom_data }),
       toast,
     }).then((created) => {
       if (created) showCustomerReceipt(fb, t, created, { navigate });
@@ -132,6 +151,7 @@ export function CustomersPage() {
     setCode("");
     setName("");
     setLimit("");
+    setCustomValues({});
   }
 
   return (
@@ -167,6 +187,13 @@ export function CustomersPage() {
           <span>{t("sales.customer.creditLimit")}</span>
           <input className="latin" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="0.00" />
         </label>
+        <CustomFieldsForm
+          defs={customFieldDefs ?? []}
+          values={customValues}
+          onChange={(k, v) => setCustomValues((prev) => ({ ...prev, [k]: v }))}
+          errors={customErrors}
+          fieldClassName="sales-field"
+        />
         <button className="btn btn--primary" type="submit">
           {t("sales.customer.add")}
         </button>
@@ -205,6 +232,9 @@ export function CustomersPage() {
                 <th>{t("sales.customer.code")}</th>
                 <th>{t("sales.customer.name")}</th>
                 <th className="sales-table__num">{t("sales.customer.creditLimit")}</th>
+                {(customFieldDefs ?? []).map((def) => (
+                  <th key={def.key}>{isArabic ? def.label_ar : def.label_en}</th>
+                ))}
                 <th />
               </tr>
             </thead>
@@ -232,6 +262,9 @@ export function CustomersPage() {
                   <td className="sales-table__num">
                     <Bdi>{c.credit_limit_minor ? formatMinor(c.credit_limit_minor) : t("sales.customer.unlimited")}</Bdi>
                   </td>
+                  {(customFieldDefs ?? []).map((def) => (
+                    <td key={def.key}>{formatCustomFieldValue(def, c.custom_data?.[def.key])}</td>
+                  ))}
                   <td>
                     <RowActions label={t("common.actions")}>
                       <Link className="btn btn--sm" to={`/sales?customer=${encodeURIComponent(c.name)}`}>

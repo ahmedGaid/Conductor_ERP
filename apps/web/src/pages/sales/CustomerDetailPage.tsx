@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 
 import { listCustomers, listOrders } from "../../api/sales";
 import { generalLedger } from "../../api/accounting";
+import { listCustomFieldDefs } from "../../api/customFields";
+import { formatCustomFieldValue } from "../../lib/customFields";
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
@@ -19,10 +21,16 @@ import "./sales.css";
 const AR_ACCOUNT_CODE = "1100";
 
 export function CustomerDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.resolvedLanguage?.startsWith("ar") ?? true;
   const { code = "" } = useParams();
 
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
+  const { data: customFieldDefs } = useAsync(
+    () => listCustomFieldDefs("sales.customer"),
+    [],
+    "settings:customFields:sales.customer",
+  );
   const { data: orders, loading, error, reload } = useAsync(() => listOrders(), [code]);
   const { data: ledger } = useAsync(
     () => generalLedger(AR_ACCOUNT_CODE, { partyType: "customer", party: code }),
@@ -72,6 +80,12 @@ export function CustomerDetailPage() {
     { label: t("party.ordersCount"), value: String(mine.length) },
     { label: t("party.totalInvoiced"), value: formatMinor(totalInvoiced) },
     { label: t("party.balance"), value: formatMinor(ledger?.closing_balance ?? 0) },
+    ...(customFieldDefs ?? [])
+      .map((def) => ({
+        label: isArabic ? def.label_ar : def.label_en,
+        value: formatCustomFieldValue(def, customer?.custom_data?.[def.key]),
+      }))
+      .filter((row) => row.value !== ""),
   ];
 
   const rows: PartyOrderRow[] = mine.map((o) => ({

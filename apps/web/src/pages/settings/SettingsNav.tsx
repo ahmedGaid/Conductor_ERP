@@ -59,6 +59,14 @@ export function SettingsNav() {
             {t("settings.tabs.webhooks")}
           </NavLink>
         )}
+        {isAdmin && (
+          <NavLink
+            to="/settings/custom-fields"
+            className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
+          >
+            {t("settings.tabs.customFields")}
+          </NavLink>
+        )}
       </nav>
     </header>
   );

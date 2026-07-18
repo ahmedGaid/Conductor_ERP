@@ -1,0 +1,5 @@
+.custom-field-error {
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+  margin-block-start: var(--space-1);
+}

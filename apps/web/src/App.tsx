@@ -92,6 +92,8 @@ const BranchesPage = lazyPage(
   () => import("./pages/settings/BranchesPage"), "BranchesPage");
 const WebhooksSettingsPage = lazyPage(
   () => import("./pages/settings/WebhooksSettingsPage"), "WebhooksSettingsPage");
+const CustomFieldsPage = lazyPage(
+  () => import("./pages/settings/CustomFieldsPage"), "CustomFieldsPage");
 const UsersPage = lazyPage(() => import("./pages/admin/UsersPage"), "UsersPage");
 const UserDetailPage = lazyPage(() => import("./pages/admin/UserDetailPage"), "UserDetailPage");
 const RolesPage = lazyPage(() => import("./pages/admin/RolesPage"), "RolesPage");
@@ -184,6 +186,7 @@ function AppRoutes() {
           <Route path="/settings/organization" element={<OrganizationPage />} />
           <Route path="/settings/branches" element={<BranchesPage />} />
           <Route path="/settings/webhooks" element={<WebhooksSettingsPage />} />
+          <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/:id" element={<UserDetailPage />} />
           <Route path="/admin/roles" element={<RolesPage />} />

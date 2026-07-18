@@ -1898,7 +1898,8 @@
       "accessibility": "Accessibility",
       "organization": "Organization",
       "branches": "Branches",
-      "webhooks": "Webhooks"
+      "webhooks": "Webhooks",
+      "customFields": "Custom fields"
     },
     "common": {
       "auto": "Auto"
@@ -2076,6 +2077,39 @@
         "status_retrying": "Retrying",
         "status_failed": "Failed"
       }
+    },
+    "customFields": {
+      "adminOnly": "Only a System Admin can manage custom fields.",
+      "lead": "Add your own fields to customers or items — they show up on the form, the table, and the record page.",
+      "entityPicker": "Entity",
+      "entityCustomers": "Customers",
+      "entityItems": "Items",
+      "key": "Key",
+      "keyHint": "Lowercase letters, numbers and underscores only, starting with a letter.",
+      "labelAr": "Arabic label",
+      "labelEn": "English label",
+      "type": "Type",
+      "types": {
+        "TEXT": "Text",
+        "NUMBER": "Number",
+        "DATE": "Date",
+        "CHOICE": "Choice",
+        "MONEY": "Money"
+      },
+      "choices": "Choices",
+      "choicesPlaceholder": "e.g. cairo, giza, alexandria",
+      "required": "Required",
+      "add": "Add field",
+      "edit": "Edit",
+      "save": "Save",
+      "deactivate": "Deactivate",
+      "deactivateConfirmTitle": "Deactivate this field?",
+      "deactivateConfirmBody": "It disappears from the form, table and Settings list. Values already saved on existing records are kept and stay visible on those records.",
+      "empty": "No custom fields yet.",
+      "emptyHint": "Add a field above — it appears on this entity's form and table right away.",
+      "toastCreated": "Field added",
+      "toastUpdated": "Field updated",
+      "toastDeactivated": "Field deactivated"
     }
   },
   "admin": {

@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { createItem, listItems, type Item, type ItemType } from "../../api/inventory";
+import { listCustomFieldDefs } from "../../api/customFields";
+import { buildCustomData, formatCustomFieldValue, validateCustomFieldValues, type CustomFieldValues } from "../../lib/customFields";
+import { CustomFieldsForm } from "../../components/CustomFieldsForm";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
@@ -33,9 +36,15 @@ import "./inventory.css";
 const ITEM_TYPES: ItemType[] = ["stock", "service"];
 
 export function ItemsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.resolvedLanguage?.startsWith("ar") ?? true;
   const toast = useToast();
   const { data, loading, error, reload, mutate } = useAsync(listItems, [], "inventory:items");
+  const { data: customFieldDefs } = useAsync(
+    () => listCustomFieldDefs("inventory.item"),
+    [],
+    "settings:customFields:inventory.item",
+  );
   const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<string>(ALL_TAB);
 
@@ -108,6 +117,8 @@ export function ItemsPage() {
   const [uom, setUom] = useState("unit");
   const [type, setType] = useState<ItemType>("stock");
   const [importOpen, setImportOpen] = useState(false);
+  const [customValues, setCustomValues] = useState<CustomFieldValues>({});
+  const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
 
   // ⌘/Ctrl+Enter submits the add form from any field (incl. the type select).
   const formRef = useRef<HTMLFormElement>(null);
@@ -140,17 +151,26 @@ export function ItemsPage() {
     const s = sku.trim();
     const n = name.trim();
     if (!s || !n) return;
+    const defs = customFieldDefs ?? [];
+    const errors = validateCustomFieldValues(defs, customValues);
+    if (Object.keys(errors).length > 0) {
+      setCustomErrors(errors);
+      return;
+    }
+    setCustomErrors({});
     const u = uom.trim() || "unit";
+    const custom_data = buildCustomData(defs, customValues);
     void optimisticCreate<Item>({
       current: data ?? [],
       mutate,
-      placeholder: (id) => ({ id, sku: s, name: n, uom: u, type }) as Item,
-      request: () => createItem({ sku: s, name: n, uom: u, type }),
+      placeholder: (id) => ({ id, sku: s, name: n, uom: u, type, custom_data }) as Item,
+      request: () => createItem({ sku: s, name: n, uom: u, type, custom_data }),
       toast,
       success: t("inventory.toast.itemCreated"),
     });
     setSku("");
     setName("");
+    setCustomValues({});
   }
 
   return (
@@ -193,6 +213,13 @@ export function ItemsPage() {
             <option value="service">{t("inventory.types.service")}</option>
           </select>
         </label>
+        <CustomFieldsForm
+          defs={customFieldDefs ?? []}
+          values={customValues}
+          onChange={(k, v) => setCustomValues((prev) => ({ ...prev, [k]: v }))}
+          errors={customErrors}
+          fieldClassName="inv-field"
+        />
         <button className="btn btn--primary" type="submit">
           {t("inventory.item.add")}
         </button>
@@ -242,6 +269,9 @@ export function ItemsPage() {
                 <th>{t("inventory.item.name")}</th>
                 <th>{t("inventory.item.uom")}</th>
                 <th>{t("inventory.item.type")}</th>
+                {(customFieldDefs ?? []).map((def) => (
+                  <th key={def.key}>{isArabic ? def.label_ar : def.label_en}</th>
+                ))}
                 <th />
               </tr>
             </thead>
@@ -262,6 +292,9 @@ export function ItemsPage() {
                   <td>{i.name}</td>
                   <td>{i.uom}</td>
                   <td>{t(`inventory.types.${i.type}`)}</td>
+                  {(customFieldDefs ?? []).map((def) => (
+                    <td key={def.key}>{formatCustomFieldValue(def, i.custom_data?.[def.key])}</td>
+                  ))}
                   <td>
                     {i.type === "stock" && (
                       <RowActions label={t("common.actions")}>

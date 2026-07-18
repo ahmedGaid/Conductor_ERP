@@ -18,6 +18,7 @@ export interface Customer {
   name: string;
   credit_limit_minor: number;
   is_active: boolean;
+  custom_data: Record<string, unknown>;
 }
 
 export interface OrderLine {
@@ -64,6 +65,7 @@ export function createCustomer(payload: {
   code: string;
   name: string;
   credit_limit_minor?: number;
+  custom_data?: Record<string, unknown>;
 }): Promise<Customer> {
   return apiFetch<Customer>("/sales/customers", { method: "POST", body: JSON.stringify(payload) });
 }
