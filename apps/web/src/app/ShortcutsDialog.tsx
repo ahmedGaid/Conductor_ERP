@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import { modKey } from "../lib/keyboard";
 import "./CommandPalette.css";
 import "./ShortcutsDialog.css";
 
@@ -33,11 +34,12 @@ export function ShortcutsDialog({
     else if (!open && dlg.open) dlg.close();
   }, [open]);
 
+  const mod = modKey();
   const general: Shortcut[] = [
-    { keys: ["⌘", "K"], label: t("shortcuts.palette") },
+    { keys: [mod, "K"], label: t("shortcuts.palette") },
     { keys: ["/"], label: t("shortcuts.search") },
     { keys: ["C"], label: t("shortcuts.create") },
-    { keys: ["⌘", "J"], label: t("shortcuts.assistant") },
+    { keys: [mod, "J"], label: t("shortcuts.assistant") },
     { keys: ["?"], label: t("shortcuts.help") },
   ];
   const lists: Shortcut[] = [
@@ -48,7 +50,7 @@ export function ShortcutsDialog({
     { keys: ["Esc"], label: t("shortcuts.listClear") },
   ];
   const forms: Shortcut[] = [
-    { keys: ["⌘", "Enter"], label: t("shortcuts.formSubmit") },
+    { keys: [mod, "Enter"], label: t("shortcuts.formSubmit") },
     { keys: ["Esc"], label: t("shortcuts.formCancel") },
   ];
   const navigation: Shortcut[] = [

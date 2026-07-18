@@ -47,6 +47,36 @@ export const itemsGuide: HelpGuide = {
   tips: [
     { en: "Choose clear, stable SKUs — they're hard to change once used in transactions.", ar: "اختر رموزاً واضحة وثابتة — يصعب تغييرها بعد استخدامها في المعاملات." },
   ],
+  checklist: {
+    name: { en: "Add your first item", ar: "أضف أول صنف" },
+    doneMessage: {
+      en: "Item added — it's now selectable on sales orders, purchases, and stock moves.",
+      ar: "تمت إضافة الصنف — صار قابلاً للاختيار في طلبات المبيعات والمشتريات وحركات المخزون.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a SKU", ar: "أدخل رمز الصنف (SKU)" },
+        detail: [
+          { en: "A short, unique code — this is what you'll type to find the item everywhere else.", ar: "رمز قصير وفريد — هذا ما ستكتبه لإيجاد الصنف في كل مكان آخر." },
+          { en: "Pick something stable: it's hard to change once the item's used in a transaction.", ar: "اختر رمزاً ثابتاً: يصعب تغييره بعد استخدام الصنف في معاملة." },
+        ],
+        hint: { en: "SKU set. Now name it.", ar: "تم إدخال الرمز. الآن سمِّه." },
+        done: (s) => s.skuSet === true || (s.itemCount as number) > 0,
+      },
+      {
+        label: { en: "Enter a name", ar: "أدخل اسماً" },
+        detail: [
+          { en: "The readable name shown on orders and lists.", ar: "الاسم المقروء الذي يظهر في الطلبات والقوائم." },
+        ],
+        hint: { en: "Name set. Type and unit default to Stock/unit — change them now if needed.", ar: "تم إدخال الاسم. النوع والوحدة الافتراضيان مخزون/وحدة — غيّرهما الآن إن احتجت." },
+        done: (s) => s.nameSet === true || (s.itemCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add", ar: "اضغط «إضافة»" },
+        done: (s) => (s.itemCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/inventory/warehouses", label: { en: "Warehouses", ar: "المخازن" } },
     { to: "/inventory", label: { en: "Stock on hand", ar: "الأرصدة المتاحة" } },

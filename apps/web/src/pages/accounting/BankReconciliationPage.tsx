@@ -15,6 +15,8 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
+import { ComboBox } from "../../components/ComboBox";
+import { DatePicker } from "../../components/DatePicker";
 import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -117,16 +119,16 @@ export function BankReconciliationPage() {
         <div className="acct-toolbar">
           <label className="acct-field">
             <span>{t("accounting.bankRec.account")}</span>
-            <select className="latin" value={account} onChange={(e) => setAccount(e.target.value)} required>
-              <option value="">—</option>
-              {cashAccounts.map((a) => (
-                <option key={a.code} value={a.code}>{a.code} · {a.name}</option>
-              ))}
-            </select>
+            <ComboBox
+              value={account}
+              onChange={setAccount}
+              placeholder={t("common.selectField", { field: t("accounting.bankRec.account") })}
+              options={cashAccounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+            />
           </label>
           <label className="acct-field">
             <span>{t("accounting.bankRec.statementDate")}</span>
-            <input className="latin" type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} required />
+            <DatePicker value={stmtDate} onChange={setStmtDate} />
           </label>
           <label className="acct-field">
             <span>{t("accounting.bankRec.closingBalance")}</span>
@@ -148,7 +150,7 @@ export function BankReconciliationPage() {
               {lines.map((l, i) => (
                 <tr key={i}>
                   <td>
-                    <input className="latin" type="date" value={l.date} onChange={(e) => setLine(i, { date: e.target.value })} />
+                    <DatePicker value={l.date} onChange={(v) => setLine(i, { date: v })} />
                   </td>
                   <td className="acct-table__num">
                     <input className="latin" inputMode="decimal" value={l.amount}

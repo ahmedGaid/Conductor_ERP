@@ -11,9 +11,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import services
+from . import approvals, services
 from .engine import engine
-from .models import Workflow, WorkflowInstance
+from .models import ApprovalStatus, Workflow, WorkflowInstance
 from .serializers import (
     DecisionSerializer,
     InstanceDetailSerializer,
@@ -106,7 +106,13 @@ class InstanceDetailView(APIView):
 
 
 class InstanceDecisionView(APIView):
-    """Approve/reject a waiting (approval) instance; re-enters the engine at that node."""
+    """Approve/reject a waiting (approval) instance; re-enters the engine at that node.
+
+    Routes through the RBAC-checked ``approvals.decide`` when the instance has a pending
+    ``ApprovalRequest`` (true for every approval wait since FILE_09); falls back to a bare
+    ``engine.resume`` only for the case of no request row at all (shouldn't happen going forward,
+    kept so a pre-existing waiting instance from before this migration isn't stranded).
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -114,7 +120,24 @@ class InstanceDecisionView(APIView):
         get_object_or_404(WorkflowInstance, id=instance_id)
         s = DecisionSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        instance = engine.resume(instance_id, decision=s.validated_data["decision"])
+        pending = (
+            WorkflowInstance.objects.get(id=instance_id)
+            .approval_requests.filter(status=ApprovalStatus.PENDING)
+            .order_by("-created_at")
+            .first()
+        )
+        if pending is not None:
+            approvals.decide(
+                actor=request.user,
+                request_id=pending.id,
+                decision=s.validated_data["decision"],
+                comment=s.validated_data.get("comment", ""),
+            )
+            instance = WorkflowInstance.objects.select_related("workflow", "current_node").get(
+                id=instance_id
+            )
+        else:
+            instance = engine.resume(instance_id, decision=s.validated_data["decision"])
         return _envelope(InstanceDetailSerializer(instance).data)
 
 

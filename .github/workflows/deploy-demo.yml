@@ -10,6 +10,9 @@ name: Deploy demo
 #   DEMO_SSH_KEY   - private key for a dedicated deploy key (not your personal key)
 # Optional:
 #   DEMO_APP_DIR   - path to the repo clone on the VM (default: /opt/conductor-erp-demo)
+#
+# NOTE: this is the Oracle/VM path. If deploying on Render instead, Render's
+# own auto-deploy-on-push already covers this — this workflow is unused.
 
 on:
   push:

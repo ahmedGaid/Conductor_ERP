@@ -18,6 +18,8 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { EntityLink } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { InventoryNav } from "./InventoryNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./inventory.css";
@@ -35,6 +37,7 @@ export function WarehousesPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "inventory:warehouses", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((w) => matchesAllFilters(w, fields, filters)) : data),
     [data, fields, filters],
@@ -121,6 +124,7 @@ export function WarehousesPage() {
 
       {data && data.length > 0 && (
         <div className="inv-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

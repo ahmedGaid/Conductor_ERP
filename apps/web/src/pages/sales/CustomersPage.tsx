@@ -23,11 +23,14 @@ import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { RowActions } from "../../components/RowActions";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import { SalesNav } from "./SalesNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./sales.css";
 
 export function CustomersPage() {
@@ -44,6 +47,7 @@ export function CustomersPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "sales:customers", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((c) => matchesAllFilters(c, fields, filters)) : data),
     [data, fields, filters],
@@ -90,6 +94,13 @@ export function CustomersPage() {
   // ⌘/Ctrl+Enter submits the add form from any field (incl. the credit-limit input).
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    codeSet: code.trim() !== "",
+    nameSet: name.trim() !== "",
+    customerCount: (data ?? []).length,
+  });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [
@@ -172,6 +183,7 @@ export function CustomersPage() {
 
       {data && data.length > 0 && (
         <div className="sales-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

@@ -17,10 +17,13 @@ import { downloadCsv, rowsToCsv } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
+import { DatePicker } from "../../components/DatePicker";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -57,6 +60,7 @@ export function FixedAssetsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "accounting:assets", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((a) => matchesAllFilters(a, fields, filters)) : data),
     [data, fields, filters],
@@ -194,7 +198,7 @@ export function FixedAssetsPage() {
           </label>
           <label className="acct-field">
             <span>{t("accounting.assets.acquired")}</span>
-            <input className="latin" type="date" value={acqDate} onChange={(e) => setAcqDate(e.target.value)} required />
+            <DatePicker value={acqDate} onChange={setAcqDate} />
           </label>
           <button className="btn btn--primary" type="submit" disabled={busy}>
             {t("accounting.assets.add")}
@@ -208,7 +212,7 @@ export function FixedAssetsPage() {
           </label>
           <label className="acct-field">
             <span>{t("accounting.assets.runDate")}</span>
-            <input className="latin" type="date" value={runDate} onChange={(e) => setRunDate(e.target.value)} required />
+            <DatePicker value={runDate} onChange={setRunDate} />
           </label>
           <button className="btn" type="submit" disabled={runBusy}>
             {t("accounting.assets.runDepreciation")}
@@ -229,6 +233,7 @@ export function FixedAssetsPage() {
       {data && data.length > 0 && (
         <>
           <div className="acct-toolbar-row">
+            <SavedViews api={savedViews} />
             <FilterBar fields={fields} filters={filters} onChange={setFilters} />
           </div>
           {filtered && (

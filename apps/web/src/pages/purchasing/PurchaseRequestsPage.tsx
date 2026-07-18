@@ -21,6 +21,8 @@ import { StatusRing } from "../../components/StatusRing";
 import { purchasingTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -49,6 +51,7 @@ export function PurchaseRequestsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "purchasing:requests", fields, filters, setFilters });
 
   const filtered = useMemo(
     () => (data ? data.filter((r) => matchesAllFilters(r, fields, filters)) : data),
@@ -121,7 +124,12 @@ export function PurchaseRequestsPage() {
     <section className="pur-page">
       <PurchasingNav />
       <div className="pur-page__head">
-        {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
+        {data && data.length > 0 && (
+          <>
+            <SavedViews api={savedViews} />
+            <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+          </>
+        )}
       </div>
 
       {loading && (

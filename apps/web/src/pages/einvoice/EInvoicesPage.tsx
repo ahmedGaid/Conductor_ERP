@@ -22,6 +22,8 @@ import { einvoiceTone } from "../../lib/statusTone";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { EInvoiceNav } from "./EInvoiceNav";
@@ -56,6 +58,7 @@ export function EInvoicesPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "einvoice:invoices", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((e) => matchesAllFilters(e, fields, filters)) : data),
     [data, fields, filters],
@@ -100,6 +103,7 @@ export function EInvoicesPage() {
 
       {data && data.length > 0 && (
         <div className="ein-toolbar">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

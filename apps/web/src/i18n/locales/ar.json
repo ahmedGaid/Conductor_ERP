@@ -674,7 +674,13 @@
     "config": "الإعدادات (JSON)",
     "condition": "الشرط (JSON)",
     "conditionPlaceholder": "اتركه فارغًا للوصلة الافتراضية",
-    "ordering": "الترتيب"
+    "ordering": "الترتيب",
+    "approval": {
+      "title": "العنوان",
+      "message": "الرسالة",
+      "approverRole": "دور المعتمِد",
+      "approverRolePlaceholder": "مثال: finance_manager — اتركه فارغًا لأي مستخدم"
+    }
   },
   "instance": {
     "toast": {
@@ -685,6 +691,8 @@
     "awaitingDecision": "بانتظار قرار عند العقدة: {{node}}",
     "approve": "موافقة",
     "reject": "رفض",
+    "decidedBy": "قرار بواسطة {{user}}",
+    "decisionComment": "تعليق",
     "timeline": "مسار التنفيذ",
     "noRuns": "لا توجد خطوات تنفيذ بعد.",
     "attempt": "محاولة",
@@ -1624,7 +1632,12 @@
     "undo": "تراجع",
     "undone": "تم التراجع",
     "notFound": "تعذّر العثور على هذا السجل.",
-    "owner": "المسؤول"
+    "owner": "المسؤول",
+    "selectField": "اختر {{field}}",
+    "search": "بحث…",
+    "noResults": "لا نتائج",
+    "today": "اليوم",
+    "clear": "مسح"
   },
   "import": {
     "action": "استيراد CSV",
@@ -1836,6 +1849,7 @@
   },
   "help": {
     "button": "مساعدة",
+    "buttonWithIssues": "مساعدة — {{count}} يحتاج تصحيحاً",
     "close": "إغلاق المساعدة",
     "purpose": "الغرض من هذه الصفحة",
     "howItWorks": "كيف تعمل",
@@ -1845,7 +1859,13 @@
     "tips": "نصائح",
     "mistakes": "أخطاء شائعة",
     "related": "صفحات ذات صلة",
-    "noGuide": "دليل هذه الصفحة قيد الإعداد."
+    "noGuide": "دليل هذه الصفحة قيد الإعداد.",
+    "tabsLabel": "طريقة عرض المساعدة",
+    "tabGuide": "الدليل",
+    "tabLive": "مباشر",
+    "live": {
+      "calm": "لا شيء يحتاج انتباهك في هذه الصفحة الآن."
+    }
   },
   "export": {
     "csv": "CSV",

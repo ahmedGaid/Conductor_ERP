@@ -72,9 +72,10 @@ export function getInstance(id: string): Promise<InstanceDetail> {
 export function decideInstance(
   id: string,
   decision: "approve" | "reject",
+  comment = "",
 ): Promise<InstanceDetail> {
   return apiFetch<InstanceDetail>(`/workflow/instances/${id}/decision`, {
     method: "POST",
-    body: JSON.stringify({ decision }),
+    body: JSON.stringify({ decision, comment }),
   });
 }

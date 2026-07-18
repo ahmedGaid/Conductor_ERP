@@ -50,6 +50,66 @@ export const newOrderGuide: HelpGuide = {
   mistakes: [
     { en: "If a customer is over their credit limit, confirming the order will be blocked.", ar: "إذا تجاوز العميل حدّه الائتماني، يُمنع تأكيد الطلب." },
   ],
+  alerts: [
+    {
+      when: (s) => s.hasError === true,
+      tone: "warn",
+      title: { en: "Something needs fixing", ar: "هناك ما يحتاج تصحيحاً" },
+      body: {
+        en: "The red message above the button explains what's missing — fix that, then submit again.",
+        ar: "الرسالة الحمراء فوق الزر توضّح الناقص — صحّحها ثم أرسل مرة أخرى.",
+      },
+    },
+  ],
+  checklist: {
+    name: { en: "Build this order", ar: "أنشئ هذا الطلب" },
+    doneMessage: {
+      en: "Everything's filled in — review the total, then click Create order.",
+      ar: "كل شيء مكتمل — راجع الإجمالي ثم اضغط «إنشاء الطلب».",
+    },
+    steps: [
+      {
+        label: { en: "Pick who's buying", ar: "اختر من يشتري" },
+        detail: [
+          {
+            en: "Open the Customer field and search by name — start typing and the list narrows.",
+            ar: "افتح حقل العميل وابحث بالاسم — ابدأ الكتابة وتضيق القائمة.",
+          },
+        ],
+        hint: { en: "Customer set. Now pick where it ships from.", ar: "تم تحديد العميل. الآن اختر مصدر الشحن." },
+        done: (s) => s.customerPicked === true,
+      },
+      {
+        label: { en: "Pick the shipping warehouse", ar: "اختر مخزن الشحن" },
+        detail: [
+          {
+            en: "Open the Warehouse field — pick the one that actually holds the stock you're selling.",
+            ar: "افتح حقل المخزن — اختر الذي يحتفظ فعلاً بالبضاعة التي تبيعها.",
+          },
+        ],
+        hint: { en: "Warehouse set. Now add what they're buying.", ar: "تم تحديد المخزن. الآن أضف ما يشتريه." },
+        done: (s) => s.warehousePicked === true,
+      },
+      {
+        label: { en: "Add at least one item line", ar: "أضف سطر صنف واحد على الأقل" },
+        detail: [
+          {
+            en: "In the item row, search and pick a product — its price fills in automatically if one's on file.",
+            ar: "في سطر الصنف، ابحث واختر منتجاً — يُملأ سعره تلقائياً إن كان مسجلاً.",
+          },
+          {
+            en: "Set the quantity. Adjust the price or add a discount if this order needs it.",
+            ar: "حدّد الكمية. عدّل السعر أو أضف خصماً إن احتاج هذا الطلب ذلك.",
+          },
+          {
+            en: "Click Add line for a second item, or leave it at one.",
+            ar: "اضغط «إضافة سطر» لصنف ثانٍ، أو اتركه بصنف واحد.",
+          },
+        ],
+        done: (s) => s.lineReady === true,
+      },
+    ],
+  },
   related: [
     { to: "/sales", label: { en: "All orders", ar: "كل الطلبات" } },
   ],
@@ -133,6 +193,49 @@ export const newQuotationGuide: HelpGuide = {
     en: "Add the customer and lines just like an order; the totals preview what the eventual sale would be. Submit it to start the approval/convert flow.",
     ar: "أضف العميل والسطور كما في الطلب؛ تعرض المجاميع كيف سيكون البيع المحتمل. قدّمه لبدء مسار الموافقة/التحويل.",
   },
+  alerts: [
+    {
+      when: (s) => s.hasError === true,
+      tone: "warn",
+      title: { en: "Something needs fixing", ar: "هناك ما يحتاج تصحيحاً" },
+      body: {
+        en: "The red message above the button explains what's missing — fix that, then submit again.",
+        ar: "الرسالة الحمراء فوق الزر توضّح الناقص — صحّحها ثم أرسل مرة أخرى.",
+      },
+    },
+  ],
+  checklist: {
+    name: { en: "Build this quotation", ar: "أنشئ عرض السعر هذا" },
+    doneMessage: {
+      en: "Everything's filled in — review the total, then submit to start the approval flow.",
+      ar: "كل شيء مكتمل — راجع الإجمالي ثم قدّمه لبدء مسار الموافقة.",
+    },
+    steps: [
+      {
+        label: { en: "Pick who it's for", ar: "اختر لمن هذا العرض" },
+        detail: [
+          { en: "Open the Customer field and search by name.", ar: "افتح حقل العميل وابحث بالاسم." },
+        ],
+        hint: { en: "Customer set. Now pick a warehouse.", ar: "تم تحديد العميل. الآن اختر مخزناً." },
+        done: (s) => s.customerPicked === true,
+      },
+      {
+        label: { en: "Pick a warehouse", ar: "اختر مخزناً" },
+        detail: [
+          { en: "This is only for pricing/availability at this stage — nothing ships from a quotation.", ar: "هذا للتسعير والتوفر فقط في هذه المرحلة — لا شيء يُشحن من عرض السعر." },
+        ],
+        hint: { en: "Warehouse set. Now add what you're quoting.", ar: "تم تحديد المخزن. الآن أضف ما تعرض سعره." },
+        done: (s) => s.warehousePicked === true,
+      },
+      {
+        label: { en: "Add at least one item line", ar: "أضف سطر صنف واحد على الأقل" },
+        detail: [
+          { en: "Pick a product — its price fills in automatically if one's on file. Set the quantity.", ar: "اختر منتجاً — يُملأ سعره تلقائياً إن كان مسجلاً. حدّد الكمية." },
+        ],
+        done: (s) => s.lineReady === true,
+      },
+    ],
+  },
   related: [
     { to: "/sales/quotations", label: { en: "All quotations", ar: "كل العروض" } },
   ],
@@ -162,6 +265,32 @@ export const customersGuide: HelpGuide = {
   howItWorks: {
     en: "A customer's credit limit caps how much they can owe at once; the system blocks confirming an order that would exceed it. Set customers up here before selling to them.",
     ar: "يحدّ الحدّ الائتماني للعميل أقصى ما يمكن أن يدين به دفعة واحدة؛ ويمنع النظام تأكيد طلب يتجاوزه. هيّئ العملاء هنا قبل البيع لهم.",
+  },
+  checklist: {
+    name: { en: "Add your first customer", ar: "أضف أول عميل" },
+    doneMessage: {
+      en: "Customer added — pick them on any new order or quotation.",
+      ar: "أُضيف العميل — اختره في أي طلب أو عرض سعر جديد.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a code", ar: "أدخل كوداً" },
+        detail: [
+          { en: "A short unique code you'll recognize in lists — letters/numbers, e.g. CUST-001.", ar: "كود قصير مميّز تتعرف عليه في القوائم — حروف/أرقام، مثل CUST-001." },
+        ],
+        hint: { en: "Code set. Now enter the name.", ar: "تم إدخال الكود. الآن أدخل الاسم." },
+        done: (s) => s.codeSet === true || (s.customerCount as number) > 0,
+      },
+      {
+        label: { en: "Enter the name", ar: "أدخل الاسم" },
+        hint: { en: "Name set. Credit limit is optional — leave it blank for unlimited.", ar: "تم إدخال الاسم. الحد الائتماني اختياري — اتركه فارغاً لحد غير محدود." },
+        done: (s) => s.nameSet === true || (s.customerCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add", ar: "اضغط «إضافة»" },
+        done: (s) => (s.customerCount as number) > 0,
+      },
+    ],
   },
   related: [
     { to: "/sales", label: { en: "Sales orders", ar: "طلبات المبيعات" } },

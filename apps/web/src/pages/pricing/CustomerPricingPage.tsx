@@ -24,6 +24,8 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { ComboBox } from "../../components/ComboBox";
+import { DatePicker } from "../../components/DatePicker";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { PricingTabs } from "./PricingTabs";
@@ -118,25 +120,21 @@ function AssignmentsBlock({
       <form className="card pricing-toolbar" onSubmit={onAssign}>
         <label className="pricing-field">
           <span>{t("pricing.customers.customer")}</span>
-          <select value={customer} onChange={(e) => setCustomer(e.target.value)}>
-            <option value="">—</option>
-            {customers.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} · {c.name}
-              </option>
-            ))}
-          </select>
+          <ComboBox
+            value={customer}
+            onChange={setCustomer}
+            placeholder={t("common.selectField", { field: t("pricing.customers.customer") })}
+            options={customers.map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))}
+          />
         </label>
         <label className="pricing-field">
           <span>{t("pricing.customers.priceList")}</span>
-          <select value={listCode} onChange={(e) => setListCode(e.target.value)}>
-            <option value="">—</option>
-            {lists.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.code} · {l.name}
-              </option>
-            ))}
-          </select>
+          <ComboBox
+            value={listCode}
+            onChange={setListCode}
+            placeholder={t("common.selectField", { field: t("pricing.customers.priceList") })}
+            options={lists.map((l) => ({ value: l.code, label: `${l.code} · ${l.name}` }))}
+          />
         </label>
         <button className="btn btn--primary" type="submit">
           {t("pricing.customers.assign")}
@@ -286,25 +284,21 @@ function OverridesBlock({
       <form className="card pricing-toolbar" onSubmit={onAdd}>
         <label className="pricing-field">
           <span>{t("pricing.customers.customer")}</span>
-          <select value={customer} onChange={(e) => setCustomer(e.target.value)}>
-            <option value="">—</option>
-            {customers.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} · {c.name}
-              </option>
-            ))}
-          </select>
+          <ComboBox
+            value={customer}
+            onChange={setCustomer}
+            placeholder={t("common.selectField", { field: t("pricing.customers.customer") })}
+            options={customers.map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))}
+          />
         </label>
         <label className="pricing-field">
           <span>{t("pricing.detail.item")}</span>
-          <select value={sku} onChange={(e) => setSku(e.target.value)}>
-            <option value="">—</option>
-            {items.map((it) => (
-              <option key={it.sku} value={it.sku}>
-                {it.sku} · {it.name}
-              </option>
-            ))}
-          </select>
+          <ComboBox
+            value={sku}
+            onChange={setSku}
+            placeholder={t("common.selectField", { field: t("pricing.detail.item") })}
+            options={items.map((it) => ({ value: it.sku, label: `${it.sku} · ${it.name}` }))}
+          />
         </label>
         <label className="pricing-field">
           <span>{t("pricing.detail.unitPrice")}</span>
@@ -328,11 +322,11 @@ function OverridesBlock({
         </label>
         <label className="pricing-field">
           <span>{t("pricing.customers.validFrom")}</span>
-          <input className="latin" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+          <DatePicker value={validFrom} onChange={setValidFrom} />
         </label>
         <label className="pricing-field">
           <span>{t("pricing.customers.validTo")}</span>
-          <input className="latin" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+          <DatePicker value={validTo} onChange={setValidTo} />
         </label>
         <label className="pricing-field pricing-field--check">
           <input type="checkbox" checked={taxInclusive} onChange={(e) => setTaxInclusive(e.target.checked)} />

@@ -126,10 +126,8 @@ export function PurchaseRequestDetailPage() {
     if (s === "approved") {
       pageActions.push({ id: "convert", label: t("purchasing.requests.convert"), run: () => onConvert(data) });
     }
-    if (s === "submitted" || s === "approved") {
-      pageActions.push({ id: "reject", label: t("purchasing.requests.reject"),
-        run: () => act("rejected", () => rejectRequest(data.id, ""), "rejected") });
-    }
+    // "reject" is NOT pushed here — it's already mirrored from barMenu below (useSetPageActions)
+    // under the identical condition, so adding it here too would duplicate the palette row.
   }
   usePaletteActions("pr-detail", pageActions);
 

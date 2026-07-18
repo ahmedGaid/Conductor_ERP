@@ -173,7 +173,10 @@ export function PurchaseOrderDetailPage() {
     if (s === "billed") {
       pageActions.push({ id: "pay", label: t("purchasing.detail.recordPayment"), run: () => runAction("pay") });
     }
-    if (s === "billed" || s === "paid") {
+    // "return" is NOT pushed here while billed — it's already mirrored from barMenu below
+    // (useSetPageActions), so adding it here too would duplicate the palette row. Once paid, it
+    // falls off barMenu (menu only covers "billed"), so it still needs registering here.
+    if (s === "paid") {
       pageActions.push({ id: "return", label: t("purchasing.detail.return"), run: () => runAction("return") });
     }
   }

@@ -16,6 +16,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
+import { DatePicker } from "../../components/DatePicker";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
@@ -130,7 +131,7 @@ export function FixedAssetDetailPage() {
               <h3 className="acct-detail__action-title">{t("accounting.assets.dispose")}</h3>
               <label className="acct-field">
                 <span>{t("accounting.assets.disposedDate")}</span>
-                <input className="latin" type="date" value={disposeDate} onChange={(e) => setDisposeDate(e.target.value)} required />
+                <DatePicker value={disposeDate} onChange={setDisposeDate} />
               </label>
               <label className="acct-field">
                 <span>{t("accounting.assets.proceeds")}</span>

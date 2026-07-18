@@ -33,6 +33,46 @@ export const usersGuide: HelpGuide = {
   tips: [
     { en: "Select several rows to suspend, activate, or archive them in one action.", ar: "حدّد عدة صفوف لإيقافها أو تفعيلها أو أرشفتها دفعة واحدة." },
   ],
+  checklist: {
+    name: { en: "Invite your first user", ar: "ادعُ أول مستخدم" },
+    doneMessage: {
+      en: "Invited — copy the one-time password from the banner above and share it securely; they'll be prompted to set their own on first sign-in.",
+      ar: "تمت الدعوة — انسخ كلمة المرور المؤقتة من الشريط أعلاه وشاركها بأمان؛ سيُطلب منه تعيين كلمته الخاصة عند أول دخول.",
+    },
+    steps: [
+      {
+        label: { en: "Open the invite form", ar: "افتح نموذج الدعوة" },
+        detail: [
+          { en: "Click Invite user at the top of the page.", ar: "اضغط «دعوة مستخدم» أعلى الصفحة." },
+        ],
+        hint: { en: "Form open. Now fill in who they are.", ar: "النموذج مفتوح. الآن أدخل بياناته." },
+        done: (s) => s.inviteOpen === true || s.submitted === true,
+      },
+      {
+        label: { en: "Enter a username", ar: "أدخل اسم مستخدم" },
+        detail: [
+          { en: "This is what they'll type to sign in — keep it simple, no spaces.", ar: "هذا ما سيكتبه لتسجيل الدخول — اجعله بسيطاً بلا مسافات." },
+        ],
+        hint: { en: "Username set.", ar: "تم إدخال اسم المستخدم." },
+        done: (s) => s.usernameSet === true || s.submitted === true,
+      },
+      {
+        label: { en: "Enter their email", ar: "أدخل بريده الإلكتروني" },
+        detail: [
+          { en: "Used for password resets and notifications.", ar: "يُستخدم لإعادة تعيين كلمة المرور والإشعارات." },
+        ],
+        hint: { en: "Email set. Role and department are optional — assign now or later from the user's page.", ar: "تم إدخال البريد. الدور والقسم اختياريان — عيّنهما الآن أو لاحقاً من صفحة المستخدم." },
+        done: (s) => s.emailSet === true || s.submitted === true,
+      },
+      {
+        label: { en: "Click Invite", ar: "اضغط «دعوة»" },
+        detail: [
+          { en: "A temporary password is generated — you'll see it once, right after this.", ar: "تُولَّد كلمة مرور مؤقتة — ستراها مرة واحدة فور هذا." },
+        ],
+        done: (s) => s.submitted === true,
+      },
+    ],
+  },
   related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
 };
 

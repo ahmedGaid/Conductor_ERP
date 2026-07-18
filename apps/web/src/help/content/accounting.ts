@@ -110,6 +110,60 @@ export const journalEntryGuide: HelpGuide = {
     { en: "Posting is blocked if the period is closed — change the date or ask an admin to open the period.", ar: "يُمنع الترحيل إذا كانت الفترة مغلقة — غيّر التاريخ أو اطلب من المسؤول فتح الفترة." },
     { en: "Don't try to fix a posted entry by editing — post a reversing entry instead.", ar: "لا تصحّح قيداً مُرحّلاً بالتعديل — رحّل قيداً عكسياً بدلاً من ذلك." },
   ],
+  alerts: [
+    {
+      when: (s) => s.hasLines === true && s.balanced === false,
+      tone: "warn",
+      title: { en: "Debits and credits don't match", ar: "المدين والدائن غير متطابقين" },
+      body: {
+        en: "The totals row at the bottom shows the gap. Posting stays blocked until both sides are equal.",
+        ar: "يُظهر صف المجاميع أسفل الفارق. يبقى الترحيل ممنوعاً حتى يتساوى الجانبان.",
+      },
+    },
+    {
+      when: (s) => s.hasError === true,
+      tone: "warn",
+      title: { en: "Something needs fixing", ar: "هناك ما يحتاج تصحيحاً" },
+      body: {
+        en: "The red message above the button explains what's wrong — fix that, then post again.",
+        ar: "الرسالة الحمراء فوق الزر توضّح المشكلة — صحّحها ثم رحّل مرة أخرى.",
+      },
+    },
+  ],
+  checklist: {
+    name: { en: "Post this entry", ar: "رحّل هذا القيد" },
+    doneMessage: {
+      en: "Balanced and ready — click Post to record it.", ar: "متوازن وجاهز — اضغط «ترحيل» لتسجيله.",
+    },
+    steps: [
+      {
+        label: { en: "Add at least two lines with accounts", ar: "أضف سطرين على الأقل بحسابات" },
+        detail: [
+          {
+            en: "Pick an account on the first line and put its amount in either Debit or Credit — never both.",
+            ar: "اختر حساباً في السطر الأول وضع مبلغه في المدين أو الدائن — وليس كليهما.",
+          },
+          {
+            en: "Pick a second account for the other side of the transaction. Click Add line if you need more.",
+            ar: "اختر حساباً ثانياً للجانب المقابل من المعاملة. اضغط «إضافة سطر» إن احتجت أكثر.",
+          },
+        ],
+        hint: { en: "Lines added. Now make them balance.", ar: "تمت إضافة السطور. الآن وازنها." },
+        done: (s) => s.hasLines === true,
+      },
+      {
+        label: { en: "Balance debits and credits", ar: "وازن المدين والدائن" },
+        detail: [
+          {
+            en: "The totals row at the bottom must show the same number on both sides — adjust an amount until it does.",
+            ar: "يجب أن يُظهر صف المجاميع أسفل نفس الرقم في الجانبين — عدّل مبلغاً حتى يتساويا.",
+          },
+        ],
+        hint: { en: "Balanced. Ready to post.", ar: "متوازن. جاهز للترحيل." },
+        done: (s) => s.balanced === true,
+      },
+    ],
+  },
   related: [
     { to: "/accounting", label: { en: "Chart of accounts", ar: "دليل الحسابات" } },
     { to: "/accounting/journals", label: { en: "All journal entries", ar: "كل القيود" } },

@@ -75,9 +75,23 @@ export interface InstanceSummary {
   updated_at: string;
 }
 
+export interface ApprovalRequestInfo {
+  id: string;
+  approver_role: string;
+  approver_user: string | null;
+  title: string;
+  message: string;
+  status: "pending" | "approved" | "rejected";
+  decided_by: string | null;
+  comment: string;
+  decided_at: string | null;
+  created_at: string;
+}
+
 export interface InstanceDetail extends InstanceSummary {
   context: Record<string, unknown>;
   node_runs: NodeRun[];
+  approval: ApprovalRequestInfo | null;
 }
 
 export interface DashboardMetrics {

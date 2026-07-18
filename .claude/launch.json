@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "apps/web",
       "port": 5173
+    },
+    {
+      "name": "django",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["manage.py", "runserver", "127.0.0.1:8000"],
+      "port": 8000
     }
   ]
 }

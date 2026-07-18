@@ -6,6 +6,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
+import { DatePicker } from "../../components/DatePicker";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -25,7 +26,7 @@ export function BalanceSheetPage() {
       <div className="acct-toolbar">
         <label className="acct-field">
           <span>{t("accounting.report.asOf")}</span>
-          <input type="date" className="latin" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+          <DatePicker value={asOf} onChange={setAsOf} />
         </label>
         {data && (
           <span className={data.is_balanced ? "acct-balanced" : "acct-unbalanced"}>

@@ -16,6 +16,7 @@ import { ActionFeedbackProvider } from "./ActionFeedbackContext";
 import { ActionFeedbackHost } from "./ActionFeedbackHost";
 import { HelpCenter } from "../help/HelpCenter";
 import { HelpProvider } from "../help/HelpContext";
+import { HelpSignalsProvider } from "../help/HelpSignalsContext";
 import { usePreferences } from "../preferences/PreferencesContext";
 import { AssistantProvider, AssistantPanelGate } from "../assistant/AssistantProvider";
 import { DetourPill } from "../assistant/DetourPill";
@@ -95,6 +96,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setNavOpen(false)}
             />
             <CommandBar onMenu={() => setNavOpen((v) => !v)} />
+            {/* Re-keyed per route so a page's published help signals reset on navigation, exactly
+                like the page-actions/crumb contexts. Wraps BOTH the page (the publisher) and
+                HelpCenter (the reader) so the drawer's Live tab sees what the current page states. */}
+            <HelpSignalsProvider key={location.pathname}>
             <main id="main" className="appshell__main" ref={mainRef}>
               {/* Re-keying on the path resets the per-route contexts (page actions + document
                   crumb) and replays the enter animation, so pages glide in instead of snapping.
@@ -111,6 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </PageActionsProvider>
             </main>
             <HelpCenter />
+            </HelpSignalsProvider>
             <AssistantPanelGate />
             <DetourPill />
             <ShortcutsHost />

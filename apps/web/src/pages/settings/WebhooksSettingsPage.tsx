@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState, type FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge, type BadgeTone } from "../../components/Badge";
@@ -26,7 +26,11 @@ import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { SYSTEM_ADMIN } from "./roles";
 import { Toggle } from "./controls";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "../admin/admin.css";
+
+/** Per-subscription delivery tally the Live help tab reads (has anything landed? has any failed?). */
+type DeliveryStats = { count: number; failed: number };
 
 const DELIVERY_TONE: Record<WebhookDelivery["status"], BadgeTone> = {
   pending: "pending",
@@ -37,13 +41,30 @@ const DELIVERY_TONE: Record<WebhookDelivery["status"], BadgeTone> = {
 
 let tempSeq = 0;
 
-function DeliveriesPanel({ subscriptionId }: { subscriptionId: string }) {
+function DeliveriesPanel({
+  subscriptionId,
+  onStats,
+}: {
+  subscriptionId: string;
+  onStats: (id: string, stats: DeliveryStats) => void;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
   const { data, loading, error, reload, mutate } = useAsync(
     () => listWebhookDeliveries(subscriptionId),
     [subscriptionId],
   );
+
+  // Report this subscription's delivery tally up so the Live help tab can tick "a delivery landed"
+  // and surface the "a delivery failed" alert — the page only learns delivery state once opened.
+  useEffect(() => {
+    if (data) {
+      onStats(subscriptionId, {
+        count: data.length,
+        failed: data.filter((d) => d.status === "failed").length,
+      });
+    }
+  }, [data, subscriptionId, onStats]);
 
   if (loading) return <ListSkeleton />;
   if (error) return <ErrorState message={error} onRetry={reload} />;
@@ -114,8 +135,33 @@ export function WebhooksSettingsPage() {
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
+  // Once a secret has been shown this session, the checklist's "copy the secret" step stays ticked
+  // even after the reveal card is dismissed — the act happened, don't un-tick it.
+  const [secretEverShown, setSecretEverShown] = useState(false);
+  const [deliveryStats, setDeliveryStats] = useState<Record<string, DeliveryStats>>({});
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  const reportStats = useCallback((id: string, stats: DeliveryStats) => {
+    setDeliveryStats((prev) =>
+      prev[id]?.count === stats.count && prev[id]?.failed === stats.failed
+        ? prev
+        : { ...prev, [id]: stats },
+    );
+  }, []);
+
+  // Publish the page's live facts for the Help drawer's Live tab (alerts + self-ticking checklist).
+  // urlTyped/eventsPicked let the checklist tick as the user fills the form, before they even click
+  // Add — the "leading by the hand" bit-by-bit feel.
+  useSetHelpSignals({
+    subCount: data?.length ?? 0,
+    urlTyped: url.trim().length > 0,
+    eventsPicked: selectedEvents.length > 0,
+    secretJustShown: revealedSecret !== null,
+    secretEverShown,
+    hasDelivery: Object.values(deliveryStats).some((s) => s.count > 0),
+    hasFailedDelivery: Object.values(deliveryStats).some((s) => s.failed > 0),
+  });
 
   if (me && !isAdmin) {
     return (
@@ -156,6 +202,7 @@ export function WebhooksSettingsPage() {
     });
     if (created) {
       setRevealedSecret((created as WebhookSubscription & { secret: string }).secret);
+      setSecretEverShown(true);
       setUrl("");
       setSelectedEvents([]);
     }
@@ -178,6 +225,7 @@ export function WebhooksSettingsPage() {
     try {
       const updated = await regenerateWebhookSecret(sub.id);
       setRevealedSecret(updated.secret);
+      setSecretEverShown(true);
     } catch (err) {
       toast.show(err instanceof Error ? err.message : String(err), "error");
     }
@@ -298,7 +346,7 @@ export function WebhooksSettingsPage() {
                   {expanded === sub.id && (
                     <tr>
                       <td colSpan={4}>
-                        <DeliveriesPanel subscriptionId={sub.id} />
+                        <DeliveriesPanel subscriptionId={sub.id} onStats={reportStats} />
                       </td>
                     </tr>
                   )}

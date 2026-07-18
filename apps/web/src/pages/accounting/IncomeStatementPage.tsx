@@ -9,6 +9,7 @@ import { Bdi } from "../../components/Bdi";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { ComboBox } from "../../components/ComboBox";
 import "./accounting.css";
 
 export function IncomeStatementPage() {
@@ -36,21 +37,26 @@ export function IncomeStatementPage() {
       <div className="acct-toolbar">
         <label className="acct-field">
           <span>{t("accounting.report.period")}</span>
-          <select className="latin" value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="">{t("accounting.report.allPeriods")}</option>
-            {(periods ?? []).map((p) => (
-              <option key={p.code} value={p.code}>{p.code}</option>
-            ))}
-          </select>
+          <ComboBox
+            className="latin"
+            value={period}
+            onChange={setPeriod}
+            placeholder={t("accounting.report.allPeriods")}
+            options={[{ value: "", label: t("accounting.report.allPeriods") }, ...(periods ?? []).map((p) => ({ value: p.code, label: p.code }))]}
+          />
         </label>
         <label className="acct-field">
           <span>{t("accounting.costCenters.label")}</span>
-          <select className="latin" value={costCenter} onChange={(e) => setCostCenter(e.target.value)}>
-            <option value="">{t("accounting.costCenters.all")}</option>
-            {(costCenters ?? []).filter((c) => c.is_active).map((c) => (
-              <option key={c.code} value={c.code}>{c.code} · {c.name}</option>
-            ))}
-          </select>
+          <ComboBox
+            className="latin"
+            value={costCenter}
+            onChange={setCostCenter}
+            placeholder={t("accounting.costCenters.all")}
+            options={[
+              { value: "", label: t("accounting.costCenters.all") },
+              ...(costCenters ?? []).filter((c) => c.is_active).map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` })),
+            ]}
+          />
         </label>
       </div>
 

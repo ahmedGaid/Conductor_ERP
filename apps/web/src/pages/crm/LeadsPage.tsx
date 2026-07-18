@@ -26,11 +26,14 @@ import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useFormKeys } from "../../hooks/useFormKeys";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./crm.css";
 
 const LEAD_STATUSES = ["new", "contacted", "qualified", "unqualified", "converted"] as const;
@@ -64,6 +67,7 @@ export function LeadsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "crm:leads", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((l) => matchesAllFilters(l, fields, filters)) : data),
     [data, fields, filters],
@@ -86,6 +90,9 @@ export function LeadsPage() {
   // ⌘/Ctrl+Enter submits the add-lead form from any field (incl. the source select).
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({ leadCount: (data ?? []).length });
 
   // Multi-select for bulk qualify (mirrors the per-row "qualify" on a new lead).
   const selection = useRowSelection<Lead>({
@@ -233,6 +240,7 @@ export function LeadsPage() {
 
       {data && data.length > 0 && (
         <div className="crm-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

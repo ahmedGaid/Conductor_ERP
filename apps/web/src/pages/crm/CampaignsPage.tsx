@@ -20,6 +20,8 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -49,6 +51,7 @@ export function CampaignsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "crm:campaigns", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((c) => matchesAllFilters(c, fields, filters)) : data),
     [data, fields, filters],
@@ -163,6 +166,7 @@ export function CampaignsPage() {
 
       {data && data.length > 0 && (
         <div className="crm-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

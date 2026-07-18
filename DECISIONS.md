@@ -4,6 +4,49 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Saved views — FILE_06/07 superseded by existing `erp/identity` implementation (2026-07-18)
+
+twenty-harvest FILE_06 (`SavedView` backend, planned in `erp/core`) and FILE_07 (view tabs UI) were
+both **already fully built** before this session, under `erp/identity` — model, migration
+`0010_savedview`, service (`saved_views.py`), DRF API at `/api/identity/saved-views`, 12 passing
+tests, and a frontend `SavedViews`/`useSavedViews` component already consuming it. Narrower than
+the plan's design: owner-only (`is_shared` doesn't exist — no org-wide sharing), and config is a
+flat `list_key`+`query`-string pair (the list's URL query string) rather than a structured
+filters/sort/columns/density JSON. This session did not rebuild it — closed FILE_06 as-is, and for
+FILE_07 did rollout only (extended the existing component from 2 wired pages — sales>orders,
+inventory>items — to all 22 unified list pages). The richer tabs-row/sharing/unsaved-changes-dot
+design FILE_07 originally specified was **not built**; redesigning an existing, working, previously
+accepted component is a bigger decision than a rollout session should make unasked. If sharing is
+wanted, it needs its own plan (model change + owner/admin-edit rule + second-user visibility test).
+
+## Approval-node RBAC — scope split between backend and canvas visuals (twenty-harvest FILE_09, 2026-07-18)
+
+The engine already halted/resumed at an `approval` node (pre-existing) — what FILE_09 actually
+needed was the surrounding governance: a real `ApprovalRequest` row, an approver-scoped RBAC check,
+notification dispatch, and an audit trail. Built all four in full (`erp/workflow/approvals.py`,
+model+migration, 11 new tests, `pytest erp/workflow` 47/47, `gate:all` 00-17 green) — see the
+`_done` plan file for exact detail.
+
+**Deliberately not built:** a bespoke per-node-type visual (pending/approved/rejected card with
+its own chip/color) on the canvas. No node type has ANY custom rendering today — `<ReactFlow>` is
+given no `nodeTypes` prop anywhere in `apps/web`, so every node (not just approval) renders as the
+library's default box. Building one bespoke card for approval alone would be an inconsistent
+one-off; building the general per-type node-card system properly is a separate frontend-
+architecture decision (affects every node type) that a rollout/backend session shouldn't make
+unasked. Flagged in the plan file rather than shipped as if the visual ask was fully met.
+
+## Dev-DB migration drift caused sales/inventory/purchasing 500s (2026-07-18)
+
+FILE_07 handover-gate section B (delivery E2E re-pass) hit `500 Internal Server Error` on
+`/api/sales/customers`, `/api/sales/orders`, `/api/inventory/items` in the browser. Root cause:
+`sales.0008_customer_custom_data`, `sales.0009_pendingpayment`, `inventory.0007_item_custom_data`,
+`inventory.0008_alter_stockmovement_type_pendingstockentry`, `purchasing.0008_pendingpayment`,
+`core.0003_appliedupgradestep`, `core.0004_customfielddef` were unapplied on the dev `erp` database
+— `gate:all` never caught this because it runs against a fresh test DB (migrations always apply
+cleanly there); only the persistent dev DB drifted. Fixed with `manage.py migrate`. Not a code
+defect — a reminder that `gate:all` green does not guarantee the dev DB itself is current; run
+`manage.py migrate` after pulling any session that added migrations, before driving E2E by hand.
+
 ## Playwright E2E suite — new dev-dependency approved (twenty-harvest FILE_04, 2026-07-16)
 
 **Decision gate (team rule 7 — no new dependency without asking):** founder chose **Option A** —

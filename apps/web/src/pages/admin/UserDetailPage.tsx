@@ -21,6 +21,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { InlineEdit } from "../../components/InlineEdit";
+import { ComboBox } from "../../components/ComboBox";
 import "./admin.css";
 
 const STATUSES = ["active", "invited", "suspended", "archived"] as const;
@@ -188,10 +189,12 @@ export function UserDetailPage() {
           <h2>{t("admin.detail.roleAccess")}</h2>
           <label className="admin-field">
             <span>{t("admin.detail.assignedRole")}</span>
-            <select value={current.role ?? ""} onChange={(e) => patch({ role: e.target.value })}>
-              <option value="">{t("admin.invite.noRole")}</option>
-              {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <ComboBox
+              value={current.role ?? ""}
+              onChange={(v) => patch({ role: v })}
+              placeholder={t("admin.invite.noRole")}
+              options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+            />
           </label>
           <label className="admin-field">
             <span>{t("admin.users.status")}</span>
@@ -201,10 +204,12 @@ export function UserDetailPage() {
           </label>
           <label className="admin-field">
             <span>{t("admin.users.department")}</span>
-            <select value={current.department ?? ""} onChange={(e) => patch({ department: e.target.value || null })}>
-              <option value="">—</option>
-              {org?.departments.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
-            </select>
+            <ComboBox
+              value={current.department ?? ""}
+              onChange={(v) => patch({ department: v || null })}
+              placeholder={t("common.selectField", { field: t("admin.users.department") })}
+              options={(org?.departments ?? []).map((d) => ({ value: d.code, label: d.name }))}
+            />
           </label>
           <button className="btn admin-reset" onClick={reset}>{t("admin.detail.resetPassword")}</button>
         </div>

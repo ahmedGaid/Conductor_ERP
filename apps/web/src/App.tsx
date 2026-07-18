@@ -61,12 +61,6 @@ import { SupplierDetailPage } from "./pages/purchasing/SupplierDetailPage";
 import { PurchaseRequestsPage } from "./pages/purchasing/PurchaseRequestsPage";
 import { NewPurchaseRequestPage } from "./pages/purchasing/NewPurchaseRequestPage";
 import { PurchaseRequestDetailPage } from "./pages/purchasing/PurchaseRequestDetailPage";
-import { PipelinePage } from "./pages/crm/PipelinePage";
-import { OpportunityDetailPage } from "./pages/crm/OpportunityDetailPage";
-import { LeadsPage } from "./pages/crm/LeadsPage";
-import { TicketsPage } from "./pages/crm/TicketsPage";
-import { CampaignsPage } from "./pages/crm/CampaignsPage";
-import { CampaignDetailPage } from "./pages/crm/CampaignDetailPage";
 import type { ReactNode } from "react";
 
 // Heavy or rarely-visited screens load on demand so the main chunk stays inside the bundle
@@ -105,6 +99,14 @@ const AssistantPage = lazyPage(() => import("./pages/assistant/AssistantPage"), 
 const KnowledgePage = lazyPage(() => import("./pages/assistant/KnowledgePage"), "KnowledgePage");
 const OpsPage = lazyPage(() => import("./pages/assistant/OpsPage"), "OpsPage");
 const RoleDetailPage = lazyPage(() => import("./pages/admin/RoleDetailPage"), "RoleDetailPage");
+const PipelinePage = lazyPage(() => import("./pages/crm/PipelinePage"), "PipelinePage");
+const OpportunityDetailPage = lazyPage(
+  () => import("./pages/crm/OpportunityDetailPage"), "OpportunityDetailPage");
+const LeadsPage = lazyPage(() => import("./pages/crm/LeadsPage"), "LeadsPage");
+const TicketsPage = lazyPage(() => import("./pages/crm/TicketsPage"), "TicketsPage");
+const CampaignsPage = lazyPage(() => import("./pages/crm/CampaignsPage"), "CampaignsPage");
+const CampaignDetailPage = lazyPage(
+  () => import("./pages/crm/CampaignDetailPage"), "CampaignDetailPage");
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, restoring } = useAuth();

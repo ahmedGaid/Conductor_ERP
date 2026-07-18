@@ -133,6 +133,10 @@ def _step(instance_id, runtime: dict) -> bool:
         instance.status = InstanceStatus.WAITING
         instance.save(update_fields=["status", "updated_at"])
         _log(instance, node_exec, LogLevel.INFO, f"node '{node.key}' waiting")
+        if node.type == NodeType.APPROVAL:
+            from .. import approvals
+
+            approvals.create_approval_request(instance, node)
         return False
 
     # --- failed (with retry policy) ---

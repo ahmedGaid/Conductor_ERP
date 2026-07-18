@@ -12,7 +12,10 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import type { CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { ComboBox } from "../../components/ComboBox";
 import "./admin.css";
 
 export function RolesPage() {
@@ -38,6 +41,7 @@ export function RolesPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "admin:roles", fields, filters, setFilters });
   const filtered = useMemo(
     () => (roles ? roles.filter((r) => matchesAllFilters(r, fields, filters)) : roles),
     [roles, fields, filters],
@@ -91,6 +95,7 @@ export function RolesPage() {
 
       {roles && roles.length > 0 && (
         <div className="admin-filterbar">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}
@@ -180,10 +185,12 @@ function NewRoleForm({
         </label>
         <label className="admin-field">
           <span>{t("admin.roles.copyFrom")}</span>
-          <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)}>
-            <option value="">{t("admin.roles.copyBlank")}</option>
-            {roles.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
-          </select>
+          <ComboBox
+            value={copyFrom}
+            onChange={setCopyFrom}
+            placeholder={t("admin.roles.copyBlank")}
+            options={[{ value: "", label: t("admin.roles.copyBlank") }, ...roles.map((r) => ({ value: r.name, label: r.name }))]}
+          />
         </label>
       </div>
       <div className="admin-invite__foot">

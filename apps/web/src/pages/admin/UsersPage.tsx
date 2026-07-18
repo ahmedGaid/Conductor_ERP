@@ -15,6 +15,8 @@ import { normalizeSearch } from "../../lib/arabicSearch";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
+import { ComboBox } from "../../components/ComboBox";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
@@ -112,14 +114,20 @@ export function UsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={role} onChange={(e) => setRole(e.target.value)} aria-label={t("admin.users.role")}>
-          <option value="">{t("admin.users.allRoles")}</option>
-          {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <select value={department} onChange={(e) => setDepartment(e.target.value)} aria-label={t("admin.users.department")}>
-          <option value="">{t("admin.users.allDepartments")}</option>
-          {org?.departments.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
-        </select>
+        <ComboBox
+          value={role}
+          onChange={setRole}
+          placeholder={t("admin.users.allRoles")}
+          options={[{ value: "", label: t("admin.users.allRoles") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+          aria-label={t("admin.users.role")}
+        />
+        <ComboBox
+          value={department}
+          onChange={setDepartment}
+          placeholder={t("admin.users.allDepartments")}
+          options={[{ value: "", label: t("admin.users.allDepartments") }, ...(org?.departments.map((d) => ({ value: d.code, label: d.name })) ?? [])]}
+          aria-label={t("admin.users.department")}
+        />
         <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label={t("admin.users.status")}>
           <option value="">{t("admin.users.allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(`admin.status.${s}`)}</option>)}
@@ -194,14 +202,13 @@ export function UsersPage() {
         <button className="btn btn--sm" onClick={() => runBulk("activate")}>{t("admin.action.activate")}</button>
         <button className="btn btn--sm" onClick={() => runBulk("suspend")}>{t("admin.action.suspend")}</button>
         <button className="btn btn--sm" onClick={() => runBulk("archive")}>{t("admin.action.archive")}</button>
-        <select
+        <ComboBox
           value={assignRoleTo}
-          onChange={(e) => setAssignRoleTo(e.target.value)}
+          onChange={setAssignRoleTo}
+          placeholder={t("admin.action.assignRole")}
+          options={[{ value: "", label: t("admin.action.assignRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
           aria-label={t("admin.action.assignRole")}
-        >
-          <option value="">{t("admin.action.assignRole")}</option>
-          {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
+        />
         <button className="btn btn--sm" disabled={!assignRoleTo} onClick={() => runBulk("assign_role")}>
           {t("admin.action.apply")}
         </button>
@@ -239,6 +246,18 @@ function InviteForm({
   const [department, setDepartment] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Sticky once true — set right before onClose() so the Live tab's last step still reads as done
+  // even after the form closes and this component starts returning null (it stays mounted).
+  const [submitted, setSubmitted] = useState(false);
+
+  // Publish the page's live facts for the Help drawer's Live tab. Must run before the `if (!open)`
+  // return below — hooks can't be conditional — so signals persist through the close.
+  useSetHelpSignals({
+    inviteOpen: open,
+    usernameSet: username.trim() !== "",
+    emailSet: email.trim() !== "",
+    submitted,
+  });
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -246,6 +265,7 @@ function InviteForm({
     setErr(null);
     try {
       const created = await createUser({ username, email, role: role || undefined, department: department || undefined });
+      setSubmitted(true);
       onCreated(t("admin.invite.done", { name: username, password: created.temp_password ?? "" }));
       setUsername(""); setEmail(""); setRole(""); setDepartment(""); onClose();
     } catch (e2) {
@@ -270,17 +290,21 @@ function InviteForm({
         </label>
         <label className="admin-field">
           <span>{t("admin.users.role")}</span>
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="">{t("admin.invite.noRole")}</option>
-            {org?.roles.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+          <ComboBox
+            value={role}
+            onChange={setRole}
+            placeholder={t("admin.invite.noRole")}
+            options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+          />
         </label>
         <label className="admin-field">
           <span>{t("admin.users.department")}</span>
-          <select value={department} onChange={(e) => setDepartment(e.target.value)}>
-            <option value="">—</option>
-            {org?.departments.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
-          </select>
+          <ComboBox
+            value={department}
+            onChange={setDepartment}
+            placeholder={t("common.selectField", { field: t("admin.users.department") })}
+            options={(org?.departments ?? []).map((d) => ({ value: d.code, label: d.name }))}
+          />
         </label>
       </div>
       {err && <p className="error-text">{err}</p>}

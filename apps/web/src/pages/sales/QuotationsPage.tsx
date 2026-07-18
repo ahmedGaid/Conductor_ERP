@@ -21,6 +21,8 @@ import { StatusRing } from "../../components/StatusRing";
 import { salesTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { SalesNav } from "./SalesNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -49,6 +51,7 @@ export function QuotationsPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "sales:quotations", fields, filters, setFilters });
 
   const filtered = useMemo(
     () => (data ? data.filter((q) => matchesAllFilters(q, fields, filters)) : data),
@@ -121,7 +124,12 @@ export function QuotationsPage() {
     <section className="sales-page">
       <SalesNav />
       <div className="sales-page__head">
-        {data && data.length > 0 && <FilterBar fields={fields} filters={filters} onChange={setFilters} />}
+        {data && data.length > 0 && (
+          <>
+            <SavedViews api={savedViews} />
+            <FilterBar fields={fields} filters={filters} onChange={setFilters} />
+          </>
+        )}
       </div>
 
       {loading && (

@@ -12,6 +12,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { StatCard } from "../../components/StatCard";
+import { ComboBox } from "../../components/ComboBox";
 import { useAsync } from "../../hooks/useAsync";
 import "./ops.css";
 
@@ -250,12 +251,13 @@ export function OpsPage() {
       )}
 
       <div className="ops-filters">
-        <select value={feature} onChange={(e) => onFeature(e.target.value)} aria-label={t("ops.filterFeature")}>
-          <option value="">{t("ops.allFeatures")}</option>
-          {FEATURES.map((f) => (
-            <option key={f} value={f}>{t(`ops.feature.${f}`)}</option>
-          ))}
-        </select>
+        <ComboBox
+          value={feature}
+          onChange={onFeature}
+          placeholder={t("ops.allFeatures")}
+          options={[{ value: "", label: t("ops.allFeatures") }, ...FEATURES.map((f) => ({ value: f, label: t(`ops.feature.${f}`) }))]}
+          aria-label={t("ops.filterFeature")}
+        />
         <select value={status} onChange={(e) => onStatus(e.target.value)} aria-label={t("ops.filterStatus")}>
           <option value="">{t("ops.allStatuses")}</option>
           {STATUSES.map((st) => (

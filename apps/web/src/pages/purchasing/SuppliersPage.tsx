@@ -22,11 +22,14 @@ import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
+import { SavedViews } from "../../components/SavedViews";
+import { useSavedViews } from "../../hooks/useSavedViews";
 import { RowActions } from "../../components/RowActions";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
 import { PurchasingNav } from "./PurchasingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./purchasing.css";
 
 export function SuppliersPage() {
@@ -43,6 +46,7 @@ export function SuppliersPage() {
     ],
     [t],
   );
+  const savedViews = useSavedViews({ listKey: "purchasing:suppliers", fields, filters, setFilters });
   const filtered = useMemo(
     () => (data ? data.filter((s) => matchesAllFilters(s, fields, filters)) : data),
     [data, fields, filters],
@@ -84,6 +88,13 @@ export function SuppliersPage() {
   // ⌘/Ctrl+Enter submits the add form from any field.
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  // Publish the page's live facts for the Help drawer's Live tab.
+  useSetHelpSignals({
+    codeSet: code.trim() !== "",
+    nameSet: name.trim() !== "",
+    supplierCount: (data ?? []).length,
+  });
 
   const importFields = useMemo<ImportFieldInfo[]>(
     () => [
@@ -159,6 +170,7 @@ export function SuppliersPage() {
 
       {data && data.length > 0 && (
         <div className="pur-filters">
+          <SavedViews api={savedViews} />
           <FilterBar fields={fields} filters={filters} onChange={setFilters} />
         </div>
       )}

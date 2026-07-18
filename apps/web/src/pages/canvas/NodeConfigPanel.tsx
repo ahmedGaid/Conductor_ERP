@@ -85,6 +85,12 @@ export function NodeConfigPanel({ selection, onNodeConfigChange, onEdgeChange, o
             <dt>{t("canvas.nodeType")}</dt>
             <dd>{t(`nodeType.${selection.nodeType}`)}</dd>
           </dl>
+          {selection.nodeType === "approval" && (
+            <ApprovalFields
+              config={selection.config}
+              onChange={(config) => onNodeConfigChange(selection.key, config)}
+            />
+          )}
           <label className="canvas__field">
             <span>{t("canvas.config")}</span>
             <textarea
@@ -132,5 +138,53 @@ export function NodeConfigPanel({ selection, onNodeConfigChange, onEdgeChange, o
         </button>
       </div>
     </aside>
+  );
+}
+
+/**
+ * Structured fields for the approval node's title/message/role — the fields most authors set.
+ * A specific approver (`approver_user_id`) still goes through the raw JSON config below it; a
+ * user-search combobox here is a follow-up, not built in this pass.
+ */
+function ApprovalFields({
+  config,
+  onChange,
+}: {
+  config: Record<string, unknown>;
+  onChange: (config: Record<string, unknown>) => void;
+}) {
+  const { t } = useTranslation();
+
+  function set(key: string, value: string) {
+    onChange({ ...config, [key]: value });
+  }
+
+  return (
+    <>
+      <label className="canvas__field">
+        <span>{t("canvas.approval.title")}</span>
+        <input
+          value={(config.title as string) ?? ""}
+          onChange={(e) => set("title", e.target.value)}
+        />
+      </label>
+      <label className="canvas__field">
+        <span>{t("canvas.approval.message")}</span>
+        <textarea
+          rows={2}
+          value={(config.message as string) ?? ""}
+          onChange={(e) => set("message", e.target.value)}
+        />
+      </label>
+      <label className="canvas__field">
+        <span>{t("canvas.approval.approverRole")}</span>
+        <input
+          className="latin"
+          value={(config.approver_role as string) ?? ""}
+          onChange={(e) => set("approver_role", e.target.value)}
+          placeholder={t("canvas.approval.approverRolePlaceholder")}
+        />
+      </label>
+    </>
   );
 }
