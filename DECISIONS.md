@@ -2158,3 +2158,28 @@ replaying a backdated movement costs it against the CURRENT balance, silently co
 territory; `FILE_16_FINANCE_ADAPTERS.md` renamed `_done` anyway since both remaining Task
 B/C halves are now either shipped (payments/receipts, inventory_opening) or explicitly descoped
 (inventory_transactions) — nothing left to build against this file.
+
+## Custom fields: Supplier added as a third entity (twenty-harvest FILE_12 follow-up, 2026-07-18)
+
+FILE_12 (custom fields UI, built by Agent B on a founder-authorized cross into `apps/web`
+territory — see `PARALLEL_PLAN.md` A7) shipped with the entity scope FILE_11 already fixed:
+`sales.customer` and `inventory.item` only. Founder asked why, then explicitly delegated the call
+("you decide what's best for the app") on whether to widen it.
+
+**Decision: add `purchasing.supplier`, and stop there.** `Supplier` (`code`, `name`, `is_active`)
+is a strict structural subset of `Customer` — the Identity System's own Arabic lexicon already
+treats Customer/Supplier as the AR/AP pair (عميل / مورد). Leaving Supplier out was the actual
+inconsistency: anyone who finds custom fields on customers would reasonably expect them on
+suppliers too. Deliberately did **not** extend to leads, sales/purchase orders, or any other
+entity — those are transactional or CRM-shaped, not master data, and widening further would break
+the twenty-harvest plan's own intentional scope brake ("fields only, never objects", `Docs/ARP_
+STRATEGY.md` §5's explicit refusal of Odoo-style generic configurability). Two clean entities
+becoming three natural ones is completion, not scope creep; a fourth would need its own case made.
+
+**Implementation mirrors `sales.customer`/`inventory.item` exactly** — `ENTITY_CHOICES` entry,
+`custom_data` JSONField + migration on `Supplier`, serializer field, `validate_custom_data` in the
+create view, dynamic form + table columns on `SuppliersPage`, detail facts on
+`SupplierDetailPage`, third option in the Settings entity picker. No new pattern invented.
+`erp/purchasing` has no audit-snapshot or export-table wiring on supplier create today (unlike
+customer/item), so no custom-fields test/wiring was added for either — matching what exists, not
+inventing scope beyond it.
