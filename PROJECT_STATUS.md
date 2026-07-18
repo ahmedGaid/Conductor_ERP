@@ -1,10 +1,11 @@
 # Conductor ERP (ERP-B lane) — Project Status
 
 ![Status](https://img.shields.io/badge/status-active_development-brightgreen)
-![Progress](https://img.shields.io/badge/progress-85%25-blue)
+![Progress](https://img.shields.io/badge/progress-90%25-blue)
 ![Stack](https://img.shields.io/badge/stack-Django%205.1%20%2B%20React%2018%2FTS-informational)
 
-> **Last Updated:** 2026-07-17 · **Updated By:** agent · **Branch analyzed:** `feat/b-lane`
+> **Last Updated:** 2026-07-18 · **Updated By:** agent · **Branch analyzed:** `feat/sec-hardening`
+> (== `origin/main` @ `cd99366`)
 > 🤖 **AI agents:** read [Executive Summary](#executive-summary) +
 > [AI Agent Quick Context](#ai-agent-quick-context) first — 2 minutes gets you 90% of the picture.
 
@@ -14,17 +15,22 @@ Conductor ERP ("ARP — Agentic Resource Planning") is a customer-hosted, single
 Egyptian SMBs: Django modular-monolith backend + React/TS frontend, Arabic/RTL-first, bilingual.
 Core modules (Sales, Purchasing, Inventory, Accounting, CRM) plus VAT, Egyptian e-invoicing (ETA),
 workflow engine, AI assistant, RBAC, and audit trail are built and gated green (`v1.0.0`,
-2026-07-16). **This specific checkout is `C:\AhmedGaid\ERP-B`** — a separate git worktree
-(`feat/b-lane`) used by "Agent B" to run backend work in parallel with "Agent A" (main checkout
-`C:\AhmedGaid\ERP`, `feat/a-*` branches) against the same GitHub repo. Current focus: the
-pre-handover hardening set, then the "twenty-harvest" (Twenty CRM parity) and "smart-import"
-(zero-prep Excel migration) plans. Next priority: continue B's lane on twenty-harvest FILE_19+
-per the parallel execution board.
+2026-07-16). **This specific checkout is `C:\AhmedGaid\ERP-B`** — a separate git worktree used by
+"Agent B" to run backend work in parallel with "Agent A" (main checkout `C:\AhmedGaid\ERP`,
+`feat/a-*` branches) against the same GitHub repo. Current focus: the pre-handover hardening set
+(security hardening confirmed done and re-verified 2026-07-18) plus the "twenty-harvest" (Twenty
+CRM parity) and "smart-import" (zero-prep Excel migration) plans — backend for both is now almost
+entirely done; **Agent B's lane is IDLE** (no eligible backend-only task left per the 2026-07-18
+board audit) and the remaining backlog is nearly all `apps/web` UI, Agent A's territory. B only
+picks up new work when the founder opens a backend-only task or takes an explicitly-authorized
+cross-territory `apps/web` file.
 
 ## AI Agent Quick Context
 
-- **Current goal:** Ship customer handover readiness, then work down the twenty-harvest +
-  smart-import backend queues in lane B while lane A (separate worktree) does frontend/workflow.
+- **Current goal:** Ship customer handover readiness. Lane B's backend queue (twenty-harvest +
+  smart-import) is now almost entirely done — **lane B is IDLE** as of 2026-07-18; remaining work
+  is nearly all `apps/web` UI (lane A's territory) or founder-gated (handover-gate sections C/D/E
+  need a real customer box).
 - **Architecture:** Django 5.1 + DRF modular monolith (`erp/*` apps) + React 18/TS/Vite
   (`apps/web`), Postgres 16, Redis (Celery broker + throttling), Arabic/RTL-first, JWT auth.
 - **⚠️ You are in a worktree, not the primary checkout.** `C:\AhmedGaid\ERP-B` is Agent B's lane
@@ -44,13 +50,19 @@ per the parallel execution board.
   `erp-status`-skill update at merge checkpoints only.
 - **Do NOT:** touch `apps/web/**` from this lane without a coordination note on the board; reopen
   a `_done` plan file (fix forward in code instead); run destructive git ops on `main`.
-- **Current priorities:** finish the pre-handover set (delivery-readiness FILE_07 handover gate),
-  then twenty-harvest Tier 2 backend (FILE_19 admin panel backend is next per the board).
+- **Current priorities:** delivery-readiness FILE_07 handover gate sections C/D/E (founder + real
+  customer box, not solo). Backend queue is otherwise drained — admin panel backend (FILE_19),
+  AI usage/cost backend (FILE_20), draftable payments, and reconciled inventory opening are all
+  done. Remaining twenty-harvest/smart-import work is `apps/web` UI (lane A) for those same
+  features, plus TH FILE_18 (Kanban pipeline) and SI FILE_12–15 (wizard/preview/report UI).
 - **How to continue safely:** read `Docs/plan/PARALLEL_PLAN.md` (board) and
   `Docs/plan/EXECUTION_ORDER.md` (queue authority) first; recall the `erp-status` skill for live
   state; run `pytest erp/<app>` + `.\.venv\Scripts\python.exe scripts\gates\_run.py all`.
-- **Likely next files to edit:** `erp/core/**` (admin panel backend, TH FILE_19),
-  `Docs/plan/twenty-harvest-plan/FILE_19_*.md`.
+- **Likely next files to edit:** none default-claimed — lane B is idle. If picking up
+  founder-authorized cross-territory `apps/web` work (as happened once already, see FILE_12/16),
+  **check `Docs/plan/PARALLEL_PLAN.md` first for a `doing(A)` row on the same file** — two agents
+  independently built the same FILE_16 UX-states-batch task in parallel on 2026-07-18 because the
+  board hadn't been flipped yet; the duplicate was discarded in favor of Agent A's version.
 - **Deeper truth lives in:** `erp-status` skill (live pointer), `DECISIONS.md` (160K, full
   rationale log), `Docs/plan/EXECUTION_ORDER.md` (queue order), `Docs/plan/PARALLEL_PLAN.md`
   (this lane's board), `Docs/ARP_STRATEGY.md` (category/scope), `Docs/Brand/*` (brand triad).
@@ -74,17 +86,17 @@ in a "delivery-readiness" hardening pass before the first real customer handover
 
 | Area | Progress | Status |
 |---|---|---|
-| **Overall** | `████████░░ 85%` | Core ERP done; hardening + Twenty-parity/import backlog in progress |
-| Backend (Django/DRF) | `█████████░ 90%` | 5 core modules + accounting depth + workflow + identity/RBAC done; imports & admin-panel backend ongoing |
-| Frontend (React/TS) | `████████░░ 80%` | Core UI + Linear-polish (undo/keyboard/views/inbox) done; Twenty-harvest UI (saved views, ⌘K, custom fields UI) partial |
+| **Overall** | `█████████░ 90%` | Core ERP + Twenty-harvest/Smart-import backend done; remaining work is mostly `apps/web` UI + founder-gated handover steps |
+| Backend (Django/DRF) | `█████████░ 90%` | 5 core modules + accounting depth + workflow + identity/RBAC + admin-panel + AI-usage + draftable-payments + inventory-opening backends all done; lane B idle, no backend-only task left |
+| Frontend (React/TS) | `████████░░ 85%` | Core UI + Linear-polish + custom-fields UI + API-keys UI + activity-timeline UI + list-UX + Arabic user guide done; Kanban pipeline UI, admin-panel UI, AI-usage UI, import wizard/preview UI still open |
 | Database | `█████████░ 90%` | Postgres 16, migrations current per app; no known pending schema debt |
 | Infrastructure | `████████░░ 80%` | Docker/Compose + `provision_customer` go-live command done; production hardening ongoing |
-| Authentication | `█████████░ 90%` | JWT + HttpOnly refresh cookie, 2FA, RBAC, API keys (backend done, keys UI pending) |
-| API | `████████░░ 80%` | DRF surface broad + gate17 API-schema snapshot; import/admin-panel endpoints still landing |
-| Testing | `████████░░ 80%` | pytest + pytest-django, ~1300 tests reported green in `erp-status`; Playwright E2E for Tier-1 flows done; **no JS unit-test runner** |
-| Documentation | `█████████░ 90%` | Extensive `Docs/plan/*`, `DECISIONS.md`, brand docs, RUNBOOK |
-| Deployment | `███████░░░ 70%` | Dockerfile + waitress/whitenoise prod profile; handover gate (FILE_07) not yet run on a real customer box |
-| AI Integration | `███████░░░ 70%` | AI workspace (chat/actions/tool catalog) done; AI-reliability roadmap Phases 3–8 (retrieval v2, memory, orchestration, guardrails) not started |
+| Authentication | `█████████░ 90%` | JWT + HttpOnly refresh cookie, 2FA, RBAC, API keys — backend AND Settings UI both done |
+| API | `█████████░ 90%` | DRF surface broad + gate17 API-schema snapshot kept current; admin-panel/AI-usage/imports endpoints all landed |
+| Testing | `████████░░ 80%` | pytest + pytest-django, ~1300+ tests reported green in `erp-status`; Playwright E2E for Tier-1 flows done; **no JS unit-test runner** |
+| Documentation | `█████████░ 90%` | Extensive `Docs/plan/*`, `DECISIONS.md`, brand docs, RUNBOOK, in-app Arabic user guide |
+| Deployment | `███████░░░ 70%` | Dockerfile + waitress/whitenoise prod profile; handover gate (FILE_07) sections A+B done, C/D/E not yet run on a real customer box |
+| AI Integration | `███████░░░ 70%` | AI workspace (chat/actions/tool catalog) + usage/cost tracking backend done; AI-reliability roadmap Phases 3–8 (retrieval v2, memory, orchestration, guardrails) not started |
 
 ## Architecture & Stack
 
@@ -167,21 +179,38 @@ storage/         runtime file storage root (reports, exports; STORAGE_ROOT env-c
 - [x] Smart Import: parsing/mapping/dedupe/auto-masters/execution-engine/background runner/REST
       API/document adapters (sales, purchasing docs) + finance adapters (journal entries,
       account opening)
+- [x] Security hardening — scope enforcement (`scope_queryset` on every module), SSRF egress guard,
+      auth/JWT hardening, import/backup file-handling caps, `check --deploy` clean — confirmed done
+      + re-verified twice (2026-07-16, 2026-07-18)
+- [x] Custom fields UI (Settings CRUD + customer/item/supplier forms) — twenty-harvest FILE_12
+- [x] Activity timeline — read API + tab UI + AI/import source glyph — twenty-harvest FILE_13
+- [x] API keys — backend + Settings → Developers UI + generated reference page — twenty-harvest FILE_14
+- [x] List UX — peek-card audit (zero gap found) + Pipeline stage inline edit — twenty-harvest FILE_17
+- [x] Arabic-first in-app User Guide + 38-term glossary, reachable via ⌘K/App Menu — twenty-harvest FILE_15
+- [x] Admin panel backend (`GET /api/system/status/` — version/uptime/DB+Redis/storage/backups) —
+      twenty-harvest FILE_19 Task A/C (Settings UI still open)
+- [x] AI usage & cost backend (`GET /api/assistant/usage/`) — twenty-harvest FILE_20 Task A/C
+      (Settings UI still open)
+- [x] Draftable payments (`PendingPayment`) + reconciled inventory opening (`PendingStockEntry`,
+      suspense-account posting) backend + API — review/apply screens (apps/web) still open
 
 ### 🟡 Partially Complete
 - [ ] Smart Import finance adapters — journal entries + opening entries done; payments/receipts
       and inventory-opening/transactions are documented blockers (no unallocated-payment model,
       no as-of-date WAC) — see `DECISIONS.md`
-- [ ] Twenty-harvest FILE_14 API keys — backend done (this lane); Settings → Developers keys UI +
-      reference page not built (Agent A territory)
-- [ ] Twenty-harvest FILE_13 activity timeline — read API done; tab UI + verifiability link
-      deferred to Agent A
-- [ ] Twenty-harvest FILE_15/16 import adapters — backend done; preview UI / suspense-approval
-      panel (apps/web) unbuilt/unverified from this lane
-- [ ] Delivery-readiness FILE_07 HANDOVER GATE — not yet run on a real customer box
+- [ ] Smart Import document/finance adapters — backend done (SI FILE_15/16); wizard/preview/
+      report + suspense-approval UI (SI FILE_12–14) unbuilt (Agent A territory)
+- [ ] Twenty-harvest FILE_16 UX states batch (empty-state taxonomy, skeletons, `?` cheatsheet) —
+      reportedly completed by Agent A 2026-07-18 in the sibling `C:\AhmedGaid\ERP` worktree, but
+      **not yet visible on `origin/main`** as of this update; treat as unconfirmed until the board
+      or a commit shows it merged
+- [ ] Admin panel + AI usage Settings UI (FILE_19/20 Task B) — backend/API done, UI unbuilt
+- [ ] Delivery-readiness FILE_07 HANDOVER GATE — sections A+B done; C/D/E need the founder on a
+      real customer box (provisioning, ETA day-one invoice, restore drill)
 
 ### ⬜ Not Started
-- [ ] Twenty-harvest FILE_19+ (admin panel backend — next task for this lane) through FILE_21
+- [ ] Twenty-harvest FILE_18 Kanban pipeline UI, FILE_21 acceptance
+- [ ] Smart-import FILE_17 acceptance (blocked on FILE_12–14 UI landing first)
 - [ ] AI-reliability roadmap Phases 3–8 (retrieval v2, memory, agent orchestration v2,
       guardrails/security, perf/cost, production hardening)
 - [ ] ARP roadmap phases A2, B, B2, C–F (strategic roadmap, gated behind queue positions 1–10)
@@ -193,36 +222,50 @@ Authority: `Docs/plan/EXECUTION_ORDER.md` (global queue) + `Docs/plan/PARALLEL_P
 lane's board). Do not reorder without reading both.
 
 **High Priority**
-1. Twenty-harvest FILE_19 admin panel backend (this lane's next claimed task)
-2. Delivery-readiness FILE_07 HANDOVER GATE (founder + either agent, needs a real customer box)
+1. Delivery-readiness FILE_07 HANDOVER GATE sections C/D/E (founder + real customer box — the only
+   hard blocker left before customer handover)
+2. Twenty-harvest FILE_18 Kanban pipeline UI, FILE_19/20 Settings UI (admin panel, AI usage) —
+   all Agent A territory, backend already done for all three
 
 **Medium Priority**
-1. Twenty-harvest FILE_20–21 (Tier 3 polish + acceptance)
-2. Smart-import FILE_12–14 (wizard/preview/report UI — Agent A territory, depends on this lane's
-   adapters)
+1. Twenty-harvest FILE_21 acceptance (after Tier-2/3 UI lands)
+2. Smart-import FILE_12–15 (wizard/preview/report/adapter-review UI — Agent A territory, backend
+   done for all of it) → FILE_17 acceptance
 
 **Low Priority**
 1. ARP roadmap phases A2/B/B2/C–F (after queue positions 1–10 are fully `_done`)
 2. AI-reliability roadmap Phases 3–8
 
-**Current blockers:** none active. Historical: 2026-07-16 both-agents-one-checkout incident
-(fixed — worktrees now separate, see Hard Constraints above).
+**Current blockers:** none active for lane B (lane is idle — no eligible backend-only task).
+Historical: 2026-07-16 both-agents-one-checkout incident (fixed — worktrees now separate, see Hard
+Constraints above); 2026-07-18 both agents independently built the same `apps/web` file (FILE_16)
+in parallel because the shared board hadn't been flipped yet — no data lost, the duplicate was
+discarded, but it's a reminder to re-check `PARALLEL_PLAN.md` immediately before any cross-territory
+pickup, not just at session start.
 
 ## Recent Work
 
-- 2026-07-17 — API keys backend: model + `ApiKeyAuthentication` + service (`e64191d`)
-- 2026-07-17 — Finance import adapters: journal_entries + account_opening (`e877d6d`)
-- 2026-07-17 — Document import adapters finished: sales_quotations, sales_orders, purchase_orders
-  (`b385831`)
-- 2026-07-17 — Document import adapters: group-by engine + sales/purchase invoices (`03791cc`)
-- 2026-07-16 — Activity timeline read API (Task A only) (`1b0a9b2`)
-- 2026-07-16 — Custom fields backend (fields only) (`eab66b5`)
-- 2026-07-16 — Smart Import REST API + deterministic autofix (`91da71a`)
-- 2026-07-16 — Smart Import background runner: DB-backed job queue, `manage.py run_imports`
-  (`b1a3a70`)
-- 2026-07-16 — Smart Import execution engine: strategies, chunked commits, resume, rollback
-  (`68642c3`)
-- 2026-07-16 — Release versioning: `VERSION` single source of truth (`9e2b422`)
+- 2026-07-18 — gate17 API-schema snapshot regenerated (was stale since `91da71a`, flagging a real
+  route replacement as a false break) (`98c8878`)
+- 2026-07-18 — Security hardening (B18) confirmed already done from the 2026-07-02 session,
+  re-verified twice, docs-only (`b503df7`, `03fa32c`, `dbe2f81`)
+- 2026-07-18 — Arabic-first in-app User Guide + 38-term glossary, ⌘K/App-Menu reachable
+  (twenty-harvest FILE_15) (`733ec81`)
+- 2026-07-18 — CRM Pipeline stage inline edit + list-page peek-card audit (twenty-harvest FILE_17)
+  (`00e3a36`)
+- 2026-07-18 — API keys Settings page + generated reference docs page (twenty-harvest FILE_14
+  Task B/C) (`f01fc57`)
+- 2026-07-18 — Activity timeline tab UI + AI/import source glyph (twenty-harvest FILE_13 Task B/C)
+  (`1081e22`)
+- 2026-07-18 — Supplier added as a third custom-fields entity (`cca1093`)
+- 2026-07-18 — Custom fields UI: Settings CRUD + customer/item form rendering (twenty-harvest
+  FILE_12) (`3a52111`)
+- 2026-07-18 — Admin panel backend (`GET /api/system/status/`), AI usage/cost backend
+  (`GET /api/assistant/usage/`), draftable payments, reconciled inventory opening — all backend
+  done this window, review/apply UI still open (see `Docs/plan/PARALLEL_PLAN.md` B14–B17)
+- earlier (2026-07-16/17): Smart Import engine complete (parsing → execution → background runner →
+  REST API → document + finance adapters), activity-timeline read API, custom-fields backend,
+  release versioning (`VERSION`/`manage.py upgrade`)
 
 **Recent architectural changes:**
 1. Smart Import background jobs use a DB-backed queue (`ImportBatch` status + `manage.py
@@ -237,8 +280,10 @@ lane's board). Do not reorder without reading both.
 
 ## Known Issues & Technical Debt
 
-- Smart Import finance adapters: payments/receipts and inventory-opening/transactions are
-  explicitly unbuilt (documented blockers, not forgotten — see `DECISIONS.md`).
+- Smart Import finance adapters: `payments`/`receipts` and `inventory_transactions` are explicitly
+  unbuilt (documented blockers — no unallocated-payment model, no as-of-date WAC). `inventory_opening`
+  was later solved separately via `PendingStockEntry` (suspense-account posting, B17) — only
+  `inventory_transactions` remains an open blocker now. See `DECISIONS.md`.
 - `erp/workflow/tests/test_api.py` — pre-existing broken test flagged separately in `erp-status`
   (excluded from the "1146/1146 green" count as of 2026-07-16).
 - `seed_identity` creates 3 demo users with a shared known password (`Dev12345!`) — fine for dev,
@@ -247,9 +292,9 @@ lane's board). Do not reorder without reading both.
 - `sales._next_customer_code` can mis-detect the max on non-numeric codes (filed, low priority).
 - No `TODO`/`FIXME`/`HACK` markers found in `erp/` — debt is tracked in `DECISIONS.md`/plan files
   instead of code comments.
-- **Uncommitted local noise:** ~430 untracked `assistant/2026/07/data_*.csv` files at repo root
-  (small generated CSVs, e.g. import/export test artifacts) — not part of the tracked project;
-  worth `.gitignore`-ing or cleaning up, not a functional issue.
+- **Uncommitted local noise:** 1,100+ (growing) untracked `assistant/2026/07/data_*.csv` files at
+  repo root (small generated CSVs, e.g. import/export test artifacts) — not part of the tracked
+  project; worth `.gitignore`-ing before it grows further, not currently a functional issue.
 
 ## Design Decisions & Business Rules
 
@@ -338,9 +383,11 @@ customer upgrades (not raw `migrate`).
   (`check-bundle-size.mjs`) runs on every frontend build.
 - **Security:** prod settings profile sets HSTS (1y), strict CSP, secure cookies, SSL redirect;
   `manage.py check --deploy --settings=config.settings.prod` reports no issues (verified
-  2026-07-16). Argon2 password hashing, DRF throttling on anon/user/login. Outstanding:
-  code-level scope/SSRF audit from `Docs/plan/00-security-hardening.md` still owed; demo-user
-  default-credential cleanup still owed before real customer handover.
+  2026-07-16, re-verified 2026-07-18). Argon2 password hashing, DRF throttling on anon/user/login.
+  `Docs/plan/00-security-hardening.md` (scope enforcement via `scope_queryset` on every module,
+  SSRF egress allowlist, JWT/auth hardening, import/backup file-size caps) is **done and
+  re-verified twice** — no longer outstanding. Still owed before real customer handover: demo-user
+  default-credential cleanup (`phase1d_qa` test user pending suspend/delete in the dev DB).
 
 ---
 
