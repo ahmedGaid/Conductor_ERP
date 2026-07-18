@@ -1488,7 +1488,13 @@
       "badPrice": "سعر غير صالح"
     },
     "pipeline": {
-      "empty": "لا توجد فرص بعد."
+      "empty": "لا توجد فرص بعد.",
+      "viewToggle": "عرض خط الفرص",
+      "table": "جدول",
+      "board": "لوحة",
+      "emptyColumn": "لا فرص في هذه المرحلة.",
+      "daysSuffix": "ي",
+      "moveToStage": "نقل إلى المرحلة"
     },
     "detail": {
       "advanceTo": "الانتقال إلى {{stage}}",

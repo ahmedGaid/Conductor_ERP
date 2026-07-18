@@ -1488,7 +1488,13 @@
       "badPrice": "Invalid price"
     },
     "pipeline": {
-      "empty": "No opportunities yet."
+      "empty": "No opportunities yet.",
+      "viewToggle": "Pipeline view",
+      "table": "Table",
+      "board": "Board",
+      "emptyColumn": "No opportunities in this stage.",
+      "daysSuffix": "d",
+      "moveToStage": "Move to stage"
     },
     "detail": {
       "advanceTo": "Move to {{stage}}",

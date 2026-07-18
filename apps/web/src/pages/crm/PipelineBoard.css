@@ -1,0 +1,102 @@
+/* CRM pipeline kanban — three open-stage columns, monochrome, colour never carries the stage
+   distinction (position + label do). Flex row already flows inline-start → inline-end under the
+   page's dir, so RTL mirrors for free — no logical-property gymnastics needed here. */
+.pipeline-board {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-block-end: var(--space-2);
+}
+
+.pipeline-board__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  inline-size: 18rem;
+  flex: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+
+.pipeline-board__col--over {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface-alt);
+}
+
+.pipeline-board__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-inline: var(--space-1);
+  padding-block-end: var(--space-1);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.pipeline-board__title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.pipeline-board__count {
+  font-size: var(--font-size-sm);
+}
+
+.pipeline-board__sum {
+  margin-inline-start: auto;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.pipeline-board__empty {
+  padding: var(--space-3) var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.pipeline-board__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  padding: var(--space-3);
+  cursor: grab;
+}
+
+.pipeline-board__card:active {
+  cursor: grabbing;
+}
+
+.pipeline-board__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+}
+
+.pipeline-board__name {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.pipeline-board__card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-block-start: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.pipeline-board__move select {
+  font: inherit;
+}
+
+/* RowActions' default reveal is keyed off `tr:hover` (table rows); this kit's card is an <article>,
+   so reveal here on the card's own hover/focus-within instead. */
+.pipeline-board__card:hover .pipeline-board__move,
+.pipeline-board__card:focus-within .pipeline-board__move {
+  opacity: 1;
+}

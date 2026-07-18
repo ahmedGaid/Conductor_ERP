@@ -70,6 +70,7 @@ export interface Opportunity {
   expected_close: string | null;
   sales_order_number: string;
   notes: string;
+  updated_at: string;
   lines: OppLine[];
 }
 

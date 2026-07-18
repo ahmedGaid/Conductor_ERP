@@ -31,9 +31,18 @@ import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
 import { EmptyState } from "../../components/EmptyState";
+import { SegmentedControl } from "../../components/SegmentedControl";
 import { CrmNav } from "./CrmNav";
+import { PipelineBoard } from "./PipelineBoard";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./crm.css";
+
+const VIEW_KEY = "crm.pipeline.view";
+type PipelineView = "table" | "board";
+
+function storedView(): PipelineView {
+  return localStorage.getItem(VIEW_KEY) === "board" ? "board" : "table";
+}
 
 interface DraftLine {
   item_sku: string;
@@ -54,6 +63,12 @@ export function PipelinePage() {
   const undoable = useUndoableAction();
   const { data, loading, error, reload, mutate } = useAsync(() => listOpportunities(), [], "crm:opportunities");
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  const [view, setView] = useState<PipelineView>(storedView);
+
+  function changeView(next: PipelineView) {
+    setView(next);
+    localStorage.setItem(VIEW_KEY, next);
+  }
 
   // Same optimistic-flip + undo-window contract as OpportunityDetailPage's `advance`, applied to
   // one row of the list array instead of a single-record cache entry.
@@ -251,6 +266,24 @@ export function PipelinePage() {
       )}
 
       {data && data.length > 0 && (
+        <div className="crm-toolbar">
+          <SegmentedControl
+            ariaLabel={t("crm.pipeline.viewToggle")}
+            value={view}
+            onChange={changeView}
+            options={[
+              { value: "table", label: t("crm.pipeline.table") },
+              { value: "board", label: t("crm.pipeline.board") },
+            ]}
+          />
+        </div>
+      )}
+
+      {data && data.length > 0 && view === "board" && (
+        <PipelineBoard opportunities={data} onMove={advanceRow} />
+      )}
+
+      {data && data.length > 0 && view === "table" && (
         <div className="card crm-table-wrap">
           <table className="crm-table">
             <thead>

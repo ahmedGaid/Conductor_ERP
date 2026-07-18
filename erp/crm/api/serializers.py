@@ -127,6 +127,7 @@ class OpportunitySerializer(serializers.Serializer):
     expected_close = serializers.DateField()
     sales_order_number = serializers.CharField()
     notes = serializers.CharField()
+    updated_at = serializers.DateTimeField()
     lines = serializers.SerializerMethodField()
 
     def get_lead_code(self, obj) -> str:
