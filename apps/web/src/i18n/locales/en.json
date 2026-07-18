@@ -1473,7 +1473,8 @@
       "weighted": "Weighted",
       "probability": "Probability",
       "salesOrder": "Sales order",
-      "notes": "Notes"
+      "notes": "Notes",
+      "stageClosed": "Closed — stage can't change"
     },
     "newOpp": {
       "create": "Create opportunity",

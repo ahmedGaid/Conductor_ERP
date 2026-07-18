@@ -1473,7 +1473,8 @@
       "weighted": "المرجَّح",
       "probability": "الاحتمالية",
       "salesOrder": "أمر البيع",
-      "notes": "ملاحظات"
+      "notes": "ملاحظات",
+      "stageClosed": "مغلقة — لا يمكن تغيير المرحلة"
     },
     "newOpp": {
       "create": "إنشاء فرصة",

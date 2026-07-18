@@ -5,10 +5,12 @@ import { NavIcon } from "../../app/icons";
 import { Link } from "react-router-dom";
 
 import {
+  advanceStage,
   createOpportunity,
   getOpportunity,
   listOpportunities,
   type NewOppLine,
+  type OppStage,
   type Opportunity,
 } from "../../api/crm";
 import { listCustomers } from "../../api/sales";
@@ -18,6 +20,7 @@ import { Badge } from "../../components/Badge";
 import { crmTone } from "../../lib/statusTone";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
+import { useUndoableAction } from "../../lib/useUndoableAction";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { useRowSelection } from "../../hooks/useRowSelection";
@@ -40,10 +43,33 @@ interface DraftLine {
 
 const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "", unit_price: "" });
 
+// Stages an opportunity can move between freely from the list — mirrors the detail page's
+// undo-not-confirm "advance" action. Won/lost are a separate, consequential flow (spawns a sales
+// order / closes the deal for good) and are never reachable from this quiet inline control.
+const OPEN_STAGES: OppStage[] = ["qualifying", "proposal", "negotiation"];
+
 export function PipelinePage() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, reload } = useAsync(() => listOpportunities(), [], "crm:opportunities");
+  const undoable = useUndoableAction();
+  const { data, loading, error, reload, mutate } = useAsync(() => listOpportunities(), [], "crm:opportunities");
+  const [editingStageId, setEditingStageId] = useState<string | null>(null);
+
+  // Same optimistic-flip + undo-window contract as OpportunityDetailPage's `advance`, applied to
+  // one row of the list array instead of a single-record cache entry.
+  function advanceRow(o: Opportunity, next: OppStage) {
+    if (!data) return;
+    const snapshot = data;
+    mutate(snapshot.map((row) => (row.id === o.id ? { ...row, stage: next } : row)));
+    void undoable<Opportunity>({
+      perform: () => advanceStage(o.id, next),
+      undo: async () => {
+        await advanceStage(o.id, o.stage);
+      },
+      message: t("crm.toast.stageAdvanced", { stage: t(`crm.stage.${next}`) }),
+      onUndone: () => mutate(snapshot),
+    });
+  }
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
   const { data: warehouses } = useAsync(listWarehouses, [], "inventory:warehouses");
   const { data: items } = useAsync(listItems, [], "inventory:items");
@@ -262,7 +288,41 @@ export function PipelinePage() {
                   </td>
                   <td>{o.name}</td>
                   <td>
-                    <Badge tone={crmTone(o.stage)}>{t(`crm.stage.${o.stage}`)}</Badge>
+                    {editingStageId === o.id ? (
+                      <select
+                        className="crm-stage-edit"
+                        autoFocus
+                        aria-label={t("common.editField", { field: t("crm.opp.stage") })}
+                        value={o.stage}
+                        onChange={(e) => {
+                          const next = e.target.value as OppStage;
+                          setEditingStageId(null);
+                          if (next !== o.stage) advanceRow(o, next);
+                        }}
+                        onBlur={() => setEditingStageId(null)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            e.stopPropagation();
+                            setEditingStageId(null);
+                          }
+                        }}
+                      >
+                        {OPEN_STAGES.map((s) => (
+                          <option key={s} value={s}>{t(`crm.stage.${s}`)}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <button
+                        type="button"
+                        className="crm-stage-cell"
+                        onClick={() => {
+                          if (OPEN_STAGES.includes(o.stage)) setEditingStageId(o.id);
+                          else toast.show(t("crm.opp.stageClosed"), "info");
+                        }}
+                      >
+                        <Badge tone={crmTone(o.stage)}>{t(`crm.stage.${o.stage}`)}</Badge>
+                      </button>
+                    )}
                   </td>
                   <td className="crm-table__num"><Bdi>{formatMinor(o.amount_minor, o.currency)}</Bdi></td>
                   <td className="crm-table__num muted"><Bdi>{formatMinor(o.weighted_minor, o.currency)}</Bdi></td>
