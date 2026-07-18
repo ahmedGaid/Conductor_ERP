@@ -91,8 +91,17 @@ A2/A3 merge at M1 if ready, else M2 — they never block the gate.
 | A6 | ⌘K actions — `TH/FILE_08` | A (started ahead of A5 — founder override, palette/registry/role-filter/context-inject already shipped by unified-ui; this session found+fixed a duplicate-action bug across 5 detail pages) | apps/web command menu | A5 | 1 | M3 | done(32c054b) |
 | B5 | Auto-masters — `SI/FILE_08` | B | erp/imports | M1 (queue priority only — may start early if B-lane idles in wave 1) | 1 | M2 | done(849a30f) |
 | B6 | Execution engine — `SI/FILE_09` | B | erp/imports | B5 | 1 | M2 | done(68642c3) |
-| B7 | Background runner — `SI/FILE_10` | B | erp/imports (DB-backed queue, not Celery — see DECISIONS.md) | B6 | 1 | **M2 = SI engine merge (NOT yet merged — needs Agent A coordination + gate:all)** | done(b1a3a70) |
+| B7 | Background runner — `SI/FILE_10` | B | erp/imports (DB-backed queue, not Celery — see DECISIONS.md) | B6 | 1 | **M2 = SI engine merge — DONE 2026-07-18, merged to `main` at `d271c58`** | done(b1a3a70) |
 | B8 | Import API — `SI/FILE_11` | B | erp/imports/api | B7 | 1 | M3 | done(91da71a) |
+
+**M2 (sync, 2026-07-18):** B merged `feat/b-lane` → `main` (fast-forward, `d271c58`) — brings all
+of B1–B17 (SI engine + wave-2/3 backend halves) onto `main` alongside A's work through the same
+point (TH FILE_09 approval node, saved-views UI, ⌘K dedupe, ComboBox/DatePicker rollout, Popover
+reflow fix). gate:all 00-02/04-17 green on the merged tip before push (gate03 N/A on B); full
+`pytest` green (1369 passed, 1 pre-existing skip). A must `git pull origin main` (or rebase
+`feat/a-partial-payments`) before its next task. SI FILE_17 acceptance is now unblocked (was
+waiting on this merge); the apps/web review/apply screens B left unbuilt (TH FILE_12–20, SI
+FILE_12–15) are A's next backend-complete territory to pick up.
 
 ### Wave 3+ — continuation by ownership (summarized; scope = each plan file, as written)
 
