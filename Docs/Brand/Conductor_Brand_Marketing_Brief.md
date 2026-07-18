@@ -43,6 +43,16 @@ best modern software, not like finance software shouting at you.
 This is a brand-narrative restatement of the Directive's quality bar — it does not change any
 visual rule. Near-black chrome is fixed; colour means something; Arabic/RTL is the default reality.
 
+**Why craft is the strategy — the Apple lesson.** People don't buy Apple for the hardware specs;
+they buy it because they trust that *everything will feel better* before they even open the box.
+Odoo competes on features, SAP on enterprise, Oracle on power, Microsoft on ecosystem — **Conductor
+competes on the one thing almost no ERP competes on: the feeling of using the software.** The
+aspiration is not "another ERP" but *the most enjoyable business software an Egyptian owner has ever
+used* — earning loyalty because people enjoy it and trust it, not because it has the most modules.
+Craft is the moat, and it stays in character: quiet, precise, trustworthy. Luxury here means
+confidence, simplicity, and silence — never flash. (Sharpens the north-star; changes no visual rule
+— the Directive still wins on every pixel.)
+
 ---
 
 ## 3. Brand idea & essence
@@ -166,8 +176,8 @@ day (want speed and clarity). Messaging must serve both — *control* for the bu
 - AR: **أعمالك في انسجام.**
 
 **Performance (when the differentiator must be explicit):**
-- EN: *ERP that simply works.* · *Run your business, not your software.*
-- AR: *إدارة أعمالك ببساطة.* · *كل أعمالك في مكانٍ واحد.*
+- EN: *ERP that simply works.* · *Run your business, not your software.* · *Your business, conducted with precision.*
+- AR: *إدارة أعمالك ببساطة.* · *كل أعمالك في مكانٍ واحد.* · *أعمالك، بإتقان.*
 
 Use the harmony line as the standing brand signature; use the performance lines in ads, landing
 hero, and comparison contexts where "simple" needs to be said outright.
@@ -190,12 +200,24 @@ hero, and comparison contexts where "simple" needs to be said outright.
 | "Something went wrong — try again." | "Error 500: Internal Server Error." |
 | "Waiting for Finance approval." | "Status: PENDING_APPROVAL_FIN." |
 
+**Product vocabulary (the human-word rule).** Name product concepts in human words — *Assistant,
+Timeline, Insights, Workspace*, the daily brief's name — over generic ERP-speak (*Master Data,
+Utilities, Configuration*) wherever a human word fits. One canonical word per concept, in both
+languages, registered in the [Visual Identity System §6](Conductor_Visual_Identity_System.md) lexicon
+(today Arabic-first; extend it to English nouns) before shipping. This extends the Arabic-lexicon
+moat to the English surface. (Queued: EXECUTION_ORDER track **P**.)
+
 ---
 
 ## 12. Marketing voice & claims discipline
 
 **Prefer:** "ERP that simply works." · "Built for growing businesses." · "Business, in harmony." ·
-"Correct books, automatically." · "Arabic-first."
+"Correct books, automatically." · "Arabic-first." · "Close your books with confidence." · "Know
+where every pound goes."
+
+> **Sell confidence, not features.** People don't buy "100+ modules"; they buy outcomes — closing
+> the books calmly, knowing where every pound goes, staying in control. Lead every message with the
+> outcome and the feeling, never the feature grid (see §13).
 
 **Avoid:** "Revolutionary." · "Next-generation." · "AI-powered everything." · "We're changing the
 world." · feature-count bragging.
@@ -248,6 +270,14 @@ opening Conductor.* If a campaign, page, or onboarding step works against this, 
   for finance; trust comes first.
 - **Hype-driven.** Buzzwords over solved problems.
 
+**Hard refusal — never market as "the Apple of ERP" (or any borrowed-brand claim).** The Apple
+*lesson* — that we compete on the feeling of using the software (§2) — is an **internal craft thesis
+only.** Never say or imply "the Apple of ERP" (or "the Tesla/Notion/Linear of…") in public copy,
+decks, ads, sales, or app-store listings. It leans on another company's brand instead of ours,
+invites trademark and hype objections, and breaks the quiet/precise/trustworthy voice. State the
+outcome in **our own words** — *the most enjoyable business software an Egyptian owner has used* —
+never by borrowing Apple's name.
+
 ---
 
 ## 16. How to use this brief
@@ -262,6 +292,27 @@ opening Conductor.* If a campaign, page, or onboarding step works against this, 
 
 ## 17. Change log
 
+- **2026-07-18 — Product Philosophy front door + "Apple of ERP" barred from external marketing.**
+  Added [`Conductor_Product_Philosophy.md`](Conductor_Product_Philosophy.md) — a ≤1-screen front-door
+  index (mission, the 8 Conductor Standard, 7 decision-questions, AI stance, premium=confidence,
+  "Conductor has taste") that **points into the triad and adds no new rule** (not a fourth charter —
+  same one-source-of-truth discipline; see DECISIONS.md). Added a **hard refusal** to §15: *"the
+  Apple of ERP" is an internal craft thesis only — never a public/marketing claim* (we sell the
+  feeling of the software in our own words, not by borrowing another brand). Wired a **Conductor
+  Quality Review** PR template (`.github/pull_request_template.md`) mapping the 8-point ship test.
+  No visual/token/gate change.
+- **2026-07-18 — "Apple of ERP" craft thesis folded in.** Sharpened the craft north-star (§2) with
+  the founder's Apple-lesson framing — *we compete on the feeling of using the software*, aspiring to
+  the most enjoyable business software an Egyptian owner has used — kept in the quiet/precise/
+  trustworthy character (no visual-rule change; Directive still wins). Added outcome-led lines
+  ("Your business, conducted with precision." / "أعمالك، بإتقان.", "Close your books with
+  confidence.", "Know where every pound goes.") to §10/§12 and a "sell confidence, not features"
+  note. The in-app half of the same source manifesto (**The Conductor Standard** ship test,
+  performance budgets, fear-reduction, and the AI-partner / first-hour / Morning-Brief experience
+  north-stars) was folded into the [Directive](Conductor_ERP_Product_Design_Engineering_Directive.md),
+  not adopted as a second charter — same one-source-of-truth discipline as the 2026-06-19 UX-tips
+  reconciliation. AI/ritual items stay gated by claims discipline (§12): design direction, not a
+  marketed promise. See DECISIONS.md.
 - **2026-07-02 — ARP category adopted (internal).** Category set to **ARP — Agentic Resource
   Planning** with signature lines (§1, §13); public use gated on a live flagship agentic demo per
   `Docs/ARP_STRATEGY.md` §2 (claims discipline §12 unchanged — nothing marketed before it ships).

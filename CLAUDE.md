@@ -24,8 +24,11 @@ If a task touches both UI behaviour and brand, recall **both** `conductor-brand`
 - Live status / next steps → recall the **`erp-status`** skill (via `/erp-resume`)
 - Decisions & rejected paths → `DECISIONS.md`
 - Build spec & phases → `files/ERP_BuildSpec.md`, `files/PHASE_*.md`
-- Brand (3 pillars) → `Docs/Brand/` — Brief (*words*) · Directive (*in-app behaviour*) ·
-  Visual Identity System (*assets + off-app surfaces + Arabic lexicon*)
+- **Brand → start at the front door: `Docs/Brand/Conductor_Product_Philosophy.md`** (≤1 screen:
+  mission + the 8 Conductor Standard + where each rule lives), *then* the 3 pillars in `Docs/Brand/`
+  — Brief (*words*) · Directive (*in-app behaviour*) · Visual Identity System (*assets + off-app
+  surfaces + Arabic lexicon*). Every user-facing PR runs the **Conductor Quality Review**
+  (`.github/pull_request_template.md`) — the 8-point ship test as a checklist.
 - Design tokens (the only place raw hex is allowed) → `apps/web/src/styles/tokens.css`
 
 ## Hard rules — the safety net (the skills carry the full version)

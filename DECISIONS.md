@@ -4,6 +4,87 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Product Philosophy front door added + "Apple of ERP" barred from external marketing (2026-07-18)
+
+Added `Docs/Brand/Conductor_Product_Philosophy.md` — a ≤1-screen **front door** over the brand triad
+(mission, the 8 Conductor Standard, 7 decision-questions, AI stance, premium=confidence, "Conductor
+has taste"). **Decision: this is an index, not a fourth charter.** It reconciles with the standing
+"fold into the triad, don't spawn a second charter" discipline (the 2026-07-18 Apple-manifesto and
+2026-06-19 UX-tips reconciliations) because it **adds no new rule** — every line points into the
+Brief / Directive / Identity System, which remain the single sources of truth (the Directive still
+wins on every pixel). The gap it fills is *onboarding*: new contributors and agents needed one
+readable entry point before diving into three long docs. The 8 and the 7 questions are restatements
+of existing rules, not additions.
+
+**Hard refusal added to Brief §15 — never market "the Apple of ERP" (or any borrowed-brand claim).**
+The Apple *lesson* (compete on the feeling of using the software, Brief §2) is an **internal craft
+thesis only.** Reasons: it borrows another company's brand equity instead of building ours; invites
+trademark/hype objections; and breaks the quiet/precise/trustworthy voice. Public copy states the
+outcome in our own words — *the most enjoyable business software an Egyptian owner has used* — never
+by leaning on Apple's name. (The internal thesis stays; only external use is barred.)
+
+**Also:** wired `.github/pull_request_template.md` with a **Conductor Quality Review** section (the
+8-point ship test as a PR checklist) + a "why is this more premium?" line + the gate commands. Docs
+& process only — no code, token, or gate change. Logged in both brand change logs (Brief §17,
+Directive Implementation log).
+
+## CPO "Master Plan" reviewed — folded into the roadmap, not adopted as a parallel plan (2026-07-18)
+
+A founder-supplied 6-phase CPO roadmap ("Zero Friction → Apple Polish → Trust → AI Partner → Luxury
+→ Brand", plus a "Calm Company Operating System" positioning and eight "Conductor Principles") was
+reviewed against `arp-roadmap.md` + `EXECUTION_ORDER.md`. **Verdict: ~90% already planned or
+shipped**; its eight principles duplicate The Conductor Standard (now in the Directive). Mapping:
+Phase 1 ↔ linear-polish + unified-ui + field-primitives (done); Phase 2 ↔ those + `conductor-brand`;
+Phase 3 "AI preview (current→new→impact→confirm)" ↔ the shipped **SimulationDiffCard** (Phase W+);
+Phase 4 ↔ **Phase C** agent roster + daily brief; Phase 5 ↔ saved views (done) + ⌘K (done) +
+dashboard brief; Phase 6 ↔ the Arabic-lexicon moat + Brief voice. Its five "top priorities" already
+match the roadmap's front-loaded order. **Not adopted as a parallel plan** — one source of truth
+(same discipline as the 2026-06-19 UX-tips and the 2026-07-18 Apple-manifesto reconciliations). The
+craft doctrine + "Calm Company OS" positioning were folded into the roadmap as a binding lens on
+every phase.
+
+**Added** (arp-roadmap "Craft & Trust polish" stubs → `EXECUTION_ORDER.md` track **P**, off critical
+path, founder-standing-OK): (1) **System Confidence panel** — a positive health strip complementing
+the shipped "Needs attention today"; (2) **calm milestone moments** — no confetti/sound; (3)
+**English product-vocabulary canon** — extend the Identity §6 lexicon moat to English nouns.
+
+**Rejected / guarded (with reasons) — do not re-queue:**
+- **Success / notification sounds** — against the quiet/precise/"silence-is-luxury" brand. Opt-in and
+  off-by-default only if ever revisited.
+- **Silent autosave / "Save & Continue"** on accounting/order/journal forms — settled 2026-06-19:
+  explicit draft-save only; a half-entered posting autosaving is unsafe (confidence rule).
+- **Column resize / reorder / pinning** — already weighed and deferred as "low value for the effort"
+  (Directive); the Master Plan adds no new evidence (law: settled stays settled).
+- **Natural-language filters** ("unpaid invoices over 30 days from Cairo") — allowed only as
+  assistant tool-use → structured filter; never free-text-to-SQL (standing decision,
+  `EXECUTION_ORDER.md` §Standing decisions). A future ⌘K/assistant nicety, not a new query path.
+
+## "Apple of ERP" manifesto folded into the brand triad, not adopted as a second charter (2026-07-18)
+
+A founder manifesto ("the mistake founders make is thinking Apple sells beautiful hardware — Apple
+sells trust… compete on the feeling of using the software… the most enjoyable business software ever
+created… run your business like an orchestra… the 8-point Conductor Standard") was studied and added
+to the brand strategy. **Decision: fold it into the existing triad, not create a fourth doc.** This
+follows the project's own precedent (Directive, 2026-06-19: two external UX-tip prompts were
+reconciled into the Directive rather than adopted as competing charters — one source of truth per
+concern). ~70% of the manifesto was already in the brand: the orchestra idea (Brief §3), the
+Linear/Telegram craft north-star (Brief §2), speed/motion/designed-states/confidence (Directive
+§§2–5), and "compete on experience not feature count" (Brief §13).
+
+**Genuinely-new material placed as follows** — narrative → **Brief**: the "Apple lesson" craft
+thesis (§2), outcome-led lines incl. "Your business, conducted with precision." / "أعمالك، بإتقان."
+(§10/§12), and a "sell confidence, not features" note (§12). In-app → **Directive**: **The Conductor
+Standard** (8-point ship test, written as a summary/index into existing rules, explicitly *not* a new
+rulebook), **performance budgets** (dashboard < 1s / open a record < 300ms / instant search / no
+loading screen / invisible save, §2), **fear-reduction / reassurance** (§5), and an **Experience
+north-stars** section (first-hour-as-packaging, Morning-Brief ritual, AI-as-business-partner,
+support-as-product).
+
+**Guardrail kept:** every AI / ritual / Morning-Brief item is framed as *design direction gated by
+claims discipline* (Brief §12) — a north-star for the coming ARP/agentic stage, **not** a current or
+marketed capability. Docs-only change: no code, token, i18n, or gate impact. The `conductor-brand`
+skill's brand-feel checklist was linked as the screen-level expansion of the Conductor Standard.
+
 ## Saved views — FILE_06/07 superseded by existing `erp/identity` implementation (2026-07-18)
 
 twenty-harvest FILE_06 (`SavedView` backend, planned in `erp/core`) and FILE_07 (view tabs UI) were

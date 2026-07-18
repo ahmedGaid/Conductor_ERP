@@ -7,6 +7,20 @@ workflow/forms engine + UI shell, then ERP modules (Accounting → Inventory →
 See [DECISIONS.md](DECISIONS.md) for why the stack and scope are what they are, and
 [the build plan](../../Users/Rw/.claude/plans) for the full roadmap.
 
+## Design & brand — read before touching any UI or copy
+
+Start at the **[Product Philosophy front door](Docs/Brand/Conductor_Product_Philosophy.md)** — one
+screen covering the mission, the 8-point **Conductor Standard** (the ship test), and where every
+rule lives. It points into the brand triad, the sources of truth:
+
+- **[Brand & Marketing Brief](Docs/Brand/Conductor_Brand_Marketing_Brief.md)** — *what we say* (copy, naming, positioning).
+- **[Product Design & Engineering Directive](Docs/Brand/Conductor_ERP_Product_Design_Engineering_Directive.md)** — *how it looks & behaves* (wins on any pixel).
+- **[Visual Identity System](Docs/Brand/Conductor_Visual_Identity_System.md)** — assets, off-app surfaces, the Arabic lexicon.
+
+Every user-facing PR runs the **Conductor Quality Review**
+([.github/pull_request_template.md](.github/pull_request_template.md)) — the same 8-point ship test
+as a checklist.
+
 ## Repository layout
 
 ```

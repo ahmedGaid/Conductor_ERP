@@ -11,6 +11,18 @@
 
 ---
 
+## Craft doctrine (binding lens on every phase — adopted 2026-07-18)
+
+Conductor does not try to out-feature Odoo; it wins on **craft** — faster, calmer, smarter, more
+trustworthy, more beautiful, not bigger (the "Linear + Apple + Notion of ERP" bar). So every phase's
+acceptance also binds to **The Conductor Standard** (the 8-point ship test in the
+[Product Design & Engineering Directive](../Brand/Conductor_ERP_Product_Design_Engineering_Directive.md))
+and the Apple-lesson craft thesis (Brief §2): *we compete on the feeling of using the software.* A
+phase is not done when its function works — it's done when it *feels* Conductor. Positioning room
+this buys (internal, same claims-gate discipline): Conductor as the **Calm Company Operating
+System** — the owner conducts; the system quietly coordinates the details — broader than "ERP",
+letting the agentic layers (deep-vision L0–L6) grow under one identity.
+
 ## Sequencing logic
 
 Customers before flagship: the migration agent (A) gets real companies with real data into the
@@ -184,6 +196,44 @@ The Linear-grade surface every phase demos on. Two plan folders, run in queue or
   (added 2026-07-07).
 - **Builds on:** identity/RBAC; the old master-plan SaaS + billing sessions fold into this phase.
 - **When reached:** `Docs/plan/platform-plan/` (sized then; largest phase).
+
+## Craft & Trust polish — folded from the CPO "Master Plan" review (2026-07-18)
+
+A founder-supplied 6-phase CPO plan was reviewed against this roadmap + `EXECUTION_ORDER.md`. ~90%
+was already planned or shipped — Phase 1 (zero-friction) = linear-polish + unified-ui +
+field-primitives (done); Phase 2 (Apple polish) = those + `conductor-brand`; Phase 3 "AI preview
+(current→new→impact→confirm)" = the shipped **SimulationDiffCard** (Phase W+); Phase 4 (proactive
+AI) = **Phase C** agent roster + daily brief; Phase 5 (luxury) = saved views (done) + ⌘K (done) +
+the dashboard brief; Phase 6 (brand) = the Arabic-lexicon moat + Brief voice. Its five "top
+priorities" already match this roadmap's front-loaded order (onboarding A/A2 → workflow polish →
+proactive C → design system → brand language). **Not re-adopted as a parallel plan** (one source of
+truth). Full verdict incl. rejected/guarded items in DECISIONS.md.
+
+Three genuinely-new, on-brand, not-yet-queued items are queued here as stubs (off critical path,
+founder-standing-OK UI/UX — `EXECUTION_ORDER.md` track **P**; scoped into a `FILE_00` when
+scheduled, not pre-written months ahead):
+
+- **System Confidence panel.** The reassurance complement to the shipped "Needs attention today"
+  (which surfaces *problems*): a calm, positive health strip — e.g. *Books balanced ✓ · VAT ready ✓
+  · Backups: yesterday ✓ · Stock health ✓ · Assistant connected ✓* — each colour paired with a word
+  (never colour alone), each deep-linking to its proof. Pure trust UX. Frontend + light read
+  endpoints.
+- **Calm milestone moments.** Useful, quiet delight — first profitable month, 1000th invoice — as a
+  gentle, dismissible acknowledgment. **No confetti, no sound** (that would break the quiet/calm
+  brand); the *gentle-warning* side (e.g. unexpected stock-out) already belongs to Phase C agent
+  findings.
+- **English product-vocabulary canon.** Extend the lexicon moat (Identity System §6, today
+  Arabic-first) to English product nouns: prefer human words (Assistant, Timeline, Insights,
+  Workspace, the daily brief's name) over "Master Data / Utilities / Configuration" where a human
+  word fits. One canonical English word per concept, registered before use; then a light rename +
+  i18n pass. Brand-doc task first, build second.
+
+**Reviewed and deliberately NOT queued** (reasons in DECISIONS.md): success/notification **sounds**
+(against the quiet brand — opt-in-only if ever), **silent autosave / "Save & Continue"** on
+accounting/order/journal forms (settled: explicit draft-save only — half-entered postings must not
+autosave), **column resize/reorder/pinning** (already weighed and deferred as low-value — no new
+evidence), and **natural-language filters** (allowed only as assistant tool-use → structured filter,
+never free-text-to-SQL — a standing decision).
 
 ## Remove / refuse track (continuous — not a phase)
 

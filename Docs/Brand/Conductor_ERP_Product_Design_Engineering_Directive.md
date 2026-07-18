@@ -39,6 +39,11 @@ Translating the five qualities above into rules we can actually build and check 
 - Loading is **never a blank screen**: show skeletons/placeholders that match the final layout, so the
   page doesn't reflow when data lands.
 - Respect `prefers-reduced-motion` — motion is polish, never a barrier.
+- **Performance budgets — speed *is* the luxury.** Concrete targets, not decoration: dashboard
+  paints in **< 1s**; opening a record (invoice/order) in **< 300ms**; customer/item search feels
+  **instant**; switching pages shows **no loading screen** (skeleton or cached paint, never a
+  spinner-wall); saving feels **invisible**. Where the network can't meet a budget, hide it with
+  optimistic paint + stale-while-revalidate (already wired via `useAsync` `cacheKey`), never a blank.
 
 ### 3. Simplicity — remove before you add
 - Default to the **lightest control** that works: a link over a button, a segmented control over a
@@ -78,6 +83,60 @@ Translating the five qualities above into rules we can actually build and check 
 - Consistent, keyboard-reachable focus: one `:focus-visible` ring (`--focus-ring`) across the whole
   app; full keyboard operability; visible focus order.
 - Errors are caught and shown inline near their cause, in the user's language, with ar/en parity.
+- **Remove fear — reassurance is premium UX.** Owners are afraid to click, delete, or post. Before
+  and after any consequential action, say plainly what it touches and whether it can be undone
+  ("This is reversible," "No journal entries are affected," "Only draft records change"). Offer undo
+  where an action is reversible; confirm where it isn't. This is display-layer wording (ar/en
+  parity) — it never changes the actual state machine — and it reassures, it doesn't nag.
+
+## The Conductor Standard — the ship test
+
+Before any feature ships, it must pass these eight. They are the memorable summary of everything
+above (and the Brief's promise) — **a checklist, not a second rulebook**: each points to where its
+concrete rules already live. Fail one and the feature is not done.
+
+1. **Invisible complexity** — technical depth (tax, double-entry, approvals) hides behind a simple
+   interaction. *(→ Simplicity, above — hide, never omit.)*
+2. **Instant performance** — every action feels immediate; saving is invisible. *(→ Speed + the
+   performance budgets, above.)*
+3. **Calm by default** — no visual noise, no needless alerts, no clutter; monochrome chrome. *(→
+   Clarity; Identity System §3.)*
+4. **Trust through transparency** — say what will happen *before* an important action and what
+   happened *after*; reassure about reversibility. *(→ Confidence, above.)*
+5. **Consistency everywhere** — the same action behaves the same on every screen. *(→ Brand value
+   #4; the standard field primitives, §3 above.)*
+6. **Human AI** — when the agentic layer ships it *notices, explains, and protects* — proactive,
+   never overwhelming or surprising. Gated by claims discipline (Brief §12): a design north-star,
+   not a current promise.
+7. **Craft in every detail** — typography, spacing, motion, language, and error messages all feel
+   deliberately designed. *(→ Readability; Identity System §4/§7.)*
+8. **Business confidence** — the user leaves every screen more informed and more in control than
+   before.
+
+Passing gate03 means *not mechanically off-brand*; passing this eight-point list — plus the
+screen-level brand-feel checklist in the `conductor-brand` skill, its expansion — is what "done"
+means.
+
+## Experience north-stars (design direction for coming stages — gated by claims discipline)
+
+Not shipped promises, and **not to be marketed before they ship** (Brief §12). They set the bar for
+what "delightful" looks like as Conductor grows into its ARP category:
+
+- **The first hour is the packaging.** Onboarding is Conductor's unboxing: a designed welcome, a
+  guided setup with a visible progress tracker, no empty screens, and a real task completed within
+  minutes (north-star metric, Brief §14). That first hour decides "another ERP" vs. "this feels
+  different."
+- **Rituals people miss when they're gone.** e.g. a **Morning Brief** — on open, the few things that
+  matter in ~30 seconds ("Yesterday: revenue ↑, two invoices overdue, one stock alert, cash runway
+  37 days"), each a one-line insight linking to the fix. (Extends the shipped dashboard "Needs
+  attention today" panel.)
+- **AI as a business partner, not a chatbot.** The agentic layer should *notice, explain, predict,
+  recommend, teach, and protect* — turning "Ahmed hasn't paid recently" into the aging view, a
+  drafted reminder, and a payment plan one click away — never a raw chat box bolted on. Drafts-only,
+  reversible, transparent.
+- **Support is part of the product.** When a user asks for help, the context (company, version,
+  recent actions, last errors) is already in hand — so the answer, or a clean escalation with
+  diagnostics, is immediate.
 
 ## Non-negotiable engineering rules (enforced by gates)
 - **Colour:** only `tokens.css` may contain raw hex. Everything else uses `var(--color-*)`. (gate03)
@@ -196,3 +255,22 @@ fight our constraints are recorded with the required change so the limitation st
   of …"; "Waiting for a manager's approval before it can be confirmed") — display-layer only, the
   status enum/lifecycle is untouched; new `sales.statusExplain` / `purchasing.statusExplain` i18n keys
   with ar/en parity. gate:all 00–11 green.
+- **2026-07-18 — "Apple of ERP" manifesto reconciled into the charter (docs only).** A founder
+  manifesto (compete on craft / *the feeling of using the software*, "the most enjoyable business
+  software," the 8-point Conductor Standard, rituals, AI-as-partner) was reviewed against this
+  Directive and the Brief. As with the 2026-06-19 UX-tips reconciliation, ~70% was already stated
+  here; it is **not** adopted as a second charter. Folded in the genuinely-new concrete rules:
+  **The Conductor Standard** (8-point ship test, as a summary/index into existing rules — not a new
+  rulebook), **performance budgets** (dashboard < 1s / open a record < 300ms / instant search / no
+  loading screen / invisible save) under §2 Speed, and **fear-reduction / reassurance** under §5
+  Confidence. Added an **Experience north-stars** section (first-hour-as-packaging, Morning-Brief
+  ritual, AI-as-business-partner, support-as-product) as design direction **gated by claims
+  discipline** (Brief §12 — not marketed before it ships). The narrative half went to the Brief §2/
+  §10/§12. No code, token, or gate change. See DECISIONS.md.
+- **2026-07-18 — Product Philosophy front door + Quality-Review PR template (docs only).** New
+  [`Docs/Brand/Conductor_Product_Philosophy.md`](Conductor_Product_Philosophy.md) distills this
+  Directive's **Conductor Standard** and the Brief into a one-screen front door plus 7
+  decision-questions — an **index into the triad, no new rule, not a fourth source of truth** (this
+  Directive still wins on every pixel). Added `.github/pull_request_template.md` with a **Conductor
+  Quality Review** section (the 8-point ship test as a ship checklist) + the gate commands
+  (`check-i18n-parity`, `tsc -b`, `gate03`). No code, token, or gate change. See DECISIONS.md.
