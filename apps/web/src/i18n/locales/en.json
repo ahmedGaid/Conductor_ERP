@@ -1904,7 +1904,8 @@
       "organization": "Organization",
       "branches": "Branches",
       "webhooks": "Webhooks",
-      "customFields": "Custom fields"
+      "customFields": "Custom fields",
+      "developers": "Developers"
     },
     "common": {
       "auto": "Auto"
@@ -2116,6 +2117,41 @@
       "toastCreated": "Field added",
       "toastUpdated": "Field updated",
       "toastDeactivated": "Field deactivated"
+    },
+    "developers": {
+      "adminOnly": "Only a System Admin can manage API keys.",
+      "lead": "Role-bound integration credentials, and a truthful reference for the API they can call.",
+      "keysTitle": "API keys",
+      "name": "Name",
+      "role": "Role",
+      "rolePlaceholder": "Choose a role",
+      "prefix": "Prefix",
+      "lastUsed": "Last used",
+      "expires": "Expires",
+      "expiresNever": "Never",
+      "usedNever": "Never used",
+      "status": "Status",
+      "statusActive": "Active",
+      "statusRevoked": "Revoked",
+      "add": "Create key",
+      "revoke": "Revoke",
+      "revokeConfirmTitle": "Revoke this key?",
+      "revokeConfirmBody": "Anything using it starts getting 401 Unauthorized immediately. This can't be undone — create a new key if it's still needed.",
+      "empty": "No API keys yet.",
+      "emptyHint": "Create a key above — it authenticates as the role you bind it to, nothing more.",
+      "toastCreated": "Key created",
+      "toastRevoked": "Key revoked",
+      "secretRevealTitle": "API key",
+      "secretRevealDesc": "Shown once — copy it now. It authenticates as the {{role}} role via the Authorization header.",
+      "secretRevealDismiss": "I've copied it",
+      "docsTitle": "Reference",
+      "docsLead": "Every route this key can reach, generated from the live API — never hand-maintained.",
+      "docsAuthTitle": "Authentication",
+      "docsAuthBody": "Send the key on every request:",
+      "docsMoneyNote": "Money amounts are always integer minor units (piasters) on the wire — never a decimal.",
+      "docsRateLimitNote": "Keys are rate-limited per key, same as a human session.",
+      "docsMethods": "Methods",
+      "docsPath": "Path"
     }
   },
   "admin": {

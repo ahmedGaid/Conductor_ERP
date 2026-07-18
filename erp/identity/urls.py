@@ -34,4 +34,8 @@ urlpatterns = [
     path("roles/<str:name>", views.RoleDetailView.as_view(), name="role-detail"),
     path("roles/<str:name>/permission", views.RolePermissionView.as_view(), name="role-permission"),
     path("roles/<str:name>/approval-limit", views.RoleApprovalLimitView.as_view(), name="role-approval-limit"),
+    # API keys (integration credentials)
+    path("api-keys", views.ApiKeysView.as_view(), name="api-keys"),
+    path("api-keys/<int:pk>/revoke", views.ApiKeyRevokeView.as_view(), name="api-key-revoke"),
+    path("api-docs", views.ApiDocsView.as_view(), name="api-docs"),
 ]

@@ -105,6 +105,14 @@ class SetRolePermissionSerializer(serializers.Serializer):
     granted = serializers.BooleanField()
 
 
+# --- API keys (twenty-harvest FILE_14) ---
+
+class CreateApiKeySerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+    role = serializers.CharField()
+    expires_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
 class SetApprovalLimitSerializer(serializers.Serializer):
     """Set one document type's ceiling. Exactly one of: a ``limit_minor`` ceiling,
     ``unlimited`` (null limit), or ``remove`` (drop the row entirely)."""
