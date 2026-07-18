@@ -136,6 +136,32 @@ def _recent_actions_block(conversation) -> str | None:
     return "\n".join(lines)
 
 
+def detect_language(text: str) -> str:
+    """``"ar"`` if the text carries Arabic script, else ``"en"``.
+
+    Deliberately a character test, not a model call: the reply language must be decided the same
+    way every time, and a one-word question ("Sales?") has to resolve without inference.
+    """
+    return "ar" if any("؀" <= ch <= "ۿ" for ch in (text or "")) else "en"
+
+
+def answer_language_directive(question: str) -> str:
+    """The closing, non-negotiable reply-language line for one question.
+
+    Asking the model to *infer* "match the user's language" loses against an Arabic-heavy system
+    prompt — live recordings had gemini-2.5-flash answering English questions in Arabic 21/21
+    even with the rule stated last. So the language is computed here and stated flatly, leaving
+    the model nothing to weigh up.
+    """
+    if detect_language(question) == "ar":
+        return "REPLY LANGUAGE: Arabic. The user wrote in Arabic — your entire answer must be in Arabic."
+    return (
+        "REPLY LANGUAGE: English. The user wrote in English — your entire answer must be in "
+        "English. Do NOT answer in Arabic. Arabic terms elsewhere in these instructions are "
+        "vocabulary references only."
+    )
+
+
 def build_system_prompt(actor, page: dict | None = None, conversation=None) -> str:
     """Assemble the envelope: identity, user, page (optional), company, personas."""
     sections = [_IDENTITY, _user_block(actor)]

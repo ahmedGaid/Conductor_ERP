@@ -208,3 +208,39 @@ def test_prompt_without_conversation_unchanged():
 
     assert with_none == without_kwarg
     assert "Previous AI actions" not in with_none
+
+
+# --- reply language: computed, not inferred ------------------------------------------------------
+# Live recordings had gemini-2.5-flash answering English questions in Arabic 21/21 even with the
+# rule stated last in the prompt, so the language is decided here and stated flatly instead.
+
+@pytest.mark.parametrize("text,expected", [
+    ("What's total sales this month?", "en"),
+    ("كم إجمالي المبيعات هذا الشهر؟", "ar"),
+    ("Sales?", "en"),
+    ("", "en"),
+    ("PO-2026-0022 حالة", "ar"),          # mixed script counts as Arabic
+    ("show me PO-2026-0022", "en"),
+])
+def test_detect_language(text, expected):
+    assert context.detect_language(text) == expected
+
+
+def test_language_directive_names_the_language():
+    english = context.answer_language_directive("What's total sales this month?")
+    arabic = context.answer_language_directive("كم إجمالي المبيعات هذا الشهر؟")
+
+    assert "REPLY LANGUAGE: English" in english
+    assert "Do NOT answer in Arabic" in english
+    assert "REPLY LANGUAGE: Arabic" in arabic
+
+
+def test_language_directive_closes_the_answer_system_prompt():
+    """It must be LAST — the whole point is that it wins on recency over the Arabic-heavy envelope."""
+    from erp.assistant.services.ask import _answer_system
+
+    user = _user()
+    prompt = _answer_system(user, None, "What's total sales this month?")
+
+    assert prompt.rstrip().endswith("vocabulary references only.")
+    assert prompt.index("REPLY LANGUAGE") > prompt.index("Answer briefly and plainly")

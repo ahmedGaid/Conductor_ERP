@@ -47,6 +47,97 @@ def _validate(nodes: list[dict], edges: list[dict]) -> None:
             )
         seen_ordering.add(slot)
 
+    _validate_drafts_only(nodes, edges)
+
+
+def _action_risk(node: dict) -> str | None:
+    """The declared risk of an ``assistant_action`` node's action — ``None`` if it names none."""
+    from erp.assistant.services.actions import ACTIONS
+
+    action = ACTIONS.get((node.get("config") or {}).get("action") or "")
+    return action.risk if action else None
+
+
+def _posts(node: dict) -> bool:
+    """Does this node push something out of the building — post/send/finalise?
+
+    An assistant action declared ``post``/``destructive`` (none exist today; the rule is written
+    for the day they arrive), or an API Call marked as an external write.
+    """
+    if node["type"] == NodeType.ASSISTANT_ACTION:
+        return _action_risk(node) in ("post", "destructive")
+    if node["type"] == NodeType.API_CALL:
+        return bool((node.get("config") or {}).get("write"))
+    return False
+
+
+def _validate_drafts_only(nodes: list[dict], edges: list[dict]) -> None:
+    """The drafts-only rule, enforced at save time.
+
+    An assistant-action node that WRITES (creates a draft) must be followed, on **every** path
+    that leaves it, by an ``approval`` node — before the run reaches any posting node and before
+    it reaches the end. A graph that lets an agent-made draft slip past a human is refused here,
+    not caught later in a run.
+    """
+    by_key = {n["key"]: n for n in nodes}
+    out: dict[str, list[str]] = {n["key"]: [] for n in nodes}
+    for e in edges:
+        out[e["source"]].append(e["target"])
+
+    for node in nodes:
+        if node["type"] != NodeType.ASSISTANT_ACTION:
+            continue
+        config = node.get("config") or {}
+        name = config.get("action")
+        if not name:
+            raise ValidationError(
+                f"the assistant step '{node['key']}' has no action chosen yet"
+            )
+        risk = _action_risk(node)
+        if risk is None:
+            raise ValidationError(
+                f"the assistant step '{node['key']}' names an action that does not exist "
+                f"('{name}')"
+            )
+        if risk == "read":
+            continue  # a reading step creates nothing, so nothing needs approving
+
+        reason = _path_without_approval(node["key"], by_key, out)
+        if reason:
+            raise ValidationError(
+                f"the assistant step '{node['key']}' creates a draft, so a human approval step "
+                f"must come after it on every path — {reason}"
+            )
+
+
+def _path_without_approval(start: str, by_key: dict, out: dict[str, list[str]]) -> str | None:
+    """Walk forward from ``start``; return a human reason for the first unapproved path found.
+
+    A branch stops being a problem the moment it hits an approval node. Cycles terminate because
+    a key is only walked once in the "no approval seen yet" state.
+    """
+    seen: set[str] = set()
+    stack = list(out.get(start, []))
+    if not stack:
+        return "this step has nothing after it"
+    while stack:
+        key = stack.pop()
+        if key in seen:
+            continue
+        seen.add(key)
+        node = by_key[key]
+        if node["type"] == NodeType.APPROVAL:
+            continue  # approved from here on — this branch is fine
+        if _posts(node):
+            return f"'{key}' posts or sends before anyone has approved it"
+        if node["type"] == NodeType.END:
+            return f"the path through '{key}' finishes with no approval step"
+        nxt = out.get(key, [])
+        if not nxt:
+            return f"the path through '{key}' finishes with no approval step"
+        stack.extend(nxt)
+    return None
+
 
 @transaction.atomic
 def save_graph(

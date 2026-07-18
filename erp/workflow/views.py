@@ -141,6 +141,27 @@ class InstanceDecisionView(APIView):
         return _envelope(InstanceDetailSerializer(instance).data)
 
 
+class AssistantActionCatalogView(APIView):
+    """The actions an ``assistant_action`` node may be pointed at — for the canvas picker.
+
+    Deliberately NOT filtered by the reader's own roles: the graph author picks what the step
+    does, and the step runs later as whoever *triggers* the run, with that person's permissions
+    checked at that moment (see the executor). Filtering here by the author's roles would hide
+    steps a valid trigger could perform. The panel says which permission each step needs instead.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        from erp.assistant.services.actions import ACTIONS
+
+        return _envelope([
+            {"name": a.name, "description": a.description, "kind": a.kind, "risk": a.risk,
+             "args": list(a.args.keys())}
+            for a in sorted(ACTIONS.values(), key=lambda a: a.name)
+        ])
+
+
 class DashboardMetricsView(APIView):
     permission_classes = [IsAuthenticated]
 

@@ -6,9 +6,7 @@
       "intent": "lookup",
       "tool": "open_purchase_orders",
       "supplier": "Gamma Supplies",
-      "limit": 20,
-      "status": null,
-      "warehouse": null
+      "limit": 20
     },
     {
       "action": "tool",
@@ -19,32 +17,24 @@
     },
     {
       "action": "tool",
-      "why": "Check stock on hand for Gamma Supplies items",
+      "why": "Check Gamma Supplies' items in low stock",
       "intent": "lookup",
-      "tool": "stock_on_hand",
-      "query": "Packaging Box M",
-      "limit": 1
-    },
-    {
-      "action": "tool",
-      "intent": "lookup",
-      "why": "Check Gamma Supplies items in low stock",
       "tool": "query_data",
       "entity": "item",
       "filters": [
         {
-          "field": "sku",
-          "op": "contains",
-          "value": "ITM-0077"
+          "field": "supplier_code",
+          "op": "eq",
+          "value": "Gamma Supplies"
         }
       ],
       "group_by": [],
       "aggregate": "list",
-      "limit": 1
+      "limit": 20
     },
     {
       "action": "tool",
-      "why": "Check Gamma Supplies items in low stock",
+      "why": "Check Gamma Supplies' items",
       "intent": "lookup",
       "tool": "query_data",
       "entity": "item",
@@ -61,7 +51,7 @@
     },
     {
       "action": "tool",
-      "why": "Check Gamma Supplies items in low stock",
+      "why": "Check Gamma Supplies' items",
       "intent": "lookup",
       "tool": "query_data",
       "entity": "item",
@@ -69,6 +59,23 @@
         {
           "field": "supplier_code",
           "op": "eq",
+          "value": "Gamma Supplies"
+        }
+      ],
+      "group_by": [],
+      "aggregate": "list",
+      "limit": 50
+    },
+    {
+      "action": "tool",
+      "why": "Check Gamma Supplies' items",
+      "intent": "lookup",
+      "tool": "query_data",
+      "entity": "item",
+      "filters": [
+        {
+          "field": "name",
+          "op": "contains",
           "value": "Gamma Supplies"
         }
       ],
@@ -78,6 +85,6 @@
     }
   ],
   "stream_responses": [
-    "There are no open purchase orders for **Gamma Supplies** in the system.\n\nThe only open purchase order is for **مورد تجريبي** (PO-2026-0091).\n\nRegarding low stock, the system shows one item below its reorder point:\n\n| صنف | الكمية المتاحة | نقطة إعادة الطلب |\n|------|---------------|------------------|\n| Packaging Box M (ITM-0077) | 5 | 20 |"
+    "There are no open purchase orders for **Gamma Supplies** in the system.\n\nLow stock items unrelated to Gamma Supplies:\n- Packaging Box M (ITM-0077): 5 on hand, reorder point 20."
   ]
 }

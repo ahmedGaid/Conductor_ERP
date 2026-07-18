@@ -3,7 +3,7 @@
     {
       "tool": "search_documents",
       "period": null,
-      "query": "supplier onboarding procedure",
+      "query": "onboarding new supplier procedure",
       "limit": 3,
       "status": null,
       "supplier": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "According to **Supplier Onboarding SOP** (SOP-0014), القسم 1: يجب على **المورد** الجديد تقديم سجل ضريبي وسند عدم إفشاء موقع قبل إصدار أول أمر شراء."
+      "answer": "According to Supplier Onboarding SOP (SOP-0014, section 1), new suppliers must submit tax registration and a signed NDA before the first purchase order is issued."
     }
   ],
   "stream_responses": []

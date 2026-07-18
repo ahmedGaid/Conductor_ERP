@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "هناك صنف واحد منتهية الصلاحية خلال 30 يوماً:\n\n| الصنف | الكمية | رقم الدفعة | تاريخ انتهاء الصلاحية |\n|------|--------|------------|----------------------|\n| UHT Milk 1L | 40 | B-2026-07 | 2026-07-25 |"
+      "answer": "The following batch is expiring within 30 days:\n\n| SKU | Item Name | Batch | Expiry Date | Quantity |\n|-----|-----------|-------|-------------|----------|\n| ITM-0099 | UHT Milk 1L | B-2026-07 | 2026-07-25 | 40"
     }
   ],
   "stream_responses": []

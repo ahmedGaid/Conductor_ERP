@@ -15,17 +15,21 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $RepoRoot
 
+# Same flags as demo-redeploy.ps1 — required every invocation (secrets + demo Dockerfile live
+# outside docker-compose.yml). See that script / docker-compose.demo.yml for why.
+$ComposeArgs = @("--env-file", "deploy/.env.demo", "-f", "docker-compose.yml", "-f", "docker-compose.demo.yml")
+
 Write-Host "[demo-reset] tearing down stack + volumes..."
-docker compose down -v
+docker compose @ComposeArgs down -v
 
 Write-Host "[demo-reset] starting fresh stack..."
-docker compose up -d
+docker compose @ComposeArgs up -d
 
 Write-Host "[demo-reset] waiting for 'web' to report healthy..."
 $healthy = $false
 for ($i = 0; $i -lt 30; $i++) {
   try {
-    docker compose exec -T web curl -fsS http://localhost:8000/health | Out-Null
+    docker compose @ComposeArgs exec -T web curl -fsS http://localhost:8000/health | Out-Null
     $healthy = $true
     break
   } catch {
@@ -35,8 +39,8 @@ for ($i = 0; $i -lt 30; $i++) {
 if (-not $healthy) { Write-Warning "[demo-reset] 'web' never reported healthy after 150s — seeding anyway." }
 
 Write-Host "[demo-reset] seeding demo data..."
-docker compose exec -T web python manage.py seed_identity
-docker compose exec -T web python manage.py seed_accounting
-docker compose exec -T web python scripts/seed_demo.py
+docker compose @ComposeArgs exec -T web python manage.py seed_identity
+docker compose @ComposeArgs exec -T web python manage.py seed_accounting
+docker compose @ComposeArgs exec -T web python scripts/seed_demo.py
 
 Write-Host "[demo-reset] done."

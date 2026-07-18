@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "فاتورة المبيعات SO-2026-0055: العميل: عميل تجريبي، الإجمالي: 500.00 EGP"
+      "answer": "Found sales order SO-2026-0055 for عميل تجريبي with total 500.00 EGP."
     }
   ],
   "stream_responses": []

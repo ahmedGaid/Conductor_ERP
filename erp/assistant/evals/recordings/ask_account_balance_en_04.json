@@ -19,12 +19,12 @@
           "value": "Receivable"
         }
       ],
-      "group_by": [],
+      "group_by": null,
       "aggregate": "sum",
       "metric": "balance"
     },
     {
-      "answer": "Conductor cannot answer that specific question yet. Would you like the total of all open sales invoices instead?"
+      "answer": "Conductor does not have a report for the total accounts receivable balance yet."
     }
   ],
   "stream_responses": []

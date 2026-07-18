@@ -2,10 +2,9 @@
   "json_responses": [
     {
       "action": "clarify",
-      "why": "Need employee ID for Sara",
-      "question": "ما هو اسم Sara بالكامل أو قسمها؟",
-      "intent": "lookup",
-      "tool": "none"
+      "question": "هل سارة موظفة في الشركة؟",
+      "why": "التحقق من وجود الموظف",
+      "intent": "lookup"
     }
   ],
   "stream_responses": []

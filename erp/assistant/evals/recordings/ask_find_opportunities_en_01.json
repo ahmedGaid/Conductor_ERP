@@ -4,7 +4,7 @@
       "tool": "find_opportunities",
       "period": null,
       "query": "Fajr Group",
-      "limit": 1,
+      "limit": 8,
       "status": null,
       "supplier": null,
       "warehouse": null,
@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "فرصة Fajr Group (OPP-0031) في مرحلة المفاوضات بقيمة 275,000.00 جنيه مصري، من المتوقع إغلاقها في 2026-09-01."
+      "answer": "The Fajr Group opportunity (OPP-0031) is currently in the negotiation stage with an expected close date of 2026-09-01 and a deal value of 275,000.00 EGP."
     }
   ],
   "stream_responses": []

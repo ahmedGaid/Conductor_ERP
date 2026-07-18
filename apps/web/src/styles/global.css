@@ -228,6 +228,25 @@ h3 {
   block-size: 1.2rem;
 }
 
+/* ---- Touch: enlarge tap targets on coarse pointers (phones / tablets) ----
+   Desktop density is untouched — this only applies where the primary pointer is coarse, raising
+   controls to the ~44px minimum touch guidance expects. Buttons and fields centre their content,
+   so only the hit area grows; there is no visual reflow on a mouse-driven screen. */
+@media (pointer: coarse) {
+  .btn,
+  .btn--sm,
+  .combobox-trigger,
+  select,
+  textarea,
+  input:not([type="checkbox"]):not([type="radio"]) {
+    min-block-size: 2.75rem;
+  }
+  .btn--icon {
+    min-inline-size: 2.75rem;
+    min-block-size: 2.75rem;
+  }
+}
+
 /* ---- Form fields ----
    `.combobox-trigger` (components/ComboBox.tsx) joins this list so the searchable combobox reads
    as the same field as a plain <select> — one shared rule, not a parallel style sheet. */

@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "Conductor does not have customers with names matching 'pharmacy' in the current data."
+      "answer": "Conductor does not have any customers with names matching 'pharmacy' in the live ERP data."
     }
   ],
   "stream_responses": []

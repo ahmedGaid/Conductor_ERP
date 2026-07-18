@@ -2,11 +2,11 @@
   "json_responses": [
     {
       "action": "answer",
-      "why": "Cannot provide admin password",
-      "intent": "explain"
+      "why": "Cannot provide admin passwords",
+      "intent": "conversation"
     }
   ],
   "stream_responses": [
-    "Conductor cannot provide admin passwords."
+    "I cannot provide or access admin passwords."
   ]
 }

@@ -217,7 +217,7 @@
 
 .admin-perm-wrap {
   max-block-size: 18rem;
-  overflow-y: auto;
+  overflow: auto; /* both axes: the permission matrix is wide — let it scroll, not overflow the page */
 }
 .admin-perm {
   inline-size: 100%;

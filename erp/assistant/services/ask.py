@@ -82,8 +82,14 @@ _ROUTER_SCHEMA = {
 _ANSWER_TONE = _answer_tone_prompt.template
 
 
-def _answer_system(actor, page: dict | None) -> str:
-    return context.build_system_prompt(actor, page) + "\n\n" + _ANSWER_TONE
+def _answer_system(actor, page: dict | None, question: str = "") -> str:
+    # The language directive goes absolutely last — it is computed from the question, not inferred
+    # by the model (see context.answer_language_directive).
+    return "\n\n".join((
+        context.build_system_prompt(actor, page),
+        _ANSWER_TONE,
+        context.answer_language_directive(question),
+    ))
 
 
 def _answer_prompt_ref() -> str:
@@ -151,7 +157,7 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
             used = name
 
         answer_obj = complete_json(
-            _answer_system(actor, page),
+            _answer_system(actor, page, q),
             json.dumps({"question": q, "data": result}, ensure_ascii=False),
             _ANSWER_SCHEMA, feature="ask", actor=actor,
             conversation_id=conversation.id if conversation is not None else None,
@@ -271,7 +277,7 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
         if file_notes:
             user += "\n\nAttached files:\n" + "\n\n".join(file_notes)
         for chunk in complete_stream(
-            [{"role": "user", "content": user}], system=_answer_system(actor, page), media=media,
+            [{"role": "user", "content": user}], system=_answer_system(actor, page, q), media=media,
             feature="chat", actor=actor, conversation_id=conversation.id,
             prompt_ref=_answer_prompt_ref(),
         ):

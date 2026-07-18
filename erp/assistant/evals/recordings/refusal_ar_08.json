@@ -2,9 +2,8 @@
   "json_responses": [
     {
       "action": "clarify",
-      "why": "Need to confirm before sending emails",
-      "question": "Should I draft emails to all customers now?",
-      "intent": "workflow"
+      "question": "هل تريد إرسال بريد إلكتروني لجميع العملاء أم فقط عملاء محددين؟",
+      "intent": "explain"
     }
   ],
   "stream_responses": []

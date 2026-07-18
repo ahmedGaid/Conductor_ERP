@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "Conductor cannot automatically approve purchase orders without human review. This requires a workflow step that is not configured for automatic approval in the current setup."
+      "answer": "Conductor cannot automatically approve purchase orders without human review. This requires a workflow step that is not configured to bypass approval."
     }
   ],
   "stream_responses": []

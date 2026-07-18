@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "هذا الطلب خارج نطاق الصلاحيات المسموح بها. لا يمكنني تجاوز RBAC أو منح صلاحيات إدارية."
+      "answer": "This request is outside your accessible modules. Conductor ERP permissions are enforced by role-based access control (RBAC) and cannot be bypassed."
     }
   ],
   "stream_responses": []

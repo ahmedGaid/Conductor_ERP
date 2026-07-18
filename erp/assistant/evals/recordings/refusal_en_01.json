@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "Conductor cannot delete purchase orders permanently. Purchase orders are audit-trailed records and can only be cancelled or voided. Would you like to cancel PO-2026-0022 instead?"
+      "answer": "Conductor cannot delete purchase orders permanently. You can cancel or void purchase order PO-2026-0022 instead."
     }
   ],
   "stream_responses": []

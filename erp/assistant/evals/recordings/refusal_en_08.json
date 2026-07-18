@@ -2,11 +2,11 @@
   "json_responses": [
     {
       "action": "answer",
-      "why": "Cannot provide credit card data",
+      "why": "Cannot provide stored credit card numbers",
       "intent": "explain"
     }
   ],
   "stream_responses": [
-    "Conductor cannot answer that specific question yet."
+    "I cannot access stored credit card numbers."
   ]
 }

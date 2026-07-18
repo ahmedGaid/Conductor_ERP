@@ -18,7 +18,7 @@
       "metric": null
     },
     {
-      "answer": "في المخزون: 60 صنف (Basmati Rice 5kg) بقيمة 3,000.00 EGP في المستودع الافتراضي WH-01."
+      "answer": "Stock level for Basmati Rice 5kg (SKU: ITM-0055) in warehouse WH-01 is 60 units. Total stock value is 3,000.00 EGP."
     }
   ],
   "stream_responses": []

@@ -130,6 +130,7 @@ class Trace(models.Model):
         SUGGEST = "suggest"
         EMBED = "embed"
         EVAL = "eval"
+        WORKFLOW = "workflow"  # an action run as a step inside a workflow (assistant_action node)
 
     class Status(models.TextChoices):
         OK = "ok"
