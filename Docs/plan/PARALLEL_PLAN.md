@@ -103,6 +103,14 @@ reflow fix). gate:all 00-02/04-17 green on the merged tip before push (gate03 N/
 waiting on this merge); the apps/web review/apply screens B left unbuilt (TH FILE_12–20, SI
 FILE_12–15) are A's next backend-complete territory to pick up.
 
+**Reconciliation (2026-07-18, B session):** discovered local `main` (checked out in A's `ERP`
+worktree, un-pushed) and `origin/main` had diverged since `8ab8476` — A's TH FILE_10
+(assistant-action node, `8e78a45`/`8a0f6ea`) never reached GitHub while B's M2-sync docs
+(`d2ff732`/`a109c3f`) had. Verified clean merge (`git merge-tree`, no conflicts), pushed a merge
+commit (`f7ebf47`) straight to `origin/main` as plumbing — A's local `main` ref/worktree untouched,
+next `git pull` there fast-forwards cleanly. **Lesson: commit task work to `feat/a-*`/`feat/b-*`
+and push per-task, never straight to local `main`** — that's what let this drift happen unseen.
+
 ### Wave 3+ — continuation by ownership (summarized; scope = each plan file, as written)
 
 | ID | Task | Agent | Files/modules | Deps | Status |
@@ -116,9 +124,10 @@ FILE_12–15) are A's next backend-complete territory to pick up.
 | B15 | AI usage & cost page — Task A (read endpoint) + Task C (tests) only — `TH/FILE_20` | B | `erp/assistant/api/usage.py` (new — `GET /api/assistant/usage/?month=`, admin-only), `erp/assistant/api/urls.py` (mount), `erp/assistant/tests/test_usage.py` | B14 | done(HEAD) — straight aggregation over existing `Trace`/`Budget`/`SpendRollup` records, zero new tracking: month totals (requests, tokens in/out, cost microcents, cache-hit share, degraded-minutes), per-provider split, per-user table, budget-vs-consumed (org scope pairs its monthly `SpendRollup` row exactly; request/user-daily scopes expose config only — no monthly "consumed" figure invented for ceilings that reset per-call/per-day). Cost stays in microcents (same USD convention as `api/ops` — no EGP/FX conversion fabricated). `degraded_minutes` = exact count of distinct calendar-minutes with stored `routing.skipped` evidence, not a live-state estimate replayed onto the past. `pytest` full suite green (1318 passed, 1 pre-existing skip), gate:all 00-02/04-17 green (gate03 N/A on B — no apps/web node_modules; gate17 confirms the new route as non-breaking). FILE_20 stays open, not `_done` — Task B (Settings → AI page UI) is apps/web, A's territory, unbuilt |
 | B16 | Draftable payments — `PendingPayment` (smart-import FILE_16 Task B follow-up) | B | `erp/sales/domain/models.py`+`services/pending_payments.py`, `erp/purchasing/domain/models.py`+`services/pending_payments.py`, `erp/imports/engine.py` (row-warning support), `erp/imports/adapters/{sales,purchasing}.py` (`receipts`/`payments`), both modules' `api/` (list/apply/discard/match) | B15 | done(d8ba38c) — backend + API + tests only; review screen is apps/web, Agent A's territory, unbuilt. Sub-project 2 (inventory opening) specced in `DESIGN_PENDING_PAYMENTS_AND_STOCK.md`, not yet built. |
 | B17 | Reconciled inventory opening — `PendingStockEntry` (smart-import FILE_16 sub-project 2, follow-up to B16) | B | `erp/inventory/domain/models.py` (+migration), `erp/inventory/services/pending_stock.py`, `erp/imports/adapters/inventory.py` (`inventory_opening`), `erp/imports/adapters/accounting.py` (`inventory_double_booked` guard on `account_opening`), `config/settings/base.py` (`IMPORTS_DEFAULTS`), `erp/accounting/services/seeding.py` (COA `3110`) | B16 | done(d8904c8) — TDD throughout; `PendingStockEntry` posts to a dedicated suspense account (3110), never GRNI; new `MovementType.OPENING`; `account_opening` blocks with `inventory_double_booked` when an `inventory_opening` batch exists (checked via `erp.imports.models.ImportBatch`, no circular import into `erp.inventory`). `inventory_transactions` stays the documented, explicitly-descoped blocker. `FILE_16_FINANCE_ADAPTERS.md` renamed `_done` — nothing left to build against it. Review/apply screen is apps/web, Agent A's territory, unbuilt (mirrors B12–B16 precedent). Full regression (`erp/imports erp/inventory erp/accounting erp/sales erp/purchasing`) green (611 passed), gate:all 00-02/04-17 confirmed green (gate03 N/A on B — no apps/web node_modules). |
+| A7 | Custom fields UI — `TH/FILE_12` | **B (cross-territory, founder-authorized 2026-07-18)** | `apps/web/src/pages/settings/**`, customer/item forms, unified table kit column model, `i18n/locales/ar.json`+`en.json`, `api/customFields.ts` (new client) | B9 (done) | done(HEAD) — Task A settings CRUD (entity picker, inline create/edit, up/down reorder via position swap — no drag, matches existing DashboardSettingsPage precedent, no new dependency), Task B (dynamic field rendering + client-side validation mirroring the backend on the customer/item CREATE forms only — no PATCH/edit endpoint exists for either base record today, so edit was out of scope), Task C (custom fields as extra table columns + non-empty detail facts; "saved views" in this codebase only persists filter query params, not a column set, so there is no column-picker to wire — drift noted, extra columns just render whenever active defs exist). Verified end-to-end against the real running API (not just tsc): created CHOICE/DATE/MONEY defs, position-swap reorder, deactivate-hides-but-keeps-old-values, required/choice validation error shapes — all matched the frontend code exactly. `node scripts/check-i18n-parity.mjs` + `npx tsc -b` + `python scripts/gates/gate03.py` all green. No browser was available in this session to visually drive the UI — data-contract verified at rung 2, not rung 3. |
 
 - **A:** TH FILE_09 approval node → FILE_10 AI agent node (erp/workflow + canvas UI) →
-  FILE_12 custom-fields UI (needs B's FILE_11, done — see B9) → SI FILE_12–14 wizard/preview/report
+  FILE_12 custom-fields UI (done — B took it directly, see A7) → SI FILE_12–14 wizard/preview/report
   UI → TH FILE_16–18 UX batch.
 - **B:** TH FILE_13 activity timeline backend (done, B10) → SI FILE_15 all 5 adapters (done, B11) →
   SI FILE_16 finance adapters (done, B12 — journals + GL-opening only; payments + inventory-opening
@@ -126,8 +135,37 @@ FILE_12–15) are A's next backend-complete territory to pick up.
   page deferred to A) → TH FILE_19 admin panel backend (done, B14 — Task A+C only, System page UI
   deferred to A) → TH FILE_20 AI usage/cost backend (done, B15 — Task A+C only, Settings → AI page
   UI deferred to A) → B16 draftable payments (done — see above) → B17 reconciled inventory opening
-  (done — see above) → **next: check board for a new task (smart-import/twenty-harvest wave 3+
-  queue, or coordinate an M-checkpoint merge with Agent A).**
+  (done — see above) → **B-lane now IDLE (2026-07-18 M3 sync).**
+
+**M3 sync (2026-07-18, B session):** re-audited every plan folder pos 1–10 for undone (non-`_done`)
+files. Pos 1–7 + ★agent-actions + os-foundations: fully `_done`. Pos 8 (delivery-readiness) FILE_07
+sections C/D/E: founder + real customer machine only, not solo. Pos 9/10 (twenty-harvest,
+smart-import): every remaining undone file is `apps/web` — A's territory exclusively (locale keys,
+canvas UI, Settings pages). **Conclusion: B has zero eligible backend-only task left in the active
+queue.** Ran full B-lane gate suite as a checkpoint sanity pass: gate:all 00-02/04-17 green on
+`feat/b-lane` tip (gate03 N/A — no `apps/web/node_modules` on B), Redis/DB/venv healthy. No code
+changes this session — docs-only sync. `main` has moved ahead via the standing E2E job (⟳) plus A
+committing fix/test passes straight to main (`13358b2`, `c89de0e`, `83d4a59`, `96a517f`, `699a7c8`
+— assistant language-adherence, mobile reliability); board/erp-status now reflect that tip.
+**Drift noted for A:** `twenty-harvest/FILE_10_AI_AGENT_NODE.md` is done in substance (per
+erp-status, `b832ba7`) but was never renamed `_done` on disk.
+**B's next move (2026-07-18, A7 done):** the one-off `apps/web` hand-off is closed — A7 (TH
+FILE_12 custom fields UI) shipped, plan file renamed `_done`. B returns to backend-only per the
+ownership map; next unstarted twenty-harvest file is FILE_13 Task B/C (activity timeline tab
+UI — apps/web, A's territory) unless the founder extends the frontend hand-off again or opens
+new backend-only work. `apps/web/node_modules` now exists in B's worktree (installed for A7) —
+harmless to leave, but B still has no standing reason to run JS gates day-to-day.
+
+**A7 pushed straight to `origin/main`** (2026-07-18, founder asked to see it on main): `feat/b-lane`
+was a clean 1-commit fast-forward ahead of `origin/main`, so B pushed
+`feat/b-lane:main` directly (remote ref only — **A's local `main` in `C:\AhmedGaid\ERP` was never
+touched**, per the 2026-07-16 incident rule). `origin/main` tip is now `3a52111`. **A: `git pull`
+(or fast-forward your local `main`) before your next task** — same pattern as the M2/M3 syncs.
+Full `gate:all` (00–17) was NOT re-run for this push — zero backend files touched by A7, backend
+`custom_fields` tests were already green and untouched, and the frontend gates
+(parity/tsc/gate03) plus a direct API smoke test were already green pre-push. FILE_12 is not one
+of twenty-harvest's designated merge-checkpoint files (those are FILE_07/13/21) — this merge was
+user-requested, ahead of the plan's own checkpoint schedule.
 - **M3:** TH Tier 2 merge after FILE_13; SI Phase-A demo merge after FILE_14. TH FILE_21 +
   SI FILE_17 acceptances run single-agent (Either) on merged main.
 

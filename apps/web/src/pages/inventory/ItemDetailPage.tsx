@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import { getItem } from "../../api/inventory";
+import { listCustomFieldDefs } from "../../api/customFields";
+import { formatCustomFieldValue } from "../../lib/customFields";
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
@@ -21,9 +23,15 @@ import { MovementsTable } from "./MovementsTable";
 import "./inventory.css";
 
 export function ItemDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.resolvedLanguage?.startsWith("ar") ?? true;
   const { sku = "" } = useParams();
   const { data, loading, error, reload } = useAsync(() => getItem(sku), [sku], `inventory:item:${sku}`);
+  const { data: customFieldDefs } = useAsync(
+    () => listCustomFieldDefs("inventory.item"),
+    [],
+    "settings:customFields:inventory.item",
+  );
   const toast = useToast();
 
   useSetDocumentCrumb(data?.item.sku);
@@ -80,6 +88,16 @@ export function ItemDetailPage() {
                 <dt>{t("inventory.detail.onHandValue")}</dt>
                 <dd><Bdi>{formatMinor(data.stock.total_value_minor)}</Bdi></dd>
               </div>
+              {(customFieldDefs ?? []).map((def) => {
+                const value = formatCustomFieldValue(def, data.item.custom_data?.[def.key]);
+                if (!value) return null;
+                return (
+                  <div className="inv-detail__fact" key={def.key}>
+                    <dt>{isArabic ? def.label_ar : def.label_en}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                );
+              })}
             </dl>
           </div>
 

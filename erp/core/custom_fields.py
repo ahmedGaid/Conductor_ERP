@@ -20,6 +20,7 @@ from erp.core.exports import Column
 ENTITY_CHOICES = (
     ("sales.customer", "Customer"),
     ("inventory.item", "Item"),
+    ("purchasing.supplier", "Supplier"),
 )
 
 

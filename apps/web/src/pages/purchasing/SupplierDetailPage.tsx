@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 
 import { listSuppliers, listPurchaseOrders } from "../../api/purchasing";
 import { generalLedger } from "../../api/accounting";
+import { listCustomFieldDefs } from "../../api/customFields";
+import { formatCustomFieldValue } from "../../lib/customFields";
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
@@ -19,10 +21,16 @@ import "../sales/sales.css";
 const AP_ACCOUNT_CODE = "2000";
 
 export function SupplierDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.resolvedLanguage?.startsWith("ar") ?? true;
   const { code = "" } = useParams();
 
   const { data: suppliers } = useAsync(listSuppliers, [], "purchasing:suppliers");
+  const { data: customFieldDefs } = useAsync(
+    () => listCustomFieldDefs("purchasing.supplier"),
+    [],
+    "settings:customFields:purchasing.supplier",
+  );
   const { data: orders, loading, error, reload } = useAsync(() => listPurchaseOrders(), [code]);
   const { data: ledger } = useAsync(
     () => generalLedger(AP_ACCOUNT_CODE, { partyType: "supplier", party: code }),
@@ -66,6 +74,12 @@ export function SupplierDetailPage() {
     { label: t("party.ordersCount"), value: String(mine.length) },
     { label: t("party.totalBilled"), value: formatMinor(totalBilled) },
     { label: t("party.balance"), value: formatMinor(ledger?.closing_balance ?? 0) },
+    ...(customFieldDefs ?? [])
+      .map((def) => ({
+        label: isArabic ? def.label_ar : def.label_en,
+        value: formatCustomFieldValue(def, supplier?.custom_data?.[def.key]),
+      }))
+      .filter((row) => row.value !== ""),
   ];
 
   const rows: PartyOrderRow[] = mine.map((o) => ({

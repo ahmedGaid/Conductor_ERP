@@ -222,6 +222,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Due soon (nearing its due date) | يستحق قريبًا | قريب الاستحقاق (use the verbal **يستحق قريبًا** — reads as natural business Arabic beside the date, 2026-07-07) |
 | Owner (record assignee — the rep responsible, e.g. a ticket/lead) | المسؤول | مالك (reserve **مالك** for business/asset ownership — a different concept, 2026-07-09) |
 | Webhook (outbound event subscription that calls an external URL) | ويب هوك (plural: الويب هوكس) | تكامل (too broad — a webhook is one *kind* of integration; the term stays Latin-derived like "API", 2026-07-16) |
+| Custom field (an admin-defined extra field on customers/items) | الحقول المخصّصة | حقول إضافية (drifts toward "extra", not "yours to define" — the defining trait); fields only, never custom *objects* (STRATEGY §5), 2026-07-18 |
 
 ### 6.2 Status & action voice (Arabic)
 Human-language statuses (Directive — "Waiting for Finance approval") must read as **natural Egyptian

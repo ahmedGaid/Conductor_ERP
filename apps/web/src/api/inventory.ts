@@ -15,6 +15,7 @@ export interface Item {
   type: ItemType;
   is_active: boolean;
   reorder_point: string;
+  custom_data: Record<string, unknown>;
 }
 
 export interface Warehouse {
@@ -66,6 +67,7 @@ export function createItem(payload: {
   uom?: string;
   type?: ItemType;
   reorder_point?: string;
+  custom_data?: Record<string, unknown>;
 }): Promise<Item> {
   return apiFetch<Item>("/inventory/items", { method: "POST", body: JSON.stringify(payload) });
 }
