@@ -129,7 +129,11 @@ export function WarehousesPage() {
         </div>
       )}
       {data && data.length > 0 && filtered && filtered.length === 0 && (
-        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+        <EmptyState
+          title={t("filter.noMatch")}
+          hint={t("filter.noMatchHint")}
+          action={{ label: t("filter.clearAll"), onClick: () => setFilters([]) }}
+        />
       )}
 
       {filtered && filtered.length > 0 && (

@@ -443,7 +443,9 @@
     "listDown": "Next row",
     "listUp": "Previous row",
     "listOpen": "Open row",
+    "listPeek": "Peek record",
     "listSelect": "Select row",
+    "listSelectAll": "Select all",
     "listClear": "Clear selection",
     "formSubmit": "Submit form",
     "formCancel": "Cancel"
@@ -992,6 +994,7 @@
       "value": "Value",
       "reorder": "below reorder",
       "empty": "No stock balances yet.",
+      "emptyHint": "Receive stock or record an opening balance to see it here.",
       "totalValue": "Total inventory value"
     },
     "movement": {
@@ -1630,6 +1633,10 @@
       "title": "Couldn't load this",
       "hint": "Something went wrong on our side. Check your connection and try again."
     },
+    "permission": {
+      "title": "You don't have access to this",
+      "hint": "Ask an administrator to grant your role access — nothing you did caused this."
+    },
     "comingSoon": "Coming soon",
     "delete": "Delete",
     "yes": "Yes",
@@ -1727,6 +1734,7 @@
     "any": "Any",
     "noMatch": "No items match these filters.",
     "noMatchHint": "Try removing a filter to widen the results.",
+    "clearAll": "Clear filters",
     "op": {
       "is": "is",
       "isNot": "is not",
@@ -1895,7 +1903,9 @@
     "subtitle": "Task-based walkthroughs for the app's core daily flows, plus a glossary of every Arabic product term. Works fully offline.",
     "glossaryNav": "Glossary",
     "glossaryTitle": "Glossary",
-    "pitfalls": "What can go wrong"
+    "pitfalls": "What can go wrong",
+    "shortcutsHint": "Prefer the keyboard? Press ? anywhere in the app to see every shortcut, or",
+    "shortcutsLink": "open the cheat-sheet now."
   },
   "export": {
     "csv": "CSV",

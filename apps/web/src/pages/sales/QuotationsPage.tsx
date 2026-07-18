@@ -154,7 +154,11 @@ export function QuotationsPage() {
         />
       )}
       {data && data.length > 0 && visible && visible.length === 0 && (
-        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+        <EmptyState
+          title={t("filter.noMatch")}
+          hint={t("filter.noMatchHint")}
+          action={{ label: t("filter.clearAll"), onClick: () => setFilters([]) }}
+        />
       )}
 
       {visible && visible.length > 0 && (

@@ -50,7 +50,7 @@ function DeliveriesPanel({
 }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const { data, loading, error, reload, mutate } = useAsync(
+  const { data, loading, error, errorStatus, reload, mutate } = useAsync(
     () => listWebhookDeliveries(subscriptionId),
     [subscriptionId],
   );
@@ -67,7 +67,7 @@ function DeliveriesPanel({
   }, [data, subscriptionId, onStats]);
 
   if (loading) return <ListSkeleton />;
-  if (error) return <ErrorState message={error} onRetry={reload} />;
+  if (error) return <ErrorState message={error} onRetry={reload} status={errorStatus} />;
   if (!data || data.length === 0) {
     return <p className="setrow__desc">{t("settings.webhooks.deliveries.empty")}</p>;
   }
@@ -123,7 +123,7 @@ export function WebhooksSettingsPage() {
   const toast = useToast();
   const { data: me } = useAsync(getMe, []);
   const { data: catalog } = useAsync(listWebhookEvents, [], "settings:webhookEvents");
-  const { data, loading, error, reload, mutate } = useAsync(
+  const { data, loading, error, errorStatus, reload, mutate } = useAsync(
     listWebhookSubscriptions,
     [],
     "settings:webhooks",
@@ -297,7 +297,7 @@ export function WebhooksSettingsPage() {
       </form>
 
       {loading && <ListSkeleton />}
-      {error && <ErrorState message={error} onRetry={reload} />}
+      {error && <ErrorState message={error} onRetry={reload} status={errorStatus} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("settings.webhooks.empty")} hint={t("settings.webhooks.emptyHint")} />

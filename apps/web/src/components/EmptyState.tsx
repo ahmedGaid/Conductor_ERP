@@ -10,8 +10,10 @@ interface EmptyStateProps {
   hint?: string;
   /** Optional custom glyph; falls back to a neutral "empty tray" mark. */
   icon?: ReactNode;
-  /** Optional primary call-to-action that routes somewhere (e.g. the create screen). */
-  action?: { label: string; to: string };
+  /** Optional primary action — routes somewhere (e.g. the create screen) or runs in place
+   *  (e.g. "clear filters"). Never both on one variant: a filtered-empty state clears, it never
+   *  creates (creating against an active filter is how duplicate data happens). */
+  action?: { label: string; to: string } | { label: string; onClick: () => void };
 }
 
 const DEFAULT_ICON = (
@@ -44,10 +46,15 @@ export function EmptyState({ title, hint, icon, action }: EmptyStateProps) {
       </span>
       <p className="empty-state__title">{title}</p>
       {hint && <p className="empty-state__hint">{hint}</p>}
-      {action && (
+      {action && "to" in action && (
         <Link className="btn btn--primary empty-state__action" to={action.to}>
           {action.label}
         </Link>
+      )}
+      {action && "onClick" in action && (
+        <button type="button" className="btn btn--ghost empty-state__action" onClick={action.onClick}>
+          {action.label}
+        </button>
       )}
     </div>
   );

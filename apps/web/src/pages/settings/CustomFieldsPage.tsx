@@ -42,7 +42,7 @@ export function CustomFieldsPage() {
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
 
   const [entity, setEntity] = useState<CustomFieldEntity>("sales.customer");
-  const { data, loading, error, reload, mutate } = useAsync(
+  const { data, loading, error, errorStatus, reload, mutate } = useAsync(
     () => listCustomFieldDefs(entity),
     [entity],
     `settings:customFields:${entity}`,
@@ -248,7 +248,7 @@ export function CustomFieldsPage() {
       </form>
 
       {loading && <ListSkeleton />}
-      {error && <ErrorState message={error} onRetry={reload} />}
+      {error && <ErrorState message={error} onRetry={reload} status={errorStatus} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("settings.customFields.empty")} hint={t("settings.customFields.emptyHint")} />

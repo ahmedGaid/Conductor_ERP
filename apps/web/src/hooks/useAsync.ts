@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { ApiError } from "../api/client";
 import { clearCache, readCache, writeCache } from "../lib/cache";
 
 interface AsyncState<T> {
@@ -9,6 +10,8 @@ interface AsyncState<T> {
   /** True whenever a fetch is in flight, including a silent background revalidation. */
   validating: boolean;
   error: string | null;
+  /** The failed request's HTTP status, when the error came from the API (null otherwise/on success). */
+  errorStatus: number | null;
   reload: () => void;
   /**
    * Synchronously replace the current data in state *and* cache. Used for optimistic
@@ -31,6 +34,7 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[], cacheKey?
   const [data, setData] = useState<T | null>(initial ?? null);
   const [validating, setValidating] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [nonce, setNonce] = useState(0);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -40,6 +44,7 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[], cacheKey?
     let active = true;
     setValidating(true);
     setError(null);
+    setErrorStatus(null);
     run()
       .then((value) => {
         if (!active) return;
@@ -47,7 +52,9 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[], cacheKey?
         if (cacheKey) writeCache(cacheKey, value);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : String(err));
+        if (!active) return;
+        setError(err instanceof Error ? err.message : String(err));
+        setErrorStatus(err instanceof ApiError ? err.status : null);
       })
       .finally(() => {
         if (active) setValidating(false);
@@ -72,5 +79,5 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[], cacheKey?
     },
     [cacheKey],
   );
-  return { data, loading, validating, error, reload, mutate };
+  return { data, loading, validating, error, errorStatus, reload, mutate };
 }

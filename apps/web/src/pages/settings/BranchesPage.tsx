@@ -20,7 +20,7 @@ export function BranchesPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { data: me } = useAsync(getMe, []);
-  const { data, loading, error, reload, mutate } = useAsync(listBranches, [], "settings:branches");
+  const { data, loading, error, errorStatus, reload, mutate } = useAsync(listBranches, [], "settings:branches");
 
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
 
@@ -95,7 +95,7 @@ export function BranchesPage() {
       </form>
 
       {loading && <ListSkeleton />}
-      {error && <ErrorState message={error} onRetry={reload} />}
+      {error && <ErrorState message={error} onRetry={reload} status={errorStatus} />}
 
       {data && data.length === 0 && (
         <EmptyState title={t("settings.branches.empty")} hint={t("settings.branches.emptyHint")} />

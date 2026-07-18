@@ -21,7 +21,7 @@ import "./admin.css";
 export function RolesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: roles, loading, error, reload } = useAsync(listRoles, [], "admin:roles");
+  const { data: roles, loading, error, errorStatus, reload } = useAsync(listRoles, [], "admin:roles");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -88,7 +88,7 @@ export function RolesPage() {
       {loading && (
         <ListSkeleton rows={2} />
       )}
-      {error && <ErrorState message={error} onRetry={reload} />}
+      {error && <ErrorState message={error} onRetry={reload} status={errorStatus} />}
       {roles && roles.length === 0 && (
         <EmptyState title={t("admin.roles.empty")} hint={t("admin.roles.emptyHint")} />
       )}
@@ -100,7 +100,11 @@ export function RolesPage() {
         </div>
       )}
       {roles && roles.length > 0 && filtered && filtered.length === 0 && (
-        <EmptyState title={t("filter.noMatch")} hint={t("filter.noMatchHint")} />
+        <EmptyState
+          title={t("filter.noMatch")}
+          hint={t("filter.noMatchHint")}
+          action={{ label: t("filter.clearAll"), onClick: () => setFilters([]) }}
+        />
       )}
 
       {filtered && filtered.length > 0 && (

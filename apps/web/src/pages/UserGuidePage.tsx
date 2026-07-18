@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { useShortcuts } from "../app/ShortcutsContext";
 import { GLOSSARY } from "../help/content/glossary";
 import { JOURNEYS, getJourney } from "../help/content/journeys";
 import type { L } from "../help/types";
@@ -16,6 +17,7 @@ const GLOSSARY_ID = "glossary";
 export function UserGuidePage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { openShortcuts } = useShortcuts();
   const { journeyId } = useParams<{ journeyId?: string }>();
   const lang: keyof L = i18n.language?.startsWith("ar") ? "ar" : "en";
   const tr = (s: L): string => s[lang];
@@ -32,6 +34,12 @@ export function UserGuidePage() {
       <header className="module-head">
         <h1 className="module-head__title">{t("userGuide.title")}</h1>
         <p className="module-head__desc">{t("userGuide.subtitle")}</p>
+        <p className="module-head__desc">
+          {t("userGuide.shortcutsHint")}{" "}
+          <button type="button" className="userguide-link" onClick={openShortcuts}>
+            {t("userGuide.shortcutsLink")}
+          </button>
+        </p>
       </header>
 
       <div className="userguide-layout">

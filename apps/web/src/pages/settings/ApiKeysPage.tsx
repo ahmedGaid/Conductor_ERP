@@ -35,7 +35,7 @@ function formatDate(value: string | null): string {
 
 function ReferencePanel() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsync(listApiRoutes, [], "settings:apiDocs");
+  const { data, loading, error, errorStatus, reload } = useAsync(listApiRoutes, [], "settings:apiDocs");
 
   return (
     <div className="card setcard">
@@ -51,7 +51,7 @@ function ReferencePanel() {
       <p className="setrow__desc">{t("settings.developers.docsMoneyNote")}</p>
 
       {loading && <ListSkeleton />}
-      {error && <ErrorState message={error} onRetry={reload} />}
+      {error && <ErrorState message={error} onRetry={reload} status={errorStatus} />}
       {data && (
         <div className="admin-table-wrap">
           <table className="admin-table">
@@ -81,7 +81,7 @@ export function ApiKeysPage() {
   const toast = useToast();
   const { data: me } = useAsync(getMe, []);
   const { data: roles } = useAsync(listRoles, [], "settings:roles");
-  const { data, loading, error, reload, mutate } = useAsync(listApiKeys, [], "settings:apiKeys");
+  const { data, loading, error, errorStatus, reload, mutate } = useAsync(listApiKeys, [], "settings:apiKeys");
 
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
 
@@ -190,7 +190,7 @@ export function ApiKeysPage() {
         </div>
       </form>
 
-      {error && <ErrorState message={error} onRetry={reload} />}
+      {error && <ErrorState message={error} onRetry={reload} status={errorStatus} />}
 
       {data && data.length === 0 && (
         <EmptyState

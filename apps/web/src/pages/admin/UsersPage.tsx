@@ -28,7 +28,7 @@ export function UsersPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
-  const { data: users, loading, error, reload } = useAsync(() => listUsers(), [], "admin:users");
+  const { data: users, loading, error, errorStatus, reload } = useAsync(() => listUsers(), [], "admin:users");
   const { data: org } = useAsync(getOrgUnits, [], "admin:orgunits");
 
   const [search, setSearch] = useState("");
@@ -137,7 +137,7 @@ export function UsersPage() {
       {loading && (
         <ListSkeleton rows={2} />
       )}
-      {error && <ErrorState message={error} onRetry={reload} />}
+      {error && <ErrorState message={error} onRetry={reload} status={errorStatus} />}
       {users && filtered.length === 0 && <EmptyState title={t("admin.users.empty")} hint={t("admin.users.emptyHint")} />}
 
       {filtered.length > 0 && (

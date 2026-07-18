@@ -7,6 +7,9 @@ interface ErrorStateProps {
   message?: string | null;
   /** Wire to the loader's `reload` so the user can try again in place. */
   onRetry?: () => void;
+  /** The failed request's HTTP status (pass `useAsync`'s `errorStatus`). A 403 swaps in the
+   *  calm, blame-free permission variant — retrying can't fix a missing role, so no Retry button. */
+  status?: number | null;
 }
 
 const ALERT_ICON = (
@@ -26,14 +29,44 @@ const ALERT_ICON = (
   </svg>
 );
 
+const LOCK_ICON = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </svg>
+);
+
 /**
  * A designed error state for a failed data load: a quiet alert mark, a calm blame-free headline,
  * the raw message kept muted underneath (so it's still diagnosable), and a single "Retry" action
  * wired to the loader's reload — shown instead of a bare red line, so a failed fetch reads as
  * "try again", not "broken". (Charter: "every error state is designed — never a bare line.")
+ *
+ * `status === 403` swaps in the no-permission variant: a lock mark, a blame-free headline, and
+ * guidance to ask an administrator — no Retry button, since retrying can't grant a role.
  */
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+export function ErrorState({ message, onRetry, status }: ErrorStateProps) {
   const { t } = useTranslation();
+  if (status === 403) {
+    return (
+      <div className="error-state card" role="alert">
+        <span className="error-state__icon" aria-hidden="true">
+          {LOCK_ICON}
+        </span>
+        <p className="error-state__title">{t("common.permission.title")}</p>
+        <p className="error-state__hint">{t("common.permission.hint")}</p>
+      </div>
+    );
+  }
   return (
     <div className="error-state card" role="alert">
       <span className="error-state__icon" aria-hidden="true">

@@ -10,6 +10,7 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import type { CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { EmptyState } from "../../components/EmptyState";
 import { EntityLink } from "../../components/EntityLink";
 import { FilterBar } from "../../components/FilterBar";
 import { SavedViews } from "../../components/SavedViews";
@@ -80,7 +81,19 @@ export function StockOnHandPage() {
       )}
       {error && <ErrorState message={error} onRetry={reload} />}
 
-      {data && (
+      {data && data.rows.length === 0 && (
+        <EmptyState title={t("inventory.onHand.empty")} hint={t("inventory.onHand.emptyHint")} />
+      )}
+
+      {data && data.rows.length > 0 && rows.length === 0 && (
+        <EmptyState
+          title={t("filter.noMatch")}
+          hint={t("filter.noMatchHint")}
+          action={{ label: t("filter.clearAll"), onClick: () => setFilters([]) }}
+        />
+      )}
+
+      {data && rows.length > 0 && (
         <div className="card inv-table-wrap">
           <table className="inv-table">
             <thead>
@@ -107,13 +120,6 @@ export function StockOnHandPage() {
                   <td className="inv-table__num"><Bdi>{formatMinor(r.value_minor)}</Bdi></td>
                 </tr>
               ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    {data.rows.length === 0 ? t("inventory.onHand.empty") : t("filter.noMatch")}
-                  </td>
-                </tr>
-              )}
             </tbody>
             <tfoot>
               <tr>
