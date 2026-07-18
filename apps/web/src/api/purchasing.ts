@@ -17,6 +17,7 @@ export interface Supplier {
   code: string;
   name: string;
   is_active: boolean;
+  custom_data: Record<string, unknown>;
 }
 
 export interface POLine {
@@ -59,7 +60,9 @@ export function listSuppliers(): Promise<Supplier[]> {
   return apiFetch<Supplier[]>("/purchasing/suppliers");
 }
 
-export function createSupplier(payload: { code: string; name: string }): Promise<Supplier> {
+export function createSupplier(
+  payload: { code: string; name: string; custom_data?: Record<string, unknown> },
+): Promise<Supplier> {
   return apiFetch<Supplier>("/purchasing/suppliers", { method: "POST", body: JSON.stringify(payload) });
 }
 

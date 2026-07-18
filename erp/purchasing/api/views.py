@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from erp.audit.history import order_history
+from erp.core.custom_fields import validate_custom_data
 from erp.core.import_api import run_import_request, template_response
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import BRANCH_MANAGER
@@ -62,8 +63,10 @@ class SupplierListCreateView(APIView):
         s = SupplierSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         v = s.validated_data
+        custom_data = validate_custom_data("purchasing.supplier", v.get("custom_data"))
         supplier = Supplier.objects.create(
             code=v["code"], name=v["name"], is_active=v.get("is_active", True),
+            custom_data=custom_data,
             created_by=request.user if request.user.is_authenticated else None,
         )
         return _envelope(SupplierSerializer(supplier).data, status=201)

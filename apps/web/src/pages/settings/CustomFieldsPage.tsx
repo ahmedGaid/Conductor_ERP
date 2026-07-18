@@ -189,6 +189,7 @@ export function CustomFieldsPage() {
         options={[
           { value: "sales.customer", label: t("settings.customFields.entityCustomers") },
           { value: "inventory.item", label: t("settings.customFields.entityItems") },
+          { value: "purchasing.supplier", label: t("settings.customFields.entitySuppliers") },
         ]}
       />
 

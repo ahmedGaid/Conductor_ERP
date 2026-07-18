@@ -15,6 +15,7 @@ class Supplier(AuditedModel):
     code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
+    custom_data = models.JSONField(default=dict, blank=True)
 
     class Meta:
         db_table = "purchasing_supplier"

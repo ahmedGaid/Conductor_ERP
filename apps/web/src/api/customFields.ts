@@ -4,7 +4,7 @@
 import { apiFetch } from "./client";
 
 export type CustomFieldType = "TEXT" | "NUMBER" | "DATE" | "CHOICE" | "MONEY";
-export type CustomFieldEntity = "sales.customer" | "inventory.item";
+export type CustomFieldEntity = "sales.customer" | "inventory.item" | "purchasing.supplier";
 
 export interface CustomFieldDef {
   id: number;

@@ -11,9 +11,13 @@ class SupplierSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=32)
     name = serializers.CharField(max_length=200)
     is_active = serializers.BooleanField(required=False, default=True)
+    custom_data = serializers.JSONField(required=False, default=dict)
 
     def to_representation(self, obj) -> dict:
-        return {"id": str(obj.id), "code": obj.code, "name": obj.name, "is_active": obj.is_active}
+        return {
+            "id": str(obj.id), "code": obj.code, "name": obj.name, "is_active": obj.is_active,
+            "custom_data": obj.custom_data,
+        }
 
 
 class POLineInputSerializer(serializers.Serializer):

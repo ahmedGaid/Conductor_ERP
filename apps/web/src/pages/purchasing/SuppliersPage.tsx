@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { createSupplier, listSuppliers, type Supplier } from "../../api/purchasing";
+import { listCustomFieldDefs } from "../../api/customFields";
+import { buildCustomData, formatCustomFieldValue, validateCustomFieldValues, type CustomFieldValues } from "../../lib/customFields";
+import { CustomFieldsForm } from "../../components/CustomFieldsForm";
 import { useAsync } from "../../hooks/useAsync";
 import { useListKeyboardNav } from "../../hooks/useListKeyboardNav";
 import { useRowSelection } from "../../hooks/useRowSelection";
@@ -33,10 +36,16 @@ import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./purchasing.css";
 
 export function SuppliersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.resolvedLanguage?.startsWith("ar") ?? true;
   const toast = useToast();
   const fb = useActionFeedback();
   const { data, loading, error, reload, mutate } = useAsync(listSuppliers, [], "purchasing:suppliers");
+  const { data: customFieldDefs } = useAsync(
+    () => listCustomFieldDefs("purchasing.supplier"),
+    [],
+    "settings:customFields:purchasing.supplier",
+  );
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
 
   const fields = useMemo<FilterField<Supplier>[]>(
@@ -84,6 +93,8 @@ export function SuppliersPage() {
   const [code, setCode] = useState(prefill.code ?? "");
   const [name, setName] = useState(prefill.name ?? "");
   const [importOpen, setImportOpen] = useState(false);
+  const [customValues, setCustomValues] = useState<CustomFieldValues>({});
+  const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
 
   // ⌘/Ctrl+Enter submits the add form from any field.
   const formRef = useRef<HTMLFormElement>(null);
@@ -112,17 +123,26 @@ export function SuppliersPage() {
     const c = code.trim();
     const n = name.trim();
     if (!c || !n) return;
+    const defs = customFieldDefs ?? [];
+    const errors = validateCustomFieldValues(defs, customValues);
+    if (Object.keys(errors).length > 0) {
+      setCustomErrors(errors);
+      return;
+    }
+    setCustomErrors({});
+    const custom_data = buildCustomData(defs, customValues);
     void optimisticCreate<Supplier>({
       current: data ?? [],
       mutate,
-      placeholder: (id) => ({ id, code: c, name: n }) as Supplier,
-      request: () => createSupplier({ code: c, name: n }),
+      placeholder: (id) => ({ id, code: c, name: n, custom_data }) as Supplier,
+      request: () => createSupplier({ code: c, name: n, custom_data }),
       toast,
     }).then((created) => {
       if (created) showSupplierReceipt(fb, t, created, { navigate });
     });
     setCode("");
     setName("");
+    setCustomValues({});
   }
 
   return (
@@ -154,6 +174,13 @@ export function SuppliersPage() {
           <span>{t("purchasing.supplier.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
+        <CustomFieldsForm
+          defs={customFieldDefs ?? []}
+          values={customValues}
+          onChange={(k, v) => setCustomValues((prev) => ({ ...prev, [k]: v }))}
+          errors={customErrors}
+          fieldClassName="pur-field"
+        />
         <button className="btn btn--primary" type="submit">
           {t("purchasing.supplier.add")}
         </button>
@@ -191,6 +218,9 @@ export function SuppliersPage() {
                 />
                 <th>{t("purchasing.supplier.code")}</th>
                 <th>{t("purchasing.supplier.name")}</th>
+                {(customFieldDefs ?? []).map((def) => (
+                  <th key={def.key}>{isArabic ? def.label_ar : def.label_en}</th>
+                ))}
                 <th />
               </tr>
             </thead>
@@ -215,6 +245,9 @@ export function SuppliersPage() {
                   <td>
                     <PartyLink type="supplier" code={s.code}>{s.name}</PartyLink>
                   </td>
+                  {(customFieldDefs ?? []).map((def) => (
+                    <td key={def.key}>{formatCustomFieldValue(def, s.custom_data?.[def.key])}</td>
+                  ))}
                   <td>
                     <RowActions label={t("common.actions")}>
                       <Link className="btn btn--sm" to={`/purchasing?supplier=${encodeURIComponent(s.name)}`}>

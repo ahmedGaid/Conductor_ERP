@@ -2084,6 +2084,7 @@
       "entityPicker": "Entity",
       "entityCustomers": "Customers",
       "entityItems": "Items",
+      "entitySuppliers": "Suppliers",
       "key": "Key",
       "keyHint": "Lowercase letters, numbers and underscores only, starting with a letter.",
       "labelAr": "Arabic label",

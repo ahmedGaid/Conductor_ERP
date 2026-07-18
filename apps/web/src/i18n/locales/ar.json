@@ -2084,6 +2084,7 @@
       "entityPicker": "الكيان",
       "entityCustomers": "العملاء",
       "entityItems": "الأصناف",
+      "entitySuppliers": "الموردون",
       "key": "المفتاح",
       "keyHint": "أحرف إنجليزية صغيرة وأرقام وشرطة سفلية فقط، تبدأ بحرف.",
       "labelAr": "التسمية بالعربية",
