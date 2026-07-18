@@ -151,13 +151,71 @@ GRADERS = {
     "schema": grade_schema,
 }
 
+# --- language adherence (cross-cutting) ----------------------------------------------------------
+# Not a `kind`: it rides on top of whatever grader a case already declares, because the whole point
+# is that it cannot be sidestepped. It exists because a real 21/21 language failure sat undetected
+# for eight days — every one of those cases was graded on a money substring the model got right
+# while answering an English question entirely in Arabic.
+
+# Below this many letters there is nothing to judge — "5,450.00 EGP" is a valid answer in either
+# language, and guessing from three characters would invent failures.
+_MIN_LETTERS_TO_JUDGE = 5
+
+
+def _script_counts(text: str) -> tuple[int, int]:
+    """(arabic letters, latin letters). Digits, punctuation, and spacing are ignored — they carry
+    no language signal and money/codes are full of them."""
+    arabic = sum(1 for ch in text if "؀" <= ch <= "ۿ" or "ݐ" <= ch <= "ݿ")
+    latin = sum(1 for ch in text if ("a" <= ch <= "z") or ("A" <= ch <= "Z"))
+    return arabic, latin
+
+
+def dominant_script(text: str) -> str | None:
+    """``"ar"`` / ``"en"`` by which script owns most of the letters, or ``None`` when the text is
+    too short to tell.
+
+    Deliberately a majority test rather than "contains any Arabic": a correct English answer often
+    carries an Arabic proper noun ("customer عميل تجريبي"), and that must not read as a violation.
+    """
+    arabic, latin = _script_counts(text or "")
+    if arabic + latin < _MIN_LETTERS_TO_JUDGE:
+        return None
+    return "ar" if arabic > latin else "en"
+
+
+def grade_language(case: dict, output: dict) -> tuple[bool, str]:
+    """The answer must be written in the language the case was asked in.
+
+    Skipped when the case produced no phrased answer (schema/extraction cases hold structured
+    output, not prose) or when the answer is too short to classify.
+    """
+    answer = output.get("answer")
+    if not isinstance(answer, str) or not answer.strip():
+        return True, ""
+    expected = case.get("lang")
+    if expected not in ("ar", "en"):
+        return True, ""
+    actual = dominant_script(answer)
+    if actual is None or actual == expected:
+        return True, ""
+    return False, (f"answered in {actual!r} but the question was {expected!r}: "
+                   f"{answer.strip()[:80]!r}")
+
 
 def grade(case: dict, output: dict) -> tuple[str, str]:
     """Grade one case's output. Returns ``(status, reason)`` — status is ``pass`` | ``fail`` |
-    ``needs_judge`` (the rubric-graded ``judge`` kind, deferred to T1.7)."""
+    ``needs_judge`` (the rubric-graded ``judge`` kind, deferred to T1.7).
+
+    The declared kind decides first (its reason is the more actionable one when the content is
+    also wrong); a case whose content is right then still has to have been written in the right
+    language to pass.
+    """
     expected = case["expected"]
     if "judge" in expected:
         return "needs_judge", ""
     kind = next(k for k in ("schema", "contains", "citations", "refusal") if k in expected)
     passed, reason = GRADERS[kind](case, output)
+    if not passed:
+        return "fail", reason
+    passed, reason = grade_language(case, output)
     return ("pass" if passed else "fail"), reason

@@ -287,6 +287,10 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             "page record — never ask which record is meant. Prefer tools scoped to it, passing "
             f"its number or name ('{record['label']}') as the query.\n\n"
         ) + loop_system
+    # The planner writes user-facing prose too — the `clarify` question never passes through the
+    # answer path, so it needs the same computed language rule or an Arabic question can come back
+    # with an English "which order did you mean?" (caught by refusal_ar_08).
+    loop_system += "\n\n" + context.answer_language_directive(q)
     results: list[dict] = []      # {tool, why, data} per executed tool
     steps: list[dict] = []        # {tool, why, ok} — persisted summaries, never raw payloads
     citations: list[dict] = []
