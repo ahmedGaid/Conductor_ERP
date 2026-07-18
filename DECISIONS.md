@@ -1423,6 +1423,13 @@ Executed `Docs/plan/00-security-hardening.md` on branch `feat/sec-hardening`. Th
   do not wrap it with `scope_queryset`. Added `erp/pricing/tests/test_scoping.py` (commit 45f2b0f,
   branch `feat/sec-scope-pricing-invariant`) pinning that invariant as an executable regression
   guard. Slice was already delivered in session 00; only the pricing invariant test is new.
+- **Re-verified again 2026-07-18 (B-lane, branch `feat/sec-hardening`, no B18 row — file predates
+  the parallel board).** All 5 tasks were already merged (commits 945f9ee/46010f1/84264a8/8e10b08/
+  c446a9a/97af941/03f0216, ancestors of `feat/b-lane`) — zero code changes this session. Confirmed:
+  31 scope/egress/auth-hardening tests + 7 pricing import tests green on `erp_b`/`test_erp_b`;
+  `manage.py check --deploy --settings=config.settings.prod` clean (only warning was the
+  intentionally-short throwaway key used for the check, not a real gap). File renamed
+  `00-security-hardening_done.md`.
 
 ## Perf budgets 2026-07 — session 01 of the master plan (2026-07-02)
 

@@ -171,6 +171,15 @@ A's territory (gate03 surface) — flagging here, not fixing; A is concurrently 
 A8 (unpushed) so didn't touch the shared erp-status skill for this. Needs a route-split/
 lazy-import pass whenever A picks it up.
 
+**Security hardening re-check (2026-07-18, B session, branch `feat/sec-hardening`):** founder asked
+B to work `Docs/plan/00-security-hardening.md` top to bottom ("B18 row" referenced in the ask does
+not exist — that file predates this board, no row was ever created for it). Found all 5 tasks
+already merged into `feat/b-lane` from the 2026-07-02 session (commits 945f9ee/46010f1/84264a8/
+8e10b08/c446a9a/97af941/03f0216) and already re-verified once (2026-07-16, DECISIONS.md). Re-ran
+the suite anyway: 31 scope/egress/auth tests + 7 pricing import tests green, `check --deploy`
+clean. Zero code changes — file renamed `00-security-hardening_done.md`. No JWT-storage edit
+needed (already memory-only, done in `c446a9a`).
+
 **A7 pushed straight to `origin/main`** (2026-07-18, founder asked to see it on main): `feat/b-lane`
 was a clean 1-commit fast-forward ahead of `origin/main`, so B pushed
 `feat/b-lane:main` directly (remote ref only — **A's local `main` in `C:\AhmedGaid\ERP` was never
