@@ -155,6 +155,17 @@ ownership map; next unstarted twenty-harvest file is FILE_13 Task B/C (activity 
 UI — apps/web, A's territory) unless the founder extends the frontend hand-off again or opens
 new backend-only work. `apps/web/node_modules` now exists in B's worktree (installed for A7) —
 harmless to leave, but B still has no standing reason to run JS gates day-to-day.
+
+**A7 pushed straight to `origin/main`** (2026-07-18, founder asked to see it on main): `feat/b-lane`
+was a clean 1-commit fast-forward ahead of `origin/main`, so B pushed
+`feat/b-lane:main` directly (remote ref only — **A's local `main` in `C:\AhmedGaid\ERP` was never
+touched**, per the 2026-07-16 incident rule). `origin/main` tip is now `3a52111`. **A: `git pull`
+(or fast-forward your local `main`) before your next task** — same pattern as the M2/M3 syncs.
+Full `gate:all` (00–17) was NOT re-run for this push — zero backend files touched by A7, backend
+`custom_fields` tests were already green and untouched, and the frontend gates
+(parity/tsc/gate03) plus a direct API smoke test were already green pre-push. FILE_12 is not one
+of twenty-harvest's designated merge-checkpoint files (those are FILE_07/13/21) — this merge was
+user-requested, ahead of the plan's own checkpoint schedule.
 - **M3:** TH Tier 2 merge after FILE_13; SI Phase-A demo merge after FILE_14. TH FILE_21 +
   SI FILE_17 acceptances run single-agent (Either) on merged main.
 
