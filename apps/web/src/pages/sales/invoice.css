@@ -91,6 +91,10 @@
 }
 
 /* --- Line items. --- */
+/* On a narrow phone the 5-column line table would push the page sideways; let it scroll itself. */
+.invoice-doc__lines-wrap {
+  overflow-x: auto;
+}
 .invoice-doc__lines {
   inline-size: 100%;
   border-collapse: collapse;

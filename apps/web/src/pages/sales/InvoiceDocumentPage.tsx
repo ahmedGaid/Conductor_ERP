@@ -154,7 +154,8 @@ export function InvoiceDocumentPage() {
           <p className="muted latin"><Bdi>{data.customer_code}</Bdi></p>
         </section>
 
-        <table className="invoice-doc__lines">
+        <div className="invoice-doc__lines-wrap">
+          <table className="invoice-doc__lines">
           <thead>
             <tr>
               <th>{t("sales.newOrder.item")}</th>
@@ -178,7 +179,8 @@ export function InvoiceDocumentPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
 
         <div className="invoice-doc__totals">
           <div className="invoice-doc__total-row">

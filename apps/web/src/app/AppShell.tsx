@@ -45,6 +45,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Close the drawer whenever we navigate, so picking a destination dismisses it.
   useEffect(() => setNavOpen(false), [location.pathname]);
 
+  // While the drawer is open on narrow widths, lock the page behind the scrim so touch scrolling
+  // doesn't bleed through to the content underneath. Inert on wide screens (navOpen stays false).
+  useEffect(() => {
+    if (!navOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [navOpen]);
+
   // Track the last few module pages the user visited — the assistant's context envelope reads this
   // (sessionStorage, not state) so it can say "you were just looking at X" without an API call.
   useEffect(() => {
