@@ -71,7 +71,7 @@ never in A's checkout.
 | pre-handover-hardening FILE_02 CI safety net | A | `.github/workflows/ci.yml` | done 2026-07-18 (main red = bundle-size, see below) |
 | **bundle-size fix** (blocks CI green) | ~~B~~ **A** | `apps/web` route-split/lazy-import | done 2026-07-18 by A (user-directed session) — main chunk 260.7kB → 203.4kB gzip, gate03 green |
 | pre-handover-hardening FILE_03 error boundary | ~~B~~ **A** | `apps/web` + ar/en.json | done 2026-07-18 by A — B: `git pull` before continuing to FILE_04 |
-| pre-handover-hardening FILE_04 gate-run artifact | **B** | run gates, save log | needs green gate03 first |
+| pre-handover-hardening FILE_04 gate-run artifact | **B** | run gates, save log | done 2026-07-19 by B (feat/b-prehandover) — fresh gate-all 00-17 + i18n(2018 keys) + tsc -b all green → `delivery-readiness/gate-runs/gate-all-2026-07-19.log`; FILE_04 renamed `_done`. NOTE cross-lane dup: A's status banner claims a separate FILE_04 at 261c77b (guides in platform.ts) not in this branch — founder reconcile at merge |
 | pre-handover-hardening FILE_05 LICENSE+terms | **B** | root `LICENSE`, README, pyproject | founder picks license (FILE_05 asks) |
 | pre-handover-hardening FILE_06 loose ends | **B** coord | DB user delete = B; canvas smoke + partial-pay Q = **human/founder** (not an agent task) | |
 | einvoice-eta-live FILE_01→05 | **B** | `erp/einvoice/**` (B's native territory) | ⛔ STOP-gated: needs customer ETA creds + tax profile before FILE_01 there starts |

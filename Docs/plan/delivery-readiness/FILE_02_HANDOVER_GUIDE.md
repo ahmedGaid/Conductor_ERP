@@ -71,3 +71,13 @@ English from the command bar (⌘K) at the top.
 ### Security note
 Never share the admin password. Every staff member should have their own account scoped to their
 role.
+
+---
+
+## Verification evidence (handover package — internal)
+The handover package carries proof that the quality gates pass, not just a claim. A fresh full gate
+run captured at handover lives in this folder:
+[`gate-runs/gate-all-2026-07-19.log`](gate-runs/gate-all-2026-07-19.log) — Python gates 00–17 plus
+the web i18n-parity check and the TypeScript build (`tsc -b`), all green. CI
+(`.github/workflows/ci.yml`) re-runs the same checks on every push as the ongoing proof; this dated
+log is the one-time baseline for the package.

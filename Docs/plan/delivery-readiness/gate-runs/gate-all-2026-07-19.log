@@ -1,0 +1,39 @@
+===== gate-all run: 2026-07-19 (Agent B, feat/b-prehandover @ 95d0d25) =====
+Host: local dev (Windows). DB erp_b, Redis /1.
+Full pre-handover gate suite in one run: Python gates 00-17 via scripts\gates\_run.py all;
+apps/web i18n parity + tsc -b appended after. All three sections green.
+
+----- [1/3] python gates 00-17  (repo root: .venv\Scripts\python.exe scripts\gates\_run.py all) -----
+GATE 00 PASSED
+identity seeded: roles, HQ branch, admin user, role permissions
+GATE 01 PASSED
+GATE 02 PASSED
+GATE 03 PASSED
+GATE 04 PASSED
+GATE 05 PASSED
+GATE 06 PASSED
+GATE 07 PASSED
+GATE 08 PASSED
+GATE 09 PASSED
+GATE 10 PASSED
+GATE 11 PASSED
+GATE 12 PASSED
+GATE 13 PASSED
+GATE 14 PASSED
+GATE 15 eval smoke: 118/148 pass (79.7%), threshold 69.3% (baseline 74.3% - 5%)
+GATE 15 PASSED
+GATE 16: upgrade drill OK - row counts {'sales_customer': 3, 'inventory_item': 3, 'sales_order': 7}
+GATE 16 PASSED
+GATE 17: API schema check OK
+GATE 17 PASSED
+PYTHON_GATES_EXIT=0
+
+----- [2/3] apps/web i18n parity  (apps/web: node scripts/check-i18n-parity.mjs) -----
+i18n parity OK - 2018 keys present in all 2 locales (ar, en).
+I18N_EXIT=0
+
+----- [3/3] apps/web TypeScript build  (apps/web: npx tsc -b) -----
+TypeScript: No errors found
+TSC_EXIT=0
+
+===== all three sections green - gate-all 2026-07-19 (pre-handover-hardening FILE_04) =====
