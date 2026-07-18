@@ -7,14 +7,29 @@ export interface RecordChange {
   new: unknown;
 }
 
-export interface RecordHistoryEntry {
-  action: string;
-  actor_name: string | null;
+export interface TimelineEntry {
+  event: string;
+  actor: string | null;
   at: string;
+  params: Record<string, unknown>;
   changes: RecordChange[];
+  /** Set when the entry was written by the AI assistant or an import batch, not a direct user edit. */
+  source: "ai" | "import" | null;
 }
 
-export function getRecordHistory(entityType: string, entityId: string): Promise<RecordHistoryEntry[]> {
-  const qs = `entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}`;
-  return apiFetch<RecordHistoryEntry[]>(`/audit/history?${qs}`);
+export interface TimelinePage {
+  items: TimelineEntry[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
+export function getRecordTimeline(
+  entityType: string,
+  entityId: string,
+  page = 1,
+  pageSize = 20,
+): Promise<TimelinePage> {
+  const qs = `entity=${encodeURIComponent(entityType)}&id=${encodeURIComponent(entityId)}&page=${page}&page_size=${pageSize}`;
+  return apiFetch<TimelinePage>(`/audit/timeline/?${qs}`);
 }

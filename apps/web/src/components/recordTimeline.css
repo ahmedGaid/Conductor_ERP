@@ -55,11 +55,30 @@
   gap: var(--space-1);
 }
 .record-timeline__change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
 }
 .record-timeline__field {
   color: var(--color-text);
+}
+.record-timeline__chip {
+  padding-inline: var(--space-2);
+  padding-block: 1px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+
+.record-timeline__source {
+  display: inline-flex;
+  color: var(--color-text-subtle);
+}
+.record-timeline__source .navicon {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
 }
 
 .record-timeline__toggle {

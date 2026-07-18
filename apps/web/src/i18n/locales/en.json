@@ -1752,14 +1752,8 @@
       "defaultSet": "Default view set"
     }
   },
-  "timeline": {
-    "title": "Activity",
-    "empty": "No activity yet",
-    "emptyHint": "Actions on this record will appear here.",
-    "emptyValue": "—",
-    "showAll": "Show all",
-    "showLess": "Show less",
-    "action": {
+  "audit": {
+    "events": {
       "create_order": "Created",
       "approve_order": "Approved",
       "confirm_order": "Confirmed",
@@ -1772,6 +1766,17 @@
       "bill_order": "Billed",
       "pay_order": "Payment recorded",
       "post_journal": "Posted"
+    }
+  },
+  "timeline": {
+    "title": "Activity",
+    "empty": "No activity yet",
+    "emptyHint": "Actions on this record will appear here.",
+    "emptyValue": "—",
+    "loadMore": "Load more",
+    "source": {
+      "ai": "Created by the AI assistant",
+      "import": "Created by a data import"
     },
     "field": {
       "status": "Status",

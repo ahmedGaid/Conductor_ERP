@@ -1,21 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 
-import { getRecordHistory } from "../api/audit";
-import { useAsync } from "../hooks/useAsync";
+import { getRecordTimeline, type TimelineEntry } from "../api/audit";
+import { NavIcon } from "../app/icons";
 import { formatMinor } from "../lib/money";
 import { relativeTime } from "../lib/relativeTime";
 import { Bdi } from "./Bdi";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { ListSkeleton } from "./ListSkeleton";
+import { Tooltip } from "./Tooltip";
 import "./recordTimeline.css";
 
-const COLLAPSE_TO = 5;
+const PAGE_SIZE = 20;
 
-// snake_case field/action codes fall back to a readable phrase when no i18n key covers them yet
-// (the audit trail spans every module, so the dictionary only needs to grow where it reads oddly).
+// snake_case action codes fall back to a readable phrase when no i18n key covers them yet (the
+// audit trail spans every module, so the dictionary only needs to grow where it reads oddly).
 function humanize(code: string): string {
   return code.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 }
@@ -30,25 +31,43 @@ function formatValue(field: string, value: unknown, t: TFunction): string {
 /**
  * Quiet, newest-first activity feed for one record — who did what, when, and (for an update) which
  * fields changed. Every audit entry only ever stores a full snapshot (never a partial diff), so the
- * "old -> new" lines come from the backend comparing consecutive snapshots (`erp/audit/history.py`).
- * Collapsed to the last 5 by default; blame-free tone throughout (states facts, not fault).
+ * "old -> new" chips come from the backend comparing consecutive snapshots (`erp/audit/history.py`).
+ * A change caused by the AI assistant or a data import carries a small source glyph, so a disputed
+ * number or action stays click-traceable back to what actually wrote it (STRATEGY mechanic 4).
+ * Blame-free tone throughout — the timeline states facts, never fault.
  */
 export function RecordTimeline({ entityType, entityId }: { entityType: string; entityId: string }) {
   const { t, i18n } = useTranslation();
-  const { data, loading, error, reload } = useAsync(
-    () => getRecordHistory(entityType, entityId),
-    [entityType, entityId],
-    `audit:timeline:${entityType}:${entityId}`,
-  );
-  const [expanded, setExpanded] = useState(false);
+  const [rows, setRows] = useState<TimelineEntry[] | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (loading) return <ListSkeleton rows={3} title={false} />;
-  if (error) return <ErrorState message={error} onRetry={reload} />;
-  if (!data || data.length === 0) {
-    return <EmptyState title={t("timeline.empty")} hint={t("timeline.emptyHint")} />;
+  function load(pageToLoad: number, append: boolean) {
+    (append ? setLoadingMore : setLoading)(true);
+    setError(null);
+    getRecordTimeline(entityType, entityId, pageToLoad, PAGE_SIZE)
+      .then((res) => {
+        setRows((prev) => (append && prev ? [...prev, ...res.items] : res.items));
+        setTotal(res.total);
+        setPage(res.page);
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => (append ? setLoadingMore : setLoading)(false));
   }
 
-  const rows = expanded ? data : data.slice(0, COLLAPSE_TO);
+  useEffect(() => {
+    load(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityType, entityId]);
+
+  if (loading) return <ListSkeleton rows={3} title={false} />;
+  if (error) return <ErrorState message={error} onRetry={() => load(1, false)} />;
+  if (!rows || rows.length === 0) {
+    return <EmptyState title={t("timeline.empty")} hint={t("timeline.emptyHint")} />;
+  }
 
   return (
     <div className="record-timeline">
@@ -57,9 +76,16 @@ export function RecordTimeline({ entityType, entityId }: { entityType: string; e
           <li key={i} className="record-timeline__row">
             <div className="record-timeline__head">
               <span className="record-timeline__verb">
-                {t(`timeline.action.${entry.action}`, humanize(entry.action))}
+                {t(`audit.events.${entry.event}`, humanize(entry.event), entry.params)}
               </span>
-              {entry.actor_name && <span className="record-timeline__actor">{entry.actor_name}</span>}
+              {entry.actor && <span className="record-timeline__actor">{entry.actor}</span>}
+              {entry.source && (
+                <Tooltip label={t(`timeline.source.${entry.source}`)}>
+                  <span className="record-timeline__source">
+                    <NavIcon name={entry.source === "ai" ? "sparkle" : "download"} />
+                  </span>
+                </Tooltip>
+              )}
               <span className="record-timeline__time latin">{relativeTime(entry.at, i18n.language)}</span>
             </div>
             {entry.changes.length > 0 && (
@@ -69,8 +95,9 @@ export function RecordTimeline({ entityType, entityId }: { entityType: string; e
                     <span className="record-timeline__field">
                       {t(`timeline.field.${c.field}`, humanize(c.field))}
                     </span>
-                    {": "}
-                    <Bdi>{formatValue(c.field, c.old, t)}</Bdi> → <Bdi>{formatValue(c.field, c.new, t)}</Bdi>
+                    <span className="record-timeline__chip">
+                      <Bdi>{formatValue(c.field, c.old, t)}</Bdi> → <Bdi>{formatValue(c.field, c.new, t)}</Bdi>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -78,13 +105,14 @@ export function RecordTimeline({ entityType, entityId }: { entityType: string; e
           </li>
         ))}
       </ol>
-      {data.length > COLLAPSE_TO && (
+      {rows.length < total && (
         <button
           type="button"
           className="btn btn--text record-timeline__toggle"
-          onClick={() => setExpanded((v) => !v)}
+          disabled={loadingMore}
+          onClick={() => load(page + 1, true)}
         >
-          {expanded ? t("timeline.showLess") : t("timeline.showAll")}
+          {loadingMore ? t("common.loading") : t("timeline.loadMore")}
         </button>
       )}
     </div>

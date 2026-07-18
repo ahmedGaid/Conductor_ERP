@@ -54,6 +54,22 @@ def test_record_timeline_page_diffs_the_first_row_of_a_page_against_the_prior_pa
     assert page2[0]["params"] == {"number": "SO-1"}
 
 
+def test_record_timeline_page_tags_ai_and_import_caused_entries_by_module():
+    actor = User.objects.create_user(username="tl_u6", password="Dev12345!")
+    audit.record(module="sales", action="create_order", entity_type="SalesOrder", entity_id="SO-6",
+                 actor=actor, after={"number": "SO-6", "status": "draft"})
+    audit.record(module="assistant", action="draft_order", entity_type="SalesOrder", entity_id="SO-6",
+                 actor=actor, after={"number": "SO-6", "status": "draft", "notes": "AI note"})
+    audit.record(module="imports", action="execute_chunk", entity_type="SalesOrder", entity_id="SO-6",
+                 actor=actor, after={"number": "SO-6", "status": "confirmed", "notes": "AI note"})
+
+    items, _total = record_timeline_page("SalesOrder", "SO-6", page=1, page_size=10)
+    by_event = {i["event"]: i["source"] for i in items}
+    assert by_event["create_order"] is None
+    assert by_event["draft_order"] == "ai"
+    assert by_event["execute_chunk"] == "import"
+
+
 def test_record_timeline_page_beyond_available_rows_is_empty_not_an_error():
     actor = User.objects.create_user(username="tl_u2", password="Dev12345!")
     audit.record(module="sales", action="create_order", entity_type="SalesOrder", entity_id="SO-2",
@@ -72,11 +88,11 @@ def test_record_timeline_endpoint_returns_a_paginated_envelope_for_an_accessible
 
     res = _client(actor).get("/api/audit/timeline/?entity=SalesOrder&id=SO-3&page=1&page_size=10")
     assert res.status_code == 200, res.data
-    assert res.data["data"][0]["event"] == "create_order"
-    assert res.data["data"][0]["actor"] == "tl_u3"
-    assert res.data["total"] == 1
-    assert res.data["page"] == 1
-    assert res.data["page_size"] == 10
+    assert res.data["data"]["items"][0]["event"] == "create_order"
+    assert res.data["data"]["items"][0]["actor"] == "tl_u3"
+    assert res.data["data"]["total"] == 1
+    assert res.data["data"]["page"] == 1
+    assert res.data["data"]["page_size"] == 10
 
 
 def test_record_timeline_endpoint_denies_a_module_the_user_cannot_reach():

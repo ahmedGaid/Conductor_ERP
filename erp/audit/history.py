@@ -44,47 +44,23 @@ def order_history(entity_type: str, entity_id: str, stage_map: dict[str, str]) -
 _TIMELINE_SKIP = {"number", "id", "created_at", "updated_at"}
 
 
-def record_timeline(entity_type: str, entity_id: str, limit: int = 30) -> list[dict]:
-    """Generic per-record activity feed: ``[{action, actor_name, at, changes}]``, newest first.
-
-    Every audit entry stores a full point-in-time snapshot in ``after`` (never a partial diff — see
-    ``order_history`` above), so a field's "old -> new" is reconstructed here by comparing an entry's
-    snapshot against the one immediately before it for the same record.
-    """
-    entries = list(
-        AuditEntry.objects.filter(entity_type=entity_type, entity_id=entity_id)
-        .select_related("actor")
-        .order_by("created_at")
-    )
-    entries = entries[-max(1, min(limit, 100)):]
-
-    out: list[dict] = []
-    prev_after: dict | None = None
-    for e in entries:
-        after = e.after or {}
-        changes = []
-        if prev_after is not None:
-            for field, new in after.items():
-                if field in _TIMELINE_SKIP or isinstance(new, (dict, list)):
-                    continue
-                old = prev_after.get(field)
-                if old != new:
-                    changes.append({"field": field, "old": old, "new": new})
-        out.append({
-            "action": e.action,
-            "actor_name": _actor_name(e.actor),
-            "at": e.created_at.isoformat(),
-            "changes": changes,
-        })
-        if after:
-            prev_after = after
-    out.reverse()
-    return out
-
-
 # Identity fields worth surfacing as humanization params (e.g. "Order {number}") even though they
 # never appear in ``changes`` — they're excluded there by ``_TIMELINE_SKIP`` because they don't change.
 _TIMELINE_PARAM_FIELDS = {"number", "name"}
+
+# Modules whose writes are machine-caused rather than a direct human edit — the timeline surfaces
+# this so a disputed entry stays click-verifiable back to its AI trace or import batch (STRATEGY
+# mechanic 4). Anything else (the owning module's own service layer) reads as a plain human action.
+_AI_MODULES = {"assistant"}
+_IMPORT_MODULES = {"imports"}
+
+
+def _source(module: str) -> str | None:
+    if module in _AI_MODULES:
+        return "ai"
+    if module in _IMPORT_MODULES:
+        return "import"
+    return None
 
 
 def record_timeline_page(
@@ -123,6 +99,7 @@ def record_timeline_page(
                 "at": e.created_at.isoformat(),
                 "params": {k: after[k] for k in _TIMELINE_PARAM_FIELDS if k in after},
                 "changes": changes,
+                "source": _source(e.module),
             })
         if after:
             prev_after = after
