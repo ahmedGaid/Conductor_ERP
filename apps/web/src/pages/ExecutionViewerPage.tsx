@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
@@ -22,6 +23,7 @@ export function ExecutionViewerPage() {
     () => getInstance(id as string),
     [id],
   );
+  const [comment, setComment] = useState("");
 
   // Optimistic decision: leave "waiting" instantly (approve resumes → running, reject fails it) so the
   // decision card dismisses, then settle with the server's instance — it carries the true final status
@@ -32,11 +34,12 @@ export function ExecutionViewerPage() {
       current: data,
       mutate,
       optimistic: (inst) => ({ ...inst, status: decision === "approve" ? "running" : "failed" }),
-      request: () => decideInstance(id, decision),
+      request: () => decideInstance(id, decision, comment),
       settle: (_predicted, updated) => updated,
       toast,
       success: decision === "approve" ? t("instance.toast.approved") : t("instance.toast.rejected"),
     });
+    setComment("");
   }
 
   return (
@@ -60,7 +63,17 @@ export function ExecutionViewerPage() {
 
           {data.status === "waiting" && (
             <div className="card viewer__decision">
-              <span>{t("instance.awaitingDecision", { node: data.current_node ?? "" })}</span>
+              <span>
+                {data.approval?.title || t("instance.awaitingDecision", { node: data.current_node ?? "" })}
+              </span>
+              {data.approval?.message && <p className="muted">{data.approval.message}</p>}
+              <textarea
+                className="viewer__decision-comment"
+                rows={2}
+                placeholder={t("instance.decisionComment")}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
               <div className="viewer__decision-actions">
                 <button
                   className="btn btn--primary btn--sm"
@@ -78,6 +91,13 @@ export function ExecutionViewerPage() {
                 </button>
               </div>
             </div>
+          )}
+
+          {data.approval && data.approval.status !== "pending" && (
+            <p className="muted viewer__decision-outcome">
+              {t("instance.decidedBy", { user: data.approval.decided_by ?? "" })}
+              {data.approval.comment && ` — ${data.approval.comment}`}
+            </p>
           )}
 
           {data.error && <p className="error-text">{data.error}</p>}

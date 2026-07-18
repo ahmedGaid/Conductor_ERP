@@ -19,6 +19,22 @@ design FILE_07 originally specified was **not built**; redesigning an existing, 
 accepted component is a bigger decision than a rollout session should make unasked. If sharing is
 wanted, it needs its own plan (model change + owner/admin-edit rule + second-user visibility test).
 
+## Approval-node RBAC — scope split between backend and canvas visuals (twenty-harvest FILE_09, 2026-07-18)
+
+The engine already halted/resumed at an `approval` node (pre-existing) — what FILE_09 actually
+needed was the surrounding governance: a real `ApprovalRequest` row, an approver-scoped RBAC check,
+notification dispatch, and an audit trail. Built all four in full (`erp/workflow/approvals.py`,
+model+migration, 11 new tests, `pytest erp/workflow` 47/47, `gate:all` 00-17 green) — see the
+`_done` plan file for exact detail.
+
+**Deliberately not built:** a bespoke per-node-type visual (pending/approved/rejected card with
+its own chip/color) on the canvas. No node type has ANY custom rendering today — `<ReactFlow>` is
+given no `nodeTypes` prop anywhere in `apps/web`, so every node (not just approval) renders as the
+library's default box. Building one bespoke card for approval alone would be an inconsistent
+one-off; building the general per-type node-card system properly is a separate frontend-
+architecture decision (affects every node type) that a rollout/backend session shouldn't make
+unasked. Flagged in the plan file rather than shipped as if the visual ask was fully met.
+
 ## Dev-DB migration drift caused sales/inventory/purchasing 500s (2026-07-18)
 
 FILE_07 handover-gate section B (delivery E2E re-pass) hit `500 Internal Server Error` on

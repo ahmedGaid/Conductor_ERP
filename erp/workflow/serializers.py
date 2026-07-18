@@ -79,6 +79,28 @@ class StartInstanceSerializer(serializers.Serializer):
 
 class DecisionSerializer(serializers.Serializer):
     decision = serializers.ChoiceField(choices=["approve", "reject"])
+    comment = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class ApprovalRequestSerializer(serializers.Serializer):
+    """The pending (or most recently decided) approval attached to an instance, if any."""
+
+    id = serializers.UUIDField()
+    approver_role = serializers.CharField()
+    approver_user = serializers.SerializerMethodField()
+    title = serializers.CharField()
+    message = serializers.CharField()
+    status = serializers.CharField()
+    decided_by = serializers.SerializerMethodField()
+    comment = serializers.CharField()
+    decided_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField()
+
+    def get_approver_user(self, obj) -> str | None:
+        return obj.approver_user.username if obj.approver_user_id else None
+
+    def get_decided_by(self, obj) -> str | None:
+        return obj.decided_by.username if obj.decided_by_id else None
 
 
 class ExecutionLogSerializer(serializers.Serializer):
@@ -132,7 +154,17 @@ class InstanceDetailSerializer(InstanceSerializer):
 
     context = serializers.JSONField()
     node_runs = serializers.SerializerMethodField()
+    approval = serializers.SerializerMethodField()
 
     def get_node_runs(self, obj) -> list:
         runs = obj.node_runs.select_related("node").order_by("started_at", "attempt")
         return NodeExecutionSerializer(runs, many=True).data
+
+    def get_approval(self, obj) -> dict | None:
+        """The most recent approval request against this instance, if it has any."""
+        req = (
+            obj.approval_requests.select_related("approver_user", "decided_by")
+            .order_by("-created_at")
+            .first()
+        )
+        return ApprovalRequestSerializer(req).data if req else None

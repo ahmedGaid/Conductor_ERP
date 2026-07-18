@@ -178,3 +178,46 @@ def test_dashboard_metrics_reflect_real_data():
 def test_requires_authentication():
     res = APIClient().get("/api/workflow/workflows")
     assert res.status_code == 401
+
+
+def test_decision_by_wrong_approver_is_403_and_leaves_run_waiting():
+    """FILE_09 — a scoped approval node's decision endpoint enforces the approver RBAC check."""
+    admin_client = _client()
+    from erp.identity.models import User
+
+    approver = User.objects.create_user(
+        username="wf_approver", email="wf_approver@erp.local", password="Dev12345!"
+    )
+    graph = {
+        **APPROVAL_GRAPH,
+        "nodes": [
+            n if n["key"] != "approve" else {**n, "config": {"approver_user_id": approver.id}}
+            for n in APPROVAL_GRAPH["nodes"]
+        ],
+    }
+    wf_id = admin_client.post("/api/workflow/workflows", graph, format="json").data["data"]["id"]
+    instance_id = admin_client.post(
+        f"/api/workflow/workflows/{wf_id}/start", {"payload": {}}, format="json"
+    ).data["data"]["id"]
+
+    outsider = User.objects.create_user(
+        username="wf_outsider", email="wf_outsider@erp.local", password="Dev12345!"
+    )
+    outsider_client = APIClient()
+    outsider_client.force_authenticate(user=outsider)
+    res = outsider_client.post(
+        f"/api/workflow/instances/{instance_id}/decision", {"decision": "approve"}, format="json"
+    )
+    assert res.status_code == 403, res.data
+
+    # the run is untouched — the correct approver can still decide it
+    detail = admin_client.get(f"/api/workflow/instances/{instance_id}").data["data"]
+    assert detail["status"] == "waiting"
+
+    approver_client = APIClient()
+    approver_client.force_authenticate(user=approver)
+    ok = approver_client.post(
+        f"/api/workflow/instances/{instance_id}/decision", {"decision": "approve"}, format="json"
+    )
+    assert ok.status_code == 200, ok.data
+    assert ok.data["data"]["status"] == "completed"

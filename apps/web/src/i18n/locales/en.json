@@ -674,7 +674,13 @@
     "config": "Config (JSON)",
     "condition": "Condition (JSON)",
     "conditionPlaceholder": "Leave empty for the default edge",
-    "ordering": "Ordering"
+    "ordering": "Ordering",
+    "approval": {
+      "title": "Title",
+      "message": "Message",
+      "approverRole": "Approver role",
+      "approverRolePlaceholder": "e.g. finance_manager — leave empty for any user"
+    }
   },
   "instance": {
     "toast": {
@@ -685,6 +691,8 @@
     "awaitingDecision": "Awaiting a decision at node: {{node}}",
     "approve": "Approve",
     "reject": "Reject",
+    "decidedBy": "Decided by {{user}}",
+    "decisionComment": "Comment",
     "timeline": "Execution timeline",
     "noRuns": "No execution steps yet.",
     "attempt": "Attempt",

@@ -674,7 +674,13 @@
     "config": "الإعدادات (JSON)",
     "condition": "الشرط (JSON)",
     "conditionPlaceholder": "اتركه فارغًا للوصلة الافتراضية",
-    "ordering": "الترتيب"
+    "ordering": "الترتيب",
+    "approval": {
+      "title": "العنوان",
+      "message": "الرسالة",
+      "approverRole": "دور المعتمِد",
+      "approverRolePlaceholder": "مثال: finance_manager — اتركه فارغًا لأي مستخدم"
+    }
   },
   "instance": {
     "toast": {
@@ -685,6 +691,8 @@
     "awaitingDecision": "بانتظار قرار عند العقدة: {{node}}",
     "approve": "موافقة",
     "reject": "رفض",
+    "decidedBy": "قرار بواسطة {{user}}",
+    "decisionComment": "تعليق",
     "timeline": "مسار التنفيذ",
     "noRuns": "لا توجد خطوات تنفيذ بعد.",
     "attempt": "محاولة",

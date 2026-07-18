@@ -44,6 +44,12 @@ class LogLevel(models.TextChoices):
     ERROR = "error"
 
 
+class ApprovalStatus(models.TextChoices):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class Workflow(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
@@ -146,6 +152,41 @@ class ExecutionLog(models.Model):
     class Meta:
         db_table = "workflow_execution_log"
         indexes = [models.Index(fields=["instance"])]
+
+
+class ApprovalRequest(models.Model):
+    """One human decision needed at an ``approval`` node — created when a run halts there.
+
+    ``approver_user``/``approver_role`` are the node's config, copied at creation time (an edit to
+    the workflow definition after the request was raised must not retroactively change who could
+    decide it). Both blank means "any authenticated user" — the pre-FILE_09 behavior, kept as the
+    default so a graph author who hasn't set an approver yet doesn't lock everyone out.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    instance = models.ForeignKey(
+        WorkflowInstance, on_delete=models.CASCADE, related_name="approval_requests"
+    )
+    node = models.ForeignKey(WorkflowNode, on_delete=models.CASCADE, related_name="+")
+    approver_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    approver_role = models.CharField(max_length=64, blank=True, default="")
+    title = models.CharField(max_length=200, blank=True, default="")
+    message = models.TextField(blank=True, default="")
+    status = models.CharField(
+        max_length=16, choices=ApprovalStatus.choices, default=ApprovalStatus.PENDING
+    )
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    comment = models.TextField(blank=True, default="")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "workflow_approval_request"
+        indexes = [models.Index(fields=["instance", "status"])]
 
 
 class IdempotencyRecord(models.Model):
