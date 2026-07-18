@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from erp.identity import access
 
-from ..history import record_timeline, record_timeline_page
+from ..history import record_timeline_page
 
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
@@ -42,31 +42,17 @@ _MODULE_BY_ENTITY: dict[str, str] = {
 }
 
 
-class RecordHistoryView(APIView):
-    """``GET /api/audit/history?entity_type=&entity_id=`` — last 30 activity entries for one record."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request: Request) -> Response:
-        entity_type = request.query_params.get("entity_type", "")
-        entity_id = request.query_params.get("entity_id", "")
-        module = _MODULE_BY_ENTITY.get(entity_type)
-        if not module or not entity_id:
-            return Response({"detail": "unknown entity_type or missing entity_id"}, status=400)
-        if module not in access.accessible_modules(request.user):
-            return Response({"detail": "forbidden"}, status=403)
-        return Response({"data": record_timeline(entity_type, entity_id)})
-
-
 class RecordTimelineView(APIView):
     """``GET /api/audit/timeline/?entity=&id=&page=&page_size=`` — paginated, newest-first
     activity feed for one record.
 
-    Each item: ``{event, actor, at, params, changes}``. ``event`` is the raw audit action key
-    (frontend humanizes it via an ``audit.events.<key>`` i18n lookup); ``params`` carries identity
-    fields for message interpolation (e.g. an order ``number``); ``changes`` is a whitelist diff of
-    meaningful scalar fields, old -> new — never a raw snapshot dump. RBAC mirrors
-    ``RecordHistoryView``: the caller must hold read access to the module owning ``entity``.
+    Each item: ``{event, actor, at, params, changes, source}``. ``event`` is the raw audit action
+    key (frontend humanizes it via an ``audit.events.<key>`` i18n lookup); ``params`` carries
+    identity fields for message interpolation (e.g. an order ``number``); ``changes`` is a
+    whitelist diff of meaningful scalar fields, old -> new — never a raw snapshot dump; ``source``
+    is ``"ai"``/``"import"``/``null``. The pagination metadata nests under ``data`` alongside the
+    items (not as sibling keys) so it survives ``apiFetch``'s generic ``{data}`` envelope unwrap.
+    RBAC: the caller must hold read access to the module owning ``entity``.
     """
 
     permission_classes = [IsAuthenticated]
@@ -86,4 +72,4 @@ class RecordTimelineView(APIView):
             MAX_PAGE_SIZE,
         )
         items, total = record_timeline_page(entity_type, entity_id, page=page, page_size=page_size)
-        return Response({"data": items, "page": page, "page_size": page_size, "total": total})
+        return Response({"data": {"items": items, "page": page, "page_size": page_size, "total": total}})

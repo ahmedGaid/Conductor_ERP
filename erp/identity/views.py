@@ -14,12 +14,13 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from . import roles_admin, saved_views, services, users as user_svc
+from . import api_keys, roles_admin, saved_views, services, users as user_svc
 from .models import Department, Team
 from .permissions import HasAnyRole, HasModulePermission
 from .roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
 from .serializers import (
     BulkUsersSerializer,
+    CreateApiKeySerializer,
     CreateRoleSerializer,
     CreateSavedViewSerializer,
     CreateUserSerializer,
@@ -34,6 +35,7 @@ from .serializers import (
     UserSerializer,
     Verify2FASerializer,
 )
+from erp.core.errors import ValidationError as AppValidationError
 
 User = get_user_model()
 
@@ -487,6 +489,57 @@ class RoleApprovalLimitView(APIView):
             value = d.get("limit_minor") or 0
         result = roles_admin.set_approval_limit(name, d["document_type"], value, actor=request.user)
         return _envelope(result)
+
+
+# --- API keys (twenty-harvest FILE_14, Task B) ---
+
+_IsAdmin = HasAnyRole.require(SYSTEM_ADMIN)
+
+
+class ApiKeysView(APIView):
+    """List integration keys, or create one (secret returned once, then never again)."""
+
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(api_keys.list_keys(actor=request.user))
+
+    def post(self, request: Request) -> Response:
+        s = CreateApiKeySerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        try:
+            key, raw_secret = api_keys.create_key(
+                d["name"], d["role"], expires_at=d.get("expires_at"), actor=request.user
+            )
+        except AppValidationError as exc:
+            return Response({"data": {"detail": exc.message}}, status=400)
+        data = api_keys.serialize(key)
+        data["secret"] = raw_secret
+        return Response({"data": data}, status=201)
+
+
+class ApiKeyRevokeView(APIView):
+    """Revoke a key — kept in the list (audit trail), just no longer authenticates."""
+
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def post(self, request: Request, pk: int) -> Response:
+        try:
+            key = api_keys.revoke_key(pk, actor=request.user)
+        except AppValidationError as exc:
+            return Response({"data": {"detail": exc.message}}, status=404)
+        return _envelope(api_keys.serialize(key))
+
+
+class ApiDocsView(APIView):
+    """Truthful, always-current endpoint reference — same route inventory gate17 snapshots."""
+
+    permission_classes = [IsAuthenticated, _IsAdmin]
+
+    def get(self, request: Request) -> Response:
+        from scripts.gates.gate17 import _routes
+        return _envelope({"routes": _routes()})
 
 
 def _get_user(pk: int):

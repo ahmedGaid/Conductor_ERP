@@ -24,6 +24,7 @@ from ..client import (
     _groq_media_block,
     _STREAM_RUNNERS,
     embed_text,
+    gemini_http_options,
     get_client,
     get_gemini_client,
     groq_chat,
@@ -83,11 +84,25 @@ def _gemini(system: str, user: str, schema: dict, media: list | None = None,
         cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
     except Exception:  # pragma: no cover - older SDK/model without thinking support
         pass
+    http_options = gemini_http_options(timeout)  # per-call, not on the Client — see get_gemini_client
+    if http_options is not None:
+        cfg["http_options"] = http_options
     parts = [types.Part.from_bytes(data=m["data"], mime_type=m["media_type"]) for m in (media or [])]
-    resp = get_gemini_client(timeout_s=timeout).models.generate_content(
-        model=model or model_id("gemini"), contents=[*parts, user],
-        config=types.GenerateContentConfig(**cfg),
-    )
+    gen_config = types.GenerateContentConfig(**cfg)
+
+    # A defensive retry-with-fresh-client stays here in case the SDK's own httpx transport ever
+    # goes stale mid-process for an unrelated reason (idle connection reuse, etc) — cheap, and
+    # gateway.retry classifies this message as retryable too for the provider-chain backoff loop.
+    try:
+        resp = get_gemini_client().models.generate_content(
+            model=model or model_id("gemini"), contents=[*parts, user], config=gen_config,
+        )
+    except RuntimeError as exc:
+        if "client has been closed" not in str(exc).lower():
+            raise
+        resp = get_gemini_client().models.generate_content(
+            model=model or model_id("gemini"), contents=[*parts, user], config=gen_config,
+        )
     return getattr(resp, "text", "") or ""
 
 

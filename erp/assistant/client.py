@@ -84,22 +84,32 @@ def get_client():
     return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
-def get_gemini_client(timeout_s: float | None = None):
+def get_gemini_client():
     from google import genai  # deferred: package is only needed when this provider is active
+
+    # NOTE (2026-07-18): this constructor used to accept a per-task timeout_s and set it (plus a
+    # retry_options=HttpRetryOptions(attempts=1) meant to disable the SDK's own retry-on-429) via
+    # http_options on the CLIENT itself. On the currently pinned google-genai (1.75.0), passing
+    # ANY http_options with a timeout at Client-construction time triggers a real SDK bug —
+    # deterministically, on the very first call, whenever a real GenerateContentConfig
+    # (system_instruction/response_schema/thinking_config — i.e. every real caller here) is used:
+    # it raises "Cannot send a request, as the client has been closed", not the transient error it
+    # was retrying. Confirmed via direct isolation: identical calls succeed 100% of the time with
+    # the Client built bare, and fail 100% of the time with any http_options set on it — not
+    # rate-limit-related, not intermittent. gemini_http_options() below sets the same timeout on
+    # the per-CALL config instead (GenerateContentConfig.http_options), which does not trigger it.
+    # DO NOT set http_options on this Client without re-verifying against the then-installed SDK.
+    return genai.Client(api_key=settings.GEMINI_API_KEY)
+
+
+def gemini_http_options(timeout_s: float | None):
+    """Per-call timeout for a Gemini request — pass as ``GenerateContentConfig(http_options=...)``,
+    never to the Client constructor (see ``get_gemini_client``'s note)."""
+    if timeout_s is None:
+        return None
     from google.genai import types
 
-    # Disable the SDK's own retry: on a transient 429/503 its tenacity loop reuses an already-closed
-    # httpx client and raises a misleading "client has been closed" RuntimeError. We retry at the
-    # service layer with a fresh client instead (erp.assistant.services.extraction._extract_gemini).
-    http_kwargs: dict = {}
-    if timeout_s is not None:  # T2.2 per-task-class ceiling; None = SDK default (existing callers)
-        http_kwargs["timeout"] = int(timeout_s * 1000)  # SDK wants milliseconds
-    try:
-        http_kwargs["retry_options"] = types.HttpRetryOptions(attempts=1)
-    except Exception:  # pragma: no cover - older SDK without retry_options
-        pass
-    http_options = types.HttpOptions(**http_kwargs) if http_kwargs else None
-    return genai.Client(api_key=settings.GEMINI_API_KEY, http_options=http_options)
+    return types.HttpOptions(timeout=int(timeout_s * 1000))  # SDK wants milliseconds
 
 
 def groq_chat(messages: list, *, model: str, max_tokens: int, json_mode: bool = True,
@@ -221,15 +231,40 @@ def _stream_gemini(messages: list, system: str | None, media: list | None = None
         cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
     except Exception:  # pragma: no cover - older SDK/model without thinking support
         pass
+    http_options = gemini_http_options(timeout)  # per-call, not on the Client — see get_gemini_client
+    if http_options is not None:
+        cfg["http_options"] = http_options
     if media:
         text = "\n".join(m["content"] for m in messages if isinstance(m["content"], str))
         contents = [types.Part.from_bytes(data=m["data"], mime_type=m["media_type"]) for m in media]
         contents.append(text)
     else:
         contents = [m["content"] for m in messages]
-    for chunk in get_gemini_client(timeout_s=timeout).models.generate_content_stream(
-        model=model_id(prov), contents=contents, config=types.GenerateContentConfig(**cfg)
-    ):
+    gen_config = types.GenerateContentConfig(**cfg)
+
+    def _open():
+        return get_gemini_client().models.generate_content_stream(
+            model=model_id(prov), contents=contents, config=gen_config,
+        )
+
+    # Same google-genai stale-client bug as gateway.core._gemini — see its comment. Streamed here
+    # because a retry is only safe BEFORE any text has reached the caller: once a chunk has been
+    # yielded, retrying would replay the answer from the start and duplicate it, so only the first
+    # chunk gets the fresh-client retry; anything after that propagates as before.
+    _unset = object()
+    stream = _open()
+    try:
+        first = next(stream, _unset)
+    except RuntimeError as exc:
+        if "client has been closed" not in str(exc).lower():
+            raise
+        stream = _open()
+        first = next(stream, _unset)
+    if first is not _unset:
+        text = getattr(first, "text", "") or ""
+        if text:
+            yield text
+    for chunk in stream:
         text = getattr(chunk, "text", "") or ""
         if text:
             yield text

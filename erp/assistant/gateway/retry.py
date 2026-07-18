@@ -32,6 +32,10 @@ _RETRYABLE_MARKERS = (
     "connectionerror", "connection reset", "connection aborted",
     "timeout", "timed out",
     "apiconnectionerror", "apistatuserror",
+    # google-genai's own internal retry occasionally reuses an already-closed httpx client and
+    # surfaces this instead of the transient error it was retrying — a fresh client (a new attempt
+    # here) clears it, so it belongs with the transport-level failures above, not the permanent ones.
+    "client has been closed",
 )
 
 

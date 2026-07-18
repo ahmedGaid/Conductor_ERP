@@ -67,6 +67,14 @@ export function SettingsNav() {
             {t("settings.tabs.customFields")}
           </NavLink>
         )}
+        {isAdmin && (
+          <NavLink
+            to="/settings/developers"
+            className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
+          >
+            {t("settings.tabs.developers")}
+          </NavLink>
+        )}
       </nav>
     </header>
   );

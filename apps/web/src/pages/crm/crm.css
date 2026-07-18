@@ -83,3 +83,25 @@
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
+
+/* Quiet inline-edit affordance for the pipeline stage cell — reads as plain until hover/focus
+   hints it's clickable (a border, not a colour fill), matching the InlineEdit contract elsewhere
+   without wearing a permanent input-box look (this is a list cell, not a form field). */
+.crm-stage-cell {
+  display: inline-flex;
+  padding: var(--space-1);
+  margin: calc(-1 * var(--space-1));
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.crm-stage-cell:hover,
+.crm-stage-cell:focus-visible {
+  border-color: var(--color-border-strong);
+}
+
+.crm-stage-edit {
+  font: inherit;
+}
