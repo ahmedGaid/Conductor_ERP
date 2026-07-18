@@ -1,0 +1,371 @@
+<title>Conductor — Brand Philosophy Review</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* Monochrome chrome — a cool-biased neutral, chosen not defaulted */
+    --paper: #f7f8f9;
+    --card: #ffffff;
+    --ink: #14181d;
+    --ink-2: #444c56;
+    --ink-3: #6b747e;
+    --hair: #e3e7eb;
+    --hair-2: #eef1f4;
+    --rail: #14181d;
+    /* Semantic — lives ONLY inside the data, always with a word */
+    --p1: #b3261e;      /* break */
+    --p1-bg: #fbeceb;
+    --p2: #8a5a00;      /* off-brand */
+    --p2-bg: #f8f0df;
+    --p3: #34617a;      /* polish */
+    --p3-bg: #e9f0f4;
+    --pass: #2f6b45;
+    --pass-bg: #e7f1ec;
+    --pending: #6b747e;
+    --pending-bg: #eef1f4;
+    --shadow: 0 1px 2px rgba(20,24,29,.05), 0 1px 1px rgba(20,24,29,.03);
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0d0f12;
+      --card: #14181d;
+      --ink: #eef1f4;
+      --ink-2: #b6bec7;
+      --ink-3: #7d8790;
+      --hair: #262c33;
+      --hair-2: #1c2127;
+      --rail: #eef1f4;
+      --p1: #f08079; --p1-bg: #2a1614;
+      --p2: #e0aa4e; --p2-bg: #2a2110;
+      --p3: #7fb4d0; --p3-bg: #12222b;
+      --pass: #6cc08a; --pass-bg: #122318;
+      --pending: #7d8790; --pending-bg: #1c2127;
+      --shadow: 0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#f7f8f9; --card:#fff; --ink:#14181d; --ink-2:#444c56; --ink-3:#6b747e;
+    --hair:#e3e7eb; --hair-2:#eef1f4; --rail:#14181d;
+    --p1:#b3261e; --p1-bg:#fbeceb; --p2:#8a5a00; --p2-bg:#f8f0df; --p3:#34617a; --p3-bg:#e9f0f4;
+    --pass:#2f6b45; --pass-bg:#e7f1ec; --pending:#6b747e; --pending-bg:#eef1f4;
+    --shadow:0 1px 2px rgba(20,24,29,.05),0 1px 1px rgba(20,24,29,.03);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0d0f12; --card:#14181d; --ink:#eef1f4; --ink-2:#b6bec7; --ink-3:#7d8790;
+    --hair:#262c33; --hair-2:#1c2127; --rail:#eef1f4;
+    --p1:#f08079; --p1-bg:#2a1614; --p2:#e0aa4e; --p2-bg:#2a2110; --p3:#7fb4d0; --p3-bg:#12222b;
+    --pass:#6cc08a; --pass-bg:#122318; --pending:#7d8790; --pending-bg:#1c2127;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); line-height: 1.5;
+    -webkit-font-smoothing: antialiased; font-size: 15px;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* ---- Header ---- */
+  header { border-bottom: 1px solid var(--hair); padding-bottom: 28px; margin-bottom: 32px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(28px, 4.5vw, 40px); line-height: 1.08; margin: 0 0 14px;
+    letter-spacing: -.02em; font-weight: 640; text-wrap: balance;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 62ch; margin: 0 0 22px; }
+  .mission {
+    font-size: 14px; color: var(--ink-2); border-inline-start: 2px solid var(--rail);
+    padding-inline-start: 14px; margin: 0; font-style: italic;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 12px; padding: 5px 10px; border-radius: 6px;
+    border: 1px solid var(--hair); color: var(--ink-2); background: var(--card);
+  }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pending); }
+  .chip.live .dot { background: var(--p2); }
+
+  /* ---- Section scaffolding ---- */
+  section { margin-top: 44px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .sec-head h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin: 0; font-weight: 620; }
+  .sec-head .n { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .sec-note { font-size: 13.5px; color: var(--ink-3); margin: -8px 0 18px; max-width: 64ch; }
+
+  /* ---- Rubric strip ---- */
+  .rubric { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--hair); border: 1px solid var(--hair); border-radius: 10px; overflow: hidden; }
+  .std { background: var(--card); padding: 14px 16px; display: flex; gap: 12px; }
+  .std .num { font-family: var(--mono); font-size: 13px; color: var(--ink-3); font-weight: 600; min-width: 16px; }
+  .std .body strong { display: block; font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .std .body span { font-size: 12.5px; color: var(--ink-3); }
+
+  /* ---- Legend ---- */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+    font-size: 12px; padding: 4px 9px; border-radius: 5px; font-weight: 500;
+  }
+  .tag .sq { width: 8px; height: 8px; border-radius: 2px; }
+  .tag.p1 { color: var(--p1); background: var(--p1-bg); } .tag.p1 .sq { background: var(--p1); }
+  .tag.p2 { color: var(--p2); background: var(--p2-bg); } .tag.p2 .sq { background: var(--p2); }
+  .tag.p3 { color: var(--p3); background: var(--p3-bg); } .tag.p3 .sq { background: var(--p3); }
+  .tag.pass { color: var(--pass); background: var(--pass-bg); } .tag.pass .sq { background: var(--pass); }
+  .tag.pend { color: var(--pending); background: var(--pending-bg); } .tag.pend .sq { background: var(--pending); }
+
+  /* ---- Findings ---- */
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  .finding {
+    background: var(--card); border: 1px solid var(--hair); border-radius: 10px;
+    padding: 16px 18px; box-shadow: var(--shadow); display: grid;
+    grid-template-columns: auto 1fr; gap: 14px; align-items: start;
+  }
+  .finding .lead { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .finding h3 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+  .finding p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .finding .std-hit { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); margin-top: 8px; display: block; }
+  .finding .owner { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+
+  /* ---- Surface cards ---- */
+  .surfaces { display: flex; flex-direction: column; gap: 12px; }
+  .surface {
+    background: var(--card); border: 1px solid var(--hair); border-radius: 12px;
+    padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .surface-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .surface-top .id { font-family: var(--mono); font-size: 12px; color: var(--ink-3); font-weight: 600; }
+  .surface-top h3 { font-size: 16px; margin: 0; font-weight: 620; letter-spacing: -.01em; }
+  .surface-top .count { font-family: var(--mono); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .screens { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .screens span {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-2);
+    background: var(--hair-2); padding: 3px 8px; border-radius: 5px;
+  }
+  .checkstrip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--hair-2); }
+  .dots { display: flex; gap: 5px; }
+  .dots i {
+    width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--hair);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 9px; color: var(--ink-3); font-style: normal;
+  }
+  .status { font-family: var(--mono); font-size: 11.5px; color: var(--pending); }
+
+  /* ---- Method ---- */
+  .method { background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 22px 24px; box-shadow: var(--shadow); }
+  .method ol { margin: 0; padding-inline-start: 20px; }
+  .method li { font-size: 13.5px; color: var(--ink-2); margin-bottom: 8px; }
+  .method li:last-child { margin-bottom: 0; }
+  .method strong { color: var(--ink); }
+
+  footer { margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--hair); font-size: 12.5px; color: var(--ink-3); }
+  footer code { font-family: var(--mono); background: var(--hair-2); padding: 1px 5px; border-radius: 4px; color: var(--ink-2); }
+
+  @media (max-width: 640px) {
+    .rubric { grid-template-columns: 1fr; }
+    .finding { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Conductor ERP · Judgment Audit · 2026-07-18</p>
+    <h1>Brand Philosophy Review</h1>
+    <p class="lede">The whole app — ~85 screens across 8 surfaces — measured against the Product
+      Philosophy front door and its 8-point ship test. This is the plan and the scorecard: the
+      rubric, the full inventory, and the systemic findings already known. Per-screen scores fill
+      in as sessions A–H run.</p>
+    <p class="mission">"We do not compete on feature count. We compete on the feeling of using the
+      software." — Conductor Product Philosophy</p>
+    <div class="meta">
+      <span class="chip live"><span class="dot"></span>Status: plan ready · review pass not yet run</span>
+      <span class="chip"><span class="dot"></span>8 surfaces · ~85 routes · ar+en · light+dark</span>
+      <span class="chip"><span class="dot"></span>Does not block handover · feeds v1.1 polish</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-head"><span class="n">01</span><h2>The rubric — the 8 Conductor Standard</h2></div>
+    <p class="sec-note">Every screen is scored against these. Each is re-asked as a yes/no decision
+      question; any honest "no" becomes a finding. The set is typed and ordered — the numbering is
+      the Standard's own.</p>
+    <div class="rubric">
+      <div class="std"><span class="num">1</span><div class="body"><strong>Invisible complexity</strong><span>One obvious thing, one primary action. Hide depth, never omit it.</span></div></div>
+      <div class="std"><span class="num">2</span><div class="body"><strong>Instant performance</strong><span>Feels immediate. No spinner where cached data could paint. Saving is invisible.</span></div></div>
+      <div class="std"><span class="num">3</span><div class="body"><strong>Calm by default</strong><span>Monochrome chrome. Colour only inside the work, paired with a word or icon.</span></div></div>
+      <div class="std"><span class="num">4</span><div class="body"><strong>Trust through transparency</strong><span>Says what happens before, reassures after. Reversible.</span></div></div>
+      <div class="std"><span class="num">5</span><div class="body"><strong>Consistency everywhere</strong><span>The same action behaves the same on every screen.</span></div></div>
+      <div class="std"><span class="num">6</span><div class="body"><strong>Human AI</strong><span>Notices, explains, protects. Drafts-only and gated. N/A where there's no AI.</span></div></div>
+      <div class="std"><span class="num">7</span><div class="body"><strong>Craft in every detail</strong><span>Type, spacing, motion, Arabic language, errors — all feel designed.</span></div></div>
+      <div class="std"><span class="num">8</span><div class="body"><strong>Business confidence</strong><span>The user leaves every screen more informed and more in control.</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">02</span><h2>Scoring key</h2></div>
+    <div class="legend">
+      <span class="tag p1"><span class="sq"></span>P1 — break · fails the ship test</span>
+      <span class="tag p2"><span class="sq"></span>P2 — off-brand · noticeable, not blocking</span>
+      <span class="tag p3"><span class="sq"></span>P3 — polish · small craft debt</span>
+      <span class="tag pass"><span class="sq"></span>Pass — on-brand as-is</span>
+      <span class="tag pend"><span class="sq"></span>Pending — not yet reviewed</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">03</span><h2>Systemic findings — known now</h2></div>
+    <p class="sec-note">Three findings the QA audit surfaced before the per-screen pass. Each is
+      app-wide, so it seeds the scorecard rather than living in one surface. Fix ownership already
+      assigned in the queue.</p>
+    <div class="findings">
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · global</span></div>
+        <div>
+          <h3>No app-wide error boundary</h3>
+          <p>Any uncaught render error white-screens the entire app with no recovery path — the one
+            state the brand forbids being left undesigned.</p>
+          <span class="std-hit">Fails Standard 4 (reassure after) + 7 (every error state designed) · <span class="owner">owner: pre-handover-hardening/FILE_03</span></span>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · global</span></div>
+        <div>
+          <h3>Most routes are not code-split</h3>
+          <p>The router eagerly imports ~40 page components, enlarging the first-paint bundle. In
+            tension with "feels instant" on cold load, especially on modest hardware.</p>
+          <span class="std-hit">Tensions Standard 2 (instant performance) · <span class="owner">candidate finding · Session A</span></span>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · Session H</span></div>
+        <div>
+          <h3>E-invoice status copy must not claim live ETA submission</h3>
+          <p>The ETA adapter is currently simulated. Any UI string that reads as "submitted to the
+            Tax Authority" would over-promise — a transparency and claims-discipline breach.</p>
+          <span class="std-hit">Fails Standard 4 + Brief §12 claims discipline · <span class="owner">decision: pre-handover-hardening/FILE_01</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04</span><h2>The 8 review surfaces</h2></div>
+    <p class="sec-note">One surface = one review sitting, driven in the real UI in both languages and
+      both themes. The 8 boxes on each card are the 8 Standard, awaiting the pass.</p>
+    <div class="surfaces">
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">A</span> &nbsp;<h3 style="display:inline">App frame &amp; global states</h3></div><span class="count">cross-cutting</span></div>
+        <div class="screens">
+          <span>app shell</span><span>sidebar / nav</span><span>sticky header</span><span>⌘K palette</span><span>login</span><span>notifications</span><span>empty states</span><span>error states</span><span>loading skeletons</span><span>no-permission</span><span>error boundary</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass · seeded with 2 systemic findings</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">B</span> &nbsp;<h3 style="display:inline">Accounting</h3></div><span class="count">16 screens</span></div>
+        <div class="screens">
+          <span>dashboard</span><span>journals</span><span>journal / new</span><span>trial balance</span><span>general ledger</span><span>income statement</span><span>balance sheet</span><span>cash flow</span><span>VAT return</span><span>assets</span><span>cost centers</span><span>bank reconciliation</span><span>budgets</span><span>report builder</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">C</span> &nbsp;<h3 style="display:inline">Inventory</h3></div><span class="count">10 screens</span></div>
+        <div class="screens">
+          <span>dashboard</span><span>items</span><span>item detail</span><span>warehouses</span><span>warehouse detail</span><span>movements</span><span>stock on hand</span><span>counts</span><span>count detail</span><span>batches</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">D</span> &nbsp;<h3 style="display:inline">Sales</h3></div><span class="count">9 screens</span></div>
+        <div class="screens">
+          <span>dashboard</span><span>order / new</span><span>order detail</span><span>order → invoice</span><span>quotations</span><span>quotation / new</span><span>quotation detail</span><span>customers</span><span>customer detail</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">E</span> &nbsp;<h3 style="display:inline">Purchasing</h3></div><span class="count">9 screens</span></div>
+        <div class="screens">
+          <span>dashboard</span><span>order / new</span><span>order import</span><span>order detail</span><span>requests</span><span>request / new</span><span>request detail</span><span>suppliers</span><span>supplier detail</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">F</span> &nbsp;<h3 style="display:inline">CRM</h3></div><span class="count">7 screens</span></div>
+        <div class="screens">
+          <span>dashboard</span><span>pipeline / kanban</span><span>opportunity detail</span><span>leads</span><span>tickets</span><span>campaigns</span><span>campaign detail</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass · Kanban newest (2026-07-18)</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">G</span> &nbsp;<h3 style="display:inline">Settings · Admin · Pricing</h3></div><span class="count">16 screens</span></div>
+        <div class="screens">
+          <span>profile</span><span>appearance</span><span>dashboard</span><span>navigation</span><span>notifications</span><span>accessibility</span><span>organization</span><span>branches</span><span>webhooks</span><span>custom fields</span><span>developers</span><span>users</span><span>roles</span><span>pricing</span><span>pricing customers</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass</span>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="surface-top"><div><span class="id">H</span> &nbsp;<h3 style="display:inline">Assistant · Help · E-invoice · Workflows</h3></div><span class="count">10 screens</span></div>
+        <div class="screens">
+          <span>assistant</span><span>knowledge</span><span>ops</span><span>help center</span><span>e-invoice</span><span>workflows</span><span>workflow / new</span><span>workflow editor</span><span>instance viewer</span>
+        </div>
+        <div class="checkstrip">
+          <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
+          <span class="status">Pending review pass · seeded with 1 systemic finding</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">05</span><h2>How each session runs</h2></div>
+    <div class="method">
+      <ol>
+        <li>Recall <strong>conductor-brand</strong> (the rubric + Arabic lexicon) and <strong>erp-frontend</strong> (what "normal" looks like) before touching a screen.</li>
+        <li>Run the app (<strong>run-dev.ps1</strong>, login <code>admin</code>/<code>Dev12345!</code>). Drive every screen in the surface — no scoring from screenshots alone.</li>
+        <li>Ask the 7 decision questions honestly per screen. Every "no" is a finding: <strong>screen · verdict · Standard(s) failed · severity · the specific fix</strong>.</li>
+        <li>Check the <strong>Arabic</strong> against Identity §6 — one canonical word per concept, human status, blame-free error. This is where craft slips most often.</li>
+        <li>Check <strong>both themes</strong> (light + dark) and <strong>both directions</strong> (RTL + LTR read identically).</li>
+        <li>Append findings to this scorecard. <strong>Do not fix in the review pass</strong> — fixes become their own sessions, ranked by severity.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    Plan folder: <code>Docs/plan/brand-philosophy-review/</code> · Queue position <code>BR</code> in
+    <code>EXECUTION_ORDER.md</code> (off critical path, founder-paced) · Rubric source:
+    <code>Docs/Brand/Conductor_Product_Philosophy.md</code>. A green mechanical gate means "not
+    off-brand"; this review is the judgment a gate cannot see.
+  </footer>
+</div>

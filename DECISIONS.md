@@ -2271,3 +2271,20 @@ create view, dynamic form + table columns on `SuppliersPage`, detail facts on
 `erp/purchasing` has no audit-snapshot or export-table wiring on supplier create today (unlike
 customer/item), so no custom-fields test/wiring was added for either — matching what exists, not
 inventing scope beyond it.
+
+## FILE_01 ETA e-invoicing: founder picked Branch A — real integration before handover (2026-07-18)
+
+`pre-handover-hardening/FILE_01_ETA_EINVOICE_DECISION.md` surfaced the audit's Critical finding:
+`erp/einvoice/services/eta_adapter.py` is a simulated stub (hash-based "signature", no real ETA
+submission); `gate10.py` proves lifecycle only, not government compliance. Two branches presented
+— (A) real ETA integration before handover, or (B) ship simulated + written disclosure/sign-off.
+
+**Founder picked Branch A: customer needs live compliant e-invoicing on day one.** No further
+disclosure/UI-copy work needed (that was Branch B's deliverable).
+
+**Consequence: `Docs/plan/einvoice-eta-live/` is now a Must-Have handover blocker**, flagged in
+`EXECUTION_ORDER.md` pos 8C. Handover (`delivery-readiness/FILE_07_HANDOVER_GATE.md` sections
+C/D/E) cannot proceed until that plan's FILE_01→FILE_05 are `_done`. That plan needs real ETA
+production/sandbox credentials + the customer's tax profile before FILE_01 there can start — a
+STOP-gate on the customer, not buildable solo. Remaining pre-handover-hardening files (FILE_02–06)
+are unaffected and can proceed in parallel/before it.

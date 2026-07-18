@@ -1,5 +1,7 @@
 # General ERP — Platform
 
+[![CI](https://github.com/ahmedGaid/Conductor_ERP/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmedGaid/Conductor_ERP/actions/workflows/ci.yml)
+
 Customer-hosted, single-tenant ERP built as a **Django modular monolith** (Python 3.13 + DRF),
 with a React + TypeScript frontend. Arabic/RTL-first, bilingual. Built foundation-first: platform +
 workflow/forms engine + UI shell, then ERP modules (Accounting → Inventory → Sales → Purchasing → CRM).

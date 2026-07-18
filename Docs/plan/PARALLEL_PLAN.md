@@ -15,7 +15,7 @@ agent can execute any task.
 
 | Territory | Owner | Files |
 |---|---|---|
-| Frontend + i18n | **A** | `apps/web/**` (incl. `ar.json`/`en.json`), gate03 surface |
+| Frontend + i18n | **A** (see override below) | `apps/web/**` (incl. `ar.json`/`en.json`), gate03 surface |
 | Workflow + webhooks | **A** | `erp/workflow/**`, new `erp/webhooks/**` |
 | Core infra + gates | **B** | `erp/core/**`, `scripts/gates/**`, `VERSION`, `CHANGELOG.md`, `Docs/RUNBOOK.md` |
 | Imports | **B** | `erp/imports/**` |
@@ -24,6 +24,30 @@ agent can execute any task.
 Cross-territory need → the OWNER does it, or the task waits for a checkpoint. Locale keys are
 A-only until a checkpoint lands; B backend tasks must not add UI strings (plan files already
 split backend/UI into separate FILEs, so this costs nothing).
+
+### ⚠️ Founder override (2026-07-18) — B takes most remaining apps/web work
+
+Reason: B has more token budget than A right now. B-lane was IDLE (per M3 audit, all remaining
+undone plan files are `apps/web`) while A carries the whole frontend backlog alone — founder
+wants that rebalanced. `apps/web/node_modules` already exists in B's worktree (installed for A7),
+so B can run `tsc -b`/gate03 there.
+
+**New split (supersedes the row above until reversed):**
+- **B** takes the named UI hand-off files it already has backend-complete: TH FILE_19 (System
+  settings page), TH FILE_20 (Settings → AI usage page), SI FILE_12–15 (import wizard/preview/
+  adapter-review screens), and the review/apply screens for B16 (draftable payments) + B17
+  (reconciled inventory opening). One FILE per session, same rules as any other task (i18n
+  parity + `tsc -b` + gate03 + live verify where possible).
+- **A** keeps: any interrupt/bug work, the paused dynamic-help rollout (H), and anything
+  newly opened by the founder — plus first refusal on any file that touches `erp/workflow`/
+  `erp/webhooks` even if its UI half is apps/web (that stays A's, cross-territory rule unchanged).
+- **Anti-conflict:** each hand-off file above touches a disjoint page/route (Settings→System,
+  Settings→AI, import wizard steps, payments/stock review panels) — no two rows below share a
+  file. Before starting, B still does the Setup §HARD STOP checks (own worktree/branch) and
+  `git pull` first, since A may have pushed frontend infra changes (e.g. the gate03 bundle-size
+  fix flagged in the B health check below) that a new B session would otherwise miss.
+- Reversion: if B's queue empties again or founder says otherwise, ownership map row above
+  resumes as written.
 
 **Resume command:** `/erp-resume` is lane-aware (skill step 0): checkout path decides —
 `C:\AhmedGaid\ERP` → Agent A, `C:\AhmedGaid\ERP-B` → Agent B (email tie-break: ahmedgaid14 → A,
@@ -218,6 +242,21 @@ of twenty-harvest's designated merge-checkpoint files (those are FILE_07/13/21) 
 user-requested, ahead of the plan's own checkpoint schedule.
 - **M3:** TH Tier 2 merge after FILE_13; SI Phase-A demo merge after FILE_14. TH FILE_21 +
   SI FILE_17 acceptances run single-agent (Either) on merged main.
+
+### Wave 4 — founder override, B takes the apps/web hand-off backlog (2026-07-18)
+
+| ID | Task | Agent | Files/modules | Deps | Est | Checkpoint | Status |
+|---|---|---|---|---|---|---|---|
+| B19 | System settings page — `TH/FILE_19` Task B (consumes B14's `/api/system/status/`) | B | `apps/web/src/pages/settings/SystemPage.tsx` (new), `SettingsNav.tsx`, `App.tsx` route, `ar.json`/`en.json` | B14 (done) | 1 | M3 | todo |
+| B20 | Settings → AI usage page — `TH/FILE_20` Task B (consumes B15's `/api/assistant/usage/`) | B | `apps/web/src/pages/settings/AiUsagePage.tsx` (new), `SettingsNav.tsx`, `App.tsx` route, `ar.json`/`en.json` | B15 (done) | 1 | M3 | todo |
+| B21 | Import wizard/preview UI — `SI/FILE_12`–`FILE_14` | B | `apps/web/src/pages/imports/**` (new), `api/imports.ts`, `ar.json`/`en.json` | B7 (done) | 2–3 sessions (one FILE each) | Phase A demo point (SI FILE_14) | todo |
+| B22 | Document/finance adapter review screens — `SI/FILE_15`–`FILE_16` UI half | B | `apps/web/src/pages/imports/**` (adapter preview + finance suspense-approval panel) | B11, B12 (done) | 1–2 | M3 | todo |
+| B23 | Draftable payments review screen — B16 follow-up (apps/web half) | B | `apps/web/src/pages/sales/**`, `apps/web/src/pages/purchasing/**` (pending-payment review/apply), `ar.json`/`en.json` | B16 (done) | 1 | M3 | todo |
+| B24 | Reconciled inventory-opening review screen — B17 follow-up (apps/web half) | B | `apps/web/src/pages/inventory/**` (pending-stock review/apply), `ar.json`/`en.json` | B17 (done) | 1 | M3 | todo |
+
+Order within Wave 4 (B's own judgment on resequencing if a dep surfaces): B19 → B20 → B21 → B22 →
+B23 → B24. Each is one plan-file scope, one session, gates green, rename `_done`, flip this row,
+push, before starting the next.
 
 ## Critical path
 
