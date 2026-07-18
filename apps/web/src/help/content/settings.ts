@@ -142,6 +142,63 @@ export const settingsBranchesGuide: HelpGuide = {
   related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
 };
 
+export const settingsCustomFieldsGuide: HelpGuide = {
+  title: { en: "Custom fields", ar: "الحقول المخصّصة" },
+  purpose: {
+    en: "Administrator-only. Add your own fields to customers, items and suppliers — beyond the built-in ones — so records capture exactly what your business tracks.",
+    ar: "للمسؤول فقط. أضف حقولك الخاصة إلى العملاء والأصناف والموردين — إلى جانب الحقول الجاهزة — لتلتقط السجلات ما يهم عملك بالضبط.",
+  },
+  howItWorks: {
+    en: "Pick the record type, give the field a key and a bilingual (Arabic + English) label, choose its type and whether it's required, then Add. It appears on that record's create form and as an extra column in its list. Turning a field off hides it from new entry but keeps every value already saved. Only the System Admin can change this page.",
+    ar: "اختر نوع السجل، وامنح الحقل مفتاحاً وتسمية بالعربية والإنجليزية، وحدّد نوعه وهل هو مطلوب، ثم اضغط «أضف». يظهر الحقل في نموذج إنشاء ذلك السجل وكعمود إضافي في قائمته. إيقاف الحقل يخفيه عن الإدخال الجديد لكنه يحتفظ بكل قيمة سبق حفظها. ولا يمكن تغيير هذه الصفحة إلا لمسؤول النظام.",
+  },
+  sections: [
+    {
+      heading: { en: "Field types", ar: "أنواع الحقول" },
+      items: [
+        { term: { en: "Text", ar: "نص" }, desc: { en: "A short free-text line.", ar: "سطر نص حر قصير." } },
+        { term: { en: "Number", ar: "رقم" }, desc: { en: "A plain number.", ar: "رقم عادي." } },
+        { term: { en: "Date", ar: "تاريخ" }, desc: { en: "A single calendar date.", ar: "تاريخ واحد من التقويم." } },
+        { term: { en: "Choice", ar: "اختيار" }, desc: { en: "A pick-list — type the options separated by commas.", ar: "قائمة اختيار — اكتب الخيارات مفصولة بفواصل." } },
+        { term: { en: "Money", ar: "مبلغ" }, desc: { en: "An amount, formatted in the organization currency.", ar: "مبلغ يُنسَّق بعملة المؤسسة." } },
+      ],
+    },
+  ],
+  tips: [
+    { en: "Use the arrows to reorder fields — the order here is the order they appear on the form.", ar: "استخدم الأسهم لإعادة ترتيب الحقول — ترتيبها هنا هو ترتيب ظهورها في النموذج." },
+    { en: "Deactivate rather than delete: it stops new entries without losing the history already captured.", ar: "استخدم الإيقاف بدل الحذف: يمنع الإدخالات الجديدة دون فقدان السجل الذي التُقط بالفعل." },
+  ],
+  related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
+};
+
+export const settingsDevelopersGuide: HelpGuide = {
+  title: { en: "Developers", ar: "المطوّرون" },
+  purpose: {
+    en: "Administrator-only. Create API keys so an outside system can call Conductor on your behalf, and read a truthful, always-current reference of the endpoints those keys can reach.",
+    ar: "للمسؤول فقط. أنشئ مفاتيح واجهة برمجة ليستدعي نظام خارجي Conductor نيابةً عنك، واطّلع على مرجع صادق ومحدَّث دائماً بالمسارات التي تصل إليها تلك المفاتيح.",
+  },
+  howItWorks: {
+    en: "A key is bound to a role, so it can do exactly what that role can do — no more. Add a key, pick its role, and copy the secret shown once (Conductor never shows it again — regenerate if you lose it). The calling system sends it on every request as the header Authorization: Api-Key <secret>. Revoke a key any time to cut off its access immediately. Only the System Admin can change this page.",
+    ar: "يرتبط المفتاح بدور، فيفعل ما يفعله ذلك الدور بالضبط — لا أكثر. أضف مفتاحاً، واختر دوره، وانسخ المفتاح السري الذي يظهر مرة واحدة (لا يعرضه Conductor مجدداً — أعِد توليده إن فقدته). يُرسله النظام المستدعي في كل طلب ضمن الترويسة Authorization: Api-Key <secret>. ألغِ أي مفتاح في أي وقت لقطع وصوله فوراً. ولا يمكن تغيير هذه الصفحة إلا لمسؤول النظام.",
+  },
+  sections: [
+    {
+      heading: { en: "The reference panel", ar: "لوحة المرجع" },
+      body: {
+        en: "The list of endpoints below is generated from the app itself, so it's never out of date. Amounts are always sent and received as integer minor units (e.g. piastres), never decimals.",
+        ar: "قائمة المسارات أدناه مولَّدة من التطبيق نفسه، فلا تكون قديمة أبداً. تُرسَل المبالغ وتُستقبَل دائماً كوحدات صغرى صحيحة (مثل القروش)، لا كأرقام عشرية.",
+      },
+    },
+  ],
+  tips: [
+    { en: "Give each integration its own key with the narrowest role it needs — then you can revoke just that one without disturbing the others.", ar: "امنح كل تكامل مفتاحه الخاص بأضيق دور يحتاجه — عندها يمكنك إلغاؤه وحده دون التأثير على البقية." },
+  ],
+  mistakes: [
+    { en: "Storing the secret somewhere public (a shared doc, a front-end bundle) — anyone who reads it holds that role's access. Keep it server-side, and revoke immediately if it leaks.", ar: "تخزين المفتاح السري في مكان عام (مستند مشترك، حزمة واجهة أمامية) — من يقرأه يملك وصول ذلك الدور. احفظه على الخادم، وألغِه فوراً إن تسرّب." },
+  ],
+  related: [{ to: "/settings/webhooks", label: { en: "Webhooks", ar: "الويب هوكس" } }],
+};
+
 export const settingsWebhooksGuide: HelpGuide = {
   title: { en: "Webhooks", ar: "الويب هوكس" },
   purpose: {
