@@ -85,8 +85,8 @@ def test_summary_totals_error_rate_tokens_and_cost():
 
 
 def test_summary_excludes_traces_outside_the_day_window():
-    recent = _trace()
-    old = _backdate(_trace(), days_ago=30)
+    _trace()
+    _backdate(_trace(), days_ago=30)
 
     resp = _admin().get(f"{SUMMARY_URL}?days=7")
     data = resp.json()["data"]

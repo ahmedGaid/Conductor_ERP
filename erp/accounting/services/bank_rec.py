@@ -11,7 +11,7 @@ Amounts are integer **minor units**. A statement line's `amount_minor` is signed
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from django.db import transaction
 from django.db.models import Sum

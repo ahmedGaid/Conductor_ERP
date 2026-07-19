@@ -14,8 +14,6 @@ from decimal import Decimal
 
 import pytest
 from django.db.models import Sum
-from rest_framework.test import APIClient
-
 from erp.accounting.domain.accounts import AccountType
 from erp.accounting.domain.models import Account, JournalEntry, JournalLine
 from erp.accounting.errors import UnbalancedEntryError
@@ -37,6 +35,7 @@ from erp.sales.tests.factories import (
     make_warehouse,
     stocked,
 )
+from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.django_db
 

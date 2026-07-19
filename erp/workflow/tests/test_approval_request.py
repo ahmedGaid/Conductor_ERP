@@ -6,7 +6,8 @@ import pytest
 from django.contrib.auth.models import Group
 
 from erp.audit.models import AuditEntry
-from erp.core.errors import ConflictError, PermissionError as AppPermissionError
+from erp.core.errors import ConflictError
+from erp.core.errors import PermissionError as AppPermissionError
 from erp.identity.models import User
 from erp.notifications.domain.models import Notification
 from erp.workflow import approvals

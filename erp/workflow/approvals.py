@@ -9,7 +9,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from erp.audit import services as audit
-from erp.core.errors import ConflictError, PermissionError as AppPermissionError
+from erp.core.errors import ConflictError
+from erp.core.errors import PermissionError as AppPermissionError
 from erp.identity.access import is_superadmin
 from erp.notifications.contracts import notify
 

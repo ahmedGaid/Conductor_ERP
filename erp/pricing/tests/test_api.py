@@ -94,7 +94,7 @@ def test_customer_assignment_overrides_default():
 
 def test_setting_a_new_default_clears_the_old_one():
     client = _admin_client()
-    first = _make_list(client, code="A")
+    _make_list(client, code="A")
     second = _make_list(client, code="B", is_default=False)
     client.patch(f"/api/pricing/price-lists/{second['id']}", {"is_default": True}, format="json")
 

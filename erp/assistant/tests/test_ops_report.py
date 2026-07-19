@@ -95,8 +95,8 @@ def test_send_weekly_report_writes_file_and_notifies_admins_only(monkeypatch, tm
     _trace()
     _trace(status=Trace.Status.ERROR, error_class="timeout")
 
-    admin = User.objects.create_user(username="wr_admin", password="Dev12345!",
-                                     email="admin@example.test", is_superuser=True)
+    User.objects.create_user(username="wr_admin", password="Dev12345!",
+                             email="admin@example.test", is_superuser=True)
     group = Group.objects.create(name=SYSTEM_ADMIN)
     role_holder = User.objects.create_user(username="wr_role", password="Dev12345!", email="")
     role_holder.groups.add(group)

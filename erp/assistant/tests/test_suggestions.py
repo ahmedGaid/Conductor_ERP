@@ -14,7 +14,6 @@ from django.test import override_settings
 
 from erp.assistant.services import actions, suggestions
 from erp.identity.models import RolePermission, User
-from erp.identity.roles import BRANCH_MANAGER
 from erp.inventory.domain.models import Item, Warehouse
 from erp.purchasing.domain.models import Supplier
 from erp.sales.domain.models import Customer

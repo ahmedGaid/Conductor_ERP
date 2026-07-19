@@ -19,8 +19,8 @@ model relays it honestly instead of inventing data.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from erp.accounting import contracts as accounting
 from erp.audit.models import AuditEntry
@@ -179,8 +179,8 @@ def _income_statement_summary(actor, *, period: str = "this_month", **_) -> dict
         "total_revenue": _egp(r["total_revenue_minor"]),
         "total_expenses": _egp(r["total_expenses_minor"]),
         "net_income": _egp(r["net_income_minor"]),
-        "revenue": [{**l, "amount": _egp(l["amount_minor"])} for l in r["revenue"]],
-        "expenses": [{**l, "amount": _egp(l["amount_minor"])} for l in r["expenses"]],
+        "revenue": [{**ln, "amount": _egp(ln["amount_minor"])} for ln in r["revenue"]],
+        "expenses": [{**ln, "amount": _egp(ln["amount_minor"])} for ln in r["expenses"]],
     }
 
 

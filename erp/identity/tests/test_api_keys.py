@@ -175,7 +175,7 @@ def test_key_traffic_is_absent_from_the_human_users_list(client, admin):
 # --- Audit ------------------------------------------------------------------------------------
 
 def test_audit_records_the_key_principal_not_a_human(client, admin):
-    role = _grant("Bot role", "administration.user.create")
+    _grant("Bot role", "administration.user.create")
     _grant("Bot role", "administration.user.view")
     api_key, raw = api_keys.create_key("Bot", "Bot role", actor=admin)
 

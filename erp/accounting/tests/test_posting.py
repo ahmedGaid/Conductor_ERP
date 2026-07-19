@@ -128,8 +128,8 @@ def test_reversal_mirrors_the_original():
     )
     reversal = reverse_journal(original)
     assert reversal.reverses_id == original.id
-    orig_lines = {(l.account.code, l.debit, l.credit) for l in original.lines.all()}
-    rev_lines = {(l.account.code, l.debit, l.credit) for l in reversal.lines.all()}
+    orig_lines = {(ln.account.code, ln.debit, ln.credit) for ln in original.lines.all()}
+    rev_lines = {(ln.account.code, ln.debit, ln.credit) for ln in reversal.lines.all()}
     assert rev_lines == {(code, credit, debit) for (code, debit, credit) in orig_lines}
 
 

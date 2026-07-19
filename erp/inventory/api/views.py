@@ -25,8 +25,6 @@ from erp.identity.scoping import scope_queryset
 from .. import services
 from ..domain.models import Category, Item, StockCount, StockCountLine, StockMovement, Warehouse
 from ..imports import ITEM_IMPORT
-from ..repositories import items as item_repo
-from ..repositories import warehouses as warehouse_repo
 from .serializers import (
     CategorySerializer,
     CountLineSetSerializer,

@@ -78,6 +78,6 @@ def test_row_level_write_may_return_warnings_without_erroring():
 def test_existing_row_level_adapters_unaffected_by_bare_record_return():
     """A guard: any adapter still returning a bare record (every one built before this session)
     behaves exactly as before — no warnings, no crash unpacking a non-tuple."""
-    actor = _manager()
-    batch = ImportBatch.objects.create(entity="customers")
+    _manager()
+    ImportBatch.objects.create(entity="customers")
     assert "customers" in registry.entities()

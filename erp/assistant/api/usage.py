@@ -6,7 +6,7 @@ file) is left out rather than shown as fact.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from django.conf import settings
 from django.db.models import Count, Sum
@@ -32,7 +32,7 @@ def _month_start(raw: str | None) -> date:
         year_s, month_s = raw.split("-", 1)
         return date(int(year_s), int(month_s), 1)
     except (TypeError, ValueError):
-        raise ValidationError(f"Invalid month '{raw}' — expected YYYY-MM.")
+        raise ValidationError(f"Invalid month '{raw}' — expected YYYY-MM.") from None
 
 
 def _next_month_start(month_start: date) -> date:

@@ -6,15 +6,15 @@ stay decoupled from inventory's internals.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import datetime
+from dataclasses import dataclass
 
 from django.db import models
 
 from erp.audit import services as audit
 
 from ..domain.models import StockMovement
+from ..errors import UnknownItemError, UnknownWarehouseError
 from ..events import STOCK_ISSUED, STOCK_RECEIVED, STOCK_TRANSFERRED
 from ..repositories import items as _items
 from ..repositories import warehouses as _warehouses
@@ -28,7 +28,6 @@ from ..services.stock import (
     return_out_stock,
     transfer_stock,
 )
-from ..errors import UnknownItemError, UnknownWarehouseError
 
 
 @dataclass(frozen=True)

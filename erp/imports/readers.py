@@ -18,9 +18,9 @@ from __future__ import annotations
 import csv
 import io
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, Optional
 
 # --- Magic bytes -----------------------------------------------------------------------------
 XLSX_MAGIC = b"PK\x03\x04"  # xlsx is a zip
@@ -36,7 +36,7 @@ SAMPLE_ROWS = 10  # rows returned below the header for the mapping preview
 _PROBE_BYTES = 64 * 1024  # how much we decode to guess encoding/delimiter
 
 # BOM + zero-width + bidi marks stripped from cell text; control chars stripped by regex.
-_ZERO_WIDTH = "﻿​‌‍‎‏‪‫‬‭‮"
+_ZERO_WIDTH = "﻿​‌‍‎‏‪‫‬‭‮"  # nosec B613 -- this literal enumerates the chars we STRIP; it defends against, not commits, a trojan-source attack
 _ZW_TABLE = {ord(c): None for c in _ZERO_WIDTH}
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 # Arabic read as cp1256 but decoded as latin-1 turns into a run of Ø/Ù/Ú/Û — the mojibake tell.
@@ -61,8 +61,8 @@ class SheetInfo:
 class FileInfo:
     format: str  # "xlsx" | "csv"
     sheets: list[SheetInfo]
-    encoding: Optional[str] = None  # csv only
-    delimiter: Optional[str] = None  # csv only
+    encoding: str | None = None  # csv only
+    delimiter: str | None = None  # csv only
 
 
 @dataclass

@@ -161,9 +161,9 @@ def convert_request(req: PurchaseRequest, actor=None):
         supplier=req.supplier, warehouse_code=req.warehouse_code, currency=req.currency,
         notes=f"From request {req.number}",
         lines=[
-            POLineInput(item_sku=l.item_sku, quantity=l.quantity,
-                        unit_cost_minor=l.unit_cost_minor, description=l.description)
-            for l in req.lines.all().order_by("line_no")
+            POLineInput(item_sku=ln.item_sku, quantity=ln.quantity,
+                        unit_cost_minor=ln.unit_cost_minor, description=ln.description)
+            for ln in req.lines.all().order_by("line_no")
         ],
         actor=actor,
     )

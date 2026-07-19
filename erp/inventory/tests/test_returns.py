@@ -5,6 +5,7 @@ value. return_in reverses an issue's COGS; return_out reverses a receipt's GRNI.
 """
 from __future__ import annotations
 
+import datetime as dt
 from decimal import Decimal
 
 import pytest
@@ -15,8 +16,6 @@ from erp.inventory.errors import InsufficientStockError
 from erp.inventory.repositories import balances as balance_repo
 
 from .factories import make_gl, make_item, make_warehouse
-
-import datetime as dt
 
 DATE = dt.date(2026, 6, 15)
 

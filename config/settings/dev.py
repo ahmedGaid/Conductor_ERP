@@ -1,6 +1,6 @@
 """Development settings."""
 from .base import *  # noqa: F401,F403
-from .base import INSTALLED_APPS, REST_FRAMEWORK
+from .base import REST_FRAMEWORK
 
 DEBUG = True
 INTERNAL_IPS = ["127.0.0.1"]

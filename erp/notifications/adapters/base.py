@@ -8,7 +8,7 @@ adapter pattern: offline-safe by default, real clients drop in behind the same s
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 

@@ -86,9 +86,9 @@ def test_defaults_to_current_month_and_totals_aggregate():
 
 def test_month_param_selects_a_different_month_and_excludes_others():
     last_month_start = (_this_month_start().replace(day=1) - timezone.timedelta(days=1)).replace(day=1)
-    in_range = _at(_trace(cost_microcents=5), timezone.make_aware(
+    _at(_trace(cost_microcents=5), timezone.make_aware(
         timezone.datetime.combine(last_month_start.replace(day=10), timezone.datetime.min.time())))
-    out_of_range = _at(_trace(cost_microcents=9), _mid_this_month())
+    _at(_trace(cost_microcents=9), _mid_this_month())
 
     resp = _admin().get(f"{USAGE_URL}?month={last_month_start.strftime('%Y-%m')}")
     data = resp.json()["data"]

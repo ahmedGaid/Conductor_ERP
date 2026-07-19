@@ -16,7 +16,11 @@ from rest_framework.test import APIClient
 from erp.core.errors import ValidationError
 from erp.core.events import bus
 from erp.identity.models import User
-from erp.notifications.domain.models import WebhookDelivery, WebhookDeliveryStatus, WebhookSubscription
+from erp.notifications.domain.models import (
+    WebhookDelivery,
+    WebhookDeliveryStatus,
+    WebhookSubscription,
+)
 from erp.notifications.services import webhooks
 from erp.notifications.webhook_catalog import WEBHOOK_EVENT_CATALOG
 from erp.sales.events import ORDER_INVOICED
@@ -86,7 +90,7 @@ def test_retry_schedule_on_failure(monkeypatch):
     monkeypatch.setattr("erp.notifications.services.webhooks.urllib.request.urlopen", fake_urlopen)
 
     before = timezone.now()
-    for expected_delay in webhooks.RETRY_SCHEDULE:
+    for _expected_delay in webhooks.RETRY_SCHEDULE:
         result = webhooks.attempt_delivery(delivery.id)
         assert result.status == WebhookDeliveryStatus.RETRYING
         assert result.next_retry_at is not None

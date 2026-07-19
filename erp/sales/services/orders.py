@@ -282,7 +282,7 @@ def deliver_order(order: SalesOrder, delivered: dict[int, Decimal] | None = None
     if not moved:
         raise ExcessiveDeliveryError(data={"order": order.number, "reason": "nothing to deliver"})
 
-    fully = all(Decimal(l.delivered_qty) >= Decimal(l.quantity) for l in order.lines.all())
+    fully = all(Decimal(ln.delivered_qty) >= Decimal(ln.quantity) for ln in order.lines.all())
     order.status = OrderStatus.DELIVERED if fully else OrderStatus.PARTIALLY_DELIVERED
     order.save(update_fields=["status", "updated_at"])
     audit.record(module="sales", action="deliver_order", entity_type="SalesOrder",
@@ -363,7 +363,7 @@ def return_order(order: SalesOrder, returned: dict[int, Decimal] | None = None, 
     order.returned_minor += sell_value
     order.invoiced_minor -= sell_value + vat_value
     order.credit_note_number = entry.number
-    if all(Decimal(l.returned_qty) >= Decimal(l.delivered_qty) for l in order.lines.all()):
+    if all(Decimal(ln.returned_qty) >= Decimal(ln.delivered_qty) for ln in order.lines.all()):
         order.status = OrderStatus.RETURNED
     order.save(update_fields=["returned_minor", "invoiced_minor", "credit_note_number",
                               "status", "updated_at"])

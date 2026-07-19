@@ -14,10 +14,10 @@ from erp.core.events import bus
 
 from .. import events
 from ..domain.models import (
-    Activity,
-    ActivityType,
     NEXT_PRIORITY,
     OPEN_TICKET_STATUSES,
+    Activity,
+    ActivityType,
     RelatedType,
     Ticket,
     TicketPriority,

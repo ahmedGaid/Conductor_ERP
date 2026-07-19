@@ -5,8 +5,9 @@ repository. Rule 2: all writes run inside a transaction with automatic rollback 
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Generic, Iterator, TypeVar
+from typing import Generic, TypeVar
 
 from django.db import models, transaction
 
@@ -20,7 +21,7 @@ def atomic() -> Iterator[None]:
         yield
 
 
-class Repository(Generic[T]):
+class Repository(Generic[T]):  # noqa: UP046 -- PEP 695 syntax would ripple through 19 subclass call sites; not worth the blast radius for a style-only rule
     """Thin, typed data-access boundary for a single model."""
 
     model: type[T]

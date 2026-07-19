@@ -20,10 +20,12 @@ from erp.audit.models import AuditEntry
 from erp.identity.models import User
 from erp.inventory.domain.models import Item, StockBalance, StockCount, StockTransfer, Warehouse
 from erp.purchasing.domain.models import PurchaseOrder, PurchaseRequest, Supplier
+from erp.purchasing.errors import RequestInvalidTransitionError
 from erp.purchasing.services.requests import RequestLineInput as PRLineInput
 from erp.purchasing.services.requests import create_request as purchasing_create_request
 from erp.purchasing.services.requests import submit_request as purchasing_submit_request
 from erp.sales.domain.models import Customer, Quotation, QuotationStatus, SalesOrder
+from erp.sales.errors import QuotationInvalidTransitionError
 from erp.sales.services import quotations as quotation_services
 from erp.sales.services.orders import OrderLineInput
 from erp.sales.services.orders import create_order as sales_create_order
@@ -383,7 +385,7 @@ def test_convert_quotation_not_approved_surfaces_risk_and_fails_on_confirm():
     assert "error" not in proposal  # still a card — the risk line warns, it doesn't block
     assert proposal["risks"]
 
-    with pytest.raises(Exception):
+    with pytest.raises(QuotationInvalidTransitionError):
         actions.execute(admin, "convert_quotation", proposal["payload"])
     assert SalesOrder.objects.count() == 0
 
@@ -440,7 +442,6 @@ def test_edit_non_draft_order_returns_error_no_card():
 
 
 def test_edit_sales_order_permission_refused_at_both_stages():
-    admin = _admin()
     _seed_sales()
     customer = Customer.objects.get(code="C-1")
     order = sales_create_order(
@@ -562,7 +563,7 @@ def test_convert_purchase_request_not_approved_surfaces_risk_and_fails_on_confir
     assert "error" not in proposal  # still a card — the risk line warns, it doesn't block
     assert proposal["risks"]
 
-    with pytest.raises(Exception):
+    with pytest.raises(RequestInvalidTransitionError):
         actions.execute(admin, "convert_purchase_request", proposal["payload"])
     assert PurchaseOrder.objects.count() == 0
 
@@ -576,7 +577,6 @@ def test_convert_purchase_request_unknown_query_is_a_blocker():
 
 
 def test_convert_purchase_request_permission_refused_at_both_stages():
-    admin = _admin()
     _seed_purchasing()
     supplier = Supplier.objects.get(code="S-1")
     req = _approved_request(supplier)
@@ -750,13 +750,13 @@ def test_set_reorder_point_permission_refused_at_both_stages():
 
     with pytest.raises(PermissionError):
         actions.execute(nobody, "set_reorder_point", {"sku": "SKU-1", "reorder_point": "50"})
-    Item.objects.get(sku="SKU-1").reorder_point == 0
+    assert Item.objects.get(sku="SKU-1").reorder_point == 0
 
 
 # --- accounting actions (agent-actions FILE_04) ---------------------------------------------------
 
-from erp.accounting.domain.models import Account, JournalEntry
-from erp.accounting.tests.factories import make_coa, make_period
+from erp.accounting.domain.models import Account, JournalEntry  # noqa: E402
+from erp.accounting.tests.factories import make_coa, make_period  # noqa: E402
 
 
 def _seed_accounting():
@@ -882,7 +882,7 @@ def test_create_account_permission_refused_at_both_stages():
 
 # --- CRM actions (agent-actions FILE_05) -------------------------------------------------------
 
-from erp.crm.domain.models import Opportunity, Activity
+from erp.crm.domain.models import Activity, Opportunity  # noqa: E402
 
 
 def _seed_crm():

@@ -2287,4 +2287,56 @@ disclosure/UI-copy work needed (that was Branch B's deliverable).
 C/D/E) cannot proceed until that plan's FILE_01→FILE_05 are `_done`. That plan needs real ETA
 production/sandbox credentials + the customer's tax profile before FILE_01 there can start — a
 STOP-gate on the customer, not buildable solo. Remaining pre-handover-hardening files (FILE_02–06)
+
+## post-handover-v1_1 FILE_01: bandit added; ruff/mypy debt baselined, not mass-fixed (2026-07-19)
+
+`post-handover-v1_1/FILE_01_STATIC_ANALYSIS_CI.md` wires `ruff`/`mypy`/`bandit` into a new CI
+`lint` job. `bandit` (security lint) is net-new — flagged by the plan itself as needing a DECISIONS
+entry first (team rule: no new deps without asking). **Founder approved adding it** (dev-only, zero
+runtime impact) when asked directly this session, over the alternatives of ruff+mypy-only or
+deferring FILE_01 entirely. Pinned `bandit>=1.7,<2.0` in `requirements.txt`.
+
+**ruff: 1672 pre-existing findings on first run.** `ruff check --fix` closed 190 safe/mechanical
+ones (import sorting, deprecated-typing modernization). Of the rest, 75 were real (missing
+exception chaining, ambiguous `l` names, unused test variables, a genuine missing `assert`, blind
+`except Exception` in two tests, `zip()` without `strict=`) — all fixed by hand, file by file, not
+batch-scripted, so each fix matches its actual call site. **1401 were `E501` line-too-long**,
+spread near-uniformly across the codebase — this predates any line-length enforcement, so it's a
+formatting-only debt with zero correctness payoff and real regression risk if mass-reformatted
+blind. **Decision: baseline `E501` via `ignore = ["E501"]`** in `pyproject.toml`'s ruff config,
+documented inline, rather than reformat ~1400 lines this session. New code still wraps at ~100
+cols by convention; it just isn't machine-enforced. One further ruff finding (`UP046`, PEP 695
+generic syntax on `erp/core/repository.py`'s base `Repository(Generic[T])`) was baselined via an
+inline `# noqa` instead of fixed — the syntax change would ripple through 19 subclass call sites
+across 7 modules for a style-only rule, not worth the blast radius in this session.
+
+**mypy: 0 pre-existing errors matches (nearly) nowhere near reality — repeated cold-cache runs
+were flaky.** Wiring mypy into CI meant first establishing what "green" even means for existing
+code. Multiple `rm -rf .mypy_cache && mypy . --no-incremental` runs (verified via full output
+redirected to a file, not console/pipe, after console-truncation gave misleading partial reads
+twice) surfaced **two entirely disjoint file sets on different runs** — one ~41-file/153-error set,
+one ~9-file/48-error set, *never both in the same run*, with zero file overlap between them. This
+looks like a genuine mypy nondeterminism on this codebase (large repo, Windows), not a config bug —
+possibly related to how `ignore_errors` on some modules changes cross-module `Any` inference for
+others. **Decision: baseline the UNION of every file seen erroring across all runs** (50 modules,
+via `[[tool.mypy.overrides]] ignore_errors = true`, documented inline with the reasoning) rather
+than chase which specific run is "correct" — a superset baseline can only be too generous, never
+too strict, so it can't accidentally let a real regression slip through on the file it least
+expects. Verified clean (`Success: no issues found in 657 source files`) on two further independent
+cold-cache runs before trusting it. ~600 of 657 source files were already clean on every run;
+baselined errors were mostly Django migration `dependencies` typing, a `(module, value)` reason-code
+tuple pattern older than its own `str`-typed contract, import-adapter generic-variance mismatches
+(`ImportAdapter.group_by: str | None` vs concrete adapters typed `str`), and `object`-typed dynamic
+ORM lookups through the assistant's action layer (`erp/assistant/services/actions.py`, the single
+largest offender). None are runtime bugs on their own — real per-module type design work, out of
+this session's "Small" scope; shrink the list over time, don't add to it silently.
+
+**bandit: 4 medium+ findings, all false positives, suppressed with a documented `# nosec` each** —
+two `B613` (trojansource) on a literal enumerating bidi/zero-width Unicode chars that the code
+STRIPS as an input-sanitization measure (`erp/imports/normalize.py`, `erp/imports/readers.py`); two
+`B310` (`urllib.request.urlopen` scheme audit) where `erp/workflow/adapters/egress.py`'s
+`assert_public_url()` SSRF guard already runs immediately before the call
+(`erp/notifications/services/webhooks.py`, `erp/workflow/adapters/rest.py`) — bandit can't see
+across the function-call boundary. CI job is `bandit -r erp/ -ll` (medium+ severity only, matching
+what was triaged).
 are unaffected and can proceed in parallel/before it.

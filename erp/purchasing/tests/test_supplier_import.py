@@ -30,7 +30,7 @@ def _post(client: APIClient, raw: bytes, **fields):
 
 def test_preview_then_commit_creates():
     client = _client()
-    csv = "code,name\nS-1,Delta Mills\nS-2,Cairo Supply\n".encode("utf-8")
+    csv = b"code,name\nS-1,Delta Mills\nS-2,Cairo Supply\n"
 
     preview = _post(client, csv).json()["data"]
     assert preview["committed"] is False
@@ -53,18 +53,18 @@ def test_cp1256_arabic_decodes():
 def test_existing_skipped_then_upsert_updates():
     client = _client()
     Supplier.objects.create(code="S-1", name="Old")
-    skip = _post(client, "code,name\nS-1,New\n".encode("utf-8"), commit="true").json()["data"]
+    skip = _post(client, b"code,name\nS-1,New\n", commit="true").json()["data"]
     assert skip["summary"]["skipped"] == 1
     assert Supplier.objects.get(code="S-1").name == "Old"
 
-    up = _post(client, "code,name\nS-1,New\n".encode("utf-8"), commit="true", mode="upsert").json()["data"]
+    up = _post(client, b"code,name\nS-1,New\n", commit="true", mode="upsert").json()["data"]
     assert up["summary"]["updated"] == 1
     assert Supplier.objects.get(code="S-1").name == "New"
 
 
 def test_partial_success_and_idempotent_reupload():
     client = _client()
-    csv = "code,name\nS-1,Good\nS-2,\nS-3,Fine\n".encode("utf-8")  # row 3 missing name
+    csv = b"code,name\nS-1,Good\nS-2,\nS-3,Fine\n"  # row 3 missing name
     first = _post(client, csv, commit="true").json()["data"]
     assert first["summary"] == {"total": 3, "created": 2, "updated": 0, "skipped": 0, "failed": 1}
     assert Supplier.objects.count() == 2

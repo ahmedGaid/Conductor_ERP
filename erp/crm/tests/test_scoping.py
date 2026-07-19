@@ -9,11 +9,11 @@ import pytest
 from django.contrib.auth.models import Group
 
 from erp.core.models import Branch
+from erp.crm import services
+from erp.crm.domain.models import Lead, LeadStatus
 from erp.identity.models import RolePermission, User
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
-from erp.crm import services
-from erp.crm.domain.models import Lead, LeadStatus
 
 pytestmark = pytest.mark.django_db
 

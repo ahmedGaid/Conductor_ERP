@@ -12,6 +12,10 @@ src = ["erp", "config", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+# E501 (line-too-long) baselined 2026-07-19: 1400+ pre-existing violations across the codebase,
+# predating any line-length enforcement — a mass reformat carries real regression risk with zero
+# correctness payoff. New code should still wrap at ~100 cols by convention; not machine-enforced.
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.dev"
@@ -25,3 +29,71 @@ markers = [
 python_version = "3.13"
 plugins = []
 ignore_missing_imports = true
+
+# Baselined 2026-07-19 (CI enforcement rollout, post-handover-v1_1 FILE_01): these modules had
+# pre-existing type errors across repeated cold-cache full runs (~600 of 657 source files were
+# already clean on every run) — mostly Django migration `dependencies` typing, a `(module, value)`
+# reason-code tuple pattern that predates its `str`-typed contract, import-adapter generic-variance
+# mismatches, and dynamic `object`-typed ORM lookups in the assistant's action layer. Fixing these
+# properly needs real per-module type design (not mechanical), so they're excluded here rather than
+# block CI rollout — every OTHER module stays blocking, including new files. Shrink this list over
+# time; don't add to it silently.
+# NOTE: which exact files surface an error varied between repeated cold, no-incremental,
+# zero-cache runs on this codebase (two disjoint ~41-file and ~9-file sets were each observed,
+# never together) — this list is the UNION of every file seen erroring across those runs, so it
+# stays a superset regardless of which path a given CI run takes. If CI ever goes red on a file
+# NOT in this list, that's a genuine new/regressed error, not this flakiness.
+[[tool.mypy.overrides]]
+module = [
+    "erp.audit.migrations.0001_initial",
+    "erp.core.migrations.0001_initial",
+    "erp.imports.registry",
+    "erp.imports.readers",
+    "erp.accounting.domain.accounts",
+    "erp.core.imports",
+    "erp.audit.services",
+    "erp.crm.domain.models",
+    "erp.imports.validate",
+    "erp.crm.services.support",
+    "erp.accounting.tests.factories",
+    "erp.accounting.services.chart",
+    "erp.assistant.query_registry",
+    "erp.imports.engine",
+    "erp.assistant.verifier.packs",
+    "erp.imports.adapters.accounting",
+    "erp.imports.tests.test_engine_row_warnings",
+    "erp.sales.services.orders",
+    "erp.purchasing.services.orders",
+    "erp.imports.adapters.inventory",
+    "erp.identity.services",
+    "erp.identity.tests.test_api_keys",
+    "erp.sales.services.quotations",
+    "erp.purchasing.services.requests",
+    "erp.identity.views",
+    "erp.sales.tests.test_scoping",
+    "erp.sales.tests.test_approval_limits",
+    "erp.purchasing.tests.test_scoping",
+    "erp.purchasing.tests.test_approval_limits",
+    "erp.assistant.client",
+    "erp.imports.adapters.crm",
+    "erp.assistant.services.actions",
+    "erp.assistant.services.extraction",
+    "erp.workflow.services",
+    "erp.assistant.gateway.core",
+    "erp.assistant.evals.graders",
+    "erp.imports.normalize",
+    "erp.imports.detect",
+    "erp.assistant.tools",
+    "erp.assistant.services.agent",
+    "erp.imports.autofix",
+    "erp.imports.api.views",
+    "erp.imports.adapters.sales",
+    "erp.imports.adapters.purchasing",
+    "scripts.seed_demo",
+    "erp.assistant.tests.test_page_context",
+    "erp.assistant.tests.test_actions",
+    "erp.assistant.evals.runner",
+    "erp.assistant.evals.routing_report",
+    "erp.workflow.engine.registry",
+]
+ignore_errors = true

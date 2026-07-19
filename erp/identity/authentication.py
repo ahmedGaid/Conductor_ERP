@@ -42,7 +42,7 @@ class ApiKeyAuthentication(BaseAuthentication):
                 hashed_key=hash_secret(secret)
             )
         except ApiKey.DoesNotExist:
-            raise AuthenticationFailed("Invalid API key")
+            raise AuthenticationFailed("Invalid API key") from None
         if not api_key.is_active:
             raise AuthenticationFailed("API key revoked")
         if api_key.expires_at and api_key.expires_at <= timezone.now():

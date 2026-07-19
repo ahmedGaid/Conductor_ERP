@@ -128,7 +128,7 @@ def _group(name: str) -> Group:
     try:
         return Group.objects.get(name=name)
     except Group.DoesNotExist:
-        raise ValidationError(f"Unknown role: {name}")
+        raise ValidationError(f"Unknown role: {name}") from None
 
 
 def _modules_for(group: Group) -> list[str]:

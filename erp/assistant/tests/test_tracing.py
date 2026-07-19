@@ -127,7 +127,7 @@ def test_trace_call_maps_taxonomy_to_status_and_keeps_raw_class_name():
         pass
 
     with pytest.raises(RateLimitError):
-        with tracing.trace_call("ask") as handle:
+        with tracing.trace_call("ask"):
             raise RateLimitError("429")
     trace = Trace.objects.get()
     assert trace.error_class == "rate_limited"
@@ -140,7 +140,7 @@ def test_trace_call_maps_timeout_to_timeout_status():
         pass
 
     with pytest.raises(APITimeoutError):
-        with tracing.trace_call("ask") as handle:
+        with tracing.trace_call("ask"):
             raise APITimeoutError("timed out")
     trace = Trace.objects.get()
     assert trace.error_class == "timeout"

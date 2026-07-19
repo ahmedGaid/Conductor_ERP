@@ -6,9 +6,6 @@ from decimal import Decimal
 
 import pytest
 
-YEAR_START = dt.date(2026, 1, 1)
-YEAR_END = dt.date(2026, 12, 31)
-
 from erp.accounting.services import general_ledger, trial_balance, vat_return
 from erp.sales.domain.models import OrderStatus
 from erp.sales.errors import UnknownTaxCodeError
@@ -23,6 +20,9 @@ from erp.sales.services import (
 )
 
 from .factories import DATE, make_books, make_customer, make_item, make_vat, make_warehouse, stocked
+
+YEAR_START = dt.date(2026, 1, 1)
+YEAR_END = dt.date(2026, 12, 31)
 
 pytestmark = pytest.mark.django_db
 

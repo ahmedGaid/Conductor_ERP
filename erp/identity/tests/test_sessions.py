@@ -3,13 +3,13 @@ and suspending a user force-signs-out every device. Runs under gate01 (erp/ident
 """
 from __future__ import annotations
 
-import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from erp.identity import sessions, users as user_svc
+from erp.identity import sessions
+from erp.identity import users as user_svc
 from erp.identity.models import USER_SUSPENDED
 from erp.identity.roles import SYSTEM_ADMIN
 

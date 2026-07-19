@@ -24,7 +24,7 @@ def _get_owned(user, view_id: int) -> SavedView:
     try:
         return SavedView.objects.get(pk=view_id, user=user)
     except SavedView.DoesNotExist:
-        raise NotFoundError("Saved view not found")
+        raise NotFoundError("Saved view not found") from None
 
 
 def create_view(user, list_key: str, name: str, query: str = "", is_default: bool = False) -> SavedView:

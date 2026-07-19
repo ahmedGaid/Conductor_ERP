@@ -5,6 +5,7 @@ the same weighted-average math ``receive_stock`` uses. See DESIGN_PENDING_PAYMEN
 sub-project 2."""
 from __future__ import annotations
 
+import datetime as dt
 from decimal import Decimal
 
 import pytest
@@ -22,8 +23,6 @@ from erp.inventory.services.pending_stock import (
 from .factories import make_gl, make_item, make_warehouse
 
 pytestmark = pytest.mark.django_db
-
-import datetime as dt
 
 DATE = dt.date(2026, 1, 1)
 

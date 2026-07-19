@@ -17,7 +17,7 @@ def validate_submission(form: FormDefinition, data: dict) -> None:
             try:
                 float(data[key])
             except (TypeError, ValueError):
-                raise ValidationError(f"field '{key}' must be a number")
+                raise ValidationError(f"field '{key}' must be a number") from None
 
 
 def submit(form: FormDefinition, data: dict, user=None) -> FormSubmission:

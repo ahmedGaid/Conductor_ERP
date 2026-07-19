@@ -11,9 +11,20 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.imports import engine
 from erp.imports.models import ImportBatch, ImportRow
 from erp.purchasing.domain.models import PendingPayment, PendingPaymentStatus
-from erp.purchasing.services import POLineInput, bill_order, confirm_order, create_order, receive_order
-
-from erp.purchasing.tests.factories import DATE, make_books, make_item, make_supplier, make_warehouse
+from erp.purchasing.services import (
+    POLineInput,
+    bill_order,
+    confirm_order,
+    create_order,
+    receive_order,
+)
+from erp.purchasing.tests.factories import (
+    DATE,
+    make_books,
+    make_item,
+    make_supplier,
+    make_warehouse,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -62,7 +73,7 @@ def test_payment_with_resolvable_order_creates_a_matched_pending_payment():
 def test_payment_without_a_reference_stays_unmatched_with_a_warning():
     make_books()
     make_item()
-    wh = make_warehouse()
+    make_warehouse()
     make_supplier(code="SUP2")
     actor = _manager("pay2")
     batch = ImportBatch.objects.create(entity="payments")

@@ -13,7 +13,6 @@ from django.db import transaction
 
 from ..domain.models import (
     CountStatus,
-    Item,
     StockBalance,
     StockCount,
     StockCountLine,

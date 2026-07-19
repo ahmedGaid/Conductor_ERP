@@ -42,7 +42,7 @@ def _resolve(model, code):
     try:
         return model.objects.get(code=code)
     except model.DoesNotExist:
-        raise ValidationError(f"Unknown {model.__name__.lower()}: {code}")
+        raise ValidationError(f"Unknown {model.__name__.lower()}: {code}") from None
 
 
 def create_user(*, username, email, role=None, branch=None, department=None, team=None, actor=None):
@@ -71,7 +71,7 @@ def _group(role_name: str) -> Group:
     try:
         return Group.objects.get(name=role_name)
     except Group.DoesNotExist:
-        raise ValidationError(f"Unknown role: {role_name}")
+        raise ValidationError(f"Unknown role: {role_name}") from None
 
 
 def set_status(user, status: str, actor=None):
@@ -181,7 +181,8 @@ def serialize_list(user) -> dict:
 
 def serialize_detail(user) -> dict:
     """The full profile: identity + role + module access + effective permissions + sessions + audit."""
-    from . import access, sessions as sessions_svc
+    from . import access
+    from . import sessions as sessions_svc
 
     p = _prefs(user)
     data = serialize_list(user)

@@ -12,7 +12,6 @@ from __future__ import annotations
 from .rbac import DataScope, broadest, module_of
 from .roles import SYSTEM_ADMIN
 
-
 # Order cancellation policy (org-wide). Cancellation is only safe before stock/GL side-effects, so it
 # is offered only for the draft/confirmed states; the org setting picks how far it is allowed.
 _CANCEL_ALLOW_RANK = {"disabled": 0, "draft": 1, "confirmed": 2}

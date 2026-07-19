@@ -58,7 +58,7 @@ def _get_owned_batch(actor, pk) -> ImportBatch:
     try:
         batch = ImportBatch.objects.get(pk=pk)
     except ImportBatch.DoesNotExist:
-        raise NotFoundError("Import batch not found.")
+        raise NotFoundError("Import batch not found.") from None
     if not _is_elevated(actor) and batch.created_by_id != actor.id:
         raise ForbiddenError("You do not have access to this import batch.")
     return batch
@@ -209,7 +209,7 @@ class MappingView(APIView):
             try:
                 profile = ImportProfile.objects.get(pk=profile_id, entity=entity)
             except ImportProfile.DoesNotExist:
-                raise NotFoundError("Import profile not found.")
+                raise NotFoundError("Import profile not found.") from None
             if not row_mapping:
                 headers = readers.read_headers(_read_attachment(batch.source_file))
                 row_mapping = mapping_svc.apply_profile(profile, headers.headers).field_map()
@@ -287,7 +287,7 @@ class RowDetailView(APIView):
         try:
             row = batch.rows.get(row_number=row_number)
         except ImportRow.DoesNotExist:
-            raise NotFoundError("Row not found.")
+            raise NotFoundError("Row not found.") from None
 
         decision = request.data.get("decision")
         if decision:
@@ -373,7 +373,7 @@ class ExecuteView(APIView):
             try:
                 report = engine.execute_batch(request.user, batch)
             except engine.ReadinessError as exc:
-                raise ConflictError("Batch is not ready to execute.", data={"reasons": exc.reasons})
+                raise ConflictError("Batch is not ready to execute.", data={"reasons": exc.reasons}) from exc
             return _envelope({"queued": False, "report": report})
 
         return _envelope({"queued": True, "batch": _batch_row(batch)})
@@ -500,6 +500,6 @@ class ProfileDetailView(APIView):
         try:
             profile = ImportProfile.objects.get(pk=pk)
         except ImportProfile.DoesNotExist:
-            raise NotFoundError("Import profile not found.")
+            raise NotFoundError("Import profile not found.") from None
         profile.delete()
         return Response(status=204)

@@ -6,7 +6,8 @@ import pytest
 from django.test import override_settings
 
 from erp.assistant.errors import AssistantUnavailableError
-from erp.assistant.gateway import core as llm, retry
+from erp.assistant.gateway import core as llm
+from erp.assistant.gateway import retry
 from erp.assistant.models import Trace, TraceStep
 from erp.identity.models import User
 

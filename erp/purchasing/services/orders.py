@@ -254,8 +254,8 @@ def receive_order(order: PurchaseOrder, received: dict[int, Decimal] | None = No
         raise ExcessiveReceiptError(data={"order": order.number, "reason": "nothing to receive"})
 
     lines = list(order.lines.all())
-    received_total = sum(_round_minor(Decimal(l.received_qty) * Decimal(l.unit_cost_minor)) for l in lines)
-    fully = all(Decimal(l.received_qty) >= Decimal(l.quantity) for l in lines)
+    received_total = sum(_round_minor(Decimal(ln.received_qty) * Decimal(ln.unit_cost_minor)) for ln in lines)
+    fully = all(Decimal(ln.received_qty) >= Decimal(ln.quantity) for ln in lines)
     order.received_minor = received_total
     order.status = POStatus.RECEIVED if fully else POStatus.PARTIALLY_RECEIVED
     order.save(update_fields=["received_minor", "status", "updated_at"])
@@ -405,7 +405,7 @@ def return_order(order: PurchaseOrder, returned: dict[int, Decimal] | None = Non
     order.returned_minor += cost_value
     order.billed_minor -= cost_value + vat_value
     order.debit_note_number = entry.number
-    if all(Decimal(l.returned_qty) >= Decimal(l.received_qty) for l in order.lines.all()):
+    if all(Decimal(ln.returned_qty) >= Decimal(ln.received_qty) for ln in order.lines.all()):
         order.status = POStatus.RETURNED
     order.save(update_fields=["returned_minor", "billed_minor", "debit_note_number",
                               "status", "updated_at"])

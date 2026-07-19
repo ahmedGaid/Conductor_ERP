@@ -28,7 +28,7 @@ def assert_public_url(url: str) -> None:
     try:
         parsed = urlparse(url)
     except ValueError:
-        raise _blocked("unparseable URL")
+        raise _blocked("unparseable URL") from None
     if parsed.scheme not in ("http", "https"):
         raise _blocked(f"scheme '{parsed.scheme}' not allowed (http/https only)")
     host = parsed.hostname
@@ -44,7 +44,7 @@ def assert_public_url(url: str) -> None:
     try:
         infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
     except OSError:
-        raise _blocked(f"host '{host}' does not resolve")
+        raise _blocked(f"host '{host}' does not resolve") from None
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
         if (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved

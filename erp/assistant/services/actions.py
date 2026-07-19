@@ -18,10 +18,10 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from difflib import SequenceMatcher
-from typing import Callable
 
 from erp.accounting import contracts as accounting
 from erp.crm import contracts as crm
@@ -1233,7 +1233,7 @@ def _build_log_activity(actor, *, query: str | None = None, note: str | None = N
 def _execute_log_activity(actor, payload: dict) -> dict:
     if not _can(actor, BRANCH_MANAGER):
         raise PermissionError
-    activity = crm.log_activity(
+    crm.log_activity(
         type=payload["type"], subject=payload["subject"],
         related_type=payload["related_type"], related_ref=payload["related_ref"],
         actor=actor,

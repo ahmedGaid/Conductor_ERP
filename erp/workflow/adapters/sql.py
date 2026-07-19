@@ -24,7 +24,7 @@ class SqlAdapter:
                 rows = []
                 if cursor.description is not None:
                     columns = [c[0] for c in cursor.description]
-                    rows = [dict(zip(columns, r)) for r in cursor.fetchall()]
+                    rows = [dict(zip(columns, r, strict=False)) for r in cursor.fetchall()]
                 return AdapterResult(ok=True, data=rows)
         except Exception as exc:  # noqa: BLE001
             return AdapterResult(ok=False, error=f"{type(exc).__name__}: {exc}")

@@ -23,7 +23,6 @@ from erp.identity.scoping import scope_queryset
 from .. import services
 from ..domain.models import Customer, PendingPayment, Quotation, SalesOrder
 from ..imports import CUSTOMER_IMPORT
-from ..repositories import customers as customer_repo
 from .serializers import (
     CustomerSerializer,
     LinesActionSerializer,

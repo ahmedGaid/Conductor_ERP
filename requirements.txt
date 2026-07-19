@@ -23,3 +23,4 @@ pytest>=8.3
 pytest-django>=4.9
 mypy>=1.11
 ruff>=0.6
+bandit>=1.7,<2.0        # security lint, CI-only (post-handover-v1_1 FILE_01, DECISIONS 2026-07-19)

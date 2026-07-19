@@ -62,10 +62,10 @@ def test_save_graph_round_trips():
 
     def norm(graph):
         nodes = sorted(
-            ((n["key"], n["type"], n["config"], n["position"]) for n in graph["nodes"])
+            (n["key"], n["type"], n["config"], n["position"]) for n in graph["nodes"]
         )
         edges = sorted(
-            ((e["source"], e["target"], e["ordering"], _key(e["condition"])) for e in graph["edges"])
+            (e["source"], e["target"], e["ordering"], _key(e["condition"])) for e in graph["edges"]
         )
         return nodes, edges
 

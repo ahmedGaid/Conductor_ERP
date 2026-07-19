@@ -25,7 +25,13 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 from erp.inventory import contracts as inventory
 from erp.purchasing import contracts
-from erp.purchasing.domain.models import PendingPayment, PendingPaymentStatus, POStatus, PurchaseOrder, Supplier
+from erp.purchasing.domain.models import (
+    PendingPayment,
+    PendingPaymentStatus,
+    POStatus,
+    PurchaseOrder,
+    Supplier,
+)
 from erp.purchasing.services.orders import POLineInput
 from erp.purchasing.services.pending_payments import create_pending_payment
 
@@ -98,7 +104,9 @@ def _find_supplier(ref: str):
 
 
 def _resolve_tax_code(value) -> str | None:
-    from ..normalize import normalize_tax  # local import: avoids a normalize<->adapters import cycle
+    from ..normalize import (
+        normalize_tax,  # local import: avoids a normalize<->adapters import cycle
+    )
 
     if value in (None, ""):
         return ""

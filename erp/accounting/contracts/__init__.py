@@ -18,7 +18,13 @@ from ..events import JOURNAL_POSTED, PERIOD_CLOSED
 from ..services import chart as _chart
 from ..services import reports as _reports
 from ..services import statements as _statements
-from ..services.posting import JournalInput, LineInput, create_draft_journal, post_journal, reverse_journal
+from ..services.posting import (
+    JournalInput,
+    LineInput,
+    create_draft_journal,
+    post_journal,
+    reverse_journal,
+)
 from ..services.seeding import (
     baseline_summary,
     get_standard_vat_rate_bps,
@@ -26,7 +32,6 @@ from ..services.seeding import (
     set_standard_vat_rate,
 )
 from ..services.taxes import TaxCodeInfo, compute_tax, find_tax_code
-
 
 # --- scoped/gated read helpers for the AI assistant (session 08 tool catalog) -------------------
 # The financial statements are company-wide GL aggregates (not per-record scoped); the assistant's
@@ -71,10 +76,10 @@ def income_statement_summary(*, period: str = "this_month") -> dict:
         "total_revenue_minor": stmt.total_revenue,
         "total_expenses_minor": stmt.total_expenses,
         "net_income_minor": stmt.net_income,
-        "revenue": [{"code": l.account_code, "name": l.account_name, "amount_minor": l.amount}
-                    for l in stmt.revenue[:5]],
-        "expenses": [{"code": l.account_code, "name": l.account_name, "amount_minor": l.amount}
-                     for l in stmt.expenses[:5]],
+        "revenue": [{"code": ln.account_code, "name": ln.account_name, "amount_minor": ln.amount}
+                    for ln in stmt.revenue[:5]],
+        "expenses": [{"code": ln.account_code, "name": ln.account_name, "amount_minor": ln.amount}
+                     for ln in stmt.expenses[:5]],
     }
 
 

@@ -206,7 +206,6 @@ def test_escalation_without_owner_creates_no_inbox_row():
 
 def test_inbox_is_isolated_per_user():
     from erp.identity.models import User
-
     from erp.notifications.services import inbox_for
 
     dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="mine")
@@ -218,7 +217,6 @@ def test_inbox_is_isolated_per_user():
 
 def test_inbox_orders_unread_before_read_then_newest_first():
     from erp.identity.models import User
-
     from erp.notifications.services import inbox_for, mark_read
 
     older = dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="older")
@@ -231,7 +229,6 @@ def test_inbox_orders_unread_before_read_then_newest_first():
 
 def test_mark_read_is_owner_scoped_and_idempotent():
     from erp.identity.models import User
-
     from erp.notifications.services import mark_read
 
     note = dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="S")
@@ -250,7 +247,6 @@ def test_mark_read_is_owner_scoped_and_idempotent():
 
 def test_mark_all_read_flips_only_my_unread():
     from erp.identity.models import User
-
     from erp.notifications.services import mark_all_read
 
     dispatch(channel=NotificationChannel.INAPP, recipient="alice", subject="a")

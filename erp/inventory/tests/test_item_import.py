@@ -34,7 +34,7 @@ def _post(client: APIClient, raw: bytes, **fields):
 
 def test_preview_then_commit_creates_with_defaults():
     client = _client()
-    csv = "sku,name\nITM-1,Cement\nITM-2,Sand\n".encode("utf-8")
+    csv = b"sku,name\nITM-1,Cement\nITM-2,Sand\n"
 
     preview = _post(client, csv).json()["data"]
     assert preview["summary"]["created"] == 2
@@ -53,11 +53,11 @@ def test_known_category_links_unknown_is_a_row_error():
     client = _client()
     Category.objects.create(code="RAW", name="Raw materials")
 
-    ok = _post(client, "sku,name,category_code\nITM-1,Cement,RAW\n".encode("utf-8"), commit="true")
+    ok = _post(client, b"sku,name,category_code\nITM-1,Cement,RAW\n", commit="true")
     assert ok.json()["data"]["summary"]["created"] == 1
     assert Item.objects.get(sku="ITM-1").category.code == "RAW"
 
-    bad = _post(client, "sku,name,category_code\nITM-2,Steel,NOPE\n".encode("utf-8"), commit="true")
+    bad = _post(client, b"sku,name,category_code\nITM-2,Steel,NOPE\n", commit="true")
     body = bad.json()["data"]
     assert body["summary"]["failed"] == 1
     assert body["rows"][0]["errors"][0]["field"] == "category_code"
@@ -66,7 +66,7 @@ def test_known_category_links_unknown_is_a_row_error():
 
 def test_invalid_type_choice_is_a_row_error():
     client = _client()
-    body = _post(client, "sku,name,type\nITM-1,Widget,gadget\n".encode("utf-8"), commit="true").json()["data"]
+    body = _post(client, b"sku,name,type\nITM-1,Widget,gadget\n", commit="true").json()["data"]
     assert body["summary"]["failed"] == 1
     assert Item.objects.count() == 0
 
@@ -74,13 +74,13 @@ def test_invalid_type_choice_is_a_row_error():
 def test_reorder_point_accepts_arabic_indic_digits():
     client = _client()
     # "١٢" is Arabic-Indic 12; the engine folds digits before the serializer parses.
-    _post(client, "sku,name,reorder_point\nITM-9,Bolt,١٢\n".encode("utf-8"), commit="true")
+    _post(client, "sku,name,reorder_point\nITM-9,Bolt,١٢\n".encode(), commit="true")
     assert int(Item.objects.get(sku="ITM-9").reorder_point) == 12
 
 
 def test_partial_success_and_idempotent_reupload():
     client = _client()
-    csv = "sku,name\nITM-1,A\nITM-2,\nITM-3,C\n".encode("utf-8")  # row 3 missing name
+    csv = b"sku,name\nITM-1,A\nITM-2,\nITM-3,C\n"  # row 3 missing name
     first = _post(client, csv, commit="true").json()["data"]
     assert first["summary"] == {"total": 3, "created": 2, "updated": 0, "skipped": 0, "failed": 1}
 

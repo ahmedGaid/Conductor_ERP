@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
-from typing import Callable
+from collections.abc import Callable
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -72,7 +72,7 @@ class IpWhitelistMiddleware:
         return self.get_response(request)
 
     @staticmethod
-    def _client_ip(request: HttpRequest) -> "ipaddress._BaseAddress | None":
+    def _client_ip(request: HttpRequest) -> ipaddress._BaseAddress | None:
         xff = request.META.get("HTTP_X_FORWARDED_FOR")
         raw = xff.split(",")[0].strip() if xff else request.META.get("REMOTE_ADDR", "")
         try:

@@ -6,7 +6,8 @@ request (never cached stale) so a permission or page change is reflected immedia
 from __future__ import annotations
 
 from erp.accounting import contracts as accounting
-from erp.identity import access, services as identity_services
+from erp.identity import access
+from erp.identity import services as identity_services
 from erp.inventory import contracts as inventory
 
 from .prompt_registry import get as get_prompt

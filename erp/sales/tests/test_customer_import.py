@@ -38,7 +38,7 @@ def _post(client: APIClient, raw: bytes, **fields):
 
 def test_preview_does_not_write_then_commit_creates():
     client = _client()
-    csv = "code,name,credit_limit\nC-1,Nile Trading,50000\nC-2,Delta Co,0\n".encode("utf-8")
+    csv = b"code,name,credit_limit\nC-1,Nile Trading,50000\nC-2,Delta Co,0\n"
 
     preview = _post(client, csv)  # commit defaults to false
     assert preview.status_code == 200
@@ -57,7 +57,7 @@ def test_preview_does_not_write_then_commit_creates():
 
 def test_money_major_units_become_minor():
     client = _client()
-    csv = "code,name,credit_limit\nC-9,Acme,\"1,000.50\"\n".encode("utf-8")
+    csv = b"code,name,credit_limit\nC-9,Acme,\"1,000.50\"\n"
     _post(client, csv, commit="true")
     assert Customer.objects.get(code="C-9").credit_limit_minor == 100_050
 
@@ -79,7 +79,7 @@ def test_cp1256_arabic_and_utf8_bom_decode():
 
 def test_duplicate_within_file_first_wins_rest_fail():
     client = _client()
-    csv = "code,name\nC-1,First\nC-1,Second\n".encode("utf-8")
+    csv = b"code,name\nC-1,First\nC-1,Second\n"
     body = _post(client, csv, commit="true").json()["data"]
     assert body["summary"]["created"] == 1
     assert body["summary"]["failed"] == 1
@@ -92,12 +92,12 @@ def test_existing_skipped_in_create_mode_updated_in_upsert():
     client = _client()
     Customer.objects.create(code="C-1", name="Old Name")
 
-    skip = _post(client, "code,name\nC-1,New Name\n".encode("utf-8"), commit="true").json()["data"]
+    skip = _post(client, b"code,name\nC-1,New Name\n", commit="true").json()["data"]
     assert skip["summary"]["skipped"] == 1
     assert Customer.objects.get(code="C-1").name == "Old Name"  # untouched
 
     up = _post(
-        client, "code,name\nC-1,New Name\n".encode("utf-8"), commit="true", mode="upsert"
+        client, b"code,name\nC-1,New Name\n", commit="true", mode="upsert"
     ).json()["data"]
     assert up["summary"]["updated"] == 1
     assert Customer.objects.get(code="C-1").name == "New Name"
@@ -105,7 +105,7 @@ def test_existing_skipped_in_create_mode_updated_in_upsert():
 
 def test_partial_success_good_rows_commit_bad_row_reported():
     client = _client()
-    csv = "code,name\nC-1,Good\nC-2,\nC-3,Also Good\n".encode("utf-8")  # row 3 missing name
+    csv = b"code,name\nC-1,Good\nC-2,\nC-3,Also Good\n"  # row 3 missing name
     body = _post(client, csv, commit="true").json()["data"]
     assert body["summary"] == {"total": 3, "created": 2, "updated": 0, "skipped": 0, "failed": 1}
     assert Customer.objects.count() == 2
@@ -116,7 +116,7 @@ def test_partial_success_good_rows_commit_bad_row_reported():
 
 def test_reupload_is_idempotent():
     client = _client()
-    csv = "code,name\nC-1,One\nC-2,Two\n".encode("utf-8")
+    csv = b"code,name\nC-1,One\nC-2,Two\n"
     _post(client, csv, commit="true")
     second = _post(client, csv, commit="true").json()["data"]
     assert second["summary"]["created"] == 0
@@ -127,7 +127,7 @@ def test_reupload_is_idempotent():
 def test_over_length_code_is_a_row_error():
     client = _client()
     long_code = "C-" + "X" * 40  # > 32 chars
-    body = _post(client, f"code,name\n{long_code},Acme\n".encode("utf-8"), commit="true").json()["data"]
+    body = _post(client, f"code,name\n{long_code},Acme\n".encode(), commit="true").json()["data"]
     assert body["summary"]["failed"] == 1
     assert Customer.objects.count() == 0
 

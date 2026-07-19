@@ -36,7 +36,7 @@ def drf_exception_handler(exc: Exception, context: dict) -> Response | None:
         response.data = {
             "error": {
                 "error_id": error_id,
-                "code": "HTTP-%s" % response.status_code,
+                "code": f"HTTP-{response.status_code}",
                 "message": response.data,
                 "correlation_id": correlation_id,
             }

@@ -200,7 +200,7 @@ def test_date_invalid_with_no_raw_value_proposes_nothing():
 
 # --- whitespace trim fallback --------------------------------------------------------------------
 def test_whitespace_is_trimmed_as_a_last_resort(gadget_adapter):
-    actor = _manager("a5")
+    _manager("a5")
     batch = ImportBatch.objects.create(entity="gadgets", mapping={"code": "Code", "label": "Label"})
     row = ImportRow.objects.create(
         batch=batch, row_number=1, raw={"Code": "G1", "Label": " Widget "},

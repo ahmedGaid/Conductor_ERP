@@ -28,7 +28,13 @@ from erp.identity.scoping import scope_queryset
 from erp.inventory import contracts as inventory
 from erp.sales import contracts
 from erp.sales.domain.models import (
-    Customer, OrderStatus, PendingPayment, PendingPaymentStatus, Quotation, QuotationStatus, SalesOrder,
+    Customer,
+    OrderStatus,
+    PendingPayment,
+    PendingPaymentStatus,
+    Quotation,
+    QuotationStatus,
+    SalesOrder,
 )
 from erp.sales.services.orders import OrderLineInput
 from erp.sales.services.pending_payments import create_pending_payment
@@ -120,7 +126,9 @@ def _resolve_tax_code(value) -> str | None:
     """A raw tax cell ("14%", "VAT", "معفى") → a configured ``TaxCode.code``, ``""`` for an
     explicitly untaxed line, or ``None`` when the token can't be matched to any configured rate —
     the ``missing_ref`` case ``lookup`` and ``write`` share."""
-    from ..normalize import normalize_tax  # local import: avoids a normalize<->adapters import cycle
+    from ..normalize import (
+        normalize_tax,  # local import: avoids a normalize<->adapters import cycle
+    )
 
     if value in (None, ""):
         return ""

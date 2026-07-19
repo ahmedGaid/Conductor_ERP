@@ -44,7 +44,6 @@ def check() -> None:
     call_command("seed_identity", verbosity=0)
     from django.contrib.auth import get_user_model
     from django.contrib.auth.models import Group
-
     from erp.identity.roles import DEFAULT_ROLES
 
     for role in DEFAULT_ROLES:

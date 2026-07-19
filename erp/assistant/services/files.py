@@ -51,7 +51,7 @@ def fetch_unclaimed(attachment_ids, *, user) -> list[Attachment]:
     try:
         ids = list(dict.fromkeys(int(i) for i in attachment_ids))
     except (TypeError, ValueError):
-        raise Http404
+        raise Http404 from None
     rows = {a.id: a for a in Attachment.objects.filter(id__in=ids, user=user, message__isnull=True)}
     if len(rows) != len(ids):
         raise Http404

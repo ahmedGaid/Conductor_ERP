@@ -7,7 +7,13 @@ import pytest
 
 from erp.purchasing.domain.models import PendingPaymentStatus, POStatus
 from erp.purchasing.errors import OverpaymentError, PendingPaymentStateError
-from erp.purchasing.services import POLineInput, bill_order, confirm_order, create_order, receive_order
+from erp.purchasing.services import (
+    POLineInput,
+    bill_order,
+    confirm_order,
+    create_order,
+    receive_order,
+)
 from erp.purchasing.services.pending_payments import (
     apply_pending_payment,
     create_pending_payment,

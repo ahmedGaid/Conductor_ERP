@@ -100,7 +100,7 @@ def test_group_by_builds_documents_and_computes_totals(sales_world):
     assert inv1.customer.code == "C1"
     assert inv1.status == "draft"
     lines = list(inv1.lines.order_by("line_no"))
-    assert [str(l.quantity) for l in lines] == ["2.0000", "3.0000"]
+    assert [str(ln.quantity) for ln in lines] == ["2.0000", "3.0000"]
     assert inv1.subtotal_minor == 2 * 10_00 + 3 * 10_00
 
     inv2 = orders["import:INV-2"]
@@ -229,7 +229,7 @@ def test_purchase_invoice_path_creates_draft_purchase_order_supplier_side():
     assert order.supplier.code == "S1"
     assert order.status == "draft"
     lines = list(order.lines.order_by("line_no"))
-    assert [str(l.quantity) for l in lines] == ["5.0000", "1.0000"]
+    assert [str(ln.quantity) for ln in lines] == ["5.0000", "1.0000"]
     assert order.subtotal_minor == 6 * 8_00
 
 
@@ -252,7 +252,7 @@ def test_sales_quotation_path_creates_draft_quotation(sales_world):
     assert quote.customer.code == "C1"
     assert quote.status == "draft"
     lines = list(quote.lines.order_by("line_no"))
-    assert [str(l.quantity) for l in lines] == ["2.0000", "1.0000"]
+    assert [str(ln.quantity) for ln in lines] == ["2.0000", "1.0000"]
     assert quote.subtotal_minor == 3 * 10_00
 
 

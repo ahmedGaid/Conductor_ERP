@@ -162,9 +162,9 @@ def convert_quotation(quote: Quotation, actor=None):
         customer=quote.customer, warehouse_code=quote.warehouse_code, currency=quote.currency,
         notes=f"From quotation {quote.number}",
         lines=[
-            OrderLineInput(item_sku=l.item_sku, quantity=l.quantity,
-                           unit_price_minor=l.unit_price_minor, description=l.description)
-            for l in quote.lines.all().order_by("line_no")
+            OrderLineInput(item_sku=ln.item_sku, quantity=ln.quantity,
+                           unit_price_minor=ln.unit_price_minor, description=ln.description)
+            for ln in quote.lines.all().order_by("line_no")
         ],
         actor=actor,
     )

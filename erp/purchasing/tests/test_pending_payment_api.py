@@ -7,7 +7,13 @@ import pytest
 from rest_framework.test import APIClient
 
 from erp.identity.models import User
-from erp.purchasing.services import POLineInput, bill_order, confirm_order, create_order, receive_order
+from erp.purchasing.services import (
+    POLineInput,
+    bill_order,
+    confirm_order,
+    create_order,
+    receive_order,
+)
 from erp.purchasing.services.pending_payments import create_pending_payment
 
 from .factories import DATE, make_books, make_item, make_supplier, make_warehouse

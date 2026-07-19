@@ -5,11 +5,10 @@ from __future__ import annotations
 
 import pytest
 from django.contrib.auth.models import Group
-from rest_framework.test import APIClient
-
 from erp.identity.models import User
 from erp.identity.roles import SYSTEM_ADMIN
 from erp.monitoring import checks, status_api
+from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.django_db
 

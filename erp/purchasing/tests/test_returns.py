@@ -19,7 +19,6 @@ from erp.purchasing.services import (
     bill_order,
     confirm_order,
     create_order,
-    pay_order,
     receive_order,
     return_order,
 )

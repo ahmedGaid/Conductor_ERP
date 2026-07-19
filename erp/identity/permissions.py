@@ -18,7 +18,7 @@ class HasAnyRole(BasePermission):
     required_roles: tuple[str, ...] = ()
 
     @classmethod
-    def require(cls, *roles: str) -> type["HasAnyRole"]:
+    def require(cls, *roles: str) -> type[HasAnyRole]:
         return type("HasAnyRole_" + "_".join(roles), (cls,), {"required_roles": tuple(roles)})
 
     def has_permission(self, request, view) -> bool:
@@ -46,7 +46,7 @@ class HasModulePermission(BasePermission):
     required_codes: tuple[str, ...] = ()
 
     @classmethod
-    def require(cls, *codes: str) -> type["HasModulePermission"]:
+    def require(cls, *codes: str) -> type[HasModulePermission]:
         return type(
             "HasModulePermission_" + "_".join(c.replace(".", "_") for c in codes),
             (cls,),

@@ -33,7 +33,7 @@ def _group(role_name: str) -> Group:
     try:
         return Group.objects.get(name=role_name)
     except Group.DoesNotExist:
-        raise ValidationError(f"Unknown role: {role_name}")
+        raise ValidationError(f"Unknown role: {role_name}") from None
 
 
 def _new_prefix() -> str:
@@ -116,4 +116,4 @@ def _get(pk: int) -> ApiKey:
     try:
         return ApiKey.objects.get(pk=pk)
     except ApiKey.DoesNotExist:
-        raise ValidationError(f"Unknown API key: {pk}")
+        raise ValidationError(f"Unknown API key: {pk}") from None

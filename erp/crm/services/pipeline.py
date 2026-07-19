@@ -7,7 +7,6 @@ Every transition is atomic and guarded.
 """
 from __future__ import annotations
 
-import datetime as dt
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -22,9 +21,9 @@ from .. import events
 from ..domain.models import (
     OPEN_STAGES,
     Lead,
-    OppStage,
     Opportunity,
     OpportunityLine,
+    OppStage,
 )
 from ..errors import (
     EmptyOpportunityError,

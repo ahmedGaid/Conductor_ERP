@@ -10,7 +10,8 @@ from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from erp.assistant.gateway import cache, core as llm
+from erp.assistant.gateway import cache
+from erp.assistant.gateway import core as llm
 from erp.assistant.models import ResponseCache, Trace, TraceStep
 from erp.identity.models import User
 

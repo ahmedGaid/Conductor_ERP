@@ -1,7 +1,6 @@
 """Adapter tests: SQL parameterization + DB dedupe, REST mapping/header, factory."""
 from __future__ import annotations
 
-import io
 import socket
 
 import pytest

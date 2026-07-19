@@ -20,9 +20,9 @@ stays owned by ``actions``/``suggestions`` for the single-record write path.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Callable
 
 from erp.audit import services as audit
 from erp.identity.roles import BRANCH_MANAGER

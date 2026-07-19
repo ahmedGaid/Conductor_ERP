@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from .orders import (  # noqa: F401
     APPROVAL_THRESHOLD_MINOR as ORDER_APPROVAL_THRESHOLD_MINOR,
+)
+from .orders import (
     POLineInput,
     approve_order,
     bill_order,
@@ -11,8 +13,16 @@ from .orders import (  # noqa: F401
     create_order,
     pay_order,
     receive_order,
-    requires_approval as order_requires_approval,
     return_order,
+)
+from .orders import (
+    requires_approval as order_requires_approval,
+)
+from .pending_payments import (  # noqa: F401
+    apply_pending_payment,
+    create_pending_payment,
+    discard_pending_payment,
+    match_pending_payment,
 )
 from .requests import (  # noqa: F401
     APPROVAL_THRESHOLD_MINOR,
@@ -23,12 +33,6 @@ from .requests import (  # noqa: F401
     reject_request,
     requires_approval,
     submit_request,
-)
-from .pending_payments import (  # noqa: F401
-    apply_pending_payment,
-    create_pending_payment,
-    discard_pending_payment,
-    match_pending_payment,
 )
 
 __all__ = [

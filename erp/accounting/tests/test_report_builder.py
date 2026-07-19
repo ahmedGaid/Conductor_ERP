@@ -5,8 +5,9 @@ import datetime as dt
 
 import pytest
 
+from erp.accounting.api import exports as export_tables
 from erp.accounting.domain.accounts import AccountType
-from erp.accounting.domain.models import Account, ReportDefinition
+from erp.accounting.domain.models import ReportDefinition
 from erp.accounting.services import (
     JournalInput,
     LineInput,
@@ -15,7 +16,6 @@ from erp.accounting.services import (
     run_definition,
     run_scheduled,
 )
-from erp.accounting.api import exports as export_tables
 from erp.core.exports import render_bytes
 
 from .factories import make_coa, make_period
