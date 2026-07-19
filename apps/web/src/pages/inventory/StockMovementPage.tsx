@@ -19,6 +19,7 @@ import { useRowSelection } from "../../hooks/useRowSelection";
 import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
 import { useListPageActions } from "../../hooks/useListPageActions";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
@@ -57,6 +58,8 @@ export function StockMovementPage() {
   const [expiry, setExpiry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useSetHelpSignals({ movementCount: (movements ?? []).length });
 
   // Post is a form (forms keep their controls) — no bar primary, just print + CSV of the log below.
   const csvColumns = useMemo<CsvColumn<Movement>[]>(

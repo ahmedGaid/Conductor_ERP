@@ -20,9 +20,9 @@ from collections.abc import Callable
 from django.conf import settings
 
 from ..client import (
+    _STREAM_RUNNERS,
     _anthropic_media_block,
     _groq_media_block,
-    _STREAM_RUNNERS,
     embed_text,
     gemini_http_options,
     get_client,
@@ -33,8 +33,8 @@ from ..client import (
     provider,
     provider_chain,
 )
-from . import breaker, budgets, cache, retry
 from ..errors import AllProvidersDown, AssistantUnavailableError, BudgetExceeded, classify_exception
+from . import breaker, budgets, cache, retry
 
 __all__ = ["complete_json", "complete_stream", "embed_text", "model_id", "provider",
            "provider_chain"]

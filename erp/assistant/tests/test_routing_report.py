@@ -7,7 +7,7 @@ from __future__ import annotations
 from io import StringIO
 
 import pytest
-from django.core.management import call_command, CommandError
+from django.core.management import CommandError, call_command
 
 from erp.assistant import client as assistant_client
 from erp.assistant.evals import routing_report

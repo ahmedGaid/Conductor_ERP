@@ -11,8 +11,8 @@ call the LLM. This module owns the registry and ``run``; the six packs live in `
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 
 @dataclass(frozen=True)

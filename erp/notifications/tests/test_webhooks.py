@@ -16,7 +16,11 @@ from rest_framework.test import APIClient
 from erp.core.errors import ValidationError
 from erp.core.events import bus
 from erp.identity.models import User
-from erp.notifications.domain.models import WebhookDelivery, WebhookDeliveryStatus, WebhookSubscription
+from erp.notifications.domain.models import (
+    WebhookDelivery,
+    WebhookDeliveryStatus,
+    WebhookSubscription,
+)
 from erp.notifications.services import webhooks
 from erp.notifications.webhook_catalog import WEBHOOK_EVENT_CATALOG
 from erp.sales.events import ORDER_INVOICED

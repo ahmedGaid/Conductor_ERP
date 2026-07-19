@@ -15,13 +15,12 @@ from decimal import Decimal
 import pytest
 from django.conf import settings
 from django.core.cache import cache
+from erp.identity.models import User
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
-
-from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
 
@@ -134,7 +133,13 @@ def _seed_orders(n: int) -> None:
 
 
 def _seed_movements(n: int) -> None:
-    from erp.inventory.domain.models import Item, MovementType, StockBalance, StockMovement, Warehouse
+    from erp.inventory.domain.models import (
+        Item,
+        MovementType,
+        StockBalance,
+        StockMovement,
+        Warehouse,
+    )
 
     item = Item.objects.create(sku="SKU-PERF", name="Perf item")
     warehouse = Warehouse.objects.create(code="WH-PERF", name="Perf warehouse")

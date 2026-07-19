@@ -8,7 +8,8 @@ import pytest
 from django.test import override_settings
 
 from erp.assistant.errors import AllProvidersDown, AssistantUnavailableError
-from erp.assistant.gateway import breaker, core as llm
+from erp.assistant.gateway import breaker
+from erp.assistant.gateway import core as llm
 from erp.assistant.models import Trace
 from erp.identity.models import User
 

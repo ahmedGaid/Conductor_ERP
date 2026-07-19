@@ -14,8 +14,7 @@ from django.test import override_settings
 from erp.assistant.models import Conversation, Message
 from erp.assistant.services import agent
 from erp.identity.models import User
-from erp.inventory.domain.models import Warehouse
-from erp.inventory.domain.models import Item
+from erp.inventory.domain.models import Item, Warehouse
 from erp.sales.domain.models import Customer
 
 pytestmark = pytest.mark.django_db

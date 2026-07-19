@@ -139,6 +139,24 @@ export const settingsBranchesGuide: HelpGuide = {
     en: "Add a branch with a short code and a name. Turning a branch off keeps its history but stops it from being assigned to new users or records. Only the System Admin can change this page.",
     ar: "أضف فرعاً برمز مختصر واسم. إيقاف الفرع يحتفظ بسجله لكنه يمنع تعيينه لمستخدمين أو سجلات جديدة. ولا يمكن تغيير هذه الصفحة إلا لمسؤول النظام.",
   },
+  checklist: {
+    name: { en: "Add your first branch", ar: "أضف أول فرع" },
+    doneMessage: {
+      en: "Branch added and active — it's now assignable to users and records.",
+      ar: "أُضيف الفرع وهو نشط — يمكن تعيينه الآن للمستخدمين والسجلات.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a code and name", ar: "أدخل رمزاً واسماً" },
+        hint: { en: "Code and name set. Click Add to create it.", ar: "تم إدخال الرمز والاسم. اضغط «إضافة» لإنشائه." },
+        done: (s) => (s.branchCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add", ar: "اضغط «إضافة»" },
+        done: (s) => (s.branchCount as number) > 0,
+      },
+    ],
+  },
   related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
 };
 

@@ -12,7 +12,7 @@ here, making every new module agent-operable on day one. Until then, new assista
 """
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from erp.accounting import contracts as accounting
 from erp.inventory import contracts as inventory

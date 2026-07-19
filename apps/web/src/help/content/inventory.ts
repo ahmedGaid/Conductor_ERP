@@ -153,6 +153,27 @@ export const stockMovementGuide: HelpGuide = {
   mistakes: [
     { en: "You can't issue more than you have — the system blocks an oversell.", ar: "لا يمكنك صرف أكثر مما لديك — يمنع النظام البيع الزائد." },
   ],
+  checklist: {
+    name: { en: "Log your first movement", ar: "سجّل أول حركة" },
+    doneMessage: {
+      en: "Movement logged. Receives and issues post their accounting entry automatically.",
+      ar: "سُجّلت الحركة. الاستلام والصرف يُرحّلان قيدهما المحاسبي تلقائياً.",
+    },
+    steps: [
+      {
+        label: { en: "Pick the type, item, and warehouse", ar: "اختر النوع والصنف والمخزن" },
+        detail: [
+          { en: "Transfer needs both a source and a destination warehouse.", ar: "التحويل يحتاج مخزن مصدر ومخزن وجهة." },
+        ],
+        hint: { en: "Set. Now enter the quantity and submit.", ar: "تم التحديد. الآن أدخل الكمية وأرسل." },
+        done: (s) => (s.movementCount as number) > 0,
+      },
+      {
+        label: { en: "Enter the quantity and submit", ar: "أدخل الكمية وأرسل" },
+        done: (s) => (s.movementCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/inventory", label: { en: "Stock on hand", ar: "الأرصدة المتاحة" } },
     { to: "/inventory/batches", label: { en: "Batches", ar: "التشغيلات" } },
@@ -179,6 +200,27 @@ export const stockCountsGuide: HelpGuide = {
       ],
     },
   ],
+  checklist: {
+    name: { en: "Start your first count", ar: "ابدأ أول جرد" },
+    doneMessage: {
+      en: "Count started — it snapshots current quantities. Open it to enter what you actually counted.",
+      ar: "بدأ الجرد — يأخذ لقطة للكميات الحالية. افتحه لإدخال ما عددته فعلاً.",
+    },
+    steps: [
+      {
+        label: { en: "Pick the warehouse and date", ar: "اختر المخزن والتاريخ" },
+        hint: { en: "Warehouse set. Now start the count.", ar: "تم تحديد المخزن. الآن ابدأ الجرد." },
+        done: (s) => (s.stockCountCount as number) > 0,
+      },
+      {
+        label: { en: "Click Start count", ar: "اضغط «ابدأ جرداً»" },
+        detail: [
+          { en: "It appears in the list with status Counting — open it to enter quantities.", ar: "يظهر في القائمة بحالة «جارٍ الجرد» — افتحه لإدخال الكميات." },
+        ],
+        done: (s) => (s.stockCountCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/inventory/counts", label: { en: "All counts", ar: "كل عمليات الجرد" } },
     { to: "/inventory", label: { en: "Stock on hand", ar: "الأرصدة المتاحة" } },

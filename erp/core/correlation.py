@@ -8,9 +8,9 @@ through every call.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Iterator
 
 HEADER_NAME = "X-Correlation-ID"
 

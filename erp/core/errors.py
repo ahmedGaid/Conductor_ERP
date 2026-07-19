@@ -14,7 +14,7 @@ _counter = itertools.count(1)
 
 def new_error_id() -> str:
     """Runtime identifier for a single error occurrence (not persisted across restarts)."""
-    year = _dt.datetime.now(tz=_dt.timezone.utc).year
+    year = _dt.datetime.now(tz=_dt.UTC).year
     return f"ERR-{year}-{next(_counter):06d}"
 
 

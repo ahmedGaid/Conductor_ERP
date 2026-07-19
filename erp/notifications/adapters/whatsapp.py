@@ -17,6 +17,6 @@ class WhatsAppAdapter:
 
     def send(self, message: NotificationMessage) -> SendResult:
         digest = hashlib.sha256(
-            f"{message.recipient}|{message.subject}|{message.body}".encode("utf-8")
+            f"{message.recipient}|{message.subject}|{message.body}".encode()
         ).hexdigest()
         return SendResult(provider_ref=f"wamid-{digest[:20]}", ok=True)

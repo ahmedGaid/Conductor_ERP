@@ -49,10 +49,12 @@ If a task touches both UI behaviour and brand, recall **both** `conductor-brand`
 - **Money:** integer minor units on the wire; format/parse only at the edge (`lib/money.ts`).
 
 ## Before you say "done" (frontend work)
-Run from `apps/web`: `node scripts/check-i18n-parity.mjs` and `npx tsc --noEmit`. Full mechanical
-brand gate: `python scripts/gates/gate03.py` (repo root). **There is no JS unit-test runner.**
-A green gate means *not mechanically off-brand* — still run the `conductor-brand` brand-feel checklist
-(the judgment rules a gate can't see). Green gate **and** passed checklist = actually done.
+Run from `apps/web`: `node scripts/check-i18n-parity.mjs`, `npx tsc --noEmit`, and `npm run test`
+(Vitest — pure-logic units only: `lib/money.ts`, `lib/customFields.ts`, `lib/workflow.ts` so far;
+add a test alongside any new pure-logic module you write). Full mechanical brand gate:
+`python scripts/gates/gate03.py` (repo root). A green gate means *not mechanically off-brand* —
+still run the `conductor-brand` brand-feel checklist (the judgment rules a gate can't see). Green
+gate **and** passed checklist = actually done.
 
 ## Style
 Match surrounding code — comment density, naming, idioms. Don't add a brand; enforce the one that

@@ -47,7 +47,8 @@ class RestAdapter:
 
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=DEFAULT_TIMEOUT) as resp:
+            # scheme/host already checked by assert_public_url above
+            with urllib.request.urlopen(req, timeout=DEFAULT_TIMEOUT) as resp:  # nosec B310
                 raw = resp.read().decode("utf-8") or "null"
                 status = resp.status
                 parsed = _maybe_json(raw)

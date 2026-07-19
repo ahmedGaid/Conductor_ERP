@@ -1,6 +1,9 @@
 """Identity API views — thin; validation + delegation to services."""
 from __future__ import annotations
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -10,11 +13,10 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from erp.core.errors import ValidationError as AppValidationError
 
-from . import api_keys, roles_admin, saved_views, services, users as user_svc
+from . import api_keys, roles_admin, saved_views, services
+from . import users as user_svc
 from .models import Department, Team
 from .permissions import HasAnyRole, HasModulePermission
 from .roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
@@ -35,7 +37,6 @@ from .serializers import (
     UserSerializer,
     Verify2FASerializer,
 )
-from erp.core.errors import ValidationError as AppValidationError
 
 User = get_user_model()
 
@@ -554,6 +555,7 @@ def _branch(code: str | None):
     if not code:
         return None
     from rest_framework.exceptions import ValidationError as DRFValidationError
+
     from erp.core.models import Branch
     try:
         return Branch.objects.get(code=code)

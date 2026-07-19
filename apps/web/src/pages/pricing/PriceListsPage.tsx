@@ -13,6 +13,7 @@ import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { useListPageActions } from "../../hooks/useListPageActions";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { PricingTabs } from "./PricingTabs";
@@ -43,6 +44,11 @@ export function PriceListsPage() {
     [t],
   );
   useListPageActions({ rows: data, columns: csvColumns, filename: "price-lists" });
+
+  useSetHelpSignals({
+    priceListCount: (data ?? []).length,
+    hasDefault: (data ?? []).some((pl) => pl.is_default),
+  });
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");

@@ -5,8 +5,9 @@ repository. Rule 2: all writes run inside a transaction with automatic rollback 
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Generic, Iterator, TypeVar
+from typing import Generic, TypeVar
 
 from django.db import models, transaction
 

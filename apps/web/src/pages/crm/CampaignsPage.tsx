@@ -15,6 +15,7 @@ import { optimisticCreate } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
 import { formatMinor, parseToMinor } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -100,6 +101,8 @@ export function CampaignsPage() {
   const [name, setName] = useState("");
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [cost, setCost] = useState("");
+
+  useSetHelpSignals({ campaignCount: (data ?? []).length });
 
   // ⌘/Ctrl+Enter submits the add form from any field (incl. the channel select).
   const formRef = useRef<HTMLFormElement>(null);

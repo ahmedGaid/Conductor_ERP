@@ -25,7 +25,7 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.imports import detect as detect_module
 from erp.imports import registry
 from erp.imports.detect import Candidate, DetectResult
-from erp.imports.models import ImportBatch, ImportProfile, ImportRow
+from erp.imports.models import ImportBatch, ImportProfile
 from erp.imports.registry import FieldSpec, Issue
 from erp.sales.domain.models import Customer
 

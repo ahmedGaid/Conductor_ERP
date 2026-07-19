@@ -38,9 +38,9 @@ from ..errors import (
 from ..gateway import status as gateway_status
 from ..models import Attachment, Conversation, KnowledgeDocument, Message
 from ..services import actions, files, imports, knowledge
-from ..services.simulation import PlanStep, simulate
 from ..services.ask import MAX_QUESTION_CHARS
 from ..services.extraction import ALLOWED_TYPES
+from ..services.simulation import PlanStep, simulate
 from ..verifier import run as verify_run
 
 # Cross-card idempotency window (FILE_03 T3.1): a confirm that repeats another confirmed proposal's

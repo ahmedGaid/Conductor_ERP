@@ -16,9 +16,9 @@ from __future__ import annotations
 import csv
 import io
 import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from typing import Callable
 
 from django.db import transaction
 

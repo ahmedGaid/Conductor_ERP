@@ -181,7 +181,8 @@ def serialize_list(user) -> dict:
 
 def serialize_detail(user) -> dict:
     """The full profile: identity + role + module access + effective permissions + sessions + audit."""
-    from . import access, sessions as sessions_svc
+    from . import access
+    from . import sessions as sessions_svc
 
     p = _prefs(user)
     data = serialize_list(user)

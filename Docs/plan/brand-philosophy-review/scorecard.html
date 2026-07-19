@@ -181,7 +181,7 @@
     <p class="mission">"We do not compete on feature count. We compete on the feeling of using the
       software." — Conductor Product Philosophy</p>
     <div class="meta">
-      <span class="chip live"><span class="dot"></span>Status: plan ready · review pass not yet run</span>
+      <span class="chip live"><span class="dot"></span>Status: Session A reviewed 2026-07-19 · 7 of 8 remain</span>
       <span class="chip"><span class="dot"></span>8 surfaces · ~85 routes · ar+en · light+dark</span>
       <span class="chip"><span class="dot"></span>Does not block handover · feeds v1.1 polish</span>
     </div>
@@ -222,21 +222,21 @@
       assigned in the queue.</p>
     <div class="findings">
       <div class="finding">
-        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · global</span></div>
+        <div class="lead"><span class="tag pass"><span class="sq"></span>FIXED · global</span></div>
         <div>
-          <h3>No app-wide error boundary</h3>
-          <p>Any uncaught render error white-screens the entire app with no recovery path — the one
-            state the brand forbids being left undesigned.</p>
-          <span class="std-hit">Fails Standard 4 (reassure after) + 7 (every error state designed) · <span class="owner">owner: pre-handover-hardening/FILE_03</span></span>
+          <h3>App-wide error boundary — now in place</h3>
+          <p>Confirmed 2026-07-19 (Session A): <code>AppErrorBoundary</code> wraps the router root in
+            <code>App.tsx</code>. Verified present in source, not re-triggered live this session.</p>
+          <span class="std-hit">Was: fails Standard 4 + 7 · <span class="owner">fixed by pre-handover-hardening/FILE_03</span></span>
         </div>
       </div>
       <div class="finding">
-        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · global</span></div>
+        <div class="lead"><span class="tag pass"><span class="sq"></span>FIXED · global</span></div>
         <div>
-          <h3>Most routes are not code-split</h3>
-          <p>The router eagerly imports ~40 page components, enlarging the first-paint bundle. In
-            tension with "feels instant" on cold load, especially on modest hardware.</p>
-          <span class="std-hit">Tensions Standard 2 (instant performance) · <span class="owner">candidate finding · Session A</span></span>
+          <h3>Routes now code-split</h3>
+          <p>Confirmed 2026-07-19 (Session A): <code>App.tsx</code> uses <code>lazy()</code> for route
+            components (6 occurrences). Was the bundle-size fix landed 2026-07-18.</p>
+          <span class="std-hit">Was: tensions Standard 2 · <span class="owner">fixed 2026-07-18 (A), gate03 green</span></span>
         </div>
       </div>
       <div class="finding">
@@ -246,6 +246,18 @@
           <p>The ETA adapter is currently simulated. Any UI string that reads as "submitted to the
             Tax Authority" would over-promise — a transparency and claims-discipline breach.</p>
           <span class="std-hit">Fails Standard 4 + Brief §12 claims discipline · <span class="owner">decision: pre-handover-hardening/FILE_01</span></span>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · Session A</span></div>
+        <div>
+          <h3>Notification content not localized to the viewer's language</h3>
+          <p>Found live 2026-07-19: with UI language set to English, the notifications panel still
+            shows Arabic notification bodies verbatim — "الملخص الصباحي" (morning summary), Arabic
+            customer names and amounts in an AR digest string — sitting next to a correctly-English
+            "AI weekly report" notification. Digest/summary notifications appear to be generated and
+            stored in one fixed language rather than rendered per the viewer's current locale.</p>
+          <span class="std-hit">Fails Standard 5 (same action, same result everywhere) + i18n parity discipline · <span class="owner">candidate fix: notification generation service (erp/notifications) — needs a locale field or per-viewer render, not a frontend-only fix</span></span>
         </div>
       </div>
     </div>
@@ -264,7 +276,9 @@
         </div>
         <div class="checkstrip">
           <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
-          <span class="status">Pending review pass · seeded with 2 systemic findings</span>
+          <span class="status">Reviewed 2026-07-19 (A) · 2 prior systemic findings now FIXED (error
+            boundary, code-split) · 1 new P2 (notification localization) · see finding #4 above.
+            Method: spot-check, not exhaustive — see note below.</span>
         </div>
       </div>
 
@@ -346,6 +360,21 @@
       </div>
 
     </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04b</span><h2>Session A — what was actually covered (2026-07-19)</h2></div>
+    <p class="sec-note">Honest coverage note, not a full 8-screen×2-theme×2-language matrix drive.
+      Checked live: sidebar monochrome-rail consistency across light/dark (stays near-black in
+      both — read as an intentional fixed brand anchor, not a bug), accent-colour setting correctly
+      scoped to links only ("core identity stays black" — its own copy confirms this), English
+      locale on Settings/Profile (clean, no leftover Arabic, human voice), notifications panel
+      (found the localization gap above). Not driven live this pass: login screen, loading
+      skeletons, no-permission variant (relying on prior A12 rung-3 verification — mocked 403,
+      confirmed calm lock-icon/no-retry), ⌘K palette re-opened live (relying on structural DOM
+      content check + prior A6/A9 rung-3 verification). Screenshot tool was unreliable this
+      session (known flaky issue), so all checks here are DOM/computed-style level, not pixel
+      review. A follow-up pass should close those gaps before scoring Session A fully complete.</p>
   </section>
 
   <section>

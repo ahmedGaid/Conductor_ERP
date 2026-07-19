@@ -31,18 +31,18 @@ class Money:
             raise ValueError("currency must be a 3-letter ISO code")
 
     @classmethod
-    def zero(cls, currency: str = DEFAULT_CURRENCY) -> "Money":
+    def zero(cls, currency: str = DEFAULT_CURRENCY) -> Money:
         return cls(0, currency)
 
-    def _check(self, other: "Money") -> None:
+    def _check(self, other: Money) -> None:
         if self.currency != other.currency:
             raise CurrencyMismatch(f"{self.currency} vs {other.currency}")
 
-    def __add__(self, other: "Money") -> "Money":
+    def __add__(self, other: Money) -> Money:
         self._check(other)
         return Money(self.minor + other.minor, self.currency)
 
-    def __sub__(self, other: "Money") -> "Money":
+    def __sub__(self, other: Money) -> Money:
         self._check(other)
         return Money(self.minor - other.minor, self.currency)
 

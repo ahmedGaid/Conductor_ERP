@@ -19,8 +19,8 @@ model relays it honestly instead of inventing data.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from erp.accounting import contracts as accounting
 from erp.audit.models import AuditEntry

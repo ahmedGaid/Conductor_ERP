@@ -10,6 +10,41 @@ export const priceListsGuide: HelpGuide = {
     en: "Keep one list marked Default — it applies to any customer you haven't assigned a specific list. Mark a list 'tax-inclusive' if its prices already include VAT; the system backs the tax out when it fills an order line. A customer's own list, or a negotiated price for one item, always wins over the default.",
     ar: "احتفظ بقائمة واحدة معلَّمة كافتراضية — تنطبق على أي عميل لم تُسنِد له قائمة بعينها. علِّم القائمة «شاملة الضريبة» إذا كانت أسعارها تتضمن ضريبة القيمة المضافة؛ ويستخرج النظام الضريبة عند ملء سطر الطلب. قائمة العميل الخاصة، أو سعر متفاوَض عليه لصنف واحد، تَغلِب الافتراضية دائمًا.",
   },
+  checklist: {
+    name: { en: "Add your first price list", ar: "أضف أول قائمة أسعار" },
+    doneMessage: {
+      en: "Price list added. Open it to add items and their prices.",
+      ar: "أُضيفت قائمة الأسعار. افتحها لإضافة الأصناف وأسعارها.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a code and name", ar: "أدخل رمزاً واسماً" },
+        detail: [
+          { en: "Mark it Default if it should apply to any customer without their own list.", ar: "علّمها كافتراضية إن كانت ستُطبَّق على أي عميل بلا قائمة خاصة." },
+        ],
+        hint: { en: "Code and name set. Click Add to create it.", ar: "تم إدخال الرمز والاسم. اضغط «إضافة» لإنشائها." },
+        done: (s) => (s.priceListCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add", ar: "اضغط «إضافة»" },
+        detail: [
+          { en: "Open the new list next to add items and their unit prices.", ar: "افتح القائمة الجديدة بعدها لإضافة الأصناف وأسعار وحداتها." },
+        ],
+        done: (s) => (s.priceListCount as number) > 0,
+      },
+    ],
+  },
+  alerts: [
+    {
+      tone: "info",
+      title: { en: "No default list yet", ar: "لا توجد قائمة افتراضية بعد" },
+      body: {
+        en: "No list is marked Default — customers without their own list won't get automatic pricing.",
+        ar: "لا توجد قائمة معلَّمة كافتراضية — لن يحصل العملاء بلا قائمة خاصة على تسعير تلقائي.",
+      },
+      when: (s) => (s.priceListCount as number) > 0 && s.hasDefault !== true,
+    },
+  ],
   related: [
     { to: "/sales/orders/new", label: { en: "New order", ar: "طلب جديد" } },
     { to: "/inventory/items", label: { en: "Items", ar: "الأصناف" } },

@@ -1,25 +1,6 @@
 """Accounting application services (public within the module)."""
 from __future__ import annotations
 
-from .posting import (  # noqa: F401
-    JOURNAL_APPROVAL_THRESHOLD_MINOR,
-    JournalInput,
-    LineInput,
-    enforce_journal_approval,
-    journal_requires_approval,
-    post_journal,
-    reverse_journal,
-)
-from .reports import (  # noqa: F401
-    GeneralLedger,
-    LedgerLine,
-    TrialBalance,
-    TrialBalanceRow,
-    VatReturn,
-    general_ledger,
-    trial_balance,
-    vat_return,
-)
 from .assets import (  # noqa: F401
     AssetInput,
     AssetRegister,
@@ -29,22 +10,6 @@ from .assets import (  # noqa: F401
     asset_register,
     dispose_asset,
     run_depreciation,
-)
-from .budgets import (  # noqa: F401
-    BudgetLineInput,
-    BudgetVsActual,
-    VarianceRow,
-    budget_vs_actual,
-    create_budget,
-    set_budget_line,
-    set_budget_lines,
-)
-from .report_builder import (  # noqa: F401
-    BuiltReport,
-    BuiltRow,
-    is_due,
-    run_definition,
-    run_scheduled,
 )
 from .bank_rec import (  # noqa: F401
     BankLineInput,
@@ -57,10 +22,40 @@ from .bank_rec import (  # noqa: F401
     reconciliation,
     unmatch_line,
 )
-from .taxes import (  # noqa: F401
-    TaxCodeInfo,
-    compute_tax,
-    find_tax_code,
+from .budgets import (  # noqa: F401
+    BudgetLineInput,
+    BudgetVsActual,
+    VarianceRow,
+    budget_vs_actual,
+    create_budget,
+    set_budget_line,
+    set_budget_lines,
+)
+from .posting import (  # noqa: F401
+    JOURNAL_APPROVAL_THRESHOLD_MINOR,
+    JournalInput,
+    LineInput,
+    enforce_journal_approval,
+    journal_requires_approval,
+    post_journal,
+    reverse_journal,
+)
+from .report_builder import (  # noqa: F401
+    BuiltReport,
+    BuiltRow,
+    is_due,
+    run_definition,
+    run_scheduled,
+)
+from .reports import (  # noqa: F401
+    GeneralLedger,
+    LedgerLine,
+    TrialBalance,
+    TrialBalanceRow,
+    VatReturn,
+    general_ledger,
+    trial_balance,
+    vat_return,
 )
 from .statements import (  # noqa: F401
     BalanceSheet,
@@ -70,6 +65,11 @@ from .statements import (  # noqa: F401
     balance_sheet,
     cash_flow,
     income_statement,
+)
+from .taxes import (  # noqa: F401
+    TaxCodeInfo,
+    compute_tax,
+    find_tax_code,
 )
 
 __all__ = [

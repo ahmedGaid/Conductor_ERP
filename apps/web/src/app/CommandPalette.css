@@ -22,7 +22,9 @@
   margin-inline: auto;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
+  /* Elevated -overlay grade, matching every other floating menu — a modal that floats over the
+     page reads the same as a dropdown that does. */
+  background-color: var(--color-surface-overlay);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);

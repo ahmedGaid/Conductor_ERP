@@ -15,7 +15,13 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from ..domain.accounts import signed_balance
-from ..domain.models import EntryStatus, JournalLine, ReportDefinition, ReportGroupBy, ReportSchedule
+from ..domain.models import (
+    EntryStatus,
+    JournalLine,
+    ReportDefinition,
+    ReportGroupBy,
+    ReportSchedule,
+)
 
 
 @dataclass

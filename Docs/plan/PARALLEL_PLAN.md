@@ -73,10 +73,10 @@ never in A's checkout.
 | pre-handover-hardening FILE_03 error boundary | ~~B~~ **A** | `apps/web` + ar/en.json | done 2026-07-18 by A — B: `git pull` before continuing to FILE_04 |
 | pre-handover-hardening FILE_04 gate-run artifact | **B** | run gates, save log | needs green gate03 first |
 | pre-handover-hardening FILE_05 LICENSE+terms | **B** | root `LICENSE`, README, pyproject | founder picks license (FILE_05 asks) |
-| pre-handover-hardening FILE_06 loose ends | **B** coord | DB user delete = B; canvas smoke + partial-pay Q = **human/founder** (not an agent task) | |
+| pre-handover-hardening FILE_06 loose ends | **B** coord | DB user delete = B; canvas smoke + partial-pay Q = **human/founder** (not an agent task) | **DB user delete done 2026-07-19 by A** — `phase1d_qa` (pk 9) suspended on A's dev DB `erp`; the real target B couldn't reach under the HARD STOP. Canvas smoke + partial-pay Q still open, human-only. |
 | einvoice-eta-live FILE_01→05 | **B** | `erp/einvoice/**` (B's native territory) | ⛔ STOP-gated: needs customer ETA creds + tax profile before FILE_01 there starts |
-| post-handover-v1_1 FILE_01→05 | **B** | CI/backend + one `apps/web` (FILE_04 Vitest) | after handover; FILE_04 needs new-dep OK (Vitest) — ask founder |
-| brand-philosophy-review sessions A→H | **B** | read-only UI review; appends to `scorecard.html` + findings | low conflict (no product-code edits in the review pass) |
+| post-handover-v1_1 FILE_01→05 | ~~B~~ **A** | CI/backend + one `apps/web` (FILE_04 Vitest) | **done 2026-07-19 by A** — founder redirected an A session onto B's backlog after browser-dependent B-scope work (twenty-harvest FILE_21, brand-philosophy-review) turned out unrunnable in that session's harness (no screenshot/JS-eval tool). Founder approved all 4 new dev tools (bandit/pip-compile/pytest-cov/Vitest) in one batch. Detail in `DECISIONS.md`. B: `git pull` before continuing. |
+| brand-philosophy-review sessions A→H | **B** | read-only UI review; appends to `scorecard.html` + findings | low conflict (no product-code edits in the review pass). ⚠️ **Needs a harness with screenshot/JS-eval tooling** — confirmed 2026-07-19 that a plain VSCode-extension session has neither; check before assigning a session here. |
 
 **A keeps:** live interrupts/bugs, `erp/workflow`+`erp/webhooks` first-refusal (cross-territory
 rule holds), and the paused dynamic-help rollout (H) only if A has spare budget. Otherwise A idles.
@@ -295,6 +295,34 @@ user-requested, ahead of the plan's own checkpoint schedule.
 Order within Wave 4 (B's own judgment on resequencing if a dep surfaces): B19 → B20 → B21 → B22 →
 B23 → B24. Each is one plan-file scope, one session, gates green, rename `_done`, flip this row,
 push, before starting the next.
+
+**A13 (2026-07-19, A session):** twenty-harvest `FILE_21_ACCEPTANCE.md` — **partial pass, not
+renamed `_done`.** Full checklist state + verification method per item is in the plan file's own
+"Session progress" section. Headline: Tier 1 mostly clean (upgrade no-op, gate16/17, webhooks via
+test suite); real gaps found — CHANGELOG stale since v1.0.0, RUNBOOK gate-count stale (says 00–13,
+actual 00–17), both B's territory (core infra/gates row), not fixed by A. Tier 2/3 spot-checked
+(System panel + AI usage page + Kanban live-verified; rest relied on each item's own prior rung-3
+verification). **Session cut short by a lane collision** — mid-session, Agent B was found actively
+writing to this checkout (`C:\AhmedGaid\ERP`) instead of `C:\AhmedGaid\ERP-B`, exactly the
+2026-07-16 incident pattern; full writeup in `DECISIONS.md` ("Lane collision" entry, 2026-07-19). A
+deferred the Playwright suite and a second full `gate:all` run to limit further shared-DB exposure.
+**Remainder for a follow-up FILE_21 session:** Playwright suite, saved-views on 2 more pages,
+live Kanban drag+RTL check, the visual conductor-brand feel checklist (screenshot tool was
+unreliable this session). Did not touch erp-status skill this session (B had just written to it
+mid-session, not at a merge checkpoint — avoided adding a second concurrent writer to that file).
+
+**A14 (2026-07-19, same A session):** `brand-philosophy-review` Session A (app frame + global
+states) — spot-check pass, not the full matrix. Both systemic findings seeded in the scorecard
+(no error boundary, no code-splitting) are **already fixed** (confirmed in source:
+`AppErrorBoundary` wraps the router root, `lazy()` used for routes) — updated scorecard from
+"known gap" to "fixed". New finding: notification panel doesn't localize digest content to the
+viewer's language (Arabic summary text shown while UI language = English) — logged as P2 in
+`Docs/plan/brand-philosophy-review/scorecard.html`, candidate fix lives in the notification
+generation service (`erp/notifications`), not the frontend. Did not touch any B-owned path — this
+plan folder is read-only-review + its own static `scorecard.html`, zero product-code edits, chosen
+specifically because B's own harness can't run it (no browser tooling, per B's erp-status banner)
+so there's no scope overlap risk. File left open (not `_done` — no per-session done convention for
+this plan; sessions B–H remain). Restored UI language to Arabic before ending.
 
 ## Critical path
 

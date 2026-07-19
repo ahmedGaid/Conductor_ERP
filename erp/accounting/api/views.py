@@ -39,7 +39,6 @@ from .serializers import (
     AccountSerializer,
     AssetDisposeSerializer,
     BankAdjustmentSerializer,
-    BankLineInputSerializer,
     BankMatchSerializer,
     BankStatementCreateSerializer,
     BudgetLineSetSerializer,

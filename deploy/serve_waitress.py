@@ -28,9 +28,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # Default to prod, but let the service definition / shell override it.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.prod")
 
-from waitress import serve  # noqa: E402
-
 from config.wsgi import application  # noqa: E402
+from waitress import serve  # noqa: E402
 
 
 def main() -> None:

@@ -26,9 +26,9 @@ from erp.inventory.services.reports import stock_on_hand
 from erp.purchasing.domain.models import PurchaseOrder
 from erp.sales.domain.models import SalesOrder
 
-from . import actions
 from ..errors import ActionFailedError, ActionForbiddenError
 from ..verifier import run as verify_run
+from . import actions
 
 # --- sim-mode flag + collector (T4.1) --------------------------------------------------------
 

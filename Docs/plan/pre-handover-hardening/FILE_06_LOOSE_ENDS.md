@@ -14,9 +14,14 @@ session must close before go-live:
 - [ ] Ask the customer the partial-payments policy question; record the answer in FILE_07 section B.
       (Partial-payments UI already shipped — `delivery-readiness/FILE_05_PARTIAL_PAYMENTS_done.md`;
       this is just confirming the customer's expected behavior.)
-- [ ] Suspend or delete user `phase1d_qa` in the dev DB (and confirm it never existed on the
-      customer machine's fresh provision).
-- [ ] Tick the corresponding boxes in `FILE_07_HANDOVER_GATE.md` section B.
+- [x] Suspend or delete user `phase1d_qa` in the dev DB (and confirm it never existed on the
+      customer machine's fresh provision). — 2026-07-19 (A, `C:\AhmedGaid\ERP` dev DB `erp`): found
+      pk 9, `is_active=True` — suspended (`is_active=False`), not hard-deleted, to avoid breaking
+      FK-linked audit/created-by history on a shared dev DB. `provision_customer --verify` (FILE_07
+      section C) independently checks the real customer machine has zero demo users, so this dev-DB
+      suspension plus that verify gate together close the exposure.
+- [ ] Tick the corresponding boxes in `FILE_07_HANDOVER_GATE.md` section B (canvas + partial-pay
+      question only — those two remain human-only, not closed by this item).
 
 ## Watch
 - The canvas smoke is the ONE item repeatedly flagged as un-automatable — do not mark it done from a

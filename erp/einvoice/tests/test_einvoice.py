@@ -14,8 +14,13 @@ from erp.einvoice.services import (
     record_invoice,
     submit_invoice,
 )
-from erp.sales.services import confirm_order, create_order, deliver_order, invoice_order
-from erp.sales.services import OrderLineInput
+from erp.sales.services import (
+    OrderLineInput,
+    confirm_order,
+    create_order,
+    deliver_order,
+    invoice_order,
+)
 from erp.sales.tests.factories import (
     DATE,
     make_books,

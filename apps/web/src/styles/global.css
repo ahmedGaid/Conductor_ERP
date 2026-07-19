@@ -284,9 +284,12 @@ textarea:focus,
 }
 
 /* ---- Surfaces ---- */
+/* -border-strong (not the hairline -border used for dividers/table rules) — a card's outer edge
+   needs to read clearly against its own surface, especially in dark mode where -surface sits only
+   one faint step above -bg; too soft a line and the card face reads as un-bounded. */
 .card {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xs);
   padding: var(--space-5);

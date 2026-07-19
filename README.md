@@ -38,12 +38,19 @@ scripts/gates/ machine gates — each stage must pass its gate before the next
 architecture/  auto/maintained docs (modules, events, database, api, error-catalog, ...)
 ```
 
-## Prerequisites (Windows)
+## Prerequisites
 
-Installed via winget: Python 3.13, Node LTS, PostgreSQL 16, Memurai Developer (Redis-compatible).
+Python 3.13, Node 24, PostgreSQL 16, Redis (or a Redis-compatible service).
+
+- **Windows** — installed via winget: Python 3.13, Node LTS, PostgreSQL 16, Redis (Redis.Redis
+  winget package — see [DECISIONS.md](DECISIONS.md), not Memurai).
+- **Linux (Debian/Ubuntu)** — `sudo apt install python3.13 python3.13-venv postgresql-16 redis-server`;
+  Node 24 via [nodesource](https://github.com/nodesource/distributions) or `nvm install 24`.
+- **macOS** — `brew install python@3.13 postgresql@16 redis node@24`; `brew services start postgresql@16 redis`.
 
 ## Quickstart (local dev)
 
+**Windows (PowerShell):**
 ```powershell
 # 1. Create the database role + db (once)
 & "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -f scripts/sql/bootstrap_db.sql
@@ -62,6 +69,29 @@ copy .env.example .env   # then edit DATABASE_URL / REDIS_URL if needed
 # 5. Gate (definition of done for the stage)
 .\.venv\Scripts\python scripts/gates/_run.py 00
 ```
+
+**Linux / macOS (bash):**
+```bash
+# 1. Create the database role + db (once)
+psql -U postgres -f scripts/sql/bootstrap_db.sql
+
+# 2. Python env + deps
+python3.13 -m venv .venv
+./.venv/bin/python -m pip install -r requirements.txt
+
+# 3. Configure env
+cp .env.example .env   # then edit DATABASE_URL / REDIS_URL if needed
+
+# 4. Migrate + run
+./.venv/bin/python manage.py migrate
+./.venv/bin/python manage.py runserver
+
+# 5. Gate (definition of done for the stage)
+./.venv/bin/python scripts/gates/_run.py 00
+```
+
+The `manage.py`/gate commands themselves are OS-agnostic — only the venv path (`Scripts\` vs
+`bin/`) and the Postgres bootstrap invocation differ per platform.
 
 `GET http://localhost:8000/health` → `{ "ok": true }`.
 `GET http://localhost:8000/system-check` → DB / Redis / storage status.

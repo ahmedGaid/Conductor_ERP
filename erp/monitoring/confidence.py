@@ -10,8 +10,8 @@ from __future__ import annotations
 import datetime
 
 from django.conf import settings
-from django.utils import timezone
 from django.urls import path
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response

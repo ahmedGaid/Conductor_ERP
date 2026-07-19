@@ -45,3 +45,10 @@ hygiene, coverage, frontend test/a11y gaps, cross-platform docs.
 ## Change log
 - **2026-07-18 — Created** from the QA audit Phase 1/2. Positioned in `EXECUTION_ORDER.md` as pos
   8-D (after handover; interleavable with the numbered roadmap once live).
+- **2026-07-19 — Phase 1 (FILE_01–05) all done**, ahead of the "after handover" sequencing note —
+  founder explicitly redirected a session onto B's backlog once browser-dependent B-scope work
+  (brand-philosophy-review, twenty-harvest FILE_21) turned out not runnable in that session's
+  harness (no screenshot/JS-eval tool). None of FILE_01–05 is customer-facing or risky
+  pre-handover (CI lint, dependency lockfile, coverage baseline, JS unit tests, README/deprecation
+  fix), so doing them early cost nothing. Full detail + baseline tables in `DECISIONS.md`. Phase 2
+  (FILE_06–09, Nice-to-Have) remains founder-paced, not started.

@@ -5,8 +5,8 @@ matching the org-preferences convention (org-wide settings, admin-gated writes).
 """
 from __future__ import annotations
 
-from django.urls import path
 from django.shortcuts import get_object_or_404
+from django.urls import path
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request

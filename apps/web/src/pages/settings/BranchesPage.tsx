@@ -10,6 +10,7 @@ import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { ErrorState } from "../../components/ErrorState";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { SYSTEM_ADMIN } from "./roles";
@@ -28,6 +29,8 @@ export function BranchesPage() {
   const [name, setName] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
+
+  useSetHelpSignals({ branchCount: (data ?? []).length });
 
   if (me && !isAdmin) {
     return (

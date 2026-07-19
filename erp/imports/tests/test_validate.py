@@ -10,8 +10,8 @@ from __future__ import annotations
 import pytest
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test.utils import CaptureQueriesContext
 from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from erp.assistant.models import Attachment
 from erp.identity.models import User

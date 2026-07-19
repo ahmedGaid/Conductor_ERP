@@ -27,6 +27,7 @@ import { useRowSelection } from "../../hooks/useRowSelection";
 import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
 import { useListPageActions } from "../../hooks/useListPageActions";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
@@ -95,6 +96,12 @@ export function PipelinePage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  useSetHelpSignals({
+    opportunityCount: (data ?? []).length,
+    nameSet: name.trim().length > 0,
+    customerPicked: customer.trim().length > 0,
+  });
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));

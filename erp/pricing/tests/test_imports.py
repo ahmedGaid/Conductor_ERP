@@ -6,11 +6,11 @@ import io
 import pytest
 from rest_framework.test import APIClient
 
+from erp.core.imports import auto_map, read_table, run_import
 from erp.identity.models import User
 
 from ..domain.models import PriceList, PriceListLine
 from ..imports import make_price_list_line_import
-from erp.core.imports import run_import, auto_map, read_table
 
 pytestmark = pytest.mark.django_db
 

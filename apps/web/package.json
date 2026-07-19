@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "vite",
     "e2e": "playwright test -c e2e/playwright.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "check:i18n": "node scripts/check-i18n-parity.mjs",
     "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/check-i18n-parity.mjs",
@@ -32,6 +34,7 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.2",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^4.1.10"
   }
 }

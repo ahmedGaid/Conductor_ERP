@@ -6,7 +6,7 @@ file) is left out rather than shown as fact.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from django.conf import settings
 from django.db.models import Count, Sum

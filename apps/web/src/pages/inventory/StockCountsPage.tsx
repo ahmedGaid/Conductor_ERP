@@ -12,6 +12,7 @@ import { BulkActionBar } from "../../components/BulkActionBar";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { useListPageActions } from "../../hooks/useListPageActions";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
@@ -104,6 +105,8 @@ export function StockCountsPage() {
   const [countDate, setCountDate] = useState(today());
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  useSetHelpSignals({ stockCountCount: (data ?? []).length });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

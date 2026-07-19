@@ -22,33 +22,45 @@ django.setup()
 
 from erp.inventory.contracts import receive  # noqa: E402
 from erp.inventory.domain.models import Item, Warehouse  # noqa: E402
-from erp.purchasing.domain.models import Supplier  # noqa: E402
+from erp.purchasing.domain.models import (  # noqa: E402
+    PurchaseOrder,
+    PurchaseRequest,
+    Supplier,  # noqa: E402
+)
 from erp.purchasing.services import (  # noqa: E402
     POLineInput,
+    RequestLineInput,
+    approve_request,
     bill_order,
-    confirm_order as po_confirm,
-    create_order as po_create,
+    create_request,
     receive_order,
+    submit_request,
 )
-from erp.sales.domain.models import Customer, SalesOrder  # noqa: E402
+from erp.purchasing.services import (
+    confirm_order as po_confirm,
+)
+from erp.purchasing.services import (
+    create_order as po_create,
+)
+from erp.sales.domain.models import (  # noqa: E402
+    Customer,
+    Quotation,
+    SalesOrder,
+    SalesOrderLine,
+)
 from erp.sales.services import (  # noqa: E402
     OrderLineInput,
     QuoteLineInput,
-    approve_quotation,
-    confirm_order as so_confirm,
-    create_order as so_create,
     create_quotation,
     deliver_order,
     invoice_order,
     submit_quotation,
 )
-from erp.sales.domain.models import Quotation, SalesOrderLine  # noqa: E402
-from erp.purchasing.domain.models import PurchaseOrder, PurchaseRequest  # noqa: E402
-from erp.purchasing.services import (  # noqa: E402
-    RequestLineInput,
-    approve_request,
-    create_request,
-    submit_request,
+from erp.sales.services import (
+    confirm_order as so_confirm,
+)
+from erp.sales.services import (
+    create_order as so_create,
 )
 
 
@@ -414,7 +426,6 @@ def seed_crm_extras() -> None:
     import datetime as _dt
 
     from django.utils import timezone as _tz
-
     from erp.crm.services import (
         OppLineInput,
         create_campaign,

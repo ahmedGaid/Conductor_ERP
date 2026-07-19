@@ -149,7 +149,8 @@ def attempt_delivery(delivery_id) -> WebhookDelivery:
                 "X-Conductor-Signature": _sign(sub.secret, body),
             },
         )
-        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+        # scheme/host already checked by assert_public_url above
+        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:  # nosec B310
             if not (200 <= resp.status < 300):
                 raise RuntimeError(f"non-2xx response: {resp.status}")
         delivery.status = WebhookDeliveryStatus.DELIVERED

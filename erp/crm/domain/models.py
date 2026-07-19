@@ -16,7 +16,6 @@ from django.utils import timezone
 
 from erp.core.models import AuditedModel
 
-
 # --- Campaigns -------------------------------------------------------------
 
 class CampaignChannel(models.TextChoices):

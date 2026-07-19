@@ -13,7 +13,15 @@ from django.db import transaction
 from django.db.models import Sum
 
 from ..domain.accounts import signed_balance
-from ..domain.models import Account, Budget, BudgetLine, EntryStatus, FiscalYear, JournalLine, Period
+from ..domain.models import (
+    Account,
+    Budget,
+    BudgetLine,
+    EntryStatus,
+    FiscalYear,
+    JournalLine,
+    Period,
+)
 from ..errors import InvalidBudgetError
 
 

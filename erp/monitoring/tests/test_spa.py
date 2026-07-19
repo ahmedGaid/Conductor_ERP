@@ -10,9 +10,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from django.test import Client
-
 from config.spa import _DIST_INDEX
+from django.test import Client
 
 pytestmark = pytest.mark.django_db
 

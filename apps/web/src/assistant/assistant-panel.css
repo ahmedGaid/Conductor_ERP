@@ -7,8 +7,11 @@
   z-index: 75; /* below the help drawer (80) — help opens over the panel, not tied with it */
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  /* Elevated -overlay grade + the stronger border, matching every other floating surface: this
+     panel sits above the page (or docks over its edge), so it needs the same clear separation as
+     the menus/⌘K, not the flatter card-on-page look. */
+  background: var(--color-surface-overlay);
+  border: 1px solid var(--color-border-strong);
   color: var(--color-text);
 }
 

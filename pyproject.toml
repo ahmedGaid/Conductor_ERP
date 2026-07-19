@@ -11,6 +11,12 @@ src = ["erp", "config", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+# Baselined 2026-07-19 (post-handover-v1_1 FILE_01, DECISIONS.md): ~1400 pre-existing E501 hits
+# across legacy modules predate the 100-char limit; fixing them is a repo-wide reformat out of
+# scope for this CI-wiring task. The rest are pre-existing style nits (never a correctness rule
+# like F401/F821), each too scattered to hand-fix here without touching unrelated call sites.
+# New code should still target <=100 chars by convention; a future pass can re-enable these.
+ignore = ["E501", "B904", "E741", "F841", "E402", "B905", "B017", "B007", "B015", "UP031", "UP046"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.dev"
@@ -20,7 +26,94 @@ markers = [
     "evals: offline golden-dataset eval runner tests (ai-reliability T1.6) — recorded responses, zero network",
 ]
 
+[tool.coverage.run]
+source = ["erp"]
+omit = ["*/migrations/*", "*/tests/*", "*/evals/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+# Baseline 2026-07-19 (post-handover-v1_1 FILE_03, DECISIONS.md): 89% overall. Floor set 5 points
+# below baseline (same -5% pattern as gate15's eval-smoke threshold) so real regressions fail CI
+# without the floor being so tight that one new untested branch trips it.
+fail_under = 84
+
 [tool.mypy]
 python_version = "3.13"
 plugins = []
 ignore_missing_imports = true
+
+# Baselined 2026-07-19 (post-handover-v1_1 FILE_01, DECISIONS.md): 51 pre-existing modules with
+# mypy errors (mostly untyped legacy code + the AI assistant/imports modules' dynamic dict-shaped
+# payloads). Ignored here so CI starts green; any error in a module NOT listed below is new and
+# blocks the PR. Shrink this list over time rather than adding to it.
+[[tool.mypy.overrides]]
+module = [
+    "erp.accounting.domain.accounts",
+    "erp.accounting.services.chart",
+    "erp.accounting.tests.factories",
+    "erp.assistant.client",
+    "erp.assistant.evals.graders",
+    "erp.assistant.evals.routing_report",
+    "erp.assistant.evals.runner",
+    "erp.assistant.gateway.core",
+    "erp.assistant.query_registry",
+    "erp.assistant.services.actions",
+    "erp.assistant.services.agent",
+    "erp.assistant.services.extraction",
+    "erp.assistant.tests.test_actions",
+    "erp.assistant.tests.test_page_context",
+    "erp.assistant.tools",
+    "erp.assistant.verifier.packs",
+    "erp.audit.migrations.0001_initial",
+    "erp.audit.services",
+    "erp.core.exports",
+    "erp.core.imports",
+    "erp.core.migrations.0001_initial",
+    "erp.crm.domain.models",
+    "erp.crm.services.support",
+    "erp.identity.services",
+    "erp.identity.tests.test_api_keys",
+    "erp.identity.views",
+    "erp.imports.adapters.accounting",
+    "erp.imports.adapters.crm",
+    "erp.imports.adapters.inventory",
+    "erp.imports.adapters.purchasing",
+    "erp.imports.adapters.sales",
+    "erp.imports.api.views",
+    "erp.imports.autofix",
+    "erp.imports.detect",
+    "erp.imports.engine",
+    "erp.imports.normalize",
+    "erp.imports.readers",
+    "erp.imports.registry",
+    "erp.imports.tests.test_engine_row_warnings",
+    "erp.imports.validate",
+    "erp.monitoring.migrations.0001_initial",
+    "erp.purchasing.services.orders",
+    "erp.purchasing.services.requests",
+    "erp.purchasing.tests.test_approval_limits",
+    "erp.purchasing.tests.test_scoping",
+    "erp.sales.services.orders",
+    "erp.sales.services.quotations",
+    "erp.sales.tests.test_approval_limits",
+    "erp.sales.tests.test_scoping",
+    "erp.workflow.engine.registry",
+    "erp.workflow.services",
+]
+ignore_errors = true
+
+[tool.bandit]
+# Baselined 2026-07-19 (post-handover-v1_1 FILE_01, DECISIONS.md), sampled before skipping:
+# B101 assert_used — pytest idiom, ~3300 hits all in test files (pytest rewrites assert; not a
+#   security control).
+# B105/B106/B107 hardcoded_password_* — naive keyword match on identifiers like `password=` in
+#   test factories and a `"pass"` dict key in an eval scoreboard; sampled several, all false
+#   positives, none are real secrets.
+# B110 try_except_pass — 5 hits, all in the AI assistant gateway/client (best-effort retry/degrade
+#   paths in a module explicitly out of scope for this delivery track).
+# B311 blacklist (non-crypto `random`) — 4 hits, AI retry backoff jitter + test randomness, not
+#   used for anything security-sensitive.
+# B613 trojansource and B310 url-open findings were reviewed individually and suppressed inline
+# with `# nosec` at the four specific lines instead of a blanket skip (see DECISIONS.md).
+skips = ["B101", "B105", "B106", "B107", "B110", "B311"]

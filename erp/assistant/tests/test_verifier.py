@@ -12,11 +12,17 @@ from decimal import Decimal
 import pytest
 
 from erp.accounting.domain.accounts import AccountType
-from erp.accounting.domain.models import (Account, EntryStatus, FiscalYear, JournalEntry,
-                                          JournalLine, Period, PeriodStatus)
+from erp.accounting.domain.models import (
+    Account,
+    EntryStatus,
+    FiscalYear,
+    JournalEntry,
+    JournalLine,
+    Period,
+    PeriodStatus,
+)
 from erp.assistant import verifier
-from erp.inventory.domain.models import (Item, StockBalance, StockTransfer, TransferStatus,
-                                         Warehouse)
+from erp.inventory.domain.models import Item, StockBalance, StockTransfer, TransferStatus, Warehouse
 from erp.sales.domain.models import Customer, OrderStatus, SalesOrder, SalesOrderLine
 
 pytestmark = pytest.mark.django_db

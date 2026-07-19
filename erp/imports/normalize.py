@@ -23,10 +23,8 @@ from __future__ import annotations
 
 import datetime as _dt
 import re
-import unicodedata
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from typing import Optional
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from erp.accounting.domain.money import MINOR_UNIT_DIGITS
 from erp.imports.mapping import normalize_header
@@ -72,13 +70,14 @@ _PUNCT_VARIANTS = {
     ord("’"): "'", ord("‘"): "'", ord("“"): '"', ord("”"): '"',
     ord("–"): "-", ord("—"): "-", ord("‐"): "-", ord(" "): " ",
 }
-_ZERO_WIDTH = "﻿​‌‍‎‏‪‫‬‭‮"
+# These ARE the bidi/zero-width marks this cleanup strips, not an attack.
+_ZERO_WIDTH = "﻿​‌‍‎‏‪‫‬‭‮"  # nosec B613
 _ZW_TABLE = {ord(c): None for c in _ZERO_WIDTH}
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _WS_RE = re.compile(r"\s+")
 
 
-def clean_text(v) -> Optional[str]:
+def clean_text(v) -> str | None:
     """Trim, collapse internal whitespace, drop zero-width/control chars, repair cp1256 mojibake and
     fold punctuation variants. Non-string cells (int/float/date/bool) pass through untouched — typed
     parsing owns them. Arabic letters are kept AS-IS for the stored name; matching folds a copy."""
@@ -99,7 +98,7 @@ def match_key(v) -> str:
 
 
 # --- Numbers + money (Task B) ----------------------------------------------------------------
-def _to_decimal(text: str) -> Optional[Decimal]:
+def _to_decimal(text: str) -> Decimal | None:
     """Parse a human number to Decimal, resolving thousands vs decimal separators.
 
     Both separators present → the LAST one is the decimal point (handles "1,250.50" and "1.250,50").
@@ -184,14 +183,14 @@ def _pivot_year(y: int) -> int:
     return y
 
 
-def _build_date(y: int, m: int, d: int) -> Optional[_dt.date]:
+def _build_date(y: int, m: int, d: int) -> _dt.date | None:
     try:
         return _dt.date(_pivot_year(y), m, d)
     except ValueError:
         return None
 
 
-def parse_date(v, dayfirst: bool = True, warnings: Optional[list] = None):
+def parse_date(v, dayfirst: bool = True, warnings: list | None = None):
     """Messy date → ``datetime.date``, or Issue ``date_invalid``.
 
     Handles ISO (2026-02-01), Egyptian day-first numeric (01/02/2026, 02.01.26), spelled months
@@ -316,7 +315,7 @@ class TaxToken:
     integer or None when the word carried no number (the adapter fills its default)."""
 
     kind: str  # "vat" | "exempt" | "wht" | "none"
-    rate: Optional[int] = None
+    rate: int | None = None
 
 
 _PERCENT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*%?")
@@ -389,7 +388,7 @@ def normalize_email(v):
 EG_TAX_ID_LEN = 9  # Egyptian tax registration number is 9 digits.
 
 
-def normalize_tax_id(v, warnings: Optional[list] = None):
+def normalize_tax_id(v, warnings: list | None = None):
     """Tax id → digits only, or Issue ``tax_id_invalid`` when it has no digits. A wrong length is a
     WARNING (appended to ``warnings`` if given), never blocking — some legacy records are imperfect."""
     if v is None:

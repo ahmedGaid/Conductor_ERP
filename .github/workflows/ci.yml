@@ -57,7 +57,29 @@ jobs:
         run: python scripts/gates/_run.py all
 
       - name: Run pytest
-        run: pytest
+        run: pytest --cov=erp --cov-report=term-missing
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: ruff
+        run: ruff check .
+
+      - name: mypy
+        run: mypy erp config
+
+      - name: bandit
+        run: bandit -r erp/ -c pyproject.toml
 
   web:
     runs-on: ubuntu-latest
@@ -75,6 +97,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Unit tests
+        run: npm run test
 
       - name: i18n key parity
         run: node scripts/check-i18n-parity.mjs

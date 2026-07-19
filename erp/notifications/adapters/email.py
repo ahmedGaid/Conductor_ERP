@@ -29,5 +29,5 @@ class EmailAdapter:
         if not sent:
             return SendResult(ok=False, error="email backend reported 0 delivered")
         # A stable local reference for the log (the SMTP server's id isn't returned by send_mail).
-        ref = hashlib.sha256(f"{message.recipient}|{message.subject}".encode("utf-8")).hexdigest()[:24]
+        ref = hashlib.sha256(f"{message.recipient}|{message.subject}".encode()).hexdigest()[:24]
         return SendResult(provider_ref=f"email-{ref}", ok=True)

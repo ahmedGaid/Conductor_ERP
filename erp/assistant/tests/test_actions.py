@@ -882,7 +882,7 @@ def test_create_account_permission_refused_at_both_stages():
 
 # --- CRM actions (agent-actions FILE_05) -------------------------------------------------------
 
-from erp.crm.domain.models import Opportunity, Activity
+from erp.crm.domain.models import Activity, Opportunity
 
 
 def _seed_crm():

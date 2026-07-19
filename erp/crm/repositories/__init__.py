@@ -5,7 +5,7 @@ from django.db.models import Sum
 
 from erp.core.repository import Repository
 
-from ..domain.models import Lead, Opportunity, OPEN_STAGES, Ticket
+from ..domain.models import OPEN_STAGES, Lead, Opportunity, Ticket
 
 
 class LeadRepository(Repository[Lead]):

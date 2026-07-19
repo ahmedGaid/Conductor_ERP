@@ -387,12 +387,12 @@ class JournalLine(models.Model):
         indexes = [models.Index(fields=["account"])]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(debit__gte=0) & models.Q(credit__gte=0),
+                condition=models.Q(debit__gte=0) & models.Q(credit__gte=0),
                 name="acct_line_amounts_non_negative",
             ),
             # A line is either a debit or a credit, never both.
             models.CheckConstraint(
-                check=~(models.Q(debit__gt=0) & models.Q(credit__gt=0)),
+                condition=~(models.Q(debit__gt=0) & models.Q(credit__gt=0)),
                 name="acct_line_not_both_sides",
             ),
         ]

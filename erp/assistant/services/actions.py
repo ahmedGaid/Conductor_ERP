@@ -18,10 +18,10 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from difflib import SequenceMatcher
-from typing import Callable
 
 from erp.accounting import contracts as accounting
 from erp.crm import contracts as crm

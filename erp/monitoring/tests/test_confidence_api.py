@@ -4,10 +4,9 @@ never breaks even when a check errors.
 from __future__ import annotations
 
 import pytest
-from rest_framework.test import APIClient
-
 from erp.identity.models import User
 from erp.monitoring import confidence
+from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.django_db
 

@@ -4,6 +4,33 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Lane collision — Agent B found active in `C:\AhmedGaid\ERP` during twenty-harvest FILE_21 (2026-07-19)
+
+Mid-session (Agent A, `/erp-resume` → twenty-harvest FILE_21 acceptance), the working tree jumped
+from 5 modified files to ~158 — new changes exactly matching Agent B's declared scope
+(`post-handover-v1_1 FILE_01/02`: `.github/workflows/ci.yml`, `.github/dependabot.yml`,
+`pyproject.toml`, `requirements.txt`), with timestamps landing inside A's own session window, plus
+live HMR activity on `apps/web/src/app/AppMenu.css` and `apps/web/src/styles/tokens.css` (A's own
+territory) mid-check. Asked the founder directly — confirmed: Agent B (VS Code, ahmedgaid85@gmail.com)
+was running in `C:\AhmedGaid\ERP` instead of its provisioned worktree `C:\AhmedGaid\ERP-B`, the exact
+failure mode the 2026-07-16 incident's HARD STOP rules exist to prevent (see PARALLEL_PLAN.md §"⚠️
+Incident 2026-07-16"). Founder directed A to keep working, scoped to files/plans NOT in B's
+territory, rather than stop and wait.
+
+**A's mitigation this session:** avoided editing any B-owned path (`post-handover-v1_1/**`,
+`pre-handover-hardening/**`, `einvoice-eta-live/**`, `brand-philosophy-review/**`, `erp/core/**`,
+`scripts/gates/**`, `CHANGELOG.md`, `Docs/RUNBOOK.md`); avoided re-running the full `gate:all`
+pytest suite a second time (already ran once, green, before the collision was noticed) to limit
+further shared-DB collision exposure; deferred the Playwright E2E suite entirely for the same
+reason. Net effect: twenty-harvest FILE_21 acceptance this session is a genuine partial pass, not
+exhaustive — see `Docs/plan/twenty-harvest-plan/FILE_21_ACCEPTANCE.md` "Session progress" section
+for exactly what was verified live vs relied on prior recorded verification vs deferred. File is
+deliberately **not** renamed `_done`.
+
+**Open question for the founder:** confirm B has moved to `C:\AhmedGaid\ERP-B` and that the shared
+dev/test DB (`erp`/`test_erp`) wasn't corrupted by the brief overlap (same symptom as 2026-07-16:
+check for phantom "database does not exist" errors on the next full pytest run in either lane).
+
 ## Product Philosophy front door added + "Apple of ERP" barred from external marketing (2026-07-18)
 
 Added `Docs/Brand/Conductor_Product_Philosophy.md` — a ≤1-screen **front door** over the brand triad
@@ -158,6 +185,31 @@ Design notes for future maintainers:
 - **Option B (future)** — allow posting actions, still confirm-gated, with extra guards (typed re-entry, setting + permission gate). Would require FILE_05 (self-verification) live first so numbers are cross-checked before a post card is shown.
 
 **Decision:** Remain on Option A for v1. Benchmark suite (ai-reliability FILE_05 T5.6) covers these actions with the unsafe-write predicate (any executed write without a confirmed card = failure). Posting actions queued as a separate plan if founder chooses Option B later.
+
+### Addendum — Option B reopened, scoped down (2026-07-19/20, brainstorm session)
+
+Founder chose to reopen posting actions **without waiting for ai-reliability FILE_05** — that engine
+(durable `AgentRun`/`AgentStep`, typed plan→validate→execute→verify, AI numeric self-verification)
+turned out to be an unbuilt, multi-month dependency (only Phases 1–2 of 8 are done; FILE_05 also
+needs Phase 4 first). Waiting was no longer the right tradeoff for a handful of well-understood
+posting actions.
+
+**New guard shape (manual, not AI-driven):** an org-wide `OrgPreferences.assistant_posting_enabled`
+toggle (off by default, System-Admin only) + the same per-action role check every draft action
+already has (no new permission-code layer) + a typed retype-confirm card for any `risk="post"`
+action (user retypes the exact amount/quantity shown; server re-validates, a mismatch doesn't burn
+the card). Explicitly **no AI cross-check of numbers** — that gap is accepted for v1 and revisited
+as a pure additive enhancement once FILE_05 ships. Reversal is human-only (no `compensation` field
+on any of these 5 — reverse the journal / cancel the PO / etc. on the normal screen, as today).
+
+**Scope:** 5 actions (post a drafted journal entry, receive a PO, pay a PO, approve a purchase
+request, issue stock) — full plan at `Docs/plan/agent-posting-plan/FILE_00_INDEX.md`, queued as
+position **PA** in `EXECUTION_ORDER.md`. Verifying the real code first (per project rule: never
+invent a contract) surfaced a genuine, AI-unrelated gap: no code path anywhere — manual or API —
+has ever posted an existing DRAFT journal entry (only create-and-post-fresh exists). Decision:
+build a real `post_draft_journal_entry()` service used by BOTH a new manual "Post" button on
+`JournalDetailPage.tsx` AND the assistant action, so the assistant never gains a capability the
+manual UI lacks ("AI runs as the user" stays true).
 
 ## unified-ui-plan acceptance (FILE_09, 2026-07-09)
 
@@ -2288,3 +2340,165 @@ C/D/E) cannot proceed until that plan's FILE_01→FILE_05 are `_done`. That plan
 production/sandbox credentials + the customer's tax profile before FILE_01 there can start — a
 STOP-gate on the customer, not buildable solo. Remaining pre-handover-hardening files (FILE_02–06)
 are unaffected and can proceed in parallel/before it.
+
+## post-handover-v1_1 FILE_01: CI lint job wired (ruff+mypy+bandit) with a documented baseline (2026-07-19)
+
+`bandit` added as a new dev-only dependency (`requirements.txt`) — security lint, per team rule 7
+(ask before new deps); founder approved bandit + pip-compile + pytest-cov + Vitest together when
+asked which of FILE_01–04's new tools to add. `.github/workflows/ci.yml` gets a new `lint` job:
+`ruff check .`, `mypy erp config`, `bandit -r erp/ -c pyproject.toml`, blocking on `pull_request`
+(same trigger as the existing `backend`/`web` jobs).
+
+**Baseline, not a fix-everything pass** — the codebase predates all three tools being enforced, so
+getting the job green meant triaging ~1679 ruff findings, 202 mypy errors, and 3494 bandit findings
+in one sitting, not fixing each individually:
+- **ruff**: ran `ruff check . --fix` first (193 safe autofixes: import sorting, deprecated-import
+  syntax, etc). Of what remained, **1405 were `E501` line-too-long** on code written before the
+  100-char limit was enforced — fixing those by hand is a repo-wide reformat, out of scope here.
+  Ignored `E501` plus a handful of scattered style-only codes (`B904`, `E741`, `F841`, `E402`,
+  `B905`, `B017`, `B007`, `B015`, `UP031`, `UP046`, ~75 hits total) in `pyproject.toml`
+  `[tool.ruff.lint].ignore`, documented inline. Correctness-class rules (`F401`, `F821`, etc.) stay
+  enforced — none were present after autofix.
+- **mypy**: 202 errors across 51 modules, almost all either untyped legacy code or the AI
+  assistant/imports modules' dynamic dict-shaped payloads (out of scope — AI is off for this
+  delivery track; imports engine is dict/JSON-driven by design). Listed the 51 modules in
+  `[[tool.mypy.overrides]]` with `ignore_errors = true`, inline comment: shrink this list over
+  time, never add to it. Any type error in a module NOT on the list fails CI.
+- **bandit**: sampled every finding class before deciding. `B101` (assert_used, ~3300 hits) is a
+  pytest idiom, not a security control. `B105/B106/B107` (hardcoded_password_*) is a naive keyword
+  match — sampled several, all false positives (test-factory `password=` kwargs, one `"pass"` dict
+  key in an eval scoreboard). `B110`/`B311` (try/except/pass, non-crypto `random`) — all 9 hits
+  confined to the AI assistant gateway/client (retry/backoff, out of scope) or test randomness.
+  These six rule IDs are skipped via `[tool.bandit].skips` in `pyproject.toml`, with the sampling
+  rationale written inline. The two genuinely reviewed classes were **not** blanket-skipped:
+  `B613` (trojansource/bidi control chars, 2 hits in `erp/imports/normalize.py` and `readers.py`)
+  — these ARE the Arabic bidi/zero-width marks the importer's text-cleanup strips, confirmed by
+  reading the code; suppressed with a targeted `# nosec B613` at those two lines only. `B310`
+  (url-open scheme audit, 2 hits in `erp/notifications/services/webhooks.py` and
+  `erp/workflow/adapters/rest.py`) — both call `assert_public_url()` immediately before
+  `urlopen()` (the existing webhook SSRF guard); suppressed with `# nosec B310` at those two lines
+  only, so any FUTURE unguarded `urlopen()` elsewhere still trips bandit.
+
+Verified: `ruff check .`, `mypy erp config`, `bandit -r erp/ -c pyproject.toml` all exit 0 locally;
+full `scripts/gates/_run.py all` (00–17) still green after the `models.py` deprecation fix from
+FILE_05 (see below) and the two `nosec`-annotated lines — no behavior changed, only comments/config.
+
+## post-handover-v1_1 FILE_05: README cross-platform + Django 6 deprecation fix (2026-07-19)
+
+Added Linux/macOS prerequisites + a bash quickstart to `README.md` alongside the existing Windows
+PowerShell one — only the venv path (`Scripts\` vs `bin/`) and the Postgres bootstrap invocation
+differ per OS; `manage.py`/gate commands are already cross-platform. Fixed the one
+`RemovedInDjango60Warning`: `CheckConstraint(check=...)` → `CheckConstraint(condition=...)` at
+`erp/accounting/domain/models.py:389,394` (grepped repo-wide, only these two usages existed;
+migrations already serialize as `condition=`, confirmed via `makemigrations --check --dry-run
+accounting` → no new migration). `pytest erp/accounting -W error::DeprecationWarning` → 80 passed.
+Ran this file (and FILE_01 above) ahead of `post-handover-v1_1/FILE_00_INDEX.md`'s own "after
+handover" sequencing note — founder explicitly asked to push forward on non-browser B-scope work
+this session, and neither change is customer-facing or risky pre-handover.
+
+## pre-handover-hardening FILE_06: `phase1d_qa` dev-DB loose end closed (2026-07-19)
+
+The one agent-doable item in `FILE_06_LOOSE_ENDS.md` (workflow-canvas smoke test and the
+partial-payments policy question both stay human-only) — `phase1d_qa` (pk 9) was active in Agent
+A's dev DB `erp`. **Suspended (`is_active=False`), not hard-deleted** — a delete could cascade into
+FK-linked audit/created-by history on a shared dev DB; suspension satisfies "no login before
+handover" without that risk. `provision_customer --verify` (FILE_07 section C) independently
+confirms zero demo users on the real customer machine, so the two checks together close the
+exposure. Session context: this was originally B-scoped (per `PARALLEL_PLAN.md`) but flagged as
+needing "A or founder" since B cannot reach A's dev DB under the parallel-lane HARD STOP — closed
+by A directly once the founder redirected this session onto B's backlog. Also surfaced in that same
+session: `brand-philosophy-review` and `twenty-harvest FILE_21` both need live browser driving
+(screenshot/JS-eval tooling) that this plain VSCode-extension harness does not have — founder
+redirected those to a session with browser tooling ("agent A" in the founder's shorthand) rather
+than attempting them here.
+
+## post-handover-v1_1 FILE_02: backend dependency lockfile via pip-compile (2026-07-19)
+
+**Chosen tool: `pip-tools` (`pip-compile`)** — dev-only, founder-approved alongside bandit/
+pytest-cov/Vitest in the same batch. `requirements.txt` (loose ranges, hand-edited historically)
+became `requirements.in` (edit THIS file going forward); `pip-compile requirements.in -o
+requirements.txt` produces the fully-pinned lockfile. The `backend` CI job already runs `pip
+install -r requirements.txt`, so it started installing from the lockfile with **no `ci.yml`
+change** — it only needed `requirements.txt` to actually contain compiled pins, which it now does.
+
+Upper bounds added to the three packages the finding named as unbounded — `argon2-cffi<26.0`,
+`pyotp<3.0`, `django-cors-headers<5.0` — capped one major above each package's currently resolved
+version (25.1.0 / 2.10.0 / 4.9.0 respectively), not an arbitrary guess. `python-json-logger` is
+also technically unbounded but wasn't named in the finding; left alone (matching what exists, not
+widening scope). Verified: `pip install -r requirements.txt` from the compiled lockfile exits 0;
+full gate suite re-run after install.
+
+## post-handover-v1_1 FILE_04: Vitest added, `@testing-library` deliberately NOT added (2026-07-19)
+
+**Decision gate (team rule 7 — no new dependency without asking):** founder approved four tools in
+one batch answer (bandit, pip-compile, pytest-cov, Vitest) when asked which of FILE_01–04's new
+tools to add. Only **`vitest`** was actually installed — `@testing-library/react`, which the plan
+file's task list also named, was deliberately skipped: the three test targets chosen (below) are
+all pure TS functions, no component rendering involved, so `@testing-library` would have been an
+approved-but-unused dependency. Adding it anyway would be scope creep past what was actually needed
+to satisfy the "Done when" (money + validation + workflow-state coverage), and the founder's
+approval was for the named tools to unblock the FILEs, not a blank check to add every dependency a
+plan file merely mentions.
+
+**Config:** a separate `apps/web/vitest.config.ts` (not folded into `vite.config.ts`) so the test
+runner's config can never accidentally affect the production build config; `environment: "node"`
+(no jsdom, since nothing renders yet).
+
+**Targets, and why these three specifically** (the plan named `lib/money.ts`, "form validation
+helpers", "workflow-canvas state reducers", "i18n key resolution" — not all of those exist as
+clean standalone pure-logic modules today):
+- `lib/money.ts` — named explicitly in the plan; format/parse/round-trip + the negative/zero/
+  custom-currency edges. Also documents (doesn't fix — out of scope) that `parseToMinor` is
+  ASCII-digit-only by design: an Arabic-Indic numeral (`١٠٠٠`) is rejected, not converted. If a
+  real Arabic-numeral entry point is ever wanted, that needs its own normalization step upstream,
+  not a change to this parser.
+- `lib/customFields.ts` (`validateCustomFieldValues`/`buildCustomData`/`formatCustomFieldValue`) —
+  substituted for "form validation helpers": this is the actual reusable client-side validation
+  module in the codebase (mirrors the backend's `validate_custom_data`); no separate generic
+  "form validation helpers" module exists to test instead.
+- `lib/workflow.ts` (`workflowFor`/`historyByStage`) — substituted for "workflow-canvas state
+  reducers": the visual workflow-BUILDER canvas (React Flow, `@xyflow/react`) keeps its state in
+  the library's own hooks, not a hand-rolled reducer in this repo, so there is nothing pure to
+  unit-test there. `workflow.ts` is the order/PO **lifecycle tracker**'s pure logic (stage-from-
+  status mapping, exception branches, latest-entry-per-stage) — the closest genuinely testable
+  "workflow state" module that exists, and worth covering regardless of the plan's exact wording.
+- **i18n key resolution** — not covered. No standalone pure resolution function was found separate
+  from `check-i18n-parity.mjs` (already its own gate) and `react-i18next`'s own resolution (a
+  third-party library, not our logic to unit-test). Left out rather than inventing a module to
+  test.
+
+39 tests, all passing (`npm run test`); wired into `.github/workflows/ci.yml`'s `web` job as a new
+"Unit tests" step before the i18n/typecheck/build steps (fail fast, cheapest check first). Updated
+`CLAUDE.md`'s "Before you say done (frontend work)" section — it previously stated **"There is no
+JS unit-test runner"** as a hard fact; that line is now stale and was corrected to include
+`npm run test`.
+
+## post-handover-v1_1 FILE_03: backend coverage baseline (2026-07-19)
+
+`pytest-cov` added as a new dev-only dependency (same founder batch-approval as bandit/pip-compile/
+Vitest). `[tool.coverage.run]`/`[tool.coverage.report]` added to `pyproject.toml` — `source =
+["erp"]`, migrations/tests/evals omitted from the denominator (they're not the code coverage is
+meant to protect). CI `backend` job's `Run pytest` step now runs `--cov=erp
+--cov-report=term-missing` so coverage prints on every run, not just locally.
+
+**Baseline (1427 tests, ~6 min locally):**
+
+| app | stmts | miss | cover | app | stmts | miss | cover |
+|---|---|---|---|---|---|---|---|
+| accounting | 1875 | 248 | 87% | monitoring | 247 | 27 | 89% |
+| assistant | 4548 | 681 | 85% | notifications | 530 | 62 | 88% |
+| audit | 113 | 1 | 99% | pricing | 361 | 33 | 91% |
+| core | 1067 | 91 | 91% | purchasing | 966 | 54 | 94% |
+| crm | 847 | 100 | 88% | sales | 1064 | 39 | 96% |
+| einvoice | 258 | 32 | 88% | setup | 79 | 0 | 100% |
+| forms | 50 | 0 | 100% | workflow | 1088 | 109 | 90% |
+| identity | 1236 | 89 | 93% | **TOTAL** | **18043** | **1983** | **89%** |
+| imports | 2746 | 353 | 87% | | | | |
+| inventory | 968 | 64 | 93% | | | | |
+
+**Floor: `fail_under = 84`** (`pyproject.toml`) — 5 points below baseline, matching gate15's own
+"-5% of baseline" margin pattern elsewhere in the gate suite, so CI fails on a real regression
+without being so tight that one new untested branch trips it. Not gated per-app (only `assistant`
+at 85% and `accounting`/`imports` at 87% sit closest to a 84% global floor) — a future session can
+tighten per-app once the founder decides which modules deserve a stricter bar; recorded here as a
+deliberately deferred choice, not an oversight.

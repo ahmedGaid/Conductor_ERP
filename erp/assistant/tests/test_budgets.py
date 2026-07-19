@@ -12,7 +12,8 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from erp.assistant.errors import BudgetExceeded
-from erp.assistant.gateway import budgets, core as llm
+from erp.assistant.gateway import budgets
+from erp.assistant.gateway import core as llm
 from erp.assistant.models import Budget, SpendRollup, Trace
 from erp.identity.models import User
 

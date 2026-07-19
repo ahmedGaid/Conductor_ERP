@@ -5,7 +5,13 @@ import datetime as dt
 
 import pytest
 
-from erp.accounting.services import JournalInput, LineInput, general_ledger, post_journal, trial_balance
+from erp.accounting.services import (
+    JournalInput,
+    LineInput,
+    general_ledger,
+    post_journal,
+    trial_balance,
+)
 
 from .factories import make_coa, make_period
 

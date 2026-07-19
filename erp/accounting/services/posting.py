@@ -29,8 +29,8 @@ from ..errors import (
     ApprovalLimitExceededError,
     ClosedPeriodError,
     InvalidLineError,
-    NoPeriodError,
     NonPostableAccountError,
+    NoPeriodError,
     UnbalancedEntryError,
     UnknownCostCenterError,
 )

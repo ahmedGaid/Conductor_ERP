@@ -19,6 +19,30 @@ export const pipelineGuide: HelpGuide = {
       ],
     },
   ],
+  checklist: {
+    name: { en: "Add your first opportunity", ar: "أضف أول فرصة" },
+    doneMessage: {
+      en: "Opportunity added — it starts in Qualifying. Advance its stage as the deal moves forward.",
+      ar: "أُضيفت الفرصة — تبدأ في «تأهيل». قدّم مرحلتها مع تقدّم الصفقة.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a name and pick the customer", ar: "أدخل اسماً واختر العميل" },
+        detail: [
+          { en: "The name is your own label for the deal; the customer is who you're selling to.", ar: "الاسم تسمية خاصة بك للصفقة؛ العميل هو من تبيع له." },
+        ],
+        hint: { en: "Name and customer set. Add at least one line to see the value.", ar: "تم تحديد الاسم والعميل. أضف سطراً واحداً على الأقل لرؤية القيمة." },
+        done: (s) => (s.nameSet === true && s.customerPicked === true) || (s.opportunityCount as number) > 0,
+      },
+      {
+        label: { en: "Click Create opportunity", ar: "اضغط «إنشاء فرصة»" },
+        detail: [
+          { en: "It appears in Qualifying — switch to Board view to see it move across stages.", ar: "تظهر في «تأهيل» — بدّل إلى عرض «لوحة» لرؤيتها تتنقل بين المراحل." },
+        ],
+        done: (s) => (s.opportunityCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/crm/leads", label: { en: "Leads", ar: "العملاء المحتملون" } },
     { to: "/sales", label: { en: "Sales orders", ar: "طلبات المبيعات" } },
@@ -181,6 +205,27 @@ export const campaignsGuide: HelpGuide = {
       ],
     },
   ],
+  checklist: {
+    name: { en: "Add your first campaign", ar: "أضف أول حملة" },
+    doneMessage: {
+      en: "Campaign added. Tag leads and opportunities with it to start measuring ROI.",
+      ar: "أُضيفت الحملة. سِم بها العملاء المحتملين والفرص لتبدأ قياس العائد.",
+    },
+    steps: [
+      {
+        label: { en: "Enter a code and name", ar: "أدخل رمزاً واسماً" },
+        detail: [
+          { en: "The code is a short reference; the name is what shows in reports.", ar: "الرمز مرجع قصير؛ الاسم هو ما يظهر في التقارير." },
+        ],
+        hint: { en: "Code and name set. Cost is optional — add it to see ROI later.", ar: "تم إدخال الرمز والاسم. التكلفة اختيارية — أضفها لرؤية العائد لاحقاً." },
+        done: (s) => (s.campaignCount as number) > 0,
+      },
+      {
+        label: { en: "Click Add campaign", ar: "اضغط «إضافة حملة»" },
+        done: (s) => (s.campaignCount as number) > 0,
+      },
+    ],
+  },
   related: [
     { to: "/crm/leads", label: { en: "Leads", ar: "العملاء المحتملون" } },
     { to: "/crm/pipeline", label: { en: "Pipeline", ar: "خط المبيعات" } },

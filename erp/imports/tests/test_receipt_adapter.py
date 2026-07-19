@@ -12,9 +12,21 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.imports import engine
 from erp.imports.models import ImportBatch, ImportRow
 from erp.sales.domain.models import PendingPayment, PendingPaymentStatus
-from erp.sales.services import OrderLineInput, confirm_order, create_order, deliver_order, invoice_order
-
-from erp.sales.tests.factories import DATE, make_books, make_customer, make_item, make_warehouse, stocked
+from erp.sales.services import (
+    OrderLineInput,
+    confirm_order,
+    create_order,
+    deliver_order,
+    invoice_order,
+)
+from erp.sales.tests.factories import (
+    DATE,
+    make_books,
+    make_customer,
+    make_item,
+    make_warehouse,
+    stocked,
+)
 
 pytestmark = pytest.mark.django_db
 

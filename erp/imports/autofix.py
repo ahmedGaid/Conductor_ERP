@@ -15,7 +15,8 @@ from __future__ import annotations
 from .mapping import levenshtein, normalize_header
 from .models import ImportBatch, ImportRow
 from .normalize import _CURRENCY_WORDS, parse_date
-from .registry import Issue, get as get_adapter
+from .registry import Issue
+from .registry import get as get_adapter
 from .validate import revalidate_rows
 
 CURRENCY_FIX_MAX_DISTANCE = 1

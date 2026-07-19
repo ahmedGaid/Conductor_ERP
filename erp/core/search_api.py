@@ -15,8 +15,8 @@ exactly what the client would — folding shapes the *comparison key only*, neve
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from django.apps import apps
 from django.db.models import Q

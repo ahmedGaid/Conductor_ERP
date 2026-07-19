@@ -18,7 +18,13 @@ from ..events import JOURNAL_POSTED, PERIOD_CLOSED
 from ..services import chart as _chart
 from ..services import reports as _reports
 from ..services import statements as _statements
-from ..services.posting import JournalInput, LineInput, create_draft_journal, post_journal, reverse_journal
+from ..services.posting import (
+    JournalInput,
+    LineInput,
+    create_draft_journal,
+    post_journal,
+    reverse_journal,
+)
 from ..services.seeding import (
     baseline_summary,
     get_standard_vat_rate_bps,
@@ -26,7 +32,6 @@ from ..services.seeding import (
     set_standard_vat_rate,
 )
 from ..services.taxes import TaxCodeInfo, compute_tax, find_tax_code
-
 
 # --- scoped/gated read helpers for the AI assistant (session 08 tool catalog) -------------------
 # The financial statements are company-wide GL aggregates (not per-record scoped); the assistant's

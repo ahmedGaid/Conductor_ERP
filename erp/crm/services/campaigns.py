@@ -17,8 +17,8 @@ from ..domain.models import (
     Campaign,
     CampaignStatus,
     Lead,
-    OppStage,
     Opportunity,
+    OppStage,
 )
 from ..errors import InvalidTransitionError
 
