@@ -30,14 +30,14 @@ unchanged: `requires_confirm=True` on every action (enforced at import by `_vali
 `build_proposal`/`execute` run as the actor (never a privilege the human lacks), every executed
 action writes `audit.record(module="assistant", ...)`, money is integer minor units end to end.
 
-**What's different from the drafts-only track:** these 5 actions have `risk="post"` and their
+**What's different from the drafts-only track:** these 6 actions have `risk="post"` and their
 `effects` declare `gl="posts"` and/or `stock="moves"` — which `_validate_action` already requires
 to carry at least one invariant (built forward-looking in os-foundations, unused until now). No
 action here has a `compensation` — reversal is human-only, on the normal module screen, exactly
 like a destructive action with no auto-undo (reverse the journal, cancel the PO, etc. — all already
 exist as manual actions; this plan does not add new ones).
 
-## The guard mechanism (shared by all 5 — built once, in FILE_01)
+## The guard mechanism (shared by all 6 — built once, in FILE_01)
 
 1. **`OrgPreferences.assistant_posting_enabled`** (new boolean field, default `False`) — same
    single-row, System-Admin-only-editable model that already carries `einvoice_enabled`. One new
@@ -50,22 +50,32 @@ exist as manual actions; this plan does not add new ones).
 3. **The underlying domain function's own checks** run as normal and are never bypassed
    (`ApprovalLimitExceededError`, `ClosedPeriodError`, non-postable-account, etc. — inherited free).
 4. **Typed re-confirm** — any action with `risk="post"` returns an extra `challenge: {label, minor}`
-   key from `build_proposal`. `ActionCard.tsx` renders a text input (reusing the same
-   `parseToMinor` client-side match check `PaymentDialog.tsx` already uses); Confirm stays disabled
-   until it matches. The confirm endpoint (`erp/assistant/api/views.py`) independently re-validates
-   server-side against the value stored in `message.meta.proposal` — the client check is UX only.
-   A mismatch returns 400 and **does not consume the card** (single-use is reserved for a real
-   confirm, not a typo).
+   key from `build_proposal`. `ActionCard.tsx` renders a text input; the retyped text is parsed
+   client-side with the existing `parseToMinor` (`lib/money.ts` — the same function
+   `PaymentDialog.tsx` already uses) into an integer, which drives BOTH the live match feedback
+   (Confirm stays disabled until it equals `challenge.minor`) AND is what's actually sent to the
+   server as `typed_minor` on confirm — there is no backend equivalent of `parseToMinor` to write
+   (checked `erp/accounting/domain/money.py` — `Money` has no string parser), so the server does a
+   plain `int ==` check against the value stored in `message.meta.proposal`, never trusting the
+   client's disabled-button state alone. A mismatch returns 400 and **does not consume the card**
+   (single-use is reserved for a real confirm, not a typo).
 
-## The 5 actions — verified against real code before this design was written
+## The 6 actions — verified against real code before this design was written
 
 | # | Action | Target function | Manual precedent | Role gate | `kind` | Notable |
 |---|---|---|---|---|---|---|
 | 1 | `post_journal_entry_draft` | **new** `post_draft_journal_entry()` | **none — see below** | ACCOUNTANT / BRANCH_MANAGER | `post` | new domain code + new manual "Post" button (parity) |
-| 2 | `receive_purchase_order` | `erp/purchasing/services/orders.py` `receive_order()` | `receivePO()` button | BRANCH_MANAGER | `update` | stock effect |
-| 3 | `pay_purchase_order` | `orders.py` `pay_order()` | `payPO()` button | BRANCH_MANAGER | `post` | GL effect |
-| 4 | `approve_purchase_request` | `erp/purchasing/services/requests.py` `approve_request()` | `approveRequest()` button | BRANCH_MANAGER | `approve` | no money amount — challenge uses request subtotal |
-| 5 | `issue_stock_entry` | `erp/inventory/services/stock.py` `issue_stock()` | `issueStock()` in `api/inventory.ts` | BRANCH_MANAGER | `adjust` | stock + GL (COGS) effect |
+| 2 | `receive_purchase_order` | `erp/purchasing/services/orders.py` `receive_order()` | `receivePO()` button | BRANCH_MANAGER | `update` | stock effect; v1 = full receipt only (partial-receipt line-map descoped, see FILE_03) |
+| 3 | `bill_purchase_order` | `orders.py` `bill_order()` | `billPO()` button | BRANCH_MANAGER | `post` | 3-way match (`ThreeWayMatchError`) + GRNI→AP clearing + VAT, GL effect |
+| 4 | `pay_purchase_order` | `orders.py` `pay_order()` | `payPO()` button | BRANCH_MANAGER | `post` | requires order already `BILLED`; GL effect |
+| 5 | `approve_purchase_request` | `erp/purchasing/services/requests.py` `approve_request()` | `approveRequest()` button | BRANCH_MANAGER | `approve` | no money amount — challenge uses request subtotal |
+| 6 | `issue_stock_entry` | `erp/inventory/services/stock.py` `issue_stock()` | `issueStock()` in `api/inventory.ts` | BRANCH_MANAGER | `adjust` | stock + GL (COGS) effect |
+
+**Scope note (added after `bill_order`/`pay_order` were read in full):** the original FILE_06 text
+said "pay/invoice an order" — read as covering BOTH lifecycle steps once the code showed they are
+two separate, already-existing manual actions (`billPO`/`payPO`), not one. `pay_order()` itself
+`_require`s the order already be `POStatus.BILLED`, so without action 3 the assistant's pay action
+would refuse on any order that's merely `RECEIVED` — action 3 closes that gap.
 
 **Discovered gap (action 1):** the assistant has drafted unposted journal entries since
 ai-workspace FILE_10 (`EntryStatus.DRAFT`), but no code path anywhere — manual or API — has ever
@@ -84,13 +94,14 @@ to BOTH a new manual "Post" button on `JournalDetailPage.tsx` AND the assistant 
 | FILE_01 | Guard infrastructure | **Opus** (safety-critical shared foundation — every later file depends on this being right) | `OrgPreferences.assistant_posting_enabled` + serializer + `OrganizationPage.tsx` checkbox; generic `challenge`/typed-confirm plumbing in `actions.py` + confirm endpoint + `ActionCard.tsx` (no new actions registered yet — proven with a test-only toy action, same pattern `test_actions.py` already uses for `_toy_action`) |
 | FILE_02 | Post journal entry draft | **Opus** (new GL-affecting domain code, same caliber as agent-actions FILE_04) | `post_draft_journal_entry()` service, manual "Post" button on `JournalDetailPage.tsx`, `post_journal_entry_draft` assistant action |
 | FILE_03 | Receive purchase order | **Sonnet** (pattern replication over a real existing endpoint) | `receive_purchase_order` action |
-| FILE_04 | Pay purchase order | **Sonnet** | `pay_purchase_order` action |
-| FILE_05 | Approve purchase request | **Sonnet** | `approve_purchase_request` action |
-| FILE_06 | Issue stock entry | **Sonnet** | `issue_stock_entry` action |
-| FILE_07 | Acceptance + bench wiring + DECISIONS.md addendum | **Opus** (judgment + a founder decision to close) | Full FILE_06-shape acceptance checklist (agent-actions precedent) run against all 5 + the 2 new checks (org-toggle-off refusal, retype-mismatch handling); benchmark wiring per the original coordination note; DECISIONS.md addendum recording this plan's outcome |
+| FILE_04 | Bill purchase order | **Sonnet** | `bill_purchase_order` action (3-way match errors surfaced calmly) |
+| FILE_05 | Pay purchase order | **Sonnet** | `pay_purchase_order` action |
+| FILE_06 | Approve purchase request | **Sonnet** | `approve_purchase_request` action |
+| FILE_07 | Issue stock entry | **Sonnet** | `issue_stock_entry` action |
+| FILE_08 | Acceptance + bench wiring + DECISIONS.md addendum | **Opus** (judgment + a founder decision to close) | Full FILE_06-shape acceptance checklist (agent-actions precedent) run against all 6 + the 2 new checks (org-toggle-off refusal, retype-mismatch handling); benchmark wiring per the original coordination note; DECISIONS.md addendum recording this plan's outcome |
 
-FILE_03–06 are pattern-replication once FILE_01–02 land — say so at session start and let the
-founder `/model` down to Sonnet before burning Opus. FILE_01/02/07 stay on Opus.
+FILE_03–07 are pattern-replication once FILE_01–02 land — say so at session start and let the
+founder `/model` down to Sonnet before burning Opus. FILE_01/02/08 stay on Opus.
 
 ## Before you start ANY file in this plan
 
@@ -121,4 +132,4 @@ One file = one session.
   `git log` for recent touches before FILE_02 — no other plan currently targets it).
 - If `ai-reliability` FILE_05 lands before this plan starts (unlikely, but check `erp-status`): the
   self-verification layer becomes an ADDITIVE enhancement to the existing action registry, not a
-  redesign — nothing in FILE_01–07 needs to change shape.
+  redesign — nothing in FILE_01–08 needs to change shape.

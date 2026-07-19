@@ -202,7 +202,7 @@ the card). Explicitly **no AI cross-check of numbers** — that gap is accepted 
 as a pure additive enhancement once FILE_05 ships. Reversal is human-only (no `compensation` field
 on any of these 5 — reverse the journal / cancel the PO / etc. on the normal screen, as today).
 
-**Scope:** 5 actions (post a drafted journal entry, receive a PO, pay a PO, approve a purchase
+**Scope:** 6 actions (post a drafted journal entry, receive/bill/pay a PO, approve a purchase
 request, issue stock) — full plan at `Docs/plan/agent-posting-plan/FILE_00_INDEX.md`, queued as
 position **PA** in `EXECUTION_ORDER.md`. Verifying the real code first (per project rule: never
 invent a contract) surfaced a genuine, AI-unrelated gap: no code path anywhere — manual or API —
