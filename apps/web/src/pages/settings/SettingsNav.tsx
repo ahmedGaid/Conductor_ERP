@@ -75,6 +75,22 @@ export function SettingsNav() {
             {t("settings.tabs.developers")}
           </NavLink>
         )}
+        {isAdmin && (
+          <NavLink
+            to="/settings/system"
+            className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
+          >
+            {t("settings.tabs.system")}
+          </NavLink>
+        )}
+        {isAdmin && (
+          <NavLink
+            to="/settings/ai-usage"
+            className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
+          >
+            {t("settings.tabs.aiUsage")}
+          </NavLink>
+        )}
       </nav>
     </header>
   );

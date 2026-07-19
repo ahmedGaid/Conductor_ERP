@@ -372,3 +372,43 @@ export const developersGuide: HelpGuide = {
     { to: "/settings/custom-fields", label: { en: "Custom fields", ar: "الحقول المخصّصة" } },
   ],
 };
+
+export const aiUsageGuide: HelpGuide = {
+  title: { en: "AI usage", ar: "استخدام المساعد الذكي" },
+  purpose: {
+    en: "Where the assistant's tokens and cost went this month, and how close each spend budget is to its limit.",
+    ar: "أين ذهبت رموز المساعد الذكي وتكلفته هذا الشهر، ومدى قرب كل ميزانية إنفاق من حدّها.",
+  },
+  howItWorks: {
+    en: "Only a System Admin can view this. Every figure is a straight total over calls already made — nothing here is estimated. Pick a month to see its totals, the split by provider and by user, and how spend compares to the configured budgets. 'View traces' opens the underlying call log for the same numbers. No usage yet doesn't mean something is broken — the app works fully without AI.",
+    ar: "فقط مسؤول النظام يمكنه رؤية هذا. كل رقم هنا إجمالي مباشر لطلبات تمّت فعلاً — لا شيء هنا تقديري. اختر شهراً لرؤية إجمالياته، والتوزيع حسب المزوّد وحسب المستخدم، ومقارنة الإنفاق بالميزانيات المُعدّة. 'عرض السجلات' يفتح سجل الطلبات الأصلي لنفس الأرقام. عدم وجود استخدام لا يعني وجود عطل — يعمل التطبيق بكامل وظائفه دون المساعد الذكي.",
+  },
+  related: [
+    { to: "/assistant/ops", label: { en: "Assistant health", ar: "صحة المساعد" } },
+  ],
+};
+
+export const systemGuide: HelpGuide = {
+  title: { en: "System", ar: "النظام" },
+  purpose: {
+    en: "A read-only operator panel — database, Redis, background workers, storage, backup freshness, and which environment variables are configured, all at a glance.",
+    ar: "لوحة تشغيل للقراءة فقط — قاعدة البيانات وRedis وعمليات المعالجة الخلفية والتخزين وحداثة النسخ الاحتياطي، وأي متغيرات بيئة مُعدّة، كل ذلك في نظرة واحدة.",
+  },
+  howItWorks: {
+    en: "Only a System Admin can view this panel. It refreshes automatically every 30 seconds, or use 'Refresh' for an immediate check. Environment variables show as Set/Unset only — the actual values never leave the server. There's no way to change configuration from here by design: edit .env and restart the app.",
+    ar: "فقط مسؤول النظام يمكنه رؤية هذه اللوحة. تُحدَّث تلقائياً كل 30 ثانية، أو استخدم 'تحديث' لفحص فوري. تظهر متغيرات البيئة كـ مُعدّ/غير مُعدّ فقط — القيم الفعلية لا تغادر الخادم أبداً. لا توجد طريقة لتغيير الإعدادات من هنا بالتصميم: عدّل ملف .env وأعد تشغيل التطبيق.",
+  },
+  mistakes: [
+    {
+      en: "'Backup: Not configured' doesn't mean backups are failing — it means BACKUP_DIR isn't set yet. Register the nightly backup task (see the Runbook) to start tracking it here.",
+      ar: "'النسخ الاحتياطي: غير مُعدّ' لا تعني فشل النسخ الاحتياطي — بل أن BACKUP_DIR غير مُعدّ بعد. سجّل مهمة النسخ الاحتياطي الليلية (انظر دليل التشغيل) لبدء تتبعها هنا.",
+    },
+    {
+      en: "'Background workers: Degraded' with 0 workers just means no Celery worker is currently running — queued jobs (imports, reports, notifications) wait until one starts, nothing is lost.",
+      ar: "'عمليات المعالجة الخلفية: أداء متدهور' مع 0 عامل تعني فقط عدم تشغيل أي عامل Celery حالياً — المهام المُصفوفة (الاستيراد والتقارير والإشعارات) تنتظر حتى يبدأ أحدها، دون فقدان شيء.",
+    },
+  ],
+  related: [
+    { to: "/settings/developers", label: { en: "Developers", ar: "المطوّرون" } },
+  ],
+};

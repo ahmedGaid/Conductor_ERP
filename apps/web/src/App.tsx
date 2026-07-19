@@ -47,6 +47,10 @@ const CustomFieldsPage = lazyPage(
   () => import("./pages/settings/CustomFieldsPage"), "CustomFieldsPage");
 const ApiKeysPage = lazyPage(
   () => import("./pages/settings/ApiKeysPage"), "ApiKeysPage");
+const SystemPage = lazyPage(
+  () => import("./pages/settings/SystemPage"), "SystemPage");
+const AIUsagePage = lazyPage(
+  () => import("./pages/settings/AIUsagePage"), "AIUsagePage");
 const UsersPage = lazyPage(() => import("./pages/admin/UsersPage"), "UsersPage");
 const UserDetailPage = lazyPage(() => import("./pages/admin/UserDetailPage"), "UserDetailPage");
 const RolesPage = lazyPage(() => import("./pages/admin/RolesPage"), "RolesPage");
@@ -233,6 +237,8 @@ function AppRoutes() {
           <Route path="/settings/webhooks" element={<WebhooksSettingsPage />} />
           <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
           <Route path="/settings/developers" element={<ApiKeysPage />} />
+          <Route path="/settings/system" element={<SystemPage />} />
+          <Route path="/settings/ai-usage" element={<AIUsagePage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/:id" element={<UserDetailPage />} />
           <Route path="/admin/roles" element={<RolesPage />} />

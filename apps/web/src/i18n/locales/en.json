@@ -1945,7 +1945,9 @@
       "branches": "Branches",
       "webhooks": "Webhooks",
       "customFields": "Custom fields",
-      "developers": "Developers"
+      "developers": "Developers",
+      "system": "System",
+      "aiUsage": "AI usage"
     },
     "common": {
       "auto": "Auto"
@@ -2193,6 +2195,101 @@
       "docsRateLimitNote": "Keys are rate-limited per key, same as a human session.",
       "docsMethods": "Methods",
       "docsPath": "Path"
+    },
+    "system": {
+      "lead": "A read-only view of the running system — for diagnosis, not configuration. Change settings in .env and restart.",
+      "version": "Version",
+      "uptime": "Uptime",
+      "uptimeDays": "{{days}}d {{hours}}h",
+      "uptimeHours": "{{hours}}h {{minutes}}m",
+      "uptimeMinutes": "{{minutes}}m",
+      "status": {
+        "healthy": "Running",
+        "warning": "Degraded",
+        "critical": "Not responding"
+      },
+      "banner": {
+        "warning": "Something needs attention — see the flagged row below.",
+        "critical": "A core service isn't responding — see the flagged row below."
+      },
+      "database": "Database",
+      "redis": "Redis",
+      "storage": "Storage",
+      "storageFree": "{{free}} free of {{total}}",
+      "workers": "Background workers",
+      "workersDetail": "{{count}} worker(s), {{depth}} job(s) queued",
+      "workersCount": "{{count}} worker(s)",
+      "hint": {
+        "database": "The database isn't reachable — check that PostgreSQL is running and DATABASE_URL is correct.",
+        "redis": "Redis isn't reachable — check that it's running and REDIS_URL is correct.",
+        "storage": "The storage folder isn't writable — check STORAGE_ROOT's permissions and free space.",
+        "workers": "No background worker is online — jobs (imports, reports, notifications) will queue until one starts."
+      },
+      "backup": "Backups",
+      "backupDesc": "Last successful nightly backup (see the Runbook's backup section).",
+      "backupNotConfigured": "Not configured",
+      "backupNoneYet": "No backups found yet",
+      "envTitle": "Environment variables",
+      "envDesc": "Names only — values never leave the server.",
+      "envName": "Name",
+      "envState": "State",
+      "envValue": {
+        "set": "Set",
+        "unset": "Unset"
+      },
+      "refresh": "Refresh"
+    },
+    "aiUsage": {
+      "lead": "Where the assistant's tokens and cost went this month — read-only, the same numbers the reliability gateway already tracks.",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "totals": {
+        "requests": "Requests",
+        "tokens": "Tokens (in / out)",
+        "cost": "Cost",
+        "cacheHit": "Cache-hit share",
+        "degradedMinutes": "Degraded minutes"
+      },
+      "budget": {
+        "title": "Budgets",
+        "org": "Organization (monthly)",
+        "userDaily": "Per user (daily)",
+        "perRequest": "Per request",
+        "consumedOfLimit": "{{consumed}} of {{limit}}",
+        "notConfigured": "Not configured",
+        "action": {
+          "block": "Blocks new calls",
+          "notify": "Notifies only"
+        },
+        "status": {
+          "ok": "On track",
+          "warning": "Near limit",
+          "over": "Over limit"
+        }
+      },
+      "provider": {
+        "title": "By provider",
+        "col": {
+          "provider": "Provider",
+          "requests": "Requests",
+          "tokens": "Tokens",
+          "cost": "Cost"
+        }
+      },
+      "byUser": {
+        "title": "By user",
+        "col": {
+          "user": "User",
+          "requests": "Requests",
+          "tokens": "Tokens",
+          "cost": "Cost"
+        }
+      },
+      "viewTraces": "View traces",
+      "empty": {
+        "title": "No AI usage recorded yet",
+        "hint": "The app works fully without it — usage and cost will appear here once the assistant is used, or once an AI provider key is configured."
+      }
     }
   },
   "admin": {

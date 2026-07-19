@@ -1,0 +1,60 @@
+.usage-month {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-end: var(--space-3);
+}
+.usage-month__label {
+  font-weight: var(--font-weight-medium);
+  min-inline-size: 8rem;
+  text-align: center;
+}
+
+.usage-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+  margin-block-end: var(--space-4);
+}
+@media (max-width: 960px) {
+  .usage-tiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.usage-budget {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1 1 auto;
+}
+.usage-budget__track {
+  flex: 1 1 auto;
+  block-size: 0.5rem;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.usage-budget__fill {
+  block-size: 100%;
+  border-radius: var(--radius-sm);
+}
+.usage-budget__fill--ok {
+  background-color: var(--color-accent);
+}
+.usage-budget__fill--warning {
+  background-color: var(--color-warning-strong);
+}
+.usage-budget__fill--over {
+  background-color: var(--color-danger-strong);
+}
+.usage-budget__figures {
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+}
+.usage-budget__figures--warning {
+  color: var(--color-warning-strong);
+}
+.usage-budget__figures--over {
+  color: var(--color-danger-strong);
+}

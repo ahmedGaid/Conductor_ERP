@@ -236,6 +236,14 @@ const PATHS: Record<string, ReactNode> = {
       <path d="m8.5 12 2.5 2.5 5-5.5" />
     </>
   ),
+  // Warning triangle — degraded / down state (System status panel).
+  warning: (
+    <>
+      <path d="M10.3 3.8 2.4 17.3a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </>
+  ),
   // Arrow back — return to list / parent. Points inline-start (mirrored in RTL via .backlink CSS).
   arrowBack: (
     <>
