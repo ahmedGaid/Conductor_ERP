@@ -1,5 +1,6 @@
 import { test, expect } from "../lib/fixtures";
 import type { ApiGet } from "../lib/api";
+import { pickCombo } from "../lib/combobox";
 
 // Prerequisite: `scripts/seed_demo.py` master data (supplier GLOBEX, warehouse MAIN) — see
 // Docs/RUNBOOK.md "Regression run before every release". The request/order are created fresh
@@ -49,11 +50,11 @@ test("purchasing: request -> approve -> convert -> receive -> bill -> partial pa
   // Above the 10,000 approval threshold (see scripts/seed_demo.py seed_discounts_and_approval),
   // so the request needs an explicit Approve, not just Submit.
   await page.goto("/#/purchasing/requests/new");
-  await page.getByLabel(t("purchasing.orders.supplier")).selectOption("GLOBEX");
-  await page.getByLabel(t("inventory.warehouse.label")).selectOption("MAIN");
+  await pickCombo(page, page.getByLabel(t("purchasing.orders.supplier")), "GLOBEX");
+  await pickCombo(page, page.getByLabel(t("inventory.warehouse.label")), "MAIN");
 
   const line = page.locator(".pur-table tbody tr").first();
-  await line.locator("select").selectOption("WIDGET");
+  await pickCombo(page, line.locator(".combobox-trigger"), "WIDGET");
   await line.locator("input").nth(0).fill("200"); // quantity
   await line.locator("input").nth(1).fill("80.00"); // unit cost -> 16,000.00
 
@@ -100,7 +101,11 @@ test("purchasing: request -> approve -> convert -> receive -> bill -> partial pa
   // Partial payment (delivery-readiness FILE_05): order stays open with a reduced balance.
   await page.getByRole("button", { name: t("purchasing.detail.recordPayment"), exact: true }).click();
   await page.getByLabel(t("document.paymentDialog.amount")).fill("600.00");
-  await page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true }).click();
+  // The dialog seeds its amount field from state set by an effect on open — wait for the confirm
+  // button to actually enable (validation passes) rather than racing that render with the click.
+  const confirmBtn1 = page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true });
+  await expect(confirmBtn1).toBeEnabled();
+  await confirmBtn1.click();
 
   await expect(async () => {
     order = await apiGet<PurchaseOrderApi>(orderPath);
@@ -112,7 +117,9 @@ test("purchasing: request -> approve -> convert -> receive -> bill -> partial pa
 
   // Final payment (dialog defaults to the remaining outstanding) settles the order in full.
   await page.getByRole("button", { name: t("purchasing.detail.recordPayment"), exact: true }).click();
-  await page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true }).click();
+  const confirmBtn2 = page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true });
+  await expect(confirmBtn2).toBeEnabled();
+  await confirmBtn2.click();
 
   await expect(async () => {
     order = await apiGet<PurchaseOrderApi>(orderPath);

@@ -1,4 +1,5 @@
 import { test, expect } from "../lib/fixtures";
+import { pickCombo } from "../lib/combobox";
 
 // Prerequisite: `manage.py seed_accounting` (chart of accounts incl. postable accounts 1000 Cash
 // and 6100 Bank Charges) — see Docs/RUNBOOK.md "Regression run before every release".
@@ -20,9 +21,9 @@ test("accounting: a balanced manual journal posts and the trial balance still ba
   await page.goto("/#/accounting/journals/new");
 
   const rows = page.locator(".acct-table tbody tr");
-  await rows.nth(0).locator("select").nth(0).selectOption("6100"); // Bank Charges
+  await pickCombo(page, rows.nth(0).locator(".combobox-trigger").nth(0), "6100"); // Bank Charges
   await rows.nth(0).locator("input").nth(0).fill("15.00"); // debit
-  await rows.nth(1).locator("select").nth(0).selectOption("1000"); // Cash
+  await pickCombo(page, rows.nth(1).locator(".combobox-trigger").nth(0), "1000"); // Cash
   await rows.nth(1).locator("input").nth(1).fill("15.00"); // credit
 
   await expect(page.getByText(t("accounting.entry.balanced"), { exact: true })).toBeVisible();

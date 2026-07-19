@@ -1,5 +1,6 @@
 import { test, expect } from "../lib/fixtures";
 import type { ApiGet } from "../lib/api";
+import { pickCombo } from "../lib/combobox";
 
 // Prerequisite: `scripts/seed_demo.py` master data (customer ACME, warehouse MAIN, item WIDGET,
 // tax code VAT14 via `manage.py seed_accounting`, and the STANDARD price list's WIDGET line) —
@@ -52,9 +53,9 @@ test("sales: create -> confirm -> deliver -> invoice -> partial pay -> pay in fu
 }) => {
   await page.goto("/#/sales/orders/new");
 
-  await page.getByLabel(t("sales.orders.customer")).selectOption("ACME");
-  await page.getByLabel(t("inventory.warehouse.label")).selectOption("MAIN");
-  await page.getByLabel(t("sales.newOrder.taxCode")).selectOption("VAT14");
+  await pickCombo(page, page.getByLabel(t("sales.orders.customer")), "ACME");
+  await pickCombo(page, page.getByLabel(t("inventory.warehouse.label")), "MAIN");
+  await pickCombo(page, page.getByLabel(t("sales.newOrder.taxCode")), "VAT14");
 
   const line = page.locator(".sales-table tbody tr").first();
   // Quantity BEFORE item: picking the item auto-resolves its price for the current customer+qty
@@ -62,7 +63,7 @@ test("sales: create -> confirm -> deliver -> invoice -> partial pay -> pay in fu
   // seed_pricing). Picking the item first and overwriting the field afterwards races that
   // in-flight resolve call, which can silently clobber a manually-typed price back to 150.00.
   await line.locator("input").nth(0).fill("5"); // quantity
-  await line.locator("select").selectOption("WIDGET");
+  await pickCombo(page, line.locator(".combobox-trigger"), "WIDGET");
   await expect(line.locator("input").nth(1)).toHaveValue("150.00"); // resolved unit price
 
   await page.getByRole("button", { name: t("sales.newOrder.create"), exact: true }).click();
@@ -88,7 +89,11 @@ test("sales: create -> confirm -> deliver -> invoice -> partial pay -> pay in fu
   // Partial payment (delivery-readiness FILE_05): order stays open with a reduced balance.
   await page.getByRole("button", { name: t("sales.detail.recordPayment"), exact: true }).click();
   await page.getByLabel(t("document.paymentDialog.amount")).fill("300.00");
-  await page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true }).click();
+  // The dialog seeds its amount field from state set by an effect on open — wait for the confirm
+  // button to actually enable (validation passes) rather than racing that render with the click.
+  const confirmBtn1 = page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true });
+  await expect(confirmBtn1).toBeEnabled();
+  await confirmBtn1.click();
 
   await expect(async () => {
     order = await apiGet<SalesOrderApi>(orderPath);
@@ -100,7 +105,9 @@ test("sales: create -> confirm -> deliver -> invoice -> partial pay -> pay in fu
 
   // Final payment (dialog defaults to the remaining outstanding) settles the order in full.
   await page.getByRole("button", { name: t("sales.detail.recordPayment"), exact: true }).click();
-  await page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true }).click();
+  const confirmBtn2 = page.getByRole("button", { name: t("document.paymentDialog.confirm"), exact: true });
+  await expect(confirmBtn2).toBeEnabled();
+  await confirmBtn2.click();
 
   await expect(async () => {
     order = await apiGet<SalesOrderApi>(orderPath);

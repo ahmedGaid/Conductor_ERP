@@ -1,4 +1,5 @@
 import { test, expect } from "../lib/fixtures";
+import { pickCombo } from "../lib/combobox";
 
 // Prerequisite: `scripts/seed_demo.py` master data (customer ACME, price list STANDARD, item
 // GADGET) — see Docs/RUNBOOK.md "Regression run before every release".
@@ -53,7 +54,7 @@ test("pricing: a qty-tiered price line resolves ahead of the base price in a sal
   // inline-edit button, whose accessible name also contains "Unit price" and would otherwise
   // make a page-wide getByLabel("Unit price") match 10+ elements.
   const addForm = page.locator("form.pricing-toolbar");
-  await addForm.getByLabel(t("pricing.detail.item")).selectOption("GADGET");
+  await pickCombo(page, addForm.getByLabel(t("pricing.detail.item")), "GADGET");
   await addForm.getByLabel(t("pricing.detail.unitPrice")).fill("250.00");
   await addForm.getByLabel(t("pricing.detail.minQty")).fill("20"); // tier: qty >= 20 -> 250.00
   await addForm.getByRole("button", { name: t("pricing.detail.addLine") }).click();
@@ -68,15 +69,16 @@ test("pricing: a qty-tiered price line resolves ahead of the base price in a sal
   // A new sales order for ACME: qty below the tier resolves the base price (300.00, seeded by
   // scripts/seed_demo.py seed_pricing); qty at/above the tier resolves the new 250.00 line.
   await page.goto("/#/sales/orders/new");
-  await page.getByLabel(t("sales.orders.customer")).selectOption("ACME");
+  await pickCombo(page, page.getByLabel(t("sales.orders.customer")), "ACME");
 
   const line = page.locator(".sales-table tbody tr").first();
   await line.locator("input").nth(0).fill("5"); // qty below the tier
-  await line.locator("select").selectOption("GADGET");
+  await pickCombo(page, line.locator(".combobox-trigger"), "GADGET");
   await expect(line.locator("input").nth(1)).toHaveValue("300.00");
 
   await line.locator("input").nth(0).fill("25"); // qty at/above the tier
-  await line.locator("select").selectOption(""); // re-pick to re-trigger resolution at the new qty
-  await line.locator("select").selectOption("GADGET");
+  // Re-pick (same option) to re-trigger price resolution at the new qty — ComboBox's onChange
+  // fires unconditionally on pick, so no need to clear first like the native <select> it replaced.
+  await pickCombo(page, line.locator(".combobox-trigger"), "GADGET");
   await expect(line.locator("input").nth(1)).toHaveValue("250.00");
 });
