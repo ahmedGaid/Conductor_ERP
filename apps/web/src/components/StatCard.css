@@ -42,11 +42,20 @@
   block-size: 1.1rem;
 }
 
+.statcard__icon--negative {
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger-strong);
+}
+
 .statcard__value {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+.statcard__value--negative {
+  color: var(--color-danger-strong);
 }
 
 .statcard__foot {
@@ -73,4 +82,9 @@
 
 .statcard__hint {
   color: var(--color-text-subtle);
+}
+
+.statcard__hint--negative {
+  color: var(--color-danger-strong);
+  font-weight: var(--font-weight-semibold);
 }

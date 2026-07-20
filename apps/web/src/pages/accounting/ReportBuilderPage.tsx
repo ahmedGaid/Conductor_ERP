@@ -191,7 +191,7 @@ export function ReportBuilderPage() {
                       <button className="btn btn--sm btn--primary" disabled={busy} onClick={() => setRunId(d.id)}>
                         {t("accounting.reportBuilder.run")}
                       </button>
-                      <button className="btn btn--sm btn--danger" onClick={() => onDelete(d.id)}>
+                      <button className="btn btn--sm btn--ghost" onClick={() => onDelete(d.id)}>
                         {t("common.delete")}
                       </button>
                     </div>

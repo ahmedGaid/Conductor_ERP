@@ -96,6 +96,8 @@
       "openDocument": "Open",
       "alreadyExecuted": "This was already handled.",
       "previewImpact": "Preview impact",
+      "retypeLabel": "Type {{value}} to confirm",
+      "retypeMismatch": "That doesn't match — check the amount and try again.",
       "titles": {
         "create_sales_order_draft": "Draft sales order",
         "create_purchase_request_draft": "Draft purchase request",
@@ -410,7 +412,7 @@
     "purchasing": "Purchase requests, orders to suppliers, goods received, supplier bills and returns.",
     "inventory": "Items, warehouses, current stock levels and every movement in and out.",
     "crm": "Leads, sales pipeline, opportunities, marketing campaigns and support tickets.",
-    "einvoice": "Submit your invoices electronically to the Egyptian Tax Authority and track their status.",
+    "einvoice": "Prepare your invoices for Egyptian e-invoicing and track them here. Filing to the Tax Authority's portal is not connected yet.",
     "notifications": "A log of every email and message the system has sent, with delivery status.",
     "workflows": "Design and run automated business processes across the whole system."
   },
@@ -529,7 +531,7 @@
       "lede": "Your standard VAT rate, and whether you use Egyptian e-invoicing (ETA).",
       "vatRate": "Standard VAT rate",
       "einvoice": "Egyptian e-invoicing (ETA)",
-      "einvoiceHint": "Turn off to hide e-invoicing across the app."
+      "einvoiceHint": "Prepares and tracks e-invoices in the app. Filing to the Tax Authority's portal is not connected yet. Turn off to hide e-invoicing across the app."
     },
     "invite": {
       "title": "Invite your team",
@@ -587,6 +589,7 @@
     "totalExpenses": "Total Expenses",
     "netProfit": "Net Profit",
     "cashBalance": "Cash Balance",
+    "cashNegative": "Balance is negative",
     "topExpenses": "Top Expenses",
     "noData": "No data yet.",
     "netCashFlow": "Net Cash Flow",
@@ -637,6 +640,10 @@
     "nodes": "Nodes",
     "instances": "Instances",
     "empty": "No workflows yet. Create your first one.",
+    "tabs": {
+      "workflows": "Workflows",
+      "instances": "Runs"
+    },
     "statusValue": {
       "active": "Active",
       "archived": "Archived"
@@ -714,6 +721,12 @@
     "toast": {
       "approved": "Approved",
       "rejected": "Rejected"
+    },
+    "list": {
+      "node": "Current step",
+      "created": "Started",
+      "empty": "No runs yet.",
+      "emptyHint": "Open a workflow and press Run to start one."
     },
     "openWorkflow": "Open workflow",
     "awaitingDecision": "Awaiting a decision at node: {{node}}",
@@ -924,6 +937,7 @@
       "unbalanced": "Unbalanced",
       "addLine": "Add line",
       "post": "Post entry",
+      "toastPosted": "Journal entry {{number}} posted to the ledger.",
       "invalidAmount": "Invalid amount",
       "needLines": "At least two lines with amounts are required"
     },
@@ -1058,6 +1072,12 @@
       "warehouse": "Warehouse",
       "received": "Received qty",
       "expiry": "Earliest expiry",
+      "expiresToday": "Expires today",
+      "expiresInOne": "1 day left",
+      "expiresIn": "{{count}} days left",
+      "expiredAgoOne": "expired 1 day ago",
+      "expiredAgo": "expired {{count}} days ago",
+      "viewStock": "View stock",
       "empty": "No batches recorded yet.",
       "hint": "Receive stock with a batch/lot and expiry to see it traced here."
     },
@@ -1208,7 +1228,7 @@
       "invoice": "Issue invoice",
       "recordPayment": "Record payment",
       "completeSale": "Complete sale",
-      "sendEinvoice": "Send as e-invoice",
+      "sendEinvoice": "Prepare as e-invoice",
       "creditNoteNo": "Credit note no.",
       "returned": "Returned",
       "deliverRemaining": "Deliver remaining",
@@ -1227,6 +1247,7 @@
       "empty": "No quotations yet.",
       "create": "Create quotation",
       "approval": "Approval",
+      "lineDetails": "Quotation details",
       "needsApproval": "Needs approval",
       "autoApprove": "Auto-approved",
       "convertedTo": "Converted to",
@@ -1357,7 +1378,8 @@
       "approved": "Approved",
       "pendingApproval": "Pending approval",
       "vat": "VAT",
-      "orderDetails": "Order details"
+      "orderDetails": "Order details",
+      "requestDetails": "Request details"
     },
     "requests": {
       "number": "Request no.",
@@ -1421,6 +1443,7 @@
       "escalationsRun": "Escalated {{count}} ticket(s)",
       "stageAdvanced": "Moved to {{stage}}",
       "oppWon": "Opportunity won",
+      "oppWonWithOrder": "Opportunity won — sales order {{number}} created",
       "oppLost": "Opportunity lost",
       "campaignActivated": "Campaign activated",
       "campaignCompleted": "Campaign completed",
@@ -1478,6 +1501,7 @@
       "company": "Company",
       "email": "Email",
       "source": "Source",
+      "campaignCode": "Campaign code",
       "code": "Lead no.",
       "convert": "Convert",
       "empty": "No leads yet.",
@@ -1486,6 +1510,7 @@
     "opp": {
       "name": "Opportunity",
       "customer": "Customer",
+      "campaignCode": "Campaign code",
       "number": "Opp. no.",
       "stage": "Stage",
       "amount": "Amount",
@@ -1512,6 +1537,9 @@
     "detail": {
       "advanceTo": "Move to {{stage}}",
       "win": "Mark won",
+      "winConfirmTitle": "Mark \"{{name}}\" as won?",
+      "winConfirmBody": "This closes the opportunity as won.",
+      "winConfirmBodyWithOrder": "This closes the opportunity as won and creates a real sales order from its lines.",
       "lose": "Mark lost",
       "namePlaceholder": "Opportunity name",
       "notesPlaceholder": "Add a note"
@@ -1838,23 +1866,27 @@
   },
   "einvoice": {
     "toast": {
-      "submitted": "Invoice submitted"
+      "submitted": "Invoice prepared"
     },
     "tabs": {
       "invoices": "E-invoices"
     },
     "empty": "No e-invoices yet — issue a sales invoice to create one.",
+    "notConnected": {
+      "title": "Filing to the Tax Authority is not connected yet",
+      "detail": "Invoices are prepared and tracked here only. Nothing is sent to the Authority's portal, and the reference on each row is generated by this system — keep filing the way you do today until the connection is set up."
+    },
     "invoice": "Invoice",
     "customer": "Customer",
     "tax": "VAT",
     "total": "Total",
-    "uuid": "ETA UUID",
+    "uuid": "Local reference",
     "statusHeader": "Status",
-    "submit": "Submit to ETA",
+    "submit": "Prepare for filing",
     "poll": "Check status",
     "status": {
       "draft": "Draft",
-      "submitted": "Submitted",
+      "submitted": "Prepared",
       "valid": "Valid",
       "rejected": "Rejected",
       "cancelled": "Cancelled"
@@ -1933,7 +1965,8 @@
   },
   "settings": {
     "title": "Settings",
-    "intro": "Personalize your workspace. These preferences are yours alone and never affect other users.",
+    "introPersonal": "Personalize your workspace. These preferences are yours alone and never affect other users.",
+    "introOrg": "These settings apply to your whole organization — every user is affected by what you change here.",
     "tabs": {
       "profile": "Profile",
       "appearance": "Appearance",
@@ -2061,11 +2094,13 @@
       "companyName": "Company name",
       "country": "Country",
       "vatNumber": "VAT registration number",
-      "vatNumberDesc": "Shown on your invoices and e-invoice submissions.",
+      "vatNumberDesc": "Shown on your invoices and e-invoice records.",
       "baseCurrency": "Base currency",
       "baseCurrencyDesc": "The currency your books are kept in.",
       "einvoice": "Egyptian e-invoicing (ETA)",
-      "einvoiceDesc": "When off, e-invoicing is hidden across the app.",
+      "einvoiceDesc": "Prepares and tracks e-invoices in the app; filing to the Tax Authority's portal is not connected yet. When off, e-invoicing is hidden across the app.",
+      "assistantPosting": "Assistant posting actions",
+      "assistantPostingDesc": "Let the assistant post, receive, and pay — not just draft. Off by default.",
       "language": "Default language",
       "languageDesc": "The language new users start with.",
       "theme": "Default theme",
@@ -2125,6 +2160,55 @@
         "status_delivered": "Delivered",
         "status_retrying": "Retrying",
         "status_failed": "Failed"
+      },
+      "event": {
+        "accounting": {
+          "JournalPosted": "Journal posted",
+          "PeriodClosed": "Period closed"
+        },
+        "crm": {
+          "LeadConverted": "Lead converted",
+          "OpportunityWon": "Opportunity won",
+          "OpportunityLost": "Opportunity lost",
+          "TicketOpened": "Ticket opened",
+          "TicketResolved": "Ticket resolved",
+          "TicketEscalated": "Ticket escalated"
+        },
+        "einvoice": {
+          "Recorded": "Invoice recorded",
+          "Submitted": "Invoice submitted",
+          "Validated": "Invoice validated",
+          "Rejected": "Invoice rejected"
+        },
+        "inventory": {
+          "StockReceived": "Stock received",
+          "StockIssued": "Stock issued",
+          "StockTransferred": "Stock transferred"
+        },
+        "purchasing": {
+          "OrderApproved": "Purchase order approved",
+          "OrderConfirmed": "Purchase order confirmed",
+          "OrderReceived": "Purchase order received",
+          "OrderBilled": "Purchase order billed",
+          "OrderPaid": "Purchase order paid",
+          "OrderReturned": "Purchase order returned",
+          "RequestSubmitted": "Purchase request submitted",
+          "RequestApproved": "Purchase request approved",
+          "RequestRejected": "Purchase request rejected",
+          "RequestConverted": "Purchase request converted"
+        },
+        "sales": {
+          "OrderApproved": "Order approved",
+          "OrderConfirmed": "Order confirmed",
+          "OrderDelivered": "Order delivered",
+          "OrderInvoiced": "Order invoiced",
+          "OrderReturned": "Order returned",
+          "PaymentReceived": "Payment received",
+          "QuotationSubmitted": "Quotation submitted",
+          "QuotationApproved": "Quotation approved",
+          "QuotationRejected": "Quotation rejected",
+          "QuotationConverted": "Quotation converted"
+        }
       }
     },
     "customFields": {
@@ -2188,7 +2272,7 @@
       "secretRevealDesc": "Shown once — copy it now. It authenticates as the {{role}} role via the Authorization header.",
       "secretRevealDismiss": "I've copied it",
       "docsTitle": "Reference",
-      "docsLead": "Every route this key can reach, generated from the live API — never hand-maintained.",
+      "docsLead": "Every route this API exposes, generated from the live server — never hand-maintained. A key can only reach the routes its role is granted; this list isn't filtered per key.",
       "docsAuthTitle": "Authentication",
       "docsAuthBody": "Send the key on every request:",
       "docsMoneyNote": "Money amounts are always integer minor units (piasters) on the wire — never a decimal.",

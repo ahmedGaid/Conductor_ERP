@@ -13,11 +13,18 @@ const SALES_TONES: Record<string, BadgeTone> = {
 };
 
 const PURCHASING_TONES: Record<string, BadgeTone> = {
+  // Purchase order statuses
   confirmed: "running",
   received: "waiting",
   billed: "accent",
   paid: "completed",
   cancelled: "failed",
+  // Purchase request statuses (shared tone map — request/order status names don't collide)
+  draft: "neutral",
+  submitted: "pending",
+  approved: "waiting",
+  rejected: "failed",
+  converted: "completed",
 };
 
 const CRM_TONES: Record<string, BadgeTone> = {

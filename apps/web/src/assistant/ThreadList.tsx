@@ -153,13 +153,16 @@ export function ThreadList({ onPick }: { onPick?: () => void } = {}) {
           />
         ) : (
           <button type="button" className="thread-row__main" onClick={() => select(c)}>
-            <span className="thread-row__title">
+            {/* dir="auto" on the truncating element itself — not just the inner Bdi isolation —
+                so text-overflow clips at this title's own trailing edge even when its script
+                differs from the UI language (an English title in an Arabic UI, or vice versa). */}
+            <span className="thread-row__title" dir="auto">
               <Bdi>{c.title || t("assistant.threads.untitled")}</Bdi>
             </span>
             <span className="thread-row__meta">
               <span className="thread-row__time">{relativeTime(c.updated_at, lang)}</span>
               {c.preview && (
-                <span className="thread-row__preview">
+                <span className="thread-row__preview" dir="auto">
                   <Bdi>{c.preview}</Bdi>
                 </span>
               )}

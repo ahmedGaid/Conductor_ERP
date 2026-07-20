@@ -30,6 +30,7 @@ import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { Disclosure } from "../../components/Disclosure";
+import { RecordTimeline } from "../../components/RecordTimeline";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
@@ -202,7 +203,7 @@ export function QuotationDetailPage() {
         </div>
       </div>
 
-      <Disclosure summary={t("sales.detail.orderDetails")} defaultOpen>
+      <Disclosure summary={t("sales.quotations.lineDetails")} defaultOpen>
         <div className="sales-table-wrap">
           <table className="sales-table">
             <thead>
@@ -226,10 +227,12 @@ export function QuotationDetailPage() {
           </table>
 
           <dl className="sales-meta">
-            <div className="sales-meta__row">
-              <dt>{t("sales.quotations.approval")}</dt>
-              <dd>{data.requires_approval ? t("sales.quotations.needsApproval") : t("sales.quotations.autoApprove")}</dd>
-            </div>
+            {(data.status === "draft" || data.status === "submitted") && (
+              <div className="sales-meta__row">
+                <dt>{t("sales.quotations.approval")}</dt>
+                <dd>{data.requires_approval ? t("sales.quotations.needsApproval") : t("sales.quotations.autoApprove")}</dd>
+              </div>
+            )}
             {data.converted_order_number && (
               <div className="sales-meta__row">
                 <dt>{t("sales.quotations.convertedTo")}</dt>
@@ -244,6 +247,10 @@ export function QuotationDetailPage() {
             )}
           </dl>
         </div>
+      </Disclosure>
+
+      <Disclosure summary={t("timeline.title")}>
+        <RecordTimeline entityType="Quotation" entityId={data.number} />
       </Disclosure>
     </section>
   );

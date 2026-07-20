@@ -12,9 +12,11 @@ interface Props {
   hint?: string;
   /** When true, a positive delta is bad (e.g. expenses) and shown red. */
   invertDelta?: boolean;
+  /** When true, the value itself is an alarming number (e.g. negative cash) — coloured + iconed + worded, not just a minus sign. */
+  negative?: boolean;
 }
 
-export function StatCard({ label, value, icon, delta, hint, invertDelta }: Props) {
+export function StatCard({ label, value, icon, delta, hint, invertDelta, negative }: Props) {
   const { t } = useTranslation();
   const hasDelta = delta !== undefined && delta !== null;
   const good = hasDelta ? (invertDelta ? (delta as number) < 0 : (delta as number) >= 0) : false;
@@ -24,12 +26,12 @@ export function StatCard({ label, value, icon, delta, hint, invertDelta }: Props
       <div className="statcard__top">
         <span className="statcard__label">{label}</span>
         {icon && (
-          <span className="statcard__icon" aria-hidden="true">
-            <NavIcon name={icon} />
+          <span className={negative ? "statcard__icon statcard__icon--negative" : "statcard__icon"} aria-hidden="true">
+            <NavIcon name={negative ? "warning" : icon} />
           </span>
         )}
       </div>
-      <div className="statcard__value">
+      <div className={negative ? "statcard__value statcard__value--negative" : "statcard__value"}>
         <Bdi>{value}</Bdi>
       </div>
       <div className="statcard__foot">
@@ -39,7 +41,9 @@ export function StatCard({ label, value, icon, delta, hint, invertDelta }: Props
             <Bdi>{Math.abs(delta as number)}%</Bdi>
           </span>
         ) : null}
-        <span className="statcard__hint">{hint ?? t("dashboard.vsLastMonth")}</span>
+        <span className={negative ? "statcard__hint statcard__hint--negative" : "statcard__hint"}>
+          {negative ? t("dashboard.cashNegative") : hint ?? t("dashboard.vsLastMonth")}
+        </span>
       </div>
     </div>
   );

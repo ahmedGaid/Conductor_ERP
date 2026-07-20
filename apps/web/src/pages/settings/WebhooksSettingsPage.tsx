@@ -41,6 +41,28 @@ const DELIVERY_TONE: Record<WebhookDelivery["status"], BadgeTone> = {
 
 let tempSeq = 0;
 
+/** Translated label for a catalog event name ("sales.QuotationConverted"), falling back to the
+ *  raw name if a module/event pair hasn't been added to the event.* dictionary yet. */
+function eventLabel(t: ReturnType<typeof useTranslation>["t"], name: string): string {
+  const key = `settings.webhooks.event.${name}`;
+  const label = t(key);
+  return label === key ? name : label;
+}
+
+/** Splits the flat, alphabetically-sorted event catalog into contiguous per-module groups
+ *  ("sales.QuotationConverted" → module "sales") — the sort already keeps each module's events
+ *  together, so this only needs to detect where the prefix changes. */
+function groupEventsByModule(names: string[]): Array<{ module: string; names: string[] }> {
+  const groups: Array<{ module: string; names: string[] }> = [];
+  for (const name of names) {
+    const [module] = name.split(".");
+    const last = groups[groups.length - 1];
+    if (last && last.module === module) last.names.push(name);
+    else groups.push({ module, names: [name] });
+  }
+  return groups;
+}
+
 function DeliveriesPanel({
   subscriptionId,
   onStats,
@@ -97,7 +119,7 @@ function DeliveriesPanel({
       <tbody>
         {data.map((d) => (
           <tr key={d.id} className="admin-row">
-            <td className="latin">{d.event_name}</td>
+            <td>{eventLabel(t, d.event_name)}</td>
             <td>
               <Badge tone={DELIVERY_TONE[d.status]}>
                 {t(`settings.webhooks.deliveries.status_${d.status}`)}
@@ -277,15 +299,20 @@ export function WebhooksSettingsPage() {
         <div className="admin-field">
           <span>{t("settings.webhooks.events")}</span>
           <div className="webhook-events">
-            {(catalog ?? []).map((name) => (
-              <label key={name} className="webhook-event-label latin">
-                <input
-                  type="checkbox"
-                  checked={selectedEvents.includes(name)}
-                  onChange={() => toggleEvent(name)}
-                />
-                {name}
-              </label>
+            {groupEventsByModule(catalog ?? []).map((group) => (
+              <fieldset key={group.module} className="webhook-events__group">
+                <legend>{t(`nav.${group.module}`, group.module)}</legend>
+                {group.names.map((name) => (
+                  <label key={name} className="webhook-event-label">
+                    <input
+                      type="checkbox"
+                      checked={selectedEvents.includes(name)}
+                      onChange={() => toggleEvent(name)}
+                    />
+                    {eventLabel(t, name)}
+                  </label>
+                ))}
+              </fieldset>
             ))}
           </div>
         </div>
@@ -319,7 +346,7 @@ export function WebhooksSettingsPage() {
                 <Fragment key={sub.id}>
                   <tr className="admin-row">
                     <td className="latin">{sub.url}</td>
-                    <td className="latin">{sub.event_names.join(", ")}</td>
+                    <td>{sub.event_names.map((n) => eventLabel(t, n)).join(", ")}</td>
                     <td>
                       <Toggle
                         checked={sub.is_active}

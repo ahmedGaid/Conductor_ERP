@@ -21,6 +21,7 @@ import { StatusRing } from "../../components/StatusRing";
 import { einvoiceTone } from "../../lib/statusTone";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
+import { DocumentStatusNote } from "../../components/DocumentStatusNote";
 import { FilterBar } from "../../components/FilterBar";
 import { SavedViews } from "../../components/SavedViews";
 import { useSavedViews } from "../../hooks/useSavedViews";
@@ -94,6 +95,15 @@ export function EInvoicesPage() {
   return (
     <section className="ein-page">
       <EInvoiceNav />
+
+      {/* Claims discipline: the ETA adapter is simulated (erp/einvoice/services/eta_adapter.py,
+          SIMULATED), so nothing on this screen reaches the Tax Authority. Say so once, plainly,
+          above the table — remove this note in the same change that flips SIMULATED to False. */}
+      <DocumentStatusNote
+        tone="active"
+        title={t("einvoice.notConnected.title")}
+        detail={t("einvoice.notConnected.detail")}
+      />
 
       {loading && (
         <ListSkeleton />

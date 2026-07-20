@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 import { getMe } from "../../api/identity";
 import { useAsync } from "../../hooks/useAsync";
@@ -15,15 +15,31 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "accessibility", to: "/settings/accessibility" },
 ];
 
+// These tabs change data every user in the org sees or is bound by — the opposite of "yours
+// alone" (brand-philosophy-review §04i P1). Their path prefixes drive which intro line shows.
+const ORG_WIDE_PATHS = [
+  "/settings/organization",
+  "/settings/branches",
+  "/settings/webhooks",
+  "/settings/custom-fields",
+  "/settings/developers",
+  "/settings/system",
+  "/settings/ai-usage",
+];
+
 export function SettingsNav() {
   const { t } = useTranslation();
   const { data: me } = useAsync(getMe, []);
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
+  const location = useLocation();
+  const isOrgWideTab = ORG_WIDE_PATHS.some((path) => location.pathname.startsWith(path));
 
   return (
     <header className="module-head">
       <h1 className="module-head__title">{t("settings.title")}</h1>
-      <p className="module-head__desc">{t("settings.intro")}</p>
+      <p className="module-head__desc">
+        {t(isOrgWideTab ? "settings.introOrg" : "settings.introPersonal")}
+      </p>
       <nav className="setnav" aria-label={t("settings.title")}>
         {TABS.map(({ key, to, end }) => (
           <NavLink

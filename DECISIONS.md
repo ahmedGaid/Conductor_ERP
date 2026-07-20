@@ -4,6 +4,40 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## E-invoicing claims discipline: the module says what it does, and `eta_client` stays unwired (2026-07-20)
+
+`brand-philosophy-review` §04j P1, executed under `pre-handover-hardening/FILE_01` (Branch B — ship
+with documented simulation). The review found `/einvoice` claiming live ETA filing end to end in
+both locales over an adapter whose own docstring says it *simulates*. Four decisions.
+
+**1. "Valid" is now unreachable, not merely unlikely.** The old stub's `query()` returned `"valid"`
+for anything it was handed, so every prepared invoice drifted to a resting status meaning *the Tax
+Authority accepted this* — a statement no authority had made. `eta_adapter.query()` now returns
+`"pending"` and `poll_invoice` leaves the record at `submitted` on that outcome. The `valid` branch
+is untouched and still tested (`test_poll_validates_when_the_adapter_reports_valid`) so a real
+adapter reaches it the day it exists. Rejected alternative: hiding the "Check status" action —
+polling is a real, honest operation; it just has no verdict to report yet.
+
+**2. The UUID column is a local reference.** `uuid` holds the first 64 hex chars of our own document
+hash. Labelled *Local reference* / *مرجع محلي* in the table, the export columns, and the help
+content. The DB column keeps its name (a real ETA UUID will occupy it later); only the human label
+changed.
+
+**3. The copy is hedged wherever a customer could read a claim** — module intro, the on-screen
+`einvoice.notConnected` note, submit action + toast, the `submitted` status label (*Prepared* /
+*مُجهَّزة*), the two Settings hints, the sales order action, the module help guide, the glossary
+term, and the `einvoice-submission` journey (which described a `processing → accepted` flow that
+never existed in this product). One truth: invoices are *prepared and tracked here*; filing stays
+manual until the connection is set up.
+
+**4. `eta_client.py` is deliberately NOT wired into `issue.py`.** It is the *credential* half only —
+it fetches an OAuth token and submits nothing (document submission is FILE_02+, STOP-gated behind
+sandbox credentials the customer has not supplied). Wiring it into `submit_invoice` would add a
+token round-trip that changes no outcome while making the code *look* live — the exact confusion
+this session exists to remove. It stays reachable from the operator panel (`status_report()`) as a
+readiness check. It gets wired in FILE_02, together with real document submission, in the same
+change that flips `eta_adapter.SIMULATED` to False and un-hedges the copy above.
+
 ## ETA e-invoicing: API contract verified against official docs; stdlib HTTP; https enforced (2026-07-20)
 
 `einvoice-eta-live/FILE_01` (partial — see "still open" below). Three choices worth recording.
@@ -2562,3 +2596,30 @@ without being so tight that one new untested branch trips it. Not gated per-app 
 at 85% and `accounting`/`imports` at 87% sit closest to a 84% global floor) — a future session can
 tighten per-app once the founder decides which modules deserve a stricter bar; recorded here as a
 deliberately deferred choice, not an oversight.
+
+## perf-ux-polish: P1 brand-review fix batch (2026-07-20)
+
+21 of 25 P1 findings fixed in one session (see `conductor-brand-fix` skill for the full table).
+Three deliberate scope calls made along the way:
+
+- **Developers API reference (`ApiDocsView`)** — the finding was that `settings.developers.docsLead`
+  claimed "every route this key can reach" while actually dumping all 209 routes unfiltered. Real
+  per-key filtering would need a route→permission-code map that doesn't exist yet (every view's
+  `HasModulePermission.required_codes` would need collecting and cross-referencing against the
+  key's role — a bigger, separate piece of work). Fixed what was cheaply and honestly fixable now:
+  the copy no longer claims a scoping the endpoint doesn't do, and raw Django converters
+  (`<uuid:pk>`) are humanized (`{pk}`) before reaching the customer-facing panel. Real per-key
+  filtering is still open — flag it if a customer actually asks for a scoped reference.
+- **System Admin's `permission_count`** — `roles_admin.list_roles()` used to report `0` for System
+  Admin because it bypasses the granular `RolePermission` table entirely (see `permissions.py`).
+  Rather than inventing a "N/A — bypasses all checks" special case, it now reports the total
+  registered permission count (`modules × actions` from `rbac.py`), mirroring the precedent already
+  set by `_modules_for()` for the same role.
+- **Quotation validity/expiry** — the P1 asked for a validity/expiry date on quotation detail, but
+  `Quotation` has no such field on the model at all; adding one is a migration, not a UI fix. Timeline
+  + the `requires_approval` mislabel + a dedicated "Quotation details" heading were fixed (all
+  UI-only); the expiry field itself is deferred alongside the three explicitly-BIG findings (workflow
+  instances route, CRM activity history, bilingual chart-of-accounts).
+
+Gates: `tsc --noEmit` clean, i18n parity 2158/2158, Vitest 39/39, `gate03.py` clean,
+`pytest erp/identity erp/purchasing erp/crm` 175/175.

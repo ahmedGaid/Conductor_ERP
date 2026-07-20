@@ -93,6 +93,7 @@ export function PipelinePage() {
   const [name, setName] = useState("");
   const [customer, setCustomer] = useState("");
   const [warehouse, setWarehouse] = useState("");
+  const [campaignCode, setCampaignCode] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -136,11 +137,13 @@ export function PipelinePage() {
         name,
         customer_code: customer,
         warehouse_code: warehouse,
+        campaign_code: campaignCode.trim() || undefined,
         lines: payloadLines,
       });
       setName("");
       setCustomer("");
       setWarehouse("");
+      setCampaignCode("");
       setLines([emptyLine()]);
       reload();
       toast.show(t("crm.toast.opportunityCreated"), "success");
@@ -202,6 +205,10 @@ export function PipelinePage() {
               placeholder={t("common.selectField", { field: t("inventory.warehouse.label") })}
               options={(warehouses ?? []).map((w) => ({ value: w.code, label: `${w.code} · ${w.name}` }))}
             />
+          </label>
+          <label className="crm-field">
+            <span>{t("crm.opp.campaignCode")}</span>
+            <input className="latin" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} />
           </label>
         </div>
 

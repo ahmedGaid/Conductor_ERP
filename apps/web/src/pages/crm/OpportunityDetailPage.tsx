@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
@@ -16,6 +16,7 @@ import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { DocumentPrimaryButton } from "../../components/DocumentHeader";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
@@ -49,6 +50,7 @@ export function OpportunityDetailPage() {
     `crm:opportunity:${id}`,
   );
   useRecentEntity(data?.number);
+  const [confirmWin, setConfirmWin] = useState(false);
 
   // Optimistic: flip the stage instantly so the badge and action set update, then let the server's
   // returned opportunity reconcile derived values (weighted amount, spawned sales order). A failure
@@ -83,6 +85,26 @@ export function OpportunityDetailPage() {
     });
   }
 
+  // Win is confirmed, not undo-not-confirm, because it spawns a real sales order in another
+  // module — unlike advance/lose, there's no clean inverse to offer as an Undo.
+  function doWin() {
+    if (!data) return;
+    const createSalesOrder = data.lines.length > 0;
+    void runOptimistic<Opportunity, Opportunity>({
+      current: data,
+      mutate,
+      optimistic: (o) => ({ ...o, stage: "won" }),
+      request: () => winOpportunity(data.id, createSalesOrder),
+      settle: (_predicted, updated) => updated,
+      toast,
+      success: t("crm.toast.oppWon"),
+      successFrom: (updated) =>
+        updated.sales_order_number
+          ? t("crm.toast.oppWonWithOrder", { number: updated.sales_order_number })
+          : "",
+    });
+  }
+
   // Inline edit of the opportunity's title: same optimistic flow, confirmed with a "Saved" toast
   // once it lands (a deliberate text edit, unlike the freely-clicked stage actions). Awaited so the
   // field holds its saving state until the round-trip settles.
@@ -107,8 +129,7 @@ export function OpportunityDetailPage() {
   // mirrored into the palette, so it still needs registering here.
   const pageActions: PaletteAction[] = [];
   if (data && (data.stage === "qualifying" || data.stage === "proposal" || data.stage === "negotiation")) {
-    pageActions.push({ id: "win", label: t("crm.detail.win"),
-      run: () => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon")) });
+    pageActions.push({ id: "win", label: t("crm.detail.win"), run: () => setConfirmWin(true) });
   }
   usePaletteActions("opportunity-detail", pageActions);
 
@@ -123,7 +144,7 @@ export function OpportunityDetailPage() {
       <DocumentPrimaryButton
         action={{
           label: t("crm.detail.win"),
-          onClick: () => act((o) => ({ ...o, stage: "won" }), () => winOpportunity(data.id, data.lines.length > 0), t("crm.toast.oppWon")),
+          onClick: () => setConfirmWin(true),
         }}
       />
     );
@@ -257,6 +278,19 @@ export function OpportunityDetailPage() {
               </table>
             </div>
           )}
+
+          <ConfirmDialog
+            open={confirmWin}
+            title={t("crm.detail.winConfirmTitle", { name: data.name })}
+            body={
+              data.lines.length > 0
+                ? t("crm.detail.winConfirmBodyWithOrder")
+                : t("crm.detail.winConfirmBody")
+            }
+            confirmLabel={t("crm.detail.win")}
+            onConfirm={doWin}
+            onClose={() => setConfirmWin(false)}
+          />
         </>
       )}
     </section>

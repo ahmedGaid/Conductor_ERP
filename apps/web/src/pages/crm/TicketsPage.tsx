@@ -287,7 +287,7 @@ export function TicketsPage() {
                 <th>{t("crm.ticket.subject")}</th>
                 <th>{t("crm.ticket.priority")}</th>
                 <th>{t("common.owner")}</th>
-                <th>{t("crm.opp.stage")}</th>
+                <th>{t("common.status")}</th>
                 <th>{t("crm.ticket.sla")}</th>
                 <th />
               </tr>

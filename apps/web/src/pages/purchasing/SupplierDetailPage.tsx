@@ -102,7 +102,7 @@ export function SupplierDetailPage() {
       name={name}
       typeLabel={t("party.supplier")}
       summary={summary}
-      ordersTitle={t("party.ordersTitle")}
+      ordersTitle={t("purchasing.tabs.orders")}
       orders={rows}
       ordersEmpty={t("party.noOrders")}
       ledger={ledger ?? null}

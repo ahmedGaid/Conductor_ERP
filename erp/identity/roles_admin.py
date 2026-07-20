@@ -29,10 +29,17 @@ def list_roles() -> list[dict]:
             "protected": is_protected(g.name),
             # Hidden API-key service principals aren't human members of this role.
             "members": g.user_set.filter(api_key_principal__isnull=True).count(),
-            "permission_count": g.role_permissions.count(),
+            # System Admin bypasses the granular table entirely (see permissions.py), so it never
+            # carries RolePermission rows — count it as holding every registered permission rather
+            # than reporting a false 0.
+            "permission_count": _total_permission_count() if g.name == SYSTEM_ADMIN else g.role_permissions.count(),
             "modules": _modules_for(g),
         })
     return rows
+
+
+def _total_permission_count() -> int:
+    return sum(len(entities) for entities in rbac.MODULES.values()) * len(rbac.ACTIONS)
 
 
 def role_detail(name: str) -> dict:

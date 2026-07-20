@@ -1,8 +1,11 @@
 """E-invoice lifecycle services.
 
-record_invoice (idempotent, from a posted sales invoice) → submit (to ETA, assigns UUID) →
-poll (validate). Every transition is atomic. The submission itself goes through the ETA adapter,
-so the only side effect is the simulated external call + the persisted status.
+record_invoice (idempotent, from a posted sales invoice) → submit (prepare, assigns a reference) →
+poll (ask for the outcome). Every transition is atomic. The submission itself goes through the ETA
+adapter, so the only side effect is the (currently simulated) external call + the persisted status.
+
+While ``eta_adapter.SIMULATED`` is True nothing reaches the Tax Authority, so ``poll_invoice``
+cannot reach ``valid`` — a prepared invoice rests at ``submitted``.
 """
 from __future__ import annotations
 
@@ -79,7 +82,7 @@ def record_invoice(data: EInvoiceInput, actor=None) -> ETAInvoice:
 
 @transaction.atomic
 def submit_invoice(eta: ETAInvoice, actor=None) -> ETAInvoice:
-    """Submit a draft (or re-submit a submitted) e-invoice to ETA. Idempotent on the UUID."""
+    """Prepare a draft (or re-prepare a prepared) e-invoice for ETA. Idempotent on the reference."""
     from erp.assistant.services.simulation import in_sim_mode, record_skip
 
     if in_sim_mode():
@@ -116,6 +119,13 @@ def poll_invoice(eta: ETAInvoice, actor=None) -> ETAInvoice:
             data={"invoice": eta.invoice_number, "status": eta.status, "expected": "submitted"}
         )
     outcome = eta_adapter.query(eta.uuid)
+    if outcome == "pending":
+        # The adapter has no Tax-Authority verdict to report (it is simulated). Leave the record
+        # where it is rather than inventing a "valid" that no authority granted — see
+        # eta_adapter.SIMULATED and the claims-discipline decision (2026-07-20).
+        audit.record(module="einvoice", action="poll_invoice", entity_type="ETAInvoice",
+                     entity_id=eta.invoice_number, actor=actor, after={"status": eta.status})
+        return eta
     if outcome == "valid":
         eta.status = ETAStatus.VALID
         eta.validated_at = eta.validated_at or timezone.now()

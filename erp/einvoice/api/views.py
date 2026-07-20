@@ -42,7 +42,8 @@ def _einvoice_table(qs, lang: str) -> ReportTable:
         Column("customer", _l("Customer", "العميل", lang)),
         Column("tax", _l("VAT", "ضريبة", lang), kind="money", align="end"),
         Column("total", _l("Total", "الإجمالي", lang), kind="money", align="end"),
-        Column("uuid", _l("ETA UUID", "معرّف المصلحة", lang)),
+        # Locally generated, not a Tax-Authority UUID, while the adapter is simulated.
+        Column("uuid", _l("Local reference", "مرجع محلي", lang)),
         Column("status", _l("Status", "الحالة", lang)),
     ]
     rows = [

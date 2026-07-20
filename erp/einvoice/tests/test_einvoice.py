@@ -8,6 +8,7 @@ import pytest
 
 from erp.einvoice.domain.models import ETAInvoice, ETAStatus
 from erp.einvoice.errors import InvalidEInvoiceTransitionError
+from erp.einvoice.services import eta_adapter
 from erp.einvoice.services import (
     EInvoiceInput,
     poll_invoice,
@@ -64,7 +65,7 @@ def test_invoicing_records_eta_invoice_via_the_event_bus():
     assert eta.document_hash  # computed at record time
 
 
-def test_submit_then_poll_validates():
+def test_submit_then_poll_stays_prepared_while_simulated():
     order = _invoiced_order()
     eta = ETAInvoice.objects.get(invoice_number=order.invoice_number)
 
@@ -80,6 +81,22 @@ def test_submit_then_poll_validates():
     eta.refresh_from_db()
     assert eta.uuid == first_uuid
 
+    # The adapter is simulated, so polling has no Tax-Authority verdict to report: the record must
+    # rest at "prepared" rather than claim a validation nobody granted (claims discipline §04j).
+    poll_invoice(eta)
+    eta.refresh_from_db()
+    assert eta.status == ETAStatus.SUBMITTED
+    assert eta.validated_at is None
+
+
+def test_poll_validates_when_the_adapter_reports_valid(monkeypatch):
+    """The `valid` path still works — it is reachable only from a real (non-simulated) adapter."""
+    order = _invoiced_order()
+    eta = ETAInvoice.objects.get(invoice_number=order.invoice_number)
+    submit_invoice(eta)
+    eta.refresh_from_db()
+
+    monkeypatch.setattr(eta_adapter, "query", lambda uuid: "valid")
     poll_invoice(eta)
     eta.refresh_from_db()
     assert eta.status == ETAStatus.VALID
@@ -130,8 +147,9 @@ def test_eta_lifecycle_via_api():
     assert submitted["status"] == "submitted"
     assert submitted["uuid"]
 
-    validated = client.post(f"/api/einvoice/invoices/{eta.id}/poll").data["data"]
-    assert validated["status"] == "valid"
+    # Polling a simulated submission reports no verdict — the record stays "submitted" (prepared).
+    polled = client.post(f"/api/einvoice/invoices/{eta.id}/poll").data["data"]
+    assert polled["status"] == "submitted"
 
 
 def test_eta_requires_authentication():

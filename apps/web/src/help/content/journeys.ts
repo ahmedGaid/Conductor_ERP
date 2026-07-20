@@ -119,21 +119,20 @@ export const JOURNEYS: Journey[] = [
   },
   {
     id: "einvoice-submission",
-    title: { ar: "تقديم الفاتورة الإلكترونية (منظومة الفوترة)", en: "e-invoice submission (ETA)" },
+    title: { ar: "تجهيز الفاتورة الإلكترونية (منظومة الفوترة)", en: "Preparing an e-invoice (ETA)" },
     summary: {
-      ar: "إرسال فاتورة بيع إلى مصلحة الضرائب المصرية إلكترونيًا.",
-      en: "Sending a sales invoice to the Egyptian Tax Authority electronically.",
+      ar: "تجهيز فاتورة بيع بشكل الفوترة الإلكترونية المصرية ومتابعتها. الإرسال إلى المصلحة غير موصول بعد.",
+      en: "Preparing a sales invoice in Egyptian e-invoicing form and tracking it. Filing to the Authority is not connected yet.",
     },
     steps: [
-      { ar: "يجب أولًا ضبط بيانات اعتماد ETA الحقيقية من الإعدادات — لا تُفعَّل هذه الخطوة تلقائيًا.", en: "Real ETA credentials must be configured in Settings first — this isn't enabled by default." },
-      { ar: "بعد إصدار فاتورة بيع، تظهر في قائمة الفوترة الإلكترونية بحالة \"لم تُرسَل بعد\".", en: "After issuing a sales invoice, it appears in the e-invoicing list as \"not yet submitted\"." },
-      { ar: "من القائمة: أرسل الفاتورة — الحالة تتحول إلى \"قيد المعالجة\" ثم \"مقبولة\" أو \"مرفوضة\".", en: "From the list: submit the invoice — status moves to \"processing\", then \"accepted\" or \"rejected\"." },
-      { ar: "عند الرفض، سبب الرفض يظهر بجانب الفاتورة — صحّح البيانات وأعد الإرسال.", en: "On rejection, the reason shows next to the invoice — fix the data and resubmit." },
+      { ar: "بعد إصدار فاتورة بيع، تظهر في قائمة الفوترة الإلكترونية كمسودة.", en: "After issuing a sales invoice, it appears in the e-invoicing list as a draft." },
+      { ar: "من القائمة: اضغط \"تجهيز للإرسال\" — تصبح الحالة \"مُجهَّزة\" ويُنشأ لها مرجع محلي.", en: "From the list: click \"Prepare for filing\" — the status becomes \"Prepared\" and a local reference is generated." },
+      { ar: "قدّم الفاتورة لمصلحة الضرائب بطريقتك المعتادة — النظام لا يرسلها نيابة عنك بعد.", en: "File the invoice with the Tax Authority the way you do today — the system does not send it for you yet." },
     ],
     pitfalls: [
       {
-        problem: { ar: "الفاتورة تُرفض بسبب رقم ضريبي غير صحيح للعميل.", en: "The invoice is rejected over an invalid customer VAT number." },
-        fix: { ar: "صحّح الرقم الضريبي في بيانات العميل ثم أعد الإرسال من نفس الفاتورة.", en: "Fix the VAT number on the customer record, then resubmit from the same invoice." },
+        problem: { ar: "توقّع أن \"مُجهَّزة\" تعني أن المصلحة استلمت الفاتورة.", en: "Assuming \"Prepared\" means the Authority received the invoice." },
+        fix: { ar: "لا تعني ذلك. المرجع يُنشئه النظام محليًا، والتقديم للمصلحة ما زال يدويًا حتى يتم توصيل الخدمة.", en: "It does not. The reference is generated locally, and filing stays manual until the connection is set up." },
       },
     ],
     related: [{ to: "/einvoice", label: { ar: "الفوترة الإلكترونية", en: "E-invoicing" } }],

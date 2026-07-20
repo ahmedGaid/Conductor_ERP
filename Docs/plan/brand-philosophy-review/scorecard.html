@@ -276,9 +276,10 @@
         </div>
         <div class="checkstrip">
           <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
-          <span class="status">Reviewed 2026-07-19 (A) · 2 prior systemic findings now FIXED (error
-            boundary, code-split) · 1 new P2 (notification localization) · see finding #4 above.
-            Method: spot-check, not exhaustive — see note below.</span>
+          <span class="status">Full pass complete 2026-07-20 · <strong>1 P1 · 8 P2 · 7 P3</strong>,
+            plus 6 verified passes · 2 prior systemic findings confirmed FIXED (error boundary,
+            code-split) · pixel review done this time (Playwright), closing the 2026-07-19 gaps.
+            Findings in §04c below.</span>
         </div>
       </div>
 
@@ -289,7 +290,9 @@
         </div>
         <div class="checkstrip">
           <div class="dots"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div>
-          <span class="status">Pending review pass</span>
+          <span class="status">Full pass complete 2026-07-20 · <strong>2 P1 · 9 P2 · 4 P3</strong>,
+            plus 4 verified passes · driven ar/RTL + en/LTR, light + dark. The Arabic-first breach
+            here is structural, not a string swap. Findings in §04d below.</span>
         </div>
       </div>
 
@@ -374,7 +377,2285 @@
       confirmed calm lock-icon/no-retry), ⌘K palette re-opened live (relying on structural DOM
       content check + prior A6/A9 rung-3 verification). Screenshot tool was unreliable this
       session (known flaky issue), so all checks here are DOM/computed-style level, not pixel
-      review. A follow-up pass should close those gaps before scoring Session A fully complete.</p>
+      review. A follow-up pass should close those gaps before scoring Session A fully complete.
+      <strong>&nbsp;→ Closed 2026-07-20:</strong> the pass in §04c drove the login screen, the
+      loading skeletons, the ⌘K palette and the not-found route live, with real pixel review. The
+      in-app screenshot tool is still broken (30&nbsp;s timeouts); Playwright
+      <code>chromium.launch()</code> headless works and was used instead. Preferences are
+      server-backed, so theme/language must be switched through the Settings UI — writing
+      <code>localStorage</code> is silently overwritten on load.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04c</span><h2>Session A findings — full pass (2026-07-20)</h2></div>
+    <p class="sec-note">App frame and global states, driven live in Arabic/RTL and English/LTR,
+      light and dark: login, app shell, sidebar, sticky header, ⌘K palette, notifications, the
+      dashboard's loading and loaded states, and the unknown-route path. Ranked most severe first.
+      Nothing here is fixed — each becomes its own session.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · dashboard</span></div>
+        <div>
+          <h3>A negative cash balance looks exactly like a healthy one</h3>
+          <p>The Cash Balance KPI reads <code>-1,390,234.86 EGP</code> in the same plain near-white
+            as Total Revenue — no colour, no icon, no word. Meanwhile a <em>+903.3%</em> profit
+            delta gets green and a <em>+25.8%</em> expense delta gets red. Colour is spent on the
+            movement and withheld from the number that would actually alarm an owner; the minus
+            sign is the only signal, and it is easy to miss at that size. The one screen that
+            exists to tell the owner where the business stands stays silent on its worst number.</p>
+          <span class="std-hit">Fails Standard 8 + 3 · <span class="owner">judgment call on
+            severity — filed P1 because it defeats the dashboard's whole purpose</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · routing</span></div>
+        <div>
+          <h3>An unknown route silently becomes Home — there is no not-found state</h3>
+          <p>Navigating to <code>#/definitely-not-a-real-route</code> rewrites the URL to
+            <code>#/</code> and renders the dashboard, with "الرئيسية" marked active in the nav.
+            A mistyped address, a stale bookmark or a link to a since-renamed screen all end the
+            same way: the user is somewhere they did not ask to be, with nothing saying so. The
+            no-permission path very likely lands here too, since nav is permission-filtered and
+            unmatched routes fall through to the same catch-all.</p>
+          <span class="std-hit">Fails Standard 4 + 8 · breaks the designed-states rule (no
+            not-found state exists at all)</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · i18n · global</span></div>
+        <div>
+          <h3>No plural forms anywhere — Arabic counts read wrong</h3>
+          <p>48 Arabic and 51 English keys interpolate <code>{{count}}</code>, and there is not a
+            single plural-form key (<code>_one</code>/<code>_two</code>/<code>_few</code>/…) in
+            either locale. Arabic has six plural categories; every one of these strings is wrong at
+            most counts. Live on the dashboard: <em>"1 رسائل فشل إرسالها"</em> — should be
+            "رسالة واحدة". English is wrong too ("1 messages failed to send"). The import flow
+            hand-rolled <code>*One</code> variants, which proves the team knows the problem, but the
+            fix never generalized. This is precisely the native-Arabic craft the brand claims as
+            its moat.</p>
+          <span class="std-hit">Fails Standard 7 · Identity §6 · <span class="owner">key seen live:
+            dashboard.attention.failedMessages</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · global</span></div>
+        <div>
+          <h3>One generic list skeleton stands in for every page</h3>
+          <p><code>App.tsx</code> uses <code>&lt;Suspense fallback={&lt;ListSkeleton rows={6}/&gt;}&gt;</code>
+            for every lazy route, and <code>DashboardPage</code> renders the same component while
+            loading. So a dashboard of four KPI cards plus two panels first paints as five stacked
+            full-width bars, then jumps to a completely different layout. The skeleton never
+            describes the page it is standing in for, which makes the wait feel longer, not
+            shorter, and produces a visible jolt on arrival.</p>
+          <span class="std-hit">Fails Standard 2 + 7 · <span class="owner">App.tsx Suspense
+            fallback + DashboardPage.tsx:104</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · dashboard</span></div>
+        <div>
+          <h3>The greeting calls the owner by his system login</h3>
+          <p><code>DashboardPage.tsx:92</code> passes <code>data.username</code> into the greeting,
+            so the first line of the product every morning is
+            <em>"صباح الخير، admin"</em> — an English system identifier dropped into an Arabic
+            sentence. The display name is already known and correct: the header two rows above
+            shows "Ahmed Gaid". In English it is no better: "Good morning, admin".</p>
+          <span class="std-hit">Fails Standard 7 · <span class="owner">use prefs.display_name,
+            fall back to username</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · notifications</span></div>
+        <div>
+          <h3>Every row offers Resend, including the ones that succeeded</h3>
+          <p>The delivery log paints a persistent bordered "إعادة الإرسال" button on all ~12 visible
+            rows, every one of them already <em>مُرسَل</em>. The result is a column of identical
+            repeat-send buttons down the edge of the screen — visually the loudest thing on the
+            page, and an invitation to double-send a customer invoice by mistake. Resend belongs on
+            failed rows, or on hover.</p>
+          <span class="std-hit">Fails Standard 1 + 3 · reversibility concern under Standard 4</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · notifications</span></div>
+        <div>
+          <h3>Email subjects render as raw English inside the Arabic UI</h3>
+          <p>The الموضوع column shows <code>Invoice JE-2026-000271</code> verbatim on every row of
+            an otherwise fully Arabic screen. The subjects are generated English-only, so the
+            Arabic-first promise breaks at exactly the point the customer sees what was sent on
+            their behalf. Pairs with the notification-body localization gap already filed as
+            finding #4.</p>
+          <span class="std-hit">Fails Standard 7 · Identity §6</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · dashboard</span></div>
+        <div>
+          <h3>Good and bad movement share one glyph — only colour tells them apart</h3>
+          <p>Total Expenses shows <span style="white-space:nowrap">▲ 25.8%</span> in red and Net
+            Profit shows <span style="white-space:nowrap">▲ 903.3%</span> in green. Same arrow, same
+            direction, opposite meanings, distinguished by hue alone. The brand rule is that colour
+            always pairs with a word or an icon that carries the meaning by itself — here the icon
+            is identical in both cases, so a red-green colourblind owner reads the two cards the
+            same way.</p>
+          <span class="std-hit">Fails Standard 3 (colour must earn its place) · a11y</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · dashboard</span></div>
+        <div>
+          <h3>"System confidence" reports a problem it gives you no way to fix</h3>
+          <p>The panel lists <em>Backups not confirmed</em> with a warning icon and then stops —
+            no link, no chevron, no next step, unlike the "Needs attention" rows directly above it
+            which all carry one. A panel whose job is confidence tells the owner something is wrong
+            and leaves them holding it.</p>
+          <span class="std-hit">Fails Standard 8 + 4</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · global</span></div>
+        <div>
+          <h3>A focus box is painted around the page title on every navigation</h3>
+          <p>The <code>&lt;h1&gt;</code> carries <code>tabIndex=-1</code> and receives focus on route
+            change — the right accessibility instinct — but the outline is not scoped to
+            <code>:focus-visible</code>, so mouse users see a bright rectangle drawn around the
+            heading every single time they change page. It reads as a rendering fault.</p>
+          <span class="std-hit">Fails Standard 7 · <span class="owner">scope the outline to
+            :focus-visible</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · dashboard</span></div>
+        <div>
+          <h3>The page title changes identity mid-load</h3>
+          <p><code>DashboardPage.tsx:90-94</code> renders "الرئيسية" while loading and swaps it for
+            "صباح الخير، …" once data lands. The h1 is the page's anchor; having it rename itself a
+            second after arrival is a small, repeated instability.</p>
+          <span class="std-hit">Fails Standard 5 + 2</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · tokens</span></div>
+        <div>
+          <h3>Dark mode is pure black, while the token file promises near-black</h3>
+          <p><code>tokens.css</code> describes dark mode as "a near-black canvas" in its own comment
+            at line&nbsp;188, then sets <code>--color-bg: #000000</code> at line&nbsp;196 —
+            the one value that is not near-black. Light mode is correctly a tint
+            (<code>--palette-ink-050</code>), not pure white, so the asymmetry is unintended. Small,
+            but tokens.css is the single authority: either the value or the comment must move.</p>
+          <span class="std-hit">Fails Standard 7 · <span class="owner">tokens.css:188 vs :196</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · ⌘K palette</span></div>
+        <div>
+          <h3>The palette drops the icons the sidebar uses for the same destinations</h3>
+          <p>Every "الانتقال إلى" entry is text-only, while the sidebar shows each of those exact
+            destinations with its icon. The same thing is presented two ways in two places, so the
+            palette loses the fast visual recognition the icon set was built to give.</p>
+          <span class="std-hit">Fails Standard 5</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · sidebar</span></div>
+        <div>
+          <h3>The nav advertises an unbuilt module and an internal ops screen</h3>
+          <p>"وحدات قادمة → التقارير · قريبًا" ships a permanently disabled row in the customer's
+            main navigation, and "صحة المساعد" (Assistant health) puts an internal diagnostics
+            screen alongside Users and Roles. Both add noise to the frame, and the first is a soft
+            claim about something that has not shipped.</p>
+          <span class="std-hit">Fails Standard 1 + 3 · Brief §12 claims discipline</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · notifications</span></div>
+        <div>
+          <h3>The page's only primary button is an export, and it is labelled "PDF / طباعة"</h3>
+          <p>The single filled near-black button on the delivery log is the print/export action —
+            the primary slot spent on a utility rather than on what the page is for. The label
+            itself splices a Latin acronym and an Arabic word with a slash, against the one-canonical-
+            word rule. The المرجع and الموضوع columns also repeat the same reference on every row.</p>
+          <span class="std-hit">Fails Standard 1 · Identity §6</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · login</span></div>
+        <div>
+          <h3>No way back in if the owner forgets the password</h3>
+          <p>The login card offers username, password, submit — and nothing else. For a product
+            about to be handed to a customer who will administer it themselves, a locked-out owner
+            has no self-serve path and no on-screen hint of who to ask. Also minor: a long money
+            value in a KPI card wraps to a second line and breaks the alignment of the KPI row
+            (seen at 1440&nbsp;px on Cash Balance).</p>
+          <span class="std-hit">Fails Standard 8 · <span class="owner">may be a deliberate
+            admin-provisioned decision — confirm with founder before filing a fix</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · verified</span></div>
+        <div>
+          <h3>What the pass confirmed is genuinely on-brand</h3>
+          <p><strong>Icons.</strong> Every glyph checked in the DOM is
+            <code>fill="none" stroke="currentColor"</code> — no filled, foreign or library icons
+            anywhere in the frame. The coloured circles on the dashboard are tinted <em>chip
+            backgrounds</em> behind single-stroke glyphs, which is the rule working, not breaking
+            it. <strong>RTL ↔ LTR.</strong> Shell, sidebar, header cluster, palette and tables all
+            mirror cleanly; English reads identically to Arabic. <strong>Digits.</strong> Latin in
+            both locales, money formatted consistently. <strong>Login.</strong> Calm and monochrome
+            in both themes. <strong>Palette.</strong> Has a designed footer hint row
+            (navigate / open / close). <strong>Chrome.</strong> Stays monochrome in both themes —
+            no colour leaked into the frame on any screen driven this pass.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04d</span><h2>Session B findings — Accounting (2026-07-20)</h2></div>
+    <p class="sec-note">14 accounting routes driven live in Arabic/RTL and English/LTR, light and
+      dark: chart of accounts, journals, new entry, trial balance, general ledger, income statement,
+      balance sheet, cash flow, VAT return, fixed assets, cost centers, bank reconciliation, budgets,
+      report builder. Ranked most severe first.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · module-wide</span></div>
+        <div>
+          <h3>The chart of accounts is English-only, by construction</h3>
+          <p>An Egyptian accountant opens the finance module and reads
+            <em>Cash · Bank · Accounts Receivable · VAT Input (Recoverable) · Accumulated
+            Depreciation</em> — 27 accounts, all English, next to a النوع column that is correctly
+            Arabic. This is not demo data: <code>erp/accounting/services/seeding.py</code> calls
+            itself "the single source of truth" and the <strong>first-run setup wizard runs it</strong>,
+            so a real customer is provisioned this way. The names then propagate into every report —
+            trial balance, general ledger, income statement, balance sheet, cash flow all render
+            them verbatim. <strong>The fix is structural, not a string swap:</strong>
+            <code>Account</code> has a single <code>name</code> field
+            (<code>domain/models.py:21</code>) with no Arabic counterpart, so bilingual account
+            names need a model change plus a migration for existing installs.</p>
+          <span class="std-hit">Fails Standard 7 + 8 · Identity §6 · the deepest Arabic-first breach
+            found so far</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · report builder</span></div>
+        <div>
+          <h3>Saturated red Delete buttons, one click, on every saved-report row</h3>
+          <p>Each row carries a filled bright-red <em>حذف</em> button sitting directly beside a
+            filled black <em>تشغيل</em>. It is the loudest colour anywhere in the product, it is
+            permanently visible in a list rather than revealed on intent, it is destructive, and
+            nothing on screen says what will happen before it happens. Nowhere else in the app is a
+            row-level destructive action styled as a solid red button — so it breaks consistency as
+            well as calm. This is the clearest "Linear would not ship this" on the surface.</p>
+          <span class="std-hit">Fails Standard 3 + 4 + 5 · violates the monochrome-chrome and
+            colour-earns-its-place rules at once</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · general ledger</span></div>
+        <div>
+          <h3>The general ledger's empty state is one grey line of text</h3>
+          <p>Before an account is chosen, the page shows <em>"اختر حسابًا"</em> — small, grey,
+            floating in an otherwise blank area — which is the exact same string already sitting in
+            the select's placeholder directly above it. No icon, no explanation of what the ledger
+            will show, no suggested or recent accounts. The module's most-used drill-down screen
+            greets you with a bare state and says the same thing twice.</p>
+          <span class="std-hit">Fails Standard 7 · breaks the designed-states rule</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · new journal entry</span></div>
+        <div>
+          <h3>An untouched blank form already accuses you of being unbalanced</h3>
+          <p>Opening "قيد جديد" shows <em>غير متوازن</em> in red against empty totals of
+            0.00 / 0.00 — before a single keystroke. A blank form is not an error; showing a red
+            failure on arrival is the opposite of blame-free, and it trains the user to ignore the
+            one indicator that matters when it turns red for real.</p>
+          <span class="std-hit">Fails Standard 4 + 7 · blame-free-error rule</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · new journal entry</span></div>
+        <div>
+          <h3>Posting to the ledger is the only way to submit — there is no draft</h3>
+          <p>The single submit control is <em>ترحيل القيد</em>, which writes the general ledger.
+            There is no "save as draft", so a half-finished entry is either abandoned or posted.
+            Worth weighing against the guard work already shipped in agent-posting-plan FILE_01:
+            the assistant is gated behind a typed-retype challenge before it may post, while the
+            manual form posts on one click with no confirm step at all.</p>
+          <span class="std-hit">Fails Standard 4 (reversible; say what happens before)</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · navigation</span></div>
+        <div>
+          <h3>Two tabs light up as active at the same time</h3>
+          <p>On <code>/accounting/journals/new</code> both <em>القيود</em> and <em>قيد جديد</em>
+            carry the active underline simultaneously. Every other accounting route marks exactly
+            one. The user cannot tell where they are from the nav.</p>
+          <span class="std-hit">Fails Standard 5 + 4</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · navigation</span></div>
+        <div>
+          <h3>The breadcrumb lies on the second row of tabs</h3>
+          <p>On Bank Reconciliation and Report Builder the breadcrumb still reads
+            <em>المالية › دليل الحسابات</em> while the active tab is elsewhere. The first-row tabs
+            (Income Statement, Trial Balance, VAT return) update it correctly, so this is scoped to
+            the wrapped second row — a stale value, not a missing one, which is worse: it states a
+            location confidently and is wrong.</p>
+          <span class="std-hit">Fails Standard 4 + 5</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · module front door</span></div>
+        <div>
+          <h3>Fourteen equal-weight tabs wrapped onto two rows</h3>
+          <p>The module opens on a strip of 14 tabs — chart of accounts, journals, new entry, trial
+            balance, general ledger, income statement, balance sheet, cash flow, VAT return, fixed
+            assets, cost centers, bank reconciliation, budgets, report builder — none grouped, none
+            ranked, wrapping to a second line at 1440&nbsp;px. Nothing tells a new user where to
+            start, which is the opposite of "real work within minutes, without training".
+            Compounding it, <em>قيد جديد</em> is both a tab and a primary button in the Journals page
+            header: the same action in two places, styled two ways.</p>
+          <span class="std-hit">Fails Standard 1 + 5 · Brief §14</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · module-wide</span></div>
+        <div>
+          <h3>Pages open in data-entry mode with the create form already expanded</h3>
+          <p>Chart of Accounts, Bank Reconciliation and Report Builder each devote the top of the
+            page to a permanently open create form, before the user has asked to create anything.
+            The content they came for is pushed down, and the screen's first impression is a row of
+            empty inputs rather than the books. Three screens do it the same way, so it is a
+            pattern, not an oversight — which also means one fix covers all three.</p>
+          <span class="std-hit">Fails Standard 1 + 3</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · all reports</span></div>
+        <div>
+          <h3>"EGP" is printed on every single cell</h3>
+          <p>The trial balance repeats the currency 26 times on one screen; the income statement,
+            balance sheet, cash flow and VAT return all do the same. The ledger is EGP-only
+            (<code>base_currency</code> is read-only in the UI), so the code is carrying no
+            information and is actively making the columns harder to scan and compare. Convention is
+            the currency once, in the column header.</p>
+          <span class="std-hit">Fails Standard 3 + 7</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · VAT return</span></div>
+        <div>
+          <h3>The VAT return computes what you owe and then stops</h3>
+          <p>It arrives at <em>صافي الضريبة المستحقة 2,797.34 EGP</em> and offers nothing after
+            that — no export in a filing format, no "mark as filed", no period lock, no drill-down
+            to the invoices behind each line. For an Egyptian SMB this is the most consequential
+            number the software produces and the screen is a dead end. Its date range also defaults
+            to the whole calendar year (2026/01/01–2026/12/31) although Egyptian VAT is filed
+            monthly, so the default view is not the one anyone needs.</p>
+          <span class="std-hit">Fails Standard 8 + 4 · <span class="owner">filing-format work
+            overlaps einvoice-eta-live (pos 8C)</span></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · trial balance</span></div>
+        <div>
+          <h3>Whether the books balance is the smallest thing on the page</h3>
+          <p><em>متوازن</em> renders as a few pixels of green text floating above the table, with no
+            chip, no icon and no totals row beside it. It is the entire question a trial balance
+            exists to answer. It should be the most confident element on the screen, next to the
+            debit and credit totals that prove it.</p>
+          <span class="std-hit">Fails Standard 8</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · income statement</span></div>
+        <div>
+          <h3>No comparison period</h3>
+          <p>The P&amp;L shows one column of numbers with nothing to judge them against, while the
+            home dashboard shows "vs last month" on every KPI. The report that exists to show
+            performance over time is the one place without a prior period. It also defaults to
+            "كل الفترات" (all periods), which is rarely the question being asked.</p>
+          <span class="std-hit">Fails Standard 8</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · bank reconciliation</span></div>
+        <div>
+          <h3>An account shown as a bare code, and a new colour with no defined meaning</h3>
+          <p>The saved-statement row identifies its bank account as <code>1010</code> alone, where
+            every report shows "Bank · 1010". Separately, the <em>مفتوح</em> status chip is cyan —
+            a hue not used anywhere else in the status vocabulary (green, amber, red so far), so it
+            enters the palette without a meaning attached to it.</p>
+          <span class="std-hit">Fails Standard 5 + 3</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · report builder</span></div>
+        <div>
+          <h3>Shipped report names in English, and a helper that leaks server internals</h3>
+          <p>The three default saved reports are <em>Activity by period · Expenses by account ·
+            Revenue by account</em> — shipped defaults, not user-typed, sitting in the Arabic UI.
+            The helper line below the form reads "التقارير المجدولة تُصدَّر إلى القرص تلقائيًا",
+            telling the user their reports go "to disk" — a server-side detail they cannot act on
+            and cannot find.</p>
+          <span class="std-hit">Fails Standard 7 + 4</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · verified</span></div>
+        <div>
+          <h3>What Accounting gets right</h3>
+          <p><strong>The VAT return's Arabic is excellent</strong> — ضريبة المخرجات (مبيعات)،
+            ضريبة المدخلات (مشتريات)، صافي الضريبة المستحقة is correct Egyptian tax vocabulary, not
+            translated-from-English. <strong>The income statement's structure is genuinely
+            well-crafted</strong>: section labels, hairline rules, bold subtotals, net income set
+            apart. <strong>Bank reconciliation explains itself before you act</strong> — "مبالغ
+            الكشف بإشارة: موجب للإيداع، سالب للسحب" plus a <code>±0.00</code> placeholder is exactly
+            the say-what-happens-before behaviour the VAT screen lacks; it is the model the rest of
+            the module should copy. <strong>ar/en and light/dark mirror cleanly</strong> across all
+            14 routes, and the module accent stays inside the page — the chrome never picked up
+            colour. Also checked and cleared: the report-builder tab is a single canonical term
+            (<code>accounting.tabs.reportBuilder</code>), verified in the locale file rather than
+            read off pixels.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04e</span><h2>Session C findings — Inventory (2026-07-20)</h2></div>
+    <p class="sec-note">Six inventory routes plus three detail screens driven live in Arabic/RTL and
+      English/LTR, dark and light: stock on hand, items, item detail, warehouses, warehouse detail,
+      movements, stock counts, count detail, batches. Ranked most severe first.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · batches</span></div>
+        <div>
+          <h3>The batch screen cannot answer the only question batch tracking exists to answer</h3>
+          <p>Batch and lot tracking exists so a food or pharmacy business knows <em>what expires
+            next</em>. The page shows an <em>Earliest expiry</em> column rendered as inert grey text
+            — the same weight as every other cell — and nothing else. There is no days-remaining
+            figure, no emphasis on a batch expiring soon, no default sort by expiry, no "expiring
+            this month" filter, and no summary. An owner cannot look at this screen and learn
+            anything they could not read off a spreadsheet. The page also has no primary action of
+            any kind: it is a read-only table with a bare <em>All / Filter</em> toolbar above it.
+            For the Egyptian SMBs this product is aimed at, this is the module's weakest screen.</p>
+          <span class="std-hit">Fails Standard 1 + 8 · the page has no job and leaves the owner no
+            more informed than before</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · stock count detail</span></div>
+        <div>
+          <h3>The count's variance is hidden until after you have already posted it</h3>
+          <p>A stock count exists to surface the difference between what the system thinks you hold
+            and what you actually counted. On this screen the variance columns are literally not
+            rendered until the count is posted —
+            <code>{posted &amp;&amp; &lt;th&gt;…variance…}</code>
+            (<code>StockCountDetailPage.tsx:127-128</code>) — so the user commits an irreversible
+            stock adjustment <em>and</em> a general-ledger entry before ever being shown what it will
+            change. <strong>Post count</strong> sits in the sticky header, always enabled, with no
+            confirmation and no preview. Posting a sheet where nothing was counted still succeeds
+            and still shows a success toast: <code>post_count</code> skips lines whose
+            <code>counted_quantity</code> is null (<code>erp/inventory/services/stock_count.py:77</code>)
+            and then locks the count anyway. The data is safe; the promise is not.</p>
+          <span class="std-hit">Fails Standard 4 + 8 · says nothing before, reassures nothing after,
+            and is not reversible</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · movements</span></div>
+        <div>
+          <h3>Stock in and stock out look exactly the same</h3>
+          <p>In the movements ledger <em>Receive</em> and <em>Issue</em> (استلام / صرف) are plain
+            text in the same weight and colour, and the quantity column is unsigned — a receipt of
+            200 and an issue of 5 both read as bare positive numbers. There is no glyph, no sign, no
+            alignment cue. Scanning the stock ledger for "what left the warehouse this week" means
+            reading every row's first column word by word. Confirmed identical in Arabic and English,
+            dark and light. Session A logged the dashboard version of this (one glyph, colour only);
+            here there is not even colour.</p>
+          <span class="std-hit">Fails Standard 1 + 7 · the ledger's most important distinction is
+            the least visible thing on the screen</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · module-wide</span></div>
+        <div>
+          <h3>Every list page opens in data-entry mode, with the create form already expanded</h3>
+          <p>Items, warehouses, movements and stock counts all push their create form to the top of
+            the page, permanently open, before the user has asked to create anything. On movements
+            this is worse than clutter: the always-visible form's primary button is
+            <strong>Post movement</strong>, which writes stock <em>and</em> a journal entry with no
+            confirmation step. Session B found this exact pattern across Accounting; finding it
+            again across a second whole module makes it systemic rather than local, and the fix
+            should be one shared decision, not per-page patches.</p>
+          <span class="std-hit">Fails Standard 1 + 4 + 5 · the page's first impression is a form,
+            not the work</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · stock counts</span></div>
+        <div>
+          <h3>Two different date formats on one screen, in the same field</h3>
+          <p>The <em>Count date</em> picker renders <code>20/07/2026</code> while the
+            <em>Count date</em> column of the table directly below it renders
+            <code>2026-06-19</code>. Same screen, same concept, two formats — day-first in the
+            control, ISO in the data. Confirmed in both locales (Arabic shows
+            <code>2026/07/20</code> against <code>2026-06-19</code>). Dates are formatted per
+            component rather than through one shared edge formatter, the way money already is.</p>
+          <span class="std-hit">Fails Standard 5 + 7 · breaks the one-formatter discipline that
+            <code>lib/money.ts</code> already models</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · stock counts</span></div>
+        <div>
+          <h3>A cyan status badge, in a product that has no cyan</h3>
+          <p>The <em>Counting</em> / جارٍ الجرد badge renders sky blue
+            (<code>rgb(56, 189, 248)</code> on a cyan tint) — a hue that appears nowhere else in the
+            module, in either theme, and that has no defined meaning in the identity system. It is
+            the single most saturated thing on the page and it sits next to a monochrome table. It
+            reads as a leftover from a starter palette rather than a decision. Session B found the
+            same class of problem in Accounting ("a new colour with no defined meaning"), which
+            suggests the status-badge tones need one audit rather than two fixes.</p>
+          <span class="std-hit">Fails Standard 3 · colour that does not earn its place</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · stock count detail</span></div>
+        <div>
+          <h3>You cannot correct a counted quantity once you have typed one</h3>
+          <p><code>saveLine</code> begins <code>if (value === "" || value === current) return;</code>
+            (<code>StockCountDetailPage.tsx:44</code>). Typing 500 into a line, realising it is wrong,
+            clearing the box and tabbing away silently leaves 500 stored — the field is cleared on
+            screen but the empty value is never sent, and the old number returns on reload. During a
+            physical stock count, mistyping and clearing is the single most likely user action on
+            the screen. Nothing tells the user the correction did not take.</p>
+          <span class="std-hit">Fails Standard 4 + 8 · silent data loss on the most common
+            correction path</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · item detail</span></div>
+        <div>
+          <h3>The item page shows you everything and lets you do nothing</h3>
+          <p>Opening an item gives unit, type, stock value, stock by warehouse and recent movements —
+            and not one action. You cannot rename the item, adjust its stock, or start a movement for
+            it. The <em>Recent movements</em> table does not link through to the movements ledger
+            filtered to this item, so the five rows shown are the end of the road. The warehouse
+            detail page has the same shape. Every path out of these screens goes backwards.</p>
+          <span class="std-hit">Fails Standard 1 + 8 · a detail screen with no primary action</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · module-wide</span></div>
+        <div>
+          <h3>The module blurb repeats on every screen, including deep detail pages</h3>
+          <p>"Items, warehouses, current stock levels and every movement in and out." sits under the
+            title <em>Inventory</em> on all nine screens driven, never changing — including the stock
+            count detail page, where the user is mid-task on one warehouse's count and is told again
+            what the inventory module is. Together with the tab bar and the breadcrumb it means every
+            detail screen spends roughly a fifth of its height re-introducing the module before the
+            actual content starts.</p>
+          <span class="std-hit">Fails Standard 1 + 7 · orientation chrome outweighs the work</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · detail pages</span></div>
+        <div>
+          <h3>Two detail pages, two different ways to go back, both redundant</h3>
+          <p>The stock count detail page uses the shared <code>BackLink</code> component, with its
+            arrow. The item detail page uses a hand-rolled
+            <code>&lt;Link className="inv-back"&gt;</code> (<code>ItemDetailPage.tsx:62</code>) with no
+            arrow and no shared styling. Both sit directly underneath a breadcrumb that already offers
+            the same navigation, so each screen shows the user two ways back — inconsistently.</p>
+          <span class="std-hit">Fails Standard 5 · the same action does not behave the same way
+            twice</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · module-wide</span></div>
+        <div>
+          <h3>Quantities always carry four decimal places</h3>
+          <p>Every quantity in the module renders as <code>122.0000</code>, <code>5.0000</code>,
+            <code>40.0000</code> — including for items measured in whole units. Four decimals is
+            correct storage precision and wrong display precision; it makes every table noisier than
+            it needs to be and buries the digits that matter.</p>
+          <span class="std-hit">Standard 7 · precision shown should follow the unit</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · module-wide</span></div>
+        <div>
+          <h3>The loading skeleton throws away the module frame</h3>
+          <p>Entering any inventory route replaces the whole page — title, description, six-tab bar,
+            toolbar — with six generic grey bars, then paints the real layout in. The frame is
+            already known before the data arrives, so the jump is avoidable. It is the concrete cost
+            of the generic <code>ListSkeleton</code> Session A flagged. (The skeleton itself is
+            correct and carries a screen-reader label; the problem is its scope, not its craft.)</p>
+          <span class="std-hit">Standard 2 + 7 · avoidable layout shift on every entry</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · lists</span></div>
+        <div>
+          <h3>Filter chips that never filter anything</h3>
+          <p>The stock counts list offers <em>All 2</em> and <em>Counting 2</em> — two chips with
+            identical counts, because every count in the system has the same status. The items list
+            does the same with <em>All 14</em> and <em>Stock item 14</em>. The control is honest but
+            useless in its most common state, and nothing hides or de-emphasises it when a facet has
+            only one value.</p>
+          <span class="std-hit">Standard 1 · a control offered where there is no choice</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · lists</span></div>
+        <div>
+          <h3>Three stacked toolbar rows above a two-row table</h3>
+          <p>Above each list sits an unlabelled <em>All</em> with a bare expand glyph, then
+            <em>Filter</em> on its own line, then the chip row — three separate horizontal bands of
+            chrome before the data starts, even when the table holds one or two rows. On the batches
+            screen the toolbar is taller than the content it controls.</p>
+          <span class="std-hit">Standard 7 · chrome out of proportion to the work</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · movements</span></div>
+        <div>
+          <h3>Placeholders speak in two voices</h3>
+          <p>The movement form reads <em>Select SKU</em>, <em>Select Warehouse code</em>,
+            <em>Select Date</em> — then <em>optional</em>, lowercase, for Batch / lot, and
+            <code>0.00</code> for Unit cost. Three different placeholder conventions in one row of
+            fields: an instruction, a field property, and a sample value.</p>
+          <span class="std-hit">Standard 7 · one voice, including in placeholder text</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · module-wide</span></div>
+        <div>
+          <h3>"EGP" printed on every value cell, again</h3>
+          <p>Movements, item detail and warehouse detail repeat the currency on every row of every
+            money column. Session B logged this in Accounting; it is the same component behaviour
+            surfacing in a second module, so it belongs to the shared money-cell fix rather than to
+            Inventory.</p>
+          <span class="std-hit">Standard 7 · duplicate of the Accounting finding, recorded for the
+            shared fix</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · verified</span></div>
+        <div>
+          <h3>What Inventory gets right</h3>
+          <p><strong>Bidirectionality is clean.</strong> All six routes and all three detail screens
+            mirror correctly; English reads identically to Arabic with no stray physical alignment.
+            <strong>Numbers are disciplined</strong> — Latin digits in both locales, money through
+            <code>formatMinor</code>, values wrapped in <code>&lt;Bdi&gt;</code>.
+            <strong>Icons are clean</strong>: every SVG audited across the module came back
+            <code>stroke="currentColor"</code> with no fill — zero foreign or filled glyphs.
+            <strong>Skeletons are real skeletons</strong> with a screen-reader label, not a bare
+            "Loading…". <strong>Field primitives are the standard ones</strong> — ComboBox for SKU
+            and warehouse, DatePicker for dates, exactly as the field-primitives decision requires.
+            <strong>Bulk selection is honestly scoped</strong>: it drives a CSV export bar, and the
+            source explains why no other bulk verb applies. <strong>Performance is genuinely
+            instant</strong> — first rows painted in 105-254 ms on every list route once compiled.
+            <strong>Chrome stays monochrome</strong>; the amber tint seen during the pass is the
+            user's own accent preference and stays confined to links and active states.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04f</span><h2>Session D findings — Sales (2026-07-20)</h2></div>
+    <p class="sec-note">Nine sales routes driven live in Arabic/RTL and English/LTR, dark and light:
+      orders list, new order, order detail, invoice document, quotations list, new quotation,
+      quotation detail, customers list, customer detail. Ranked most severe first.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · module-wide lexicon</span></div>
+        <div>
+          <h3>Sales ships two different Arabic words for "order" — the exact thing the lexicon rule forbids</h3>
+          <p>The canonical Arabic for a sales order across this product is <strong>الطلبات</strong>:
+            it is the sidebar entry, the sub-nav tab, the orders page heading, and the section
+            heading on customer detail (<code>ar.json:11, 1088, 1134</code>). But the customers list
+            row action reads <strong>عرض أوامر البيع</strong>
+            (<code>sales.customer.viewOrders</code>, <code>ar.json:1168</code>) and the related-records
+            group calls the same collection <strong>أوامر البيع</strong>
+            (<code>related.orders</code>, <code>ar.json:2492</code>). So on the customers list the user
+            clicks a link labelled <em>أوامر البيع</em> and lands on a page that calls the very same
+            records <em>الطلبات</em> — two Arabic words for one concept, on two adjacent screens, in
+            one module. The ⌘K palette adds a third framing in English (<em>New sales order</em> vs
+            the list's <em>New order</em>). The Arabic lexicon is described in the brand docs as the
+            moat; this is a direct hit on it, and it is a pure string fix — pick <strong>الطلبات</strong>,
+            change two keys.</p>
+          <span class="std-hit">Fails Standard 5 + 6 · hard-refusal list: "two Arabic words for one
+            concept"</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · quotation detail</span></div>
+        <div>
+          <h3>The quotation screen is an order screen with the interesting parts deleted</h3>
+          <p>Order detail is the best screen in the module: a five-step timeline (إنشاء → تأكيد →
+            تسليم → فاتورة → تحصيل) with real dates, a four-figure money panel (total / VAT /
+            invoiced / outstanding), and a genuinely human status line — <em>"مدفوع بالكامل — لا يوجد
+            إجراء آخر."</em> Quotation detail, for the same customer-facing document, shows a number,
+            a status pill, one line of meta, a single <em>Total</em>, the line table, and then an
+            orphaned label reading <em>الموافقة / موافقة تلقائية</em> floating on a bare background
+            with no card and no explanation. Half the viewport below is empty. Worse, its line-table
+            heading is literally <strong>تفاصيل الطلب / "Order details"</strong>
+            (<code>ar.json:1363</code>) — the quotation page tells you you are looking at an order.
+            And a quotation has <em>no validity or expiry date anywhere on the screen</em>, which is
+            the one field that distinguishes a quote from an order commercially. Confirmed identical
+            in both locales.</p>
+          <span class="std-hit">Fails Standard 5 + 7 + 8 · same job, two levels of craft; the user
+            leaves without the one fact a quote carries</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · customer detail</span></div>
+        <div>
+          <h3>Customer detail dumps 36 orders and a full ledger with no paging, filter or date range</h3>
+          <p>The page opens with a good four-figure summary (credit limit / orders / total invoiced /
+            balance) and then renders <em>every</em> order the customer has ever placed — 36 rows for
+            Acme — followed by the complete account statement beneath it, all unpaginated and
+            unfiltered. There is no date range, no status filter, no "show recent" default. Two
+            further problems ride along: the balance <strong>2,660.00 EGP</strong> is plain body text
+            with no indication of direction or ageing, so the number that matters most on a customer
+            page carries no meaning; and the status column renders as flat text (<em>مدفوع</em>,
+            <em>مؤكد</em>) while the orders list renders the same statuses as coloured dot-and-word
+            pills. Same data, same module, two treatments. The page also has no primary action at all
+            — you cannot start an order for the customer you are looking at.</p>
+          <span class="std-hit">Fails Standard 1 + 2 + 5 + 8</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · customer detail</span></div>
+        <div>
+          <h3>The account statement narrates itself in English inside an Arabic UI</h3>
+          <p>Every statement line reads <code>Invoice SO-2026-000003 — ACME</code> /
+            <code>Payment SO-2026-000007 — ACME</code> with the Arabic column headers
+            (التاريخ / رقم القيد / البيان / مدين / دائن) above them. The narration is generated
+            server-side at posting time, so — exactly like the English-only chart of accounts found
+            in Session B — this is not a translation-file fix. It is the same defect class in a second
+            module and should be fixed once, at the point where journal descriptions are composed,
+            not per screen.</p>
+          <span class="std-hit">Fails Standard 6 · related to the Session B chart-of-accounts P1</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · new order vs new quotation</span></div>
+        <div>
+          <h3>The two create forms disagree about what creating a sales document involves</h3>
+          <p><em>New order</em> shows a five-step progress stepper, a tax selector, and a discount
+            column. <em>New quotation</em> — the document that <em>becomes</em> that order — has no
+            stepper, no tax selector and no discount column, so a quote can never carry the two
+            commercial terms most likely to be negotiated. Convert the quote and those fields appear
+            from nowhere. Both forms then label their footer <strong>الإجماليات</strong> ("totals",
+            plural) for what is a single grand total, and the order form stacks
+            <em>الإجمالي الفرعي</em> directly above <em>الإجماليات</em> with the same
+            <code>0.00 EGP</code> beside each and no tax row between them, so two adjacent rows read
+            as duplicates. The discount input is a bare <code>0.00</code> with no currency or percent
+            marker — the user cannot tell which they are entering.</p>
+          <span class="std-hit">Fails Standard 4 + 5 · the same action behaves differently, and the
+            money it produces is ambiguous</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · module-wide</span></div>
+        <div>
+          <h3>Sales makes "create" a tab, then also makes it a button — three ways to start one order</h3>
+          <p>The sub-nav reads <em>Orders · Quotations · New order · Customers</em>: a tab strip of
+            views with a verb wedged into it. The same action is simultaneously the top-bar primary
+            button (<strong>New order</strong>), and again in the ⌘K palette as <em>New sales
+            order</em>. On the customers list the pattern repeats differently — the create form is
+            expanded inline above the table with its own <strong>إضافة عميل</strong> button while
+            <strong>استيراد CSV</strong> sits above it and the top bar holds only a <em>⋯</em> menu,
+            so the page has three competing entry points and no single primary action. The expanded
+            create form is the third consecutive module to open in data-entry mode; Sessions B and C
+            logged the same thing, and this confirms it as one systemic decision rather than three
+            page fixes.</p>
+          <span class="std-hit">Fails Standard 1 + 5 · no screen in Sales has one obvious primary
+            action</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · orders list</span></div>
+        <div>
+          <h3>The orders list renders all 48 rows at once, and the count chip says so</h3>
+          <p>The status chip row reads <em>All 48</em> and the table then paints all 48 rows with no
+            pagination and no virtualisation. At 48 seed rows it still feels instant; the shape does
+            not survive a real customer with four thousand orders, and the chip counts confirm the
+            page is fetching and rendering the whole set rather than a window. Same on the customers
+            list. Flagged now, while the fix is a list-component decision rather than a rescue.</p>
+          <span class="std-hit">Tension with Standard 2 · correct today, wrong at real volume</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · error state</span></div>
+        <div>
+          <h3>A designed Arabic error state ends with a raw English technical string</h3>
+          <p>The failure state is otherwise exactly right — icon, Arabic heading
+            <em>تعذّر تحميل البيانات</em>, a blame-free line (<em>حدث خطأ من جانبنا</em>), and a single
+            <em>إعادة المحاولة</em> action. Then it prints <code>Request failed (500)</code> in English
+            underneath. The blame-free Arabic sentence does the reassuring and the English fragment
+            immediately undoes it. Either localise it or move it behind a "details" affordance for
+            support.</p>
+          <span class="std-hit">Fails Standard 6 · designed state, undesigned last line</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · orders list, light theme</span></div>
+        <div>
+          <h3>The Draft status dot nearly disappears on white</h3>
+          <p>Status is rendered as a coloured ring plus its word — the correct pattern, and it passes.
+            But in light theme the <em>Draft</em> ring is a very pale grey on white and reads as an
+            empty space at a glance, while every other status has a legible ring. Colour is not
+            carrying meaning alone here (the word is present), so this is polish rather than a break —
+            but it makes the one status the user most needs to spot the hardest one to see.</p>
+          <span class="std-hit">Standard 7 · contrast</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · order detail, invoice document, status system</span></div>
+        <div>
+          <h3>What Sales gets right — do not "fix" these</h3>
+          <p><strong>Order detail is the best screen reviewed so far.</strong> The five-step timeline
+            with real dates answers "where is this order" instantly; the money panel separates total,
+            VAT, invoiced and outstanding; and the status line is written like a person —
+            <em>"مدفوع بالكامل — لا يوجد إجراء آخر."</em> — which is exactly the human-status rule the
+            Identity System asks for. <strong>The invoice document page</strong> is calm and correct:
+            org tax number, issue date in spelled Arabic (<em>20 يوليو 2026</em>), subtotal/VAT/total
+            separated, one <em>طباعة</em> action and a way back. <strong>The status system is
+            on-brand</strong> — a coloured ring <em>always</em> paired with its word, never colour
+            alone, and the chrome around it stays monochrome in both themes.
+            <strong>Money is disciplined</strong>: Latin digits in both locales, thousands separators,
+            two decimals throughout. <strong>Contextual row actions</strong> are honest — only the one
+            draft order offers <em>تأكيد الطلب</em>, and only on hover.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04g</span><h2>Session E findings — Purchasing (2026-07-20)</h2></div>
+    <p class="sec-note">Nine purchasing routes driven live in Arabic/RTL and English/LTR, dark and
+      light: purchase-orders list, new PO, import invoice, PO detail, requests list, new request,
+      request detail, suppliers list, supplier detail. Ranked most severe first.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · module-wide lexicon</span></div>
+        <div>
+          <h3>Purchasing ships four Arabic phrasings for "purchase order" — and one of them is the
+            module's own word for "purchase request"</h3>
+          <p>The canonical Arabic here is <strong>أمر الشراء / أوامر الشراء</strong> — the tab, the
+            page heading, the create button, the supplier row action. Against it, on the same screens:
+            (1) the module description printed on <em>every</em> purchasing page reads
+            <em>"طلبات الشراء و<strong>أوامر التوريد</strong> للموردين…"</em>
+            (<code>ar.json:412</code>) — a third noun for the same object, one line under the tab that
+            calls it أوامر الشراء; (2) the PO line-table heading is
+            <strong>تفاصيل الطلب</strong> (<code>purchasing.detail.orderDetails</code>);
+            (3) supplier detail titles its purchase-order table and its count
+            <strong>الطلبات</strong> (<code>party.ordersTitle</code>, <code>party.ordersCount</code> —
+            keys shared with Sales, where الطلبات <em>is</em> correct); and (4) the bulk toasts say
+            <em>"تمت الموافقة على 3 طلبات"</em> / <em>"تم تأكيد 3 طلبات"</em>
+            (<code>purchasing.toast.bulkApproved</code>, <code>bulkConfirmed</code>) for purchase
+            <em>orders</em>. That last one is not merely stylistic: in this module
+            <strong>طلب الشراء is the purchase request</strong>, so
+            <em>"تمت الموافقة على 3 طلبات"</em> (orders approved) is indistinguishable from
+            <em>"تمت الموافقة على 3 طلبات شراء"</em> (<code>bulkReqApproved</code>, requests approved).
+            After a bulk approve the user cannot tell which of the two record types they just
+            approved. Sales shipped this bug with two words; Purchasing ships it with four, and one
+            collision changes meaning rather than tone.</p>
+          <span class="std-hit">Fails Standard 5 + 6 + 8 · hard-refusal list: "two Arabic words for
+            one concept" · third module in a row (B, D, E) — treat as systemic</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · requests list + request detail</span></div>
+        <div>
+          <h3>Every purchase-request status renders in the same colour — a rejected request looks
+            exactly like an approved one</h3>
+          <p>Both the requests list and request detail colour their status badge with
+            <code>purchasingTone()</code> (<code>PurchaseRequestsPage.tsx:211</code>,
+            <code>PurchaseRequestDetailPage.tsx:190</code>), but that map
+            (<code>lib/statusTone.ts:15-21</code>) only contains purchase-<em>order</em> statuses.
+            None of <code>draft, submitted, approved, rejected, converted, cancelled</code> is in it,
+            so all six fall through to the <code>pending</code> default. Verified live in both themes:
+            مسودة, مُوافَق عليه and مُحوَّل render as the identical grey ring across all 36 rows —
+            the status column is decoration. <strong>مرفوض (rejected) is styled the same as
+            مُوافَق عليه (approved)</strong>, which is the one distinction the screen exists to make.
+            The same map also drops the order statuses <code>draft</code>,
+            <code>partially_received</code> and <code>returned</code>, so a returned order — a problem
+            state — reads visually as a fresh draft.</p>
+          <span class="std-hit">Fails Standard 3 + 4 + 5 · colour that carries no meaning is worse
+            than no colour</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · request detail</span></div>
+        <div>
+          <h3>A fully converted request still tells the user it "needs approval"</h3>
+          <p><code>PurchaseRequestDetailPage.tsx:231</code> renders
+            <code>data.requires_approval ? "يحتاج موافقة" : "موافقة تلقائية"</code>. That field is the
+            <em>policy flag</em> — "does this kind of request need a manager?" — but it is labelled
+            <strong>الموافقة / Approval</strong> and reads as live state. Driven live: PR-2026-000036
+            shows status <strong>مُحوَّل (Converted)</strong>, shows
+            <em>حُوِّل إلى PO-2026-000038</em>, and directly beneath announces
+            <strong>الموافقة: يحتاج موافقة</strong>. The record is finished and the screen says it is
+            still waiting. PO detail gets this right on the same data model —
+            <code>PurchaseOrderDetailPage.tsx:387</code> renders
+            <code>approved ? "مُوافَق عليه" : "بانتظار الموافقة"</code>, real state. Two sibling pages,
+            one correct, one not.</p>
+          <span class="std-hit">Fails Standard 4 + 5 + 8 · the screen contradicts itself</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · request detail</span></div>
+        <div>
+          <h3>Request detail is order detail with the good parts deleted — the same shape as the
+            quotation finding in Session D</h3>
+          <p>PO detail carries a five-step timeline with real dates, a human status explainer
+            (<em>"مدفوع بالكامل — لا يوجد إجراء آخر."</em>), a three-figure money panel and an
+            activity log. Request detail, for a record that has its own six-state lifecycle, shows a
+            number, a pill, one meta line, a single <em>الإجمالي</em>, the line table and two meta
+            rows — <strong>no timeline, no activity log, and no status explainer at all</strong>
+            (there is no <code>requestStatusExplain.*</code> namespace; <code>statusExplain.*</code>
+            exists only for orders). Its line-table heading reuses
+            <code>purchasing.detail.orderDetails</code>, so a purchase request is headed
+            <strong>تفاصيل الطلب / "Order details"</strong> — in English, flatly the wrong record
+            type. The table headers are also borrowed from other modules
+            (<code>sales.newOrder.item</code>, <code>inventory.onHand.quantity</code>,
+            <code>sales.orders.total</code>). This is the second module where the secondary document
+            (quotation, then request) is a degraded copy of the primary one.</p>
+          <span class="std-hit">Fails Standard 5 + 7 · recurrence of Session D's quotation finding
+            — one shared fix</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · routing</span></div>
+        <div>
+          <h3><code>/purchasing/orders</code> is not a route — it silently dumps the user on the
+            dashboard</h3>
+          <p>The purchase-orders list is mounted at <code>/purchasing</code>
+            (<code>App.tsx:290</code>) while every child is under <code>/purchasing/orders/*</code>
+            — <code>orders/new</code>, <code>orders/import</code>, <code>orders/:id</code>. So the
+            parent path of every purchase-order URL matches no route, and the catch-all
+            <code>&lt;Route path="*" element={&lt;Navigate to="/" replace /&gt;} /&gt;</code>
+            (<code>App.tsx:315</code>) redirects it to Home with no message. Confirmed live: truncating
+            a PO URL back one segment lands on the dashboard as though nothing happened. Sales does
+            this correctly (<code>/sales/orders</code>). Two problems in one: the inconsistent mount,
+            and a global catch-all that treats "wrong address" as "go home" instead of the designed
+            not-found state the app already has strings for (<code>errors.notFound</code>).</p>
+          <span class="std-hit">Fails Standard 4 + 5</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · sub-nav</span></div>
+        <div>
+          <h3>The purchasing tab strip mixes places with actions, and puts two different "create"
+            buttons one click apart</h3>
+          <p>The strip reads <em>أوامر الشراء · طلبات الشراء · أمر شراء جديد · الموردون ·
+            استيراد فاتورة</em> — three destinations with two <em>actions</em> wedged between them,
+            styled identically as tabs. On the requests page this produces a real trap: the sticky
+            header's primary button is <strong>طلب شراء جديد</strong> (new request) while the tab
+            immediately to its left is <strong>أمر شراء جديد</strong> (new order) — two different
+            records, near-identical Arabic, adjacent, same visual weight. The same
+            <em>أمر شراء جديد</em> also appears a third time in the ⌘K create menu. Sales does not do
+            this; its sub-nav is destinations only.</p>
+          <span class="std-hit">Fails Standard 1 + 5</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · supplier detail</span></div>
+        <div>
+          <h3>Supplier detail contradicts itself on money, and narrates the Arabic statement in
+            English</h3>
+          <p>For supplier <em>ag supplier</em> the summary reads
+            <strong>إجمالي المشتريات 0.00 EGP</strong> while the account statement immediately below
+            lists a 1,000.00 EGP bill, a 1,000.00 EGP payment and a 1,000.00 EGP debit note, and the
+            balance shows <strong>-1,000.00 EGP</strong>. Whatever <code>billed_minor</code> means
+            here, the screen shows the user two irreconcilable answers to "what have I bought from
+            this supplier". The Arabic label is also a mistranslation of its own key:
+            <code>party.totalBilled</code> = <em>"إجمالي المشتريات"</em> (total purchases) vs English
+            <em>"Total billed"</em>. And every statement memo is server-generated English —
+            <em>"Bill PO-2026-000008 — ag supplier"</em>, <em>"Debit note …"</em> — sitting inside an
+            otherwise fully Arabic table. That is the same class as Session B's English chart of
+            accounts and Session D's English customer statement: <strong>third occurrence, systemic
+            back-end string problem.</strong> Minor: the page also loads <em>all</em> purchase orders
+            and filters client-side (<code>SupplierDetailPage.tsx:34,42</code>), and offers no primary
+            action — you cannot start an order for the supplier you are looking at.</p>
+          <span class="std-hit">Fails Standard 2 + 4 + 6 + 8</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · orders list</span></div>
+        <div>
+          <h3>Two rows both labelled "مسودة" offer two different actions, with nothing on screen
+            explaining why</h3>
+          <p>PO-2026-000017 offers <em>تأكيد الأمر</em>; PO-2026-000013, same status pill, same
+            column, offers <em>موافقة</em>. The logic is correct —
+            <code>PurchaseOrdersPage.tsx:256-271</code> branches on
+            <code>requires_approval &amp;&amp; !approved</code> — but that fact is invisible: the status
+            column says <em>مسودة</em> for both, and there is no "awaiting approval" state, badge or
+            filter chip in the list. PO detail <em>does</em> surface it, via the
+            <code>statusExplain.awaitingApproval</code> line. The list withholds the one thing that
+            explains its own behaviour.</p>
+          <span class="std-hit">Fails Standard 4 + 5</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · suppliers list</span></div>
+        <div>
+          <h3>The add-supplier form is expanded above the table by default — fourth module in a row</h3>
+          <p>The suppliers page opens with its <em>رمز المورد / الاسم / إضافة مورد</em> form already
+            occupying the space above the list, so the page's stated job (find a supplier) sits below
+            an editor for a job the user is not doing. Identical to the findings logged in Sessions B,
+            C and D. <strong>Four modules — stop filing it per module and fix the pattern once.</strong></p>
+          <span class="std-hit">Fails Standard 1 · systemic</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · PO detail</span></div>
+        <div>
+          <h3>"رقم الفاتورة" shows a journal-entry number, not the supplier's invoice number</h3>
+          <p>PO-2026-000038 renders <strong>رقم الفاتورة: JE-2026-000267</strong>. Labelled as the
+            bill number, the value is an internal journal-entry id. A user reconciling against the
+            supplier's paperwork will look for that number and not find it. Either label it as the
+            posting reference or carry the supplier's actual invoice number — the import-invoice flow
+            already captures one (<code>purchasing.importInvoice.invoiceNumber</code>).</p>
+          <span class="std-hit">Fails Standard 4 + 7</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · lists + detail</span></div>
+        <div>
+          <h3>"EGP" repeated on every money cell; quantities padded to four decimals</h3>
+          <p>The orders list prints <em>16,000.00 EGP</em> on all 38 rows, the requests list on all
+            36 — the currency is a property of the column, not of each figure. Same finding as Session
+            C, now confirmed module-wide across Purchasing. Alongside it, quantities render
+            <strong>200.0000</strong> and <strong>0.0000</strong> for whole units on PO detail, which
+            reads like machine output rather than a designed number.</p>
+          <span class="std-hit">Fails Standard 7 · recurrence — one shared fix with Session C</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · English copy</span></div>
+        <div>
+          <h3>The English UI speaks in abbreviations the Arabic UI does not use</h3>
+          <p><em>New PO</em>, <em>PO no.</em>, <em>Create PO</em>, <em>Create draft PO</em>,
+            <em>Convert to PO</em>. The Arabic side consistently writes the phrase out —
+            <em>أمر شراء جديد</em>, <em>رقم الأمر</em>, <em>إنشاء أمر الشراء</em>. English is the
+            second locale here, but the brand voice is "short, plain, human" in both; <em>PO</em> is
+            internal shorthand, and it appears on a primary button.</p>
+          <span class="std-hit">Fails Standard 7 · Brief voice rules</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · new request</span></div>
+        <div>
+          <h3>New PO shows the lifecycle stepper; new request does not</h3>
+          <p>The new-PO form opens with a five-step stepper (إنشاء → تأكيد → استلام → فاتورة المورد →
+            سداد) that tells the user where creating this record sits in the whole flow. The new-request
+            form — which has its own submit → approve → convert lifecycle, and is the <em>earlier</em>
+            step of the same story — shows nothing. It also lacks the <em>الضريبة</em> field the PO
+            form has, with no explanation of why tax is absent at request time.</p>
+          <span class="std-hit">Fails Standard 5</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · PO detail, import invoice</span></div>
+        <div>
+          <h3>What Purchasing gets right — do not "fix" these</h3>
+          <p><strong>PO detail holds the bar set by Sales' order detail.</strong> Five-step timeline
+            with real dates, a completion line (<em>"اكتملت كل الخطوات في 2026/07/20"</em>), a
+            three-figure money panel (الإجمالي / المفوتر / المتبقي), a human status explainer, one
+            primary action (<em>تسجيل مرتجع</em>) and everything else in the ⋯ menu. RTL is correct
+            throughout, chrome stays monochrome in both themes, and the approval row shows real state
+            rather than a policy flag. <strong>The import-invoice screen is the best AI surface
+            reviewed so far</strong>: one dropzone, one action, stated file limits, and an honest,
+            unhyped promise — <em>"المساعد الذكي يقرأها — وأنت من يقرر ما يُرحَّل."</em> Drafts-only and
+            gated, exactly as Standard 6 asks; its unreadable-document state is designed and
+            blame-free (<em>"هذا ما استطعنا تبيّنه — صورة أوضح بإضاءة أفضل تحل الأمر غالبًا."</em>).
+            <strong>The purchasing status explainers</strong> (<code>statusExplain.*</code>) are model
+            human-status copy — every order state says what to do next.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04h</span><h2>Session F findings — CRM (2026-07-20)</h2></div>
+    <p class="sec-note">Seven CRM screens driven live in Arabic/RTL and English/LTR, dark and light:
+      pipeline table, pipeline board (Kanban), opportunity detail, leads, tickets, campaigns,
+      campaign detail. Ranked most severe first.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · module-wide</span></div>
+        <div>
+          <h3>The CRM has no activity history — the one thing a CRM exists to remember</h3>
+          <p>The API models it in full: <code>api/crm.ts</code> declares
+            <code>Activity</code>, <code>ActivityType</code> (<em>call · email · meeting · task ·
+            note</em>) and <code>RelatedType</code> (<em>lead · opportunity · ticket</em>). No CRM page
+            renders any of it — a repo-wide search for activity UI returns only Accounting's ledger
+            and <code>PartyDetailView</code>. So a salesperson opening OPP-2026-000035 can see the
+            amount, a probability and a free-text notes box, and <strong>cannot see a single thing
+            that has happened with this customer</strong>: no calls logged, no emails, no meetings,
+            no next step, no owner. Driven live, the whole opportunity detail is six facts and a
+            notes field. Every other module's detail page carries a timeline (Sales order,
+            PO detail — both logged as passes); the module whose entire promise is
+            <em>remembering the relationship</em> is the one without one.</p>
+          <span class="std-hit">Fails Standard 1 + 4 + 8 · "would Linear ship this?" — no</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · opportunity detail</span></div>
+        <div>
+          <h3>The primary button silently creates a sales order in another module — nothing says so,
+            and there is no undo</h3>
+          <p>The bar primary on an open opportunity is <strong>تحديد كناجحة / Mark won</strong>
+            (<code>OpportunityDetailPage.tsx:120-131</code>). It calls
+            <code>winOpportunity(id, data.lines.length &gt; 0)</code> — so when the opportunity has
+            lines, winning it <strong>posts a real sales order into Sales</strong>. The button says
+            none of this: no confirm, no "this will create a sales order" line, no mention in the
+            toast (<em>تم ربح الفرصة</em>). Whether the document is created depends on
+            <code>lines.length</code>, which is invisible from the header where the button sits.
+            And unlike every neighbouring action in this module — stage advance, lead qualify,
+            campaign status all use <code>useUndoableAction</code> — win/lose go through plain
+            <code>runOptimistic</code> with <strong>no Undo</strong>. The module's most consequential
+            action is its least explained and its only irreversible one.</p>
+          <span class="std-hit">Fails Standard 4 + 5 · "says what happens before, reversible after"</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · leads + tickets</span></div>
+        <div>
+          <h3>Leads and tickets both label their status column "المرحلة / Stage" — the opportunity
+            word — while the filter beside it calls the same column "الحالة / Status"</h3>
+          <p><code>LeadsPage.tsx:281</code> and <code>TicketsPage.tsx:290</code> both render
+            <code>&lt;th&gt;{t("crm.opp.stage")}&lt;/th&gt;</code> — the <em>opportunity</em> key,
+            <strong>المرحلة / Stage</strong>. On the same screens the filter field and the status tabs
+            use <code>common.status</code> — <strong>الحالة / Status</strong> — over the identical
+            values. Verified live in both locales: the tickets table reads
+            <em>الأولوية · المسؤول · <strong>المرحلة</strong> · اتفاقية الخدمة</em> in Arabic and
+            <em>Priority · Owner · <strong>Stage</strong> · SLA</em> in English, with a
+            <em>Status</em> filter directly above. A ticket has no stage; a lead has no stage.
+            <strong>Two words for one concept, both visible at once</strong> — the hard-refusal list,
+            and the fourth module in a row to hit it (B, D, E, F). Pure string fix: point both
+            headings at <code>common.status</code>.</p>
+          <span class="std-hit">Fails Standard 5 + 6 + 7 · hard-refusal: "two Arabic words for one
+            concept"</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · campaigns + campaign detail</span></div>
+        <div>
+          <h3>Campaign detail instructs the user to do something the UI cannot do</h3>
+          <p>Every campaign page ends with <code>crm.campaign.linkHint</code>:
+            <em>"عيّن رمز حملة على عميل محتمل أو فرصة ليُحتسب ضمن هذا العائد."</em> /
+            <em>"Set a campaign code on a lead or opportunity to roll its value into this ROI."</em>
+            The API supports exactly that — <code>createLead()</code> and
+            <code>createOpportunity()</code> both accept <code>campaign_code</code>, and the backend
+            reads it (<code>erp/crm/api/views.py:169</code>). <strong>Neither form exposes the
+            field.</strong> Add-lead collects name, company, email, source; new-opportunity collects
+            name, customer, warehouse, lines. There is no edit path either — <code>updateOpportunity</code>
+            accepts only <code>name</code> and <code>notes</code>. So the one instruction the campaign
+            screen gives is impossible to follow through the product, and every campaign a user
+            creates by hand will report 0 leads / 0 opportunities forever. Driven live on SPRING26:
+            <em>العملاء المحتملون 0</em>, with metrics that only exist because seed data set the code
+            directly in the database.</p>
+          <span class="std-hit">Fails Standard 4 + 8 · guidance that dead-ends is worse than no
+            guidance</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · module-wide lexicon</span></div>
+        <div>
+          <h3>An opportunity is "الفرصة" everywhere except on campaign detail, where the same records
+            become "الصفقات"</h3>
+          <p>The canonical word across the module is <strong>الفرصة / الفرص</strong> — the tab
+            (خط الفرص), the create button (إنشاء فرصة), the detail heading, every toast, the board's
+            empty column (<em>لا فرص في هذه المرحلة</em>). Campaign detail then switches nouns for the
+            same objects: <code>crm.campaign.won</code> = <strong>الصفقات الناجحة</strong> and
+            <code>crm.campaign.wonValue</code> = <strong>قيمة الصفقات الناجحة</strong>. Both sit in one
+            metrics grid <em>next to</em> <code>crm.campaign.opportunities</code> = <strong>الفرص</strong>.
+            Verified live on SPRING26: the card reads <em>الفرص 2</em> and
+            <em>الصفقات الناجحة 1</em> — and that 1 <em>is</em> one of the 2. The user is left to guess
+            whether صفقة is a second record type. English is consistent (<em>Opportunities</em> /
+            <em>Won deals</em> is idiomatic there); the break is Arabic-only. Fix: الفرص الناجحة /
+            قيمة الفرص الناجحة.</p>
+          <span class="std-hit">Fails Standard 5 + 6 · hard-refusal: "two Arabic words for one
+            concept" · same class as the Sales and Purchasing P1s</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · tickets</span></div>
+        <div>
+          <h3>The support queue fetches every ticket's SLA deadline and then refuses to show it</h3>
+          <p><code>Ticket</code> carries <code>sla_due_at</code>, <code>opened_at</code> and
+            <code>escalated_at</code> (<code>api/crm.ts</code>). The SLA column renders one of two
+            words — <strong>ضمن الوقت</strong> or <strong>متجاوزة</strong> — and drops the timestamps
+            entirely. So the screen can say a ticket has <em>already</em> breached, but never
+            <em>which ticket breaches next</em>, <em>how long is left</em>, or <em>when</em> it was
+            opened. There is no sort by deadline and no "due soon" filter; the only SLA tool is the
+            manual <em>تنفيذ التصعيد</em> sweep, which acts on tickets that are <strong>already
+            late</strong>. A support queue that can only report failures after the fact does not make
+            the day easier. Exactly the shape of Session C's batches P1 (expiry present in the data,
+            inert on the screen).</p>
+          <span class="std-hit">Fails Standard 1 + 2 + 8 · the screen cannot answer its own question</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · pipeline (both views)</span></div>
+        <div>
+          <h3>The page called "Pipeline" leads with a data-entry form; the pipeline itself starts
+            below the fold</h3>
+          <p><code>/#/crm</code> opens on <strong>فرصة جديدة / New opportunity</strong> — a full
+            line-item entry table with item/quantity/price rows, an Add-line button and a totals
+            footer — occupying the screen from the module header down to y≈640 of a 1000px viewport.
+            The Table/Board toggle and the first opportunity appear <em>after</em> it. Verified in both
+            locales. This is the create-form-expanded-by-default finding for the <strong>fifth
+            module</strong> (B, C, D, E, F — now unambiguously systemic, one shared fix), but it lands
+            hardest here: elsewhere the form precedes a list, whereas here a multi-row order form
+            precedes <em>the module's whole reason to exist</em>. A salesperson opening their pipeline
+            should see their pipeline.</p>
+          <span class="std-hit">Fails Standard 1 · systemic recurrence — 5th module</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · pipeline</span></div>
+        <div>
+          <h3>The pipeline is the only CRM list you cannot filter, tab, or save a view of</h3>
+          <p>Leads, tickets and campaigns each ship <code>SavedViews</code> +
+            <code>FilterBar</code> + <code>StatusTabs</code>. <code>PipelinePage.tsx</code> ships none
+            of the three — it renders 35 rows in one flat table with no stage tabs, no owner/amount
+            filter and no saved views, driven live. The highest-value list in the module is the least
+            equipped one, and the same user meets two different list contracts one tab apart. The
+            board view partly compensates but only for the three open stages, so won and lost
+            opportunities are unreachable from either view without leaving the module.</p>
+          <span class="std-hit">Fails Standard 5 + 1 · same action, different behaviour one tab apart</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · leads</span></div>
+        <div>
+          <h3>Enter on a highlighted lead creates an opportunity — everywhere else in the app Enter
+            opens the row</h3>
+          <p><code>useListKeyboardNav</code> is the app's shared j/k contract and its
+            <code>onOpen</code> means <em>open this record</em> — campaigns navigate to detail, Sales
+            and Purchasing navigate to detail. On the leads list <code>onOpen</code> instead runs
+            <code>convert(l.id)</code> (<code>LeadsPage.tsx:178-185</code>), which
+            <strong>spawns a new opportunity</strong> via <code>runOptimistic</code> — no confirm, no
+            Undo, and with <code>customer_code: ""</code> so the new opportunity is created
+            unattached. One keystroke of muscle memory, learned on every other list, silently writes a
+            record here. Qualify (the neighbouring, reversible action) correctly uses
+            <code>useUndoableAction</code>; convert does not.</p>
+          <span class="std-hit">Fails Standard 4 + 5 · the same key must mean the same thing</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · opportunity detail + campaign detail</span></div>
+        <div>
+          <h3>Both detail screens drop fields the API already sends — including the pipeline's close
+            date</h3>
+          <p><code>Opportunity.expected_close</code> is fetched and never rendered, so the pipeline
+            shows a <em>weighted</em> forecast (المرجَّح, driven by probability) with
+            <strong>no date to forecast into</strong> — the number cannot be summed into a month or a
+            quarter. <code>Campaign.start_date</code>, <code>end_date</code> and <code>notes</code> are
+            likewise fetched and dropped, so campaign detail cannot say whether a campaign is running
+            now, and a <em>draft</em> campaign still reports ROI and won deals with nothing to explain
+            that it has not started. Same class as the SLA finding above: the data arrives, the screen
+            discards it.</p>
+          <span class="std-hit">Fails Standard 1 + 8</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · campaigns + campaign detail</span></div>
+        <div>
+          <h3>ROI is coloured green or red with no word or icon beside it</h3>
+          <p>The campaigns list paints the ROI cell with
+            <code>roi_minor &gt;= 0 ? "crm-ontime" : "crm-breach"</code>
+            (<code>CampaignsPage.tsx:240</code>) and campaign detail with
+            <code>m.is_profitable ? …</code> (<code>CampaignDetailPage.tsx:122</code>). Those classes
+            resolve to <code>--color-success-strong</code> and <code>--color-status-failed</code> —
+            verified live, SPRING26's <em>3,000.00 EGP</em> renders green. Nothing else marks the
+            state: on a positive figure there is no sign, no word, no icon, so <strong>profitability
+            is carried by hue alone</strong> and disappears for a colour-blind reader or in print.
+            The classes are also borrowed from the tickets SLA vocabulary (<em>on-time / breached</em>),
+            which is a different concept wearing the same paint.</p>
+          <span class="std-hit">Fails Standard 3 · "colour always pairs with a word or icon"</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · module-wide</span></div>
+        <div>
+          <h3>"EGP" is stamped on every money cell — third module, same fix</h3>
+          <p>The pipeline table repeats <em>EGP</em> on both money columns of all 35 rows (70 times on
+            one screen), the campaigns table on three columns, the board on every card and column sum.
+            Currency belongs in the column header or the page context, not in each cell; the repetition
+            is the loudest thing on an otherwise quiet table and it fights the tabular alignment.
+            Logged in Session B and again in Session C — this is now the third confirmation of the same
+            systemic issue and should be fixed once in the shared money formatter's call sites, not
+            per module.</p>
+          <span class="std-hit">Fails Standard 7 · systemic recurrence — 3rd module</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · leads + tickets</span></div>
+        <div>
+          <h3>Both queues show an Owner column that nothing in the product can fill</h3>
+          <p><code>Lead.owner</code> and <code>Ticket.owner</code> exist on the wire and both tables
+            reserve a column for them (<code>common.owner</code>, rendered via
+            <code>OwnerChip</code>). No CRM screen can assign one: the add-lead and open-ticket forms
+            have no owner field, there is no row action, no bulk assign and no detail page to edit
+            from. Driven live across 37 leads and every ticket, the column is <strong>"—" in every
+            row</strong>. An always-empty column costs horizontal space on the two densest tables in
+            the module and quietly implies a capability that is not there — and it is the field that
+            would answer "whose lead is this?", the first question in any shared queue.</p>
+          <span class="std-hit">Fails Standard 1 + 8 · designed-states rule: never ship a column that
+            can only be empty</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · tickets</span></div>
+        <div>
+          <h3>Escalate is a solid-red filled button for a routine, non-destructive action</h3>
+          <p><code>TicketsPage.tsx:342</code> styles the escalate row action
+            <code>btn--danger</code>, which <code>global.css:201</code> defines as a filled
+            <code>--color-danger</code> background. Escalating a ticket destroys nothing — it raises
+            priority one step, and the module's own sweep does it automatically. Filled danger is the
+            heaviest visual weight the design system has and should be reserved for irreversible
+            loss; using it here means the row shouts at the user for doing the right thing. Same class
+            as Session B's filled-red delete buttons, at lower blast radius (one gated row action).
+            Fix: plain <code>btn--sm</code>, danger reserved for lose/delete.</p>
+          <span class="std-hit">Fails Standard 3 · colour must match consequence</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · pipeline board</span></div>
+        <div>
+          <h3>The Kanban card's age badge reads "0ي" — an unlabelled letter glued to a number</h3>
+          <p>Each card prints <code>daysSince(updated_at)</code> followed by
+            <code>crm.pipeline.daysSuffix</code> — <strong>ي</strong> in Arabic,
+            <strong>d</strong> in English — with no space and no label
+            (<code>PipelineBoard.tsx:96</code>). Live, every card reads <em>0ي</em>. A bare Arabic
+            letter suffixed to a Latin digit is not a form Arabic uses; nothing says the number is
+            days, nor days <em>since what</em> (it is last-update, not age). Either spell the unit
+            (<em>منذ 3 أيام</em>) or carry it in a tooltip, as <code>PriorityBar</code> already does
+            for its meter.</p>
+          <span class="std-hit">Fails Standard 6 + 7 · native-Arabic rule</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · toasts</span></div>
+        <div>
+          <h3>One toast still ships the "ticket(s)" parenthetical, and the bulk-qualify toast is
+            ungrammatical in Arabic</h3>
+          <p><code>crm.toast.escalationsRun</code> reads <em>"Escalated {{count}} ticket(s)"</em> — the
+            un-designed plural this module elsewhere handles properly with paired
+            <code>…One</code> / <code>…</code> keys (<code>bulkResolvedOne</code> /
+            <code>bulkResolved</code>). In Arabic the same family breaks agreement:
+            <code>crm.toast.bulkLeadsQualified</code> = <em>"تم تأهيل {{count}} عملاء محتملين"</em>,
+            which is correct for 3–10 and wrong for 11+ (<em>"11 عملاء محتملين"</em> should be
+            <em>"11 عميلاً محتملاً"</em>). Identical to the Purchasing <em>{{count}} طلبات</em>
+            finding — a shared plural-form helper would close both.</p>
+          <span class="std-hit">Fails Standard 6 + 7 · voice rule: no parentheticals in shipped copy</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · campaigns</span></div>
+        <div>
+          <h3>The campaigns list hides status and groups by channel instead</h3>
+          <p>Campaign status (مسودة / نشطة / مكتملة) exists on every record, drives the detail page's
+            primary action, and appears <strong>nowhere in the list</strong> — no column, and the
+            status-tab strip is wired to <code>channel</code> instead
+            (<code>CampaignsPage.tsx:179</code>). So the list cannot answer "which campaigns are
+            running right now", only "which are email". Its create form is also the only one in the
+            module with no heading above it — leads and tickets both open with an
+            <code>&lt;h2&gt;</code> (<em>إضافة عميل محتمل</em>, <em>فتح تذكرة</em>), campaigns with a
+            bare row of fields.</p>
+          <span class="std-hit">Fails Standard 1 + 5</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · opportunity detail</span></div>
+        <div>
+          <h3>The linked sales order is a link that does not open the sales order</h3>
+          <p>When an opportunity has spawned an order, detail shows its number under
+            <em>أمر البيع</em> as a link — pointing at <code>/sales/orders</code>, the whole list
+            (<code>OpportunityDetailPage.tsx:219</code>). The user clicks a specific document number
+            and lands on an unfiltered table to hunt for it. Every other cross-module reference in the
+            app resolves to the record (<code>EntityLink</code> is imported on this very page and used
+            for line items).</p>
+          <span class="std-hit">Fails Standard 5 + 8 · a link must go where it says</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · pipeline board, status/priority meters, undo contract</span></div>
+        <div>
+          <h3>What CRM gets right — do not "fix" these</h3>
+          <p><strong>The Kanban board is the most on-brand thing in the module.</strong> Native HTML5
+            drag with a keyboard-reachable "move to stage" select on every card as an equal path
+            (never drag-only), a settled drop-target treatment, per-column count <em>and</em> money
+            sum, a designed empty-column line (<em>لا فرص في هذه المرحلة</em>) rather than a blank,
+            correct RTL column order, and a drop that flips optimistically then offers Undo.
+            <strong><code>PriorityBar</code> is a model meter</strong>: three monochrome bars, the exact
+            word one hover away, and the single splash of danger — <em>urgent</em> — always printed
+            beside its colour, exactly as the colour rule asks. <strong><code>crmTone()</code> is
+            complete</strong> — all five opportunity stages, all five lead statuses and all four ticket
+            statuses are mapped, so CRM does not repeat Purchasing's all-one-colour P1.
+            <strong>The undo-not-confirm contract is applied with real judgment</strong>: reversible
+            steps (stage advance, lead qualify, campaign activate) flip instantly and offer Undo, and
+            the code comments explain why win/lose are treated differently — the reasoning is right
+            even though the win path still needs the warning called out above.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04i</span><h2>Session G findings — Settings + Admin + Pricing (2026-07-20)</h2></div>
+    <p class="sec-note">Seventeen routes driven live in Arabic/RTL and English/LTR, dark and light:
+      the thirteen Settings tabs (profile, appearance, dashboard, navigation, notifications,
+      accessibility, organization, branches, webhooks, custom fields, developers, system, AI usage),
+      Users, Roles, and both Pricing screens. Ranked most severe first.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · every Settings tab</span></div>
+        <div>
+          <h3>Settings promises "these preferences are yours alone and never affect other users" —
+            then hands you the company's branches, webhooks, API keys and tax number under the same
+            sentence</h3>
+          <p><code>SettingsNav.tsx:26</code> prints one subtitle, <code>settings.intro</code>, above
+            all thirteen tabs: <em>خصّص مساحة عملك. هذه التفضيلات خاصة بك ولا تؤثر على المستخدمين
+            الآخرين.</em> / <strong>"Personalize your workspace. These preferences are yours alone and
+            never affect other users."</strong> Seven of those thirteen tabs are org-wide
+            administration — Organization, Branches, Webhooks, Custom fields, Developers, System,
+            AI usage — and they are gated on <code>isAdmin</code> precisely because they change what
+            <em>everyone</em> sees. The Organization tab then contradicts the header two lines below
+            it: <em>إعدادات تُطبّق على الجميع في المؤسسة</em> ("settings that apply to everyone").
+            So the screen where an admin edits the company tax number, deactivates a branch that
+            scopes every sales and stock record, or mints an API key, is captioned with an explicit
+            promise that nothing here touches anybody else. This is the plainest trust break found in
+            the review so far: not an omission, an active false statement, in both locales.</p>
+          <span class="std-hit">Fails Standard 4 + 8 · the fix: split the strip into
+            <em>Preferences</em> (personal) and <em>Administration</em> (org-wide), each with its own
+            true subtitle — the <code>isAdmin</code> boundary already draws the line</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /admin/roles</span></div>
+        <div>
+          <h3>System Admin — the role that can do everything — reports <strong>0 permissions</strong></h3>
+          <p>Driven live, the roles table reads: Accountant 58, Auditor 32, Branch Manager 91,
+            <strong>System Admin 0</strong> — while the same row claims 9 modules. An owner opening
+            the one screen that answers "who can do what" is told the administrator role grants
+            nothing. Almost certainly the superuser path bypasses the permission table the count
+            reads from, so the number is structurally blind rather than merely stale; either way the
+            page states a falsehood about the most powerful role in the product, on the screen whose
+            entire job is to be believed. Nothing on the row flags the count as not-applicable.</p>
+          <span class="std-hit">Fails Standard 4 + 8 · the fix: render superuser/built-in-admin roles
+            as <em>كل الصلاحيات / All permissions</em>, never as <code>0</code></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /admin/users</span></div>
+        <div>
+          <h3>The user list mixes machine accounts in with people — and one API key shows up wearing
+            System Admin</h3>
+          <p>The page says <em>إدارة من يمكنه تسجيل الدخول</em> / "Manage who can sign in, their roles,
+            and account status." It then lists, styled exactly like colleagues and with the same
+            avatar circles: <code>apikey:b31b47bd</code> (<code>apikey+b31b47bd@keys.internal</code>)
+            carrying the <strong>System Admin</strong> role, <code>ai_eval_runner</code>
+            (<code>ai-eval-runner@local.invalid</code>), and <code>drill_user</code>
+            (<code>drill@example.test</code>). Three of nine rows are not people. An owner auditing
+            access sees an unexplained account with full administrative rights and no way to tell it
+            is the service identity behind an API key they minted on the Developers tab. The invariant
+            the screen needs — <em>you can see, at a glance, exactly who can get in</em> — is broken
+            by the screen itself.</p>
+          <span class="std-hit">Fails Standard 1 + 4 + 8 · the fix: filter service principals out by
+            default with an explicit <em>Show service accounts</em> toggle, and label the ones that
+            back an API key as such</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /settings/developers</span></div>
+        <div>
+          <h3>The API reference claims to show what <em>this key</em> can reach, then prints all 209
+            routes in the system — Django path converters and all</h3>
+          <p>The caption under <em>المرجع</em> reads <em>"كل مسار يمكن لهذا المفتاح الوصول إليه،
+            مُولّد من واجهة البرمجة الفعلية"</em> — "every path this key can access, generated from
+            the real API." There is no key (the list above it is empty, with a correct designed empty
+            state), and the table is not filtered by role at all: it dumps every route in the product,
+            from <code>/api/setup/complete</code> to <code>/api/identity/users/bulk</code>, rendered
+            with raw framework internals — <code>/api/accounting/assets/&lt;str:code&gt;</code>,
+            <code>/api/imports/&lt;uuid:pk&gt;/autofix/apply</code>. Two failures in one surface: the
+            promise of scoping is not kept, and an Egyptian SMB owner is shown Django URL-converter
+            syntax on a customer-facing settings page. The page's own good instinct — "generated from
+            the real API, never hand-written" — is the right idea aimed at the wrong output.</p>
+          <span class="std-hit">Fails Standard 1 + 4 + 7 · the fix: filter the table by the selected
+            key's role, and render path params as <code>{code}</code>/<code>{id}</code></span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /settings/webhooks</span></div>
+        <div>
+          <h3>Thirty-four event names, none of them in Arabic, as one undivided wall of checkboxes</h3>
+          <p>The event picker renders every subscribable event as its raw dotted identifier —
+            <code>sales.QuotationConverted</code>, <code>purchasing.RequestSubmitted</code>,
+            <code>accounting.JournalPosted</code> — thirty-four of them, English CamelCase, in a flat
+            unsectioned grid, in the Arabic UI. No Arabic labels, no grouping by module, no search,
+            no descriptions. This is the largest single block of untranslated user-facing text found
+            in the review: the whole event vocabulary of the product bypasses i18n. The Arabic-first
+            rule is not "most strings are translated" — one screen this size undoes it. The tab is
+            itself titled <em>الويب هوكس</em>, a transliteration where the lexicon wants a chosen
+            Arabic term.</p>
+          <span class="std-hit">Fails Standard 1 + 7 · Identity §6 · the fix: an
+            <code>events.*</code> key per event (ar + en), grouped under module headings, with the
+            technical id shown as secondary text</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · appearance + accessibility</span></div>
+        <div>
+          <h3>Two different tabs offer two different controls for text size, in two different Arabic
+            words</h3>
+          <p>Appearance carries <em>حجم النص</em> / "Text size" as a three-way segmented control
+            (صغير · افتراضي · كبير) described as <em>"يغيّر حجم الواجهة بالكامل"</em>. Accessibility
+            carries <em>نص أكبر</em> / "Larger text" as a two-state toggle described as
+            <em>"زيادة حجم النص في التطبيق"</em>. Same job, two screens, two Arabic phrasings, and
+            no cross-reference between them — a user who sets "large" on one tab and toggles the other
+            has no way to know which wins. The two-Arabic-words-for-one-concept refusal, now hit in
+            Settings after four consecutive product modules.</p>
+          <span class="std-hit">Fails Standard 5 + 7 · Identity §6 · the fix: one control, one word;
+            Accessibility should link to it, not duplicate it</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /settings/ai-usage</span></div>
+        <div>
+          <h3>The only money in the product denominated in dollars — printed to four decimals, with
+            the currency symbol flipping sides mid-sentence in RTL</h3>
+          <p>Organization settings declare the base currency EGP and every other money surface honours
+            it. AI usage prints <code>$0.0101</code>, budgets <code>$0.0050</code> per user and
+            <code>$0.0005</code> per call, and in the Arabic build the organization budget line renders
+            <strong><code>$0.0080 من 3.0000$</code></strong> — the same sentence puts the symbol before
+            one figure and after the other, because the values are not wrapped for bidi. Four decimal
+            places also breaks the money contract (integer minor units, formatted only by
+            <code>lib/money.ts</code>). The numbers are honest and the read-only framing is good;
+            the presentation is the only money in the app that does not look like the rest.</p>
+          <span class="std-hit">Fails Standard 5 + 7 · the fix: route through
+            <code>lib/money.ts</code> + <code>&lt;Bdi&gt;</code>, and state the provider currency
+            explicitly rather than assuming the reader knows it is USD</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · settings shell, both locales</span></div>
+        <div>
+          <h3>Thirteen tabs in one horizontal strip — it wraps, orphaning the last tabs on a second
+            row in Arabic and English alike</h3>
+          <p><code>SettingsNav.tsx</code> lays all thirteen destinations in a single <code>.setnav</code>
+            row. At 1440px the Arabic build drops <em>استخدام المساعد الذكي</em> alone onto a second
+            line; the English build drops <em>System</em> and <em>AI usage</em>. The active-tab
+            underline then sits on a row by itself, disconnected from the strip it belongs to. Settings
+            of this size is a sidebar pattern, not a tab strip — and the same change fixes the
+            personal/administration split called out in the first finding above. The component also
+            repeats eight near-identical <code>isAdmin &amp;&amp; &lt;NavLink&gt;</code> blocks
+            (<code>SettingsNav.tsx:38-93</code>) where the existing <code>TABS</code> array with an
+            <code>adminOnly</code> flag would do.</p>
+          <span class="std-hit">Fails Standard 1 + 7 · "would Linear ship this?" — no</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · users, roles, branches, pricing</span></div>
+        <div>
+          <h3>Every name an admin reads is English-only — roles, branches, departments, price lists</h3>
+          <p>Fifth confirmation of the review's most persistent structural finding, and the first time
+            it lands on records the customer creates. Roles render as <em>System Admin · Accountant ·
+            Branch Manager · Auditor</em> (the role is keyed by name — <code>/api/identity/roles/
+            &lt;str:name&gt;</code> — so there is no display-name field to translate into). Branches
+            read <em>Alexandria Branch · Headquarters</em>; departments <em>FIN · OPS · SALES</em>;
+            price lists <em>Standard Prices · Wholesale · Retail prices</em> (with the capitalisation
+            drifting between them). The Arabic UI frames them all correctly and then prints English in
+            every value cell. Same class as Session B's chart of accounts and Session E's supplier
+            narration: a single <code>name</code> column doing bilingual duty.</p>
+          <span class="std-hit">Fails Standard 7 · Identity §6 · the fix: one shared decision on
+            <code>name_ar</code>/<code>name_en</code> across role, branch, department and price list —
+            a migration, not a string pass</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · users, roles</span></div>
+        <div>
+          <h3>Colour is spent on the states that carry no information</h3>
+          <p>On Users, eight of nine rows wear a filled green <em>نشط / Active</em> pill; on Roles,
+            every row wears a filled teal <em>مدمج / Built-in</em> pill. In both cases the coloured
+            badge marks the default, unremarkable state, so the colour distinguishes nothing — and on
+            Roles it is the only colour on the screen. The rule the brand actually asks for is the
+            inverse: colour appears when something needs attention (Users gets this half-right — the
+            single <em>مدعو / Invited</em> row in blue is the one row worth noticing). Related, dark
+            theme only: some name cells render in link colour and others in plain body text within the
+            same column; the light build renders all of them as links.</p>
+          <span class="std-hit">Fails Standard 3 + 5 · the fix: neutral treatment for Active and
+            Built-in; reserve the filled pill for Invited, Suspended, Archived and Custom</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /settings/webhooks</span></div>
+        <div>
+          <h3>A dead-grey "Add webhook" primary that never says what it is waiting for, and destructive
+            row actions as bare inline links</h3>
+          <p>The <em>إضافة ويب هوك</em> button renders permanently disabled-looking with no hint of
+            the missing input (URL? at least one event? both?), so the screen's one primary action
+            reads as broken rather than as guarded. Below it, each subscription exposes
+            <em>عمليات الإرسال · تجديد المفتاح السري · حذف</em> as three inline text links rather than
+            the <code>RowActions</code> menu used everywhere else in the app, with <em>حذف</em> — an
+            irreversible delete of a live integration — presented identically to the two safe ones.</p>
+          <span class="std-hit">Fails Standard 4 + 5 · the fix: state the precondition beside the
+            button; move row actions into <code>RowActions</code> with delete confirmed</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /settings/system</span></div>
+        <div>
+          <h3>A customer-facing page that answers in Django</h3>
+          <p>The System tab tells the reader <em>"غيّر الإعدادات في ملف .env ثم أعد التشغيل"</em> and
+            then lists forty environment-variable names —<code>DJANGO_SETTINGS_MODULE</code>,
+            <code>DRF_THROTTLE_ANON</code>, <code>CELERY_TASK_ALWAYS_EAGER</code>. The backup row
+            points at "the backup section of the runbook", a document the customer does not have. The
+            restraint is real and worth keeping — values never leave the server, and the degraded
+            background-worker row is a genuinely well-written blame-free explanation of what will feel
+            slow and why — but the vocabulary belongs to whoever deploys the product, not to whoever
+            bought it.</p>
+          <span class="std-hit">Fails Standard 1 + 8 · the fix: lead with the plain-language health
+            summary; put the raw env inventory behind a "Technical details" disclosure</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /pricing/customers</span></div>
+        <div>
+          <h3>One screen, two unrelated jobs, two primary buttons — and no currency anywhere on the
+            price fields</h3>
+          <p>The Customer pricing tab stacks two independent create-forms with their own empty states:
+            <em>قائمة الأسعار حسب العميل</em> (link a customer to a list) and
+            <em>الأسعار المتفاوَض عليها</em> (a per-customer, per-item price). Both are expanded, both
+            carry a filled primary (<em>ربط</em>, <em>إضافة سعر</em>), and both accept a click with
+            every field still empty. Meanwhile <em>سعر الوحدة</em> — the negotiated price that
+            overrides every price list — is entered with no currency shown at all, on a screen where
+            the sibling tab prints EGP against each list. Fourth screen in the module family with the
+            create-form-expanded pattern; seventh module overall.</p>
+          <span class="std-hit">Fails Standard 1 + 4 · the fix: split the two jobs, collapse the
+            forms behind their primaries, disable until valid, print the currency</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · /settings/dashboard</span></div>
+        <div>
+          <h3>Panel reordering is two text arrows, not the icon set — and not draggable</h3>
+          <p><code>DashboardSettingsPage.tsx:85,94</code> render literal <code>↑</code> and
+            <code>↓</code> glyphs inside the buttons. They come from the font, not from
+            <code>src/app/icons.tsx</code>, so they carry a different stroke weight and optical size
+            from every other icon in the product, and their direction is ambiguous in RTL where the
+            rest of the app mirrors. The <code>aria-label</code>s and disabled end-states are correct,
+            so this is craft, not access. Reordering a six-item list also wants drag with the arrows
+            as the keyboard path — the CRM Kanban already sets that pattern in this codebase.</p>
+          <span class="std-hit">Fails Standard 7 · one hand of icons</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · profile, users</span></div>
+        <div>
+          <h3>Raw identifiers and a bare "أبداً" where human phrasing belongs</h3>
+          <p>Profile shows the timezone as <code>Africa/Cairo</code> — the IANA identifier, unlocalised,
+            in an Arabic form beside fully-translated labels. Users prints <em>أبداً</em> in the
+            "last login" cell for accounts that have never signed in; bare <em>أبداً</em> is a negation
+            adverb, not a value, and reads as a fragment in Arabic where <em>لم يسجّل الدخول</em> is
+            the natural phrasing. Empty department and branch cells fall back to <em>—</em>.</p>
+          <span class="std-hit">Fails Standard 7 · Identity §6 · human phrasing</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · /settings/ai-usage</span></div>
+        <div>
+          <h3>"الرموز" means tokens here and codes everywhere else — plus an untranslated
+            <code>unknown</code> provider row</h3>
+          <p>The tokens tile is labelled <em>الرموز</em>, while <em>الرمز</em> is the settled word for
+            <em>code</em> on Branches (<em>رمز الفرع</em>) and Pricing (<em>الرمز</em>) — the lexicon
+            collision runs in the opposite direction from the usual finding: one Arabic word, two
+            concepts. The per-provider table also carries a literal <code>unknown</code> row in English
+            among <em>gemini · mistral · groq</em>, and the tokens tile repeats its own
+            <em>وارد / صادر</em> caption directly beneath the value it already labels.</p>
+          <span class="std-hit">Fails Standard 7 · Identity §6</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · /settings/branches</span></div>
+        <div>
+          <h3>Deactivating a branch is one unguarded toggle, on the page that explains how much a
+            branch decides</h3>
+          <p>The page's own description says every user belongs to one branch and that sales, stock and
+            other records are scoped by it. The only control on each row is a bare active toggle — no
+            confirm, no statement of what happens to the users and records attached, no visible undo.
+            Dark theme also makes the on and off states hard to tell apart at a glance: the difference
+            is knob position plus a subtle track shade, with no word beside it.</p>
+          <span class="std-hit">Fails Standard 4 · the fix: confirm with the consequence named, or
+            flip optimistically with Undo as the rest of the app does</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · empty states, field primitives, org settings, system degradation</span></div>
+        <div>
+          <h3>What Settings gets right — do not "fix" these</h3>
+          <p><strong>The empty states are the best in the product.</strong> Every one found is designed
+            — icon, title, and a sentence that tells you what to do next and what it will get you:
+            <em>"أنشئ مفتاحًا أعلاه — يعمل بصلاحيات الدور المرتبط به فقط، لا أكثر"</em> on Developers,
+            <em>"أضف حقلًا أعلاه — يظهر في نموذج هذا الكيان وجدوله فورًا"</em> on Custom fields,
+            <em>"اربط عميلًا بقائمة أسعار لتجاوز القائمة الافتراضية"</em> on Pricing. Not one bare
+            "No data" across seventeen routes. <strong>The field primitives are fully rolled out here</strong>
+            — ComboBox for every long list and DatePicker for every date on the Pricing screens, with
+            Latin digits in both locales. <strong>Organization settings is the model settings page</strong>:
+            every row states its consequence in plain Egyptian Arabic before you touch it —
+            <em>"عند إيقافها، تُخفى الفوترة الإلكترونية من التطبيق"</em>, and the assistant-posting
+            toggle says <em>"لا مجرد إعداد المسودات. مُتوقف افتراضيًا"</em>, naming both the power and
+            the default. <strong>The System tab's degraded-worker row is a model failure state</strong>:
+            it says which queue is down, and then which user-visible things (imports, reports,
+            notifications) will wait — the fault explained in the reader's terms, blame-free.
+            <strong>AI usage is honest about being read-only</strong> and points at the gateway that
+            already owns the numbers rather than claiming its own truth.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">04j</span><h2>Session H findings — Assistant + Help + E-invoice + Workflows (2026-07-20)</h2></div>
+    <p class="sec-note">The last surface. Nine routes driven live in Arabic/RTL and English/LTR, dark
+      and light: the assistant page, knowledge base, assistant health, e-invoicing, the workflow list,
+      the workflow canvas (new and existing), an execution instance, the user guide and its glossary,
+      plus the two overlays — the context Help Center and the shortcuts dialog — and the docked
+      assistant panel. Ranked most severe first.</p>
+    <div class="findings">
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /einvoice</span></div>
+        <div>
+          <h3>The module tells an accountant their invoices were filed with the Egyptian Tax Authority.
+            Nothing leaves the building.</h3>
+          <p>This was the finding the review seeded for Session H, and it is confirmed in source and on
+            screen. <code>erp/einvoice/services/eta_adapter.py</code> says so in its own first line:
+            <em>"Stubbed ETA adapter … This adapter <strong>simulates</strong> the contract"</em>.
+            <code>submit()</code> returns <code>accepted=True</code> unconditionally with a UUID that is
+            just the first 64 hex characters of a local SHA-256 of the document;
+            <code>query()</code> returns <code>"valid"</code> for anything with a UUID.
+            <code>issue.py</code> calls that adapter and nothing else — the newly landed
+            <code>eta_client.py</code> (real credentials, real endpoints) is not wired into the submit
+            path, so even an org that enters genuine ETA credentials is still talking to the stub.</p>
+          <p>Now the copy over that stub, with no hedge anywhere in either locale:
+            <em>أرسل فواتيرك إلكترونيًا إلى مصلحة الضرائب المصرية وتابع حالتها</em> /
+            <strong>"Submit your invoices electronically to the Egyptian Tax Authority and track their
+            status"</strong> as the module description on every page; <em>إرسال للمصلحة</em> /
+            <strong>"Submit to ETA"</strong> as the row action; <em>تم إرسال الفاتورة</em> /
+            <strong>"Invoice submitted"</strong> as the success toast;
+            <em>معرّف المصلحة</em> / <strong>"ETA UUID"</strong> as a column heading, printing
+            <code>ba98a1501055…</code> — a locally computed hash presented as a government reference
+            number, the kind of value an accountant copies into a tax file or quotes in a dispute; and
+            <em>صالحة</em> / <strong>"Valid"</strong> as the resting status, which the stub hands out to
+            every document that was ever submitted. The <em>مرفوضة</em> / "Rejected" filter tab can
+            never fire: no code path reaches it. Thirty-one invoices sit on this screen in the demo,
+            one of them already wearing a fabricated authority ID.</p>
+          <p>This is not a missing feature — a missing feature is honest. It is the product asserting
+            that a legal filing obligation has been discharged when it has not been, on the one screen
+            an Egyptian SMB buys this category of software for. Brief §12 claims discipline exists for
+            exactly this case.</p>
+          <span class="std-hit">Fails Standard 4 + 6 + 8 · Brief §12 · the fix, before handover: while
+            the adapter is a stub, the module states it — a persistent line in the module header
+            (<em>وضع تجريبي: لا تُرسَل الفواتير فعليًا إلى المصلحة</em>), the action worded as
+            <em>تجهيز للإرسال</em> rather than <em>إرسال</em>, the UUID column labelled as a local
+            reference, and no <em>صالحة</em> status until a real authority says so. The honest version
+            costs five strings; the current version is a claim the product cannot keep</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /workflows</span></div>
+        <div>
+          <h3>Thirty-two workflow runs are recorded, counted on screen, and unreachable — the module
+            has no way to open a past execution</h3>
+          <p>The list's last column is <em>التنفيذات</em> / "Instances" and it shows real numbers
+            (<code>1</code>, <code>2</code>, <code>0</code>); the database holds 32
+            <code>WorkflowInstance</code> rows with 96 <code>NodeExecution</code> and 96
+            <code>ExecutionLog</code> children. The number is plain text —
+            <code>WorkflowListPage.tsx:157</code> renders it inside <code>&lt;Bdi&gt;</code>, not a link
+            — and <code>App.tsx</code> registers exactly one instance route,
+            <code>/instances/:id</code>, with no list route and no navigation to it from anywhere in
+            the UI. The single way a user ever reaches an execution is
+            <code>WorkflowCanvasPage.tsx:248</code>, which navigates there immediately after they press
+            Run. Close that tab and the run is gone from the product.</p>
+          <p>So the module invites you to automate business processes — approvals, API calls, assistant
+            steps — and then cannot answer "did last night's run work?", "why did that approval fire?",
+            or "what happened the twelve times this ran last week". The execution viewer that would
+            answer all three is built, correct, and orphaned. For a module whose entire promise is
+            unattended work, the missing history is the promise.</p>
+          <span class="std-hit">Fails Standard 4 + 8 · the fix: make the instance count a link, and add
+            the runs list the viewer already implies — the API (<code>/workflow/instances</code>) and
+            the detail screen both already exist</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /workflows/new · /workflows/:id</span></div>
+        <div>
+          <h3>The workflow canvas has no dark theme — a white sheet inside a black app — and carries a
+            third-party vendor's watermark</h3>
+          <p>Driven in dark mode, everything the canvas owns stays light: the grid surface, the node
+            body (a white card with grey <code>start</code> text), the zoom controls, and the minimap,
+            which renders as a bright white rectangle in the corner of an otherwise near-black screen.
+            The app frame around it is correct, which makes the break louder — the one page in the
+            product where the theme simply was not implemented. On a screen an admin builds approval
+            chains on, this is the first thing seen and the last thing forgiven.</p>
+          <p>In the same corner, the library prints <strong>"React Flow"</strong> as a literal
+            attribution label. It is a foreign brand name, in Latin script, untranslated, on a customer
+            surface inside an Arabic-first product — the app frame carrying someone else's identity.</p>
+          <span class="std-hit">Fails Standard 3 + 7 · Identity (one voice, monochrome chrome) ·
+            the fix: map the canvas variables onto <code>tokens.css</code> for both themes, and remove
+            the attribution (<code>proOptions.hideAttribution</code>) or replace it with nothing</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /assistant</span></div>
+        <div>
+          <h3>Conversation titles are clipped from the wrong end whenever the script differs from the
+            interface language — the history list is unreadable in both locales</h3>
+          <p>In the Arabic UI, every English conversation in the sidebar reads
+            <em>"…ed this document?"</em>, <em>"…mns name and bal"</em>, <em>"…he attached image"</em>,
+            <em>"…m the attached file"</em> — the ellipsis lands at the <em>start</em>, so the words that
+            identify the conversation are the ones removed. Flip to English and the failure mirrors:
+            Arabic conversations become <em>"…ستخدم هذه الصفحة"</em>. The truncation is physical rather
+            than logical, so it always clips the side the opposite direction starts on. Roughly half the
+            rows in the demo history are unidentifiable at any moment, in whichever locale you happen to
+            be in, and the preview line underneath repeats the same broken fragment instead of the
+            answer.</p>
+          <p>A bilingual company is the normal case for this product; a history list that hides the
+            first words of every foreign-script row is a list you cannot use to find anything.</p>
+          <span class="std-hit">Fails Standard 5 + 7 · the fix: per-row <code>dir="auto"</code> with
+            logical truncation, so the ellipsis always falls at the row's own end</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p1"><span class="sq"></span>P1 · /assistant</span></div>
+        <div>
+          <h3>The floating help button sits on top of the assistant's Send button</h3>
+          <p>Measured live in the browser, both locales. The help FAB occupies
+            <code>x 24–68, y 832–876</code>; the assistant's send button (<em>اسأل</em> / "Ask")
+            occupies <code>x 32–93, y 866–905</code>. They overlap by roughly <strong>36 × 10
+            pixels</strong> at the send button's leading corner, with the FAB painted on top. The
+            layout mirrors correctly between RTL and LTR — and collides in both, because both anchor to
+            the same bottom-inline-start corner. The single primary action of the assistant page is
+            partially covered by an unrelated control on first load, before any scrolling.</p>
+          <span class="std-hit">Fails Standard 1 + 7 · the fix: the assistant page (and any page with a
+            bottom-anchored composer) offsets or suppresses the FAB — the composer owns that
+            corner</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /assistant/ops</span></div>
+        <div>
+          <h3>The calls-per-day chart encodes meaning in colour alone, and the colour is the only
+            saturated thing on the page</h3>
+          <p>Eight bars: three render as solid blue fills, five as dark bars with a thin blue base line.
+            Nothing on the chart says what the difference means — no legend, no label, no word or icon
+            beside either treatment — and the pattern does not track the obvious readings (the tallest
+            day is blue, but so is a middling one, while the second-tallest is not). The reader is left
+            to infer a threshold the screen never states. Colour is doing the work alone, which the
+            brand's own rule forbids, and it is the loudest ink in the product's calmest module.</p>
+          <span class="std-hit">Fails Standard 3 · brand rule "colour always pairs with a word or
+            icon" · the fix: one bar treatment, with the distinction (if there is one) said in
+            words</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /assistant/ops</span></div>
+        <div>
+          <h3>Three tiles promise a comparison and then show nothing</h3>
+          <p>Total calls, error rate and cost each print <em>مقارنة بالشهر الماضي</em> / "vs last month"
+            as their caption, with no delta, no arrow, no previous figure anywhere on the tile. The
+            caption is the label of a value that was never rendered. A reader who wants the one thing
+            the tile advertises — is this better or worse than last month — cannot get it, and the
+            empty promise makes the number above it feel less trustworthy than a bare number would.</p>
+          <span class="std-hit">Fails Standard 4 + 7 · the fix: render the delta, or drop the
+            caption</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /assistant/ops</span></div>
+        <div>
+          <h3>The health screen speaks in vendor part numbers</h3>
+          <p>The model column prints <code>gemini/gemini-2.5-flash</code> on every one of the twenty
+            visible rows, and the eval tile reads <strong>0%</strong> beside
+            <code>routing_ask_groq_meta-llama_llama-4-scout-17b-16e-instruct</code>, a raw internal
+            identifier wrapped across two lines. Three external vendors are named on a screen an owner
+            opens to ask "is my assistant healthy?", the <code>0%</code> arrives with no scale and no
+            sentence saying whether zero is bad, and the whole tile assumes the reader knows what a
+            routing eval is. The brand's AI is meant to be quiet and to speak in the reader's terms; this
+            is a build log with a heading.</p>
+          <span class="std-hit">Fails Standard 6 + 7 · the fix: name capabilities, not part numbers,
+            and state what the eval score means or remove the tile from the owner-facing view</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /help/guide/glossary + assistant panel</span></div>
+        <div>
+          <h3>The product's own dictionary teaches the wrong word — the glossary defines
+            <em>أمر بيع</em>, the exact term Session D filed as a P1</h3>
+          <p>Session D's headline finding was that Sales ships two Arabic words for one record: the
+            canonical <em>الطلبات / طلب</em> in the sidebar, tabs and headings, against
+            <em>أوامر البيع</em> in two stray keys. The glossary — the page whose entire job is to fix
+            exactly this — sides with the stray one: <em>أمر بيع: طلب عميل مؤكَّد يبدأ مسار التسليم
+            والفوترة</em>. The assistant panel then repeats it as a suggestion chip a user is invited to
+            click: <em>أنشئ مسودة أمر بيع</em>. Same for <em>أمر شراء</em> against Purchasing's own
+            <em>طلبات الشراء</em> (Session E, four phrasings). So the two surfaces that should be
+            settling the lexicon are propagating the split instead, and the glossary lends it
+            authority.</p>
+          <p>Worth naming plainly: the glossary is otherwise the best-written Arabic in the product
+            (see the pass block). This is one authoritative entry pointing the wrong way, not a bad
+            page — but a dictionary is the one place where being wrong is expensive.</p>
+          <span class="std-hit">Fails Standard 5 + 7 · Identity §6 · the fix: fold the glossary into the
+            same one-word-per-concept decision as the Sales/Purchasing string fix, and make Identity §6
+            the source both read from</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /instances/:id</span></div>
+        <div>
+          <h3>The execution viewer narrates in English and prints raw JSON to an Arabic reader</h3>
+          <p>The one screen that explains what an automated run did shows, in the Arabic UI:
+            <code>advanced 'start' -&gt; 'script_1'</code> and <code>instance completed</code> as its log
+            lines, <code>INFO</code> as the severity chip, <code>start</code> / <code>script_1</code> /
+            <code>end</code> as node names beside their translated types, and
+            <code>{}</code> / <code>{"sum": 5}</code> as the inputs and outputs. The page subtitle is a
+            bare UUID. The Arabic that <em>is</em> there is good — <em>مسار التنفيذ</em>,
+            <em>المدخلات</em>, <em>المخرجات</em>, <em>مكتمل</em> — which makes the untranslated payload
+            read like a debugger someone forgot to hide. Fourth recurrence of server-generated English
+            narration inside an Arabic screen (Sessions B, D, E).</p>
+          <span class="std-hit">Fails Standard 6 + 7 · the fix: emit log lines as translatable event
+            keys with parameters, and render inputs/outputs as labelled rows rather than a JSON
+            dump</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · Help Center overlay</span></div>
+        <div>
+          <h3>The help panel is a dead end — no search, and no way to reach the rest of the help from
+            inside it</h3>
+          <p>The context panel itself is excellent (logged as a pass below): it opens knowing which page
+            you are on and answers purpose, mechanism, steps and related pages in plain Egyptian Arabic.
+            But it has no search field, and its only links go back into the app — there is no route from
+            the panel to the other nine journeys or to the glossary. The full guide at
+            <code>/help/guide</code> has no search either: ten journeys and thirty-eight glossary terms,
+            browse-only. A user who opens help with a question the current page does not answer has to
+            already know that ⌘K indexes journeys, or leave help entirely and navigate to it.</p>
+          <span class="std-hit">Fails Standard 1 + 8 · the fix: one search field over journeys +
+            glossary, and a persistent <em>افتح الدليل الكامل</em> link in the panel footer</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /einvoice vs /help/guide</span></div>
+        <div>
+          <h3>Two Arabic verbs for the one e-invoice action</h3>
+          <p>The module says <em>إرسال للمصلحة</em> and toasts <em>تم إرسال الفاتورة</em>; the user
+            guide's journey for the same action is titled <em>تقديم الفاتورة الإلكترونية</em>. A user
+            following the guide looks for a <em>تقديم</em> button and finds an <em>إرسال</em> one. The
+            same journey also glosses the system as <em>منظومة الفوترة</em> while the module and sidebar
+            call it <em>الفوترة الإلكترونية</em>. Small, and squarely on the hard-refusal list: one
+            concept, one Arabic word, everywhere.</p>
+          <span class="std-hit">Fails Standard 5 · Identity §6</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /assistant</span></div>
+        <div>
+          <h3>The assistant introduces itself twice, in the same sentence, a hundred pixels apart</h3>
+          <p><em>اسأل عن مبيعاتك وتحصيلاتك ومخزونك — والإجابات من واقع سجلاتك</em> prints once as the
+            page subtitle beside the title, and again immediately below as the assistant's opening chat
+            bubble. Identical string, both locales. The greeting is well written — it names the scope and
+            grounds the answers in the user's own records — and printing it twice makes a considered
+            sentence look like a rendering mistake.</p>
+          <span class="std-hit">Fails Standard 7 · the fix: keep it in the bubble, let the header carry
+            the title alone</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · shortcuts dialog</span></div>
+        <div>
+          <h3>The shortcuts sheet paints a blue rule into its own chrome, then clips its content</h3>
+          <p>A saturated blue 3-pixel rule sits under the dialog title — colour in the app frame,
+            decorative, paired with no word or meaning, on an overlay whose whole content is monochrome
+            key caps. Below it, the list runs out of room: the navigation column ends mid-item at
+            <em>الإشعارات</em> with no scrollbar, fade, or any other signal that more shortcuts exist
+            beneath the footer. The reader is told they have seen every shortcut when they have not.</p>
+          <span class="std-hit">Fails Standard 3 + 7 · the fix: drop the rule to a token border, and
+            let the body scroll with a visible edge</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /einvoice + /assistant/ops</span></div>
+        <div>
+          <h3>Money recurrences: "EGP" on every cell (4th module) and the only USD in the product
+            (2nd)</h3>
+          <p>Every amount on the e-invoicing table repeats its currency — <code>105.00 EGP</code>,
+            <code>855.00 EGP</code>, sixty-two times on one screen — the same finding filed in Sessions
+            B, C and F, now confirmed in a fourth module and firmly systemic: one shared fix at the
+            formatter, currency in the column header. Separately, Assistant health prints
+            <code>$0.0070</code>, <code>$0.0005</code>, <code>$3.0000</code> — the only money in the
+            product denominated in dollars, at four decimals, in a product sold to Egyptian SMBs
+            (Session G filed the same tiles from the Settings side).</p>
+          <span class="std-hit">Fails Standard 5 + 7 · both already have owners — fold in, do not
+            re-file</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p2"><span class="sq"></span>P2 · /einvoice</span></div>
+        <div>
+          <h3>A tab strip with one tab</h3>
+          <p><code>EInvoiceNav.tsx:6</code> defines a single entry, <em>الفواتير الإلكترونية</em>, and
+            renders it through the module tab component — so the page ships a permanently-selected tab
+            that navigates nowhere, directly under a heading that already says the same words. Chrome
+            that offers no choice, on a module that is one screen.</p>
+          <span class="std-hit">Fails Standard 1 · the fix: drop the strip until there is a second
+            tab</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · /workflows · /assistant</span></div>
+        <div>
+          <h3>The demo data is test exhaust, and it is the first thing both modules show</h3>
+          <p>Thirty-one of the thirty-two workflows are named <code>E2E Workflow 1784502776130</code> and
+            the thirty-second <code>Phase1c QA Automation</code>; the assistant history is dominated by
+            <code>smoke</code>, <code>smoke-guard</code>, twelve rows of <em>New conversation</em>, and
+            one row whose Arabic has been destroyed into <code>???? ?? ????? ??? ???</code> by an
+            encoding fault somewhere upstream. Not a design defect, but these are the two modules a
+            founder demos to show the product is alive, and both currently open on machine noise. The
+            mojibake row is worth chasing separately — it suggests a path that writes conversation
+            titles without UTF-8.</p>
+          <span class="std-hit">Fails Standard 8 · the fix: prune before handover; keep a handful of
+            plausibly-named workflows and conversations</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · /workflows/new</span></div>
+        <div>
+          <h3>The palette speaks Arabic, the nodes it creates speak English</h3>
+          <p>Seven equal-weight buttons — <em>+ بداية · + موافقة · + خطوة المساعد · + شرط ·
+            + استدعاء API · + سكربت · + نهاية</em> — drop nodes whose bodies read <code>start</code>,
+            <code>script_1</code>, <code>end</code>. Two of the palette labels are themselves
+            untranslated or transliterated (<em>استدعاء API</em>, <em>سكربت</em>), and no button among
+            the seven is primary, so the canvas offers seven equally-weighted ways to begin with no
+            suggested first move. New workflows are titled <em>مسار بدون عنوان</em> and can be saved
+            that way, which is how thirty-two rows end up looking alike.</p>
+          <span class="std-hit">Fails Standard 1 + 5 · the fix: translated node labels on the canvas,
+            <em>+ بداية</em> as the only primary on an empty canvas</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · /assistant</span></div>
+        <div>
+          <h3>Sixty conversations in one flat scroll, each row printing its title twice</h3>
+          <p>Every history row renders the conversation title, then a preview line that is the same
+            string again rather than the answer. There is no grouping by date although every row already
+            carries a relative timestamp (<em>قبل ٣ أيام</em>), no pinned section surfaced at the top,
+            and <em>عرض المؤرشفة</em> sits at the very bottom of a sixty-row scroll where it is
+            effectively hidden. The four per-row hover actions (delete, archive, pin, rename) are the
+            right set and behave well — they just cannot rescue a list this shape.</p>
+          <span class="std-hit">Fails Standard 1 + 7 · the fix: group by day, show the answer as the
+            preview, lift archived to the header</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag p3"><span class="sq"></span>P3 · workspace chip popover</span></div>
+        <div>
+          <h3>The company popover covers the sidebar heading it grows out of, and repeats its own
+            trigger</h3>
+          <p>Opening <em>Golden Eagle</em> from the sidebar footer floats a panel that straddles the
+            sidebar edge, hides the <em>وحدات قادمة</em> section heading behind it, and prints
+            <em>Golden Eagle</em> as its first row while the trigger carrying the same words stays
+            visible directly beneath. Cross-cutting rather than Session H's own, noted here because it
+            was reproduced live during this pass.</p>
+          <span class="std-hit">Fails Standard 7 · cross-ref Session A</span>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="lead"><span class="tag pass"><span class="sq"></span>PASS · the guide, the glossary, the help panel, the knowledge base, the assistant's own manners</span></div>
+        <div>
+          <h3>What this surface gets right — do not "fix" these</h3>
+          <p><strong>The user guide is the best writing in the product.</strong> Ten task-shaped
+            journeys (<em>إصدار أول فاتورة</em>, <em>أرصدة بداية الشهر</em>, <em>معالجة موافقة
+            مرفوضة</em>), each with steps in the order a person actually performs them, and — rare
+            anywhere — a <em>ما الذي قد يحدث خطأ</em> section that names the two most likely failures and
+            the exact recovery for each, blame-free. <strong>The glossary is a moat asset</strong>:
+            thirty-eight terms defined in one plain Egyptian sentence apiece, including the hard ones
+            (<em>ترحيل</em>, <em>تسوية</em> vs <em>مطابقة</em>, <em>يستحق قريبًا</em>) — one
+            authoritative entry points at the wrong sales word, filed above, and the rest is a model of
+            what Identity §6 wants. <strong>The Help Center panel knows where you are</strong>: opened
+            on the sales list it answers purpose, mechanism, steps and related pages for <em>that</em>
+            screen, in four short blocks, no scrolling. <strong>The knowledge base page is honest and
+            calm</strong> — it states plainly what the assistant can search and quote, and shows per-
+            document indexing status rather than pretending upload equals readiness.
+            <strong>The assistant's manners are right</strong>: the empty state names its scope and
+            grounds it in the user's own records rather than promising intelligence, the four suggestion
+            chips are real questions an owner has, and the working state is a pulsing plan step with a
+            visible <em>إيقاف</em> — it shows what it is about to do and lets you stop it, which is the
+            behaviour Standard 6 is asking for.</p>
+          <span class="std-hit">Recorded so fix sessions do not "correct" them</span>
+        </div>
+      </div>
+
+    </div>
   </section>
 
   <section>

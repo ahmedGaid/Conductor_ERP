@@ -68,6 +68,7 @@ const CampaignDetailPage = lazyPage(
   () => import("./pages/crm/CampaignDetailPage"), "CampaignDetailPage");
 const UserGuidePage = lazyPage(() => import("./pages/UserGuidePage"), "UserGuidePage");
 const WorkflowListPage = lazyPage(() => import("./pages/WorkflowListPage"), "WorkflowListPage");
+const InstanceListPage = lazyPage(() => import("./pages/InstanceListPage"), "InstanceListPage");
 const ExecutionViewerPage = lazyPage(
   () => import("./pages/ExecutionViewerPage"), "ExecutionViewerPage");
 const ChartOfAccountsPage = lazyPage(
@@ -247,6 +248,7 @@ function AppRoutes() {
           <Route path="/pricing/customers" element={<CustomerPricingPage />} />
           <Route path="/pricing/:id" element={<PriceListDetailPage />} />
           <Route path="/workflows" element={<WorkflowListPage />} />
+          <Route path="/workflows/instances" element={<InstanceListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />
           <Route path="/instances/:id" element={<ExecutionViewerPage />} />

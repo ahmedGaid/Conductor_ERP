@@ -86,6 +86,7 @@ export function LeadsPage() {
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("web");
+  const [campaignCode, setCampaignCode] = useState("");
 
   // ⌘/Ctrl+Enter submits the add-lead form from any field (incl. the source select).
   const formRef = useRef<HTMLFormElement>(null);
@@ -130,13 +131,14 @@ export function LeadsPage() {
       current: data ?? [],
       mutate,
       placeholder: (id) => ({ id, code: "", name: n, company, email, source, status: "new" }) as Lead,
-      request: () => createLead({ name: n, company, email, source }),
+      request: () => createLead({ name: n, company, email, source, campaign_code: campaignCode.trim() || undefined }),
       toast,
       success: t("crm.toast.leadCreated"),
     });
     setName("");
     setCompany("");
     setEmail("");
+    setCampaignCode("");
   }
 
   // Qualifying a lead is reversible (its inverse just restores the prior status), so it's an
@@ -224,6 +226,12 @@ export function LeadsPage() {
               ))}
             </select>
           </label>
+          {source === "campaign" && (
+            <label className="crm-field">
+              <span>{t("crm.lead.campaignCode")}</span>
+              <input className="latin" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} />
+            </label>
+          )}
           <button type="submit" className="btn btn--primary">
             {t("crm.lead.add")}
           </button>
@@ -278,7 +286,7 @@ export function LeadsPage() {
                 <th>{t("crm.lead.company")}</th>
                 <th>{t("crm.lead.source")}</th>
                 <th>{t("common.owner")}</th>
-                <th>{t("crm.opp.stage")}</th>
+                <th>{t("common.status")}</th>
                 <th />
               </tr>
             </thead>

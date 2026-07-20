@@ -202,7 +202,7 @@ export function PurchaseRequestDetailPage() {
         </div>
       </div>
 
-      <Disclosure summary={t("purchasing.detail.orderDetails")} defaultOpen>
+      <Disclosure summary={t("purchasing.detail.requestDetails")} defaultOpen>
         <div className="pur-table-wrap">
           <table className="pur-table">
             <thead>
@@ -226,10 +226,12 @@ export function PurchaseRequestDetailPage() {
           </table>
 
           <dl className="pur-meta">
-            <div className="pur-meta__row">
-              <dt>{t("purchasing.requests.approval")}</dt>
-              <dd>{data.requires_approval ? t("purchasing.requests.needsApproval") : t("purchasing.requests.autoApprove")}</dd>
-            </div>
+            {(data.status === "draft" || data.status === "submitted") && (
+              <div className="pur-meta__row">
+                <dt>{t("purchasing.requests.approval")}</dt>
+                <dd>{data.requires_approval ? t("purchasing.requests.needsApproval") : t("purchasing.requests.autoApprove")}</dd>
+              </div>
+            )}
             {data.converted_order_number && (
               <div className="pur-meta__row">
                 <dt>{t("purchasing.requests.convertedTo")}</dt>

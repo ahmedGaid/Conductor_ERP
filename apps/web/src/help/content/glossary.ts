@@ -99,7 +99,7 @@ export const GLOSSARY: GlossaryEntry[] = [
   },
   {
     term: { ar: "فاتورة إلكترونية", en: "e-invoice" },
-    desc: { ar: "فاتورة تُرسل رسميًا إلى مصلحة الضرائب المصرية.", en: "An invoice submitted officially to the Egyptian Tax Authority." },
+    desc: { ar: "فاتورة مُجهَّزة بالشكل الذي تطلبه مصلحة الضرائب المصرية. الإرسال إليها غير موصول بعد.", en: "An invoice prepared in the form the Egyptian Tax Authority requires. Filing to the Authority is not connected yet." },
   },
   {
     term: { ar: "ملاحظات", en: "Notes" },

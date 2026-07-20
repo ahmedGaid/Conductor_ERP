@@ -67,12 +67,28 @@
   max-inline-size: 48ch;
 }
 
-/* Webhooks: event multi-select + secret reveal-once card + row actions. */
+/* Webhooks: event multi-select (sectioned by module) + secret reveal-once card + row actions. */
 .webhook-events {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
+  flex-direction: column;
+  gap: var(--space-3);
   padding-block: var(--space-2);
+}
+.webhook-events__group {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+.webhook-events__group legend {
+  flex-basis: 100%;
+  padding: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
 }
 .webhook-event-label {
   display: flex;

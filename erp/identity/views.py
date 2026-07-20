@@ -40,6 +40,11 @@ from .serializers import (
 
 User = get_user_model()
 
+# Internal system accounts that aren't human sign-ins — kept out of the Users admin list. Mirrors
+# `erp.assistant.evals.runner.eval_actor`'s fixed username (not imported directly: that module sits
+# in a different app and this is just an identity-side exclusion list, not a dependency).
+SYSTEM_USERNAMES = {"ai_eval_runner"}
+
 
 def _can(action: str):
     """RBAC for the admin user-management surface: administration.user.<action>."""
@@ -270,11 +275,12 @@ class UsersView(APIView):
         return [IsAuthenticated(), _can("create" if self.request.method == "POST" else "view")()]
 
     def get(self, request: Request) -> Response:
-        # Hidden API-key service principals (erp.identity.api_keys) are not human accounts — keep
-        # them off the human-facing Users admin list.
+        # Hidden API-key service principals (erp.identity.api_keys) and internal system accounts
+        # (e.g. the assistant eval runner) are not human accounts — keep them off the human-facing
+        # Users admin list, which is titled "manage who can sign in".
         qs = User.objects.select_related("branch", "department").filter(
             api_key_principal__isnull=True
-        ).order_by("username")
+        ).exclude(username__in=SYSTEM_USERNAMES).order_by("username")
         p = request.query_params
         if p.get("search"):
             from django.db.models import Q
@@ -539,8 +545,17 @@ class ApiDocsView(APIView):
     permission_classes = [IsAuthenticated, _IsAdmin]
 
     def get(self, request: Request) -> Response:
+        import re
+
         from scripts.gates.gate17 import _routes
-        return _envelope({"routes": _routes()})
+
+        # `_routes()` returns raw Django path syntax (`<uuid:pk>`) for gate17's own precision
+        # checks — humanize it for this customer-facing reference (`{pk}`, no converter name).
+        routes = [
+            {**r, "path": re.sub(r"<(?:\w+:)?(\w+)>", r"{\1}", r["path"])}
+            for r in _routes()
+        ]
+        return _envelope({"routes": routes})
 
 
 def _get_user(pk: int):

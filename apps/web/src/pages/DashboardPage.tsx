@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 
 import { usePreferences } from "../preferences/PreferencesContext";
 import { orderedVisibleWidgets } from "./settings/dashboardWidgets";
@@ -132,6 +133,7 @@ export function DashboardPage() {
               value={formatMinor(data.cash.closing_balance)}
               icon="accounting"
               hint={t("dashboard.asOfNow")}
+              negative={data.cash.closing_balance < 0}
             />
           </div>
 
@@ -278,7 +280,10 @@ function ConfidencePanel({ signals }: { signals: ConfidenceSignal[] }) {
 
 function TopExpenses({ report }: { report: IncomeStatementReport }) {
   const { t } = useTranslation();
-  const top = [...report.expenses].sort((a, b) => b.amount - a.amount).slice(0, 5);
+  const top = useMemo(() =>
+    [...report.expenses].sort((a, b) => b.amount - a.amount).slice(0, 5),
+    [report.expenses]
+  );
   const total = report.total_expenses || 1;
 
   return (

@@ -46,6 +46,22 @@ const PALETTE: NodeType[] = [
   "end",
 ];
 
+// The app's theme is set as `data-theme` on <html> (Settings → Appearance, or system default) —
+// React Flow doesn't see that, so mirror it into its own `colorMode` via a MutationObserver.
+function useColorMode(): "light" | "dark" {
+  const [mode, setMode] = useState<"light" | "dark">(
+    () => (document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light"),
+  );
+  useEffect(() => {
+    const el = document.documentElement;
+    const sync = () => setMode(el.getAttribute("data-theme") === "dark" ? "dark" : "light");
+    const observer = new MutationObserver(sync);
+    observer.observe(el, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+  return mode;
+}
+
 function edgeId(source: string, target: string, ordering: number): string {
   return `${source}__${target}__${ordering}`;
 }
@@ -82,6 +98,7 @@ export function WorkflowCanvasPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const colorMode = useColorMode();
 
   const [name, setName] = useState(t("workflow.untitled"));
   const [version, setVersion] = useState<number | null>(null);
@@ -293,6 +310,8 @@ export function WorkflowCanvasPage() {
         {/* The graph keeps an LTR coordinate space; the surrounding chrome mirrors in RTL. */}
         <div className="canvas__flow" dir="ltr">
           <ReactFlow
+            colorMode={colorMode}
+            proOptions={{ hideAttribution: true }}
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}

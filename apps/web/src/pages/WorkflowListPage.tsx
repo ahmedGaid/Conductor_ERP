@@ -16,6 +16,7 @@ import { SavedViews } from "../components/SavedViews";
 import { useSavedViews } from "../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../components/StatusTabs";
 import { ListSkeleton } from "../components/ListSkeleton";
+import { WorkflowNav } from "./WorkflowNav";
 import "./WorkflowListPage.css";
 
 type Workflow = Awaited<ReturnType<typeof listWorkflows>>[number];
@@ -85,10 +86,7 @@ export function WorkflowListPage() {
 
   return (
     <section className="wf-list">
-      <header className="module-head">
-        <h1 className="module-head__title">{t("nav.workflows")}</h1>
-        <p className="module-head__desc">{t("moduleIntro.workflows")}</p>
-      </header>
+      <WorkflowNav />
       <div className="wf-list__head">
         {data && data.length > 0 && (
           <>
@@ -154,7 +152,13 @@ export function WorkflowListPage() {
                     <Bdi>{wf.node_count}</Bdi>
                   </td>
                   <td>
-                    <Bdi>{wf.instance_count}</Bdi>
+                    {wf.instance_count > 0 ? (
+                      <Link to={`/workflows/instances?workflow=${wf.id}`}>
+                        <Bdi>{wf.instance_count}</Bdi>
+                      </Link>
+                    ) : (
+                      <Bdi>{wf.instance_count}</Bdi>
+                    )}
                   </td>
                 </tr>
               ))}

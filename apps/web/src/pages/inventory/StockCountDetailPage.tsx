@@ -35,6 +35,16 @@ export function StockCountDetailPage() {
   const counting = count?.status === "counting";
   const posted = count?.status === "posted";
 
+  // Live preview of the quantity variance while still counting — the server's own
+  // variance_quantity/variance_value_minor stay 0 until post_count() runs, so showing THOSE fields
+  // pre-post would silently lie. This is computed client-side from what's already on screen
+  // (system vs counted), so it can't include the money value (unit cost isn't in this payload) —
+  // shown once posting supplies the authoritative figure.
+  function previewVariance(counted: string | null, system: string): number | null {
+    if (counted == null || counted === "") return null;
+    return Number(counted) - Number(system);
+  }
+
   useSetDocumentCrumb(count ? `${count.warehouse_code} · ${count.count_date}` : undefined);
 
   // Optimistic line edit: reflect the typed count instantly, reconcile with the server's count.
@@ -124,12 +134,14 @@ export function StockCountDetailPage() {
                   <th>{t("inventory.counts.item")}</th>
                   <th className="inv-table__num">{t("inventory.counts.system")}</th>
                   <th className="inv-table__num">{t("inventory.counts.counted")}</th>
-                  {posted && <th className="inv-table__num">{t("inventory.counts.variance")}</th>}
+                  <th className="inv-table__num">{t("inventory.counts.variance")}</th>
                   {posted && <th className="inv-table__num">{t("inventory.counts.varianceValue")}</th>}
                 </tr>
               </thead>
               <tbody>
-                {(count.lines ?? []).map((ln) => (
+                {(count.lines ?? []).map((ln) => {
+                  const variance = posted ? Number(ln.variance_quantity) : previewVariance(ln.counted_quantity, ln.system_quantity);
+                  return (
                   <tr key={ln.id}>
                     <td><EntityLink type="item" value={ln.item_sku} /> · {ln.item_name}</td>
                     <td className="inv-table__num"><Bdi>{ln.system_quantity}</Bdi></td>
@@ -145,16 +157,15 @@ export function StockCountDetailPage() {
                         <Bdi>{ln.counted_quantity ?? "—"}</Bdi>
                       )}
                     </td>
-                    {posted && (
-                      <td className={`inv-table__num ${Number(ln.variance_quantity) === 0 ? "" : Number(ln.variance_quantity) < 0 ? "inv-warn" : "inv-ok"}`}>
-                        <Bdi>{ln.variance_quantity}</Bdi>
-                      </td>
-                    )}
+                    <td className={`inv-table__num ${variance === null || variance === 0 ? "" : variance < 0 ? "inv-warn" : "inv-ok"}`}>
+                      <Bdi>{variance === null ? "—" : variance}</Bdi>
+                    </td>
                     {posted && (
                       <td className="inv-table__num"><Bdi>{formatMinor(ln.variance_value_minor)}</Bdi></td>
                     )}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
