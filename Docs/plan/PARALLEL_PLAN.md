@@ -311,6 +311,19 @@ live Kanban drag+RTL check, the visual conductor-brand feel checklist (screensho
 unreliable this session). Did not touch erp-status skill this session (B had just written to it
 mid-session, not at a merge checkpoint — avoided adding a second concurrent writer to that file).
 
+**A15 (2026-07-20, A session, browser-tooled):** `twenty-harvest/FILE_21_ACCEPTANCE.md` follow-up
+— closed 4 of the 5 remainder items A13 left open: Playwright suite (16/16 green), saved views
+live-verified on 2 more pages (Purchase Orders, Inventory Stock-on-hand — full save/set-default/
+delete round trip, both cleaned up), Kanban drag-drop verified end-to-end in LTR and RTL (real
+API round trip via dispatched DOM drag events since the Browser pane's native drag tool needs a
+working screenshot first and that tool still times out; reverted both test moves), brand-feel
+checklist run at the computed-style/DOM level (monochrome chrome, one type voice, one icon hand,
+Latin digits under Arabic, designed empty states, reduced-motion CSS — all confirmed; not a
+pixel/screenshot pass). One self-inflicted false alarm: running Playwright against the shared
+dev DB while the browser tab was open threw transient 500s on Purchase Orders — a Retry click
+cleared it, no real bug. **File still not `_done`** — the 5th item (CHANGELOG stuck at v1.0.0,
+RUNBOOK gate-count stale) is B's territory, untouched. Commit `a4b7670`.
+
 **A14 (2026-07-19, same A session):** `brand-philosophy-review` Session A (app frame + global
 states) — spot-check pass, not the full matrix. Both systemic findings seeded in the scorecard
 (no error boundary, no code-splitting) are **already fixed** (confirmed in source:
