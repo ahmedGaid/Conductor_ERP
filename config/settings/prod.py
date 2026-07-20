@@ -31,6 +31,16 @@ if _SPA_DIST.exists():
     WHITENOISE_ROOT = str(_SPA_DIST)
 # index.html is dynamic (served by the root view), never a cached static file.
 WHITENOISE_INDEX_FILE = False
+# WhiteNoise scans WHITENOISE_ROOT once at process startup and does not notice files added or
+# renamed afterward (that's the whole point of its normal caching). On this single-box demo
+# deployment, `npm run build` regularly lands a new hashed bundle while waitress is still running
+# from an earlier start, so index.html (served fresh, dynamically, every request) references a
+# bundle filename WhiteNoise's stale in-memory list has never heard of -> a real 404 on the app's
+# own main script, which reads as a blank white page. Autorefresh makes WhiteNoise stat the
+# filesystem per request instead of trusting its startup snapshot - the point of failure this
+# setting exists for (see WhiteNoise's own docs). Negligible cost at this traffic scale; a full
+# process restart is no longer required after every rebuild.
+WHITENOISE_AUTOREFRESH = True
 
 # --- Security hardening (OWASP / Django deployment checklist) ---
 # Header / cookie hardening.
