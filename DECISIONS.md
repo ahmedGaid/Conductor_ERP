@@ -250,6 +250,27 @@ build a real `post_draft_journal_entry()` service used by BOTH a new manual "Pos
 `JournalDetailPage.tsx` AND the assistant action, so the assistant never gains a capability the
 manual UI lacks ("AI runs as the user" stays true).
 
+**Close-out (2026-07-20, FILE_08 acceptance) — plan PA shipped as designed.** All 6 actions landed
+without changing shape from the design table: `post_journal_entry_draft` (+ the new
+`post_draft_journal_entry()` service and manual "Post" button, exactly as the discovered-gap decision
+called for), `receive_purchase_order`, `bill_purchase_order` (3-way-match refusal surfaced calmly at
+proposal time), `pay_purchase_order` (full + partial, defaults to `outstanding_minor`),
+`approve_purchase_request`, `issue_stock_entry` (proposal shows an *estimated* weighted-average
+value; the confirmed card shows the actual posted COGS). The only contract surface added beyond
+`actions.py` was the predicted `purchasing.get_request` + `approve_request` re-export (FILE_06);
+FILE_07 needed no new contract. Guard shape held: org toggle off by default, per-action role check
+reused, typed retype-confirm on every `risk="post"` action, mismatch does not consume the card. No
+`compensation` on any action — reversal stays human-only on the module screen. Registry is now 23
+actions (17 draft + 6 post); the shared `_can_post` guard did not regress the 17 drafts. Acceptance
+gates green: 805 backend tests, i18n parity, tsc, gate03; the full 8-point matrix (incl. the two new
+toggle-off / retype-mismatch checks) is automated. **Benchmark wiring deferred as anticipated** —
+`ai-reliability` FILE_05 (agent orchestration + the bench suite) is still unbuilt, so
+`evals/datasets/agent_bench_v1.jsonl` does not yet exist; the TODO to add one wrong-retype task per
+posting action lives in `agent-posting-plan/FILE_08_ACCEPTANCE_done.md`. The accepted v1 tradeoff
+stands unchanged: **no AI cross-check of numbers before a post card is shown**, revisited as a pure
+additive layer once FILE_05 ships. This close-out re-litigates nothing — Option B, scoped to manual
+guards, is delivered.
+
 ## unified-ui-plan acceptance (FILE_09, 2026-07-09)
 
 Closing decisions for the whole plan (FILE_01–08), reconfirmed against the shipped code in a live

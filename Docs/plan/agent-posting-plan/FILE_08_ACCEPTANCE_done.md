@@ -84,12 +84,53 @@ factual close-out, not a new decision — nothing here should re-litigate Option
 
 ---
 
+---
+
+## Outcome (2026-07-20, Opus session)
+
+**All 6 actions shipped as designed** — `post_journal_entry_draft`, `receive_purchase_order`,
+`bill_purchase_order`, `pay_purchase_order`, `approve_purchase_request`, `issue_stock_entry`. No
+action changed shape during implementation vs the FILE_00 table; the two contract additions the plan
+predicted (`purchasing.get_request` + re-export `approve_request` in FILE_06; nothing new in FILE_07)
+are the only surface changes beyond `actions.py`/tests. Registry now 23 actions (17 draft + 6 post);
+`catalog_text()` = 9254 chars (~2313 tokens), well within practical planner-prompt size.
+
+**Automated acceptance — all green (this session):**
+- `pytest erp/assistant erp/accounting erp/purchasing erp/inventory erp/identity` → **805 passed**.
+- The full 8-point matrix is covered by automated tests for every posting action, including the two
+  **new-for-this-plan** items: org-toggle-OFF refuses at both build and execute (403, card stays
+  pending, nothing runs — `test_post_risk_action_guard_end_to_end`, plus per-action
+  `*_refused_when_posting_disabled`); retype mismatch refused before `execute()` ever runs, card not
+  consumed (`test_non_integer_or_missing_retype_fails_shut` + the guard end-to-end test). Every
+  posting action also has: calm status-precondition refusal naming the real status/next step (no
+  invented status), single-use/double-confirm 409, wrong-role refusal at both stages.
+- Regression: the 17 drafts-only actions all still pass unchanged (the shared `_can_post` guard code
+  did not regress them). i18n parity OK (2158 keys), `tsc --noEmit` clean, `gate03` green, no
+  hardcoded hex in the 3 new UI surfaces (`ActionCard.tsx` retype input, `OrganizationPage.tsx`
+  toggle, `JournalDetailPage.tsx` Post button).
+
+**Benchmark wiring — NOT built (as the plan anticipated).** `ai-reliability-roadmap` FILE_05
+(`FILE_05_PHASE5_AGENT_ORCHESTRATION.md`) is still not `_done` and `evals/datasets/` does not exist,
+so there is no `agent_bench_v1.jsonl` to extend. **TODO for future FILE_05 work:** when the agent
+benchmark suite lands, add ≥ 1 task per posting action to `evals/datasets/agent_bench_v1.jsonl`,
+including at least one deliberately-wrong-retype case per action under the unsafe-write predicate
+(any executed write without a correct confirm = suite failure). This is the same deferral the
+original agent-actions FILE_06 recorded.
+
+**Human-only remainder (does NOT block closing the plan — same standing gate as FILE_02–07):** the
+live browser confirm-card pass (ar-then-en, three role logins) and the dark-mode eyes-on check of the
+three new UI surfaces. Code-level brand-feel read of the retype-confirm input passes: it is labeled
+with the actual value, uses `inputMode="decimal"` + `.latin` for LTR numerals inside RTL, keeps
+Confirm disabled until the parsed value equals `challenge.minor`, and surfaces a calm
+`assistant.action.retypeMismatch` string only on a real server rejection — deliberate friction, not
+a bank dark pattern. Founder to run the live/visual pass on the real dev server.
+
 ## After This Session
 
 ```
 All checklists passed + DECISIONS.md closure entry written?
 → Rename this file: append _done. The agent-posting-plan is closed.
-→ Merge the feature branch → main (full gate:all first).
+→ (Work landed directly on main across FILE_02–07 — no feature branch to merge.)
 → Update erp-status + EXECUTION_ORDER.md (mark position PA done, mirroring how ★ was marked).
 → Start a FRESH session for the next queue position.
 ```
