@@ -11,13 +11,15 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+from django.contrib.auth.models import Group
 from django.test import override_settings
 from rest_framework.test import APIClient
 
 from erp.assistant.models import Conversation, Message
 from erp.assistant.services import actions, agent
 from erp.audit.models import AuditEntry
-from erp.identity.models import User
+from erp.identity.models import OrgPreferences, User
+from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
 from erp.inventory.domain.models import Item, StockBalance, StockCount, StockTransfer, Warehouse
 from erp.purchasing.domain.models import PurchaseOrder, PurchaseRequest, Supplier
 from erp.purchasing.services.requests import RequestLineInput as PRLineInput
@@ -829,6 +831,752 @@ def test_journal_permission_refused_at_both_stages():
     assert JournalEntry.objects.count() == 0
 
 
+# --- post a drafted journal entry (agent-posting FILE_02, the first risk="post" action) ----------
+
+def _make_draft(actor):
+    """A DRAFT journal entry to post: Dr Rent Expense 50.00 / Cr Cash 50.00 (challenge = 50.00 EGP)."""
+    import datetime as dt
+    from erp.accounting import contracts as acc
+    return acc.create_journal_entry_draft(
+        acc.JournalInput(date=dt.date(2026, 6, 15), lines=[
+            acc.LineInput(account_code="5100", debit=5000),
+            acc.LineInput(account_code="1000", credit=5000)]),
+        actor=actor,
+    )
+
+
+def test_post_journal_draft_build_carries_challenge():
+    admin = _admin()
+    _seed_accounting()
+    entry = _make_draft(admin)
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "post_journal_entry_draft", {"query": entry.number})
+    assert proposal["action"] == "post_journal_entry_draft"
+    assert proposal["challenge"] == {"label": "50.00 EGP", "minor": 5000}
+    assert {r["type"] for r in proposal["records"]} == {"journalEntry"}
+    assert JournalEntry.objects.get(id=entry.id).status == "draft"  # building posts nothing
+
+
+def test_post_journal_draft_refused_when_posting_disabled():
+    admin = _admin()
+    _seed_accounting()
+    entry = _make_draft(admin)
+    _set_posting_enabled(False)
+
+    proposal = actions.build(admin, "post_journal_entry_draft", {"query": entry.number})
+    assert "action" not in proposal
+    assert "Settings" in proposal["error"]  # points a fixer at the toggle
+
+
+def test_post_journal_draft_refused_for_wrong_role():
+    _seed_accounting()
+    admin = _admin()
+    entry = _make_draft(admin)
+    _set_posting_enabled(True)
+
+    nobody = _nobody()
+    proposal = actions.build(nobody, "post_journal_entry_draft", {"query": entry.number})
+    assert "action" not in proposal
+    assert "permission" in proposal["error"].lower()
+
+
+def test_post_journal_draft_on_already_posted_is_calm_error_no_card():
+    admin = _admin()
+    _seed_accounting()
+    entry = _make_draft(admin)
+    _set_posting_enabled(True)
+
+    from erp.accounting import contracts as acc
+    acc.post_draft_journal_entry(acc.get_journal_entry(admin, str(entry.id)), actor=admin)
+
+    proposal = actions.build(admin, "post_journal_entry_draft", {"query": entry.number})
+    assert "action" not in proposal  # no draft matches once it's posted — a calm note, no card
+    assert "error" in proposal
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_post_journal_draft_confirm_posts_to_ledger():
+    """The real action through the real confirm endpoint: right retype → the draft posts, one
+    audit row, the card flips to confirmed."""
+    admin = _admin()
+    _seed_accounting()
+    entry = _make_draft(admin)
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "post_journal_entry_draft", {"query": entry.number})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 5000}, format="json")
+    assert res.status_code == 200, res.data
+    entry.refresh_from_db()
+    assert entry.status == "posted"
+    assert AuditEntry.objects.filter(
+        module="accounting", action="post_journal", entity_id=entry.number
+    ).count() == 1
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "confirmed"
+
+
+# --- receive a purchase order (agent-posting FILE_03, pattern replication of FILE_02) -------------
+
+def _make_po(confirm: bool = True, qty: str = "5", cost: int = 100_00) -> PurchaseOrder:
+    from erp.purchasing.services import POLineInput, confirm_order, create_order
+    from erp.purchasing.tests.factories import make_item as make_po_item
+    from erp.purchasing.tests.factories import make_supplier as make_po_supplier
+    from erp.purchasing.tests.factories import make_warehouse as make_po_warehouse
+    from erp.purchasing.tests.factories import make_books as make_po_books
+
+    make_po_books()
+    make_po_item()
+    supplier = make_po_supplier()
+    wh = make_po_warehouse()
+    order = create_order(
+        supplier=supplier, warehouse_code=wh.code,
+        lines=[POLineInput(item_sku="WIDGET", quantity=Decimal(qty), unit_cost_minor=cost)],
+    )
+    if confirm:
+        confirm_order(order)
+        order.refresh_from_db()
+    return order
+
+
+def test_receive_po_build_carries_challenge():
+    from erp.accounting.domain.money import Money
+
+    admin = _admin()
+    order = _make_po(qty="5", cost=100_00)
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "receive_purchase_order", {"query": order.number})
+    assert proposal["action"] == "receive_purchase_order"
+    assert proposal["challenge"] == {"label": Money(50000, "EGP").format(), "minor": 50000}
+    assert proposal["records"] == [
+        {"type": "purchaseOrder", "value": str(order.id), "label": order.number}]
+    order.refresh_from_db()
+    assert order.status == "confirmed"  # building receives nothing
+
+
+def test_receive_po_refused_when_posting_disabled():
+    admin = _admin()
+    order = _make_po()
+    _set_posting_enabled(False)
+
+    proposal = actions.build(admin, "receive_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert "Settings" in proposal["error"]
+
+
+def test_receive_po_refused_for_wrong_role():
+    order = _make_po()
+    _set_posting_enabled(True)
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "receive_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert "permission" in proposal["error"].lower()
+
+
+def test_receive_po_on_draft_is_calm_error_no_card():
+    admin = _admin()
+    order = _make_po(confirm=False)  # still draft — not confirmed yet
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "receive_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert order.number in proposal["error"]
+    assert "confirmed" in proposal["error"]
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_receive_po_confirm_receives_and_is_single_use():
+    """The real action through the real confirm endpoint: right retype → the order receives in
+    full, one audit row, stock on hand increases; a second confirm 409s and moves nothing more."""
+    admin = _admin()
+    order = _make_po(qty="5", cost=100_00)
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "receive_purchase_order", {"query": order.number})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 50000}, format="json")
+    assert res.status_code == 200, res.data
+    order.refresh_from_db()
+    assert order.status == "received"
+    line = order.lines.get()
+    assert line.received_qty == Decimal("5")
+    balance = StockBalance.objects.get(item__sku="WIDGET", warehouse__code=order.warehouse_code)
+    assert balance.quantity == Decimal("5")
+    assert AuditEntry.objects.filter(
+        module="purchasing", action="receive_order", entity_id=order.number
+    ).count() == 1
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "confirmed"
+
+    # Single-use: a second confirm of the same card 409s and moves nothing more.
+    again = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                   "typed_minor": 50000}, format="json")
+    assert again.status_code == 409
+    line.refresh_from_db()
+    assert line.received_qty == Decimal("5")
+
+
+# --- bill a purchase order (agent-posting FILE_04, pattern replication of FILE_03) ----------------
+
+def _billable_po(qty: str = "5", cost: int = 100_00, tax_code: str = "",
+                 received: dict[int, Decimal] | None = None) -> PurchaseOrder:
+    from erp.purchasing.services import POLineInput, confirm_order, create_order, receive_order
+    from erp.purchasing.tests.factories import make_item as make_po_item
+    from erp.purchasing.tests.factories import make_supplier as make_po_supplier
+    from erp.purchasing.tests.factories import make_warehouse as make_po_warehouse
+    from erp.purchasing.tests.factories import make_books as make_po_books
+
+    make_po_books()
+    make_po_item()
+    supplier = make_po_supplier()
+    wh = make_po_warehouse()
+    order = create_order(
+        supplier=supplier, warehouse_code=wh.code, tax_code=tax_code,
+        lines=[POLineInput(item_sku="WIDGET", quantity=Decimal(qty), unit_cost_minor=cost)],
+    )
+    confirm_order(order)
+    receive_order(order, received=received)
+    order.refresh_from_db()
+    return order
+
+
+def test_bill_po_build_shows_net_vat_gross():
+    from erp.accounting.domain.money import Money
+
+    admin = _admin()
+    order = _billable_po(qty="5", cost=100_00, tax_code="VAT14")  # net 500.00, VAT14 → 70.00
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "bill_purchase_order", {"query": order.number})
+    assert proposal["action"] == "bill_purchase_order"
+    assert proposal["challenge"] == {"label": Money(57000, "EGP").format(), "minor": 57000}
+    order.refresh_from_db()
+    assert order.status == "received"  # building bills nothing
+
+
+def test_bill_po_refused_when_posting_disabled():
+    admin = _admin()
+    order = _billable_po()
+    _set_posting_enabled(False)
+
+    proposal = actions.build(admin, "bill_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert "Settings" in proposal["error"]
+
+
+def test_bill_po_refused_for_wrong_role():
+    order = _billable_po()
+    _set_posting_enabled(True)
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "bill_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert "permission" in proposal["error"].lower()
+
+
+def test_bill_po_on_partial_receipt_is_calm_error_no_card():
+    admin = _admin()
+    order = _billable_po(qty="5", received={1: Decimal("2")})  # short 3 of 5
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "bill_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert order.number in proposal["error"]
+    assert "2.0000 of 5.0000" in proposal["error"]
+    assert "partially received" in proposal["error"].lower()
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_bill_po_confirm_bills_and_posts_gl():
+    """The real action through the real confirm endpoint: right retype → the order bills, one
+    audit row, a GRNI/VAT-input/AP journal entry posts."""
+    admin = _admin()
+    order = _billable_po(qty="5", cost=100_00, tax_code="VAT14")
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "bill_purchase_order", {"query": order.number})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 57000}, format="json")
+    assert res.status_code == 200, res.data
+    order.refresh_from_db()
+    assert order.status == "billed"
+    assert order.bill_number
+    entry = JournalEntry.objects.get(number=order.bill_number)
+    accounts = {ln.account.code for ln in entry.lines.all()}
+    assert accounts == {"2150", "1190", "2000"}  # GRNI, VAT input, AP
+    assert AuditEntry.objects.filter(
+        module="purchasing", action="bill_order", entity_id=order.number
+    ).count() == 1
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "confirmed"
+
+
+def test_bill_po_over_approval_limit_surfaces_calm_apperror():
+    """An actor whose role has a configured 'invoice' ceiling below the bill's gross gets the
+    underlying ApprovalLimitExceededError, flowing through ActionExecuteView's existing AppError
+    path unchanged — this action needs no translation of its own."""
+    from erp.identity.models import ApprovalLimit, RolePermission
+    from erp.identity.rbac import DataScope
+
+    manager = _with_role("bill_capped", BRANCH_MANAGER)
+    role = Group.objects.get(name=BRANCH_MANAGER)
+    # A bare test role has no RolePermission rows, so scope_for defaults to OWN — grant view-all so
+    # find_orders can see an order this actor didn't create (mirrors what seed_identity grants).
+    RolePermission.objects.update_or_create(
+        role=role, code="purchasing.order.view", defaults={"scope": DataScope.ALL},
+    )
+    order = _billable_po(qty="5", cost=100_00)  # net 500.00, no VAT → gross 500.00
+    ApprovalLimit.objects.update_or_create(
+        role=role, document_type="invoice",
+        defaults={"limit_minor": 10_000},  # 100.00 ceiling; this bill is 500.00
+    )
+    _set_posting_enabled(True)
+
+    proposal = actions.build(manager, "bill_purchase_order", {"query": order.number})
+    conv = Conversation.objects.create(user=manager)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=manager)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 50000}, format="json")
+    assert res.status_code == 422, res.data
+    order.refresh_from_db()
+    assert order.status == "received"  # nothing posted
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "pending"  # unconsumed — the card stays usable
+
+
+# --- pay a purchase order (agent-posting FILE_05, pattern replication of FILE_04) -----------------
+
+def _billed_po(qty: str = "5", cost: int = 100_00, tax_code: str = "") -> PurchaseOrder:
+    from erp.purchasing.services import (
+        POLineInput, bill_order, confirm_order, create_order, receive_order,
+    )
+    from erp.purchasing.tests.factories import make_item as make_po_item
+    from erp.purchasing.tests.factories import make_supplier as make_po_supplier
+    from erp.purchasing.tests.factories import make_warehouse as make_po_warehouse
+    from erp.purchasing.tests.factories import make_books as make_po_books
+
+    make_po_books()
+    make_po_item()
+    supplier = make_po_supplier()
+    wh = make_po_warehouse()
+    order = create_order(
+        supplier=supplier, warehouse_code=wh.code, tax_code=tax_code,
+        lines=[POLineInput(item_sku="WIDGET", quantity=Decimal(qty), unit_cost_minor=cost)],
+    )
+    confirm_order(order)
+    receive_order(order)
+    bill_order(order)
+    order.refresh_from_db()
+    return order
+
+
+def test_pay_po_build_defaults_to_full_outstanding():
+    from erp.accounting.domain.money import Money
+
+    admin = _admin()
+    order = _billed_po(qty="5", cost=100_00)  # billed 500.00, no VAT
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "pay_purchase_order", {"query": order.number})
+    assert proposal["action"] == "pay_purchase_order"
+    assert proposal["challenge"] == {"label": Money(50000, "EGP").format(), "minor": 50000}
+    order.refresh_from_db()
+    assert order.status == "billed"  # building pays nothing
+
+
+def test_pay_po_build_with_partial_amount():
+    admin = _admin()
+    order = _billed_po(qty="5", cost=100_00)  # 500.00 outstanding
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "pay_purchase_order", {"query": order.number, "amount": 20000})
+    assert proposal["challenge"]["minor"] == 20000
+
+
+def test_pay_po_amount_over_outstanding_is_calm_error_no_card():
+    admin = _admin()
+    order = _billed_po(qty="5", cost=100_00)  # 500.00 outstanding
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "pay_purchase_order", {"query": order.number, "amount": 99999999})
+    assert "action" not in proposal
+    assert order.number in proposal["error"]
+
+
+def test_pay_po_refused_when_posting_disabled():
+    admin = _admin()
+    order = _billed_po()
+    _set_posting_enabled(False)
+
+    proposal = actions.build(admin, "pay_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert "Settings" in proposal["error"]
+
+
+def test_pay_po_refused_for_wrong_role():
+    order = _billed_po()
+    _set_posting_enabled(True)
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "pay_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert "permission" in proposal["error"].lower()
+
+
+def test_pay_po_not_yet_billed_is_calm_error_no_card():
+    from erp.purchasing.services import POLineInput, confirm_order, create_order
+    from erp.purchasing.tests.factories import make_item as make_po_item
+    from erp.purchasing.tests.factories import make_supplier as make_po_supplier
+    from erp.purchasing.tests.factories import make_warehouse as make_po_warehouse
+    from erp.purchasing.tests.factories import make_books as make_po_books
+
+    admin = _admin()
+    make_po_books()
+    make_po_item()
+    supplier = make_po_supplier()
+    wh = make_po_warehouse()
+    order = create_order(
+        supplier=supplier, warehouse_code=wh.code,
+        lines=[POLineInput(item_sku="WIDGET", quantity=Decimal("5"), unit_cost_minor=100_00)],
+    )
+    confirm_order(order)  # confirmed, not received or billed
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "pay_purchase_order", {"query": order.number})
+    assert "action" not in proposal
+    assert order.number in proposal["error"]
+    assert "billed" in proposal["error"].lower()
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_pay_po_confirm_pays_partial_then_full_and_is_single_use():
+    """The real action through the real confirm endpoint: a partial payment leaves the order
+    'billed' with reduced outstanding, one GL entry (AP debit / Cash credit), one audit row; a
+    second confirm of the same card 409s and pays nothing more."""
+    admin = _admin()
+    order = _billed_po(qty="5", cost=100_00)  # billed 500.00
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "pay_purchase_order", {"query": order.number, "amount": 20000})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 20000}, format="json")
+    assert res.status_code == 200, res.data
+    order.refresh_from_db()
+    assert order.status == "billed"  # not fully paid yet
+    assert order.paid_minor == 20000
+    entry = JournalEntry.objects.filter(reference=order.number, memo__icontains="Payment").get()
+    accounts = {ln.account.code for ln in entry.lines.all()}
+    assert accounts == {"2000", "1000"}  # AP debit, Cash credit
+    assert AuditEntry.objects.filter(
+        module="purchasing", action="pay_order", entity_id=order.number
+    ).count() == 1
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "confirmed"
+
+    # Single-use: a second confirm of the same card 409s and pays nothing more.
+    again = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                   "typed_minor": 20000}, format="json")
+    assert again.status_code == 409
+    order.refresh_from_db()
+    assert order.paid_minor == 20000
+
+    # Paying the remaining outstanding flips the order to fully paid.
+    proposal2 = actions.build(admin, "pay_purchase_order", {"query": order.number})
+    assert proposal2["challenge"]["minor"] == 30000
+    msg2 = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                  meta={"proposal": {**proposal2, "status": "pending"}})
+    res2 = client.post(EXEC_URL, {"message_id": msg2.id, "decision": "confirm",
+                                  "typed_minor": 30000}, format="json")
+    assert res2.status_code == 200, res2.data
+    order.refresh_from_db()
+    assert order.status == "paid"
+    assert order.paid_minor == 50000
+
+
+# --- approve a purchase request (agent-posting FILE_06, pattern replication of FILE_04/05) --------
+
+def _submitted_request(supplier: Supplier) -> PurchaseRequest:
+    """Above the auto-approval threshold (10,000.00 EGP) — submit leaves it 'submitted', awaiting
+    a manager, instead of auto-approving."""
+    req = purchasing_create_request(
+        supplier=supplier, warehouse_code="WH-1",
+        lines=[PRLineInput(item_sku="SKU-1", quantity=200, unit_cost_minor=10000)],  # 20,000.00 EGP
+    )
+    return purchasing_submit_request(req)
+
+
+def test_approve_pr_build_shows_subtotal_challenge():
+    from erp.accounting.domain.money import Money
+
+    admin = _admin()
+    _seed_purchasing()
+    supplier = Supplier.objects.get(code="S-1")
+    req = _submitted_request(supplier)
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "approve_purchase_request", {"query": req.number})
+    assert proposal["action"] == "approve_purchase_request"
+    assert proposal["challenge"] == {"label": Money(2_000_000, "EGP").format(), "minor": 2_000_000}
+    req.refresh_from_db()
+    assert req.status == "submitted"  # building approves nothing
+
+
+def test_approve_pr_on_draft_or_approved_is_calm_error_no_card():
+    admin = _admin()
+    _seed_purchasing()
+    supplier = Supplier.objects.get(code="S-1")
+    _set_posting_enabled(True)
+
+    draft = purchasing_create_request(
+        supplier=supplier, warehouse_code="WH-1",
+        lines=[PRLineInput(item_sku="SKU-1", quantity=3, unit_cost_minor=1000)],
+    )  # still draft, never submitted
+    proposal = actions.build(admin, "approve_purchase_request", {"query": draft.number})
+    assert "action" not in proposal
+    assert draft.number in proposal["error"]
+    assert "draft" in proposal["error"].lower()
+
+    approved = _approved_request(Supplier.objects.create(code="S-2", name="Delta Supplies"))
+    proposal2 = actions.build(admin, "approve_purchase_request", {"query": approved.number})
+    assert "action" not in proposal2
+    assert approved.number in proposal2["error"]
+    assert "approved" in proposal2["error"].lower()
+
+
+def test_approve_pr_refused_when_posting_disabled():
+    admin = _admin()
+    _seed_purchasing()
+    req = _submitted_request(Supplier.objects.get(code="S-1"))
+    _set_posting_enabled(False)
+
+    proposal = actions.build(admin, "approve_purchase_request", {"query": req.number})
+    assert "action" not in proposal
+    assert "Settings" in proposal["error"]
+
+
+def test_approve_pr_refused_for_wrong_role():
+    _seed_purchasing()
+    req = _submitted_request(Supplier.objects.get(code="S-1"))
+    _set_posting_enabled(True)
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "approve_purchase_request", {"query": req.number})
+    assert "action" not in proposal
+    assert "permission" in proposal["error"].lower()
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_approve_pr_confirm_approves_and_is_single_use():
+    """The real action through the real confirm endpoint: right retype → the request approves, one
+    audit row, approved_at/approved_by set; a second confirm 409s and changes nothing more."""
+    admin = _admin()
+    _seed_purchasing()
+    req = _submitted_request(Supplier.objects.get(code="S-1"))
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "approve_purchase_request", {"query": req.number})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 2_000_000}, format="json")
+    assert res.status_code == 200, res.data
+    req.refresh_from_db()
+    assert req.status == "approved"
+    assert req.approved_at is not None
+    assert req.approved_by_id == admin.id
+    assert AuditEntry.objects.filter(
+        module="purchasing", action="approve_request", entity_id=req.number
+    ).count() == 1
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "confirmed"
+
+    # Single-use: a second confirm of the same card 409s and changes nothing more.
+    again = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                   "typed_minor": 2_000_000}, format="json")
+    assert again.status_code == 409
+    req.refresh_from_db()
+    assert req.status == "approved"
+
+
+def test_approve_pr_over_approval_limit_surfaces_calm_apperror():
+    """An actor whose role has a configured 'purchase_request' ceiling below the request's subtotal
+    gets the underlying ApprovalLimitExceededError, flowing through ActionExecuteView's existing
+    AppError path unchanged — this action needs no translation of its own."""
+    from erp.identity.models import ApprovalLimit, RolePermission
+    from erp.identity.rbac import DataScope
+
+    manager = _with_role("approve_pr_capped", BRANCH_MANAGER)
+    role = Group.objects.get(name=BRANCH_MANAGER)
+    # A bare test role has no RolePermission rows, so scope_for defaults to OWN — grant view-all so
+    # find_requests can see a request this actor didn't create (mirrors the bill/pay precedent).
+    RolePermission.objects.update_or_create(
+        role=role, code="purchasing.request.view", defaults={"scope": DataScope.ALL},
+    )
+    _seed_purchasing()
+    req = _submitted_request(Supplier.objects.get(code="S-1"))  # subtotal 20,000.00 EGP
+    ApprovalLimit.objects.update_or_create(
+        role=role, document_type="purchase_request",
+        defaults={"limit_minor": 10_000},  # 100.00 ceiling; this request is 20,000.00
+    )
+    _set_posting_enabled(True)
+
+    proposal = actions.build(manager, "approve_purchase_request", {"query": req.number})
+    conv = Conversation.objects.create(user=manager)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=manager)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 2_000_000}, format="json")
+    assert res.status_code == 422, res.data
+    req.refresh_from_db()
+    assert req.status == "submitted"  # nothing approved
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "pending"  # unconsumed — the card stays usable
+
+
+# --- issue stock entry (agent-posting FILE_07, pattern replication of FILE_02-06) -----------------
+
+def _seed_issue_stock() -> tuple[Item, Warehouse]:
+    item = Item.objects.create(sku="SKU-3", name="Green Gizmo")
+    wh = Warehouse.objects.create(code="WH-C", name="Central")
+    StockBalance.objects.create(item=item, warehouse=wh, quantity=Decimal("50"), value_minor=5000)
+    return item, wh
+
+
+def test_issue_stock_build_shows_estimated_value():
+    admin = _admin()
+    _seed_issue_stock()
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "issue_stock_entry",
+                             {"item": "SKU-3", "quantity": "20", "warehouse": "WH-C"})
+    assert proposal["action"] == "issue_stock_entry"
+    # 5000 value_minor / 50 qty * 20 issued = 2000 estimated value.
+    assert proposal["challenge"] == {"label": "20.00 EGP", "minor": 2000}
+    from erp.inventory.domain.models import StockMovement
+
+    assert StockMovement.objects.count() == 0  # building writes nothing
+
+
+def test_issue_stock_over_on_hand_is_calm_error_no_card():
+    admin = _admin()
+    _seed_issue_stock()
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "issue_stock_entry",
+                             {"item": "SKU-3", "quantity": "999", "warehouse": "WH-C"})
+    assert "action" not in proposal
+    assert "50" in proposal["error"]
+
+
+def test_issue_stock_refused_when_posting_disabled():
+    admin = _admin()
+    _seed_issue_stock()
+    _set_posting_enabled(False)
+
+    proposal = actions.build(admin, "issue_stock_entry",
+                             {"item": "SKU-3", "quantity": "20", "warehouse": "WH-C"})
+    assert "action" not in proposal
+    assert "Settings" in proposal["error"]
+
+
+def test_issue_stock_refused_for_wrong_role():
+    _seed_issue_stock()
+    _set_posting_enabled(True)
+    nobody = _nobody()
+
+    proposal = actions.build(nobody, "issue_stock_entry",
+                             {"item": "SKU-3", "quantity": "20", "warehouse": "WH-C"})
+    assert "action" not in proposal
+    assert "permission" in proposal["error"].lower()
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_issue_stock_confirm_reduces_balance_and_posts_gl_then_is_single_use():
+    """The real action through the real confirm endpoint: right retype → stock on hand drops by the
+    issued quantity, one StockMovement (type=ISSUE), one COGS/Inventory GL entry matching the
+    ACTUAL posted value; a second confirm of the same card 409s and moves nothing more."""
+    from erp.accounting.domain.models import JournalEntry
+    from erp.inventory.domain.models import MovementType, StockMovement
+
+    from erp.inventory.tests.factories import make_gl
+
+    admin = _admin()
+    item, wh = _seed_issue_stock()
+    make_gl()  # GL accounts (1200 Inventory, 5000 COGS) + a period covering all of 2026
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "issue_stock_entry",
+                             {"item": "SKU-3", "quantity": "20", "warehouse": "WH-C"})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 2000}, format="json")
+    assert res.status_code == 200, res.data
+    balance = StockBalance.objects.get(item=item, warehouse=wh)
+    assert balance.quantity == Decimal("30")
+    movement = StockMovement.objects.get()
+    assert movement.type == MovementType.ISSUE
+    assert movement.quantity == Decimal("20")
+    entry = JournalEntry.objects.filter(reference="", memo__icontains="Issue").get()
+    accounts = {ln.account.code for ln in entry.lines.all()}
+    assert accounts == {"5000", "1200"}  # COGS debit, Inventory credit
+    assert AuditEntry.objects.filter(
+        module="inventory", action="issue_stock", entity_id=str(movement.id)
+    ).count() == 1
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "confirmed"
+
+    # Single-use: a second confirm of the same card 409s and moves nothing more.
+    again = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                   "typed_minor": 2000}, format="json")
+    assert again.status_code == 409
+    balance.refresh_from_db()
+    assert balance.quantity == Decimal("30")
+    assert StockMovement.objects.count() == 1
+
+
 def test_create_account_and_execute():
     admin = _admin()
     _seed_accounting()
@@ -1176,3 +1924,193 @@ def test_confirm_dedupes_repeat_of_same_action_across_two_cards():
     assert AuditEntry.objects.filter(module="assistant", action="confirm_deduplicated").exists()
     msg2.refresh_from_db()
     assert msg2.meta["proposal"]["status"] == "confirmed"
+
+
+# --- guard infrastructure: org toggle + typed retype-confirm (agent-posting-plan FILE_01) --------
+
+def _with_role(username: str, role: str) -> User:
+    Group.objects.get_or_create(name=role)
+    u = User.objects.create_user(username=username, password="Dev12345!",
+                                 email=f"{username}@example.test")
+    u.groups.add(Group.objects.get(name=role))
+    return u
+
+
+def _set_posting_enabled(value: bool) -> None:
+    OrgPreferences.objects.update_or_create(pk=1, defaults={"assistant_posting_enabled": value})
+
+
+def test_can_post_gates_on_toggle_and_role():
+    manager = _with_role("post_mgr", BRANCH_MANAGER)
+
+    _set_posting_enabled(False)
+    assert actions._can_post(manager, BRANCH_MANAGER) is False  # toggle off, right role
+
+    _set_posting_enabled(True)
+    wrong_role = _with_role("post_wrong_role", ACCOUNTANT)
+    assert actions._can_post(wrong_role, BRANCH_MANAGER) is False  # toggle on, wrong role
+
+    assert actions._can_post(manager, BRANCH_MANAGER) is True  # toggle on, right role
+
+
+def test_challenge_formats_label_and_carries_minor():
+    # Money.format has no thousands grouping (erp/accounting/domain/money.py) — the label is plain.
+    assert actions.challenge(4523000) == {"label": "45230.00 EGP", "minor": 4523000}
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_post_risk_action_guard_end_to_end(monkeypatch):
+    """A monkeypatched toy risk="post" action (no real posting action exists yet — FILE_02+) proves
+    the org toggle + typed retype-confirm through the real confirm endpoint, not just in isolation."""
+    admin = _admin()
+    calls: list[int] = []
+
+    def _toy_build(actor, **_):
+        return {"action": "toy_post", "summary": ["Toy post"], "records": [], "risks": [],
+                "total": None, "affected": 0, "payload": {}, "challenge": actions.challenge(100000)}
+
+    def _toy_execute(actor, payload):
+        # Mirrors the Task C pattern every real risk="post" action's execute will use.
+        if not actions._can_post(actor, BRANCH_MANAGER):
+            raise PermissionError
+        calls.append(1)
+        return {"summary": "Posted.", "links": []}
+
+    toy = actions.Action(
+        name="toy_post", description="test only", args={},
+        build_proposal=_toy_build, execute=_toy_execute,
+        kind="post", risk="post",
+    )
+    monkeypatch.setitem(actions.ACTIONS, "toy_post", toy)
+
+    proposal = actions.build(admin, "toy_post", {})
+    assert proposal["challenge"] == {"label": "1000.00 EGP", "minor": 100000}
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    # Toggle off: the typed value is right, but the toy execute's own _can_post refuses — calm
+    # 403, card stays pending, nothing runs.
+    _set_posting_enabled(False)
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 100000}, format="json")
+    assert res.status_code == 403
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "pending"
+    assert calls == []
+
+    # Toggle on, wrong typed_minor: refused before execute() ever runs — never consumed.
+    _set_posting_enabled(True)
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 1}, format="json")
+    assert res.status_code == 400
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "pending"
+    assert calls == []
+
+    # Toggle on, right typed_minor: executes for real, card flips to confirmed.
+    res = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                 "typed_minor": 100000}, format="json")
+    assert res.status_code == 200
+    assert calls == [1]
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "confirmed"
+
+
+# --- posting guard: edge cases beyond the end-to-end test above (FILE_01 Task F) ---------------
+
+def test_posting_refusals_name_the_specific_gate_that_closed():
+    """Task C mandates two DIFFERENT call shapes at build time so the message is accurate: a
+    toggle-off refusal points at Settings, a role refusal does not (a user who cannot fix it must
+    not be sent to a page they cannot use). Collapsing these into one message misinforms one case."""
+    assert "System Admin" in actions._refused_posting_disabled()["error"]
+    assert "Settings" in actions._refused_posting_disabled()["error"]
+    assert "permission" in actions._refused()["error"]
+    assert "System Admin" not in actions._refused()["error"]
+
+
+def test_challenge_label_survives_the_frontend_parser():
+    """The label is literally what the card tells the user to retype, so it must satisfy the
+    frontend's ``parseToMinor`` regex ``^-?\d+(\.\d{1,2})?$`` — no thousands separators. A
+    grouped label ("45,230.00") would parse to null and wedge Confirm permanently disabled."""
+    assert "," not in actions.challenge(4523000)["label"]
+    assert "," not in actions.challenge(123456789)["label"]
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+@pytest.mark.parametrize("typed", [None, "100000", 100000.0, True])
+def test_non_integer_or_missing_retype_fails_shut(monkeypatch, typed):
+    """The confirm check is ``isinstance(typed_minor, int)`` equality. An absent value, the right
+    number as a string, and a float all fail shut. ``True`` is included deliberately: Python's
+    ``bool`` IS an ``int``, so a JSON ``true`` reaching a challenge whose minor is 1 would slip
+    through the isinstance arm — this pins that the equality arm still rejects it."""
+    admin = _admin()
+    calls: list[int] = []
+
+    def _toy_build(actor, **_):
+        return {"action": "toy_post", "summary": ["Toy post"], "records": [], "risks": [],
+                "total": None, "affected": 0, "payload": {}, "challenge": actions.challenge(100000)}
+
+    def _toy_execute(actor, payload):
+        calls.append(1)
+        return {"summary": "Posted.", "links": []}
+
+    monkeypatch.setitem(actions.ACTIONS, "toy_post", actions.Action(
+        name="toy_post", description="test only", args={}, build_proposal=_toy_build,
+        execute=_toy_execute, kind="post", risk="post"))
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "toy_post", {})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    body = {"message_id": msg.id, "decision": "confirm"}
+    if typed is not None:
+        body["typed_minor"] = typed
+    res = client.post(EXEC_URL, body, format="json")
+
+    assert res.status_code == 400
+    assert calls == []
+    msg.refresh_from_db()
+    assert msg.meta["proposal"]["status"] == "pending"  # a typo never consumes the card
+
+
+@override_settings(ASSISTANT_ENABLED=True)
+def test_confirmed_post_card_cannot_be_replayed(monkeypatch):
+    """Single-use must hold for posting too: a correct retype spends the card exactly once, so a
+    replayed confirm 409s instead of posting a second time."""
+    admin = _admin()
+    calls: list[int] = []
+
+    def _toy_build(actor, **_):
+        return {"action": "toy_post", "summary": ["Toy post"], "records": [], "risks": [],
+                "total": None, "affected": 0, "payload": {}, "challenge": actions.challenge(100000)}
+
+    def _toy_execute(actor, payload):
+        calls.append(1)
+        return {"summary": "Posted.", "links": []}
+
+    monkeypatch.setitem(actions.ACTIONS, "toy_post", actions.Action(
+        name="toy_post", description="test only", args={}, build_proposal=_toy_build,
+        execute=_toy_execute, kind="post", risk="post"))
+    _set_posting_enabled(True)
+
+    proposal = actions.build(admin, "toy_post", {})
+    conv = Conversation.objects.create(user=admin)
+    msg = Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Ready.",
+                                 meta={"proposal": {**proposal, "status": "pending"}})
+    client = APIClient()
+    client.force_authenticate(user=admin)
+
+    ok = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                "typed_minor": 100000}, format="json")
+    assert ok.status_code == 200
+    again = client.post(EXEC_URL, {"message_id": msg.id, "decision": "confirm",
+                                   "typed_minor": 100000}, format="json")
+    assert again.status_code == 409
+    assert calls == [1]  # the replay posted nothing
