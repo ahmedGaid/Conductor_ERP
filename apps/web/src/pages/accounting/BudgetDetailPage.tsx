@@ -25,6 +25,7 @@ import { downloadExport } from "../../api/client";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
+import { codeAndName } from "../../lib/bilingualName";
 
 export function BudgetDetailPage() {
   const { t, i18n } = useTranslation();
@@ -124,7 +125,7 @@ export function BudgetDetailPage() {
                 value={account}
                 onChange={setAccount}
                 placeholder={t("common.selectField", { field: t("accounting.budgets.account") })}
-                options={pnlAccounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+                options={pnlAccounts.map((a) => ({ value: a.code, label: codeAndName(a, i18n.language) }))}
               />
             </label>
             <label className="acct-field">

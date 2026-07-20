@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from erp.core.naming import name_fields
+
 from ..domain.accounts import AccountType
 from ..domain.models import PeriodStatus
 
@@ -11,6 +13,7 @@ class AccountSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     code = serializers.CharField(max_length=32)
     name = serializers.CharField(max_length=200)
+    name_ar = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     type = serializers.ChoiceField(choices=AccountType.choices)
     parent_code = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     is_postable = serializers.BooleanField(required=False, default=True)
@@ -22,7 +25,7 @@ class AccountSerializer(serializers.Serializer):
         return {
             "id": str(obj.id),
             "code": obj.code,
-            "name": obj.name,
+            **name_fields(obj),
             "type": obj.type,
             "parent_code": obj.parent.code if obj.parent_id else None,
             "is_postable": obj.is_postable,
@@ -131,10 +134,12 @@ class CostCenterSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     code = serializers.CharField(max_length=32)
     name = serializers.CharField(max_length=200)
+    name_ar = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     is_active = serializers.BooleanField(required=False, default=True)
 
     def to_representation(self, obj) -> dict:
-        return {"id": str(obj.id), "code": obj.code, "name": obj.name, "is_active": obj.is_active}
+        return {"id": str(obj.id), "code": obj.code, **name_fields(obj),
+                "is_active": obj.is_active}
 
 
 class ReportDefinitionSerializer(serializers.Serializer):

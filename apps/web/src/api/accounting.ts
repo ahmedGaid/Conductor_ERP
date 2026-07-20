@@ -7,7 +7,9 @@ export type PeriodStatus = "open" | "closed";
 export interface Account {
   id: string;
   code: string;
+  // Both names ship on the wire; the client picks by active language (see lib/bilingualName.ts).
   name: string;
+  name_ar: string;
   type: AccountType;
   parent_code: string | null;
   is_postable: boolean;
@@ -110,6 +112,7 @@ export function listAccounts(): Promise<Account[]> {
 export function createAccount(payload: {
   code: string;
   name: string;
+  name_ar?: string;
   type: AccountType;
   parent_code?: string | null;
   is_postable?: boolean;
@@ -146,6 +149,11 @@ export function listJournals(period?: string): Promise<JournalEntry[]> {
 
 export function getJournal(id: string): Promise<JournalEntry> {
   return apiFetch<JournalEntry>(`/accounting/journals/${id}`);
+}
+
+// Post a DRAFT entry to the ledger (draft → posted). No body — the id is in the URL.
+export function postDraftJournalEntry(id: string): Promise<JournalEntry> {
+  return apiFetch<JournalEntry>(`/accounting/journals/${id}/post`, { method: "POST", body: "{}" });
 }
 
 export function trialBalance(period?: string): Promise<TrialBalanceReport> {

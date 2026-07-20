@@ -15,6 +15,7 @@ import { ComboBox } from "../../components/ComboBox";
 import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { AccountingNav } from "./AccountingNav";
 import "./accounting.css";
+import { codeAndName } from "../../lib/bilingualName";
 
 interface DraftLine {
   account_code: string;
@@ -31,7 +32,7 @@ function today(): string {
 }
 
 export function JournalEntryPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
@@ -138,7 +139,7 @@ export function JournalEntryPage() {
                       value={l.account_code}
                       onChange={(v) => setLine(i, { account_code: v })}
                       placeholder={t("common.selectField", { field: t("accounting.entry.account") })}
-                      options={postable.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+                      options={postable.map((a) => ({ value: a.code, label: codeAndName(a, i18n.language) }))}
                     />
                   </td>
                   <td className="acct-table__num">

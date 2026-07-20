@@ -11,6 +11,7 @@ import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../li
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
+import { localizedName, searchableNames } from "../../lib/bilingualName";
 import { EmptyState } from "../../components/EmptyState";
 import { FilterBar } from "../../components/FilterBar";
 import { SavedViews } from "../../components/SavedViews";
@@ -23,7 +24,8 @@ import "./accounting.css";
 const TYPES: AccountType[] = ["asset", "liability", "equity", "income", "expense"];
 
 export function ChartOfAccountsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const { data, loading, error, reload } = useAsync(listAccounts, [], "accounting:accounts");
   const [filters, setFilters] = useState<ActiveFilter[]>([]);
   const [tab, setTab] = useState<string>(ALL_TAB);
@@ -31,7 +33,8 @@ export function ChartOfAccountsPage() {
   const fields = useMemo<FilterField<Account>[]>(
     () => [
       { key: "code", label: t("accounting.account.code"), type: "text", accessor: (a) => a.code },
-      { key: "name", label: t("accounting.account.name"), type: "text", accessor: (a) => a.name },
+      // Searches both names — typing either script finds the account whatever language the screen is in.
+      { key: "name", label: t("accounting.account.name"), type: "text", accessor: (a) => searchableNames(a) },
       {
         key: "type",
         label: t("accounting.account.type"),
@@ -61,7 +64,9 @@ export function ChartOfAccountsPage() {
   const csvColumns = useMemo<CsvColumn<Account>[]>(
     () => [
       { header: t("accounting.account.code"), accessor: (a) => a.code },
+      // Both names in the export — a bilingual chart stays bilingual outside the app.
       { header: t("accounting.account.name"), accessor: (a) => a.name },
+      { header: t("accounting.account.nameAr"), accessor: (a) => a.name_ar },
       { header: t("accounting.account.type"), accessor: (a) => t(`accounting.types.${a.type}`) },
       { header: t("accounting.account.postable"), accessor: (a) => (a.is_postable ? t("common.yes") : t("common.no")) },
     ],
@@ -77,6 +82,7 @@ export function ChartOfAccountsPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [nameAr, setNameAr] = useState("");
   const [type, setType] = useState<AccountType>("asset");
   const [postable, setPostable] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -87,9 +93,10 @@ export function ChartOfAccountsPage() {
     setBusy(true);
     setFormError(null);
     try {
-      await createAccount({ code, name, type, is_postable: postable });
+      await createAccount({ code, name, name_ar: nameAr, type, is_postable: postable });
       setCode("");
       setName("");
+      setNameAr("");
       reload();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : String(err));
@@ -110,6 +117,17 @@ export function ChartOfAccountsPage() {
         <label className="acct-field">
           <span>{t("accounting.account.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
+        </label>
+        <label className="acct-field">
+          {/* Optional — an account with no Arabic name reads in English on Arabic screens. */}
+          <span>{t("accounting.account.nameAr")}</span>
+          <input
+            dir="rtl"
+            lang="ar"
+            value={nameAr}
+            onChange={(e) => setNameAr(e.target.value)}
+            placeholder={t("accounting.account.nameArHint")}
+          />
         </label>
         <label className="acct-field">
           <span>{t("accounting.account.type")}</span>
@@ -196,7 +214,8 @@ export function ChartOfAccountsPage() {
                   <td>
                     <Bdi>{a.code}</Bdi>
                   </td>
-                  <td>{a.name}</td>
+                  {/* dir="auto" — an account may still carry only an English name on an Arabic screen. */}
+                  <td dir="auto">{localizedName(a, lang)}</td>
                   <td>{t(`accounting.types.${a.type}`)}</td>
                   <td>{a.is_postable ? t("common.yes") : t("common.no")}</td>
                 </tr>

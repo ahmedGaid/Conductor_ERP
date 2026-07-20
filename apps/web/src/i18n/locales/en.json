@@ -917,6 +917,8 @@
     "account": {
       "code": "Code",
       "name": "Name",
+      "nameAr": "Arabic name",
+      "nameArHint": "Optional — shown on Arabic screens",
       "type": "Type",
       "postable": "Postable",
       "add": "Add account",

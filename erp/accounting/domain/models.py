@@ -18,7 +18,10 @@ class Account(AuditedModel):
     """A Chart-of-Accounts node. Only *postable* accounts may receive journal lines."""
 
     code = models.CharField(max_length=32, unique=True)
+    # `name` is the canonical English name; `name_ar` is the Arabic one shown on Arabic screens.
+    # Blank name_ar falls back to `name` (see core.naming.localized_name) so the chart is never empty.
     name = models.CharField(max_length=200)
+    name_ar = models.CharField(max_length=200, blank=True, default="")
     type = models.CharField(max_length=16, choices=AccountType.choices)
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.PROTECT, related_name="children"
@@ -49,6 +52,7 @@ class TaxCode(AuditedModel):
 
     code = models.CharField(max_length=16, unique=True)
     name = models.CharField(max_length=120)
+    name_ar = models.CharField(max_length=120, blank=True, default="")
     rate_bps = models.IntegerField(default=0)  # basis points: 1400 == 14.00%
     output_account_code = models.CharField(max_length=32, default="2100")  # VAT Payable (liability)
     input_account_code = models.CharField(max_length=32, default="1190")  # VAT Recoverable (asset)
@@ -140,6 +144,7 @@ class CostCenter(AuditedModel):
 
     code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=200)
+    name_ar = models.CharField(max_length=200, blank=True, default="")
     is_active = models.BooleanField(default=True)
 
     class Meta:

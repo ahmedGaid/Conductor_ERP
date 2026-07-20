@@ -203,6 +203,7 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Payment | دفعة / سداد | — |
 | Partial payment (less than the full outstanding balance) | سداد جزئي | دفعة جزئية (reserve **سداد** for the settlement action per the Payment row above; **جزئي** marks it partial, 2026-07-16) |
 | Receivables | المبالغ المستحقة (لنا) | الذمم المدينة (too technical for the 80% user) |
+| Chart-of-accounts *account title* (the formal GL register) | the standard Egyptian accounting term — **الذمم المدينة** (1100), **الذمم الدائنة** (2000), **مجمع الإهلاك** (1590) | the plain-language forms (**المبالغ المستحقة (لنا)** etc.). A COA title is read by the bookkeeper on a chart/trial balance, where the technical term *is* the right register — the same "distinct concept, both correct" pattern as المخزون vs البضاعة. Everywhere aimed at the 80% user (dashboards, lists, statuses, assistant copy) keeps the plain form from the Receivables row. Scoped to `services/seeding.py` COA titles only, 2026-07-20 |
 | Approval / Approve | موافقة | اعتماد (unified to **موافقة** app-wide, 2026-06-23) |
 | Draft | مسودة | — |
 | Post (to ledger) | ترحيل | — |
@@ -368,6 +369,11 @@ fast-and-rough (Brief §6, value 5).
 
 ## 11. Change log
 
+- **2026-07-20 — Lexicon §6.1 extended (bilingual chart of accounts, brand-review P1 §04d).** The
+  chart of accounts now ships Arabic names beside the English ones (`Account.name_ar` + backfill
+  migration). Registered the **COA account title** row: chart titles use the formal accounting
+  register (الذمم المدينة / الذمم الدائنة), which §6.1's Receivables row otherwise marks as drift.
+  Scoped to COA titles — the 80%-user surfaces keep المبالغ المستحقة. Founder-approved 2026-07-20.
 - **2026-07-16 — Lexicon §6.1 extended (outbound webhooks, twenty-harvest FILE_05).** Added
   **Webhook → ويب هوك** (plural **الويب هوكس**), governed here before shipping the Settings →
   Webhooks subscription UI.

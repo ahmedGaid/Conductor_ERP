@@ -21,6 +21,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
+import { codeAndName } from "../../lib/bilingualName";
 
 interface DraftLine {
   date: string;
@@ -37,7 +38,7 @@ function today(): string {
 type BankStatement = Awaited<ReturnType<typeof listBankStatements>>[number];
 
 export function BankReconciliationPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
   const { data, loading, error, reload } = useAsync(listBankStatements, [], "accounting:bank-statements");
@@ -123,7 +124,7 @@ export function BankReconciliationPage() {
               value={account}
               onChange={setAccount}
               placeholder={t("common.selectField", { field: t("accounting.bankRec.account") })}
-              options={cashAccounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+              options={cashAccounts.map((a) => ({ value: a.code, label: codeAndName(a, i18n.language) }))}
             />
           </label>
           <label className="acct-field">

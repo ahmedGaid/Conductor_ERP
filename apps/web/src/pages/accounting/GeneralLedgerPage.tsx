@@ -15,9 +15,10 @@ import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { ComboBox } from "../../components/ComboBox";
 import "./accounting.css";
+import { codeAndName } from "../../lib/bilingualName";
 
 export function GeneralLedgerPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: accounts } = useAsync(listAccounts, [], "accounting:accounts");
   const postable = (accounts ?? []).filter((a) => a.is_postable);
   const { data: customers } = useAsync(listCustomers, [], "sales:customers");
@@ -27,7 +28,7 @@ export function GeneralLedgerPage() {
   const [party, setParty] = useState("");
   const [partyType, partyCode] = party ? party.split(":") : ["", ""];
 
-  const accountOptions = postable.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }));
+  const accountOptions = postable.map((a) => ({ value: a.code, label: codeAndName(a, i18n.language) }));
   const partyOptions = [
     { value: "", label: t("accounting.report.allParties") },
     ...(customers ?? []).map((c) => ({

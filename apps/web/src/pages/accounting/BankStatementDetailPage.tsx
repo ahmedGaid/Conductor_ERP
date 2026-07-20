@@ -33,9 +33,10 @@ import { ComboBox } from "../../components/ComboBox";
 import { AccountingNav } from "./AccountingNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./accounting.css";
+import { codeAndName } from "../../lib/bilingualName";
 
 export function BankStatementDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const undoable = useUndoableAction();
   const { id = "" } = useParams();
@@ -278,7 +279,7 @@ export function BankStatementDetailPage() {
                   value={adjContra}
                   onChange={setAdjContra}
                   placeholder={t("common.selectField", { field: t("accounting.bankRec.contraAccount") })}
-                  options={contraAccounts.map((a) => ({ value: a.code, label: `${a.code} · ${a.name}` }))}
+                  options={contraAccounts.map((a) => ({ value: a.code, label: codeAndName(a, i18n.language) }))}
                 />
               </label>
               <label className="acct-field grow">

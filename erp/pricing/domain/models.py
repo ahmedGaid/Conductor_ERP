@@ -22,6 +22,7 @@ class PriceList(AuditedModel):
 
     code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=200)
+    name_ar = models.CharField(max_length=200, blank=True, default="")
     currency = models.CharField(max_length=3, default="EGP")
     # Do this list's prices already include VAT? If so the resolver's caller backs it out to net.
     tax_inclusive = models.BooleanField(default=False)
