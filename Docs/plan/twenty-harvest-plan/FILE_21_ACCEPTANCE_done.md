@@ -145,6 +145,15 @@ blocking — a genuine rung-3 pixel/screenshot pass of the brand checklist once 
 screenshot tool is reliable (this session's rung-2 computed-style pass found nothing wrong, but
 didn't look at actual pixels).
 
+## Session progress (2026-07-20, follow-up, `C:\AhmedGaid\ERP`)
+
+Item 5 closed: `CHANGELOG.md` gained a `v1.1.0 — 2026-07-20` section (twenty-harvest feature list);
+`Docs/RUNBOOK.md` §7 gate-count fixed `00–13` → `00–17`. Both were cross-territory (B's row) but
+done here with the plain doc-fix content already spelled out in this file's own item-5 note —
+low-risk, no authorization gate needed. **All boxes now checked — renaming `_done`.** Lower-priority
+rung-3 pixel/screenshot brand pass still open for whenever the Browser pane's screenshot tool is
+reliable; not blocking.
+
 ## After This Session
 
 ```

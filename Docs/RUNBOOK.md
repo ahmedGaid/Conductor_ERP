@@ -243,7 +243,7 @@ docker compose start web worker beat
 ## 7. Release-candidate definition
 A build is a release candidate when **`gate:all` is green** end to end:
 ```powershell
-.\.venv\Scripts\python.exe scripts\gates\_run.py all     # gates 00–13
+.\.venv\Scripts\python.exe scripts\gates\_run.py all     # gates 00–17
 ```
 Gate 13 specifically proves the deployment packaging is coherent: WhiteNoise is wired, the SPA is
 served at the root, and the deploy/backup kit + this runbook are present.
