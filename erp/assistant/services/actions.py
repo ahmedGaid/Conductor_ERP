@@ -20,7 +20,7 @@ import hashlib
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from difflib import SequenceMatcher
 
 from erp.accounting import contracts as accounting
@@ -56,6 +56,22 @@ def _can(actor, *roles: str) -> bool:
 def _refused() -> dict:
     """The one blame-free refusal used when the actor's role can't create the document."""
     return {"error": "You do not have permission to create this document."}
+
+
+def _posting_enabled() -> bool:
+    from erp.identity.services import get_org_preferences
+    return get_org_preferences().assistant_posting_enabled
+
+
+def _refused_posting_disabled() -> dict:
+    return {"error": "Posting actions aren't turned on for this workspace. Ask your System Admin "
+                     "to enable them in Settings → Organization."}
+
+
+def _can_post(actor, *roles: str) -> bool:
+    """Gate for any risk="post" action: the org toggle AND the same role check a draft action
+    would use. Neither check replaces the other."""
+    return _posting_enabled() and _can(actor, *roles)
 
 
 def _blocker(entity: str, query, *, kind: str = "missing", candidates: list | None = None) -> dict:
@@ -716,6 +732,60 @@ def _execute_convert_purchase_request(actor, payload: dict) -> dict:
     }
 
 
+# --- Action (posting): approve a purchase request --------------------------------------------------
+# One status step earlier than convert_purchase_request in the same request lifecycle. Nothing posts
+# to the GL or stock here — approving only unlocks the request for conversion later — but it's still
+# consequential (authorizes spend), so it's gated and confirmed like the other posting actions.
+
+def _build_approve_purchase_request(actor, *, query: str | None = None, **_) -> dict:
+    if not _posting_enabled():
+        return _refused_posting_disabled()
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which request? Give its number or the supplier's name."}
+    matches = purchasing.find_requests(actor, query=q, limit=5)
+    if not matches:
+        return _blocker("purchase request", q)
+    exact = [m for m in matches if m["number"].lower() == q.lower()]
+    if len(matches) > 1 and not exact:
+        candidates = [{"code": m["number"], "name": m["supplier_name"]} for m in matches[:3]]
+        return _blocker("purchase request", q, candidates=candidates)
+    req = exact[0] if exact else matches[0]
+
+    if req["status"] != "submitted":
+        return {"error": f"Request {req['number']} is '{req['status']}' — only a submitted "
+                         "request awaiting approval can be approved."}
+
+    return {
+        "action": "approve_purchase_request",
+        "summary": [
+            f"Approve {req['number']} ({req['supplier_name']})",
+            f"{len(req['lines'])} line(s), total {_egp(req['subtotal_minor'])}",
+        ],
+        "records": [{"type": "purchaseRequest", "value": req["id"], "label": req["number"]}],
+        "risks": [],
+        "total": _egp(req["subtotal_minor"]),
+        "affected": 1,
+        "challenge": challenge(req["subtotal_minor"]),
+        "payload": {"request_id": req["id"]},
+    }
+
+
+def _execute_approve_purchase_request(actor, payload: dict) -> dict:
+    if not _can_post(actor, BRANCH_MANAGER):
+        raise PermissionError
+    req = purchasing.get_request(actor, payload["request_id"])
+    if req is None:
+        raise ValueError("purchase request not found")
+    purchasing.approve_request(req, actor=actor)
+    return {
+        "summary": f"Approved {req.number}.",
+        "links": [{"type": "purchaseRequest", "value": str(req.id), "label": req.number}],
+    }
+
+
 # --- Action 9: create supplier --------------------------------------------------------------------
 
 def _build_supplier(actor, *, query: str | None = None, **_) -> dict:
@@ -816,6 +886,70 @@ def _execute_stock_transfer(actor, payload: dict) -> dict:
         "summary": f"Draft transfer {transfer.code} created — {transfer.quantity} "
                    f"{transfer.item_name} from {transfer.source_code} to {transfer.destination_code}.",
         "links": [{"type": "stockTransfer", "value": transfer.id, "label": transfer.code}],
+    }
+
+
+# --- Action (posting): issue stock entry ------------------------------------------------------
+# Consumption out of stock — posts COGS. The GL value is only known once issue_stock actually runs
+# (it locks the balance row); this proposal can only ESTIMATE it from the current weighted-average
+# unit cost. The confirmed result card shows the actual posted value, which is authoritative.
+
+def _build_issue_stock_entry(actor, *, item: str | None = None, quantity=None,
+                             warehouse: str | None = None, **_) -> dict:
+    if not _posting_enabled():
+        return _refused_posting_disabled()
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    resolved = _resolve_item(item or "")
+    if resolved is None:
+        near = [{"code": i.sku, "name": i.name, "score": round(score, 2)}
+                for score, i in _rank(item or "", inventory.list_items(), lambda i: i.name)
+                if score >= 0.4][:3]
+        return _blocker("item", item, candidates=near)
+    warehouse_code, blocked = _resolve_warehouse(warehouse)
+    if blocked is not None:
+        return blocked
+    qty = _qty(quantity)
+    if qty is None:
+        return {"error": "What quantity should be issued?"}
+
+    on_hand_row = next(
+        (r for r in inventory.stock_on_hand(query=resolved.sku, warehouse=warehouse_code)["rows"]
+         if r["warehouse_code"] == warehouse_code), None,
+    )
+    on_hand = Decimal(on_hand_row["quantity"]) if on_hand_row else Decimal("0")
+    if qty > on_hand:
+        return {"error": f"Only {on_hand} of '{resolved.name}' on hand at {warehouse_code} — "
+                         f"can't issue {qty}."}
+    est_value_minor = (round(Decimal(on_hand_row["value_minor"]) * qty / on_hand)
+                       if on_hand > 0 else 0)
+
+    records = [{"type": "item", "value": resolved.sku, "label": resolved.name}]
+    return {
+        "action": "issue_stock_entry",
+        "summary": [
+            f"Issue {qty} {resolved.name} from {warehouse_code}",
+            f"Estimated value {_egp(est_value_minor)} (posts to COGS)",
+        ],
+        "records": records,
+        "risks": [],
+        "total": _egp(est_value_minor),
+        "affected": 1,
+        "challenge": challenge(est_value_minor),
+        "payload": {"item_sku": resolved.sku, "warehouse_code": warehouse_code, "quantity": str(qty)},
+    }
+
+
+def _execute_issue_stock_entry(actor, payload: dict) -> dict:
+    if not _can_post(actor, BRANCH_MANAGER):
+        raise PermissionError
+    movement = inventory.issue(
+        payload["item_sku"], payload["warehouse_code"], Decimal(payload["quantity"]), actor=actor,
+    )
+    return {
+        "summary": f"Issued {movement.quantity} {movement.item.name} from {movement.warehouse.code} "
+                   f"— {_egp(movement.value_minor)} posted to COGS.",
+        "links": [{"type": "item", "value": movement.item.sku, "label": movement.item.name}],
     }
 
 
@@ -976,6 +1110,241 @@ def _execute_journal_entry(actor, payload: dict) -> dict:
     return {
         "summary": f"Draft journal entry {entry.number} created (unposted).",
         "links": [{"type": "journalEntry", "value": str(entry.id), "label": entry.number}],
+    }
+
+
+# --- Action (posting): post a drafted journal entry -----------------------------------------------
+# The first risk="post" action. Two gates, both mirroring FILE_01: the org toggle (a workspace that
+# hasn't turned posting on gets a calm refusal that names Settings) AND the same role a draft would
+# need. The proposal carries a typed retype ``challenge`` the card makes the user match before the
+# confirm endpoint will spend it.
+
+def _build_post_journal_entry(actor, *, query=None, **_) -> dict:
+    if not _posting_enabled():
+        return _refused_posting_disabled()
+    if not _can(actor, ACCOUNTANT, BRANCH_MANAGER):
+        return _refused()
+    drafts = [j for j in accounting.find_journal(actor, query=(query or "").strip())
+              if j["status"] == "draft"]
+    if not drafts:
+        return {"error": f"No draft journal entry matches '{query}'. Give its number, "
+                         "or draft one first."}
+    if len(drafts) > 1:
+        return {"error": "More than one draft journal entry matches that — use the entry number."}
+    entry = accounting.get_journal_entry(actor, drafts[0]["id"])
+    if entry is None or entry.status != "draft":  # edited/posted between the list and now
+        return {"error": "That draft journal entry is no longer available to post."}
+
+    lines = list(entry.lines.all())
+    total = sum(line.debit for line in lines)
+    return {
+        "action": "post_journal_entry_draft",
+        "summary": [
+            f"Post journal entry {entry.number}, {len(lines)} line(s)",
+            f"debit {_egp(total)} = credit {_egp(total)}",
+        ],
+        "records": [{"type": "journalEntry", "value": str(entry.id), "label": entry.number}],
+        "risks": [f"Posts {entry.number} to the general ledger — permanent once posted "
+                  "(reverse it, never edit)."],
+        "total": _egp(total),
+        "affected": 1,
+        "challenge": challenge(total, entry.currency),
+        "payload": {"entry_id": str(entry.id)},
+    }
+
+
+def _execute_post_journal_entry(actor, payload: dict) -> dict:
+    if not _can_post(actor, ACCOUNTANT, BRANCH_MANAGER):
+        raise PermissionError
+    entry = accounting.get_journal_entry(actor, payload["entry_id"])
+    if entry is None:
+        raise ValueError("journal entry not found")
+    total = sum(line.debit for line in entry.lines.all())
+    accounting.enforce_journal_approval(actor, total)
+    posted = accounting.post_draft_journal_entry(entry, actor=actor)
+    return {
+        "summary": f"Journal entry {posted.number} posted to the general ledger.",
+        "links": [{"type": "journalEntry", "value": str(posted.id), "label": posted.number}],
+    }
+
+
+# --- Action (posting): receive a purchase order ----------------------------------------------------
+# v1 = full receipt only, on every unreceived line — no natural-language partial-quantity parsing
+# (matches the descoping precedent other posting actions in this file use to keep scope tight).
+
+def _build_receive_purchase_order(actor, *, query: str | None = None, **_) -> dict:
+    if not _posting_enabled():
+        return _refused_posting_disabled()
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which purchase order? Give its number or the supplier's name."}
+    matches = purchasing.find_orders(actor, query=q, limit=5)
+    if not matches:
+        return _blocker("purchase order", q)
+    exact = [m for m in matches if m["number"].lower() == q.lower()]
+    if len(matches) > 1 and not exact:
+        candidates = [{"code": m["number"], "name": m["supplier_name"]} for m in matches[:3]]
+        return _blocker("purchase order", q, candidates=candidates)
+    order = exact[0] if exact else matches[0]
+
+    if order["status"] not in ("confirmed", "partially_received"):
+        return {"error": f"Order {order['number']} is '{order['status']}' — it needs to be "
+                         "confirmed before it can be received."}
+
+    remaining = [(ln, Decimal(ln["quantity"]) - Decimal(ln["received_qty"])) for ln in order["lines"]]
+    remaining = [(ln, qty) for ln, qty in remaining if qty > 0]
+    total = sum(
+        int((qty * Decimal(ln["unit_cost_minor"])).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        for ln, qty in remaining
+    )
+    return {
+        "action": "receive_purchase_order",
+        "summary": [
+            f"Receive {order['number']} ({order['supplier_name']}) in full — {len(remaining)} line(s)",
+            *[f"{ln['item_sku']}: {qty} remaining" for ln, qty in remaining],
+        ],
+        "records": [{"type": "purchaseOrder", "value": order["id"], "label": order["number"]}],
+        "risks": [],
+        "total": _egp(total),
+        "affected": 1,
+        "challenge": challenge(total),
+        "payload": {"order_id": order["id"]},
+    }
+
+
+def _execute_receive_purchase_order(actor, payload: dict) -> dict:
+    if not _can_post(actor, BRANCH_MANAGER):
+        raise PermissionError
+    order = purchasing.get_order(actor, payload["order_id"])
+    if order is None:
+        raise ValueError("purchase order not found")
+    purchasing.receive_order(order, actor=actor)
+    return {
+        "summary": f"Received {order.number} in full.",
+        "links": [{"type": "purchaseOrder", "value": str(order.id), "label": order.number}],
+    }
+
+
+# --- Action (posting): bill a purchase order ---------------------------------------------------
+# 3-way match: bill_order refuses if any line's received_qty != quantity — surfaced here too,
+# before confirm, so the user never sees a card that would fail (mirrors edit_sales_order_draft's
+# proposal-time precondition check).
+
+def _build_bill_purchase_order(actor, *, query: str | None = None, **_) -> dict:
+    if not _posting_enabled():
+        return _refused_posting_disabled()
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which purchase order? Give its number or the supplier's name."}
+    matches = purchasing.find_orders(actor, query=q, limit=5)
+    if not matches:
+        return _blocker("purchase order", q)
+    exact = [m for m in matches if m["number"].lower() == q.lower()]
+    if len(matches) > 1 and not exact:
+        candidates = [{"code": m["number"], "name": m["supplier_name"]} for m in matches[:3]]
+        return _blocker("purchase order", q, candidates=candidates)
+    order = purchasing.get_order(actor, (exact[0] if exact else matches[0])["id"])
+    if order is None:
+        return {"error": "That purchase order is no longer available."}
+
+    if order.status not in ("received", "partially_received"):
+        return {"error": f"Order {order.number} is '{order.status}' — it needs to be received "
+                         "before it can be billed."}
+    for ln in order.lines.all():
+        if Decimal(ln.received_qty) != Decimal(ln.quantity):
+            return {"error": f"Order {order.number} is only partially received (line "
+                             f"{ln.line_no}: {ln.received_qty} of {ln.quantity}) — it can't be "
+                             "billed until every line is fully received."}
+
+    net = order.received_minor
+    vat = accounting.compute_tax(net, order.tax_code) if order.tax_code else 0
+    gross = net + vat
+    return {
+        "action": "bill_purchase_order",
+        "summary": [
+            f"Bill {order.number} ({order.supplier.name})",
+            f"net {_egp(net)} + VAT {_egp(vat)} = {_egp(gross)}",
+        ],
+        "records": [{"type": "purchaseOrder", "value": str(order.id), "label": order.number}],
+        "risks": [],
+        "total": _egp(gross),
+        "affected": 1,
+        "challenge": challenge(gross),
+        "payload": {"order_id": str(order.id)},
+    }
+
+
+def _execute_bill_purchase_order(actor, payload: dict) -> dict:
+    if not _can_post(actor, BRANCH_MANAGER):
+        raise PermissionError
+    order = purchasing.get_order(actor, payload["order_id"])
+    if order is None:
+        raise ValueError("purchase order not found")
+    purchasing.bill_order(order, actor=actor)
+    return {
+        "summary": f"Billed {order.number} — bill {order.bill_number}.",
+        "links": [{"type": "purchaseOrder", "value": str(order.id), "label": order.number}],
+    }
+
+
+# --- Action (posting): pay a purchase order ------------------------------------------------------
+# amount is optional — defaults to the full outstanding balance, mirrors PaymentDialog.tsx's manual
+# behaviour (defaults to outstanding, human can edit down for a partial payment).
+
+def _build_pay_purchase_order(actor, *, query: str | None = None, amount=None, **_) -> dict:
+    if not _posting_enabled():
+        return _refused_posting_disabled()
+    if not _can(actor, BRANCH_MANAGER):
+        return _refused()
+    q = (query or "").strip()
+    if not q:
+        return {"error": "Which purchase order? Give its number or the supplier's name."}
+    matches = purchasing.find_orders(actor, query=q, limit=5)
+    if not matches:
+        return _blocker("purchase order", q)
+    exact = [m for m in matches if m["number"].lower() == q.lower()]
+    if len(matches) > 1 and not exact:
+        candidates = [{"code": m["number"], "name": m["supplier_name"]} for m in matches[:3]]
+        return _blocker("purchase order", q, candidates=candidates)
+    order = exact[0] if exact else matches[0]
+
+    if order["status"] != "billed":
+        return {"error": f"Order {order['number']} is '{order['status']}' — it needs to be "
+                         "billed first before it can be paid."}
+    amount_minor = _minor(amount) if amount else order["outstanding_minor"]
+    if amount_minor <= 0 or amount_minor > order["outstanding_minor"]:
+        return {"error": f"That amount doesn't work — {_egp(order['outstanding_minor'])} is "
+                         f"outstanding on {order['number']}."}
+
+    return {
+        "action": "pay_purchase_order",
+        "summary": [
+            f"Pay {order['number']} ({order['supplier_name']})",
+            f"{_egp(amount_minor)} of {_egp(order['outstanding_minor'])} outstanding",
+        ],
+        "records": [{"type": "purchaseOrder", "value": order["id"], "label": order["number"]}],
+        "risks": [],
+        "total": _egp(amount_minor),
+        "affected": 1,
+        "challenge": challenge(amount_minor),
+        "payload": {"order_id": order["id"], "amount_minor": amount_minor},
+    }
+
+
+def _execute_pay_purchase_order(actor, payload: dict) -> dict:
+    if not _can_post(actor, BRANCH_MANAGER):
+        raise PermissionError
+    order = purchasing.get_order(actor, payload["order_id"])
+    if order is None:
+        raise ValueError("purchase order not found")
+    purchasing.pay_order(order, payload["amount_minor"], actor=actor)
+    return {
+        "summary": f"Paid {_egp(payload['amount_minor'])} on {order.number} — now {order.status}.",
+        "links": [{"type": "purchaseOrder", "value": str(order.id), "label": order.number}],
     }
 
 
@@ -1426,6 +1795,95 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         idempotency=("lines", "date"),
     ),
     Action(
+        "post_journal_entry_draft",
+        "Post an existing DRAFT journal entry to the general ledger (the user confirms by retyping "
+        "the amount; posting is permanent — reverse, never edit). Use for 'post journal entry "
+        "<number>'. Refused with no card if no draft matches, or if posting actions are turned off "
+        "for this workspace.",
+        {"query": "journal entry number, reference or memo to find the draft to post"},
+        _build_post_journal_entry, _execute_post_journal_entry,
+        kind="post",
+        effects=(Effect("journal_entry", "update", gl="posts"),),
+        invariants=("journal_balanced", "period_open"),
+        risk="post",
+        idempotency=("entry_id",),
+    ),
+    Action(
+        "receive_purchase_order",
+        "Receive a confirmed purchase order in full — goods receipt (GRN), raises stock on hand "
+        "and clears GRNI per the normal 3-way match (the user confirms by retyping the amount; "
+        "posting is permanent). Use for 'receive PO <number>' or 'receive the order from "
+        "<supplier>'. Refused with no card if the order isn't confirmed yet, or if posting actions "
+        "are turned off for this workspace.",
+        {"query": "purchase order number or supplier name to find the order to receive"},
+        _build_receive_purchase_order, _execute_receive_purchase_order,
+        kind="post",
+        effects=(Effect("purchase_order", "update", stock="moves"),),
+        invariants=("stock_non_negative",),
+        risk="post",
+        idempotency=("order_id",),
+    ),
+    Action(
+        "bill_purchase_order",
+        "Bill a received purchase order — 3-way match, clears GRNI into AP and books VAT input "
+        "(the user confirms by retyping the amount; posting is permanent). Use for 'bill PO "
+        "<number>' or 'bill the order from <supplier>'. Refused with no card if the order isn't "
+        "fully received yet, or if posting actions are turned off for this workspace.",
+        {"query": "purchase order number or supplier name to find the order to bill"},
+        _build_bill_purchase_order, _execute_bill_purchase_order,
+        kind="post",
+        effects=(Effect("purchase_order", "update", gl="posts"),),
+        invariants=("period_open",),
+        risk="post",
+        idempotency=("order_id",),
+    ),
+    Action(
+        "pay_purchase_order",
+        "Pay a billed purchase order — cash settlement against Accounts Payable (the user confirms "
+        "by retyping the amount; posting is permanent). Use for 'pay PO <number>' or 'pay the order "
+        "from <supplier>'. Defaults to the full outstanding balance; give an amount for a partial "
+        "payment. Refused with no card if the order isn't billed yet, or if posting actions are "
+        "turned off for this workspace.",
+        {"query": "purchase order number or supplier name to find the order to pay",
+         "amount": "optional amount in minor units — defaults to the full outstanding balance"},
+        _build_pay_purchase_order, _execute_pay_purchase_order,
+        kind="post",
+        effects=(Effect("purchase_order", "update", gl="posts"),),
+        invariants=("period_open",),
+        risk="post",
+        idempotency=("order_id", "amount_minor"),
+    ),
+    Action(
+        "approve_purchase_request",
+        "Approve a purchase request that is awaiting approval (the user confirms by retyping the "
+        "amount; approving is permanent — it doesn't post to the GL or move stock, but it unlocks "
+        "the request for conversion into a purchase order). Use for 'approve request <number>' or "
+        "'approve the request from <supplier>'. Refused with no card if the request isn't awaiting "
+        "approval, or if posting actions are turned off for this workspace.",
+        {"query": "purchase request number or supplier name to find the request to approve"},
+        _build_approve_purchase_request, _execute_approve_purchase_request,
+        kind="approve",
+        effects=(Effect("purchase_request", "update"),),
+        risk="post",
+        idempotency=("request_id",),
+    ),
+    Action(
+        "issue_stock_entry",
+        "Issue stock out of a warehouse — consumption that posts COGS (the user confirms by "
+        "retyping the amount; posting is permanent). Use for 'issue <n> of <item> from "
+        "<warehouse>' or 'use <n> of <item>'. Refused with no card if the quantity exceeds what's "
+        "on hand, or if posting actions are turned off for this workspace.",
+        {"item": "item sku or name to issue",
+         "quantity": "quantity to issue",
+         "warehouse": "optional warehouse code to issue from (defaults to the default warehouse)"},
+        _build_issue_stock_entry, _execute_issue_stock_entry,
+        kind="adjust",
+        effects=(Effect("stock_movement", "create", stock="moves", gl="posts"),),
+        invariants=("stock_non_negative", "period_open"),
+        risk="post",
+        idempotency=("item_sku", "warehouse_code", "quantity"),
+    ),
+    Action(
         "create_account",
         "Create a new chart-of-accounts entry (master-data edit, the user confirms). Use for "
         "'create an expense account called <name>'. Warns if a similar account already exists.",
@@ -1494,7 +1952,7 @@ for _a in ACTIONS.values():
 ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query",
                     "item", "quantity", "from_warehouse", "to_warehouse", "reorder_point", "scope",
                     "lines", "date", "reference", "type", "code", "parent", "memo", "name",
-                    "value", "expected_close", "stage", "note")
+                    "value", "expected_close", "stage", "note", "amount")
 
 
 def catalog_text() -> str:
@@ -1530,6 +1988,13 @@ def execute(actor, name: str, payload: dict) -> dict:
     if action is None:
         raise ValueError(f"unknown action {name}")
     return action.execute(actor, payload)
+
+
+def challenge(minor: int, currency: str = "EGP") -> dict:
+    """The retype-confirm the UI shows for a risk="post" proposal: a human-readable label (reusing
+    Money.format — no new formatting logic) plus the exact minor-unit target to match against."""
+    from erp.accounting.domain.money import Money
+    return {"label": Money(minor, currency).format(), "minor": minor}
 
 
 def idempotency_key(name: str, payload: dict) -> str:
