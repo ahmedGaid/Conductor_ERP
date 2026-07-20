@@ -120,6 +120,9 @@ class Quotation(AuditedModel):
     number = models.CharField(max_length=32, unique=True)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="quotations")
     quote_date = models.DateField()
+    # Default 30 days from quote_date, set at creation (see services.quotations); the customer's
+    # price offer isn't open forever. Blank on rows created before this field existed.
+    validity_until = models.DateField(null=True, blank=True)
     warehouse_code = models.CharField(max_length=32)
     currency = models.CharField(max_length=3, default="EGP")
     status = models.CharField(max_length=16, choices=QuotationStatus.choices, default=QuotationStatus.DRAFT)

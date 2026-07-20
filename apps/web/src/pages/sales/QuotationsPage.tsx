@@ -17,6 +17,7 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";
 import { Bdi } from "../../components/Bdi";
+import { Badge, type BadgeTone } from "../../components/Badge";
 import { StatusRing } from "../../components/StatusRing";
 import { salesTone } from "../../lib/statusTone";
 import { EmptyState } from "../../components/EmptyState";
@@ -29,6 +30,21 @@ import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
 
 const QUOTATION_STATUSES = ["draft", "submitted", "approved", "rejected", "converted", "cancelled"] as const;
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function daysUntil(dateStr: string): number {
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / MS_PER_DAY);
+}
+
+function validityTone(days: number): BadgeTone {
+  if (days < 0) return "failed";
+  if (days <= 7) return "waiting";
+  return "neutral";
+}
+
+// Only an open (still-acceptable) quotation has a validity worth flagging.
+const OPEN_STATUSES = new Set(["draft", "submitted", "approved"]);
 
 export function QuotationsPage() {
   const { t } = useTranslation();
@@ -91,6 +107,7 @@ export function QuotationsPage() {
       { header: t("sales.orders.customer"), accessor: (q) => q.customer_name },
       { header: t("common.date"), accessor: (q) => q.quote_date },
       { header: t("common.status"), accessor: (q) => t(`sales.quotationStatus.${q.status}`) },
+      { header: t("sales.quotations.validUntil"), accessor: (q) => q.validity_until ?? "" },
       { header: t("sales.orders.total"), accessor: (q) => formatMinor(q.subtotal_minor, q.currency) },
     ],
     [t],
@@ -176,6 +193,7 @@ export function QuotationsPage() {
                 <th>{t("sales.orders.customer")}</th>
                 <th>{t("common.date")}</th>
                 <th>{t("common.status")}</th>
+                <th>{t("sales.quotations.validUntil")}</th>
                 <th className="sales-table__num">{t("sales.orders.total")}</th>
               </tr>
             </thead>
@@ -211,6 +229,13 @@ export function QuotationsPage() {
                       tone={salesTone(q.status)}
                       label={t(`sales.quotationStatus.${q.status}`)}
                     />
+                  </td>
+                  <td className="latin muted">
+                    {q.validity_until && OPEN_STATUSES.has(q.status) ? (
+                      <Badge tone={validityTone(daysUntil(q.validity_until))}>{q.validity_until}</Badge>
+                    ) : (
+                      q.validity_until ?? "—"
+                    )}
                   </td>
                   <td className="sales-table__num"><Bdi>{formatMinor(q.subtotal_minor, q.currency)}</Bdi></td>
                 </tr>

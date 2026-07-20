@@ -23,7 +23,7 @@ import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { Bdi } from "../../components/Bdi";
-import { Badge } from "../../components/Badge";
+import { Badge, type BadgeTone } from "../../components/Badge";
 import { salesTone } from "../../lib/statusTone";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
@@ -34,6 +34,18 @@ import { RecordTimeline } from "../../components/RecordTimeline";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./sales.css";
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function daysUntil(dateStr: string): number {
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / MS_PER_DAY);
+}
+
+function validityTone(days: number): BadgeTone {
+  if (days < 0) return "failed";
+  if (days <= 7) return "waiting";
+  return "neutral";
+}
 
 export function QuotationDetailPage() {
   const { t } = useTranslation();
@@ -233,6 +245,24 @@ export function QuotationDetailPage() {
                 <dd>{data.requires_approval ? t("sales.quotations.needsApproval") : t("sales.quotations.autoApprove")}</dd>
               </div>
             )}
+            {data.validity_until && (data.status === "draft" || data.status === "submitted" || data.status === "approved") && (() => {
+              const days = daysUntil(data.validity_until);
+              return (
+                <div className="sales-meta__row">
+                  <dt>{t("sales.quotations.validUntil")}</dt>
+                  <dd>
+                    <Bdi>{data.validity_until}</Bdi>{" "}
+                    <Badge tone={validityTone(days)}>
+                      {days < 0
+                        ? t(Math.abs(days) === 1 ? "sales.quotations.validityExpiredOne" : "sales.quotations.validityExpired", { count: Math.abs(days) })
+                        : days === 0
+                          ? t("sales.quotations.validityExpiresToday")
+                          : t(days === 1 ? "sales.quotations.validityExpiresInOne" : "sales.quotations.validityExpiresIn", { count: days })}
+                    </Badge>
+                  </dd>
+                </div>
+              );
+            })()}
             {data.converted_order_number && (
               <div className="sales-meta__row">
                 <dt>{t("sales.quotations.convertedTo")}</dt>

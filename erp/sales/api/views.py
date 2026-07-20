@@ -338,7 +338,7 @@ class QuotationListCreateView(APIView):
         customer = get_object_or_404(Customer, code=v["customer_code"])
         quote = services.create_quotation(
             customer=customer, warehouse_code=v["warehouse_code"],
-            quote_date=v.get("quote_date"), currency=v.get("currency", "EGP"),
+            quote_date=v.get("quote_date"), validity_until=v.get("validity_until"), currency=v.get("currency", "EGP"),
             notes=v.get("notes", ""),
             lines=[
                 services.QuoteLineInput(

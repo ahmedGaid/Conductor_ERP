@@ -146,6 +146,7 @@ export interface Quotation {
   customer_code: string;
   customer_name: string;
   quote_date: string;
+  validity_until: string | null;
   warehouse_code: string;
   currency: string;
   status: QuotationStatus;

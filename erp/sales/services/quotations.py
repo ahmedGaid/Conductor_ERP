@@ -31,6 +31,9 @@ from .orders import OrderLineInput, create_order
 # Quotations at or below this value auto-approve on submit; above it, they need explicit approval.
 APPROVAL_THRESHOLD_MINOR = 1_000_000  # 10,000.00 EGP
 
+# Default quote validity window when the caller doesn't set one explicitly.
+DEFAULT_VALIDITY_DAYS = 30
+
 
 @dataclass
 class QuoteLineInput:
@@ -71,13 +74,15 @@ def requires_approval(subtotal_minor: int) -> bool:
 @transaction.atomic
 def create_quotation(
     *, customer: Customer, warehouse_code: str, lines: list[QuoteLineInput],
-    quote_date=None, currency: str = "EGP", notes: str = "", actor=None,
+    quote_date=None, validity_until=None, currency: str = "EGP", notes: str = "", actor=None,
 ) -> Quotation:
     if not lines:
         raise EmptyQuotationError()
 
+    effective_quote_date = quote_date or dt.date.today()
     quote = Quotation.objects.create(
-        number=_next_number(), customer=customer, quote_date=quote_date or dt.date.today(),
+        number=_next_number(), customer=customer, quote_date=effective_quote_date,
+        validity_until=validity_until or effective_quote_date + dt.timedelta(days=DEFAULT_VALIDITY_DAYS),
         warehouse_code=warehouse_code, currency=currency, notes=notes,
         status=QuotationStatus.DRAFT,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,

@@ -101,7 +101,7 @@ def update_draft_order(*, order_number: str, lines: list[OrderLineInput], actor=
 
 def place_quotation(
     *, customer_code: str, warehouse_code: str, lines: list[QuoteLineInput],
-    quote_date=None, currency: str = "EGP", notes: str = "", actor=None,
+    quote_date=None, validity_until=None, currency: str = "EGP", notes: str = "", actor=None,
 ) -> Quotation | None:
     """Create a DRAFT quotation for a customer referenced by **code**. ``None`` if unknown."""
     customer = _customers.by_code(customer_code)
@@ -109,7 +109,7 @@ def place_quotation(
         return None
     return create_quotation(
         customer=customer, warehouse_code=warehouse_code, lines=lines,
-        quote_date=quote_date, currency=currency, notes=notes, actor=actor,
+        quote_date=quote_date, validity_until=validity_until, currency=currency, notes=notes, actor=actor,
     )
 
 

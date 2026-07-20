@@ -1,6 +1,7 @@
 """Sales quotation lifecycle — submit/approve threshold, convert to a sales order, guards."""
 from __future__ import annotations
 
+import datetime as dt
 from decimal import Decimal
 
 import pytest
@@ -45,6 +46,22 @@ def test_small_quotation_auto_approves_on_submit():
     submit_quotation(q)
     assert q.status == QuotationStatus.APPROVED  # auto-approved
     assert q.approved_at is not None
+
+
+def test_quotation_defaults_validity_to_30_days_from_quote_date():
+    customer, wh = _setup()
+    q = _quote(customer, wh)
+    assert q.validity_until == q.quote_date + dt.timedelta(days=30)
+
+
+def test_quotation_accepts_an_explicit_validity_date():
+    customer, wh = _setup()
+    explicit = dt.date(2027, 1, 15)
+    q = create_quotation(
+        customer=customer, warehouse_code=wh.code, validity_until=explicit,
+        lines=[QuoteLineInput(item_sku="WIDGET", quantity=Decimal("1"), unit_price_minor=100_00)],
+    )
+    assert q.validity_until == explicit
 
 
 def test_large_quotation_needs_approval_then_converts():
