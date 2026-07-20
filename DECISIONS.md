@@ -4,6 +4,45 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## ETA e-invoicing: API contract verified against official docs; stdlib HTTP; https enforced (2026-07-20)
+
+`einvoice-eta-live/FILE_01` (partial — see "still open" below). Three choices worth recording.
+
+**1. The ETA contract was looked up, not recalled.** The plan's locked decision #4 treats the ETA
+API as volatile. Verified 2026-07-20 against the official SDK (https://sdk.invoicing.eta.gov.eg/faq/
+and the eInvoicing API index):
+
+| | Pre-production (test) | Production |
+|---|---|---|
+| Identity (token) | `https://id.preprod.eta.gov.eg` | `https://id.eta.gov.eg` |
+| Document API | `https://api.preprod.invoicing.eta.gov.eg` | `https://api.invoicing.eta.gov.eg` |
+| Registration portal | `https://profile.preprod.eta.gov.eg` | `https://profile.eta.gov.eg` |
+
+Auth is OAuth2 `client_credentials`, scope `InvoicingAPI`, tokens ~1 hour. The `/connect/token`
+path follows the IdentityServer convention ETA's own portal uses. **Re-verify before go-live** —
+these change, and none of them are defaulted in settings precisely so a stale value cannot silently
+point a real install at a real tax endpoint.
+
+**2. stdlib `urllib.request`, not `httpx`/`requests`.** Both appear in `requirements.txt` but only
+*transitively* (via `anthropic`/`google-genai`); neither is in `requirements.in`. Importing one
+would promote it to a direct dependency, which this plan's locked decision #5 makes a STOP-gate. A
+single form-encoded POST does not justify that ask. **Revisit at FILE_02**: if real submission needs
+connection pooling, retry policy, or per-request timeouts across many document calls, promoting
+`httpx` to a direct dependency becomes a legitimate, separate founder decision.
+
+**3. `https://` is enforced on `ETA_IDENTITY_URL`, not assumed.** `urlopen` honours whatever scheme
+it is handed, so a typo'd `file:///...` identity URL would turn a token request into a local file
+read, and an `http://` one would put the client secret on the wire in clear text. `_token_url()`
+raises `ETAConfigError` on anything but https (bandit B310 still flags the `urlopen` call — it is a
+static check and cannot see the runtime guard; the guard is pinned by three tests).
+
+**Still open — FILE_01 is NOT `_done`.** Its "Done when" is a real token from the ETA sandbox, which
+needs credentials the customer has not supplied. Everything above is verified only against a
+monkeypatched transport (19 unit tests). When credentials arrive: populate the six vars in `.env`,
+run `fetch_token()`, confirm the operator panel shows `last_auth_ok_at`. That is ~20 minutes, then
+FILE_01 closes. FILE_02–05 remain STOP-gated behind it.
+
+
 ## Lane collision — Agent B found active in `C:\AhmedGaid\ERP` during twenty-harvest FILE_21 (2026-07-19)
 
 Mid-session (Agent A, `/erp-resume` → twenty-harvest FILE_21 acceptance), the working tree jumped
