@@ -1,0 +1,76 @@
+/* Human-logged CRM activity list (ActivityFeed.tsx). Monochrome; the only colour is the due-date
+   badge, which always carries a word beside it. */
+
+.activity-feed {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.activity-feed__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.activity-feed__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.activity-feed__field {
+  display: grid;
+  gap: var(--space-1);
+  flex: 1 1 14rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.activity-feed__field--type {
+  flex: 0 0 10rem;
+}
+
+.activity-feed__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity-feed__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.activity-feed__row:last-child {
+  border-block-end: none;
+}
+
+/* A completed item stays readable but stops competing with what's still open. */
+.activity-feed__row[data-done="true"] .activity-feed__subject {
+  color: var(--color-text-muted);
+}
+
+.activity-feed__kind {
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.activity-feed__subject {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-feed__owner {
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

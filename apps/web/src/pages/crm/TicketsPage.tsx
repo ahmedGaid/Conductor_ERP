@@ -33,6 +33,7 @@ import { SavedViews } from "../../components/SavedViews";
 import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
+import { ActivityDialog } from "../../components/ActivityDialog";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useSetHelpSignals } from "../../help/HelpSignalsContext";
@@ -87,6 +88,8 @@ export function TicketsPage() {
   const [subject, setSubject] = useState("");
   const [customer, setCustomer] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("medium");
+  // Tickets have no detail route, so their activity history opens in place as a modal.
+  const [activityFor, setActivityFor] = useState<Ticket | null>(null);
 
   // ⌘/Ctrl+Enter submits the add-ticket form from any field (incl. the priority select).
   const formRef = useRef<HTMLFormElement>(null);
@@ -329,6 +332,9 @@ export function TicketsPage() {
                   </td>
                   <td>
                     <RowActions className="crm-actions" label={t("common.actions")}>
+                      <button className="btn btn--sm" onClick={() => setActivityFor(tk)}>
+                        {t("crm.activity.title")}
+                      </button>
                       {tk.status === "open" && (
                         <button
                           className="btn btn--sm"
@@ -369,6 +375,14 @@ export function TicketsPage() {
           </table>
         </div>
       )}
+
+      <ActivityDialog
+        open={activityFor !== null}
+        onClose={() => setActivityFor(null)}
+        relatedType="ticket"
+        relatedRef={activityFor?.number ?? ""}
+        recordLabel={activityFor?.subject ?? ""}
+      />
 
       <BulkActionBar count={selection.count} onClear={selection.clear}>
         {resolvable.length > 0 && (

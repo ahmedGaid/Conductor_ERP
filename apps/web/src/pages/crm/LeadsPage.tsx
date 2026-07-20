@@ -30,6 +30,7 @@ import { SavedViews } from "../../components/SavedViews";
 import { useSavedViews } from "../../hooks/useSavedViews";
 import { StatusTabs, ALL_TAB } from "../../components/StatusTabs";
 import { RowActions } from "../../components/RowActions";
+import { ActivityDialog } from "../../components/ActivityDialog";
 import { CrmNav } from "./CrmNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useFormKeys } from "../../hooks/useFormKeys";
@@ -87,6 +88,8 @@ export function LeadsPage() {
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("web");
   const [campaignCode, setCampaignCode] = useState("");
+  // Leads have no detail route, so their activity history opens in place as a modal.
+  const [activityFor, setActivityFor] = useState<Lead | null>(null);
 
   // ⌘/Ctrl+Enter submits the add-lead form from any field (incl. the source select).
   const formRef = useRef<HTMLFormElement>(null);
@@ -318,6 +321,9 @@ export function LeadsPage() {
                   </td>
                   <td>
                     <RowActions className="crm-actions" label={t("common.actions")}>
+                      <button className="btn btn--sm" onClick={() => setActivityFor(l)}>
+                        {t("crm.activity.title")}
+                      </button>
                       {l.status === "new" && (
                         <button className="btn btn--sm" onClick={() => qualifyLead(l)}>
                           {t("crm.leadStatus.qualified")}
@@ -336,6 +342,14 @@ export function LeadsPage() {
           </table>
         </div>
       )}
+
+      <ActivityDialog
+        open={activityFor !== null}
+        onClose={() => setActivityFor(null)}
+        relatedType="lead"
+        relatedRef={activityFor?.code ?? ""}
+        recordLabel={activityFor?.name ?? ""}
+      />
 
       <BulkActionBar count={selection.count} onClear={selection.clear}>
         {qualifiable.length > 0 && (

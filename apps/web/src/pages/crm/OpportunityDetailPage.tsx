@@ -16,6 +16,7 @@ import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { usePaletteActions, type PaletteAction } from "../../app/PaletteActionsContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
+import { ActivityFeed } from "../../components/ActivityFeed";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { DocumentPrimaryButton } from "../../components/DocumentHeader";
 import { type DocMenuItem } from "../../components/DocumentMenu";
@@ -278,6 +279,10 @@ export function OpportunityDetailPage() {
               </table>
             </div>
           )}
+
+          <div className="card">
+            <ActivityFeed relatedType="opportunity" relatedRef={data.number} />
+          </div>
 
           <ConfirmDialog
             open={confirmWin}

@@ -1453,7 +1453,9 @@
       "bulkResolved": "{{count}} tickets resolved",
       "bulkResolvedOne": "1 ticket resolved",
       "bulkClosed": "{{count}} tickets closed",
-      "bulkClosedOne": "1 ticket closed"
+      "bulkClosedOne": "1 ticket closed",
+      "activityLogged": "Activity logged",
+      "activityCompleted": "Marked done"
     },
     "tabs": {
       "pipeline": "Pipeline",
@@ -1543,6 +1545,31 @@
       "lose": "Mark lost",
       "namePlaceholder": "Opportunity name",
       "notesPlaceholder": "Add a note"
+    },
+    "activity": {
+      "title": "Activity",
+      "typeLabel": "Type",
+      "log": "Log activity",
+      "complete": "Mark done",
+      "done": "Done",
+      "empty": "No activity yet.",
+      "emptyHint": "Log a call, email, meeting, task, or note to start tracking it here.",
+      "type": {
+        "call": "Call",
+        "email": "Email",
+        "meeting": "Meeting",
+        "task": "Task",
+        "note": "Note"
+      },
+      "subject": "Subject",
+      "subjectPlaceholder": "What's this about?",
+      "needSubject": "An activity needs a subject",
+      "overdue": "{{count}} days overdue",
+      "overdueOne": "1 day overdue",
+      "dueToday": "Due today",
+      "dueIn": "Due in {{count}} days",
+      "dueInOne": "Due in 1 day",
+      "dialogTitle": "Activity — {{record}}"
     },
     "ticket": {
       "add": "Open ticket",

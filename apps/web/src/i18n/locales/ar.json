@@ -1453,7 +1453,9 @@
       "bulkResolved": "تم حل {{count}} تذكرة",
       "bulkResolvedOne": "تم حل تذكرة واحدة",
       "bulkClosed": "تم إغلاق {{count}} تذكرة",
-      "bulkClosedOne": "تم إغلاق تذكرة واحدة"
+      "bulkClosedOne": "تم إغلاق تذكرة واحدة",
+      "activityLogged": "تم تسجيل النشاط",
+      "activityCompleted": "تم التحديد كمنجَز"
     },
     "tabs": {
       "pipeline": "خط الفرص",
@@ -1543,6 +1545,31 @@
       "lose": "تحديد كخاسرة",
       "namePlaceholder": "اسم الفرصة",
       "notesPlaceholder": "أضف ملاحظة"
+    },
+    "activity": {
+      "title": "النشاط",
+      "typeLabel": "النوع",
+      "log": "تسجيل نشاط",
+      "complete": "تحديد كمنجَز",
+      "done": "منجَز",
+      "empty": "لا يوجد نشاط بعد.",
+      "emptyHint": "سجّل مكالمة أو بريدًا أو اجتماعًا أو مهمة أو ملاحظة لبدء تتبعها هنا.",
+      "type": {
+        "call": "مكالمة",
+        "email": "بريد إلكتروني",
+        "meeting": "اجتماع",
+        "task": "مهمة",
+        "note": "ملاحظة"
+      },
+      "subject": "الموضوع",
+      "subjectPlaceholder": "ما موضوع هذا؟",
+      "needSubject": "يحتاج النشاط إلى موضوع",
+      "overdue": "متأخر بـ {{count}} يوم",
+      "overdueOne": "متأخر بيوم واحد",
+      "dueToday": "يستحق اليوم",
+      "dueIn": "يستحق خلال {{count}} يوم",
+      "dueInOne": "يستحق خلال يوم واحد",
+      "dialogTitle": "النشاط — {{record}}"
     },
     "ticket": {
       "add": "فتح تذكرة",
