@@ -41,7 +41,8 @@ ENV_VAR_NAMES = (
     "DRF_THROTTLE_USER", "DRF_THROTTLE_LOGIN", "WORKFLOW_EGRESS_ALLOWLIST", "EMAIL_BACKEND",
     "DEFAULT_FROM_EMAIL", "EMAIL_HOST", "EMAIL_PORT", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD",
     "EMAIL_USE_TLS", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY",
-    "ASSISTANT_PROVIDER",
+    "ASSISTANT_PROVIDER", "ETA_ENV", "ETA_IDENTITY_URL", "ETA_API_BASE_URL", "ETA_CLIENT_ID",
+    "ETA_CLIENT_SECRET", "ETA_RIN",
 )
 
 _DEFAULT_QUEUE = "celery"
@@ -111,6 +112,19 @@ def _env_report() -> dict:
     return {name: ("set" if os.environ.get(name) else "unset") for name in ENV_VAR_NAMES}
 
 
+def _eta_report() -> dict:
+    """ETA e-invoicing readiness (einvoice-eta-live FILE_01). Delegates to the client so the
+    presence rules live in one place; the payload carries names + timestamps only, never a
+    credential value. An unconfigured install reports calmly — it is a valid, common state."""
+    try:
+        from erp.einvoice.services import eta_client
+
+        return eta_client.status_report()
+    except Exception:  # noqa: BLE001 — the panel must render even if e-invoicing is broken
+        return {"configured": False, "environment": "", "missing_settings": [],
+                "last_auth_ok_at": None, "detail": "unavailable"}
+
+
 def _overall(*component_statuses: str) -> str:
     if checks.CRITICAL in component_statuses:
         return checks.CRITICAL
@@ -139,6 +153,7 @@ class SystemStatusView(APIView):
             "storage": storage,
             "workers": workers,
             "backup": _backup_report(),
+            "eta": _eta_report(),
             "env": _env_report(),
         })
 

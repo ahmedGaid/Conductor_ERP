@@ -154,6 +154,19 @@ STORAGE_ROOT = Path(env("STORAGE_ROOT", default=str(BASE_DIR / "storage")))
 # never writes here itself, it only reads timestamps off whatever the backup job already wrote.
 BACKUP_DIR = env("BACKUP_DIR", default="")
 
+# --- E-invoicing: Egyptian Tax Authority (ETA) ---
+# Real ETA submission (einvoice-eta-live FILE_01). Every value is env-only and empty by default:
+# an install with no credentials keeps using the simulated adapter and never touches the network.
+# Environment URLs are documented in .env.example (verified 2026-07-20 against the official SDK,
+# https://sdk.invoicing.eta.gov.eg/faq/) — they are NOT defaulted here, because silently pointing a
+# misconfigured install at a real tax endpoint is the one mistake this module must never make.
+ETA_ENV = env("ETA_ENV", default="")  # "sandbox" | "production"; empty = not configured
+ETA_IDENTITY_URL = env("ETA_IDENTITY_URL", default="")  # OAuth2 issuer, e.g. https://id.preprod.eta.gov.eg
+ETA_API_BASE_URL = env("ETA_API_BASE_URL", default="")  # document API, e.g. https://api.preprod.invoicing.eta.gov.eg
+ETA_CLIENT_ID = env("ETA_CLIENT_ID", default="")
+ETA_CLIENT_SECRET = env("ETA_CLIENT_SECRET", default="")
+ETA_RIN = env("ETA_RIN", default="")  # the taxpayer's registration number (tax profile identity)
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- DRF ---
