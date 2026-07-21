@@ -121,7 +121,7 @@ def _config_payload() -> dict:
         "source": cfg.source,           # "database" | "environment" | "none"
         "configured": not eta_config.missing_fields(cfg),
         "missing": eta_config.missing_setting_names(cfg),
-        "simulated": eta_adapter.SIMULATED,  # True until the real submission adapter (FILE_02) lands
+        "simulated": not eta_adapter.is_live(),  # live only when credentials + API base are configured
     }
 
 

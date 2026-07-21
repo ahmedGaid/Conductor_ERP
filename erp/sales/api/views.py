@@ -96,6 +96,8 @@ class CustomerListCreateView(APIView):
             code=v["code"], name=v["name"],
             credit_limit_minor=v.get("credit_limit_minor", 0),
             is_active=v.get("is_active", True),
+            tax_registration_number=v.get("tax_registration_number", ""),
+            national_id=v.get("national_id", ""),
             custom_data=custom_data,
             created_by=request.user if request.user.is_authenticated else None,
         )

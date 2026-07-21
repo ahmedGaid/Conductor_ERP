@@ -243,7 +243,6 @@ function AppRoutes() {
           <Route path="/settings/developers" element={<ApiKeysPage />} />
           <Route path="/settings/einvoice" element={<EInvoicePage />} />
           <Route path="/settings/system" element={<SystemPage />} />
-          <Route path="/imports/new" element={<ImportWizard />} />
           <Route path="/imports/:id" element={<ImportWizard />} />
           <Route path="/settings/ai-usage" element={<AIUsagePage />} />
           <Route path="/admin/users" element={<UsersPage />} />

@@ -214,3 +214,51 @@ def test_sales_requires_role():
 
 def test_requires_authentication():
     assert APIClient().get("/api/sales/orders").status_code == 401
+
+
+def test_customer_national_id_is_stored_as_fallback_identity():
+    """A customer with no tax registration number is identified by their national ID (ETA receiver
+    fallback). Both round-trip through create + list."""
+    client = _admin_client()
+    res = client.post(
+        "/api/sales/customers",
+        {"code": "CUSTNID", "name": "Walk-in Ltd", "national_id": "29001011234567"},
+        format="json",
+    )
+    assert res.status_code == 201
+    body = res.data["data"]
+    assert body["national_id"] == "29001011234567"
+    assert body["tax_registration_number"] == ""
+
+
+def test_customer_tax_registration_number_is_stored():
+    client = _admin_client()
+    res = client.post(
+        "/api/sales/customers",
+        {"code": "CUSTTRN", "name": "Registered Co", "tax_registration_number": "123456789"},
+        format="json",
+    )
+    assert res.status_code == 201
+    assert res.data["data"]["tax_registration_number"] == "123456789"
+
+
+def test_customer_rejects_malformed_national_id():
+    client = _admin_client()
+    res = client.post(
+        "/api/sales/customers",
+        {"code": "CUSTBAD", "name": "Bad ID", "national_id": "12345"},  # not 14 digits
+        format="json",
+    )
+    assert res.status_code == 400
+    assert "national_id" in res.data["error"]["message"]
+
+
+def test_customer_identity_fields_are_optional():
+    """A cash/walk-in customer below the reporting threshold needs neither identifier."""
+    client = _admin_client()
+    res = client.post(
+        "/api/sales/customers", {"code": "CUSTNONE", "name": "Cash Buyer"}, format="json",
+    )
+    assert res.status_code == 201
+    assert res.data["data"]["national_id"] == ""
+    assert res.data["data"]["tax_registration_number"] == ""

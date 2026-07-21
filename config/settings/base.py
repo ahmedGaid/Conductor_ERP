@@ -166,6 +166,17 @@ ETA_API_BASE_URL = env("ETA_API_BASE_URL", default="")  # document API, e.g. htt
 ETA_CLIENT_ID = env("ETA_CLIENT_ID", default="")
 ETA_CLIENT_SECRET = env("ETA_CLIENT_SECRET", default="")
 ETA_RIN = env("ETA_RIN", default="")  # the taxpayer's registration number (tax profile identity)
+# Issuer tax profile (FILE_02): static company identity stamped on every ETA document. Not a secret,
+# so env-only for now (no DB columns yet — a follow-up admin-config slice may move it in-app). Empty
+# fields produce a structurally-complete-but-not-yet-valid document until the real profile is set.
+ETA_ISSUER_NAME = env("ETA_ISSUER_NAME", default="")          # legal company name on the invoice
+ETA_ACTIVITY_CODE = env("ETA_ACTIVITY_CODE", default="")      # ETA taxpayer activity code
+ETA_BRANCH_ID = env("ETA_BRANCH_ID", default="")             # issuing branch id registered with ETA
+ETA_ISSUER_COUNTRY = env("ETA_ISSUER_COUNTRY", default="EG")  # ISO country code
+ETA_ISSUER_GOVERNATE = env("ETA_ISSUER_GOVERNATE", default="")
+ETA_ISSUER_REGION_CITY = env("ETA_ISSUER_REGION_CITY", default="")
+ETA_ISSUER_STREET = env("ETA_ISSUER_STREET", default="")
+ETA_ISSUER_BUILDING_NO = env("ETA_ISSUER_BUILDING_NO", default="")
 # Since 2026-07-21 the admin can enter these in-app (Settings → E-Invoicing); the env vars above stay
 # a valid fallback. The in-app client secret is stored ENCRYPTED — this is the Fernet key for it.
 # Empty = derive a key from DJANGO_SECRET_KEY (fine for dev; a SECRET_KEY rotation then invalidates
@@ -173,6 +184,15 @@ ETA_RIN = env("ETA_RIN", default="")  # the taxpayer's registration number (tax 
 # in production so the stored secret survives a SECRET_KEY rotation. Generate one with:
 #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ETA_SECRET_KEY = env("ETA_SECRET_KEY", default="")
+
+# --- ETA document signing (FILE_03) ---
+# The PKCS#12 (.pfx) soft certificate ETA requires to sign every Invoice v1.0. Key material — kept
+# OUT of the repo: point ETA_SIGNING_PFX_PATH at a file the deploy places outside version control,
+# or supply the .pfx base64-encoded via ETA_SIGNING_PFX_BASE64 (e.g. from a secret manager). With
+# neither set, documents go out unsigned (simulated/unconfigured path) and never reach ETA.
+ETA_SIGNING_PFX_PATH = env("ETA_SIGNING_PFX_PATH", default="")
+ETA_SIGNING_PFX_BASE64 = env("ETA_SIGNING_PFX_BASE64", default="")
+ETA_SIGNING_PFX_PASSWORD = env("ETA_SIGNING_PFX_PASSWORD", default="")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

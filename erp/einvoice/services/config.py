@@ -44,6 +44,34 @@ class ETAConfig:
     client_secret: str = ""   # plaintext, in-process only — never serialized, never logged
     rin: str = ""
     source: str = "none"      # "database" | "environment" | "none"
+    # --- issuer tax profile (FILE_02) ----------------------------------------------------------
+    # Static company identity the ETA document requires on every invoice (issuer block +
+    # activity code). Not a secret, so it is always env-sourced for now (no DB columns yet — a
+    # follow-up admin-config slice may move it into ``ETASettings``). Env fills it in both DB and
+    # env config modes so an in-app connection still emits a complete document.
+    issuer_name: str = ""
+    activity_code: str = ""
+    branch_id: str = ""
+    country: str = "EG"
+    governate: str = ""
+    region_city: str = ""
+    street: str = ""
+    building_number: str = ""
+
+
+def _issuer_profile_from_env() -> dict:
+    """The issuer tax-profile fields, read from settings. Static, non-secret company identity."""
+    g = lambda name, default="": str(getattr(settings, name, "") or default).strip()  # noqa: E731
+    return {
+        "issuer_name": g("ETA_ISSUER_NAME"),
+        "activity_code": g("ETA_ACTIVITY_CODE"),
+        "branch_id": g("ETA_BRANCH_ID"),
+        "country": g("ETA_ISSUER_COUNTRY", "EG") or "EG",
+        "governate": g("ETA_ISSUER_GOVERNATE"),
+        "region_city": g("ETA_ISSUER_REGION_CITY"),
+        "street": g("ETA_ISSUER_STREET"),
+        "building_number": g("ETA_ISSUER_BUILDING_NO"),
+    }
 
 
 def _from_env() -> ETAConfig:
@@ -55,6 +83,7 @@ def _from_env() -> ETAConfig:
         client_secret=str(getattr(settings, "ETA_CLIENT_SECRET", "") or "").strip(),
         rin=str(getattr(settings, "ETA_RIN", "") or "").strip(),
         source="environment",
+        **_issuer_profile_from_env(),
     )
 
 
@@ -75,6 +104,9 @@ def _from_row(row) -> ETAConfig:
         client_secret=secret,
         rin=(row.rin or "").strip(),
         source="database",
+        # The issuer profile has no DB columns yet — always read it from env so the in-app
+        # (DB-enabled) path still produces a complete ETA document.
+        **_issuer_profile_from_env(),
     )
 
 

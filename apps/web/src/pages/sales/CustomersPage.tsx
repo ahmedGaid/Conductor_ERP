@@ -98,6 +98,9 @@ export function CustomersPage() {
   const [code, setCode] = useState(prefill.code ?? "");
   const [name, setName] = useState(prefill.name ?? "");
   const [limit, setLimit] = useState("");
+  const [taxReg, setTaxReg] = useState("");
+  const [nationalId, setNationalId] = useState("");
+  const [identityError, setIdentityError] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [customValues, setCustomValues] = useState<CustomFieldValues>({});
   const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
@@ -130,6 +133,19 @@ export function CustomersPage() {
     const c = code.trim();
     const n = name.trim();
     if (!c || !n) return;
+    const taxRegistration = taxReg.trim();
+    const national = nationalId.trim();
+    // National ID is the fallback identity when there is no tax registration number; validate its
+    // shape (Egyptian national ID is 14 digits) before sending.
+    if (national && !/^\d{14}$/.test(national)) {
+      setIdentityError(t("sales.customer.nationalIdInvalid"));
+      return;
+    }
+    if (taxRegistration && !/^\d+$/.test(taxRegistration)) {
+      setIdentityError(t("sales.customer.taxRegInvalid"));
+      return;
+    }
+    setIdentityError("");
     const defs = customFieldDefs ?? [];
     const errors = validateCustomFieldValues(defs, customValues);
     if (Object.keys(errors).length > 0) {
@@ -142,8 +158,14 @@ export function CustomersPage() {
     void optimisticCreate<Customer>({
       current: data ?? [],
       mutate,
-      placeholder: (id) => ({ id, code: c, name: n, credit_limit_minor: credit, custom_data }) as Customer,
-      request: () => createCustomer({ code: c, name: n, credit_limit_minor: credit, custom_data }),
+      placeholder: (id) => ({
+        id, code: c, name: n, credit_limit_minor: credit,
+        tax_registration_number: taxRegistration, national_id: national, custom_data,
+      }) as Customer,
+      request: () => createCustomer({
+        code: c, name: n, credit_limit_minor: credit,
+        tax_registration_number: taxRegistration, national_id: national, custom_data,
+      }),
       toast,
     }).then((created) => {
       if (created) showCustomerReceipt(fb, t, created, { navigate });
@@ -151,6 +173,8 @@ export function CustomersPage() {
     setCode("");
     setName("");
     setLimit("");
+    setTaxReg("");
+    setNationalId("");
     setCustomValues({});
     setShowForm(false);
   }
@@ -194,6 +218,15 @@ export function CustomersPage() {
           <span>{t("sales.customer.creditLimit")}</span>
           <input className="latin" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="0.00" />
         </label>
+        <label className="sales-field">
+          <span>{t("sales.customer.taxRegistrationNumber")}</span>
+          <input className="latin" inputMode="numeric" value={taxReg} onChange={(e) => setTaxReg(e.target.value)} placeholder={t("sales.customer.optional")} />
+        </label>
+        <label className="sales-field">
+          <span>{t("sales.customer.nationalId")}</span>
+          <input className="latin" inputMode="numeric" value={nationalId} onChange={(e) => setNationalId(e.target.value)} placeholder={t("sales.customer.nationalIdHint")} />
+        </label>
+        {identityError && <p className="custom-field-error" role="alert">{identityError}</p>}
         <CustomFieldsForm
           defs={customFieldDefs ?? []}
           values={customValues}

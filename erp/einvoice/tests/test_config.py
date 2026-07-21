@@ -165,7 +165,7 @@ def test_config_put_saves_and_get_never_returns_the_secret(settings):
     assert body["enabled"] is True
     assert body["configured"] is True
     assert body["source"] == "database"
-    assert body["simulated"] is True                 # submission adapter still a stub
+    assert body["simulated"] is False                # fully configured + enabled → the adapter is live (FILE_02)
     assert SECRET not in res.content.decode()
 
     got = c.get("/api/einvoice/config").json()["data"]

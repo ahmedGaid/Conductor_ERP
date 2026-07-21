@@ -93,6 +93,11 @@ class ETAInvoice(AuditedModel):
     order_number = models.CharField(max_length=32, blank=True, default="")
     customer_code = models.CharField(max_length=32, blank=True, default="")
     customer_name = models.CharField(max_length=200, blank=True, default="")
+    # ETA receiver identity — a business customer carries a tax registration number (receiver type
+    # "B"); an individual carries their national ID instead (type "P"). Both optional: a walk-in/cash
+    # customer under the ETA reporting threshold (EGP 50,000) needs neither.
+    customer_tax_registration_number = models.CharField(max_length=32, blank=True, default="")
+    customer_national_id = models.CharField(max_length=14, blank=True, default="")
     issue_date = models.DateField()
     currency = models.CharField(max_length=3, default="EGP")
     tax_code = models.CharField(max_length=16, blank=True, default="")
@@ -101,7 +106,9 @@ class ETAInvoice(AuditedModel):
     total_minor = models.BigIntegerField(default=0)
     # ETA submission lifecycle.
     status = models.CharField(max_length=16, choices=ETAStatus.choices, default=ETAStatus.DRAFT)
-    uuid = models.CharField(max_length=64, blank=True, default="")        # assigned by ETA on submit
+    uuid = models.CharField(max_length=64, blank=True, default="")        # ETA document UUID (26 chars live; 64-char local hash while simulated)
+    long_id = models.CharField(max_length=64, blank=True, default="")     # ETA long ID (42 chars) — the human-visible/printable document identifier
+    submission_uuid = models.CharField(max_length=32, blank=True, default="")  # ETA batch submission UUID (26 chars) for traceability
     document_hash = models.CharField(max_length=64, blank=True, default="")  # sha256 of the document
     submitted_at = models.DateTimeField(null=True, blank=True)
     validated_at = models.DateTimeField(null=True, blank=True)

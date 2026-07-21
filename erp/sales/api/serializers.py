@@ -12,7 +12,27 @@ class CustomerSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     credit_limit_minor = serializers.IntegerField(min_value=0, required=False, default=0)
     is_active = serializers.BooleanField(required=False, default=True)
+    # ETA receiver identity: a tax registration number, or a national ID as the fallback for a
+    # customer with no registration number. Both optional; whichever is given must be well-formed.
+    tax_registration_number = serializers.CharField(
+        max_length=32, required=False, allow_blank=True, default="", trim_whitespace=True)
+    national_id = serializers.CharField(
+        max_length=14, required=False, allow_blank=True, default="", trim_whitespace=True)
     custom_data = serializers.JSONField(required=False, default=dict)
+
+    def validate_tax_registration_number(self, value: str) -> str:
+        value = (value or "").strip()
+        if value and not value.isdigit():
+            raise serializers.ValidationError("The tax registration number must be digits only.")
+        return value
+
+    def validate_national_id(self, value: str) -> str:
+        # Egyptian national ID is exactly 14 digits. Validate only when given (it is the fallback
+        # identity, not a required field for every customer).
+        value = (value or "").strip()
+        if value and (len(value) != 14 or not value.isdigit()):
+            raise serializers.ValidationError("The national ID must be 14 digits.")
+        return value
 
     def to_representation(self, obj) -> dict:
         return {
@@ -21,6 +41,8 @@ class CustomerSerializer(serializers.Serializer):
             "name": obj.name,
             "credit_limit_minor": obj.credit_limit_minor,
             "is_active": obj.is_active,
+            "tax_registration_number": obj.tax_registration_number,
+            "national_id": obj.national_id,
             "custom_data": obj.custom_data,
         }
 

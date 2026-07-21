@@ -3,13 +3,16 @@
 Compliance module that records every posted sales invoice as an **ETA e-invoice** and runs the
 submission lifecycle: `draft → submitted` (prepared) `→ valid` (or `rejected`).
 
-> **Nothing here reaches the Tax Authority yet.** The adapter is simulated
-> (`eta_adapter.SIMULATED = True`), so `poll` returns `pending` and `valid` is unreachable; the
-> `uuid` field holds a **locally generated reference**, not an ETA UUID. The UI, help content and
-> glossary say so in both languages. When a real adapter lands (`einvoice-eta-live` FILE_02+), flip
-> `SIMULATED`, and in the same change remove the `einvoice.notConnected` note from
-> `EInvoicesPage.tsx` and un-hedge the copy listed in DECISIONS.md (2026-07-20 claims-discipline
-> entry).
+> **Reaches the Tax Authority only when configured.** The adapter has two modes behind one
+> interface: **simulated** (default — `eta_adapter.is_live()` is False when ETA is not configured or
+> has no API base URL) where `poll` returns `pending`, `valid` is unreachable, and `uuid` holds a
+> **locally generated reference**; and **live** (FILE_02 — credentials + API base present) where
+> `submit` POSTs a real ETA Invoice v1.0 document and `uuid`/`long_id` are ETA-assigned. The UI, help
+> and glossary hedge in both languages while simulated. **Still STOP-gated for a validating live
+> submission:** the company tax profile (issuer name/activity/address via `ETA_ISSUER_*`) and the
+> customer's tax registration, plus document signing (FILE_03). When those land, remove the
+> `einvoice.notConnected` note from `EInvoicesPage.tsx` and un-hedge the copy listed in DECISIONS.md
+> (2026-07-20 claims-discipline entry).
 
 - **Event-driven, decoupled.** It subscribes to the `sales.OrderInvoiced` domain event (enriched with
   the invoice's business data) and records a draft `ETAInvoice`. Sales has no knowledge of this

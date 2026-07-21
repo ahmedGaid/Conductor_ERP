@@ -26,6 +26,8 @@ def _on_order_invoiced(event) -> None:
         order_number=p.get("order", ""),
         customer_code=p.get("customer_code", ""),
         customer_name=p.get("customer_name", ""),
+        customer_tax_registration_number=p.get("customer_tax_registration_number", ""),
+        customer_national_id=p.get("customer_national_id", ""),
         issue_date=issue_date or dt.date.today(),
         currency=p.get("currency", "EGP"),
         tax_code=p.get("tax_code", ""),

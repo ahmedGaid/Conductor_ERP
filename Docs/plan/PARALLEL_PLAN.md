@@ -287,7 +287,7 @@ user-requested, ahead of the plan's own checkpoint schedule.
 |---|---|---|---|---|---|---|---|
 | B19 | System settings page — `TH/FILE_19` Task B (consumes B14's `/api/system/status/`) | B | `apps/web/src/pages/settings/SystemPage.tsx` (new), `SettingsNav.tsx`, `App.tsx` route, `ar.json`/`en.json` | B14 (done) | 1 | M3 | todo |
 | B20 | Settings → AI usage page — `TH/FILE_20` Task B (consumes B15's `/api/assistant/usage/`) | B | `apps/web/src/pages/settings/AiUsagePage.tsx` (new), `SettingsNav.tsx`, `App.tsx` route, `ar.json`/`en.json` | B15 (done) | 1 | M3 | todo |
-| B21 | Import wizard/preview UI — `SI/FILE_12`–`FILE_14` | B | `apps/web/src/pages/imports/**` (new), `api/imports.ts`, `ar.json`/`en.json` | B7 (done) | 2–3 sessions (one FILE each) | Phase A demo point (SI FILE_14) | todo |
+| B21 | Import wizard/preview UI — `SI/FILE_12`–`FILE_14` | **A** (cross-lane, founder-authorized 2026-07-21) | `apps/web/src/pages/imports/**` (new), `api/smartImports.ts` (new — `api/imports.ts` name was already taken by the older per-list CSV dialog), `ar.json`/`en.json` | B7 (done) | 2–3 sessions (one FILE each) | Phase A demo point (SI FILE_14) | FILE_12 (Upload+Map) built this session — see A16 note below, not yet `_done` |
 | B22 | Document/finance adapter review screens — `SI/FILE_15`–`FILE_16` UI half | B | `apps/web/src/pages/imports/**` (adapter preview + finance suspense-approval panel) | B11, B12 (done) | 1–2 | M3 | todo |
 | B23 | Draftable payments review screen — B16 follow-up (apps/web half) | B | `apps/web/src/pages/sales/**`, `apps/web/src/pages/purchasing/**` (pending-payment review/apply), `ar.json`/`en.json` | B16 (done) | 1 | M3 | todo |
 | B24 | Reconciled inventory-opening review screen — B17 follow-up (apps/web half) | B | `apps/web/src/pages/inventory/**` (pending-stock review/apply), `ar.json`/`en.json` | B17 (done) | 1 | M3 | todo |
@@ -323,6 +323,53 @@ pixel/screenshot pass). One self-inflicted false alarm: running Playwright again
 dev DB while the browser tab was open threw transient 500s on Purchase Orders — a Retry click
 cleared it, no real bug. **File still not `_done`** — the 5th item (CHANGELOG stuck at v1.0.0,
 RUNBOOK gate-count stale) is B's territory, untouched. Commit `a4b7670`.
+
+**A16 (2026-07-21, A session):** `smart-import-plan/FILE_12_WIZARD_UPLOAD_MAP_UI.md` — Task A (route
++ step rail), B (UploadStep: drag-drop, detect/candidate-chooser, profile-hit chip), C (MappingStep:
+column table, confidence pills, save-as-profile), D (i18n) all built. Backend gap found and closed:
+`UploadView` never returned field specs for the mapping table — added `entity_fields`/`label_key`
+to its response (`erp/imports/api/views.py`), covered by an extended assertion in
+`test_full_lifecycle_upload_through_execute_and_report`. Also added `ApiError.data` passthrough
+(`apps/web/src/api/client.ts`) so the wizard can read the server's `message_key` for the .xls/empty-
+file designed errors. New client is `api/smartImports.ts`, not `api/imports.ts` — that name was
+already the older per-list CSV-import dialog's client (`components/ImportDialog.tsx`), unrelated and
+still active; collision avoided by naming, not by touching it. Found and fixed a stray leaf-migration
+split in `identity` (0012 vs 0013, both off 0011 — the other lane's assistant-posting toggle vs this
+lane's bilingual-department-names work) blocking every test in the repo; resolved via
+`makemigrations --merge` (0015), zero data/schema conflict, `pytest erp/identity` still 85/85.
+**Two real bugs found and fixed only by live-browser testing** (both would have shipped broken
+behind green pytest): (1) two separate `<Route>` entries for `/imports/new` and `/imports/:id`
+looked equivalent but aren't — React Router remounts on a route-entry change even when both render
+the same component, wiping all local wizard state the instant upload finished. Fixed by collapsing
+to one `<Route path="/imports/:id">` with `"new"` as the literal no-batch sentinel. (2) Even after
+that fix, `AppShell` keys its page providers on `location.pathname` app-wide (a deliberate existing
+pattern, not a bug) — so ANY pathname change remounts the page, not just a route-entry change.
+Redesigned around it: Upload and Map now share one URL (no navigate between them); the URL only
+moves to `/imports/{id}` once mapping succeeds, at which point the batch object is fully
+server-persisted so a remount costs nothing. Live-verified end-to-end in a real browser against the
+real API (file input has no native drag-drop/file-picker automation in this harness, so the upload
+was dispatched via a synthetic `File`/`DataTransfer`/`change` event — same code path a real drop
+takes): upload → candidate chooser (customers/suppliers tie, confidence pills correct) → select
+customers → mapping table (auto-suggested `name`/`code`, "Email" correctly left ignored) → Continue
+→ stats screen ("2 customers") → hard reload on the resulting `/imports/{id}` URL → same stats
+screen (refresh-safe, proven). RTL confirmed live (Arabic default); LTR/English NOT click-through
+verified this session (only code-reviewed: `imports.css` has zero physical `left`/`right`
+properties, same logical-CSS pattern as every other page) — flag this as the one unclosed smoke-test
+item. `.xls`-rejection and save-then-reuse-profile paths are implemented but also not live-clicked
+this session (time budget) — logic mirrors the already-tested candidate/mapping paths closely.
+Backend gates 00–02, 04–17 all green; `pytest erp/imports` 333/333, `pytest erp/identity` 85/85;
+i18n parity 2333 keys. **gate03/full-repo `tsc -b` currently blocked by an unrelated, actively-
+in-progress concurrent-session refactor** (a `showForm`-toggle removal touching ~10 list pages, none
+of them mine) — isolated re-check (`tsc -b --force` filtered to this session's files) confirms zero
+errors in every file this session touched; one full clean `npm run build`/gate03 pass was captured
+earlier in the session before that churn escalated. **Also found: a concurrent-session commit
+(`1f6e745`, local-only, NOT pushed to `origin/main`) accidentally sweep-committed this session's
+in-progress (pre-bugfix) import-wizard files alongside its own unrelated money-formatting work** —
+not destructive (this session's working tree already carries the corrected version as an uncommitted
+diff on top), not touched/rewritten by this session (not this session's commit to rewrite), flagging
+for founder awareness/commit-hygiene, not auto-fixed. **File not renamed `_done`** — LTR click-
+through, `.xls` error state, and profile-reuse flow remain for a closing pass before FILE_12 can be
+marked complete; FILE_13 (Preview/Fix UI) is next either way.
 
 **A14 (2026-07-19, same A session):** `brand-philosophy-review` Session A (app frame + global
 states) — spot-check pass, not the full matrix. Both systemic findings seeded in the scorecard

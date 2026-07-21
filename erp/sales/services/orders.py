@@ -414,6 +414,8 @@ def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
     bus.publish(events.ORDER_INVOICED, {
         "order": order.number, "invoice": entry.number,
         "customer_code": order.customer.code, "customer_name": order.customer.name,
+        "customer_tax_registration_number": order.customer.tax_registration_number,
+        "customer_national_id": order.customer.national_id,
         "date": dt.date.today().isoformat(), "currency": order.currency,
         "tax_code": order.tax_code, "net_minor": net, "tax_minor": vat, "total_minor": gross,
         # Branch of the source order (a business key — subscribers never FK into sales) so the

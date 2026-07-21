@@ -17,6 +17,12 @@ class Customer(AuditedModel):
     # Credit limit in minor units; 0 means unlimited.
     credit_limit_minor = models.BigIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    # ETA e-invoice receiver identity. A business customer carries a tax registration number; a
+    # customer who has none is identified by their national ID instead (the fallback the ETA
+    # clearance model requires for a named receiver). Both optional — a walk-in/cash customer under
+    # the reporting threshold needs neither. Egyptian national ID is 14 digits.
+    tax_registration_number = models.CharField(max_length=32, blank=True, default="")
+    national_id = models.CharField(max_length=14, blank=True, default="")
     # Admin-defined extra fields (erp.core.custom_fields) — validated at write time.
     custom_data = models.JSONField(default=dict, blank=True)
 

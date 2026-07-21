@@ -2686,3 +2686,146 @@ only), and Settings → E-Invoicing in the web app. "Test connection" proves **a
 against ETA (real `eta_client.fetch_token`) — it does NOT submit a document, because the submission
 adapter is still simulated (`eta_adapter.SIMULATED = True`). The UI states this plainly so the
 screen never claims live filing before FILE_02 lands.
+
+## einvoice: real ETA submission adapter — live when configured, stub otherwise (2026-07-21, FILE_02)
+
+`einvoice-eta-live/FILE_02`. The stub `eta_adapter.submit()` now has a real live path alongside the
+simulated one, behind the same seam (`document_hash` / `submit` / `query`). Decisions:
+
+**1. Contract verified against the official SDK, not memory** (plan locked decision #4). Verified
+2026-07-21 against https://sdk.invoicing.eta.gov.eg — Invoice **v1.0** document schema
+(`/documents/invoice-v1-0/`), submit endpoint `POST {api_base}/api/v1.0/documentsubmissions/` with
+body `{"documents":[<doc>]}` → 202 `{submissionUUID, acceptedDocuments:[{uuid,longId,internalId}],
+rejectedDocuments:[{internalId,error:{code,message,…}}]}` (`/einvoicingapi/01-submit-documents/`),
+and details `GET .../api/v1.0/documents/{uuid}/details` → `status` ∈ submitted|valid|invalid|
+rejected|cancelled (`/einvoicingapi/11-get-document-details/`). Treat as volatile — re-verify at
+go-live; the base URL is operator config (`ETA_API_BASE_URL`), not hard-coded.
+
+**2. `SIMULATED` constant → `eta_adapter.is_live()` function.** Liveness is now runtime, not a code
+constant: True only when credentials are present **and** `api_base_url` is set (auth-only config
+from FILE_01 is not enough to submit). The UI "simulated" flag (`/api/einvoice/config`) is now
+`not is_live()`, so configuring + enabling ETA in-app flips the app to real submission with no code
+change — which is the whole point of the admin-config pivot. Claims discipline holds: while not
+live, `query()` still can't return `valid`.
+
+**3. One consolidated invoice line.** `ETAInvoice` stores aggregates only and no cross-module FK
+(gate10 event-decoupling), so the live document carries a single line built from net/tax/total
+rather than reaching into sales for line detail. Header/line/tax totals reconcile per ETA's
+validation rules. A future enrichment (real per-line data) would need line storage on the event
+payload — deliberately out of scope here.
+
+**4. Money converts at this edge only.** Internally integer minor units (piasters); the ETA document
+carries decimal EGP (`Decimal(minor)/100`). VAT is emitted as `taxType "T1"`, `subType "V009"`
+(standard-rate default), `rate = tax/net`.
+
+**5. Idempotency + failure classification.** An invoice already `submitted` with a `uuid` is never
+re-sent (avoids ETA's 422 duplicate). A **transient** failure (network / 5xx / 429 / unreadable
+response) returns `retryable=True` and leaves the invoice submittable — only a real ETA **rejection**
+marks it `rejected`. New fields `long_id` (ETA long ID) + `submission_uuid` (batch) on `ETAInvoice`
+(migration `0004`); the document `uuid` column now holds a 26-char ETA UUID live (64-char local hash
+while simulated).
+
+**6. Issuer tax profile is env-only for now** (`ETA_ISSUER_NAME` / `ETA_ACTIVITY_CODE` /
+`ETA_BRANCH_ID` / `ETA_ISSUER_*` address). Not a secret; read from env in both DB and env config
+modes (no DB columns yet — a follow-up admin-config slice may move it in-app). No new dependency: the
+document call reuses stdlib `urllib` in `eta_client` (same reasoning as FILE_01, locked decision #5).
+
+**STILL STOP-GATED — a *validating* live submission is not provable solo.** It needs (a) real ETA
+pre-production credentials, (b) the company tax profile (issuer name/activity/address + the receiver
+customer's tax registration number), and (c) document **signing** (FILE_03) — ETA rejects unsigned
+documents. The adapter is proven against the documented contract with mocked responses
+(`tests/test_adapter.py`, 66 einvoice tests + gate10 green); the sandbox round-trip is the acceptance
+step the moment the founder provides creds + profile. This matches the plan's own STOP-gate.
+
+## einvoice: learned CAdES/serialization from a production integration; canonical.py landed (2026-07-21, FILE_03 groundwork)
+
+Studied a **production ETA integration** the founder supplied — `Docs/E-Invoice/` (the "Wadi" Java
+desktop signer over Oracle E-Business Suite; **not our client**, a learning reference only). It has a
+real, ETA-accepted CAdES-BES signer, so it settles the details our own SDK contract-read couldn't.
+What we took (understanding, not code — we build our own on the Conductor stack):
+
+**1. The signing recipe (unblocks FILE_03).** ETA CAdES-BES **detached**:
+- Sign over the **canonical serialization**, not the raw JSON. SHA-256 of the UTF-8 serialized string
+  is the CMS **content**.
+- Signed attributes: `contentType` = **`digestedData`** OID `1.2.840.113549.1.7.5` (the ETA quirk —
+  *not* the default `id-data`), `messageDigest`, and **`SigningCertificateV2`** (ESSCertIDv2, sha256).
+  **No `signingTime` attribute** (the reference builds one but deliberately omits it — BES).
+- `SHA256withRSA`, signer cert embedded, detached CMS. Base64 → `signatures[].value`,
+  `signatureType = "I"` (issuer). `documentTypeVersion 0.9` = unsigned (legacy); 1.0 must be signed.
+
+**2. Canonical serialization — built now as `services/canonical.py`** (its input, fully unblocked).
+Official ETA JSON algorithm, verified 2026-07-21 vs `/document-serialization-approach/`: property
+names culture-invariant **UPPERCASE** + quoted; simple values quoted **including numbers** (wire
+token, so json-rendered — matches what `eta_client` submits); an **array repeats its plural property
+name before every element** (`"TAXTOTALS""TAXTOTALS"<e1>"TAXTOTALS"<e2>`); the `signatures` property is
+**excluded**. Note the reference serializes from **XML** (singular child tags, `TAXTOTAL`) and escapes
+`"`→`\"`; our transport is **JSON**, so we follow the JSON spec (plural repeat) — the one divergence,
+and why we did **not** copy the reference verbatim. Pinned by 10 golden vectors (`test_canonical.py`);
+`pytest erp/einvoice` 76 passed, gate10 green.
+
+**3. Signing key location — decision.** The reference's key lives on a **hardware PKCS#11 USB token**
+(`SunPKCS11` + per-issuer `Token_*.cfg`). That does not fit a Django server. **Founder-approved: build
+Option A — server-side soft cert (PKCS#12 / HSM)**, same CAdES-BES output, pluggable key source, all
+in Python. `pyhanko` / `asn1crypto` approved as new deps for the CMS/CAdES structure (project no-new-dep
+rule waived for this). The `eta_adapter` seam already isolates the signer to one function.
+
+**4. Contract refinements from a live system.** Env path version **differs**: preprod = `/api/v1/`,
+prod = `/api/v1.0/` (our earlier locked fact was prod-only). Login = `POST {id-host}/connect/token`,
+`grant_type=client_credentials`, **HTTP Basic** header (`clientId:secret` base64) → `access_token`.
+Status poll has two endpoints: `GET documentsubmissions/{uuid}` → `overallStatus`, and
+`GET documents/{uuid}/details` → per-doc `status` + `validationResults.validationSteps[].error.
+innerError[].error` (FILE_04 reconciliation input). Response parse (`submissionId`,
+`acceptedDocuments[].{uuid,longId,internalId}`, `rejectedDocuments[].error.details[].message`)
+**confirms** our migration-0004 fields and `_parse_submission` exactly. The Oracle PL/SQL side confirms
+calc rules: round **5 decimals**; EGP → `amountEGP=price, amountSold=0`, else `amountEGP=price×rate`;
+line `salesTotal=qty×amountEGP`, `netTotal=salesTotal−discount`, `tax=rate×net/100`,
+`total=net+tax−itemsDiscount`; invoice `total = Σlines − extraDiscount`; taxTotals grouped by taxType.
+
+**Still STOP-gated:** signature *validity* is only provable at the live sandbox (real cert + creds).
+canonical.py and the coming signing.py are proven solo with golden vectors + a self-signed test cert.
+
+## einvoice: FILE_03 signing built — services/signing.py, CAdES-BES over canonical (2026-07-21)
+
+Implemented the recipe above as `erp/einvoice/services/signing.py`. **Detached CAdES-BES CMS** over
+`canonical.signing_hash` (SHA-256 of the canonical serialized string): signed attrs = `contentType`
+**digestedData** OID `1.2.840.113549.1.7.5` (ETA quirk, *not* id-data — also the detached
+eContentType), `messageDigest`, `SigningCertificateV2` (ESSCertIDv2/SHA-256, issuer+serial); **no
+signingTime** (BES); `rsassa_pkcs1v15` (SHA256withRSA); signer cert embedded; detached (no eContent).
+Base64 → `build_document` `signatures[] = [{signatureType:"I", value:<b64 CMS>}]`. `build_document`
+signs when a cert is configured, else `signatures==[]` (pure-mapping/unconfigured path preserved — old
+shape tests untouched).
+
+**Dep decision — asn1crypto only, NOT pyhanko.** The plan pre-approved `pyhanko`+`asn1crypto`;
+shipped with **`asn1crypto`** (CMS ASN.1 structures) + **`cryptography`** (PKCS#12 load + RSA/SHA-256,
+already transitive via google-auth, now a direct req). `pyhanko` dropped — it targets **PDF** signing
+and is a large dependency for structures asn1crypto models directly. Smaller surface, same CAdES-BES
+output. Both added to `requirements.in` (`asn1crypto>=1.5,<2.0`, `cryptography>=44,<50`).
+
+**Key material — Option A soft cert, external to repo.** PKCS#12 sourced from settings:
+`ETA_SIGNING_PFX_PATH` (file outside VCS) or `ETA_SIGNING_PFX_BASE64` (secret manager) +
+`ETA_SIGNING_PFX_PASSWORD`. Isolated to `signing.py` — the private key never rides on `ETAConfig` or
+the document dict, never logged. No key material committed; tests generate a self-signed cert in-memory.
+
+**Proven solo:** `test_signing.py` (7) — CMS structure matches the recipe (digestedData, messageDigest
+== canonical hash, SigningCertificateV2 present, **no signingTime**, detached, cert embedded), the RSA
+signature verifies back with the public key and **breaks on a tampered byte**, unconfigured → `[]`,
+configured → signed `build_document`. `pytest erp/einvoice` **83 passed**, gate10 green. **Still
+STOP-gated:** signature *validity* only provable at the live ETA sandbox (real cert + creds).
+
+## einvoice: customer tax-reg/national-id wired into the ETA receiver (2026-07-21)
+
+`build_document`'s receiver block used to fall back to the customer **code** as `receiver.id` (never
+a real ETA identity). Now: `Customer.tax_registration_number` → receiver type **"B"**, id = tax reg;
+else `Customer.national_id` → type **"P"**, id = national id; else type **"P"**, id = `""` (a
+walk-in/cash sale under the ETA reporting threshold, EGP 50,000, may post with no receiver id per the
+SDD — `build_document` does not enforce the cap itself, that is a submission-time/UI concern).
+
+Plumbing: `sales.services.orders.invoice_order` now publishes `customer_tax_registration_number` +
+`customer_national_id` on `ORDER_INVOICED` (from `Customer`, migration 0011) → `einvoice.handlers`
+reads them into `EInvoiceInput` → `ETAInvoice` gained the two fields (migration 0005) → `issue._document`
+carries them → `eta_adapter.build_document` reads the receiver block from there. No cross-module FK —
+values travel by event payload only (gate10).
+
+Tests: `test_adapter.py` — tax-reg→type B, national-id-only→type P, neither→type P/empty id; existing
+shape test updated (receiver no longer equals the customer code). `pytest erp/einvoice erp/sales`
+**185 passed**, gate10 green, django check clean.

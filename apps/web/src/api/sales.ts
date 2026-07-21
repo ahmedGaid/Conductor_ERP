@@ -18,6 +18,8 @@ export interface Customer {
   name: string;
   credit_limit_minor: number;
   is_active: boolean;
+  tax_registration_number: string;
+  national_id: string;
   custom_data: Record<string, unknown>;
 }
 
@@ -65,6 +67,8 @@ export function createCustomer(payload: {
   code: string;
   name: string;
   credit_limit_minor?: number;
+  tax_registration_number?: string;
+  national_id?: string;
   custom_data?: Record<string, unknown>;
 }): Promise<Customer> {
   return apiFetch<Customer>("/sales/customers", { method: "POST", body: JSON.stringify(payload) });

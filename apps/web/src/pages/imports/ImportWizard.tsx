@@ -25,19 +25,19 @@ interface Detected {
 
 type Phase =
   | { kind: "upload" }
-  | { kind: "resuming" }
   | { kind: "map"; detected: Detected }
+  | { kind: "resuming" }
   | { kind: "stats"; batch: ImportBatch }
   | { kind: "lost" };
 
 function stepFor(phase: Phase): StepKey {
   switch (phase.kind) {
     case "upload":
-    case "resuming":
-    case "lost":
       return "upload";
     case "map":
       return "map";
+    case "resuming":
+    case "lost":
     case "stats":
       return "review";
   }
@@ -47,33 +47,29 @@ function stepFor(phase: Phase): StepKey {
  * Upload -> Detect -> Map -> (stats). The last two rail steps (Review, Import) are filled in a
  * later session (FILE_13/14) — the stats summary shown after mapping is this session's stand-in
  * for Review, not the real review grid.
+ *
+ * `AppShell` keys its page providers on `location.pathname` (app-wide, for a clean per-page reset)
+ * — ANY pathname change remounts this component and wipes local state/refs. Upload and Map both
+ * therefore stay on the one `/imports/new` URL (no navigate between them); the URL only moves to
+ * `/imports/{id}` once mapping succeeds, at which point the batch object on the server is the
+ * complete, sufficient source of truth — a remount there costs nothing.
  */
 export function ImportWizard() {
   const { t } = useTranslation();
-  const { id } = useParams<{ id?: string }>();
+  const { id: rawId } = useParams<{ id: string }>();
+  const batchId = rawId && rawId !== "new" ? rawId : undefined;
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<Phase>(id ? { kind: "resuming" } : { kind: "upload" });
+  const [phase, setPhase] = useState<Phase>(batchId ? { kind: "resuming" } : { kind: "upload" });
 
   useEffect(() => {
-    if (!id) {
-      setPhase({ kind: "upload" });
-      return;
-    }
-    setPhase((cur) => {
-      if (cur.kind === "map" && cur.detected.upload.batch_id === id) return cur;
-      if (cur.kind === "stats" && cur.batch.id === id) return cur;
-      return { kind: "resuming" };
-    });
-  }, [id]);
-
-  useEffect(() => {
-    if (phase.kind !== "resuming" || !id) return;
+    if (!batchId || phase.kind !== "resuming") return;
     let cancelled = false;
-    getImportBatch(id)
+    getImportBatch(batchId)
       .then((batch) => {
         if (cancelled) return;
         // Headers/samples only ever live in the upload response, never persisted on the batch —
-        // a hard reload mid-mapping can't reconstruct the mapping table, only what came after it.
+        // this path (a batch id already in the URL) only exists once mapping is done, so a
+        // "mapping" status here means something went wrong server-side, not a normal reload.
         setPhase(batch.status === "mapping" ? { kind: "lost" } : { kind: "stats", batch });
       })
       .catch(() => {
@@ -82,19 +78,18 @@ export function ImportWizard() {
     return () => {
       cancelled = true;
     };
-  }, [phase.kind, id]);
+  }, [phase.kind, batchId]);
 
-  const onDetected = useCallback(
-    (detected: Detected) => {
-      setPhase({ kind: "map", detected });
-      navigate(`/imports/${detected.upload.batch_id}`, { replace: true });
+  const onDetected = useCallback((detected: Detected) => {
+    setPhase({ kind: "map", detected });
+  }, []);
+
+  const onMapped = useCallback(
+    (result: ImportMappingResult) => {
+      navigate(`/imports/${result.batch.id}`, { replace: true });
     },
     [navigate],
   );
-
-  const onMapped = useCallback((result: ImportMappingResult) => {
-    setPhase({ kind: "stats", batch: result.batch });
-  }, []);
 
   const activeStep = stepFor(phase);
   const activeIndex = STEPS.indexOf(activeStep);

@@ -102,6 +102,7 @@ function InteractiveMapping({ upload, entity, profile, onMapped }: MapModeProps)
   const { t } = useTranslation();
   const toast = useToast();
   const fields: ImportFieldSpec[] = upload.entity_fields[entity] ?? [];
+  const validFieldNames = new Set(fields.map((f) => f.name));
   const requiredFields = fields.filter((f) => f.required);
   const optionalFields = fields.filter((f) => !f.required);
   const fieldLabel = (name: string) => t(`imports.field.${name}`, name);
@@ -113,9 +114,14 @@ function InteractiveMapping({ upload, entity, profile, onMapped }: MapModeProps)
       for (const [field, column] of Object.entries(profile.mapping)) inverted[column] = field;
       return inverted;
     }
+    // `upload.mapping_suggestion` is computed server-side against the *top detected candidate*
+    // only (see UploadView) — when the user picks a different candidate from the chooser, a
+    // suggested field may not exist on the chosen entity at all. Only seed fields the chosen
+    // entity actually has; anything else silently becomes a phantom mapping that Continue's
+    // POST would reject with an inscrutable "unknown fields" error.
     const initial: Record<string, string> = {};
     for (const [column, suggestion] of Object.entries(upload.mapping_suggestion)) {
-      if (suggestion.field) initial[column] = suggestion.field;
+      if (suggestion.field && validFieldNames.has(suggestion.field)) initial[column] = suggestion.field;
     }
     return initial;
   });
@@ -221,7 +227,11 @@ function InteractiveMapping({ upload, entity, profile, onMapped }: MapModeProps)
                     </select>
                   </td>
                   <td>
-                    {suggestion?.field ? <ConfidencePill confidence={suggestion.confidence} /> : <span className="muted">—</span>}
+                    {suggestion?.field && validFieldNames.has(suggestion.field) ? (
+                      <ConfidencePill confidence={suggestion.confidence} />
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
                   </td>
                 </tr>
               );

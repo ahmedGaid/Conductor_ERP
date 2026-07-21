@@ -1186,6 +1186,12 @@
       "add": "Add customer",
       "unlimited": "Unlimited",
       "viewOrders": "View orders",
+      "taxRegistrationNumber": "Tax registration number",
+      "nationalId": "National ID",
+      "optional": "Optional",
+      "nationalIdHint": "14 digits, if no tax number",
+      "nationalIdInvalid": "The national ID must be 14 digits.",
+      "taxRegInvalid": "The tax registration number must be digits only.",
       "empty": "No customers yet.",
       "emptyHint": "Add your first customer using the form above."
     },
