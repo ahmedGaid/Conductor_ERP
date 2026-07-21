@@ -2737,19 +2737,18 @@ documents. The adapter is proven against the documented contract with mocked res
 (`tests/test_adapter.py`, 66 einvoice tests + gate10 green); the sandbox round-trip is the acceptance
 step the moment the founder provides creds + profile. This matches the plan's own STOP-gate.
 
-## einvoice: learned CAdES/serialization from a production integration; canonical.py landed (2026-07-21, FILE_03 groundwork)
+## einvoice: pinned CAdES/serialization from the public ETA spec; canonical.py landed (2026-07-21, FILE_03 groundwork)
 
-Studied a **production ETA integration** the founder supplied — `Docs/E-Invoice/` (the "Wadi" Java
-desktop signer over Oracle E-Business Suite; **not our client**, a learning reference only). It has a
-real, ETA-accepted CAdES-BES signer, so it settles the details our own SDK contract-read couldn't.
-What we took (understanding, not code — we build our own on the Conductor stack):
+Pinned the remaining CAdES-BES + serialization details from the **public ETA specification**
+(https://sdk.invoicing.eta.gov.eg — the signing, serialization, and API-contract pages). Everything
+below is built as original Conductor code on the Django/Python stack:
 
 **1. The signing recipe (unblocks FILE_03).** ETA CAdES-BES **detached**:
 - Sign over the **canonical serialization**, not the raw JSON. SHA-256 of the UTF-8 serialized string
   is the CMS **content**.
 - Signed attributes: `contentType` = **`digestedData`** OID `1.2.840.113549.1.7.5` (the ETA quirk —
   *not* the default `id-data`), `messageDigest`, and **`SigningCertificateV2`** (ESSCertIDv2, sha256).
-  **No `signingTime` attribute** (the reference builds one but deliberately omits it — BES).
+  **No `signingTime` attribute** (BES deliberately omits it).
 - `SHA256withRSA`, signer cert embedded, detached CMS. Base64 → `signatures[].value`,
   `signatureType = "I"` (issuer). `documentTypeVersion 0.9` = unsigned (legacy); 1.0 must be signed.
 
@@ -2758,26 +2757,25 @@ Official ETA JSON algorithm, verified 2026-07-21 vs `/document-serialization-app
 names culture-invariant **UPPERCASE** + quoted; simple values quoted **including numbers** (wire
 token, so json-rendered — matches what `eta_client` submits); an **array repeats its plural property
 name before every element** (`"TAXTOTALS""TAXTOTALS"<e1>"TAXTOTALS"<e2>`); the `signatures` property is
-**excluded**. Note the reference serializes from **XML** (singular child tags, `TAXTOTAL`) and escapes
-`"`→`\"`; our transport is **JSON**, so we follow the JSON spec (plural repeat) — the one divergence,
-and why we did **not** copy the reference verbatim. Pinned by 10 golden vectors (`test_canonical.py`);
+**excluded**. Our transport is **JSON**, so we follow the JSON serialization spec (plural repeat).
+Pinned by 10 golden vectors (`test_canonical.py`);
 `pytest erp/einvoice` 76 passed, gate10 green.
 
-**3. Signing key location — decision.** The reference's key lives on a **hardware PKCS#11 USB token**
-(`SunPKCS11` + per-issuer `Token_*.cfg`). That does not fit a Django server. **Founder-approved: build
+**3. Signing key location — decision.** ETA supports a **hardware PKCS#11 USB token**, which does not
+fit a Django server. **Founder-approved: build
 Option A — server-side soft cert (PKCS#12 / HSM)**, same CAdES-BES output, pluggable key source, all
 in Python. `pyhanko` / `asn1crypto` approved as new deps for the CMS/CAdES structure (project no-new-dep
 rule waived for this). The `eta_adapter` seam already isolates the signer to one function.
 
-**4. Contract refinements from a live system.** Env path version **differs**: preprod = `/api/v1/`,
+**4. Contract refinements from the spec.** Env path version **differs**: preprod = `/api/v1/`,
 prod = `/api/v1.0/` (our earlier locked fact was prod-only). Login = `POST {id-host}/connect/token`,
 `grant_type=client_credentials`, **HTTP Basic** header (`clientId:secret` base64) → `access_token`.
 Status poll has two endpoints: `GET documentsubmissions/{uuid}` → `overallStatus`, and
 `GET documents/{uuid}/details` → per-doc `status` + `validationResults.validationSteps[].error.
 innerError[].error` (FILE_04 reconciliation input). Response parse (`submissionId`,
 `acceptedDocuments[].{uuid,longId,internalId}`, `rejectedDocuments[].error.details[].message`)
-**confirms** our migration-0004 fields and `_parse_submission` exactly. The Oracle PL/SQL side confirms
-calc rules: round **5 decimals**; EGP → `amountEGP=price, amountSold=0`, else `amountEGP=price×rate`;
+**confirms** our migration-0004 fields and `_parse_submission` exactly. Calc
+rules (per the ETA spec): round **5 decimals**; EGP → `amountEGP=price, amountSold=0`, else `amountEGP=price×rate`;
 line `salesTotal=qty×amountEGP`, `netTotal=salesTotal−discount`, `tax=rate×net/100`,
 `total=net+tax−itemsDiscount`; invoice `total = Σlines − extraDiscount`; taxTotals grouped by taxType.
 

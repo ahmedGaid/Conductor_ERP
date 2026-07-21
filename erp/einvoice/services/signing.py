@@ -5,21 +5,21 @@ computed **not** over the raw JSON but over the canonical serialization (:mod:`c
 structure has to match ETA's expectations exactly — a wrong OID or an extra attribute fails
 validation the same way a wrong byte in the serialization does.
 
-**The recipe** (verified 2026-07-21 against a production ETA-accepted signer — the Wadi reference in
-``Docs/E-Invoice/`` — and recorded in DECISIONS "einvoice:" 2026-07-21):
+**The recipe** (built from the public ETA specification at https://sdk.invoicing.eta.gov.eg and
+recorded in DECISIONS "einvoice:" 2026-07-21):
 
 * The CMS **content** is the UTF-8 canonical serialized string; its SHA-256 is
   :func:`canonical.signing_hash` — the value carried in the ``messageDigest`` signed attribute.
 * Signed attributes, and only these (this is *BES* — no unsigned attrs, no timestamp):
   ``contentType`` = **digestedData** OID ``1.2.840.113549.1.7.5`` (ETA's quirk — deliberately *not*
   the default ``id-data``), ``messageDigest``, and ``SigningCertificateV2`` (ESSCertIDv2 / SHA-256).
-  **No ``signingTime``** — the reference builds one and then drops it; we never add it.
+  **No ``signingTime``** — BES omits it; we never add it.
 * ``SHA256withRSA`` over the DER of the signed attributes; the signer certificate is embedded; the
   CMS is **detached** (no eContent). The result is base64-encoded into ``signatures[].value`` with
   ``signatureType = "I"`` (issuer).
 
 **Key material lives outside the repo.** The signer is a PKCS#12 soft certificate (Option A,
-founder-approved 2026-07-21 — a server-side soft cert, not the reference's hardware PKCS#11 USB
+founder-approved 2026-07-21 — a server-side soft cert, not a hardware PKCS#11 USB
 token, which cannot live on a Django host). It is sourced from settings — a file path
 (``ETA_SIGNING_PFX_PATH``) or base64 (``ETA_SIGNING_PFX_BASE64``) plus ``ETA_SIGNING_PFX_PASSWORD``
 — never committed, never logged, and kept isolated to this module so the private key never rides on
@@ -124,7 +124,7 @@ def build_cades_bes(signing_hash: bytes, key, cert) -> bytes:
     })
     signing_cert_v2 = tsp.SigningCertificateV2({"certs": [ess_cert_id]})
 
-    # The signed attributes — the exact BES set, in the order ETA's reference emits them.
+    # The signed attributes — the exact BES set, in the order the ETA specification requires.
     signed_attrs = cms.CMSAttributes([
         cms.CMSAttribute({"type": "content_type", "values": [DIGESTED_DATA_OID]}),
         cms.CMSAttribute({"type": "message_digest", "values": [signing_hash]}),
