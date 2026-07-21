@@ -12,14 +12,19 @@ from rest_framework.views import APIView
 
 from erp.core.exports import EXPORT_FORMATS, Column, ReportTable, export_response
 from erp.identity.permissions import HasAnyRole
-from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
+from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER, SYSTEM_ADMIN
 from erp.identity.scoping import scope_queryset
 
 from .. import services
-from ..domain.models import ETAInvoice
-from .serializers import ETAInvoiceSerializer
+from ..domain.models import ETAInvoice, ETASettings
+from ..services import config as eta_config
+from ..services import eta_adapter
+from .serializers import ETAInvoiceSerializer, ETASettingsUpdateSerializer
 
 _CanFile = HasAnyRole.require(ACCOUNTANT, BRANCH_MANAGER)
+# Connection configuration is a system-administration surface (it holds a credential), not a
+# day-to-day filing action — so it is gated tighter than the invoice list/submit views.
+_CanConfigure = HasAnyRole.require(SYSTEM_ADMIN)
 
 
 def _scoped(request: Request):
@@ -94,3 +99,55 @@ class ETAInvoiceSubmitView(_ETAActionView):
 
 class ETAInvoicePollView(_ETAActionView):
     action = "poll_invoice"
+
+
+def _config_payload() -> dict:
+    """The admin view of ETA connection settings — every value except the secret.
+
+    Shows the stored row (so the form repopulates) alongside the resolver's verdict (``source``,
+    ``configured``, ``missing``) and whether the submission adapter is still simulated — so the UI
+    can never claim more than the integration actually does."""
+    row = ETASettings.load()
+    cfg = eta_config.effective_config()
+    return {
+        "environment": row.environment,
+        "identity_url": row.identity_url,
+        "api_base_url": row.api_base_url,
+        "client_id": row.client_id,
+        "rin": row.rin,
+        "enabled": row.enabled,
+        "has_secret": row.has_secret,   # presence only — the secret itself never leaves the server
+        "last_test_ok_at": row.last_test_ok_at.isoformat() if row.last_test_ok_at else None,
+        "source": cfg.source,           # "database" | "environment" | "none"
+        "configured": not eta_config.missing_fields(cfg),
+        "missing": eta_config.missing_setting_names(cfg),
+        "simulated": eta_adapter.SIMULATED,  # True until the real submission adapter (FILE_02) lands
+    }
+
+
+class ETAConfigView(APIView):
+    """``GET``/``PUT /api/einvoice/config`` — System-Admin-only ETA connection settings.
+
+    The client secret is write-only: accepted on ``PUT``, never returned on ``GET``."""
+
+    permission_classes = [IsAuthenticated, _CanConfigure]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(_config_payload())
+
+    def put(self, request: Request) -> Response:
+        serializer = ETASettingsUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        eta_config.apply_admin_update(serializer.validated_data, actor=request.user)
+        return _envelope(_config_payload())
+
+
+class ETAConfigTestView(APIView):
+    """``POST /api/einvoice/config/test`` — try to authenticate against ETA with the config in force
+    and report the outcome. Proves *credentials + reachability* only; it does not submit a document
+    (the submission adapter is a later step)."""
+
+    permission_classes = [IsAuthenticated, _CanConfigure]
+
+    def post(self, request: Request) -> Response:
+        return _envelope(eta_config.test_connection())

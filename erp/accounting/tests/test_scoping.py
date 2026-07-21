@@ -13,6 +13,7 @@ from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from erp.accounting.services import JournalInput, LineInput, post_journal
+from erp.accounting.services.posting import create_draft_journal
 from erp.core.models import Branch
 from erp.identity.models import RolePermission, User
 from erp.identity.roles import BRANCH_MANAGER
@@ -74,3 +75,27 @@ def test_journal_list_and_detail_are_branch_scoped():
     assert client.get(f"/api/accounting/journals/{entry_a.id}").status_code == 200
     # Out of scope reads as absent — 404, never 403 (existence must not leak).
     assert client.get(f"/api/accounting/journals/{entry_b.id}").status_code == 404
+
+
+def test_post_draft_out_of_scope_is_404():
+    """Posting a draft is scoped exactly like reading it: a manager cannot post another branch's
+    draft — it 404s (absent), never 403 (existence must not leak)."""
+    make_coa()
+    make_period()
+    a = Branch.objects.create(code="BR-A", name="Alpha")
+    b = Branch.objects.create(code="BR-B", name="Beta")
+    mgr_a = _manager("mgr_a", a)
+    mgr_b = _manager("mgr_b", b)
+    draft_a = create_draft_journal(
+        JournalInput(date=DATE, memo="draft", lines=[
+            LineInput(account_code="1000", debit=100_00),
+            LineInput(account_code="4000", credit=100_00),
+        ]),
+        actor=mgr_a,
+    )
+
+    client = APIClient()
+    client.force_authenticate(user=mgr_b)
+    assert client.post(f"/api/accounting/journals/{draft_a.id}/post").status_code == 404
+    draft_a.refresh_from_db()
+    assert draft_a.status == "draft"  # untouched

@@ -1253,6 +1253,12 @@
   font-size: var(--font-size-sm);
   color: var(--color-danger);
 }
+.action-card__retype {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
 .action-card__foot {
   display: flex;
   gap: var(--space-2);

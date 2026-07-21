@@ -12,6 +12,7 @@ urlpatterns = [
     path("periods/<str:code>/close", views.PeriodCloseView.as_view(), name="period-close"),
     path("journals", views.JournalListPostView.as_view(), name="journal-list"),
     path("journals/<uuid:entry_id>", views.JournalDetailView.as_view(), name="journal-detail"),
+    path("journals/<uuid:entry_id>/post", views.JournalPostDraftView.as_view(), name="journal-post-draft"),
     path("reports/trial-balance", views.TrialBalanceView.as_view(), name="trial-balance"),
     path("reports/general-ledger", views.GeneralLedgerView.as_view(), name="general-ledger"),
     path("reports/income-statement", views.IncomeStatementView.as_view(), name="income-statement"),

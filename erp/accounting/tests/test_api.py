@@ -1,9 +1,13 @@
 """Accounting DRF API — accounts, journals, posting, reports, period lock, RBAC."""
 from __future__ import annotations
 
+import datetime as dt
+
 import pytest
 from rest_framework.test import APIClient
 
+from erp.accounting.services import JournalInput, LineInput
+from erp.accounting.services.posting import create_draft_journal
 from erp.identity.models import User
 
 pytestmark = pytest.mark.django_db
@@ -155,3 +159,42 @@ def test_accounting_requires_role():
 
 def test_requires_authentication():
     assert APIClient().get("/api/accounting/accounts").status_code == 401
+
+
+# --- Post a drafted journal entry (JournalPostDraftView) ----------------------------------------
+
+def _draft_entry(actor=None, amount=100_00):
+    """A DRAFT entry created straight through the service (no manual-draft endpoint exists yet)."""
+    return create_draft_journal(
+        JournalInput(date=dt.date(2026, 6, 15), memo="draft", lines=[
+            LineInput(account_code="1000", debit=amount),
+            LineInput(account_code="3000", credit=amount),
+        ]),
+        actor=actor,
+    )
+
+
+def test_post_draft_journal_via_api():
+    client = _admin_client()
+    _bootstrap(client)
+    entry = _draft_entry()
+    assert entry.status == "draft"
+
+    res = client.post(f"/api/accounting/journals/{entry.id}/post")
+    assert res.status_code == 200, res.data
+    assert res.data["data"]["status"] == "posted"
+    entry.refresh_from_db()
+    assert entry.status == "posted"
+
+
+def test_post_draft_journal_requires_accounting_role():
+    admin = _admin_client()
+    _bootstrap(admin)
+    entry = _draft_entry()
+
+    plain = User.objects.create_user(username="pd_nobody", email="pd_nobody@erp.local", password="Dev12345!")
+    client = APIClient()
+    client.force_authenticate(user=plain)
+    assert client.post(f"/api/accounting/journals/{entry.id}/post").status_code == 403
+    entry.refresh_from_db()
+    assert entry.status == "draft"  # a refused caller flips nothing

@@ -25,7 +25,7 @@ import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showPurchaseOrderReceipt, showPurchaseOrderError, type POActionKey, type POEvent } from "../../lib/feedback/purchasing";
 import { runOptimistic } from "../../lib/optimistic";
-import { formatMinor } from "../../lib/money";
+import { formatMinor, formatMoneyNumeral, formatQuantity } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
@@ -343,19 +343,19 @@ export function PurchaseOrderDetailPage() {
                 <th className="pur-table__num">{t("inventory.onHand.quantity")}</th>
                 <th className="pur-table__num">{t("purchasing.detail.received")}</th>
                 <th className="pur-table__num">{t("purchasing.detail.returnedQty")}</th>
-                <th className="pur-table__num">{t("purchasing.newOrder.unitCost")}</th>
-                <th className="pur-table__num">{t("sales.orders.total")}</th>
+                <th className="pur-table__num">{t("purchasing.newOrder.unitCost")} (EGP)</th>
+                <th className="pur-table__num">{t("sales.orders.total")} (EGP)</th>
               </tr>
             </thead>
             <tbody>
               {data.lines.map((l) => (
                 <tr key={l.line_no}>
                   <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
-                  <td className="pur-table__num"><Bdi>{l.quantity}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{l.received_qty}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{l.returned_qty}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatMinor(l.unit_cost_minor)}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatMinor(l.line_total_minor)}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatQuantity(l.quantity)}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatQuantity(l.received_qty)}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatQuantity(l.returned_qty)}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatMoneyNumeral(l.unit_cost_minor)}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatMoneyNumeral(l.line_total_minor)}</Bdi></td>
                 </tr>
               ))}
             </tbody>

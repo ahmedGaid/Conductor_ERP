@@ -21,6 +21,7 @@ from ..services.orders import (
 )
 from ..services.requests import (
     RequestLineInput,
+    approve_request,
 )
 from ..services.requests import (
     convert_request as _convert_request,
@@ -159,6 +160,48 @@ def find_requests(actor, *, query: str, limit: int = 8) -> list[dict]:
     ]
 
 
+def find_orders(actor, *, query: str, limit: int = 8) -> list[dict]:
+    """Find purchase orders by number or supplier — scoped to the actor, most recent first.
+    Carries lines + status so posting actions (receive/bill/pay) can build a proposal without a
+    second lookup (mirrors find_requests)."""
+    q = (query or "").strip()
+    qs = _scoped_orders(actor).select_related("supplier")
+    if q:
+        qs = qs.filter(
+            Q(number__icontains=q) | Q(supplier__name__icontains=q) | Q(supplier__code__icontains=q)
+        )
+    return [
+        {"id": str(o.id), "number": o.number, "supplier_code": o.supplier.code,
+         "supplier_name": o.supplier.name, "status": o.status,
+         "subtotal_minor": o.subtotal_minor, "received_minor": o.received_minor,
+         "billed_minor": o.billed_minor, "paid_minor": o.paid_minor,
+         "outstanding_minor": o.outstanding_minor,
+         "lines": [
+             {"line_no": ln.line_no, "item_sku": ln.item_sku, "quantity": str(ln.quantity),
+              "received_qty": str(ln.received_qty), "unit_cost_minor": ln.unit_cost_minor}
+             for ln in o.lines.all().order_by("line_no")
+         ]}
+        for o in qs.order_by("-order_date")[: max(1, min(limit, 20))]
+    ]
+
+
+def get_order(actor, order_id) -> PurchaseOrder | None:
+    """One purchase order (the ORM record) scoped to the actor — the loader a gated assistant
+    posting action uses to re-resolve a proposal's payload before writing (mirrors
+    ``accounting.get_journal_entry``). Deliberately does NOT prefetch ``lines``: ``receive_order``
+    mutates each line then re-reads the plain ``order.lines.all()`` expecting the fresh rows, and a
+    primed prefetch cache would hand it the pre-receipt snapshot instead. ``None`` if out of scope
+    or gone."""
+    return _scoped_orders(actor).filter(id=order_id).first()
+
+
+def get_request(actor, request_id) -> PurchaseRequest | None:
+    """One purchase request (the ORM record) scoped to the actor — the loader a gated assistant
+    posting action uses to re-resolve a proposal's payload before writing (mirrors ``get_order``).
+    ``None`` if out of scope or gone."""
+    return _scoped_requests(actor).filter(id=request_id).first()
+
+
 def _period_range(period: str) -> tuple[datetime.date, datetime.date, str]:
     today = datetime.date.today()
     if period == "last_month":
@@ -230,10 +273,14 @@ __all__ = [
     "place_request",
     "RequestLineInput",
     "find_requests",
+    "get_request",
+    "approve_request",
     "convert_purchase_request",
     "open_purchase_orders",
     "supplier_balances",
     "purchase_summary",
+    "find_orders",
+    "get_order",
     "POLineInput",
     "create_order",
     "place_order",

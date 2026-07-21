@@ -107,6 +107,20 @@ export function OrganizationPage() {
           />
         </SettingRow>
 
+        <SettingRow
+          title={t("settings.org.assistantPosting")}
+          desc={t("settings.org.assistantPostingDesc")}
+          htmlFor="org-assistant-posting"
+        >
+          <input
+            id="org-assistant-posting"
+            type="checkbox"
+            role="switch"
+            checked={org.assistant_posting_enabled}
+            onChange={(e) => save({ assistant_posting_enabled: e.target.checked })}
+          />
+        </SettingRow>
+
         <SettingRow title={t("settings.org.orderCancel")} desc={t("settings.org.orderCancelDesc")}>
           <Segmented
             ariaLabel={t("settings.org.orderCancel")}

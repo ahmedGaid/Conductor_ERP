@@ -20,7 +20,7 @@ import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showRequestReceipt, type RequestEvent } from "../../lib/feedback/purchasing";
 import { runOptimistic } from "../../lib/optimistic";
-import { formatMinor } from "../../lib/money";
+import { formatMinor, formatMoneyNumeral } from "../../lib/money";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";

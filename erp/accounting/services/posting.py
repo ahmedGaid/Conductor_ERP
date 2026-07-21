@@ -90,6 +90,14 @@ def _resolve_period(data: JournalInput) -> Period:
     return period
 
 
+def _ensure_postable(account: Account) -> None:
+    """One place that decides whether the ledger will accept a line to this account — reused by both
+    a fresh post and the draft→posted transition, so both reject a group/deactivated account the same
+    way (an account may have been deactivated after a draft was written)."""
+    if not (account.is_postable and account.is_active):
+        raise NonPostableAccountError(data={"account": account.code})
+
+
 def _validate_and_load_accounts(data: JournalInput) -> dict[str, Account]:
     if len(data.lines) < 2:
         raise InvalidLineError("a journal entry needs at least two lines")
@@ -108,8 +116,7 @@ def _validate_and_load_accounts(data: JournalInput) -> dict[str, Account]:
             account = account_repo.by_code(line.account_code)
             if account is None:
                 raise InvalidLineError(f"line {i}: unknown account {line.account_code!r}")
-            if not (account.is_postable and account.is_active):
-                raise NonPostableAccountError(data={"account": line.account_code})
+            _ensure_postable(account)
             resolved[line.account_code] = account
         total_debit += line.debit
         total_credit += line.credit
@@ -317,3 +324,47 @@ def reverse_journal(entry: JournalEntry, actor=None, date=None) -> JournalEntry:
     reversal.reverses = entry
     reversal.save(update_fields=["reverses"])
     return reversal
+
+
+@transaction.atomic
+def post_draft_journal_entry(entry: JournalEntry, actor=None) -> JournalEntry:
+    """Post an existing DRAFT entry to the ledger — the draft→posted transition a human triggers
+    from the journal screen (and the gated assistant action). Re-validates what may have changed
+    since the draft was written — the period may have closed, a line's account may have been
+    deactivated — then flips the status and emits the SAME audit action + event as a fresh
+    ``post_journal``: it is the same business event, only reached from a draft.
+    """
+    if entry.status != EntryStatus.DRAFT:
+        raise AlreadyPostedError("only a draft entry can be posted")
+    if not entry.period.is_open:
+        raise ClosedPeriodError(data={"period": entry.period.code})
+    lines = list(entry.lines.select_related("account").order_by("line_no"))
+    for line in lines:
+        _ensure_postable(line.account)
+
+    entry.status = EntryStatus.POSTED
+    entry.posted_at = timezone.now()
+    entry.posted_by = actor if getattr(actor, "is_authenticated", False) else None
+    entry.save(update_fields=["status", "posted_at", "posted_by"])
+
+    total = sum(line.debit for line in lines)
+    audit.record(
+        module="accounting",
+        action="post_journal",
+        entity_type="JournalEntry",
+        entity_id=entry.number,
+        actor=actor,
+        after={
+            "number": entry.number,
+            "date": str(entry.date),
+            "period": entry.period.code,
+            "lines": len(lines),
+            "total": total,
+            "currency": entry.currency,
+        },
+    )
+    bus.publish(
+        events.JOURNAL_POSTED,
+        {"entry_id": str(entry.id), "number": entry.number, "period": entry.period.code},
+    )
+    return entry

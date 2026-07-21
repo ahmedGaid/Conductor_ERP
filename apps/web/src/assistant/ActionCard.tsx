@@ -10,8 +10,10 @@ import {
   type SimulationDiff,
 } from "../api/assistant";
 import { NavIcon } from "../app/icons";
+import { ApiError } from "../api/client";
 import { Bdi } from "../components/Bdi";
 import { EntityLink } from "../components/EntityLink";
+import { parseToMinor } from "../lib/money";
 import { SimulationDiffCard } from "./SimulationDiffCard";
 
 // Each proposable action's home-module icon (for record chips) and its human title key.
@@ -94,6 +96,11 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
   const [sim, setSim] = useState<
     { loading: boolean; error: string | null; diff: SimulationDiff | null } | null
   >(null);
+  // Retype-confirm (agent-posting-plan FILE_01): only rendered for a risk="post" proposal's
+  // challenge. Parsed with the same parseToMinor PaymentDialog uses, client-side only — the
+  // server re-checks the parsed value itself, this just gates the Confirm button and UX feedback.
+  const [retype, setRetype] = useState("");
+  const parsedRetype = proposal.challenge ? parseToMinor(retype) : null;
 
   async function preview() {
     if (busy) return;
@@ -118,7 +125,9 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
     setBusy(decision);
     setError(null);
     try {
-      const res = await executeAction(messageId, decision);
+      const typedMinor =
+        decision === "confirm" && proposal.challenge ? (parsedRetype ?? undefined) : undefined;
+      const res = await executeAction(messageId, decision, typedMinor);
       onResolved(messageId, {
         ...proposal,
         status: res.status,
@@ -127,7 +136,14 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
           : {}),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("assistant.errorLine"));
+      // A 400 while retyping a challenge is the mismatch/missing-value refusal (Task D) — the
+      // proposal stays pending, so show the localized line rather than the backend's raw (English-
+      // only) message.
+      if (decision === "confirm" && proposal.challenge && err instanceof ApiError && err.status === 400) {
+        setError(t("assistant.action.retypeMismatch"));
+      } else {
+        setError(err instanceof Error ? err.message : t("assistant.errorLine"));
+      }
     } finally {
       setBusy(null);
     }
@@ -222,12 +238,24 @@ export function ActionCard({ messageId, proposal, onResolved, onNavigate }: Acti
 
       {sim && <SimulationDiffCard loading={sim.loading} error={sim.error} diff={sim.diff} />}
 
+      {proposal.challenge && (
+        <label className="action-card__retype">
+          <span>{t("assistant.action.retypeLabel", { value: proposal.challenge.label })}</span>
+          <input
+            className="latin"
+            inputMode="decimal"
+            value={retype}
+            onChange={(e) => setRetype(e.target.value)}
+          />
+        </label>
+      )}
+
       <footer className="action-card__foot">
         <button
           type="button"
           className="action-card__confirm"
           onClick={() => void resolve("confirm")}
-          disabled={busy !== null}
+          disabled={busy !== null || (proposal.challenge != null && parsedRetype !== proposal.challenge.minor)}
         >
           {busy === "confirm" ? t("common.loading") : t("assistant.action.confirm")}
         </button>

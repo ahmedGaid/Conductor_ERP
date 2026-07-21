@@ -37,6 +37,7 @@ from .posting import (  # noqa: F401
     LineInput,
     enforce_journal_approval,
     journal_requires_approval,
+    post_draft_journal_entry,
     post_journal,
     reverse_journal,
 )
@@ -78,6 +79,7 @@ __all__ = [
     "JOURNAL_APPROVAL_THRESHOLD_MINOR",
     "enforce_journal_approval",
     "journal_requires_approval",
+    "post_draft_journal_entry",
     "post_journal",
     "reverse_journal",
     "GeneralLedger",

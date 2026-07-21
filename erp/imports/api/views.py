@@ -106,6 +106,13 @@ def _profile_row(p: ImportProfile) -> dict:
     return {"id": p.pk, "name": p.name, "entity": p.entity, "mapping": p.mapping, "options": p.options}
 
 
+def _field_row(f) -> dict:
+    return {
+        "name": f.name, "required": f.required, "kind": f.kind,
+        "ref": f.ref, "enum": f.enum,
+    }
+
+
 class _AlwaysAcceptContentNegotiation(BaseContentNegotiation):
     """DRF's default negotiation reserves the ``format`` query param for its OWN renderer
     selection and 404s when nothing registers that format — ``ReportView`` needs that exact
@@ -167,6 +174,15 @@ class UploadView(APIView):
                 _profile_row(p) for p in ImportProfile.objects.filter(entity=top_entity).order_by("name")
             ]
 
+        # Field specs for every candidate (not just the top pick) so the wizard can render the
+        # mapping table immediately if the user picks a different candidate than the leader —
+        # no extra round-trip needed.
+        candidate_entities = {c.entity for c in detected.candidates}
+        if top_entity:
+            candidate_entities.add(top_entity)
+        entity_fields = {e: [_field_row(f) for f in get_adapter(e).fields] for e in candidate_entities}
+        entity_labels = {e: get_adapter(e).label_key for e in candidate_entities}
+
         batch = ImportBatch.objects.create(
             entity=top_entity or "", source_file=attachment,
             status=ImportBatch.Status.MAPPING, created_by=request.user,
@@ -182,9 +198,13 @@ class UploadView(APIView):
             },
             "headers": headers.headers,
             "samples": headers.samples,
-            "candidates": [{"entity": c.entity, "confidence": c.confidence} for c in detected.candidates],
+            "candidates": [
+                {"entity": c.entity, "confidence": c.confidence, "label_key": entity_labels[c.entity]}
+                for c in detected.candidates
+            ],
             "mapping_suggestion": mapping_suggestion,
             "profile_hits": profile_hits,
+            "entity_fields": entity_fields,
         }, status=201)
 
 

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { listPeriods, trialBalance } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
-import { formatMinor } from "../../lib/money";
+import { formatMoneyNumeral } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
@@ -54,8 +54,8 @@ export function TrialBalancePage() {
               <tr>
                 <th>{t("accounting.account.code")}</th>
                 <th>{t("accounting.account.name")}</th>
-                <th className="acct-table__num">{t("accounting.entry.debit")}</th>
-                <th className="acct-table__num">{t("accounting.entry.credit")}</th>
+                <th className="acct-table__num">{t("accounting.entry.debit")} (EGP)</th>
+                <th className="acct-table__num">{t("accounting.entry.credit")} (EGP)</th>
               </tr>
             </thead>
             <tbody>
@@ -63,16 +63,16 @@ export function TrialBalancePage() {
                 <tr key={r.account_code}>
                   <td><Bdi>{r.account_code}</Bdi></td>
                   <td>{r.account_name}</td>
-                  <td className="acct-table__num"><Bdi>{formatMinor(r.debit)}</Bdi></td>
-                  <td className="acct-table__num"><Bdi>{formatMinor(r.credit)}</Bdi></td>
+                  <td className="acct-table__num"><Bdi>{formatMoneyNumeral(r.debit)}</Bdi></td>
+                  <td className="acct-table__num"><Bdi>{formatMoneyNumeral(r.credit)}</Bdi></td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
                 <td colSpan={2}>{t("accounting.entry.totals")}</td>
-                <td className="acct-table__num"><Bdi>{formatMinor(data.total_debit)}</Bdi></td>
-                <td className="acct-table__num"><Bdi>{formatMinor(data.total_credit)}</Bdi></td>
+                <td className="acct-table__num"><Bdi>{formatMoneyNumeral(data.total_debit)}</Bdi></td>
+                <td className="acct-table__num"><Bdi>{formatMoneyNumeral(data.total_credit)}</Bdi></td>
               </tr>
             </tfoot>
           </table>

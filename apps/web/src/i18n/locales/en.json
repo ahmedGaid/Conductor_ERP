@@ -39,6 +39,7 @@
     "pricing": "Pricing",
     "usersAdmin": "Users",
     "rolesAdmin": "Roles",
+    "imports": "Import",
     "knowledgeAdmin": "Knowledge base",
     "opsAdmin": "Assistant health",
     "collapseSidebar": "Collapse sidebar",
@@ -1804,6 +1805,129 @@
       "lede": "Upload a CSV with item SKUs and their prices. You can include quantity breaks."
     }
   },
+  "imports": {
+    "wizard": {
+      "title": "Import data",
+      "lede": "Bring in customers, orders, invoices, and more from a spreadsheet — no template required.",
+      "steps": {
+        "upload": "Upload",
+        "map": "Map",
+        "review": "Review",
+        "import": "Import"
+      },
+      "mappingLost": {
+        "title": "This import needs a fresh start",
+        "hint": "The file preview didn't survive the reload — upload it again to keep going."
+      },
+      "startOver": "Start over"
+    },
+    "upload": {
+      "browseButton": "Choose a file",
+      "dropTitle": "Drop your file here",
+      "dropHint": "Your file as it is — no template needed.",
+      "uploading": "Reading your file…",
+      "tryAnother": "Try another file"
+    },
+    "errors": {
+      "xlsFormat": "This is an old Excel format. Save it as .xlsx (File → Save As) and try again.",
+      "emptyFile": "This file doesn't have any rows to import."
+    },
+    "detect": {
+      "noMatch": {
+        "title": "We couldn't tell what this file is",
+        "hint": "None of the record types we know matched its columns. Check the file and try again."
+      },
+      "looksLike": "This looks like {{entity}}.",
+      "candidatesTitle": "Which one is this?",
+      "profileHit": {
+        "offer": "Use the saved mapping \"{{name}}\"?",
+        "use": "Use it",
+        "dismiss": "Not this time",
+        "using": "Using the saved mapping \"{{name}}\""
+      },
+      "continue": "Continue"
+    },
+    "confidence": {
+      "high": "likely match",
+      "medium": "possible match",
+      "low": "unsure"
+    },
+    "mapping": {
+      "title": "Map your columns to {{entity}}",
+      "columnHeader": "Your column",
+      "samplesHeader": "Sample values",
+      "fieldHeader": "Maps to",
+      "confidenceHeader": "Confidence",
+      "ignore": "— ignore —",
+      "requiredGroup": "Required",
+      "optionalGroup": "Optional",
+      "ignoredNote": "Won't be imported: {{columns}}",
+      "duplicateField": "{{fields}} is mapped from more than one column",
+      "requiredGap": "Still need a column for: {{fields}}",
+      "saveProfilePlaceholder": "Name this mapping to reuse later",
+      "saveProfileButton": "Save mapping",
+      "saveProfileSaved": "Saved",
+      "continue": "Continue"
+    },
+    "stats": {
+      "rowsOf": "{{count}} {{entity}}",
+      "newRefs": "{{count}}{{suffix}} new {{entity}}",
+      "issues": "{{count}} rows need a closer look",
+      "duplicatesInFile": "{{count}} rows repeat within the file"
+    },
+    "entity": {
+      "customers": "customers",
+      "suppliers": "suppliers",
+      "items": "items",
+      "salesQuotations": "sales quotations",
+      "salesOrders": "sales orders",
+      "salesInvoices": "sales invoices",
+      "receipts": "receipts",
+      "purchaseOrders": "purchase orders",
+      "purchaseInvoices": "purchase invoices",
+      "payments": "payments",
+      "inventoryOpening": "opening inventory",
+      "contacts": "contacts",
+      "journalEntries": "journal entries",
+      "accountOpening": "opening balances"
+    },
+    "field": {
+      "name": "Name",
+      "code": "Code",
+      "credit_limit_minor": "Credit limit",
+      "sku": "SKU",
+      "uom": "Unit",
+      "reorder_point": "Reorder point",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "quantity": "Quantity",
+      "currency": "Currency",
+      "date": "Date",
+      "amount_minor": "Amount",
+      "debit_minor": "Debit",
+      "credit_minor": "Credit",
+      "memo": "Memo",
+      "line_memo": "Line memo",
+      "method": "Payment method",
+      "source": "Source",
+      "doc_number": "Document no.",
+      "discount_minor": "Discount",
+      "unit_cost_minor": "Unit cost",
+      "unit_price_minor": "Unit price",
+      "tax_token": "Tax code",
+      "file_total_minor": "File total",
+      "owner": "Owner",
+      "customer_ref": "Customer",
+      "supplier_ref": "Supplier",
+      "item_ref": "Item",
+      "warehouse_ref": "Warehouse",
+      "account_ref": "Account",
+      "order_ref": "Order no.",
+      "entry_ref": "Entry no.",
+      "opening_ref": "Opening reference"
+    }
+  },
   "toast": {
     "region": "Notifications",
     "dismiss": "Dismiss"
@@ -2016,6 +2140,7 @@
       "webhooks": "Webhooks",
       "customFields": "Custom fields",
       "developers": "Developers",
+      "einvoice": "E-Invoicing",
       "system": "System",
       "aiUsage": "AI usage"
     },
@@ -2318,6 +2443,45 @@
       "docsRateLimitNote": "Keys are rate-limited per key, same as a human session.",
       "docsMethods": "Methods",
       "docsPath": "Path"
+    },
+    "einvoice": {
+      "adminOnly": "Only a system administrator can configure the e-invoicing connection.",
+      "lead": "Connect the ERP to the Egyptian Tax Authority (ETA). Enter your integrator credentials, test them against the pre-production portal, then turn the connection on when you are ready.",
+      "simulatedNote": "Invoices are still prepared locally — sending documents to the Tax Authority is not live yet. You can already save credentials and test the connection.",
+      "environment": "Environment",
+      "environmentDesc": "Always prove your credentials against pre-production before switching to production.",
+      "envSandbox": "Pre-production",
+      "envProduction": "Production",
+      "identityUrl": "Identity URL",
+      "identityUrlDesc": "ETA's sign-in service (OAuth2). Must start with https://.",
+      "apiUrl": "Invoicing API URL",
+      "apiUrlDesc": "ETA's document service. Must start with https://.",
+      "clientId": "Client ID",
+      "clientSecret": "Client secret",
+      "clientSecretDesc": "Stored encrypted; never shown again. Leave blank to keep the current one.",
+      "clientSecretEmpty": "No secret stored",
+      "clearSecret": "Remove",
+      "rin": "Registration number (RIN)",
+      "rinDesc": "Your taxpayer registration number, as registered with ETA.",
+      "enabled": "Use this connection",
+      "enabledDesc": "Off keeps invoices local. On lets the ERP authenticate with ETA using the settings above.",
+      "source": "Configuration in use",
+      "sourceValue": {
+        "database": "Entered here (in-app)",
+        "environment": "Server environment (.env)",
+        "none": "Not configured yet"
+      },
+      "lastTest": "Last successful test",
+      "lastTestNever": "Never tested",
+      "save": "Save",
+      "saving": "Saving…",
+      "test": "Test connection",
+      "testing": "Testing…",
+      "testOk": "Connected — ETA accepted these credentials.",
+      "testFail": {
+        "not_configured": "Not configured — fill in every field, then save.",
+        "auth_failed": "ETA refused these credentials"
+      }
     },
     "system": {
       "lead": "A read-only view of the running system — for diagnosis, not configuration. Change settings in .env and restart.",

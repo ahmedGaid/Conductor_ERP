@@ -103,5 +103,28 @@ def test_org_preferences_patch_requires_system_admin(accountant, admin):
     ).status_code == 200
 
 
+def test_assistant_posting_toggle_is_system_admin_only(accountant):
+    """A non-admin can read the flag but never flip it — same gate as every other org default."""
+    c = _auth(accountant)
+    assert c.get("/api/identity/org-preferences").status_code == 200
+    assert c.patch(
+        "/api/identity/org-preferences", {"assistant_posting_enabled": True}, format="json"
+    ).status_code == 403
+
+
 def test_preferences_require_authentication(client):
     assert client.get("/api/identity/preferences").status_code == 401
+
+
+def test_org_preferences_assistant_posting_round_trip(admin):
+    # Off by default (agent-posting-plan FILE_01); System Admin PATCH flips and persists it.
+    c = _auth(admin)
+    assert c.get("/api/identity/org-preferences").json()["data"]["assistant_posting_enabled"] is False
+
+    resp = c.patch(
+        "/api/identity/org-preferences", {"assistant_posting_enabled": True}, format="json"
+    )
+    assert resp.status_code == 200
+    assert resp.json()["data"]["assistant_posting_enabled"] is True
+    again = c.get("/api/identity/org-preferences").json()["data"]
+    assert again["assistant_posting_enabled"] is True

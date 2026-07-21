@@ -250,3 +250,43 @@
   inline-size: 1.05rem;
   block-size: 1.05rem;
 }
+
+/* E-Invoicing (ETA) connection settings */
+.eta-secret {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.eta-secret input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+.eta-status {
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space-3);
+}
+.eta-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.eta-error {
+  color: var(--color-danger);
+}
+.eta-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+.eta-result .navicon {
+  flex: 0 0 auto;
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+}
+.eta-result--ok {
+  color: var(--color-success);
+}
+.eta-result--fail {
+  color: var(--color-danger);
+}

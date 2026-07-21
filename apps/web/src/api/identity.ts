@@ -61,6 +61,7 @@ export interface OrgPreferences {
   vat_number: string;
   base_currency: string;
   einvoice_enabled: boolean;
+  assistant_posting_enabled: boolean;
   order_cancel_until: OrderCancelUntil;
   updated_at?: string;
 }

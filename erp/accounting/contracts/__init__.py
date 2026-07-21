@@ -22,6 +22,8 @@ from ..services.posting import (
     JournalInput,
     LineInput,
     create_draft_journal,
+    enforce_journal_approval,
+    post_draft_journal_entry,
     post_journal,
     reverse_journal,
 )
@@ -107,6 +109,19 @@ def find_journal(actor, *, query: str, limit: int = 8) -> list[dict]:
     ]
 
 
+def get_journal_entry(actor, entry_id) -> JournalEntry | None:
+    """One journal entry (the ORM record, lines + accounts prefetched) scoped to the actor — the
+    loader the gated assistant post-draft action uses to feed ``post_draft_journal_entry``. Returns
+    the model (as ``post_journal``/``reverse_journal`` already take one) rather than a dict, because
+    its consumer posts it. ``None`` if the entry is out of scope or does not exist."""
+    return (
+        scope_queryset(actor, JournalEntry.objects.all(), "accounting.journal.view")
+        .prefetch_related("lines__account")
+        .filter(id=entry_id)
+        .first()
+    )
+
+
 def account_balance(*, query: str) -> dict:
     """The current (cumulative) balance of one account, resolved from code or name."""
     q = (query or "").strip()
@@ -190,6 +205,7 @@ __all__ = [
     "income_statement_summary",
     "vat_return_status",
     "find_journal",
+    "get_journal_entry",
     "account_balance",
     "current_fiscal_period",
     "AccountInfo",
@@ -202,6 +218,8 @@ __all__ = [
     "DEFAULT_CURRENCY",
     "JournalInput",
     "LineInput",
+    "enforce_journal_approval",
+    "post_draft_journal_entry",
     "post_journal",
     "reverse_journal",
     "TaxCodeInfo",

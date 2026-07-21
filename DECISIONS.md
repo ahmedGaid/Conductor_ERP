@@ -2654,3 +2654,35 @@ Implementation left for a follow-up (mechanical, Haiku-fit): a `roleLabel(name, 
 `apps/web/src/lib/`, `roles.names.*` keys in both locales, then fan it out to every surface that
 renders a raw role name — `RolesPage`, `RoleDetailPage`, `UsersPage` (column + filter + invite
 dialog), `UserDetailPage`, and the role pickers in settings.
+
+## einvoice: ETA connection is configured in-app, client secret encrypted at rest (2026-07-21)
+
+Founder requirement: an admin must configure the whole ETA e-invoice connection **from the app** —
+enter credentials, pick pre-production vs production, and test the connection to ETA's portal —
+without server access or a restart, so the integration is production-ready the moment real company
+credentials exist.
+
+This **reverses `einvoice-eta-live` locked decision #2** ("real credentials never touch the DB —
+env only"). The new rule:
+
+- An `ETASettings` singleton (`erp/einvoice/domain/models.py`, table `einvoice_eta_settings`) holds
+  environment / identity URL / API URL / client-id / RIN in plain columns, and the **client secret
+  encrypted** (Fernet, `services/secrets.py`). The plaintext secret is never serialized to a client
+  (write-only field), never logged, never in an error or status payload — the API reports
+  `has_secret` (presence) only.
+- **Resolver** `services/config.py` decides the config in force: the `ETASettings` row when
+  `enabled`, else `settings.ETA_*` from env (the legacy path stays fully supported for ops-seeded
+  installs). `eta_client` and the operator panel read only through this resolver.
+- **Encryption key**: `ETA_SECRET_KEY` (env, a 44-char Fernet key). Empty → derived from
+  `DJANGO_SECRET_KEY` so dev works with no setup; the documented tradeoff is that rotating
+  `DJANGO_SECRET_KEY` with no explicit `ETA_SECRET_KEY` makes the stored secret undecryptable, which
+  degrades **calmly** (resolver reports the secret as missing; admin re-enters it), never a crash.
+- **New direct dependency: `cryptography`** (already present transitively; Python-standard for this).
+  This is the one dependency the encrypted-at-rest choice requires — promoted deliberately, with the
+  founder's explicit go-ahead, per locked decision #5's STOP-gate.
+
+Admin surface: `GET/PUT /api/einvoice/config` + `POST /api/einvoice/config/test` (System-Admin
+only), and Settings → E-Invoicing in the web app. "Test connection" proves **auth + reachability**
+against ETA (real `eta_client.fetch_token`) — it does NOT submit a document, because the submission
+adapter is still simulated (`eta_adapter.SIMULATED = True`). The UI states this plainly so the
+screen never claims live filing before FILE_02 lands.

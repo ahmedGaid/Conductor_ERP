@@ -2,13 +2,15 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
-import { getJournal, type JournalEntry } from "../../api/accounting";
+import { getJournal, postDraftJournalEntry, type JournalEntry } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { useRecentEntity } from "../../hooks/useRecentEntity";
 import { useToast } from "../../app/ToastContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
 import { type DocMenuItem } from "../../components/DocumentMenu";
+import { DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
+import { runOptimistic } from "../../lib/optimistic";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { ErrorState } from "../../components/ErrorState";
 import { formatMinor } from "../../lib/money";
@@ -32,13 +34,38 @@ const SOURCE_ENTITY: Record<string, EntityType> = {
 export function JournalDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, reload } = useAsync<JournalEntry>(() => getJournal(id as string), [id], `accounting:journal:${id}`);
+  const { data, loading, error, reload, mutate } = useAsync<JournalEntry>(() => getJournal(id as string), [id], `accounting:journal:${id}`);
   useRecentEntity(data?.number);
   const toast = useToast();
 
   useSetDocumentCrumb(data?.number);
 
-  // A posted journal is read-only — no lifecycle primary; the ⋯ menu carries print / export / share.
+  // Post a DRAFT entry to the ledger: flip to "posted" instantly, reconcile with the server's entry,
+  // toast the posted number on success (roll back + error toast on failure — e.g. a closed period).
+  function act() {
+    if (!data) return;
+    void runOptimistic<JournalEntry, JournalEntry>({
+      current: data,
+      mutate,
+      optimistic: (e) => ({ ...e, status: "posted" }),
+      request: () => postDraftJournalEntry(data.id),
+      settle: (_predicted, updated) => updated,
+      toast,
+      successFrom: (updated) => t("accounting.entry.toastPosted", { number: updated.number }),
+    });
+  }
+
+  // A draft entry gains the first (and only) lifecycle primary: Post. Once posted the journal is
+  // read-only — no primary; the ⋯ menu carries print / export / share in every state.
+  function primaryAction(): DocumentPrimary | null {
+    if (!data || data.status !== "draft") return null;
+    return { label: t("accounting.entry.post"), onClick: act };
+  }
+  const barPrimary = useMemo(() => {
+    const a = primaryAction();
+    return a ? <DocumentPrimaryButton action={a} /> : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, t]);
   const barMenu = useMemo<DocMenuItem[]>(() => {
     if (!data) return [];
     return [
@@ -56,7 +83,7 @@ export function JournalDetailPage() {
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, t]);
-  useSetPageActions({ menuItems: barMenu });
+  useSetPageActions({ primary: barPrimary, menuItems: barMenu });
 
   return (
     <section className="acct-page">

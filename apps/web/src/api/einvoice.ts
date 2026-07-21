@@ -31,3 +31,50 @@ const action = (id: string, name: string) =>
 
 export const submitETAInvoice = (id: string) => action(id, "submit");
 export const pollETAInvoice = (id: string) => action(id, "poll");
+
+// --- ETA connection configuration (admin-only, Settings → E-Invoicing) ---
+// The client secret is write-only: sent up on save, never returned. `has_secret` reports presence.
+
+export type ETAConfigSource = "database" | "environment" | "none";
+
+export interface ETAConfig {
+  environment: "" | "sandbox" | "production";
+  identity_url: string;
+  api_base_url: string;
+  client_id: string;
+  rin: string;
+  enabled: boolean;
+  has_secret: boolean;
+  last_test_ok_at: string | null;
+  source: ETAConfigSource;
+  configured: boolean;
+  missing: string[];
+  simulated: boolean;
+}
+
+// Fields the admin can write. `client_secret` empty = leave stored one unchanged; `clear_secret`
+// removes it. Everything is optional so a partial save (e.g. just toggling `enabled`) is one call.
+export interface ETAConfigUpdate {
+  environment?: "" | "sandbox" | "production";
+  identity_url?: string;
+  api_base_url?: string;
+  client_id?: string;
+  rin?: string;
+  client_secret?: string;
+  clear_secret?: boolean;
+  enabled?: boolean;
+}
+
+export interface ETATestResult {
+  ok: boolean;
+  reason: "ok" | "not_configured" | "auth_failed";
+  detail: string;
+}
+
+export const getETAConfig = () => apiFetch<ETAConfig>("/einvoice/config");
+
+export const saveETAConfig = (changes: ETAConfigUpdate) =>
+  apiFetch<ETAConfig>("/einvoice/config", { method: "PUT", body: JSON.stringify(changes) });
+
+export const testETAConnection = () =>
+  apiFetch<ETATestResult>("/einvoice/config/test", { method: "POST", body: "{}" });

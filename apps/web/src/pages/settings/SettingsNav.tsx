@@ -23,6 +23,7 @@ const ORG_WIDE_PATHS = [
   "/settings/webhooks",
   "/settings/custom-fields",
   "/settings/developers",
+  "/settings/einvoice",
   "/settings/system",
   "/settings/ai-usage",
 ];
@@ -89,6 +90,14 @@ export function SettingsNav() {
             className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
           >
             {t("settings.tabs.developers")}
+          </NavLink>
+        )}
+        {isAdmin && (
+          <NavLink
+            to="/settings/einvoice"
+            className={({ isActive }) => (isActive ? "setnav__tab setnav__tab--active" : "setnav__tab")}
+          >
+            {t("settings.tabs.einvoice")}
           </NavLink>
         )}
         {isAdmin && (

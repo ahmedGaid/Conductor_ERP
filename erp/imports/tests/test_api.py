@@ -169,6 +169,11 @@ def test_full_lifecycle_upload_through_execute_and_report():
     assert body["headers"] == ["Customer Name", "Customer Code"]
     assert "customers" in [c["entity"] for c in body["candidates"]]
     assert body["mapping_suggestion"]["Customer Name"]["field"] == "name"
+    customers_candidate = next(c for c in body["candidates"] if c["entity"] == "customers")
+    assert customers_candidate["label_key"] == "imports.entity.customers"
+    customer_fields = {f["name"]: f for f in body["entity_fields"]["customers"]}
+    assert customer_fields["name"]["required"] is True
+    assert customer_fields["name"]["kind"] == "text"
 
     mp = client.post(
         f"/api/imports/{batch_id}/mapping",

@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from erp.core.exports import EXPORT_FORMATS, export_response
+from erp.core.naming import name_fields
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import ACCOUNTANT, BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
@@ -206,6 +207,26 @@ class JournalDetailView(APIView):
         return _envelope(JournalEntrySerializer(entry).data)
 
 
+class JournalPostDraftView(APIView):
+    """Post an existing DRAFT entry to the ledger (draft → posted). Mirrors the manual-post path in
+    ``JournalListPostView.post``: the large-journal approval gate runs here too, since a draft
+    posted from this screen never passes through that view."""
+
+    permission_classes = [IsAuthenticated, _CanAccount]
+
+    def post(self, request: Request, entry_id) -> Response:
+        entry = get_object_or_404(
+            _scoped(request,
+                    JournalEntry.objects.select_related("period").prefetch_related(_LINES_PREFETCH),
+                    "journal"),
+            id=entry_id,
+        )
+        total_minor = sum(line.debit for line in entry.lines.all())
+        services.enforce_journal_approval(request.user, total_minor)
+        entry = services.post_draft_journal_entry(entry, actor=request.user)
+        return _envelope(JournalEntrySerializer(entry).data)
+
+
 class TrialBalanceView(APIView):
     permission_classes = [IsAuthenticated, _CanAccount]
 
@@ -321,7 +342,7 @@ class TaxCodeListView(APIView):
 
         rows = TaxCode.objects.filter(is_active=True).order_by("code")
         return _envelope([
-            {"code": tc.code, "name": tc.name, "rate_bps": tc.rate_bps,
+            {"code": tc.code, **name_fields(tc), "rate_bps": tc.rate_bps,
              "output_account_code": tc.output_account_code,
              "input_account_code": tc.input_account_code}
             for tc in rows

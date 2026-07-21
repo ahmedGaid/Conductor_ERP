@@ -12,7 +12,7 @@ import { BulkActionBar } from "../../components/BulkActionBar";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
-import { formatMinor } from "../../lib/money";
+import { formatMinor, formatMoneyNumeral } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, type ActiveFilter, type FilterField } from "../../lib/filters";

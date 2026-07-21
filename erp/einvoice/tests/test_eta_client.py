@@ -15,6 +15,11 @@ from django.utils import timezone
 
 from erp.einvoice.services import eta_client
 
+# The client now resolves its configuration through the database-first resolver (admin-config pivot
+# 2026-07-21). With no ETASettings row present the resolver falls back to env exactly as before, but
+# the lookup still touches the DB — so these tests need database access.
+pytestmark = pytest.mark.django_db
+
 CONFIGURED = {
     "ETA_ENV": "sandbox",
     "ETA_IDENTITY_URL": "https://id.preprod.eta.gov.eg",

@@ -361,6 +361,16 @@ class ActionExecuteView(APIView):
                                   **result})
 
         action = actions.ACTIONS.get(name)
+
+        # Typed re-confirm (agent-posting-plan FILE_01): a risk="post" proposal carries a challenge
+        # the user must retype exactly. A mismatch or missing value 400s WITHOUT consuming the card
+        # (single-use is reserved for a real confirm, not a typo) — the proposal stays pending.
+        challenge = proposal.get("challenge")
+        if challenge:
+            typed_minor = request.data.get("typed_minor")
+            if not isinstance(typed_minor, int) or typed_minor != challenge["minor"]:
+                raise ValidationError("That doesn't match. Retype the exact amount shown to confirm.")
+
         report = None
         try:
             with transaction.atomic():

@@ -7,7 +7,7 @@ import { listCustomers } from "../../api/sales";
 import { listSuppliers } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
-import { formatMinor } from "../../lib/money";
+import { formatMoneyNumeral, formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
@@ -101,9 +101,9 @@ export function GeneralLedgerPage() {
                 <th>{t("accounting.entry.date")}</th>
                 <th>{t("accounting.journals.number")}</th>
                 <th>{t("accounting.entry.memo")}</th>
-                <th className="acct-table__num">{t("accounting.entry.debit")}</th>
-                <th className="acct-table__num">{t("accounting.entry.credit")}</th>
-                <th className="acct-table__num">{t("accounting.report.running")}</th>
+                <th className="acct-table__num">{t("accounting.entry.debit")} (EGP)</th>
+                <th className="acct-table__num">{t("accounting.entry.credit")} (EGP)</th>
+                <th className="acct-table__num">{t("accounting.report.running")} (EGP)</th>
               </tr>
             </thead>
             <tbody>
@@ -116,9 +116,9 @@ export function GeneralLedgerPage() {
                   <td>
                     {l.memo ? <Link to={`/accounting/journals/${l.entry_id}`}>{l.memo}</Link> : ""}
                   </td>
-                  <td className="acct-table__num"><Bdi>{l.debit ? formatMinor(l.debit) : ""}</Bdi></td>
-                  <td className="acct-table__num"><Bdi>{l.credit ? formatMinor(l.credit) : ""}</Bdi></td>
-                  <td className="acct-table__num"><Bdi>{formatMinor(l.running_balance)}</Bdi></td>
+                  <td className="acct-table__num"><Bdi>{l.debit ? formatMoneyNumeral(l.debit) : ""}</Bdi></td>
+                  <td className="acct-table__num"><Bdi>{l.credit ? formatMoneyNumeral(l.credit) : ""}</Bdi></td>
+                  <td className="acct-table__num"><Bdi>{formatMoneyNumeral(l.running_balance)}</Bdi></td>
                 </tr>
               ))}
               {data.lines.length === 0 && (

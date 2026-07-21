@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { Movement, MovementType } from "../../api/inventory";
-import { formatMinor } from "../../lib/money";
+import { formatMoneyNumeral, formatQuantity } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink, type EntityType } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
@@ -34,7 +34,7 @@ export function MovementsTable({ movements, show }: { movements: Movement[]; sho
             <th>{t("inventory.movement.type")}</th>
             <th>{show === "item" ? t("inventory.warehouse.code") : t("inventory.item.sku")}</th>
             <th className="inv-table__num">{t("inventory.onHand.quantity")}</th>
-            <th className="inv-table__num">{t("inventory.onHand.value")}</th>
+            <th className="inv-table__num">{t("inventory.onHand.value")} (EGP)</th>
             <th>{t("inventory.detail.reference")}</th>
             <th>{t("accounting.journals.number")}</th>
           </tr>
@@ -55,8 +55,8 @@ export function MovementsTable({ movements, show }: { movements: Movement[]; sho
                     <EntityLink type="item" value={m.item_sku} />
                   )}
                 </td>
-                <td className="inv-table__num"><Bdi>{m.quantity}</Bdi></td>
-                <td className="inv-table__num"><Bdi>{formatMinor(m.value_minor)}</Bdi></td>
+                <td className="inv-table__num"><Bdi>{formatQuantity(m.quantity)}</Bdi></td>
+                <td className="inv-table__num"><Bdi>{formatMoneyNumeral(m.value_minor)}</Bdi></td>
                 <td className="latin">
                   {m.reference ? (
                     order ? <EntityLink type={order} value={m.reference} /> : <Bdi>{m.reference}</Bdi>

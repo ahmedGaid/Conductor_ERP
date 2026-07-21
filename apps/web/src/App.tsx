@@ -47,6 +47,8 @@ const CustomFieldsPage = lazyPage(
   () => import("./pages/settings/CustomFieldsPage"), "CustomFieldsPage");
 const ApiKeysPage = lazyPage(
   () => import("./pages/settings/ApiKeysPage"), "ApiKeysPage");
+const EInvoicePage = lazyPage(
+  () => import("./pages/settings/EInvoicePage"), "EInvoicePage");
 const SystemPage = lazyPage(
   () => import("./pages/settings/SystemPage"), "SystemPage");
 const AIUsagePage = lazyPage(
@@ -159,6 +161,7 @@ const NewPurchaseRequestPage = lazyPage(
   () => import("./pages/purchasing/NewPurchaseRequestPage"), "NewPurchaseRequestPage");
 const PurchaseRequestDetailPage = lazyPage(
   () => import("./pages/purchasing/PurchaseRequestDetailPage"), "PurchaseRequestDetailPage");
+const ImportWizard = lazyPage(() => import("./pages/imports/ImportWizard"), "ImportWizard");
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, restoring } = useAuth();
@@ -238,7 +241,10 @@ function AppRoutes() {
           <Route path="/settings/webhooks" element={<WebhooksSettingsPage />} />
           <Route path="/settings/custom-fields" element={<CustomFieldsPage />} />
           <Route path="/settings/developers" element={<ApiKeysPage />} />
+          <Route path="/settings/einvoice" element={<EInvoicePage />} />
           <Route path="/settings/system" element={<SystemPage />} />
+          <Route path="/imports/new" element={<ImportWizard />} />
+          <Route path="/imports/:id" element={<ImportWizard />} />
           <Route path="/settings/ai-usage" element={<AIUsagePage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/users/:id" element={<UserDetailPage />} />

@@ -199,6 +199,20 @@ export function Sidebar() {
                   </NavLink>,
                 )}
               </li>
+              <li>
+                {withTip(
+                  t("nav.imports"),
+                  <NavLink
+                    to="/imports/new"
+                    className={({ isActive }) =>
+                      isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+                    }
+                  >
+                    <span className="sidebar__icon"><NavIcon name="import" /></span>
+                    <span>{t("nav.imports")}</span>
+                  </NavLink>,
+                )}
+              </li>
               {aiStatus?.enabled && (
                 <li>
                   {withTip(

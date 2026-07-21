@@ -67,6 +67,7 @@ export class ApiError extends Error {
     message: string,
     readonly status: number,
     readonly code?: string,
+    readonly data?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -74,7 +75,7 @@ export class ApiError extends Error {
 }
 
 interface ErrorEnvelope {
-  error?: { message?: unknown; code?: string };
+  error?: { message?: unknown; code?: string; data?: Record<string, unknown> };
 }
 
 interface DataEnvelope<T> {
@@ -125,7 +126,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       typeof env?.error?.message === "string"
         ? env.error.message
         : `Request failed (${res.status})`;
-    throw new ApiError(msg, res.status, env?.error?.code);
+    throw new ApiError(msg, res.status, env?.error?.code, env?.error?.data);
   }
 
   if (mutating) invalidateForPath(path);
@@ -155,7 +156,7 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
     const env = body as ErrorEnvelope;
     const msg =
       typeof env?.error?.message === "string" ? env.error.message : `Request failed (${res.status})`;
-    throw new ApiError(msg, res.status, env?.error?.code);
+    throw new ApiError(msg, res.status, env?.error?.code, env?.error?.data);
   }
 
   invalidateForPath(path);

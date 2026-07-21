@@ -32,7 +32,6 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import timedelta
 
-from django.conf import settings
 from django.utils import timezone
 
 # ETA tokens last ~1 hour. Refresh a little early so a long request can't start on a token that
@@ -44,6 +43,8 @@ _TOKEN_PATH = "/connect/token"
 
 # The five settings that must all be present before any ETA call is possible. Names only — these
 # are safe to expose (the operator panel reports presence by name); values never leave this module.
+# The values themselves are resolved through ``config.effective_config`` (database-first, env
+# fallback) so this module never has to know *where* the credentials came from.
 REQUIRED_SETTINGS = ("ETA_ENV", "ETA_IDENTITY_URL", "ETA_CLIENT_ID", "ETA_CLIENT_SECRET", "ETA_RIN")
 
 
@@ -76,28 +77,31 @@ _CACHE = _TokenCache()
 
 
 def is_configured() -> bool:
-    """True only when every required setting is non-empty. Presence, never validity — the values
-    are proven correct by :func:`fetch_token`, not by this check."""
-    return all(str(getattr(settings, name, "") or "").strip() for name in REQUIRED_SETTINGS)
+    """True only when every required credential is present (from database or env). Presence, never
+    validity — the values are proven correct by :func:`fetch_token`, not by this check."""
+    from . import config
+
+    return not config.missing_fields(config.effective_config())
 
 
 def missing_settings() -> list[str]:
-    """The names (never values) of the required settings that are still blank."""
-    return [name for name in REQUIRED_SETTINGS
-            if not str(getattr(settings, name, "") or "").strip()]
+    """The ``ETA_*`` names (never values) of the required credentials that are still blank."""
+    from . import config
+
+    return config.missing_setting_names(config.effective_config())
 
 
-def _token_url() -> str:
+def _token_url(identity_url: str) -> str:
     """The identity token endpoint, with the scheme enforced.
 
     ``https`` is required, not assumed: ``urlopen`` honours whatever scheme it is handed, so a
-    typo'd or hostile ``ETA_IDENTITY_URL`` of ``file:///...`` would otherwise turn a token request
-    into a local file read, and a ``http://`` one would put the client secret on the wire in clear
-    text. ETA serves https only, so anything else is a configuration error worth failing on.
+    typo'd or hostile identity URL of ``file:///...`` would otherwise turn a token request into a
+    local file read, and a ``http://`` one would put the client secret on the wire in clear text.
+    ETA serves https only, so anything else is a configuration error worth failing on.
     """
-    base = str(settings.ETA_IDENTITY_URL or "").strip().rstrip("/")
+    base = str(identity_url or "").strip().rstrip("/")
     if not base.lower().startswith("https://"):
-        raise ETAConfigError("ETA_IDENTITY_URL must be an https:// URL.")
+        raise ETAConfigError("The ETA identity URL must be an https:// URL.")
     return f"{base}{_TOKEN_PATH}"
 
 
@@ -127,18 +131,21 @@ def fetch_token(*, force: bool = False) -> str:
     Raises :class:`ETAConfigError` when credentials are absent (the caller should fall back to the
     simulated adapter) and :class:`ETAAuthError` when ETA rejects or cannot be reached.
     """
-    if not is_configured():
+    from . import config
+
+    cfg = config.effective_config()
+    if config.missing_fields(cfg):
         raise ETAConfigError(
-            "ETA is not configured. Missing: " + ", ".join(missing_settings()))
+            "ETA is not configured. Missing: " + ", ".join(config.missing_setting_names(cfg)))
 
     with _CACHE.lock:
         if not force and _CACHE.valid():
             return _CACHE.token
 
-        data = _post_form(_token_url(), {
+        data = _post_form(_token_url(cfg.identity_url), {
             "grant_type": "client_credentials",
-            "client_id": str(settings.ETA_CLIENT_ID).strip(),
-            "client_secret": str(settings.ETA_CLIENT_SECRET).strip(),
+            "client_id": cfg.client_id,
+            "client_secret": cfg.client_secret,
             "scope": _SCOPE,
         })
 
@@ -171,12 +178,16 @@ def reset_cache() -> None:
 
 def status_report() -> dict:
     """Operator-panel view of ETA readiness: names and timestamps only, never a credential value."""
-    configured = is_configured()
+    from . import config
+
+    cfg = config.effective_config()
+    configured = not config.missing_fields(cfg)
     last_ok = _CACHE.last_auth_ok_at
     return {
         "configured": configured,
-        "environment": str(getattr(settings, "ETA_ENV", "") or "") if configured else "",
-        "missing_settings": missing_settings(),
+        "environment": cfg.environment if configured else "",
+        "source": cfg.source,  # "database" | "environment" | "none"
+        "missing_settings": config.missing_setting_names(cfg),
         "last_auth_ok_at": last_ok.isoformat() if last_ok else None,
         "detail": "using simulated adapter" if not configured else "credentials present",
     }

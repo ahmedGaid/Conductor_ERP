@@ -3,13 +3,29 @@
 
 const MINOR = 100; // 2 minor digits (EGP)
 
-/** 100000 -> "1,000.00 EGP" (display only). */
-export function formatMinor(minor: number, currency = "EGP"): string {
+/** 100000 -> "1,000.00" — numeral only, no currency (for table cells where currency lives in header). */
+export function formatMoneyNumeral(minor: number): string {
   const sign = minor < 0 ? "-" : "";
   const abs = Math.abs(minor);
   const whole = Math.floor(abs / MINOR);
   const frac = abs % MINOR;
-  return `${sign}${whole.toLocaleString("en-US")}.${String(frac).padStart(2, "0")} ${currency}`;
+  return `${sign}${whole.toLocaleString("en-US")}.${String(frac).padStart(2, "0")}`;
+}
+
+/** 100000 -> "1,000.00 EGP" (display only; use formatMoneyNumeral in tables). */
+export function formatMinor(minor: number, currency = "EGP"): string {
+  return `${formatMoneyNumeral(minor)} ${currency}`;
+}
+
+/** 200.0000 -> "200" for whole units, "1.50" for fractional; max 3 decimals (storage precision). */
+export function formatQuantity(quantity: number): string {
+  if (quantity === 0) return "0";
+  const sign = quantity < 0 ? "-" : "";
+  const abs = Math.abs(quantity);
+  const integral = Math.trunc(abs);
+  const frac = abs - integral;
+  if (frac < 0.0001) return `${sign}${integral}`;
+  return `${sign}${abs.toLocaleString("en-US", { maximumFractionDigits: 3 })}`;
 }
 
 /** 100050 -> "1000.50" — a plain amount string for a text input (no grouping/currency). */

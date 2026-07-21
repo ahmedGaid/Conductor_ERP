@@ -174,6 +174,9 @@ export interface ActionProposal {
   // when the action declared invariants (os-foundations FILE_03) — absent for undeclared actions,
   // no behaviour change.
   result?: { summary: string; links: ActionRecord[]; verifier?: ActionVerifier };
+  // Present only for risk="post" actions (agent-posting-plan FILE_01): the retype-confirm the card
+  // must show before Confirm is enabled — label is display text, minor is what must be retyped.
+  challenge?: { label: string; minor: number };
 }
 
 // One post-write check pass (os-foundations FILE_03 T3.2) — a failure never reaches the client as
@@ -311,10 +314,15 @@ export interface ActionResult {
 export function executeAction(
   messageId: number,
   decision: "confirm" | "dismiss",
+  typedMinor?: number,
 ): Promise<ActionResult> {
   return apiFetch<ActionResult>("/assistant/actions/execute", {
     method: "POST",
-    body: JSON.stringify({ message_id: messageId, decision }),
+    body: JSON.stringify({
+      message_id: messageId,
+      decision,
+      ...(typedMinor !== undefined ? { typed_minor: typedMinor } : {}),
+    }),
   });
 }
 

@@ -166,6 +166,13 @@ ETA_API_BASE_URL = env("ETA_API_BASE_URL", default="")  # document API, e.g. htt
 ETA_CLIENT_ID = env("ETA_CLIENT_ID", default="")
 ETA_CLIENT_SECRET = env("ETA_CLIENT_SECRET", default="")
 ETA_RIN = env("ETA_RIN", default="")  # the taxpayer's registration number (tax profile identity)
+# Since 2026-07-21 the admin can enter these in-app (Settings → E-Invoicing); the env vars above stay
+# a valid fallback. The in-app client secret is stored ENCRYPTED — this is the Fernet key for it.
+# Empty = derive a key from DJANGO_SECRET_KEY (fine for dev; a SECRET_KEY rotation then invalidates
+# the stored secret and the admin re-enters it). Set an explicit 44-char url-safe base64 Fernet key
+# in production so the stored secret survives a SECRET_KEY rotation. Generate one with:
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+ETA_SECRET_KEY = env("ETA_SECRET_KEY", default="")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

@@ -212,6 +212,9 @@ class OrgPreferences(models.Model):
     base_currency = models.CharField(max_length=3, default="EGP")
     # Egyptian ETA e-invoicing. Off hides the e-invoicing section from the app's navigation.
     einvoice_enabled = models.BooleanField(default=True)
+    # Assistant posting actions. Off (default) keeps the assistant to drafts only; on unlocks
+    # post/receive/bill/pay/approve/adjust actions that write GL/stock, not just draft documents.
+    assistant_posting_enabled = models.BooleanField(default=False)
 
     # First-run setup. False until the self-serve wizard finishes (flipped only via the setup
     # service, never the generic org-preferences PATCH). Drives the post-login route guard.
