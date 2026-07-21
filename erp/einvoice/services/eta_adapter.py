@@ -62,6 +62,11 @@ class SubmitResult:
     submission_uuid: str = ""
     status: str = ""            # "submitted" | "rejected" | "" (transient)
     retryable: bool = False     # a transient failure — keep the invoice submittable, do not reject
+    # FILE_05 archiving — the exact document that was submitted and the raw ETA response, threaded up
+    # so the lifecycle layer can persist them for retention. Live: the signed ETA Invoice v1.0 doc +
+    # the documentsubmissions response. Stub: the local document + a simulated marker (never a filing).
+    document: dict | None = None
+    raw_response: dict | None = None
 
 
 def _egp(minor: int) -> float:
@@ -175,11 +180,13 @@ def build_document(inv: dict, cfg) -> dict:
     return document
 
 
-def _parse_submission(internal_id: str, resp: dict) -> SubmitResult:
+def _parse_submission(internal_id: str, resp: dict, *, document=None, raw_response=None) -> SubmitResult:
     """Map an ETA documentsubmissions response to a :class:`SubmitResult`.
 
     Response shape (verified against the SDK): ``{submissionUUID, acceptedDocuments:[{uuid, longId,
-    internalId}], rejectedDocuments:[{internalId, error:{code, message, ...}}]}``.
+    internalId}], rejectedDocuments:[{internalId, error:{code, message, ...}}]}``. ``document`` /
+    ``raw_response`` are carried through onto the result for FILE_05 archiving (accepted path only —
+    a rejected/transient submission has no filed document to retain).
     """
     accepted = resp.get("acceptedDocuments") or []
     rejected = resp.get("rejectedDocuments") or []
@@ -195,6 +202,8 @@ def _parse_submission(internal_id: str, resp: dict) -> SubmitResult:
                 submission_uuid=submission_uuid,
                 accepted=True,
                 status="submitted",
+                document=document,
+                raw_response=raw_response,
             )
 
     for doc in rejected:
@@ -225,7 +234,9 @@ def submit(document: dict) -> SubmitResult:
     rather than marking it rejected). Stub: the reference is the first 64 hex chars of the document
     hash — deterministic, so a retry is idempotent."""
     if not is_live():
-        return SubmitResult(uuid=document_hash(document)[:64], accepted=True)
+        # Stub: archive the local document (marked simulated by the caller) so retrieval works and a
+        # demo/test has something to export — never a real ETA filing.
+        return SubmitResult(uuid=document_hash(document)[:64], accepted=True, document=dict(document))
 
     from . import config, eta_client
 
@@ -239,7 +250,7 @@ def submit(document: dict) -> SubmitResult:
         return SubmitResult(uuid="", accepted=False, error=str(exc), retryable=True)
     except eta_client.ETASubmissionError as exc:
         return SubmitResult(uuid="", accepted=False, error=str(exc), retryable=exc.retryable)
-    return _parse_submission(internal_id, resp)
+    return _parse_submission(internal_id, resp, document=eta_document, raw_response=resp)
 
 
 def query(uuid: str) -> str:

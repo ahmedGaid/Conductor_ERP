@@ -130,3 +130,40 @@ class ETAInvoice(AuditedModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"ETA[{self.invoice_number}]"
+
+
+class ETAInvoiceArchive(TimeStampedModel):
+    """Durable long-term archive of a submitted e-invoice's **exact document + ETA response**.
+
+    ETA (and Egyptian Tax Procedures Law No. 206 of 2020, art. 37) require the taxpayer to retain
+    issued e-invoices and their supporting records for **five years**. The :class:`ETAInvoice` row
+    tracks the *lifecycle* (status, UUID, hashes) but deliberately holds no line detail and not the
+    signed document itself — so the row alone is not a retention archive. This model closes that gap:
+    it stores the full document that was submitted (the ETA Invoice v1.0 JSON, signature included when
+    live) and the raw ETA response, verbatim, retrievable for audit/tax review.
+
+    Kept in a **separate table**, not columns on ``ETAInvoice``, so the large JSON blobs never load on
+    the hot list query, and the compliance archive is a clean, append-on-submit record.
+
+    ``simulated`` records honestly whether this archive is a real Tax-Authority filing or the
+    simulated stub's local document (claims discipline §04j) — nothing here may present a simulated
+    document as ETA-accepted. Retention is satisfied by never auto-deleting; there is no purge job.
+    """
+
+    eta_invoice = models.OneToOneField(
+        ETAInvoice, on_delete=models.CASCADE, related_name="archive"
+    )
+    document_json = models.TextField(blank=True, default="")   # the exact submitted document (JSON)
+    response_json = models.TextField(blank=True, default="")   # the raw ETA response (JSON)
+    document_hash = models.CharField(max_length=64, blank=True, default="")
+    # True = this is the simulated stub's local document, not a real ETA filing. Never claim a
+    # Tax-Authority verdict for a simulated archive.
+    simulated = models.BooleanField(default=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "einvoice_eta_invoice_archive"
+        ordering = ["-archived_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"ETAArchive[{self.eta_invoice_id}]"

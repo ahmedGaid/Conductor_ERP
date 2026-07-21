@@ -137,6 +137,11 @@ def submit_invoice(eta: ETAInvoice, actor=None) -> ETAInvoice:
     eta.error_text = ""
     eta.save(update_fields=["uuid", "long_id", "submission_uuid", "status", "submitted_at",
                             "error_text", "updated_at"])
+    # FILE_05 archiving: retain the exact document submitted + the ETA response for the 5-year
+    # retention window. `simulated` records honestly whether this was a real filing or the stub.
+    from . import archive
+    archive.store(eta, document=result.document, raw_response=result.raw_response,
+                  simulated=not eta_adapter.is_live())
     audit.record(module="einvoice", action="submit_invoice", entity_type="ETAInvoice",
                  entity_id=eta.invoice_number, actor=actor, after={"uuid": eta.uuid})
     bus.publish(events.EINVOICE_SUBMITTED, {"invoice": eta.invoice_number, "uuid": eta.uuid})

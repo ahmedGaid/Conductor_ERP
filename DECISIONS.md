@@ -2827,3 +2827,40 @@ values travel by event payload only (gate10).
 Tests: `test_adapter.py` — tax-reg→type B, national-id-only→type P, neither→type P/empty id; existing
 shape test updated (receiver no longer equals the customer code). `pytest erp/einvoice erp/sales`
 **185 passed**, gate10 green, django check clean.
+
+## einvoice: FILE_05 archiving + retrieval + opt-in sandbox smoke (2026-07-21, FILE_05)
+
+**Archive as a separate table, not columns on `ETAInvoice`.** ETA + Egyptian Tax Procedures Law
+No. 206/2020 (art. 37) require issued e-invoices and their supporting records be retained **5 years**.
+The `ETAInvoice` lifecycle row deliberately holds no line detail and not the signed document, so the
+row alone is not a retention archive. New model `ETAInvoiceArchive` (OneToOne → `ETAInvoice`, same-
+module FK — gate10 only forbids a cross-module FK to sales) stores the **exact submitted document +
+raw ETA response** verbatim (`document_json` / `response_json`), plus `document_hash`, `archived_at`,
+and a `simulated` flag. Separate table keeps the large JSON blobs off the hot list query. Migration
+`0007_etainvoicearchive`.
+
+**Threaded the document up through the adapter seam.** `SubmitResult` gained `document` +
+`raw_response`; `eta_adapter.submit` fills them (live: the signed ETA v1.0 doc + the
+documentsubmissions response; stub: the local flat document + no response). `issue.submit_invoice`
+calls `archive.store(...)` on the accepted path with `simulated = not eta_adapter.is_live()` — so a
+stub archive is never presented as a Tax-Authority filing (claims discipline §04j). Archive is
+one-row-per-invoice (`update_or_create`); retention is satisfied by never auto-deleting (no purge job).
+
+**Retrieval path.** `GET /api/einvoice/invoices/{id}/document` (Accountant/Branch-Manager) returns
+`archive.export_payload` — the document, ETA identifiers, status, and the `simulated` flag; 404 before
+submit. Frontend: `getETAInvoiceDocument` + a "Download document" row action (ar/en) that saves the
+payload as `einvoice-<invoice>.json`.
+
+**gate10 real-sandbox smoke is OPT-IN.** Default gate10 still proves the simulated path so CI stays
+green with no credentials. `GATE10_ETA_SANDBOX=1` additionally drives one live round-trip via
+`manage.py eta_sandbox_smoke --poll` (which itself no-ops/exit-0 when ETA is unconfigured). gate10 also
+now asserts the archive model + retrieval route exist.
+
+**STOP-gate unchanged.** The *validating* real sandbox acceptance run still needs founder-supplied ETA
+pre-production credentials + company tax profile + signing cert. All plumbing is built and
+mock-tested; `manage.py eta_sandbox_smoke` runs the moment creds arrive. Acceptance note (pending that
+run): `Docs/plan/einvoice-eta-live/FILE_05_DONE.md`.
+
+Tests: `test_archive.py` (5) — submit archives simulated doc, one-row idempotent refresh, live path
+archives the signed doc `simulated=False`, `None`/404 before submit, retrieval API 200. `pytest
+erp/einvoice` **96 passed**, gate10 green, tsc (einvoice files) + i18n parity clean.

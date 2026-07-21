@@ -2051,6 +2051,7 @@
     "statusHeader": "الحالة",
     "submit": "تجهيز للإرسال",
     "poll": "فحص الحالة",
+    "document": "تنزيل المستند",
     "pollStalled": "تحتاج مراجعة",
     "status": {
       "draft": "مسودة",

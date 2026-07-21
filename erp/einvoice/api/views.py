@@ -17,6 +17,7 @@ from erp.identity.scoping import scope_queryset
 
 from .. import services
 from ..domain.models import ETAInvoice, ETASettings
+from ..services import archive
 from ..services import config as eta_config
 from ..services import eta_adapter
 from .serializers import ETAInvoiceSerializer, ETASettingsUpdateSerializer
@@ -91,6 +92,23 @@ class _ETAActionView(APIView):
         getattr(services, self.action)(eta, actor=request.user)
         eta.refresh_from_db()
         return _envelope(ETAInvoiceSerializer(eta).data)
+
+
+class ETAInvoiceDocumentView(APIView):
+    """``GET /api/einvoice/invoices/{id}/document`` — the archived official document + status.
+
+    The retrieval path for audit/tax review (FILE_05): returns the exact document that was submitted,
+    the ETA identifiers, and a ``simulated`` flag so a stub document is never mistaken for a filing.
+    404 when the invoice has not been submitted/archived yet (nothing retained)."""
+
+    permission_classes = [IsAuthenticated, _CanFile]
+
+    def get(self, request: Request, eta_id) -> Response:
+        eta = get_object_or_404(_scoped(request), id=eta_id)
+        payload = archive.export_payload(eta)
+        if payload is None:
+            return _envelope({"detail": "not_archived"}, status=404)
+        return _envelope(payload)
 
 
 class ETAInvoiceSubmitView(_ETAActionView):

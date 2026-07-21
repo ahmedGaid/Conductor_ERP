@@ -33,6 +33,24 @@ const action = (id: string, name: string) =>
 export const submitETAInvoice = (id: string) => action(id, "submit");
 export const pollETAInvoice = (id: string) => action(id, "poll");
 
+// The archived official document + status (FILE_05 retrieval path). `simulated` is true while the
+// adapter is a stub — the document is a local record, not a Tax-Authority filing.
+export interface ETAInvoiceDocument {
+  invoice_number: string;
+  status: ETAStatus;
+  uuid: string;
+  long_id: string;
+  submission_uuid: string;
+  document_hash: string;
+  simulated: boolean;
+  archived_at: string | null;
+  document: unknown;
+  response: unknown;
+}
+
+export const getETAInvoiceDocument = (id: string) =>
+  apiFetch<ETAInvoiceDocument>(`/einvoice/invoices/${id}/document`);
+
 // --- ETA connection configuration (admin-only, Settings → E-Invoicing) ---
 // The client secret is write-only: sent up on save, never returned. `has_secret` reports presence.
 

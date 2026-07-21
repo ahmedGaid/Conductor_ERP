@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import {
+  getETAInvoiceDocument,
   listETAInvoices,
   pollETAInvoice,
   submitETAInvoice,
@@ -76,6 +77,25 @@ export function EInvoicesPage() {
   );
 
   useReportPageActions(data && data.length > 0 ? "/einvoice/invoices" : null);
+
+  // Retrieval (FILE_05): fetch the archived official document + status and save it as JSON — the
+  // artefact an auditor asks for. Available once an invoice has been submitted (has a reference).
+  async function downloadDocument(e: ETAInvoice) {
+    try {
+      const doc = await getETAInvoiceDocument(e.id);
+      const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `einvoice-${e.invoice_number}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.show(err instanceof Error ? err.message : String(err), "error");
+    }
+  }
 
   // Optimistic per-row action: patch the invoice in place, reconcile with the server's invoice (it
   // sets the UUID/hash and final status), roll back + toast on failure. `submit` predicts the obvious
@@ -187,6 +207,11 @@ export function EInvoicesPage() {
                           onClick={() => act(e.id, (x) => x, () => pollETAInvoice(e.id))}
                         >
                           {t("einvoice.poll")}
+                        </button>
+                      )}
+                      {e.uuid && (
+                        <button className="btn btn--sm" onClick={() => void downloadDocument(e)}>
+                          {t("einvoice.document")}
                         </button>
                       )}
                     </RowActions>

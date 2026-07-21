@@ -11,6 +11,7 @@ Asserts:
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -67,6 +68,12 @@ def check() -> None:
     _assert("FloatField" not in models_src, "einvoice must not use FloatField for money")
     _assert("BigIntegerField" in models_src, "money columns must be integer minor units")
 
+    # 4b. Archiving + retrieval (FILE_05): the submitted document + ETA response are retained durably
+    #     and there is a retrieval endpoint for audit/tax review.
+    _assert("ETAInvoiceArchive" in models_src, "missing the ETAInvoiceArchive retention model")
+    urls_src = _read("erp/einvoice/api/urls.py")
+    _assert("/document" in urls_src, "missing the archived-document retrieval route")
+
     # 5. No raw SQL.
     for path in EIN.rglob("*.py"):
         if "/tests/" in path.as_posix() or "/migrations/" in path.as_posix():
@@ -88,3 +95,18 @@ def check() -> None:
     page = (WEB_SRC / "pages" / "einvoice" / "EInvoicesPage.tsx").read_text(encoding="utf-8")
     for action in ("submitETAInvoice", "pollETAInvoice"):
         _assert(action in page, f"e-invoices screen missing {action} action")
+
+    # 7. Real-sandbox smoke — OPT-IN, credential-gated (FILE_05). Off by default so CI (and every
+    #    offline run) proves the simulated path above and stays green with no ETA credentials. Set
+    #    GATE10_ETA_SANDBOX=1 on a box with real ETA pre-production credentials to also drive one live
+    #    round-trip (submit → sign → poll). The command itself no-ops (exit 0) when ETA is not
+    #    configured, so even with the flag set an unconfigured box cannot fail here.
+    if os.environ.get("GATE10_ETA_SANDBOX"):
+        smoke = subprocess.run(
+            [sys.executable, "manage.py", "eta_sandbox_smoke", "--poll"],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+        )
+        if smoke.returncode != 0:
+            raise AssertionError(
+                "Real ETA sandbox smoke failed:\n" + smoke.stdout[-2000:] + "\n" + smoke.stderr[-800:]
+            )
