@@ -7,6 +7,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
+import { localizedName } from "../../lib/bilingualName";
 import { ErrorState } from "../../components/ErrorState";
 import { EmptyState } from "../../components/EmptyState";
 import { ListSkeleton } from "../../components/ListSkeleton";
@@ -18,7 +19,8 @@ import { Toggle } from "./controls";
 import "../admin/admin.css";
 
 export function BranchesPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const toast = useToast();
   const { data: me } = useAsync(getMe, []);
   const { data, loading, error, errorStatus, reload, mutate } = useAsync(listBranches, [], "settings:branches");
@@ -27,6 +29,7 @@ export function BranchesPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [nameAr, setNameAr] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef });
 
@@ -48,17 +51,19 @@ export function BranchesPage() {
     e.preventDefault();
     const c = code.trim();
     const n = name.trim();
+    const na = nameAr.trim();
     if (!c || !n) return;
     void optimisticCreate<Branch>({
       current: data ?? [],
       mutate,
-      placeholder: (id) => ({ id, code: c, name: n, is_active: true }) as Branch,
-      request: () => createBranch({ code: c, name: n }),
+      placeholder: (id) => ({ id, code: c, name: n, name_ar: na, is_active: true }) as Branch,
+      request: () => createBranch({ code: c, name: n, name_ar: na }),
       toast,
       success: t("settings.branches.toastCreated"),
     });
     setCode("");
     setName("");
+    setNameAr("");
   }
 
   function toggleActive(branch: Branch) {
@@ -89,6 +94,17 @@ export function BranchesPage() {
             <span>{t("settings.branches.name")}</span>
             <input value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
+          <label className="admin-field">
+            {/* Optional — a branch with no Arabic name reads in English on Arabic screens. */}
+            <span>{t("settings.branches.nameAr")}</span>
+            <input
+              dir="rtl"
+              lang="ar"
+              value={nameAr}
+              onChange={(e) => setNameAr(e.target.value)}
+              placeholder={t("settings.branches.nameArHint")}
+            />
+          </label>
         </div>
         <div className="admin-invite__foot">
           <button className="btn btn--primary" type="submit">
@@ -118,7 +134,8 @@ export function BranchesPage() {
               {data.map((b) => (
                 <tr key={b.id} className="admin-row">
                   <td className="latin">{b.code}</td>
-                  <td>{b.name}</td>
+                  {/* dir="auto" — a branch may still carry only an English name on an Arabic screen. */}
+                  <td dir="auto">{localizedName(b, lang)}</td>
                   <td>
                     <Toggle
                       checked={b.is_active}

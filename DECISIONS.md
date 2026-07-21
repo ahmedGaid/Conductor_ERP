@@ -2623,3 +2623,34 @@ Three deliberate scope calls made along the way:
 
 Gates: `tsc --noEmit` clean, i18n parity 2158/2158, Vitest 39/39, `gate03.py` clean,
 `pytest erp/identity erp/purchasing erp/crm` 175/175.
+
+## bilingual-names: role labels use an i18n key map, not a `RoleProfile` side table (2026-07-20)
+
+`name_ar` now reaches the frontend for every seeded reference record that carries one — chart of
+accounts, cost centers, tax codes, branches, departments, price lists. **Roles are deliberately not
+one of them.**
+
+A role's name *is* its identity: `Group.name` ("System Admin") is the string permission checks,
+`HasAnyRole.require(...)`, seeds, and tests all compare against. The two ways to give it an Arabic
+face were:
+
+- **`RoleProfile` side table** (`Group` ⟷ `{name_ar, description}`) — bilingual for *every* role,
+  including admin-created ones. Costs a model, a migration, serializer + write path, an admin form
+  field, and lifecycle sync on rename/delete.
+- **i18n key map for the built-ins** — `roles.names.systemAdmin` etc. in `ar.json`/`en.json`, looked
+  up by role name with the raw name as `defaultValue`.
+
+**Chosen: the i18n key map.** The bilingual-name rule exists for reference data *we* named on the
+customer's behalf; the four built-ins (`DEFAULT_ROLES` in `erp/identity/roles.py`) are a fixed,
+developer-owned vocabulary that belongs in the Arabic lexicon (Identity System §6), not in customer
+data — and they are `protected`, so no admin can rename them anyway. A custom role, by contrast, is
+a name the admin typed themselves; they can type it in Arabic today. Paying for a side table to
+translate four constants we control is the wrong trade.
+
+Not a one-way door: if customers ask for bilingual *custom* roles, `RoleProfile` is purely additive
+on top — the key map keeps winning for protected roles, the side table serves the rest.
+
+Implementation left for a follow-up (mechanical, Haiku-fit): a `roleLabel(name, t)` helper in
+`apps/web/src/lib/`, `roles.names.*` keys in both locales, then fan it out to every surface that
+renders a raw role name — `RolesPage`, `RoleDetailPage`, `UsersPage` (column + filter + invite
+dialog), `UserDetailPage`, and the role pickers in settings.

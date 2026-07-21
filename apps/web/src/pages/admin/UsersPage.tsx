@@ -12,6 +12,8 @@ import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { prefetch } from "../../lib/prefetch";
 import { normalizeSearch } from "../../lib/arabicSearch";
+import { localizedName } from "../../lib/bilingualName";
+import { roleLabel } from "../../lib/roleLabel";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { EmptyState } from "../../components/EmptyState";
@@ -25,7 +27,7 @@ const STATUSES = ["active", "invited", "suspended", "archived"] as const;
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 
 export function UsersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
   const { data: users, loading, error, errorStatus, reload } = useAsync(() => listUsers(), [], "admin:users");
@@ -118,14 +120,14 @@ export function UsersPage() {
           value={role}
           onChange={setRole}
           placeholder={t("admin.users.allRoles")}
-          options={[{ value: "", label: t("admin.users.allRoles") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+          options={[{ value: "", label: t("admin.users.allRoles") }, ...(org?.roles.map((r) => ({ value: r, label: roleLabel(r, t) })) ?? [])]}
           aria-label={t("admin.users.role")}
         />
         <ComboBox
           value={department}
           onChange={setDepartment}
           placeholder={t("admin.users.allDepartments")}
-          options={[{ value: "", label: t("admin.users.allDepartments") }, ...(org?.departments.map((d) => ({ value: d.code, label: d.name })) ?? [])]}
+          options={[{ value: "", label: t("admin.users.allDepartments") }, ...(org?.departments.map((d) => ({ value: d.code, label: localizedName(d, i18n.language) })) ?? [])]}
           aria-label={t("admin.users.department")}
         />
         <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label={t("admin.users.status")}>
@@ -186,7 +188,7 @@ export function UsersPage() {
                     </Link>
                   </td>
                   <td className="latin muted">{u.email}</td>
-                  <td>{u.role ?? "—"}</td>
+                  <td>{u.role ? roleLabel(u.role, t) : "—"}</td>
                   <td>{u.department ?? "—"}</td>
                   <td className="latin">{u.branch ?? "—"}</td>
                   <td><UserStatusPill status={u.status} /></td>
@@ -206,7 +208,7 @@ export function UsersPage() {
           value={assignRoleTo}
           onChange={setAssignRoleTo}
           placeholder={t("admin.action.assignRole")}
-          options={[{ value: "", label: t("admin.action.assignRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+          options={[{ value: "", label: t("admin.action.assignRole") }, ...(org?.roles.map((r) => ({ value: r, label: roleLabel(r, t) })) ?? [])]}
           aria-label={t("admin.action.assignRole")}
         />
         <button className="btn btn--sm" disabled={!assignRoleTo} onClick={() => runBulk("assign_role")}>
@@ -239,7 +241,7 @@ function InviteForm({
   onClose: () => void;
   onCreated: (msg: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -294,7 +296,7 @@ function InviteForm({
             value={role}
             onChange={setRole}
             placeholder={t("admin.invite.noRole")}
-            options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+            options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: roleLabel(r, t) })) ?? [])]}
           />
         </label>
         <label className="admin-field">
@@ -303,7 +305,7 @@ function InviteForm({
             value={department}
             onChange={setDepartment}
             placeholder={t("common.selectField", { field: t("admin.users.department") })}
-            options={(org?.departments ?? []).map((d) => ({ value: d.code, label: d.name }))}
+            options={(org?.departments ?? []).map((d) => ({ value: d.code, label: localizedName(d, i18n.language) }))}
           />
         </label>
       </div>

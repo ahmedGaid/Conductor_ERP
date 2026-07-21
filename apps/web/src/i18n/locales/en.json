@@ -1665,6 +1665,8 @@
     "list": {
       "code": "Code",
       "name": "Name",
+      "nameAr": "Arabic name",
+      "nameArHint": "Optional — shown on Arabic screens",
       "currency": "Currency",
       "default": "Default",
       "taxInclusive": "Tax-inclusive",
@@ -2159,6 +2161,8 @@
       "lead": "Company branches. Every user is assigned to one; sales, inventory, and other records scope to it.",
       "code": "Branch code",
       "name": "Branch name",
+      "nameAr": "Arabic name",
+      "nameArHint": "Optional — shown on Arabic screens",
       "active": "Active",
       "add": "Add branch",
       "empty": "No branches yet.",
@@ -2491,6 +2495,12 @@
       "noAudit": "No recorded activity."
     },
     "roles": {
+      "names": {
+        "systemAdmin": "System Admin",
+        "branchManager": "Branch Manager",
+        "accountant": "Accountant",
+        "auditor": "Auditor"
+      },
       "title": "Roles",
       "intro": "Define what each role can see and do across the system.",
       "create": "New role",

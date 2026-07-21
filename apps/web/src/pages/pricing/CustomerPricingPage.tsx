@@ -23,6 +23,7 @@ import { ListSkeleton } from "../../components/ListSkeleton";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate, runOptimistic } from "../../lib/optimistic";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { codeAndName } from "../../lib/bilingualName";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
 import { DatePicker } from "../../components/DatePicker";
@@ -58,7 +59,7 @@ export function CustomerPricingPage() {
 
 type Customer = { code: string; name: string };
 type StockItem = { sku: string; name: string };
-type PriceListLite = { code: string; name: string };
+type PriceListLite = { code: string; name: string; name_ar?: string };
 type TFn = ReturnType<typeof useTranslation>["t"];
 type Toast = ReturnType<typeof useToast>;
 
@@ -74,6 +75,7 @@ function AssignmentsBlock({
   t: TFn;
   toast: Toast;
 }) {
+  const { i18n } = useTranslation();
   const { data, loading, error, reload, mutate } = useAsync(listAssignments, [], "pricing:assignments");
   const [customer, setCustomer] = useState("");
   const [listCode, setListCode] = useState("");
@@ -133,7 +135,7 @@ function AssignmentsBlock({
             value={listCode}
             onChange={setListCode}
             placeholder={t("common.selectField", { field: t("pricing.customers.priceList") })}
-            options={lists.map((l) => ({ value: l.code, label: `${l.code} · ${l.name}` }))}
+            options={lists.map((l) => ({ value: l.code, label: codeAndName(l, i18n.language) }))}
           />
         </label>
         <button className="btn btn--primary" type="submit">

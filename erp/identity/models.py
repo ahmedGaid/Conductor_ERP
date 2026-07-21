@@ -18,6 +18,7 @@ class Department(models.Model):
 
     code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=160)
+    name_ar = models.CharField(max_length=160, blank=True, default="")
     branch = models.ForeignKey(
         "core.Branch", null=True, blank=True, on_delete=models.SET_NULL, related_name="departments"
     )

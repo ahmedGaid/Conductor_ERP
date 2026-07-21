@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from erp.core.errors import ValidationError as AppValidationError
+from erp.core.naming import name_fields
 
 from . import api_keys, roles_admin, saved_views, services
 from . import users as user_svc
@@ -403,10 +404,11 @@ class OrgUnitsView(APIView):
         return _envelope({
             "roles": list(Group.objects.order_by("name").values_list("name", flat=True)),
             "branches": [
-                {"code": b.code, "name": b.name} for b in Branch.objects.filter(is_active=True)
+                {"code": b.code, **name_fields(b)} for b in Branch.objects.filter(is_active=True)
             ],
             "departments": [
-                {"code": d.code, "name": d.name} for d in Department.objects.filter(is_active=True)
+                {"code": d.code, **name_fields(d)}
+                for d in Department.objects.filter(is_active=True)
             ],
             "teams": [{"code": t.code, "name": t.name} for t in Team.objects.filter(is_active=True)],
         })

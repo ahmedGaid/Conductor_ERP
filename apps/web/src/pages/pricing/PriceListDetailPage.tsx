@@ -36,10 +36,12 @@ import { EntityLink } from "../../components/EntityLink";
 import { InlineEdit } from "../../components/InlineEdit";
 import { ImportDialog } from "../../components/ImportDialog";
 import type { ImportFieldInfo } from "../../api/imports";
+import { localizedName } from "../../lib/bilingualName";
 import "./pricing.css";
 
 export function PriceListDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const toast = useToast();
   const { id } = useParams<{ id: string }>();
   const listId = id as string;
@@ -136,15 +138,16 @@ export function PriceListDetailPage() {
 
   const stockItems = (items ?? []).filter((i) => i.type === "stock");
 
-  useSetDocumentCrumb(pl?.name);
+  // Crumb, title, and print header follow the screen's language like every other reference name.
+  useSetDocumentCrumb(pl ? localizedName(pl, lang) : undefined);
 
   // Adding lines is a form (forms keep their controls) — no bar primary; ⋯ carries print / export /
   // share for the price list itself.
   const barMenu = useMemo<DocMenuItem[]>(() => {
     if (!pl) return [];
     return [
-      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(pl.name) },
-      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(pl.name) },
+      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(localizedName(pl, lang)) },
+      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(localizedName(pl, lang)) },
       {
         key: "share",
         label: t("document.share"),
@@ -156,7 +159,7 @@ export function PriceListDetailPage() {
       },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pl, t]);
+  }, [pl, t, lang]);
   useSetPageActions({ menuItems: barMenu });
 
   return (
@@ -164,7 +167,7 @@ export function PriceListDetailPage() {
       <div className="pricing-head">
         <BackLink to="/pricing">{t("pricing.detail.back")}</BackLink>
         <div className="pricing-detail-head">
-          <h1>{pl ? pl.name : t("pricing.title")}</h1>
+          <h1 dir="auto">{pl ? localizedName(pl, lang) : t("pricing.title")}</h1>
           {pl && (
             <div className="pricing-toggles">
               <label className="pricing-toggle">

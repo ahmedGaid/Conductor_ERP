@@ -18,6 +18,8 @@ import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { runOptimistic } from "../../lib/optimistic";
+import { localizedName } from "../../lib/bilingualName";
+import { roleLabel } from "../../lib/roleLabel";
 import { UserStatusPill } from "./UserStatusPill";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { InlineEdit } from "../../components/InlineEdit";
@@ -32,7 +34,7 @@ function initials(name: string): string {
 }
 
 export function UserDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const { id } = useParams();
   const userId = Number(id);
@@ -193,7 +195,7 @@ export function UserDetailPage() {
               value={current.role ?? ""}
               onChange={(v) => patch({ role: v })}
               placeholder={t("admin.invite.noRole")}
-              options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: r })) ?? [])]}
+              options={[{ value: "", label: t("admin.invite.noRole") }, ...(org?.roles.map((r) => ({ value: r, label: roleLabel(r, t) })) ?? [])]}
             />
           </label>
           <label className="admin-field">
@@ -208,7 +210,7 @@ export function UserDetailPage() {
               value={current.department ?? ""}
               onChange={(v) => patch({ department: v || null })}
               placeholder={t("common.selectField", { field: t("admin.users.department") })}
-              options={(org?.departments ?? []).map((d) => ({ value: d.code, label: d.name }))}
+              options={(org?.departments ?? []).map((d) => ({ value: d.code, label: localizedName(d, i18n.language) }))}
             />
           </label>
           <button className="btn admin-reset" onClick={reset}>{t("admin.detail.resetPassword")}</button>

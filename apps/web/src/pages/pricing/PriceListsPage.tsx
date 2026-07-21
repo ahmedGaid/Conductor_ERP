@@ -16,11 +16,13 @@ import { useListPageActions } from "../../hooks/useListPageActions";
 import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import type { CsvColumn } from "../../lib/csvExport";
 import { Bdi } from "../../components/Bdi";
+import { localizedName } from "../../lib/bilingualName";
 import { PricingTabs } from "./PricingTabs";
 import "./pricing.css";
 
 export function PriceListsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const toast = useToast();
   const { data, loading, error, reload, mutate } = useAsync(listPriceLists, [], "pricing:lists");
 
@@ -37,7 +39,9 @@ export function PriceListsPage() {
   const csvColumns = useMemo<CsvColumn<PriceList>[]>(
     () => [
       { header: t("pricing.list.code"), accessor: (pl) => pl.code },
+      // Both names in the export — a bilingual price list stays bilingual outside the app.
       { header: t("pricing.list.name"), accessor: (pl) => pl.name },
+      { header: t("pricing.list.nameAr"), accessor: (pl) => pl.name_ar ?? "" },
       { header: t("pricing.list.currency"), accessor: (pl) => pl.currency },
       { header: t("pricing.list.lines"), accessor: (pl) => pl.line_count },
     ],
@@ -52,6 +56,7 @@ export function PriceListsPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [nameAr, setNameAr] = useState("");
   const [currency, setCurrency] = useState("EGP");
   const [taxInclusive, setTaxInclusive] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
@@ -64,6 +69,7 @@ export function PriceListsPage() {
     e.preventDefault();
     const c = code.trim();
     const n = name.trim();
+    const na = nameAr.trim();
     if (!c || !n) return;
     const makeDefault = isDefault;
     void optimisticCreate<PriceList>({
@@ -71,16 +77,17 @@ export function PriceListsPage() {
       mutate,
       placeholder: (id) =>
         ({
-          id, code: c, name: n, currency: currency.trim() || "EGP",
+          id, code: c, name: n, name_ar: na, currency: currency.trim() || "EGP",
           tax_inclusive: taxInclusive, is_default: makeDefault, is_active: true, line_count: 0,
         }) as PriceList,
       request: () =>
-        createPriceList({ code: c, name: n, currency: currency.trim() || "EGP", tax_inclusive: taxInclusive, is_default: makeDefault }),
+        createPriceList({ code: c, name: n, name_ar: na, currency: currency.trim() || "EGP", tax_inclusive: taxInclusive, is_default: makeDefault }),
       toast,
       success: t("pricing.toast.listCreated"),
     });
     setCode("");
     setName("");
+    setNameAr("");
     setTaxInclusive(false);
     setIsDefault(false);
   }
@@ -102,6 +109,17 @@ export function PriceListsPage() {
         <label className="pricing-field">
           <span>{t("pricing.list.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
+        </label>
+        <label className="pricing-field">
+          {/* Optional — a list with no Arabic name reads in English on Arabic screens. */}
+          <span>{t("pricing.list.nameAr")}</span>
+          <input
+            dir="rtl"
+            lang="ar"
+            value={nameAr}
+            onChange={(e) => setNameAr(e.target.value)}
+            placeholder={t("pricing.list.nameArHint")}
+          />
         </label>
         <label className="pricing-field">
           <span>{t("pricing.list.currency")}</span>
@@ -152,7 +170,8 @@ export function PriceListsPage() {
                       <Bdi>{pl.code}</Bdi>
                     </Link>
                   </td>
-                  <td>{pl.name}</td>
+                  {/* dir="auto" — a list may still carry only an English name on an Arabic screen. */}
+                  <td dir="auto">{localizedName(pl, lang)}</td>
                   <td><Bdi>{pl.currency}</Bdi></td>
                   <td className="pricing-table__num"><Bdi>{pl.line_count}</Bdi></td>
                   <td>

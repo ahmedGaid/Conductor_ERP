@@ -3,11 +3,14 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from erp.core.naming import name_fields
+
 
 class PriceListSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     code = serializers.CharField(max_length=32)
     name = serializers.CharField(max_length=200)
+    name_ar = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     currency = serializers.CharField(max_length=3, required=False, default="EGP")
     tax_inclusive = serializers.BooleanField(required=False, default=False)
     is_default = serializers.BooleanField(required=False, default=False)
@@ -18,7 +21,7 @@ class PriceListSerializer(serializers.Serializer):
         return {
             "id": str(obj.id),
             "code": obj.code,
-            "name": obj.name,
+            **name_fields(obj),
             "currency": obj.currency,
             "tax_inclusive": obj.tax_inclusive,
             "is_default": obj.is_default,

@@ -16,6 +16,7 @@ import { SavedViews } from "../../components/SavedViews";
 import { useSavedViews } from "../../hooks/useSavedViews";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { ComboBox } from "../../components/ComboBox";
+import { roleLabel } from "../../lib/roleLabel";
 import "./admin.css";
 
 export function RolesPage() {
@@ -128,7 +129,7 @@ export function RolesPage() {
                   aria-selected={i === active}
                   onClick={() => navigate(`/admin/roles/${encodeURIComponent(r.name)}`)}
                 >
-                  <td><span className="admin-id__name">{r.name}</span></td>
+                  <td><span className="admin-id__name">{roleLabel(r.name, t)}</span></td>
                   <td>
                     <span className={`upill ${r.protected ? "upill--invited" : "upill--active"}`}>
                       {t(r.protected ? "admin.roles.builtin" : "admin.roles.custom")}
@@ -193,7 +194,7 @@ function NewRoleForm({
             value={copyFrom}
             onChange={setCopyFrom}
             placeholder={t("admin.roles.copyBlank")}
-            options={[{ value: "", label: t("admin.roles.copyBlank") }, ...roles.map((r) => ({ value: r.name, label: r.name }))]}
+            options={[{ value: "", label: t("admin.roles.copyBlank") }, ...roles.map((r) => ({ value: r.name, label: roleLabel(r.name, t) }))]}
           />
         </label>
       </div>

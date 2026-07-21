@@ -59,15 +59,16 @@ class Command(BaseCommand):
             Group.objects.get_or_create(name=role)
 
         branch, _ = Branch.objects.get_or_create(
-            code="HQ", defaults={"name": "Headquarters"}
+            code="HQ", defaults={"name": "Headquarters", "name_ar": "المركز الرئيسي"}
         )
 
-        # Org structure (departments + teams) for user management.
-        dept_specs = [("FIN", "Finance"), ("SALES", "Sales"), ("OPS", "Operations")]
+        # Org structure (departments + teams) for user management. Departments and branches are
+        # reference records the user reads by name, so they seed with both names (erp/core/naming.py).
+        dept_specs = [("FIN", "Finance", "المالية"), ("SALES", "Sales", "المبيعات"), ("OPS", "Operations", "العمليات")]
         departments = {}
-        for code, name in dept_specs:
+        for code, name, name_ar in dept_specs:
             departments[code], _ = Department.objects.get_or_create(
-                code=code, defaults={"name": name, "branch": branch}
+                code=code, defaults={"name": name, "name_ar": name_ar, "branch": branch}
             )
         for code, name, dept_code in [("FIN-AP", "Accounts Payable", "FIN"), ("SALES-FIELD", "Field Sales", "SALES")]:
             Team.objects.get_or_create(

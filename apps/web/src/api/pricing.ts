@@ -6,6 +6,8 @@ export interface PriceList {
   id: string;
   code: string;
   name: string;
+  /** Arabic name — blank falls back to `name` (see lib/bilingualName). */
+  name_ar?: string;
   currency: string;
   tax_inclusive: boolean;
   is_default: boolean;
@@ -57,6 +59,7 @@ export function listPriceLists(): Promise<PriceList[]> {
 export function createPriceList(payload: {
   code: string;
   name: string;
+  name_ar?: string;
   currency?: string;
   tax_inclusive?: boolean;
   is_default?: boolean;
@@ -70,7 +73,7 @@ export function getPriceList(id: string): Promise<PriceList> {
 
 export function updatePriceList(
   id: string,
-  changes: Partial<Pick<PriceList, "name" | "currency" | "tax_inclusive" | "is_default" | "is_active">>,
+  changes: Partial<Pick<PriceList, "name" | "name_ar" | "currency" | "tax_inclusive" | "is_default" | "is_active">>,
 ): Promise<PriceList> {
   return apiFetch<PriceList>(`/pricing/price-lists/${id}`, { method: "PATCH", body: JSON.stringify(changes) });
 }

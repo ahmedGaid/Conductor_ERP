@@ -57,8 +57,9 @@ export interface UserDetail extends UserRow {
 
 export interface OrgUnits {
   roles: string[];
-  branches: { code: string; name: string }[];
-  departments: { code: string; name: string }[];
+  // Branches and departments carry both names; teams have no Arabic name yet.
+  branches: { code: string; name: string; name_ar?: string }[];
+  departments: { code: string; name: string; name_ar?: string }[];
   teams: { code: string; name: string }[];
 }
 

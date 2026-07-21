@@ -26,7 +26,7 @@ def _envelope(data, status: int = 200) -> Response:
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
-        fields = ["id", "code", "name", "is_active"]
+        fields = ["id", "code", "name", "name_ar", "is_active"]
         read_only_fields = ["id"]
 
 

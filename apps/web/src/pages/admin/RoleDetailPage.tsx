@@ -19,6 +19,7 @@ import {
   type RoleRegistry,
 } from "../../api/roles";
 import { formatMinor, parseToMinor } from "../../lib/money";
+import { roleLabel } from "../../lib/roleLabel";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import "./admin.css";
 
@@ -109,7 +110,7 @@ export function RoleDetailPage() {
 
       <header className="admin-detail__head">
         <div className="admin-detail__id">
-          <h1>{role.name}</h1>
+          <h1>{roleLabel(role.name, t)}</h1>
           <p className="muted">
             <span className={`upill ${role.protected ? "upill--invited" : "upill--active"}`}>
               {t(role.protected ? "admin.roles.builtin" : "admin.roles.custom")}
