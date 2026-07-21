@@ -42,6 +42,7 @@ export function ReportBuilderPage() {
   const [schedule, setSchedule] = useState<ReportSchedule>("none");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const [runId, setRunId] = useState<string | null>(null);
   const { data: result } = useAsync(
@@ -71,6 +72,7 @@ export function ReportBuilderPage() {
       });
       setName("");
       setCodes("");
+      setShowForm(false);
       reload();
       toast.show(t("accounting.toast.reportSaved"), "success");
     } catch (err) {
@@ -113,6 +115,12 @@ export function ReportBuilderPage() {
     <section className="acct-page">
       <AccountingNav />
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("accounting.reportBuilder.save")}
+        </button>
+      )}
+      {showForm && (
       <form className="card acct-toolbar" onSubmit={onCreate}>
         <label className="acct-field">
           <span>{t("accounting.reportBuilder.name")}</span>
@@ -155,10 +163,14 @@ export function ReportBuilderPage() {
             ))}
           </select>
         </label>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit" disabled={busy}>{t("accounting.reportBuilder.save")}</button>
       </form>
-      <p className="hint">{t("accounting.reportBuilder.scheduleHint")}</p>
-      {formError && <p className="error-text">{formError}</p>}
+      )}
+      {showForm && <p className="hint">{t("accounting.reportBuilder.scheduleHint")}</p>}
+      {showForm && formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <ListSkeleton rows={1} />

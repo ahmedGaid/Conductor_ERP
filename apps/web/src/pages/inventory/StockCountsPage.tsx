@@ -105,6 +105,7 @@ export function StockCountsPage() {
   const [countDate, setCountDate] = useState(today());
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   useSetHelpSignals({ stockCountCount: (data ?? []).length });
 
@@ -132,6 +133,12 @@ export function StockCountsPage() {
     <section className="inv-page">
       <InventoryNav />
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("inventory.counts.start")}
+        </button>
+      )}
+      {showForm && (
       <form className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.counts.warehouse")}</span>
@@ -146,12 +153,16 @@ export function StockCountsPage() {
           <span>{t("inventory.counts.date")}</span>
           <DatePicker value={countDate} onChange={setCountDate} />
         </label>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit" disabled={busy}>
           {t("inventory.counts.start")}
         </button>
       </form>
-      <p className="hint">{t("inventory.counts.startHint")}</p>
-      {formError && <p className="error-text">{formError}</p>}
+      )}
+      {showForm && <p className="hint">{t("inventory.counts.startHint")}</p>}
+      {showForm && formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <ListSkeleton rows={2} />

@@ -87,6 +87,7 @@ export function ChartOfAccountsPage() {
   const [postable, setPostable] = useState(true);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -97,6 +98,7 @@ export function ChartOfAccountsPage() {
       setCode("");
       setName("");
       setNameAr("");
+      setShowForm(false);
       reload();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : String(err));
@@ -109,6 +111,12 @@ export function ChartOfAccountsPage() {
     <section className="acct-page">
       <AccountingNav />
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("accounting.account.add")}
+        </button>
+      )}
+      {showForm && (
       <form className="card acct-toolbar" onSubmit={onSubmit}>
         <label className="acct-field">
           <span>{t("accounting.account.code")}</span>
@@ -147,11 +155,15 @@ export function ChartOfAccountsPage() {
             onChange={(e) => setPostable(e.target.checked)}
           />
         </label>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit" disabled={busy}>
           {t("accounting.account.add")}
         </button>
       </form>
-      {formError && <p className="error-text">{formError}</p>}
+      )}
+      {showForm && formError && <p className="error-text">{formError}</p>}
 
       {loading && (
         <ListSkeleton />

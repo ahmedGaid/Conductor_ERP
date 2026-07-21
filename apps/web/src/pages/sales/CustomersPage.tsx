@@ -101,10 +101,10 @@ export function CustomersPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [customValues, setCustomValues] = useState<CustomFieldValues>({});
   const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
+  const [showForm, setShowForm] = useState(() => !!(prefill.code || prefill.name));
 
-  // ⌘/Ctrl+Enter submits the add form from any field (incl. the credit-limit input).
   const formRef = useRef<HTMLFormElement>(null);
-  useFormKeys({ formRef });
+  useFormKeys({ formRef, onCancel: () => setShowForm(false) });
 
   // Publish the page's live facts for the Help drawer's Live tab.
   useSetHelpSignals({
@@ -152,6 +152,7 @@ export function CustomersPage() {
     setName("");
     setLimit("");
     setCustomValues({});
+    setShowForm(false);
   }
 
   return (
@@ -162,6 +163,11 @@ export function CustomersPage() {
         <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
           {t("import.action")}
         </button>
+        {!showForm && (
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("sales.customer.add")}
+          </button>
+        )}
       </div>
 
       <ImportDialog
@@ -174,6 +180,7 @@ export function CustomersPage() {
         onCommitted={() => reload()}
       />
 
+      {showForm && (
       <form ref={formRef} className="card sales-toolbar" onSubmit={onSubmit}>
         <label className="sales-field">
           <span>{t("sales.customer.code")}</span>
@@ -194,10 +201,14 @@ export function CustomersPage() {
           errors={customErrors}
           fieldClassName="sales-field"
         />
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit">
           {t("sales.customer.add")}
         </button>
       </form>
+      )}
 
       {loading && (
         <ListSkeleton />

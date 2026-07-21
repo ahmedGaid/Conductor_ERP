@@ -79,6 +79,7 @@ function AssignmentsBlock({
   const { data, loading, error, reload, mutate } = useAsync(listAssignments, [], "pricing:assignments");
   const [customer, setCustomer] = useState("");
   const [listCode, setListCode] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   function onAssign(e: FormEvent) {
     e.preventDefault();
@@ -99,6 +100,7 @@ function AssignmentsBlock({
     });
     setCustomer("");
     setListCode("");
+    setShowForm(false);
   }
 
   function onRemove(row: CustomerAssignment) {
@@ -119,6 +121,12 @@ function AssignmentsBlock({
       <h2 className="pricing-block__title">{t("pricing.customers.assignTitle")}</h2>
       <p className="muted pricing-block__hint">{t("pricing.customers.assignHint")}</p>
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("pricing.customers.assign")}
+        </button>
+      )}
+      {showForm && (
       <form className="card pricing-toolbar" onSubmit={onAssign}>
         <label className="pricing-field">
           <span>{t("pricing.customers.customer")}</span>
@@ -138,10 +146,14 @@ function AssignmentsBlock({
             options={lists.map((l) => ({ value: l.code, label: codeAndName(l, i18n.language) }))}
           />
         </label>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit">
           {t("pricing.customers.assign")}
         </button>
       </form>
+      )}
 
       {loading && <ListSkeleton />}
       {error && <ErrorState message={error} onRetry={reload} />}
@@ -211,6 +223,7 @@ function OverridesBlock({
   const [taxInclusive, setTaxInclusive] = useState(false);
   const [validFrom, setValidFrom] = useState("");
   const [validTo, setValidTo] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   function onAdd(e: FormEvent) {
     e.preventDefault();
@@ -259,6 +272,7 @@ function OverridesBlock({
     setTaxInclusive(false);
     setValidFrom("");
     setValidTo("");
+    setShowForm(false);
   }
 
   function onRemove(row: CustomerItemPrice) {
@@ -283,6 +297,12 @@ function OverridesBlock({
       <h2 className="pricing-block__title">{t("pricing.customers.overrideTitle")}</h2>
       <p className="muted pricing-block__hint">{t("pricing.customers.overrideHint")}</p>
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("pricing.customers.addOverride")}
+        </button>
+      )}
+      {showForm && (
       <form className="card pricing-toolbar" onSubmit={onAdd}>
         <label className="pricing-field">
           <span>{t("pricing.customers.customer")}</span>
@@ -334,10 +354,14 @@ function OverridesBlock({
           <input type="checkbox" checked={taxInclusive} onChange={(e) => setTaxInclusive(e.target.checked)} />
           <span>{t("pricing.customers.taxInclusive")}</span>
         </label>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit">
           {t("pricing.customers.addOverride")}
         </button>
       </form>
+      )}
 
       {loading && <ListSkeleton />}
       {error && <ErrorState message={error} onRetry={reload} />}

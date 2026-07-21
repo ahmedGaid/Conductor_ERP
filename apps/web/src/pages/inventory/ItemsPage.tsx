@@ -119,10 +119,10 @@ export function ItemsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [customValues, setCustomValues] = useState<CustomFieldValues>({});
   const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
+  const [showForm, setShowForm] = useState(() => !!(prefill.sku || prefill.name));
 
-  // ⌘/Ctrl+Enter submits the add form from any field (incl. the type select).
   const formRef = useRef<HTMLFormElement>(null);
-  useFormKeys({ formRef });
+  useFormKeys({ formRef, onCancel: () => setShowForm(false) });
 
   // Publish the page's live facts for the Help drawer's Live tab.
   useSetHelpSignals({
@@ -171,6 +171,7 @@ export function ItemsPage() {
     setSku("");
     setName("");
     setCustomValues({});
+    setShowForm(false);
   }
 
   return (
@@ -181,6 +182,11 @@ export function ItemsPage() {
         <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
           {t("import.action")}
         </button>
+        {!showForm && (
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("inventory.item.add")}
+          </button>
+        )}
       </div>
 
       <ImportDialog
@@ -193,6 +199,7 @@ export function ItemsPage() {
         onCommitted={() => reload()}
       />
 
+      {showForm && (
       <form ref={formRef} className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.item.sku")}</span>
@@ -220,10 +227,14 @@ export function ItemsPage() {
           errors={customErrors}
           fieldClassName="inv-field"
         />
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit">
           {t("inventory.item.add")}
         </button>
       </form>
+      )}
 
       {loading && (
         <ListSkeleton />

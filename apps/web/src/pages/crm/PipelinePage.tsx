@@ -97,6 +97,7 @@ export function PipelinePage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   useSetHelpSignals({
     opportunityCount: (data ?? []).length,
@@ -145,6 +146,7 @@ export function PipelinePage() {
       setWarehouse("");
       setCampaignCode("");
       setLines([emptyLine()]);
+      setShowForm(false);
       reload();
       toast.show(t("crm.toast.opportunityCreated"), "success");
     } catch (err) {
@@ -181,6 +183,12 @@ export function PipelinePage() {
     <section className="crm-page">
       <CrmNav />
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("crm.newOpp.create")}
+        </button>
+      )}
+      {showForm && (
       <form className="card crm-page" onSubmit={onSubmit}>
         <h2>{t("crm.tabs.newOpp")}</h2>
         <div className="crm-toolbar">
@@ -264,12 +272,16 @@ export function PipelinePage() {
           <button type="button" className="btn btn--sm" onClick={() => setLines((ls) => [...ls, emptyLine()])}>
             {t("sales.newOrder.addLine")}
           </button>
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+            {t("common.cancel")}
+          </button>
           <button type="submit" className="btn btn--primary" disabled={busy}>
             {t("crm.newOpp.create")}
           </button>
         </div>
         {formError && <p className="error-text">{formError}</p>}
       </form>
+      )}
 
       {loading && (
         <ListSkeleton />

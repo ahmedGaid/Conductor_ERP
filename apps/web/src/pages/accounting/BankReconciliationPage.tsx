@@ -71,6 +71,7 @@ export function BankReconciliationPage() {
   const [lines, setLines] = useState<DraftLine[]>([emptyLine(today())]);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -116,6 +117,12 @@ export function BankReconciliationPage() {
     <section className="acct-page">
       <AccountingNav />
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("accounting.bankRec.create")}
+        </button>
+      )}
+      {showForm && (
       <form className="card" onSubmit={onSubmit}>
         <div className="acct-toolbar">
           <label className="acct-field">
@@ -175,6 +182,9 @@ export function BankReconciliationPage() {
           <button type="button" className="btn btn--sm" onClick={() => setLines((ls) => [...ls, emptyLine(today())])}>
             {t("accounting.bankRec.addLine")}
           </button>
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+            {t("common.cancel")}
+          </button>
           <button type="submit" className="btn btn--primary" disabled={busy}>
             {t("accounting.bankRec.create")}
           </button>
@@ -182,6 +192,7 @@ export function BankReconciliationPage() {
         <p className="hint">{t("accounting.bankRec.amountHint")}</p>
         {formError && <p className="error-text">{formError}</p>}
       </form>
+      )}
 
       {loading && (
         <ListSkeleton rows={2} />

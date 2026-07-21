@@ -95,10 +95,10 @@ export function SuppliersPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [customValues, setCustomValues] = useState<CustomFieldValues>({});
   const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
+  const [showForm, setShowForm] = useState(() => !!(prefill.code || prefill.name));
 
-  // ⌘/Ctrl+Enter submits the add form from any field.
   const formRef = useRef<HTMLFormElement>(null);
-  useFormKeys({ formRef });
+  useFormKeys({ formRef, onCancel: () => setShowForm(false) });
 
   // Publish the page's live facts for the Help drawer's Live tab.
   useSetHelpSignals({
@@ -143,6 +143,7 @@ export function SuppliersPage() {
     setCode("");
     setName("");
     setCustomValues({});
+    setShowForm(false);
   }
 
   return (
@@ -153,6 +154,11 @@ export function SuppliersPage() {
         <button type="button" className="btn btn--sm" onClick={() => setImportOpen(true)}>
           {t("import.action")}
         </button>
+        {!showForm && (
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("purchasing.supplier.add")}
+          </button>
+        )}
       </div>
 
       <ImportDialog
@@ -165,6 +171,7 @@ export function SuppliersPage() {
         onCommitted={() => reload()}
       />
 
+      {showForm && (
       <form ref={formRef} className="card pur-toolbar" onSubmit={onSubmit}>
         <label className="pur-field">
           <span>{t("purchasing.supplier.code")}</span>
@@ -181,10 +188,14 @@ export function SuppliersPage() {
           errors={customErrors}
           fieldClassName="pur-field"
         />
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit">
           {t("purchasing.supplier.add")}
         </button>
       </form>
+      )}
 
       {loading && (
         <ListSkeleton />

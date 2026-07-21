@@ -58,6 +58,7 @@ export function StockMovementPage() {
   const [expiry, setExpiry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(() => !!(params.get("item") || params.get("warehouse") || params.get("qty")));
 
   useSetHelpSignals({ movementCount: (movements ?? []).length });
 
@@ -120,6 +121,7 @@ export function StockMovementPage() {
       setUnitCost("");
       setBatchNo("");
       setExpiry("");
+      setShowForm(false);
       reload();
     } catch (err) {
       // A failed issue / transfer is almost always short stock — the error receipt offers a one-click
@@ -134,6 +136,12 @@ export function StockMovementPage() {
     <section className="inv-page">
       <InventoryNav />
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("inventory.movement.post")}
+        </button>
+      )}
+      {showForm && (
       <form className="card inv-page" onSubmit={onSubmit}>
         <div className="inv-segment" role="group" aria-label={t("inventory.movement.type")}>
           {MODES.map((m) => (
@@ -208,12 +216,16 @@ export function StockMovementPage() {
             </label>
           )}
 
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+            {t("common.cancel")}
+          </button>
           <button className="btn btn--primary" type="submit" disabled={busy}>
             {t("inventory.movement.post")}
           </button>
         </div>
         {error && <p className="error-text">{error}</p>}
       </form>
+      )}
 
       {movements && movements.length > 0 && (
         <div className="card inv-table-wrap">

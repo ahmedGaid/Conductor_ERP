@@ -71,10 +71,10 @@ export function WarehousesPage() {
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
-  // ⌘/Ctrl+Enter submits the add form from any field.
   const formRef = useRef<HTMLFormElement>(null);
-  useFormKeys({ formRef });
+  useFormKeys({ formRef, onCancel: () => setShowForm(false) });
 
   // Optimistic create: show the new warehouse row instantly and clear the form for the next entry;
   // the server row replaces the placeholder on settle, or it rolls back + toasts.
@@ -93,12 +93,19 @@ export function WarehousesPage() {
     });
     setCode("");
     setName("");
+    setShowForm(false);
   }
 
   return (
     <section className="inv-page">
       <InventoryNav />
 
+      {!showForm && (
+        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+          {t("inventory.warehouse.add")}
+        </button>
+      )}
+      {showForm && (
       <form ref={formRef} className="card inv-toolbar" onSubmit={onSubmit}>
         <label className="inv-field">
           <span>{t("inventory.warehouse.code")}</span>
@@ -108,10 +115,14 @@ export function WarehousesPage() {
           <span>{t("inventory.warehouse.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
+          {t("common.cancel")}
+        </button>
         <button className="btn btn--primary" type="submit">
           {t("inventory.warehouse.add")}
         </button>
       </form>
+      )}
 
       {loading && (
         <ListSkeleton />
