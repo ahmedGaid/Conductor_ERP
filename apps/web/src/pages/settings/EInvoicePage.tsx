@@ -18,6 +18,10 @@ import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { SYSTEM_ADMIN } from "./roles";
 import { Segmented, SettingRow, Toggle } from "./controls";
+// The simulated-adapter notice below uses the shared `.sysbanner` recipe; import its stylesheet so a
+// direct load of this page (no prior visit to Settings → System) still sizes the icon and lays the
+// banner out — otherwise the warning glyph renders unsized (full-width triangle).
+import "./system.css";
 
 // The plaintext secret is never returned by the API. While `has_secret` is true we show this
 // placeholder so the admin knows one is stored without ever seeing it; leaving the field blank on
