@@ -10,6 +10,11 @@ urlpatterns = [
     path("items/import", views.ItemImportView.as_view(), name="item-import"),
     path("items/import/template", views.ItemImportTemplateView.as_view(), name="item-import-template"),
     path("items/<str:sku>", views.ItemDetailView.as_view(), name="item-detail"),
+    path(
+        "items/<str:sku>/eta-code-suggestion",
+        views.ItemEtaCodeSuggestionView.as_view(),
+        name="item-eta-code-suggestion",
+    ),
     path("categories", views.CategoryListCreateView.as_view(), name="category-list"),
     path("warehouses", views.WarehouseListCreateView.as_view(), name="warehouse-list"),
     path("warehouses/<str:code>", views.WarehouseDetailView.as_view(), name="warehouse-detail"),

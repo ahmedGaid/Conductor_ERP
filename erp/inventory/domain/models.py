@@ -16,6 +16,16 @@ class ItemType(models.TextChoices):
     SERVICE = "service", "Service"
 
 
+class EtaCodeStatus(models.TextChoices):
+    """State of the item's ETA product-identity code (FILE_06). ``ACCEPTED`` is the only status the
+    e-invoice adapter may use as a live ``itemCode`` — everything else blocks the invoice line rather
+    than send a placeholder to the Tax Authority."""
+    NOT_SUBMITTED = "not_submitted", "Not submitted"
+    PENDING = "pending", "Pending"
+    ACCEPTED = "accepted", "Accepted"
+    REJECTED = "rejected", "Rejected"
+
+
 class MovementType(models.TextChoices):
     RECEIPT = "receipt", "Receipt"
     ISSUE = "issue", "Issue"
@@ -63,6 +73,13 @@ class Item(AuditedModel):
     reorder_point = models.DecimalField(max_digits=18, decimal_places=4, default=0)
     # Admin-defined extra fields (erp.core.custom_fields) — validated at write time.
     custom_data = models.JSONField(default=dict, blank=True)
+    # ETA product identity (FILE_06, EGS path) — a composite code ETA must approve before it can be
+    # used as a live itemCode. gpc_code is the GS1 classification the composition is built from.
+    gpc_code = models.CharField(max_length=32, blank=True, default="")
+    eta_item_code = models.CharField(max_length=64, blank=True, default="")
+    eta_code_status = models.CharField(
+        max_length=16, choices=EtaCodeStatus.choices, default=EtaCodeStatus.NOT_SUBMITTED,
+    )
 
     class Meta:
         db_table = "inventory_item"

@@ -30,6 +30,7 @@ credentials → signing → submission → status reconciliation → archiving �
 | FILE_03 | Document signing per ETA's required method (validate against ETA sandbox) | Large |
 | FILE_04 | Status reconciliation — poll ETA for valid/rejected, map to `ETAInvoice` states, retries | Medium |
 | FILE_05 | Archiving + acceptance — long-term invoice storage, gate10 extended to real sandbox, sign-off | Medium |
+| FILE_06 | Product coding (GPC/EGS/GTIN) — real `itemCode` identity, ETA approval workflow | Medium |
 
 ## Locked decisions (re-confirm only if code/ETA-API contradicts)
 
@@ -73,6 +74,9 @@ company tax profile. Once the admin enters them and clicks Test connection, FILE
 adapter) is the next build — the connection/auth half is done, the document-submission half is not.
 
 ## Change log
+- **2026-07-22 — FILE_06 added** (product coding, GPC/EGS/GTIN) from a doc dig of
+  `Docs/E invoice/Egyptian_E-Invoice_Guide.md`. Current `itemCode` = raw SKU is a placeholder, not
+  a real ETA-approved code. Not a blocker; sequenced after FILE_05. See `FILE_06_PRODUCT_CODING.md`.
 - **2026-07-18 — Created** from the QA audit's Critical e-invoicing finding. Positioned in
   `EXECUTION_ORDER.md` as pos 8-C; blocks handover only if `pre-handover-hardening/FILE_01` picks
   Branch A.

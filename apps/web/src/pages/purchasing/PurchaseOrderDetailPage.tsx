@@ -351,9 +351,9 @@ export function PurchaseOrderDetailPage() {
               {data.lines.map((l) => (
                 <tr key={l.line_no}>
                   <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
-                  <td className="pur-table__num"><Bdi>{formatQuantity(l.quantity)}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatQuantity(l.received_qty)}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatQuantity(l.returned_qty)}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatQuantity(Number(l.quantity))}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatQuantity(Number(l.received_qty))}</Bdi></td>
+                  <td className="pur-table__num"><Bdi>{formatQuantity(Number(l.returned_qty))}</Bdi></td>
                   <td className="pur-table__num"><Bdi>{formatMoneyNumeral(l.unit_cost_minor)}</Bdi></td>
                   <td className="pur-table__num"><Bdi>{formatMoneyNumeral(l.line_total_minor)}</Bdi></td>
                 </tr>

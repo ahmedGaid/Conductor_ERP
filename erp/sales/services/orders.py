@@ -373,6 +373,20 @@ def return_order(order: SalesOrder, returned: dict[int, Decimal] | None = None, 
     return order
 
 
+def _invoiced_line(ln: SalesOrderLine) -> dict:
+    """One ORDER_INVOICED line — business keys only, plus the item's ETA product-identity code
+    (resolved by SKU via the inventory contract, never an FK) so e-invoicing can use a real
+    ``itemCode`` once the item's code is ETA-accepted."""
+    info = inventory.find_item(ln.item_sku)
+    return {
+        "item_sku": ln.item_sku, "description": ln.description,
+        "quantity": str(ln.quantity), "unit_price_minor": ln.unit_price_minor,
+        "discount_minor": ln.discount_minor, "line_total_minor": ln.line_total_minor,
+        "eta_item_code": info.eta_item_code if info else "",
+        "eta_code_status": info.eta_code_status if info else "not_submitted",
+    }
+
+
 @transaction.atomic
 def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
     _require(order, OrderStatus.DELIVERED)
@@ -424,12 +438,7 @@ def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
         # Per-line detail, by business key only, so a subscriber (e-invoicing) can build a per-line
         # tax document without an FK into sales — see ORDER_INVOICED's payload contract.
         "lines": [
-            {
-                "item_sku": ln.item_sku, "description": ln.description,
-                "quantity": str(ln.quantity), "unit_price_minor": ln.unit_price_minor,
-                "discount_minor": ln.discount_minor, "line_total_minor": ln.line_total_minor,
-            }
-            for ln in order.lines.all().order_by("line_no")
+            _invoiced_line(ln) for ln in order.lines.all().order_by("line_no")
         ],
     })
     return order

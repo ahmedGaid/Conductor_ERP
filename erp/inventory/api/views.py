@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from erp.audit import services as audit
 from erp.core.custom_fields import custom_field_columns, validate_custom_data
+from erp.einvoice import contracts as einvoice_contracts
 from erp.core.exports import EXPORT_FORMATS, Column, ReportTable, export_response
 from erp.core.idempotency import run_once
 from erp.core.import_api import run_import_request, template_response
@@ -29,6 +30,7 @@ from .serializers import (
     CategorySerializer,
     CountLineSetSerializer,
     IssueSerializer,
+    ItemEtaCodingSerializer,
     ItemSerializer,
     MovementSerializer,
     ReceiveSerializer,
@@ -124,6 +126,50 @@ class ItemDetailView(APIView):
             "stock": _stock_dict(services.stock_on_hand(item_sku=sku)),
             "movements": _movements_for(item=item),
         })
+
+    def patch(self, request: Request, sku) -> Response:
+        """Update the ETA product-identity fields (FILE_06) — gpc_code / eta_item_code /
+        eta_code_status. The only editable fields on an existing item; everything else is set at
+        creation or via a dedicated action (e.g. reorder point)."""
+        item = get_object_or_404(Item.objects.select_related("category"), sku=sku)
+        s = ItemEtaCodingSerializer(data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        before = {
+            "gpc_code": item.gpc_code, "eta_item_code": item.eta_item_code,
+            "eta_code_status": item.eta_code_status,
+        }
+        fields = []
+        for key, value in s.validated_data.items():
+            setattr(item, key, value)
+            fields.append(key)
+        if fields:
+            item.save(update_fields=[*fields, "updated_at"])
+            audit.record(
+                module="inventory", action="set_item_eta_coding", entity_type="Item",
+                entity_id=item.sku, actor=request.user, before=before,
+                after={k: getattr(item, k) for k in before},
+            )
+        return _envelope(ItemSerializer(item).data)
+
+
+class ItemEtaCodeSuggestionView(APIView):
+    """``GET`` — a composed EGS code suggestion (FILE_06): SKU + GPC + RIN + ``"EGS"``, concatenated.
+    Fills the ETA item code field for review — never saved or submitted by this call; the user still
+    reviews, registers it on the ETA portal, and only then marks it accepted."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request, sku) -> Response:
+        item = get_object_or_404(Item, sku=sku)
+        rin = einvoice_contracts.current_rin()
+        missing = []
+        if not item.gpc_code.strip():
+            missing.append("gpc_code")
+        if not rin:
+            missing.append("rin")
+        if missing:
+            return _envelope({"suggestion": "", "missing": missing})
+        return _envelope({"suggestion": f"{item.sku}{item.gpc_code}{rin}EGS".upper(), "missing": []})
 
 
 class WarehouseDetailView(APIView):

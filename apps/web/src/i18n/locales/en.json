@@ -1098,6 +1098,28 @@
       "status": "Status",
       "active": "Active",
       "inactive": "Inactive"
+    },
+    "eta": {
+      "title": "E-invoicing product code",
+      "hint": "The Egyptian Tax Authority requires an approved product code (GPC + EGS, or a purchased GTIN) before this item's SKU can appear on a live invoice line.",
+      "gpcCode": "GPC classification",
+      "itemCode": "ETA item code",
+      "status": "Approval status",
+      "statusValues": {
+        "not_submitted": "Not submitted",
+        "pending": "Pending ETA review",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "save": "Save",
+      "saved": "E-invoicing code saved",
+      "suggest": "Suggest code",
+      "missingForSuggestion": "Add {{fields}} first to suggest a code.",
+      "missingJoin": " and ",
+      "missing": {
+        "gpc_code": "a GPC classification",
+        "rin": "an ETA tax registration number (Settings → E-Invoicing)"
+      }
     }
   },
   "party": {

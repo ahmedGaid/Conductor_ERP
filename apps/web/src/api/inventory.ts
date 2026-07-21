@@ -3,6 +3,7 @@
 import { apiFetch } from "./client";
 
 export type ItemType = "stock" | "service";
+export type EtaCodeStatus = "not_submitted" | "pending" | "accepted" | "rejected";
 export type MovementType = "receipt" | "issue" | "transfer" | "return_in" | "return_out" | "adjustment";
 export type CountStatus = "counting" | "posted" | "cancelled";
 
@@ -16,6 +17,9 @@ export interface Item {
   is_active: boolean;
   reorder_point: string;
   custom_data: Record<string, unknown>;
+  gpc_code: string;
+  eta_item_code: string;
+  eta_code_status: EtaCodeStatus;
 }
 
 export interface Warehouse {
@@ -80,6 +84,20 @@ export interface ItemDetail {
 
 export function getItem(sku: string): Promise<ItemDetail> {
   return apiFetch<ItemDetail>(`/inventory/items/${encodeURIComponent(sku)}`);
+}
+
+export function suggestItemEtaCode(sku: string): Promise<{ suggestion: string; missing: string[] }> {
+  return apiFetch(`/inventory/items/${encodeURIComponent(sku)}/eta-code-suggestion`);
+}
+
+export function updateItemEtaCoding(
+  sku: string,
+  payload: { gpc_code?: string; eta_item_code?: string; eta_code_status?: EtaCodeStatus },
+): Promise<Item> {
+  return apiFetch<Item>(`/inventory/items/${encodeURIComponent(sku)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function listWarehouses(): Promise<Warehouse[]> {

@@ -14,11 +14,22 @@ from ..events import (
 )
 from ..services.issue import EInvoiceInput, poll_invoice, record_invoice, submit_invoice
 
+
+def current_rin() -> str:
+    """The configured issuer tax registration number (RIN) — the only ETA-config value another
+    module may read directly (e.g. inventory composing an EGS product-code suggestion, FILE_06).
+    Empty when ETA is not yet configured."""
+    from ..services import config
+
+    return str(config.effective_config().rin or "")
+
+
 __all__ = [
     "EInvoiceInput",
     "record_invoice",
     "submit_invoice",
     "poll_invoice",
+    "current_rin",
     "EINVOICE_RECORDED",
     "EINVOICE_SUBMITTED",
     "EINVOICE_VALIDATED",

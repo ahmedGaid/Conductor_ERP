@@ -37,6 +37,8 @@ class ItemInfo:
     type: str
     is_active: bool
     reorder_point: str = "0"
+    eta_item_code: str = ""
+    eta_code_status: str = "not_submitted"
 
 
 def find_item(sku: str) -> ItemInfo | None:
@@ -44,7 +46,8 @@ def find_item(sku: str) -> ItemInfo | None:
     if item is None:
         return None
     return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active,
-                    reorder_point=str(item.reorder_point))
+                    reorder_point=str(item.reorder_point), eta_item_code=item.eta_item_code,
+                    eta_code_status=item.eta_code_status)
 
 
 def list_items(item_type: str = "stock") -> list[ItemInfo]:

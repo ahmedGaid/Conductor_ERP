@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from ..domain.models import ItemType
+from ..domain.models import EtaCodeStatus, ItemType
 
 
 class CategorySerializer(serializers.Serializer):
@@ -24,6 +24,11 @@ class ItemSerializer(serializers.Serializer):
     is_active = serializers.BooleanField(required=False, default=True)
     reorder_point = serializers.DecimalField(max_digits=18, decimal_places=4, required=False, default=0)
     custom_data = serializers.JSONField(required=False, default=dict)
+    gpc_code = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
+    eta_item_code = serializers.CharField(max_length=64, required=False, allow_blank=True, default="")
+    eta_code_status = serializers.ChoiceField(
+        choices=EtaCodeStatus.choices, required=False, default=EtaCodeStatus.NOT_SUBMITTED,
+    )
 
     def to_representation(self, obj) -> dict:
         return {
@@ -36,7 +41,17 @@ class ItemSerializer(serializers.Serializer):
             "is_active": obj.is_active,
             "reorder_point": str(obj.reorder_point),
             "custom_data": obj.custom_data,
+            "gpc_code": obj.gpc_code,
+            "eta_item_code": obj.eta_item_code,
+            "eta_code_status": obj.eta_code_status,
         }
+
+
+class ItemEtaCodingSerializer(serializers.Serializer):
+    """Partial update — the ETA product-identity fields only (FILE_06)."""
+    gpc_code = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    eta_item_code = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    eta_code_status = serializers.ChoiceField(choices=EtaCodeStatus.choices, required=False)
 
 
 class WarehouseSerializer(serializers.Serializer):

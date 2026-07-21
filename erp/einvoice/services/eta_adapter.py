@@ -39,6 +39,12 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
 
+class MissingItemCodeError(RuntimeError):
+    """Raised building a live document when a line's item has no ETA-accepted product code
+    (FILE_06). Never sent as a placeholder — a rejected/placeholder itemCode on a live document is
+    worse than blocking the invoice, so this is non-retryable until the item's code is accepted."""
+
+
 def is_live() -> bool:
     """True when the app should actually talk to ETA: credentials present *and* an API base URL.
 
@@ -103,7 +109,25 @@ def _split_shares(total: int, weights: list[int]) -> list[int]:
     return shares
 
 
-def _build_invoice_lines(inv: dict, net_minor: int, tax_minor: int, currency: str) -> list[dict]:
+def _line_item_code(item: dict, sku: str, *, strict: bool) -> str:
+    """The line's ``itemCode`` (FILE_06). An ETA-accepted product code always wins. ``strict``
+    (live submission only — the caller already knows ``is_live()``, this stays DB-free so
+    ``build_document`` keeps its pure-mapping contract): no accepted code is a hard failure, never a
+    placeholder on a real filing. Non-strict: falls back to the SKU (or ``"N/A"``) exactly as
+    before, so demo/test behaviour is unchanged."""
+    if str(item.get("eta_code_status") or "") == "accepted":
+        code = str(item.get("eta_item_code") or "").strip()
+        if code:
+            return code
+    if strict:
+        raise MissingItemCodeError(
+            f"Item {sku or '(unknown)'} has no ETA-accepted product code — "
+            "assign and get an EGS/GTIN code accepted before invoicing live."
+        )
+    return sku or "N/A"
+
+
+def _build_invoice_lines(inv: dict, net_minor: int, tax_minor: int, currency: str, *, strict: bool = False) -> list[dict]:
     """One ``invoiceLine`` per order line, each with its proportional share of the header VAT.
 
     ``items`` are the business dicts carried in via the ``sales.OrderInvoiced`` event (see module
@@ -124,14 +148,15 @@ def _build_invoice_lines(inv: dict, net_minor: int, tax_minor: int, currency: st
         discount_minor = int(item.get("discount_minor") or 0)
         sales_total_minor = line_net + discount_minor
         sku = str(item.get("item_sku") or "")
+        item_code = _line_item_code(item, sku, strict=strict)
         taxable_items = (
             [{"taxType": "T1", "subType": "V009", "amount": _egp(tax_share), "rate": rate}]
             if tax_share else []
         )
         lines.append({
             "description": str(item.get("description") or sku),
-            "itemType": "EGS",          # Egyptian GS/GPC code system; itemCode is the SKU below
-            "itemCode": sku,
+            "itemType": "EGS",          # ETA item-type code for goods+services (FILE_06 EGS path)
+            "itemCode": item_code,
             "unitType": "EA",           # each
             "quantity": float(item.get("quantity") or 1),
             "internalCode": sku,
@@ -157,8 +182,8 @@ def _consolidated_line(inv: dict, net_minor: int, tax_minor: int, currency: str)
         taxable_items = [{"taxType": "T1", "subType": "V009", "amount": tax_egp, "rate": rate}]
     return {
         "description": f"Invoice {inv.get('invoice', '')}",
-        "itemType": "EGS",          # Egyptian GS/GPC code system; itemCode is the real classification
-        "itemCode": "",             # unknown at the aggregate level — a validating submission needs it
+        "itemType": "EGS",          # ETA item-type code for goods+services; itemCode is the real classification
+        "itemCode": "N/A",          # unknown at the aggregate level; spec requires non-empty itemCode
         "unitType": "EA",           # each
         "quantity": 1,
         "internalCode": str(inv.get("invoice") or ""),
@@ -171,12 +196,15 @@ def _consolidated_line(inv: dict, net_minor: int, tax_minor: int, currency: str)
     }
 
 
-def build_document(inv: dict, cfg) -> dict:
+def build_document(inv: dict, cfg, *, strict: bool = False) -> dict:
     """Map an invoice's business data (+ the issuer config) to an ETA Invoice v1.0 document.
 
     ``inv`` is the flat dict :func:`erp.einvoice.services.issue._document` produces (business keys
-    and integer-minor amounts). DB-free; deterministic given ``inv``/``cfg`` and the (external)
-    signing certificate — with no certificate configured it is a pure mapping (``signatures == []``).
+    and integer-minor amounts). DB-free; deterministic given ``inv``/``cfg``/``strict`` and the
+    (external) signing certificate — with no certificate configured it is a pure mapping
+    (``signatures == []``). ``strict=True`` (only from :func:`submit`'s live path, which already
+    knows ``is_live()``) hard-fails a line with no ETA-accepted product code (FILE_06) instead of
+    falling back to the SKU — never a placeholder ``itemCode`` on a real filing.
     """
     from . import signing
     net_minor = int(inv.get("net") or 0)
@@ -191,7 +219,7 @@ def build_document(inv: dict, cfg) -> dict:
     # belongs to the customer's tax setup — "V009" is the common default; a richer tax_code →
     # subType map is a follow-up once ETA sub-types are configured per install.
     tax_totals = [{"taxType": "T1", "amount": tax_egp}] if tax_minor else []
-    lines = _build_invoice_lines(inv, net_minor, tax_minor, currency)
+    lines = _build_invoice_lines(inv, net_minor, tax_minor, currency, strict=strict)
     total_discount_egp = _egp(sum(int(item.get("discount_minor") or 0) for item in (inv.get("lines") or [])))
 
     issuer = {
@@ -310,7 +338,10 @@ def submit(document: dict) -> SubmitResult:
     from . import config, eta_client
 
     cfg = config.effective_config()
-    eta_document = build_document(document, cfg)
+    try:
+        eta_document = build_document(document, cfg, strict=True)
+    except MissingItemCodeError as exc:
+        return SubmitResult(uuid="", accepted=False, error=str(exc), retryable=False)
     internal_id = str(document.get("invoice") or "")
     try:
         resp = eta_client.submit_document(eta_document)

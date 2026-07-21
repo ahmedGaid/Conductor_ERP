@@ -55,7 +55,7 @@ export function MovementsTable({ movements, show }: { movements: Movement[]; sho
                     <EntityLink type="item" value={m.item_sku} />
                   )}
                 </td>
-                <td className="inv-table__num"><Bdi>{formatQuantity(m.quantity)}</Bdi></td>
+                <td className="inv-table__num"><Bdi>{formatQuantity(Number(m.quantity))}</Bdi></td>
                 <td className="inv-table__num"><Bdi>{formatMoneyNumeral(m.value_minor)}</Bdi></td>
                 <td className="latin">
                   {m.reference ? (
