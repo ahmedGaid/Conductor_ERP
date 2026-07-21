@@ -2051,6 +2051,7 @@
     "statusHeader": "Status",
     "submit": "Prepare for filing",
     "poll": "Check status",
+    "pollStalled": "Needs attention",
     "status": {
       "draft": "Draft",
       "submitted": "Prepared",

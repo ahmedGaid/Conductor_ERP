@@ -18,6 +18,7 @@ import { Bdi } from "../../components/Bdi";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { StatusRing } from "../../components/StatusRing";
+import { Badge } from "../../components/Badge";
 import { einvoiceTone } from "../../lib/statusTone";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { EmptyState } from "../../components/EmptyState";
@@ -164,6 +165,11 @@ export function EInvoicesPage() {
                       tone={einvoiceTone(e.status)}
                       label={t(`einvoice.status.${e.status}`)}
                     />
+                    {e.poll_stalled && (
+                      <span title={e.error_text || undefined}>
+                        <Badge tone="failed">{t("einvoice.pollStalled")}</Badge>
+                      </span>
+                    )}
                   </td>
                   <td>
                     <RowActions label={t("common.actions")}>

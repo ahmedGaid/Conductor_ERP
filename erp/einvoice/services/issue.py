@@ -13,6 +13,7 @@ import datetime as dt
 from dataclasses import dataclass
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from erp.audit import services as audit
@@ -22,6 +23,13 @@ from .. import events
 from ..domain.models import ETAInvoice, ETAStatus
 from ..errors import InvalidEInvoiceTransitionError
 from . import eta_adapter
+
+# FILE_04 — backoff schedule for the automatic reconciliation sweep, seconds: 5m / 15m / 1h / 6h / 24h,
+# then repeat the last step. Mirrors notifications.services.webhooks' RETRY_SCHEDULE shape.
+POLL_BACKOFF_SCHEDULE = [300, 900, 3600, 21600, 86400]
+# After this many attempts with still no verdict, stop auto-polling and flag for an operator to look
+# (a stuck invoice must raise a visible alert, not hang silently) — a manual poll can still retry it.
+MAX_POLL_ATTEMPTS = 10
 
 
 @dataclass
@@ -137,29 +145,56 @@ def submit_invoice(eta: ETAInvoice, actor=None) -> ETAInvoice:
 
 @transaction.atomic
 def poll_invoice(eta: ETAInvoice, actor=None) -> ETAInvoice:
-    """Poll ETA for a submitted e-invoice's validation result."""
+    """Poll ETA for a submitted e-invoice's validation result.
+
+    Called both from the UI's manual "poll" action (immediate, ignores backoff) and from the beat
+    sweep (:func:`due_polls` already filtered to eligible rows). Idempotent — polling an already-
+    settled (``valid``/``rejected``) invoice raises rather than re-asking."""
     if eta.status not in (ETAStatus.SUBMITTED, ETAStatus.VALID):
         raise InvalidEInvoiceTransitionError(
             data={"invoice": eta.invoice_number, "status": eta.status, "expected": "submitted"}
         )
     outcome = eta_adapter.query(eta.uuid)
     if outcome == "pending":
-        # The adapter has no Tax-Authority verdict to report (it is simulated). Leave the record
-        # where it is rather than inventing a "valid" that no authority granted — see
-        # eta_adapter.is_live() and the claims-discipline decision (2026-07-20).
+        # No Tax-Authority verdict yet — either still processing at ETA, or a transient read
+        # failure (the adapter can't tell the two apart; see eta_adapter.query's docstring). Either
+        # way: don't invent a verdict, just track the attempt and back off the next automatic try.
+        eta.poll_attempts += 1
+        if eta.poll_attempts >= MAX_POLL_ATTEMPTS:
+            eta.poll_stalled = True
+            eta.next_poll_at = None
+        else:
+            delay = POLL_BACKOFF_SCHEDULE[min(eta.poll_attempts - 1, len(POLL_BACKOFF_SCHEDULE) - 1)]
+            eta.next_poll_at = timezone.now() + dt.timedelta(seconds=delay)
+        eta.save(update_fields=["poll_attempts", "poll_stalled", "next_poll_at", "updated_at"])
         audit.record(module="einvoice", action="poll_invoice", entity_type="ETAInvoice",
                      entity_id=eta.invoice_number, actor=actor, after={"status": eta.status})
         return eta
     if outcome == "valid":
         eta.status = ETAStatus.VALID
         eta.validated_at = eta.validated_at or timezone.now()
-        eta.save(update_fields=["status", "validated_at", "updated_at"])
+        eta.poll_attempts = 0
+        eta.poll_stalled = False
+        eta.next_poll_at = None
+        eta.save(update_fields=["status", "validated_at", "poll_attempts", "poll_stalled",
+                                "next_poll_at", "updated_at"])
         bus.publish(events.EINVOICE_VALIDATED, {"invoice": eta.invoice_number, "uuid": eta.uuid})
     else:
         eta.status = ETAStatus.REJECTED
         eta.error_text = f"ETA returned {outcome}"
-        eta.save(update_fields=["status", "error_text", "updated_at"])
+        eta.poll_attempts = 0
+        eta.poll_stalled = False
+        eta.next_poll_at = None
+        eta.save(update_fields=["status", "error_text", "poll_attempts", "poll_stalled",
+                                "next_poll_at", "updated_at"])
         bus.publish(events.EINVOICE_REJECTED, {"invoice": eta.invoice_number})
     audit.record(module="einvoice", action="poll_invoice", entity_type="ETAInvoice",
                  entity_id=eta.invoice_number, actor=actor, after={"status": eta.status})
     return eta
+
+
+def due_polls():
+    """Submitted e-invoices the beat sweep should (re-)poll now: backoff elapsed, not stalled."""
+    return ETAInvoice.objects.filter(status=ETAStatus.SUBMITTED, poll_stalled=False).filter(
+        Q(next_poll_at__isnull=True) | Q(next_poll_at__lte=timezone.now())
+    )

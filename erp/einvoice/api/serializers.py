@@ -46,3 +46,4 @@ class ETAInvoiceSerializer(serializers.Serializer):
     uuid = serializers.CharField()
     document_hash = serializers.CharField()
     error_text = serializers.CharField()
+    poll_stalled = serializers.BooleanField()

@@ -265,6 +265,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "notifications.retry_due_webhooks",
         "schedule": 60.0,  # seconds — check for elapsed backoff windows every minute
     },
+    "reconcile-einvoice-submissions": {
+        "task": "einvoice.reconcile_submitted",
+        "schedule": 300.0,  # seconds — check every 5 minutes for elapsed poll-backoff windows
+    },
 }
 
 # Where scheduled report exports are written.

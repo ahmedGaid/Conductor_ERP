@@ -19,6 +19,7 @@ export interface ETAInvoice {
   uuid: string;
   document_hash: string;
   error_text: string;
+  poll_stalled: boolean;
 }
 
 export function listETAInvoices(status?: ETAStatus): Promise<ETAInvoice[]> {

@@ -113,6 +113,15 @@ class ETAInvoice(AuditedModel):
     submitted_at = models.DateTimeField(null=True, blank=True)
     validated_at = models.DateTimeField(null=True, blank=True)
     error_text = models.CharField(max_length=255, blank=True, default="")
+    # FILE_04 status reconciliation: how many times the beat sweep (or a manual poll) has asked ETA
+    # for a verdict and gotten none yet. Reset to 0 the moment a verdict lands (valid/rejected/etc).
+    poll_attempts = models.PositiveIntegerField(default=0)
+    # Next automatic sweep eligibility (exponential backoff) — null means "eligible now". A manual
+    # poll from the UI ignores this and always asks immediately.
+    next_poll_at = models.DateTimeField(null=True, blank=True)
+    # Set once poll_attempts exceeds the cap with still no verdict — an operator-visible alert
+    # (not a silent hang). The beat sweep skips stalled rows; a manual poll can still retry one.
+    poll_stalled = models.BooleanField(default=False)
 
     class Meta:
         db_table = "einvoice_eta_invoice"
