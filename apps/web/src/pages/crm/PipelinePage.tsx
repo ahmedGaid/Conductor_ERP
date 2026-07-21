@@ -184,9 +184,11 @@ export function PipelinePage() {
       <CrmNav />
 
       {!showForm && (
-        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
-          {t("crm.newOpp.create")}
-        </button>
+        <div className="crm-toolbar">
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("crm.newOpp.create")}
+          </button>
+        </div>
       )}
       {showForm && (
       <form className="card crm-page" onSubmit={onSubmit}>

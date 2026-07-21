@@ -116,9 +116,11 @@ export function ReportBuilderPage() {
       <AccountingNav />
 
       {!showForm && (
-        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
-          {t("accounting.reportBuilder.save")}
-        </button>
+        <div className="acct-toolbar">
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("accounting.reportBuilder.save")}
+          </button>
+        </div>
       )}
       {showForm && (
       <form className="card acct-toolbar" onSubmit={onCreate}>

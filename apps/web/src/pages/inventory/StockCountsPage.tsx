@@ -134,9 +134,11 @@ export function StockCountsPage() {
       <InventoryNav />
 
       {!showForm && (
-        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
-          {t("inventory.counts.start")}
-        </button>
+        <div className="inv-page-actions">
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("inventory.counts.start")}
+          </button>
+        </div>
       )}
       {showForm && (
       <form className="card inv-toolbar" onSubmit={onSubmit}>

@@ -101,9 +101,11 @@ export function WarehousesPage() {
       <InventoryNav />
 
       {!showForm && (
-        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
-          {t("inventory.warehouse.add")}
-        </button>
+        <div className="inv-page-actions">
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("inventory.warehouse.add")}
+          </button>
+        </div>
       )}
       {showForm && (
       <form ref={formRef} className="card inv-toolbar" onSubmit={onSubmit}>

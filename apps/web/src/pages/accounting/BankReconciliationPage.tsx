@@ -118,9 +118,11 @@ export function BankReconciliationPage() {
       <AccountingNav />
 
       {!showForm && (
-        <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
-          {t("accounting.bankRec.create")}
-        </button>
+        <div className="acct-toolbar">
+          <button type="button" className="btn btn--sm btn--primary" onClick={() => setShowForm(true)}>
+            {t("accounting.bankRec.create")}
+          </button>
+        </div>
       )}
       {showForm && (
       <form className="card" onSubmit={onSubmit}>
