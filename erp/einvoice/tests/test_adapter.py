@@ -74,6 +74,43 @@ def test_build_document_shape_and_totals():
     assert round(line["taxableItems"][0]["rate"] / 100 * line["netTotal"], 2) == line["taxableItems"][0]["amount"]
 
 
+def test_build_document_uses_per_line_detail_when_present():
+    lines = [
+        {"item_sku": "SKU-1", "description": "Widget", "quantity": "2",
+         "unit_price_minor": 500_00, "discount_minor": 0, "line_total_minor": 1000_00},
+        {"item_sku": "SKU-2", "description": "Gadget", "quantity": "1",
+         "unit_price_minor": 500_00, "discount_minor": 0, "line_total_minor": 500_00},
+    ]
+    doc = eta_adapter.build_document(_inv(lines=lines), _cfg())
+
+    assert len(doc["invoiceLines"]) == 2
+    l1, l2 = doc["invoiceLines"]
+    assert l1["itemCode"] == "SKU-1"
+    assert l1["description"] == "Widget"
+    assert l1["netTotal"] == 1000.0
+    assert l2["itemCode"] == "SKU-2"
+    assert l2["netTotal"] == 500.0
+
+    # Header VAT (210.00) split proportionally by line net (1000:500 = 2:1) and reconciles exactly.
+    assert l1["taxableItems"] == [{"taxType": "T1", "subType": "V009", "amount": 140.0, "rate": 14.0}]
+    assert l2["taxableItems"] == [{"taxType": "T1", "subType": "V009", "amount": 70.0, "rate": 14.0}]
+    assert round(sum(li["taxableItems"][0]["amount"] for li in doc["invoiceLines"]), 2) == 210.0
+    assert round(sum(li["total"] for li in doc["invoiceLines"]), 2) == doc["totalAmount"]
+
+
+def test_build_document_per_line_discount_rolls_up_to_header():
+    lines = [
+        {"item_sku": "SKU-1", "description": "Widget", "quantity": "1",
+         "unit_price_minor": 1600_00, "discount_minor": 100_00, "line_total_minor": 1500_00},
+    ]
+    doc = eta_adapter.build_document(_inv(lines=lines), _cfg())
+    line = doc["invoiceLines"][0]
+    assert line["discount"] == {"rate": 0, "amount": 100.0}
+    assert line["salesTotal"] == 1600.0
+    assert doc["totalDiscountAmount"] == 100.0
+    assert doc["totalItemsDiscountAmount"] == 100.0
+
+
 def test_build_document_receiver_falls_back_to_national_id():
     # No tax registration number, but a national ID -> type "P" individual receiver.
     doc = eta_adapter.build_document(_inv(customer_tax_registration_number="", customer_national_id="29001011234567"), _cfg())

@@ -35,6 +35,7 @@ def _on_order_invoiced(event) -> None:
         tax_minor=p.get("tax_minor", 0),
         total_minor=p.get("total_minor", 0),
         branch_code=p.get("branch_code", ""),
+        lines=p.get("lines", []),
     ))
 
 

@@ -10,7 +10,8 @@ While ETA is not live (``eta_adapter.is_live()`` is False) nothing reaches the T
 from __future__ import annotations
 
 import datetime as dt
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 
 from django.db import transaction
 from django.db.models import Q
@@ -48,6 +49,9 @@ class EInvoiceInput:
     total_minor: int = 0
     # Branch code of the source order (business key) — stamps the e-invoice's data scope.
     branch_code: str = ""
+    # Per-line detail from the source order (business dicts — see ETAInvoice.lines_json docstring).
+    # Empty when the caller has none; the adapter then falls back to one consolidated line.
+    lines: list[dict] = field(default_factory=list)
 
 
 def _document(eta: ETAInvoice) -> dict:
@@ -63,6 +67,7 @@ def _document(eta: ETAInvoice) -> dict:
         "net": eta.net_minor,
         "tax": eta.tax_minor,
         "total": eta.total_minor,
+        "lines": eta.lines,
     }
 
 
@@ -84,6 +89,7 @@ def record_invoice(data: EInvoiceInput, actor=None) -> ETAInvoice:
         customer_national_id=data.customer_national_id,
         issue_date=data.issue_date, currency=data.currency, tax_code=data.tax_code,
         net_minor=data.net_minor, tax_minor=data.tax_minor, total_minor=data.total_minor,
+        lines_json=json.dumps(data.lines) if data.lines else "",
         status=ETAStatus.DRAFT, branch=branch,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
     )

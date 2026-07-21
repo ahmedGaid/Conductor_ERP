@@ -104,6 +104,11 @@ class ETAInvoice(AuditedModel):
     net_minor = models.BigIntegerField(default=0)
     tax_minor = models.BigIntegerField(default=0)
     total_minor = models.BigIntegerField(default=0)
+    # Per-line detail (JSON array of {item_sku, description, quantity, unit_price_minor,
+    # discount_minor, line_total_minor}), carried in via the sales OrderInvoiced event payload — never
+    # a cross-module FK. Empty when the source event carried no lines (older callers, tests): the
+    # adapter falls back to one consolidated line built from net/tax/total.
+    lines_json = models.TextField(blank=True, default="")
     # ETA submission lifecycle.
     status = models.CharField(max_length=16, choices=ETAStatus.choices, default=ETAStatus.DRAFT)
     uuid = models.CharField(max_length=64, blank=True, default="")        # ETA document UUID (26 chars live; 64-char local hash while simulated)
@@ -130,6 +135,19 @@ class ETAInvoice(AuditedModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"ETA[{self.invoice_number}]"
+
+    @property
+    def lines(self) -> list[dict]:
+        """Parsed per-line detail, or ``[]`` when the source event carried none."""
+        import json
+
+        if not self.lines_json:
+            return []
+        try:
+            data = json.loads(self.lines_json)
+        except ValueError:
+            return []
+        return data if isinstance(data, list) else []
 
 
 class ETAInvoiceArchive(TimeStampedModel):

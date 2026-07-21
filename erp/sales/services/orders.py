@@ -421,6 +421,16 @@ def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
         # Branch of the source order (a business key — subscribers never FK into sales) so the
         # recorded e-invoice inherits the order's data scope.
         "branch_code": order.branch.code if order.branch_id else "",
+        # Per-line detail, by business key only, so a subscriber (e-invoicing) can build a per-line
+        # tax document without an FK into sales — see ORDER_INVOICED's payload contract.
+        "lines": [
+            {
+                "item_sku": ln.item_sku, "description": ln.description,
+                "quantity": str(ln.quantity), "unit_price_minor": ln.unit_price_minor,
+                "discount_minor": ln.discount_minor, "line_total_minor": ln.line_total_minor,
+            }
+            for ln in order.lines.all().order_by("line_no")
+        ],
     })
     return order
 

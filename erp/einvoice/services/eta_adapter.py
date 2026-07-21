@@ -15,12 +15,15 @@ verified 2026-07-21 against the official SDK (https://sdk.invoicing.eta.gov.eg/d
 and .../einvoicingapi/01-submit-documents/). Amounts on the wire are **decimal EGP**; internally
 money is integer minor units (piasters), converted at this edge only.
 
-**Data the aggregate record cannot supply.** ``ETAInvoice`` deliberately holds no line items and no
-cross-module FK (gate10 event-decoupling), so a live document carries a **single consolidated
-invoice line** built from the aggregate net/tax/total. The issuer tax profile (name, activity code,
-address) arrives via config/env — the STOP-gated input; the document shape is complete and correct,
-but a *validating* submission needs the real company profile. The receiver's tax registration number
-/ national ID now arrives via the ``sales.OrderInvoiced`` event payload (``Customer.tax_registration_
+**Data the aggregate record cannot supply.** ``ETAInvoice`` holds no cross-module FK (gate10
+event-decoupling) — its per-line detail, when present, arrives verbatim as business dicts via the
+``sales.OrderInvoiced`` event payload (``lines``, migration 0008 here) and is stored on
+``lines_json``. When the source event carried lines, the document maps one ``invoiceLine`` per order
+line with its own proportional tax share; when it did not (older callers, tests), the document falls
+back to a **single consolidated line** built from the aggregate net/tax/total. The issuer tax profile
+(name, activity code, address) arrives via config/env — the STOP-gated input; the document shape is
+complete and correct, but a *validating* submission needs the real company profile. The receiver's
+tax registration number / national ID arrives via the same event payload (``Customer.tax_registration_
 number`` / ``.national_id``, migration 0011 on sales + 0005 here) — see the receiver block below.
 
 **Signing (FILE_03).** The final document carries a detached CAdES-BES signature over its canonical
@@ -83,6 +86,91 @@ def _rate_percent(net_minor: int, tax_minor: int) -> float:
     return float(rate)
 
 
+def _split_shares(total: int, weights: list[int]) -> list[int]:
+    """Split ``total`` (minor units) across ``weights`` proportionally, exact — the last share
+    absorbs the rounding remainder so the parts always sum back to ``total``."""
+    weight_sum = sum(weights) or 1
+    shares = []
+    running = 0
+    for i, weight in enumerate(weights):
+        if i == len(weights) - 1:
+            shares.append(total - running)
+            continue
+        share = int((Decimal(total) * Decimal(weight) / Decimal(weight_sum)).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP))
+        shares.append(share)
+        running += share
+    return shares
+
+
+def _build_invoice_lines(inv: dict, net_minor: int, tax_minor: int, currency: str) -> list[dict]:
+    """One ``invoiceLine`` per order line, each with its proportional share of the header VAT.
+
+    ``items`` are the business dicts carried in via the ``sales.OrderInvoiced`` event (see module
+    docs) — never a cross-module FK. Falls back to a single consolidated line built from the
+    aggregate net/tax/total when the event carried no per-line detail.
+    """
+    items = inv.get("lines") or []
+    if not items:
+        return [_consolidated_line(inv, net_minor, tax_minor, currency)]
+
+    line_nets = [int(item.get("line_total_minor") or 0) for item in items]
+    tax_shares = _split_shares(tax_minor, line_nets) if tax_minor else [0] * len(items)
+    rate = _rate_percent(net_minor, tax_minor)
+
+    lines = []
+    for item, line_net, tax_share in zip(items, line_nets, tax_shares):
+        unit_price_minor = int(item.get("unit_price_minor") or 0)
+        discount_minor = int(item.get("discount_minor") or 0)
+        sales_total_minor = line_net + discount_minor
+        sku = str(item.get("item_sku") or "")
+        taxable_items = (
+            [{"taxType": "T1", "subType": "V009", "amount": _egp(tax_share), "rate": rate}]
+            if tax_share else []
+        )
+        lines.append({
+            "description": str(item.get("description") or sku),
+            "itemType": "EGS",          # Egyptian GS/GPC code system; itemCode is the SKU below
+            "itemCode": sku,
+            "unitType": "EA",           # each
+            "quantity": float(item.get("quantity") or 1),
+            "internalCode": sku,
+            "unitValue": {"currencySold": currency, "amountEGP": _egp(unit_price_minor)},
+            "salesTotal": _egp(sales_total_minor),
+            "discount": {"rate": 0, "amount": _egp(discount_minor)},
+            "netTotal": _egp(line_net),
+            "taxableItems": taxable_items,
+            "total": _egp(line_net + tax_share),
+        })
+    return lines
+
+
+def _consolidated_line(inv: dict, net_minor: int, tax_minor: int, currency: str) -> dict:
+    """One line built from the aggregate net/tax/total — used when the source event carried no
+    per-line detail (older callers, tests)."""
+    net_egp = _egp(net_minor)
+    tax_egp = _egp(tax_minor)
+    total_egp = _egp(int(inv.get("total") or 0))
+    taxable_items = []
+    if tax_minor:
+        rate = _rate_percent(net_minor, tax_minor)
+        taxable_items = [{"taxType": "T1", "subType": "V009", "amount": tax_egp, "rate": rate}]
+    return {
+        "description": f"Invoice {inv.get('invoice', '')}",
+        "itemType": "EGS",          # Egyptian GS/GPC code system; itemCode is the real classification
+        "itemCode": "",             # unknown at the aggregate level — a validating submission needs it
+        "unitType": "EA",           # each
+        "quantity": 1,
+        "internalCode": str(inv.get("invoice") or ""),
+        "unitValue": {"currencySold": currency, "amountEGP": net_egp},
+        "salesTotal": net_egp,
+        "discount": {"rate": 0, "amount": 0},
+        "netTotal": net_egp,
+        "taxableItems": taxable_items,
+        "total": total_egp,
+    }
+
+
 def build_document(inv: dict, cfg) -> dict:
     """Map an invoice's business data (+ the issuer config) to an ETA Invoice v1.0 document.
 
@@ -99,31 +187,12 @@ def build_document(inv: dict, cfg) -> dict:
     tax_egp = _egp(tax_minor)
     total_egp = _egp(total_minor)
 
-    taxable_items = []
-    tax_totals = []
-    if tax_minor:
-        # ETA taxType "T1" = value added tax; subType "V009" = the standard VAT rate. The exact
-        # subType belongs to the customer's tax setup — "V009" is the common default; a richer
-        # tax_code → subType map is a follow-up once ETA sub-types are configured per install.
-        rate = _rate_percent(net_minor, tax_minor)
-        taxable_items = [{"taxType": "T1", "subType": "V009", "amount": tax_egp, "rate": rate}]
-        tax_totals = [{"taxType": "T1", "amount": tax_egp}]
-
-    line = {
-        # One consolidated line — the aggregate record stores no per-line detail (see module docs).
-        "description": f"Invoice {inv.get('invoice', '')}",
-        "itemType": "EGS",          # Egyptian GS/GPC code system; itemCode is the real classification
-        "itemCode": "",             # unknown at the aggregate level — a validating submission needs it
-        "unitType": "EA",           # each
-        "quantity": 1,
-        "internalCode": str(inv.get("invoice") or ""),
-        "unitValue": {"currencySold": currency, "amountEGP": net_egp},
-        "salesTotal": net_egp,
-        "discount": {"rate": 0, "amount": 0},
-        "netTotal": net_egp,
-        "taxableItems": taxable_items,
-        "total": total_egp,
-    }
+    # ETA taxType "T1" = value added tax; subType "V009" = the standard VAT rate. The exact subType
+    # belongs to the customer's tax setup — "V009" is the common default; a richer tax_code →
+    # subType map is a follow-up once ETA sub-types are configured per install.
+    tax_totals = [{"taxType": "T1", "amount": tax_egp}] if tax_minor else []
+    lines = _build_invoice_lines(inv, net_minor, tax_minor, currency)
+    total_discount_egp = _egp(sum(int(item.get("discount_minor") or 0) for item in (inv.get("lines") or [])))
 
     issuer = {
         "type": "B",
@@ -164,12 +233,12 @@ def build_document(inv: dict, cfg) -> dict:
         "dateTimeIssued": f"{inv.get('date', '')}T00:00:00Z",
         "taxpayerActivityCode": str(getattr(cfg, "activity_code", "") or ""),
         "internalId": str(inv.get("invoice") or ""),
-        "invoiceLines": [line],
-        "totalDiscountAmount": 0,
+        "invoiceLines": lines,
+        "totalDiscountAmount": total_discount_egp,
         "totalSalesAmount": net_egp,
         "netAmount": net_egp,
         "taxTotals": tax_totals,
-        "totalItemsDiscountAmount": 0,
+        "totalItemsDiscountAmount": total_discount_egp,
         "extraDiscountAmount": 0,
         "totalAmount": total_egp,
         "signatures": [],
