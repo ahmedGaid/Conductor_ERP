@@ -71,6 +71,14 @@ class Item(AuditedModel):
     type = models.CharField(max_length=16, choices=ItemType.choices, default=ItemType.STOCK)
     is_active = models.BooleanField(default=True)
     reorder_point = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    # Extra identity keys beyond the internal SKU (DECISIONS "canonical item identity"): the world's
+    # codes for the same physical thing, so a supplier line carrying one resolves deterministically.
+    #   barcode — the scannable GTIN/EAN/UPC on the pack.
+    #   mpn     — the manufacturer's part number (their catalogue code).
+    # Blank by default and unique only when non-blank (see Meta.constraints), so an item without them
+    # stays legal while a filled-in code is a true identity, not a soft hint.
+    barcode = models.CharField(max_length=64, blank=True, default="")
+    mpn = models.CharField(max_length=64, blank=True, default="")
     # Admin-defined extra fields (erp.core.custom_fields) — validated at write time.
     custom_data = models.JSONField(default=dict, blank=True)
     # ETA product identity (FILE_06, EGS path) — a composite code ETA must approve before it can be
@@ -84,6 +92,15 @@ class Item(AuditedModel):
     class Meta:
         db_table = "inventory_item"
         ordering = ["sku"]
+        indexes = [models.Index(fields=["barcode"]), models.Index(fields=["mpn"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["barcode"], condition=~models.Q(barcode=""), name="uniq_item_barcode"
+            ),
+            models.UniqueConstraint(
+                fields=["mpn"], condition=~models.Q(mpn=""), name="uniq_item_mpn"
+            ),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.sku} — {self.name}"

@@ -126,13 +126,26 @@ def _match_supplier(name: str | None) -> dict:
     return out
 
 
-def _match_line(description: str, items: list) -> dict:
-    out: dict = {"matched_sku": None, "candidates": []}
+def _match_line(description: str, items: list, supplier_code: str | None = None) -> dict:
+    """One invoice-line description → best item match + runners-up.
+
+    The authoritative match comes from ``inventory.resolve_item`` with the recognised supplier's
+    code: a barcode/part-number/SKU in the description, or a name this supplier taught us before,
+    resolves deterministically (``matched_via`` names the winning tier). Only when the resolver finds
+    nothing do we fall back to a fuzzy name auto-match. The candidate list stays fuzzy either way, so
+    the reviewer always has near-misses to pick from — the resolver's name tier is exact-only."""
+    out: dict = {"matched_sku": None, "matched_via": None, "candidates": []}
     if not description:
         return out
+    resolution = inventory.resolve_item(supplier_code=(supplier_code or ""),
+                                        code=description, name=description)
     ranked = _rank(description, items, lambda i: i.name)
-    if ranked and ranked[0][0] >= 0.85:
+    if resolution.item is not None:
+        out["matched_sku"] = resolution.item.sku
+        out["matched_via"] = resolution.method
+    elif ranked and ranked[0][0] >= 0.85:
         out["matched_sku"] = ranked[0][1].sku
+        out["matched_via"] = "fuzzy"
     out["candidates"] = [
         {"sku": i.sku, "name": i.name, "score": round(score, 2)}
         for score, i in ranked[:3]
@@ -324,15 +337,18 @@ def _extract_mistral(data: bytes, media_type: str) -> dict:
 def _proposal(extracted: dict, filename: str, actor) -> dict:
     lines = extracted.get("lines") or []
     items = inventory.list_items() if lines else []
+    supplier = {
+        "name": extracted.get("supplier_name"),
+        "tax_id": extracted.get("supplier_tax_id"),
+        **_match_supplier(extracted.get("supplier_name")),
+    }
+    # A recognised supplier lets item resolution consult the aliases that supplier has taught us.
+    supplier_code = supplier.get("matched_code")
     proposal = {
         "readable": bool(extracted.get("readable")),
         "confidence": extracted.get("confidence", "low"),
         "issues": extracted.get("issues", []),
-        "supplier": {
-            "name": extracted.get("supplier_name"),
-            "tax_id": extracted.get("supplier_tax_id"),
-            **_match_supplier(extracted.get("supplier_name")),
-        },
+        "supplier": supplier,
         "invoice": {
             "number": extracted.get("invoice_number"),
             "date": extracted.get("invoice_date"),
@@ -346,7 +362,7 @@ def _proposal(extracted: dict, filename: str, actor) -> dict:
                 "description": ln.get("description", ""),
                 "quantity": ln.get("quantity", ""),
                 "unit_price_minor": ln.get("unit_price_minor"),
-                **_match_line(ln.get("description", ""), items),
+                **_match_line(ln.get("description", ""), items, supplier_code),
             }
             for ln in lines
         ],

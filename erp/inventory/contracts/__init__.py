@@ -41,6 +41,8 @@ class ItemInfo:
     reorder_point: str = "0"
     eta_item_code: str = ""
     eta_code_status: str = "not_submitted"
+    barcode: str = ""
+    mpn: str = ""
 
 
 def find_item(sku: str) -> ItemInfo | None:
@@ -49,7 +51,7 @@ def find_item(sku: str) -> ItemInfo | None:
         return None
     return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active,
                     reorder_point=str(item.reorder_point), eta_item_code=item.eta_item_code,
-                    eta_code_status=item.eta_code_status)
+                    eta_code_status=item.eta_code_status, barcode=item.barcode, mpn=item.mpn)
 
 
 def list_items(item_type: str = "stock") -> list[ItemInfo]:
@@ -112,14 +114,16 @@ class ItemResolution:
 def _item_info(item) -> ItemInfo:
     return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active,
                     reorder_point=str(item.reorder_point), eta_item_code=item.eta_item_code,
-                    eta_code_status=item.eta_code_status)
+                    eta_code_status=item.eta_code_status, barcode=item.barcode, mpn=item.mpn)
 
 
 def resolve_item(*, supplier_code: str = "", code: str = "", name: str = "") -> ItemResolution:
     """Resolve an incoming supplier line (its own code/name) to the canonical ``Item``, strongest
-    signal first: supplier alias by code → exact SKU → supplier alias by name → normalized item name.
-    Returns ``ItemResolution(None, 0, "none")`` when nothing matches (the caller proposes creating a
-    new item). Never creates or writes anything — resolution is a pure read."""
+    signal first: supplier alias by code → exact SKU → barcode → manufacturer part number → supplier
+    alias by name → normalized item name. Barcode/mpn are world-standard identity keys, so they rank
+    with SKU (deterministic, confidence 100) above any name match. Returns
+    ``ItemResolution(None, 0, "none")`` when nothing matches (the caller proposes creating a new
+    item). Never creates or writes anything — resolution is a pure read."""
     from ..domain.models import Item, SupplierItemAlias
 
     supplier_code = (supplier_code or "").strip()
@@ -141,7 +145,19 @@ def resolve_item(*, supplier_code: str = "", code: str = "", name: str = "") -> 
         if info is not None:
             return ItemResolution(info, 100, "sku")
 
-    # 3. Supplier alias by name — for suppliers that carry only a name, matched language-aware.
+    # 3. The supplier's code is our barcode (GTIN/EAN/UPC) — a world identity for the same item.
+    if code:
+        item = _items.by_barcode(code)
+        if item is not None:
+            return ItemResolution(_item_info(item), 100, "barcode")
+
+    # 4. The supplier's code is the manufacturer part number we recorded for the item.
+    if code:
+        item = _items.by_mpn(code)
+        if item is not None:
+            return ItemResolution(_item_info(item), 100, "mpn")
+
+    # 5. Supplier alias by name — for suppliers that carry only a name, matched language-aware.
     if supplier_code and name:
         norm = _normalize_name(name)
         aliases = (
@@ -152,7 +168,7 @@ def resolve_item(*, supplier_code: str = "", code: str = "", name: str = "") -> 
             if _normalize_name(alias.supplier_item_name) == norm:
                 return ItemResolution(_item_info(alias.item), 95, "alias_name")
 
-    # 4. Same-language exact name against the catalogue (case/whitespace-insensitive).
+    # 6. Same-language exact name against the catalogue (case/whitespace-insensitive).
     if name:
         match = Item.objects.filter(name__iexact=name, is_active=True).order_by("sku").first()
         if match is not None:

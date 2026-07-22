@@ -128,18 +128,41 @@ def _rank(name: str, candidates: list, key) -> list[tuple[float, object]]:
     return sorted(scored, key=lambda pair: pair[0], reverse=True)
 
 
-def _resolve_item(query: str) -> inventory.ItemInfo | None:
-    """A stock item query → one ItemInfo: exact SKU wins, else the best name match (≥0.6)."""
+def _resolve_item(query: str, supplier_code: str | None = None) -> inventory.ItemInfo | None:
+    """A stock item query → one ItemInfo.
+
+    Tries the inventory resolver first (SKU/barcode/mpn/supplier-alias/exact-name) — ``supplier_code``
+    lets an alias this supplier taught us win. The resolver's name tier is exact-only, so we keep the
+    chat's looser fuzzy name match (≥0.6) as a fallback for the typos a person types."""
     q = (query or "").strip()
     if not q:
         return None
-    exact = inventory.find_item(q)
-    if exact is not None and exact.type == "stock" and exact.is_active:
-        return exact
+    resolution = inventory.resolve_item(supplier_code=(supplier_code or ""), code=q, name=q)
+    if resolution.item is not None:
+        item = resolution.item
+        if item.type == "stock" and item.is_active:
+            return item
     ranked = _rank(q, inventory.list_items(), lambda i: i.name)
     if ranked and ranked[0][0] >= 0.6:
         return ranked[0][1]
     return None
+
+
+def _learn_supplier_aliases(actor, supplier_code: str, lines: list[dict]) -> None:
+    """After a confirmed purchase, remember how this supplier named each line (its source text →
+    resolved SKU), so the same wording resolves exactly next time. Best-effort — a learning failure
+    never fails the posted order."""
+    for ln in lines or []:
+        source = (ln.get("source_text") or "").strip()
+        sku = ln.get("item_sku") or ""
+        # Nothing to learn when the text is empty or already equals the SKU we resolved it to.
+        if not source or not sku or source.casefold() == sku.casefold():
+            continue
+        try:
+            inventory.record_alias(supplier_code=supplier_code, item_sku=sku,
+                                   supplier_item_name=source, actor=actor)
+        except Exception:  # learning is a nicety, not part of the write's correctness
+            pass
 
 
 def _resolve_account(query: str) -> accounting.AccountInfo | None:
@@ -284,10 +307,11 @@ def _build_purchase_request(actor, *, supplier: str | None = None, items=None,
     unresolved: list[str] = []
     total = 0
     for entry in entries:
-        item = _resolve_item(entry.get("item") if isinstance(entry, dict) else None)
+        raw_ref = str(entry.get("item", "") if isinstance(entry, dict) else "")
+        item = _resolve_item(raw_ref, supplier_code=match.code)
         qty = _qty(entry.get("quantity") if isinstance(entry, dict) else None)
         if item is None:
-            unresolved.append(str((entry or {}).get("item", "") if isinstance(entry, dict) else ""))
+            unresolved.append(raw_ref)
             risks.append(f"Item '{unresolved[-1]}' was not found — skipped.")
             continue
         if qty is None:
@@ -300,7 +324,7 @@ def _build_purchase_request(actor, *, supplier: str | None = None, items=None,
         line_total = int((qty * Decimal(cost)).quantize(Decimal("1")))
         total += line_total
         lines.append({"item_sku": item.sku, "quantity": str(qty), "unit_cost_minor": cost,
-                      "description": item.name})
+                      "description": item.name, "source_text": raw_ref})
         records.append({"type": "item", "value": item.sku, "label": item.name})
     if not lines:
         if unresolved and unresolved[0]:
@@ -338,6 +362,7 @@ def _execute_purchase_request(actor, payload: dict) -> dict:
     )
     if req is None:
         raise ValueError("supplier no longer exists")
+    _learn_supplier_aliases(actor, payload["supplier_code"], payload["lines"])
     return {
         "summary": f"Draft purchase request {req.number} created.",
         "links": [{"type": "purchaseRequest", "value": str(req.id), "label": req.number}],
@@ -622,10 +647,11 @@ def _build_purchase_order(actor, *, supplier: str | None = None, items=None,
     unresolved: list[str] = []
     total = 0
     for entry in items or []:
-        item = _resolve_item(entry.get("item") if isinstance(entry, dict) else None)
+        raw_ref = str(entry.get("item", "") if isinstance(entry, dict) else "")
+        item = _resolve_item(raw_ref, supplier_code=match.code)
         qty = _qty(entry.get("quantity") if isinstance(entry, dict) else None)
         if item is None:
-            unresolved.append(str((entry or {}).get("item", "") if isinstance(entry, dict) else ""))
+            unresolved.append(raw_ref)
             risks.append(f"Item '{unresolved[-1]}' was not found — skipped.")
             continue
         if qty is None:
@@ -638,7 +664,7 @@ def _build_purchase_order(actor, *, supplier: str | None = None, items=None,
         line_total = int((qty * Decimal(cost)).quantize(Decimal("1")))
         total += line_total
         lines.append({"item_sku": item.sku, "quantity": str(qty), "unit_cost_minor": cost,
-                      "description": item.name})
+                      "description": item.name, "source_text": raw_ref})
         records.append({"type": "item", "value": item.sku, "label": item.name})
     if not lines:
         if unresolved and unresolved[0]:
@@ -676,6 +702,7 @@ def _execute_purchase_order(actor, payload: dict) -> dict:
     )
     if order is None:
         raise ValueError("supplier no longer exists")
+    _learn_supplier_aliases(actor, payload["supplier_code"], payload["lines"])
     return {
         "summary": f"Draft purchase order {order.number} created.",
         "links": [{"type": "purchaseOrder", "value": str(order.id), "label": order.number}],

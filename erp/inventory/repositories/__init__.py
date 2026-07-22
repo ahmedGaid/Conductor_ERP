@@ -12,6 +12,18 @@ class ItemRepository(Repository[Item]):
     def by_sku(self, sku: str) -> Item | None:
         return self.model._default_manager.filter(sku=sku).first()
 
+    def by_barcode(self, barcode: str) -> Item | None:
+        """One item by exact barcode (blank never matches — it isn't an identity)."""
+        if not barcode:
+            return None
+        return self.model._default_manager.filter(barcode=barcode).first()
+
+    def by_mpn(self, mpn: str) -> Item | None:
+        """One item by exact manufacturer part number (blank never matches)."""
+        if not mpn:
+            return None
+        return self.model._default_manager.filter(mpn=mpn).first()
+
 
 class WarehouseRepository(Repository[Warehouse]):
     model = Warehouse
