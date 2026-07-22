@@ -119,7 +119,7 @@ export function LeadsPage() {
         return rows.map((l) => byId.get(l.id) ?? l);
       },
       toast,
-      success: t(qualifiable.length === 1 ? "crm.toast.bulkLeadsQualifiedOne" : "crm.toast.bulkLeadsQualified", { count: qualifiable.length }),
+      success: t("crm.toast.bulkLeadsQualified", { count: qualifiable.length }),
     });
     selection.clear();
   }

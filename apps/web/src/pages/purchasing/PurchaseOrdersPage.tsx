@@ -287,7 +287,7 @@ export function PurchaseOrdersPage() {
                 approvable,
                 (r) => ({ ...r, approved: true }),
                 (id) => approvePO(id),
-                t(approvable.length === 1 ? "purchasing.toast.bulkApprovedOne" : "purchasing.toast.bulkApproved", { count: approvable.length }),
+                t("purchasing.toast.bulkApproved", { count: approvable.length }),
               )
             }
           >
@@ -302,7 +302,7 @@ export function PurchaseOrdersPage() {
                 confirmable,
                 (r) => ({ ...r, status: "confirmed" }),
                 (id) => confirmPO(id),
-                t(confirmable.length === 1 ? "purchasing.toast.bulkConfirmedOne" : "purchasing.toast.bulkConfirmed", { count: confirmable.length }),
+                t("purchasing.toast.bulkConfirmed", { count: confirmable.length }),
               )
             }
           >

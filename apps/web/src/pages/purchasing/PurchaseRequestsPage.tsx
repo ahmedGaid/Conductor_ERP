@@ -229,7 +229,7 @@ export function PurchaseRequestsPage() {
                 submittable,
                 "submitted",
                 (id) => submitRequest(id),
-                t(submittable.length === 1 ? "purchasing.toast.bulkReqSubmittedOne" : "purchasing.toast.bulkReqSubmitted", { count: submittable.length }),
+                t("purchasing.toast.bulkReqSubmitted", { count: submittable.length }),
               )
             }
           >
@@ -244,7 +244,7 @@ export function PurchaseRequestsPage() {
                 approvable,
                 "approved",
                 (id) => approveRequest(id),
-                t(approvable.length === 1 ? "purchasing.toast.bulkReqApprovedOne" : "purchasing.toast.bulkReqApproved", { count: approvable.length }),
+                t("purchasing.toast.bulkReqApproved", { count: approvable.length }),
               )
             }
           >

@@ -393,7 +393,7 @@ export function TicketsPage() {
                 resolvable,
                 (tk) => ({ ...tk, status: "resolved" }),
                 (id) => resolveTicket(id),
-                t(resolvable.length === 1 ? "crm.toast.bulkResolvedOne" : "crm.toast.bulkResolved", { count: resolvable.length }),
+                t("crm.toast.bulkResolved", { count: resolvable.length }),
               )
             }
           >
@@ -408,7 +408,7 @@ export function TicketsPage() {
                 closable,
                 (tk) => ({ ...tk, status: "closed" }),
                 (id) => closeTicket(id),
-                t(closable.length === 1 ? "crm.toast.bulkClosedOne" : "crm.toast.bulkClosed", { count: closable.length }),
+                t("crm.toast.bulkClosed", { count: closable.length }),
               )
             }
           >
