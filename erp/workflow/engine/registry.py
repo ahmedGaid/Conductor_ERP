@@ -11,6 +11,7 @@ from ..executors.approval import ApprovalExecutor
 from ..executors.assistant_action import AssistantActionExecutor
 from ..executors.condition import ConditionExecutor
 from ..executors.end import EndExecutor
+from ..executors.notification import NotificationExecutor
 from ..executors.script import ScriptExecutor
 from ..executors.start import StartExecutor
 from ..models import NodeType, WorkflowNode
@@ -24,6 +25,7 @@ _REGISTRY = MappingProxyType(
         NodeType.ASSISTANT_ACTION: AssistantActionExecutor(),
         NodeType.CONDITION: ConditionExecutor(),
         NodeType.SCRIPT: ScriptExecutor(),
+        NodeType.NOTIFICATION: NotificationExecutor(),
         NodeType.END: EndExecutor(),
     }
 )

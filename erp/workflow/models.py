@@ -35,6 +35,7 @@ class NodeType(models.TextChoices):
     ASSISTANT_ACTION = "assistant_action"
     CONDITION = "condition"
     SCRIPT = "script"
+    NOTIFICATION = "notification"
     END = "end"
 
 
