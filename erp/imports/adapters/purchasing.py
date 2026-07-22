@@ -202,6 +202,15 @@ class PurchaseOrderAdapter:
             return code if code is not None else None
         return None
 
+    def ref_context(self, row: dict, field: str) -> dict:
+        """Supplier context for an item ``missing_ref`` (duck-typed hook read in ``validate.py``), so
+        the masters resolver can consult THIS supplier's aliases — the same supplier code/name can mean
+        a different item for a different supplier. Only the item ref carries it; other refs get none."""
+        if field != "item_ref":
+            return {}
+        supplier = _find_supplier(row.get("supplier_ref"))
+        return {"supplier_code": supplier.code} if supplier else {}
+
     def validate(self, actor, row: dict) -> list[Issue]:
         return []
 
@@ -360,6 +369,13 @@ class PurchaseInvoiceAdapter:
             code = _resolve_tax_code(value)
             return code if code is not None else None
         return None
+
+    def ref_context(self, row: dict, field: str) -> dict:
+        """Supplier context for an item ``missing_ref`` — see ``PurchaseOrderAdapter.ref_context``."""
+        if field != "item_ref":
+            return {}
+        supplier = _find_supplier(row.get("supplier_ref"))
+        return {"supplier_code": supplier.code} if supplier else {}
 
     def validate(self, actor, row: dict) -> list[Issue]:
         return []

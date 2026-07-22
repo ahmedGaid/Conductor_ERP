@@ -71,6 +71,14 @@ class Item(AuditedModel):
     type = models.CharField(max_length=16, choices=ItemType.choices, default=ItemType.STOCK)
     is_active = models.BooleanField(default=True)
     reorder_point = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    # Extra identity keys beyond the internal SKU (DECISIONS "canonical item identity"): the world's
+    # codes for the same physical thing, so a supplier line carrying one resolves deterministically.
+    #   barcode — the scannable GTIN/EAN/UPC on the pack.
+    #   mpn     — the manufacturer's part number (their catalogue code).
+    # Blank by default and unique only when non-blank (see Meta.constraints), so an item without them
+    # stays legal while a filled-in code is a true identity, not a soft hint.
+    barcode = models.CharField(max_length=64, blank=True, default="")
+    mpn = models.CharField(max_length=64, blank=True, default="")
     # Admin-defined extra fields (erp.core.custom_fields) — validated at write time.
     custom_data = models.JSONField(default=dict, blank=True)
     # ETA product identity (FILE_06, EGS path) — a composite code ETA must approve before it can be
@@ -84,9 +92,68 @@ class Item(AuditedModel):
     class Meta:
         db_table = "inventory_item"
         ordering = ["sku"]
+        indexes = [models.Index(fields=["barcode"]), models.Index(fields=["mpn"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["barcode"], condition=~models.Q(barcode=""), name="uniq_item_barcode"
+            ),
+            models.UniqueConstraint(
+                fields=["mpn"], condition=~models.Q(mpn=""), name="uniq_item_mpn"
+            ),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.sku} — {self.name}"
+
+
+class SupplierItemAlias(AuditedModel):
+    """Maps one supplier's own code/name for an item to the canonical Conductor ``Item``.
+
+    The same physical item is bought from several suppliers, each using a different code and name —
+    often a different language — for it (supplier A: ``Bearing 6205 ZZ`` / ``B-6205``; supplier B:
+    ``رولمان بلي 6205`` / ``7788``). Without a record of those supplier-specific identifiers, AI/import
+    ingestion resolves an incoming line by raw name alone and, when the name doesn't match, creates a
+    DUPLICATE item. This table is that record: ingestion resolves against it FIRST, and every
+    human-confirmed match is written back here so the next document from that supplier resolves
+    deterministically.
+
+    Supplier is referenced by ``supplier_code`` string (no cross-module FK — the same module-boundary
+    rule pricing/sales/purchasing all follow); the canonical item is a same-module FK. A supplier's
+    item code is the strongest signal, so it is uniquely constrained per supplier when present; some
+    suppliers give only a name, so the code is optional and the uniqueness is partial.
+    """
+
+    class Source(models.TextChoices):
+        CONFIRMED = "confirmed", "Confirmed"   # a human confirmed this match during ingestion
+        IMPORTED = "imported", "Imported"      # captured from a bulk import
+        MANUAL = "manual", "Manual"            # entered by hand
+
+    supplier_code = models.CharField(max_length=32)
+    supplier_item_code = models.CharField(max_length=64, blank=True, default="")
+    supplier_item_name = models.CharField(max_length=200, blank=True, default="")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="supplier_aliases")
+    source = models.CharField(max_length=16, choices=Source.choices, default=Source.CONFIRMED)
+
+    class Meta:
+        db_table = "inventory_supplier_item_alias"
+        ordering = ["supplier_code", "supplier_item_code"]
+        constraints = [
+            # One canonical item per (supplier, supplier code) — but only when a code is present;
+            # name-only aliases don't collide on an empty code.
+            models.UniqueConstraint(
+                fields=["supplier_code", "supplier_item_code"],
+                condition=~models.Q(supplier_item_code=""),
+                name="uniq_supplier_item_code",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["supplier_code", "supplier_item_code"]),
+            models.Index(fields=["item"]),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        label = self.supplier_item_code or self.supplier_item_name
+        return f"{self.supplier_code}:{label} -> {self.item_id}"
 
 
 class Warehouse(AuditedModel):

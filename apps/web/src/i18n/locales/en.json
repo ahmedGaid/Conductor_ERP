@@ -1005,7 +1005,32 @@
       "warehouses": "Warehouses",
       "movements": "Movements",
       "counts": "Stock counts",
-      "batches": "Batches"
+      "batches": "Batches",
+      "aliases": "Supplier aliases"
+    },
+    "alias": {
+      "supplier": "Supplier",
+      "supplierItemCode": "Supplier's code",
+      "supplierItemName": "Supplier's name",
+      "canonicalItem": "Item",
+      "source": "Source",
+      "repoint": "Re-point",
+      "save": "Save",
+      "delete": "Delete",
+      "chooseItem": "Choose the correct item",
+      "deleteTitle": "Delete this alias?",
+      "deleteBody": "The mapping from {{supplier}} ({{ref}}) will be forgotten. The next document from this supplier will resolve it again from scratch.",
+      "empty": "No supplier aliases yet.",
+      "emptyHint": "As imports and documents are processed, learned matches between a supplier's own codes or names and your items appear here — ready to review and correct.",
+      "sources": {
+        "confirmed": "Confirmed",
+        "imported": "Imported",
+        "manual": "Manual"
+      },
+      "toast": {
+        "repointed": "Alias re-pointed",
+        "deleted": "Alias deleted"
+      }
     },
     "types": {
       "stock": "Stock item",

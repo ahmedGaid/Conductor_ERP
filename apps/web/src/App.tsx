@@ -130,6 +130,8 @@ const StockCountsPage = lazyPage(
 const StockCountDetailPage = lazyPage(
   () => import("./pages/inventory/StockCountDetailPage"), "StockCountDetailPage");
 const BatchesPage = lazyPage(() => import("./pages/inventory/BatchesPage"), "BatchesPage");
+const SupplierAliasesPage = lazyPage(
+  () => import("./pages/inventory/SupplierAliasesPage"), "SupplierAliasesPage");
 const OrdersPage = lazyPage(() => import("./pages/sales/OrdersPage"), "OrdersPage");
 const NewOrderPage = lazyPage(() => import("./pages/sales/NewOrderPage"), "NewOrderPage");
 const OrderDetailPage = lazyPage(
@@ -285,6 +287,7 @@ function AppRoutes() {
           <Route path="/inventory/counts" element={<StockCountsPage />} />
           <Route path="/inventory/counts/:id" element={<StockCountDetailPage />} />
           <Route path="/inventory/batches" element={<BatchesPage />} />
+          <Route path="/inventory/supplier-aliases" element={<SupplierAliasesPage />} />
           <Route path="/sales" element={<OrdersPage />} />
           <Route path="/sales/orders/new" element={<NewOrderPage />} />
           <Route path="/sales/orders/:id" element={<OrderDetailPage />} />

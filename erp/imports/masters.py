@@ -36,7 +36,8 @@ def build_creation_plan(actor, batch: ImportBatch) -> dict:
     """Scan ``batch``'s ``missing_ref`` issues into one proposed entry per DISTINCT
     ``(entity, value)``: ``{entity, value, action: "create"|"link"|"blocked_unsupported",
     proposed?, link_pk?, editable}``. Saved onto ``batch.stats["creation_plan"]``."""
-    entries = [_plan_entry(actor, entity, value) for entity, value in _distinct_missing_refs(batch)]
+    entries = [_plan_entry(actor, entity, value, ctx)
+               for (entity, value), ctx in _distinct_missing_refs(batch).items()]
     entries.sort(key=lambda e: (_dependency_rank(e["entity"]), e["entity"], e["value"]))
 
     stats = dict(batch.stats or {})
@@ -64,12 +65,24 @@ def execute_creation_plan(actor, batch: ImportBatch, approved: list[dict]) -> di
 
     created_masters: list[dict] = list(stats.get("created_masters", []))
     resolved_keys: set[tuple[str, str]] = set()
+    # For a link that resolves a row to an EXISTING record whose natural key differs from the row's
+    # raw value (an item alias: supplier code 7788 → canonical RM-001), the row's ref value won't
+    # resolve on its own. We inject the canonical key as a row edit so revalidation's exact lookup
+    # succeeds — keyed by (entity, value) → canonical sku.
+    link_keys: dict[tuple[str, str], str] = {}
 
     for entry in ordered:
         entity, value = entry["entity"], entry["value"]
+        context = entry.get("context") or {}
         if entry["action"] == "link":
             entry["outcome"] = "linked"
             resolved_keys.add((entity, value))
+            link_sku = entry.get("link_sku")
+            if link_sku:
+                link_keys[(entity, value)] = link_sku
+            capture = getattr(get_adapter(entity), "capture", None)
+            if callable(capture) and link_sku:
+                capture(actor, value, context, link_sku)  # learning loop: remember this match
             continue
         adapter = get_adapter(entity)
         try:
@@ -82,46 +95,71 @@ def execute_creation_plan(actor, batch: ImportBatch, approved: list[dict]) -> di
         created_masters.append({"entity": entity, "value": value, "pk": str(pk)})
         entry["outcome"] = "created"
         resolved_keys.add((entity, value))
+        # Capturing a newly-created item's alias too: the supplier's code/name now maps to the SKU we
+        # just minted, so re-importing the same supplier line links instead of duplicating.
+        capture = getattr(adapter, "capture", None)
+        if callable(capture):
+            created_sku = (entry.get("proposed") or {}).get("sku") or value
+            capture(actor, value, context, created_sku)
 
     stats["creation_plan"] = entries
     stats["created_masters"] = created_masters
     batch.stats = stats
     batch.save(update_fields=["stats"])
 
-    revalidated = _revalidate_affected_rows(actor, batch, resolved_keys)
+    revalidated = _revalidate_affected_rows(actor, batch, resolved_keys, link_keys)
     return {"resolved": len(resolved_keys), "revalidated": revalidated}
 
 
-def _distinct_missing_refs(batch: ImportBatch) -> list[tuple[str, str]]:
-    seen: dict[tuple[str, str], None] = {}
+def _distinct_missing_refs(batch: ImportBatch) -> dict[tuple[str, str], dict]:
+    """Each distinct ``(entity, value)`` missing ref → its context (extra ``meta`` beyond
+    entity/value, e.g. the supplier the item was seen under). First occurrence wins the context."""
+    seen: dict[tuple[str, str], dict] = {}
     for row in batch.rows.filter(status=ImportRow.Status.ERROR):
         for issue in row.issues:
             if issue.get("code") != "missing_ref":
                 continue
             meta = issue.get("meta") or {}
             entity, value = meta.get("entity"), meta.get("value")
-            if entity and value:
-                seen.setdefault((entity, value), None)
-    return list(seen)
+            if entity and value and (entity, value) not in seen:
+                seen[(entity, value)] = {k: v for k, v in meta.items() if k not in ("entity", "value")}
+    return seen
 
 
 def _dependency_rank(entity: str) -> int:
     return _DEPENDENCY_ORDER.index(entity) if entity in _DEPENDENCY_ORDER else len(_DEPENDENCY_ORDER)
 
 
-def _plan_entry(actor, entity: str, value: str) -> dict:
+def _plan_entry(actor, entity: str, value: str, context: dict | None = None) -> dict:
+    context = context or {}
     try:
         adapter = get_adapter(entity)
     except KeyError:
         return {"entity": entity, "value": value, "action": "blocked_unsupported", "editable": False}
 
+    # Adapter-supplied resolution first (item aliases + SKU + normalized name), using the ref's
+    # context (the supplier). A deterministic hit proposes LINKING to the canonical record, carrying
+    # the SKU so execution can resolve the row and remember the match. Duck-typed: adapters without a
+    # ``resolve`` (customers, suppliers, …) fall through to the fuzzy-name pass unchanged.
+    resolve = getattr(adapter, "resolve", None)
+    if callable(resolve):
+        hit = resolve(actor, value, context)
+        if hit:
+            return {
+                "entity": entity, "value": value, "action": "link",
+                "link_pk": hit["sku"], "link_sku": hit["sku"],
+                "confidence": hit["confidence"], "method": hit["method"],
+                "context": context, "editable": True,
+            }
+
     link_pk = _fuzzy_link(actor, adapter, value)
     if link_pk is not None:
-        return {"entity": entity, "value": value, "action": "link", "link_pk": str(link_pk), "editable": True}
+        return {"entity": entity, "value": value, "action": "link", "link_pk": str(link_pk),
+                "context": context, "editable": True}
 
     return {
         "entity": entity, "value": value, "action": "create",
-        "proposed": _default_record(adapter, value), "editable": True,
+        "proposed": _default_record(adapter, value), "context": context, "editable": True,
     }
 
 
@@ -150,16 +188,33 @@ def _default_record(adapter, value: str) -> dict:
     return proposed
 
 
-def _revalidate_affected_rows(actor, batch: ImportBatch, resolved_keys: set[tuple[str, str]]) -> dict:
+def _revalidate_affected_rows(
+    actor, batch: ImportBatch, resolved_keys: set[tuple[str, str]],
+    link_keys: dict[tuple[str, str], str] | None = None,
+) -> dict:
     if not resolved_keys:
         return {"valid": 0, "error": 0, "duplicate": 0}
+    link_keys = link_keys or {}
     row_ids = []
     for row in batch.rows.filter(status=ImportRow.Status.ERROR):
+        touched = False
+        edits = dict(row.decision.get("edits") or {})
         for issue in row.issues:
             if issue.get("code") != "missing_ref":
                 continue
             meta = issue.get("meta") or {}
-            if (meta.get("entity"), meta.get("value")) in resolved_keys:
-                row_ids.append(row.id)
-                break
+            key = (meta.get("entity"), meta.get("value"))
+            if key not in resolved_keys:
+                continue
+            touched = True
+            # A link to an existing record under a different key (item alias): rewrite this row's ref
+            # value to the canonical key so revalidation's exact lookup resolves it.
+            canonical = link_keys.get(key)
+            if canonical:
+                edits[issue.get("field")] = canonical
+        if touched:
+            if edits != (row.decision.get("edits") or {}):
+                row.decision = {**(row.decision or {}), "edits": edits}
+                row.save(update_fields=["decision"])
+            row_ids.append(row.id)
     return revalidate_rows(actor, batch, row_ids)

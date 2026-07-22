@@ -167,6 +167,27 @@ def test_extract_matches_supplier_and_items(monkeypatch):
 
 
 @override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_supplier_alias_resolves_a_line_that_name_match_would_miss(monkeypatch):
+    from erp.inventory import contracts as inventory
+
+    Supplier.objects.create(code="S-1", name="Delta Mills")
+    Item.objects.create(sku="SUG-1", name="Sugar 1kg", type="stock")
+    misc = Item.objects.create(sku="MISC-9", name="Miscellany", type="stock")
+    # Delta Mills wrote this product as "something unknown" once and a human linked it to MISC-9.
+    inventory.record_alias(supplier_code="S-1", item_sku="MISC-9",
+                           supplier_item_name="something unknown")
+
+    monkeypatch.setattr(extraction, "get_client", lambda: _FakeClient(EXTRACTED))
+    data = _post(_client()).json()["data"]
+
+    assert data["supplier"]["matched_code"] == "S-1"
+    matched, aliased = data["lines"]
+    assert matched["matched_sku"] == "SUG-1"
+    # The second line, unmatchable by name, now resolves via the supplier's remembered alias.
+    assert aliased["matched_sku"] == misc.sku and aliased["matched_via"] == "alias_name"
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
 def test_pdf_goes_as_document_block(monkeypatch):
     fake = _FakeClient({**EXTRACTED, "lines": []})
     monkeypatch.setattr(extraction, "get_client", lambda: fake)

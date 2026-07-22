@@ -24,7 +24,15 @@ from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
 from .. import services
-from ..domain.models import Category, Item, StockCount, StockCountLine, StockMovement, Warehouse
+from ..domain.models import (
+    Category,
+    Item,
+    StockCount,
+    StockCountLine,
+    StockMovement,
+    SupplierItemAlias,
+    Warehouse,
+)
 from ..imports import ITEM_IMPORT
 from .serializers import (
     CategorySerializer,
@@ -35,6 +43,8 @@ from .serializers import (
     MovementSerializer,
     ReceiveSerializer,
     StockCountCreateSerializer,
+    SupplierAliasRepointSerializer,
+    SupplierAliasSerializer,
     TransferSerializer,
     WarehouseSerializer,
 )
@@ -150,6 +160,69 @@ class ItemDetailView(APIView):
                 after={k: getattr(item, k) for k in before},
             )
         return _envelope(ItemSerializer(item).data)
+
+
+class SupplierAliasListView(APIView):
+    """Learned supplier→item mappings (the import learning loop's memory). ``GET`` lists them,
+    newest-relevant grouping first, optionally filtered by ``supplier_code`` or ``item_sku`` — the
+    transparency surface for the alias-management screen. No create: aliases are learned during
+    ingestion, not typed by hand; a human corrects a wrong one by re-pointing or deleting it."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def get(self, request: Request) -> Response:
+        qs = SupplierItemAlias.objects.select_related("item").order_by(
+            "supplier_code", "supplier_item_code", "supplier_item_name"
+        )
+        supplier_code = request.query_params.get("supplier_code")
+        item_sku = request.query_params.get("item_sku")
+        if supplier_code:
+            qs = qs.filter(supplier_code=supplier_code)
+        if item_sku:
+            qs = qs.filter(item__sku=item_sku)
+        return _envelope(SupplierAliasSerializer(qs, many=True).data)
+
+
+class SupplierAliasDetailView(APIView):
+    """One learned alias. ``PATCH`` re-points it to the correct canonical item (the human correction
+    that fixes a mis-learned mapping); ``DELETE`` forgets it so the next document re-learns."""
+
+    permission_classes = [IsAuthenticated, _CanStock]
+
+    def patch(self, request: Request, alias_id) -> Response:
+        alias = get_object_or_404(SupplierItemAlias.objects.select_related("item"), id=alias_id)
+        s = SupplierAliasRepointSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        new_sku = s.validated_data["item_sku"].strip()
+        item = Item.objects.filter(sku=new_sku).first()
+        if item is None:
+            return _envelope({"detail": f"No item with SKU '{new_sku}'."}, status=400)
+        before = alias.item.sku
+        if item.pk != alias.item_id:
+            alias.item = item
+            alias.source = SupplierItemAlias.Source.MANUAL  # a human re-pointed this by hand
+            alias.save(update_fields=["item", "source", "updated_at"])
+            audit.record(
+                module="inventory", action="repoint_supplier_alias", entity_type="SupplierItemAlias",
+                entity_id=str(alias.id), actor=request.user,
+                before={"item_sku": before}, after={"item_sku": item.sku},
+            )
+        return _envelope(SupplierAliasSerializer(alias).data)
+
+    def delete(self, request: Request, alias_id) -> Response:
+        alias = get_object_or_404(SupplierItemAlias.objects.select_related("item"), id=alias_id)
+        snapshot = {
+            "supplier_code": alias.supplier_code,
+            "supplier_item_code": alias.supplier_item_code,
+            "supplier_item_name": alias.supplier_item_name,
+            "item_sku": alias.item.sku,
+        }
+        alias.delete()
+        audit.record(
+            module="inventory", action="delete_supplier_alias", entity_type="SupplierItemAlias",
+            entity_id=str(alias_id), actor=request.user, before=snapshot,
+        )
+        return Response(status=204)
 
 
 class ItemEtaCodeSuggestionView(APIView):

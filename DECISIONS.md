@@ -2864,3 +2864,67 @@ run): `Docs/plan/einvoice-eta-live/FILE_05_DONE.md`.
 Tests: `test_archive.py` (5) — submit archives simulated doc, one-row idempotent refresh, live path
 archives the signed doc `simulated=False`, `None`/404 before submit, retrieval API 200. `pytest
 erp/einvoice` **96 passed**, gate10 green, tsc (einvoice files) + i18n parity clean.
+
+## purchasing/inventory: canonical item identity + supplier-item alias (multi-supplier ingestion) — 2026-07-22
+
+**Problem.** The same physical item is bought from several suppliers, each using a different code and
+name (often a different language) for it. AI/smart-import item resolution matched exact-SKU or
+fuzzy-**name** only, so a cross-language supplier name (e.g. `رولمان بلي 6205` vs canonical
+`Bearing 6205 ZZ`) scored ~0 and the auto-create-masters flow proposed a **new** item → duplicate
+inventory item. Nothing captured a confirmed match, so it recurred every invoice.
+
+**Not the gap:** canonical identity already exists (`Item.sku`, used across PO/GRN/bill/pay/pricing),
+and 3-way match is already canonical (`bill_order` matches ordered==received on the PO's own SKU lines;
+billing reuses the PO's lines verbatim — no separate supplier-invoice document re-resolves items). No
+change to `bill_order`.
+
+**Decision (thin slice A, inventory-owned).** Added `SupplierItemAlias` (inventory,
+migration `0010`): `supplier_code` (string, no cross-module FK) + `supplier_item_code` +
+`supplier_item_name` → canonical `Item` FK; partial-unique on (supplier_code, supplier_item_code) when
+a code is present. New `inventory.contracts.resolve_item(supplier_code, code, name)` — hierarchy: alias
+by code (100) → exact SKU (100) → alias by normalized name (95) → normalized item name (90) → none;
+Arabic-aware normalization (strip tashkeel/tatweel, unify alef/ya/ta-marbuta) with no new dependency.
+`record_alias(...)` is the learning loop (idempotent upsert, audited, raises `UnknownItemError`).
+
+**Wiring (engine stays free of business imports).** Item resolution/capture routes through the
+adapter, duck-typed: `ItemAdapter.resolve/capture` (inventory) call the contracts; the two purchasing
+document adapters expose `ref_context(row, "item_ref")` → the row's supplier, merged into the item
+`missing_ref` meta by `validate.py`. `masters._plan_entry` proposes a LINK from a deterministic
+resolution (carrying the canonical SKU), falling back to the existing fuzzy-name link then create;
+`execute_creation_plan` injects the canonical SKU as a row edit so revalidation's exact lookup
+resolves the row, and captures an alias on both link and create. Core PO/sales create paths stay
+strict (exact `find_item`) — a hand-typed SKU must be exact.
+
+**Deferred (not this slice):** optional `Item.barcode`/`mpn` fields + their resolution tiers; the
+assistant chat-extraction path; an alias-management UI. resolve_item/record_alias are reusable by all
+of those unchanged.
+
+Tests: `erp/inventory/tests/test_item_resolution.py` (10 — the resolution hierarchy + capture loop) +
+`erp/imports/tests/test_supplier_item_alias.py` (2 — end-to-end: alias resolves supplier code to
+canonical item with NO duplicate; create captures the alias and the next import resolves
+deterministically). `pytest erp/imports erp/inventory erp/purchasing` **461 passed**, `erp/assistant`
+523 passed, django check clean, no migration drift.
+
+**Addendum — slice B: barcode/mpn identity keys + assistant chat-extraction wiring (2026-07-22).**
+Closes the two deferred items above (alias-management UI still deferred). (1) `Item` gains `barcode`
+(GTIN/EAN/UPC) and `mpn` (manufacturer part number), migration `0011`, blank by default and
+**unique only when non-blank** (partial `UniqueConstraint`) — a filled-in code is a true identity,
+not a hint. (2) `resolve_item` gains two tiers, inserted right after `sku` and above every name
+signal: `barcode` (100) and `mpn` (100) matched against the incoming `code`, since a world-standard
+identity beats any fuzzy/exact name. Repository `by_barcode`/`by_mpn`; `ItemInfo` carries both.
+(3) Assistant paths now feed the resolver supplier context: `extraction._match_line(desc, items,
+supplier_code)` calls `resolve_item(supplier_code, code=desc, name=desc)` for the authoritative match
+(`matched_via` names the tier) and keeps its `SequenceMatcher` list for pick-list candidates —
+falling back to a fuzzy ≥0.85 name auto-match only when the resolver finds nothing (its name tier is
+exact-only). `actions._resolve_item(query, supplier_code)` does the same with a fuzzy ≥0.6 fallback
+for the typos a person types in chat. The purchase-order/request builders pass the matched supplier
+code and carry each line's `source_text`; on confirm, `_execute_purchase_*` calls `record_alias(
+item_sku, supplier_item_name=source_text)` (best-effort — a learning failure never fails the posted
+order), so the chat path *learns* a supplier's vocabulary exactly as the import path does.
+**Still deferred:** the ETA document-extraction confirm posts client-side through the purchasing
+endpoint, so it has no server hook to call `record_alias` yet — it *resolves* with supplier context
+now, but recording from that path waits until that confirm is server-owned. Rejected: writing an
+alias speculatively at extraction (proposal) time — that learns the model's guess, not a human's
+confirmation. Tests: `erp/inventory/tests/test_barcode_mpn.py` (7), plus the assistant alias/learning
+cases in `test_extraction.py` + `test_actions.py`. `pytest erp/assistant erp/inventory erp/imports
+erp/purchasing` **991 passed** (2 pre-existing approval-limit failures unrelated), no migration drift.

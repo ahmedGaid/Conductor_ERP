@@ -54,6 +54,37 @@ class ItemEtaCodingSerializer(serializers.Serializer):
     eta_code_status = serializers.ChoiceField(choices=EtaCodeStatus.choices, required=False)
 
 
+class SupplierAliasSerializer(serializers.Serializer):
+    """A learned supplier→canonical-item mapping, read shape for the management screen. The canonical
+    item is shown by SKU + name so a human can judge whether the learning loop mapped it correctly."""
+
+    id = serializers.UUIDField(read_only=True)
+    supplier_code = serializers.CharField(read_only=True)
+    supplier_item_code = serializers.CharField(read_only=True)
+    supplier_item_name = serializers.CharField(read_only=True)
+    item_sku = serializers.CharField(read_only=True)
+    item_name = serializers.CharField(read_only=True)
+    source = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+    def to_representation(self, obj) -> dict:
+        return {
+            "id": str(obj.id),
+            "supplier_code": obj.supplier_code,
+            "supplier_item_code": obj.supplier_item_code,
+            "supplier_item_name": obj.supplier_item_name,
+            "item_sku": obj.item.sku,
+            "item_name": obj.item.name,
+            "source": obj.source,
+            "created_at": obj.created_at.isoformat(),
+        }
+
+
+class SupplierAliasRepointSerializer(serializers.Serializer):
+    """Re-point a mis-learned alias to the correct canonical item (the only editable field)."""
+    item_sku = serializers.CharField(max_length=64)
+
+
 class WarehouseSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     code = serializers.CharField(max_length=32)

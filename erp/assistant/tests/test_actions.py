@@ -495,6 +495,27 @@ def test_build_then_execute_creates_purchase_order_draft():
     assert result["links"][0]["value"] == str(order.id)
 
 
+def test_confirmed_purchase_order_teaches_supplier_alias():
+    from erp.inventory import contracts as inventory
+    from erp.inventory.domain.models import SupplierItemAlias
+
+    admin = _admin()
+    _seed_purchasing()  # supplier S-1 "Cairo Supplies", item SKU-1 "Blue Widget"
+
+    # The user names the item the supplier's way (its name, not our SKU) — resolves by fuzzy name.
+    decision = {"supplier": "Cairo Supplies",
+                "items": [{"item": "Blue Widget", "quantity": "2", "unit_cost": 1000}],
+                "warehouse": "WH-1"}
+    proposal = actions.build(admin, "create_purchase_order_draft", decision)
+    assert proposal["payload"]["lines"][0]["item_sku"] == "SKU-1"
+
+    actions.execute(admin, "create_purchase_order_draft", proposal["payload"])
+    # Confirming remembers "Blue Widget" for this supplier → next time it resolves via the alias.
+    alias = SupplierItemAlias.objects.get(supplier_code="S-1")
+    assert alias.item.sku == "SKU-1" and alias.supplier_item_name == "Blue Widget"
+    assert inventory.resolve_item(supplier_code="S-1", name="Blue Widget").method == "alias_name"
+
+
 def test_purchase_order_item_without_cost_is_a_risk_and_still_confirmable():
     admin = _admin()
     _seed_purchasing()
