@@ -151,8 +151,10 @@ function RunCard({ run }: { run: NodeRun }) {
         <ul className="runcard__logs">
           {run.logs.map((log, i) => (
             <li key={i} className={`runcard__log runcard__log--${log.level}`}>
-              <span className="runcard__log-level latin">{log.level}</span>
-              <span>{log.message}</span>
+              <span className="runcard__log-level">{t(`instance.logLevel.${log.level}`)}</span>
+              <span>
+                {t(`instance.log.${log.message}`, { ...(log.data ?? {}), defaultValue: log.message })}
+              </span>
             </li>
           ))}
         </ul>
@@ -211,12 +213,27 @@ function AssistantStepSummary({ output }: { output: unknown }) {
 }
 
 function Payload({ title, value }: { title: string; value: unknown }) {
+  const isPlainObject = value != null && typeof value === "object" && !Array.isArray(value);
+  const entries = isPlainObject ? Object.entries(value as Record<string, unknown>) : null;
   return (
     <div className="runcard__payload">
       <span className="muted">{title}</span>
-      <pre className="latin">
-        <Bdi>{JSON.stringify(value, null, 2)}</Bdi>
-      </pre>
+      {entries && entries.length > 0 ? (
+        <dl className="runcard__payload-rows">
+          {entries.map(([key, v]) => (
+            <div className="runcard__payload-row" key={key}>
+              <dt className="latin">{key}</dt>
+              <dd className="latin">
+                <Bdi>{typeof v === "object" ? JSON.stringify(v) : String(v)}</Bdi>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <pre className="latin">
+          <Bdi>{JSON.stringify(value, null, 2)}</Bdi>
+        </pre>
+      )}
     </div>
   );
 }

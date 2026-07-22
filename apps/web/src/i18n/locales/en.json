@@ -743,6 +743,20 @@
     "assistant": {
       "ran": "The assistant ran",
       "trace": "AI trace"
+    },
+    "logLevel": {
+      "debug": "Debug",
+      "info": "Info",
+      "warn": "Warning",
+      "error": "Error"
+    },
+    "log": {
+      "node_waiting": "Step \"{{node}}\" is waiting",
+      "node_retrying": "Step \"{{node}}\" failed (attempt {{attempt}}/{{maxAttempts}}) — retrying: {{error}}",
+      "node_failed_permanently": "Step \"{{node}}\" failed: {{error}}",
+      "instance_completed": "Run completed",
+      "edge_selection_failed": "Could not choose the next step: {{error}}",
+      "advanced": "Moved from \"{{from}}\" to \"{{to}}\""
     }
   },
   "accounting": {

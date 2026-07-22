@@ -743,6 +743,20 @@
     "assistant": {
       "ran": "شغّل المساعد",
       "trace": "أثر الذكاء الاصطناعي"
+    },
+    "logLevel": {
+      "debug": "تصحيح",
+      "info": "معلومة",
+      "warn": "تحذير",
+      "error": "خطأ"
+    },
+    "log": {
+      "node_waiting": "الخطوة \"{{node}}\" في انتظار قرار",
+      "node_retrying": "فشلت الخطوة \"{{node}}\" (المحاولة {{attempt}} من {{maxAttempts}}) — جارٍ إعادة المحاولة: {{error}}",
+      "node_failed_permanently": "فشلت الخطوة \"{{node}}\": {{error}}",
+      "instance_completed": "اكتمل التنفيذ",
+      "edge_selection_failed": "تعذّر تحديد الخطوة التالية: {{error}}",
+      "advanced": "انتقل من \"{{from}}\" إلى \"{{to}}\""
     }
   },
   "accounting": {

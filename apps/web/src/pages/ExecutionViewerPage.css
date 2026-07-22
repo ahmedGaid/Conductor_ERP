@@ -103,10 +103,34 @@
 
 .runcard__log-level {
   flex: none;
-  inline-size: 3rem;
-  text-transform: uppercase;
+  min-inline-size: 3rem;
   font-size: 0.6875rem;
   color: var(--color-text-muted);
+}
+
+.runcard__payload-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.runcard__payload-row {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-sm);
+}
+
+.runcard__payload-row dt {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.runcard__payload-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .runcard__log--warn .runcard__log-level {

@@ -345,7 +345,7 @@ export function TicketsPage() {
                       )}
                       {tk.is_breached && !tk.is_escalated && (tk.status === "open" || tk.status === "in_progress") && (
                         <button
-                          className="btn btn--sm btn--danger"
+                          className="btn btn--sm"
                           onClick={() => patchTicket(tk.id, (t0) => ({ ...t0, is_escalated: true }), () => escalateTicket(tk.id), t("crm.toast.ticketEscalated"))}
                         >
                           {t("crm.ticket.escalate")}

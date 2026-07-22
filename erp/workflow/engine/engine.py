@@ -32,13 +32,15 @@ DEFAULT_MAX_ATTEMPTS = 3
 TERMINAL = {InstanceStatus.COMPLETED, InstanceStatus.FAILED}
 
 
-def _log(instance, node_execution, level, message, data=None):
+def _log(instance, node_execution, level, event, params=None):
+    """`event` is a stable code the frontend translates (`instance.log.<event>`); `params`
+    carries the values (node keys, error text) the message interpolates — never English prose."""
     ExecutionLog.objects.create(
         instance=instance,
         node_execution=node_execution,
         level=level,
-        message=message,
-        data=data,
+        message=event,
+        data=params,
         correlation_id=get_correlation_id() or "",
     )
 
@@ -136,7 +138,7 @@ def _step(instance_id, runtime: dict) -> bool:
         node_exec.save(update_fields=["status", "finished_at"])
         instance.status = InstanceStatus.WAITING
         instance.save(update_fields=["status", "updated_at"])
-        _log(instance, node_exec, LogLevel.INFO, f"node '{node.key}' waiting")
+        _log(instance, node_exec, LogLevel.INFO, "node_waiting", {"node": node.key})
         if node.type == NodeType.APPROVAL:
             from .. import approvals
 
@@ -152,15 +154,15 @@ def _step(instance_id, runtime: dict) -> bool:
         max_attempts = int((node.config or {}).get("maxAttempts", DEFAULT_MAX_ATTEMPTS))
         # External writes are idempotent (key + ledger + DB UNIQUE), so retry is safe.
         if attempt < max_attempts:
-            _log(instance, node_exec, LogLevel.WARN,
-                 f"node '{node.key}' failed (attempt {attempt}/{max_attempts}); retrying",
-                 {"error": output.error})
+            _log(instance, node_exec, LogLevel.WARN, "node_retrying",
+                 {"node": node.key, "attempt": attempt, "maxAttempts": max_attempts,
+                  "error": output.error})
             return True  # same current_node; next _step uses attempt+1
         instance.status = InstanceStatus.FAILED
         instance.error = output.error or "node failed"
         instance.save(update_fields=["status", "error", "updated_at"])
-        _log(instance, node_exec, LogLevel.ERROR, f"node '{node.key}' failed permanently",
-             {"error": output.error})
+        _log(instance, node_exec, LogLevel.ERROR, "node_failed_permanently",
+             {"node": node.key, "error": output.error})
         return False
 
     # --- success ---
@@ -190,7 +192,7 @@ def _step(instance_id, runtime: dict) -> bool:
         instance.status = InstanceStatus.COMPLETED
         instance.current_node = None
         instance.save(update_fields=["context", "status", "current_node", "updated_at"])
-        _log(instance, node_exec, LogLevel.INFO, "instance completed")
+        _log(instance, node_exec, LogLevel.INFO, "instance_completed")
         return False
 
     try:
@@ -200,14 +202,14 @@ def _step(instance_id, runtime: dict) -> bool:
         instance.status = InstanceStatus.FAILED
         instance.error = str(exc)
         instance.save(update_fields=["context", "status", "error", "updated_at"])
-        _log(instance, node_exec, LogLevel.ERROR, "edge selection failed", {"error": str(exc)})
+        _log(instance, node_exec, LogLevel.ERROR, "edge_selection_failed", {"error": str(exc)})
         return False
 
     instance.context = context
     instance.current_node_id = edge.target_id
     instance.status = InstanceStatus.RUNNING
     instance.save(update_fields=["context", "current_node", "status", "updated_at"])
-    _log(instance, node_exec, LogLevel.INFO, f"advanced '{node.key}' -> '{edge.target.key}'")
+    _log(instance, node_exec, LogLevel.INFO, "advanced", {"from": node.key, "to": edge.target.key})
     return True
 
 

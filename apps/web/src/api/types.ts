@@ -61,8 +61,10 @@ export interface WorkflowListItem {
 
 export interface ExecutionLog {
   level: "debug" | "info" | "warn" | "error";
+  /** Stable event code (e.g. "advanced", "node_waiting") — translate via `instance.log.<message>`. */
   message: string;
-  data: unknown | null;
+  /** Interpolation values for the translated message (node keys, error text) — never prose. */
+  data: Record<string, unknown> | null;
   correlation_id: string;
   created_at: string;
 }
