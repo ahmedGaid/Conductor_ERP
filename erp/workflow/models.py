@@ -66,6 +66,28 @@ class Workflow(models.Model):
         return f"{self.name} v{self.version}"
 
 
+class WorkflowTrigger(models.Model):
+    """Subscribes a workflow to a domain event, reusing the same event-name catalog Webhooks use.
+
+    An optional JSON-logic ``condition`` gates the start (same shape/engine as edge conditions —
+    see ``erp.workflow.lib.jsonlogic``). No condition = fires on every occurrence of the event.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workflow = models.ForeignKey(Workflow, on_delete=models.CASCADE, related_name="triggers")
+    event_name = models.CharField(max_length=64)
+    condition = models.JSONField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "workflow_trigger"
+        indexes = [models.Index(fields=["event_name", "is_active"])]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.workflow.name} on {self.event_name}"
+
+
 class WorkflowNode(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workflow = models.ForeignKey(Workflow, on_delete=models.CASCADE, related_name="nodes")
