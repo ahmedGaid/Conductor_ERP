@@ -9,6 +9,9 @@ workflow/forms engine + UI shell, then ERP modules (Accounting → Inventory →
 See [DECISIONS.md](DECISIONS.md) for why the stack and scope are what they are, and
 [the build plan](../../Users/Rw/.claude/plans) for the full roadmap.
 
+Licensed under [`LICENSE`](LICENSE) (proprietary, all rights reserved). Support and warranty
+scope → [Docs/SUPPORT_TERMS.md](Docs/SUPPORT_TERMS.md).
+
 ## Design & brand — read before touching any UI or copy
 
 Start at the **[Product Philosophy front door](Docs/Brand/Conductor_Product_Philosophy.md)** — one

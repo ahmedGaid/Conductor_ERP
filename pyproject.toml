@@ -3,6 +3,7 @@ name = "erp-platform"
 version = "0.0.0"
 description = "Customer-hosted modular-monolith ERP (Django) — foundation-first build"
 requires-python = ">=3.13"
+license = { text = "Proprietary" }
 
 [tool.ruff]
 line-length = 100
