@@ -6,6 +6,12 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* Secondary text inside a cell — a supplier alias's canonical item name beside its SKU link,
+   or a muted em dash where a supplier gave only a code or only a name. */
+.inv-muted {
+  color: var(--color-text-muted);
+}
+
 .inv-ok {
   color: var(--color-success-strong);
   font-weight: var(--font-weight-medium);

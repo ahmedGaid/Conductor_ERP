@@ -15,6 +15,12 @@ urlpatterns = [
         views.ItemEtaCodeSuggestionView.as_view(),
         name="item-eta-code-suggestion",
     ),
+    path("supplier-aliases", views.SupplierAliasListView.as_view(), name="supplier-alias-list"),
+    path(
+        "supplier-aliases/<uuid:alias_id>",
+        views.SupplierAliasDetailView.as_view(),
+        name="supplier-alias-detail",
+    ),
     path("categories", views.CategoryListCreateView.as_view(), name="category-list"),
     path("warehouses", views.WarehouseListCreateView.as_view(), name="warehouse-list"),
     path("warehouses/<str:code>", views.WarehouseDetailView.as_view(), name="warehouse-detail"),

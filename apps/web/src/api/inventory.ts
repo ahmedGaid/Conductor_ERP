@@ -247,3 +247,41 @@ export interface BatchRow {
 export function listBatches(): Promise<BatchRow[]> {
   return apiFetch<BatchRow[]>("/inventory/reports/batches");
 }
+
+// ---- Supplier-item aliases (multi-supplier item resolution — the import learning loop's memory) ----
+
+export type AliasSource = "confirmed" | "imported" | "manual";
+
+export interface SupplierAlias {
+  id: string;
+  supplier_code: string;
+  supplier_item_code: string;
+  supplier_item_name: string;
+  item_sku: string;
+  item_name: string;
+  source: AliasSource;
+  created_at: string;
+}
+
+export function listSupplierAliases(params?: {
+  supplier_code?: string;
+  item_sku?: string;
+}): Promise<SupplierAlias[]> {
+  const qs = new URLSearchParams();
+  if (params?.supplier_code) qs.set("supplier_code", params.supplier_code);
+  if (params?.item_sku) qs.set("item_sku", params.item_sku);
+  const suffix = qs.toString();
+  return apiFetch<SupplierAlias[]>(`/inventory/supplier-aliases${suffix ? `?${suffix}` : ""}`);
+}
+
+// Re-point a mis-learned alias to the correct canonical item (by SKU).
+export function repointSupplierAlias(id: string, item_sku: string): Promise<SupplierAlias> {
+  return apiFetch<SupplierAlias>(`/inventory/supplier-aliases/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ item_sku }),
+  });
+}
+
+export function deleteSupplierAlias(id: string): Promise<void> {
+  return apiFetch<void>(`/inventory/supplier-aliases/${id}`, { method: "DELETE" });
+}

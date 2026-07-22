@@ -10,6 +10,7 @@ const TABS: { key: string; to: string; end?: boolean }[] = [
   { key: "movements", to: "/inventory/movements" },
   { key: "counts", to: "/inventory/counts" },
   { key: "batches", to: "/inventory/batches" },
+  { key: "aliases", to: "/inventory/supplier-aliases" },
 ];
 
 export function InventoryNav() {
