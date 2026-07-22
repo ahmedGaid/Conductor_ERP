@@ -68,11 +68,17 @@ def validate_row(actor, adapter, row: ImportRow, ref_cache: dict) -> list[Issue]
         if value in (None, ""):
             continue
         if ref_cache.get((field_spec.name, value)) is None:
+            meta = {"entity": field_spec.ref, "value": value}
+            # Optional adapter hook: extra context for this ref (e.g. the row's supplier for an item
+            # ref), so the masters resolver/capture is supplier-scoped. Duck-typed like header_fields.
+            ref_context = getattr(adapter, "ref_context", None)
+            if callable(ref_context):
+                meta.update(ref_context(row.normalized, field_spec.name) or {})
             issues.append(Issue(
                 field=field_spec.name,
                 code="missing_ref",
                 message="imports.issues.missingRef",
-                meta={"entity": field_spec.ref, "value": value},
+                meta=meta,
             ))
 
     issues.extend(adapter.validate(actor, row.normalized))

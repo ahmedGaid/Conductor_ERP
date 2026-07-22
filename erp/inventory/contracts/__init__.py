@@ -7,6 +7,8 @@ stay decoupled from inventory's internals.
 from __future__ import annotations
 
 import datetime
+import re as _re
+import unicodedata as _unicodedata
 from dataclasses import dataclass
 
 from django.db import models
@@ -75,6 +77,124 @@ def create_item(*, sku: str, name: str, uom: str = "unit", reorder_point=0, acto
 def item_sku_exists(sku: str) -> bool:
     """True when an item with this exact SKU already exists (import duplicate check)."""
     return _items.by_sku((sku or "").strip()) is not None
+
+
+# --- supplier-item resolution (multi-supplier duplicate-item fix) --------------------------------
+# The same physical item is bought from several suppliers, each with a different code and name (often
+# a different language). ``resolve_item`` maps an incoming supplier line to the canonical item; a
+# confirmed match is written back via ``record_alias`` so the next document resolves deterministically.
+_ARABIC_STRIP = _re.compile(r"[ؐ-ًؚ-ٰٟۖ-ۜ۟-۪ۨ-ۭـ]")
+_ARABIC_UNIFY = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ى": "ي", "ة": "ه", "ؤ": "و", "ئ": "ي"})
+
+
+def _normalize_name(value: str) -> str:
+    """Language-aware comparison key: NFKC, strip Arabic diacritics/tatweel, unify Arabic letter
+    variants (alef/ya/ta-marbuta), casefold, collapse whitespace. Lets ``رولمان بلي`` match the same
+    word written with a stray space or a different alef form, and English match case-insensitively."""
+    s = _unicodedata.normalize("NFKC", (value or "").strip())
+    if not s:
+        return ""
+    s = _ARABIC_STRIP.sub("", s).translate(_ARABIC_UNIFY)
+    return _re.sub(r"\s+", " ", s.casefold())
+
+
+@dataclass(frozen=True)
+class ItemResolution:
+    """The outcome of resolving one supplier line to a canonical item. ``confidence`` is 0–100 and
+    ``method`` names the winning signal (``alias_code`` | ``sku`` | ``alias_name`` | ``name`` |
+    ``none``) so the caller can decide: auto-link, propose a link, or propose a new item."""
+
+    item: ItemInfo | None
+    confidence: int
+    method: str
+
+
+def _item_info(item) -> ItemInfo:
+    return ItemInfo(sku=item.sku, name=item.name, type=item.type, is_active=item.is_active,
+                    reorder_point=str(item.reorder_point), eta_item_code=item.eta_item_code,
+                    eta_code_status=item.eta_code_status)
+
+
+def resolve_item(*, supplier_code: str = "", code: str = "", name: str = "") -> ItemResolution:
+    """Resolve an incoming supplier line (its own code/name) to the canonical ``Item``, strongest
+    signal first: supplier alias by code → exact SKU → supplier alias by name → normalized item name.
+    Returns ``ItemResolution(None, 0, "none")`` when nothing matches (the caller proposes creating a
+    new item). Never creates or writes anything — resolution is a pure read."""
+    from ..domain.models import Item, SupplierItemAlias
+
+    supplier_code = (supplier_code or "").strip()
+    code = (code or "").strip()
+    name = (name or "").strip()
+
+    # 1. Supplier's own item code — the strongest, deterministic, supplier-scoped signal.
+    if supplier_code and code:
+        alias = (
+            SupplierItemAlias.objects.filter(supplier_code=supplier_code, supplier_item_code=code)
+            .select_related("item").first()
+        )
+        if alias is not None:
+            return ItemResolution(_item_info(alias.item), 100, "alias_code")
+
+    # 2. The supplier's column IS our SKU (exact match).
+    if code:
+        info = find_item(code)
+        if info is not None:
+            return ItemResolution(info, 100, "sku")
+
+    # 3. Supplier alias by name — for suppliers that carry only a name, matched language-aware.
+    if supplier_code and name:
+        norm = _normalize_name(name)
+        aliases = (
+            SupplierItemAlias.objects.filter(supplier_code=supplier_code)
+            .exclude(supplier_item_name="").select_related("item")
+        )
+        for alias in aliases:
+            if _normalize_name(alias.supplier_item_name) == norm:
+                return ItemResolution(_item_info(alias.item), 95, "alias_name")
+
+    # 4. Same-language exact name against the catalogue (case/whitespace-insensitive).
+    if name:
+        match = Item.objects.filter(name__iexact=name, is_active=True).order_by("sku").first()
+        if match is not None:
+            return ItemResolution(_item_info(match), 90, "name")
+
+    return ItemResolution(None, 0, "none")
+
+
+def record_alias(*, supplier_code: str, item_sku: str, supplier_item_code: str = "",
+                 supplier_item_name: str = "", source: str = "confirmed", actor=None) -> None:
+    """Capture a confirmed supplier→canonical match so the next document from that supplier resolves
+    deterministically (the learning loop). Idempotent: keyed on (supplier, code) when a code is
+    present, else (supplier, name). Raises ``UnknownItemError`` if the canonical SKU doesn't exist."""
+    from ..domain.models import SupplierItemAlias
+
+    supplier_code = (supplier_code or "").strip()
+    item = _items.by_sku((item_sku or "").strip())
+    if item is None:
+        raise UnknownItemError(data={"sku": item_sku})
+
+    code = (supplier_item_code or "").strip()
+    name = (supplier_item_name or "").strip()
+    if not code and not name:
+        raise ValueError("record_alias needs a supplier_item_code or supplier_item_name")
+
+    defaults = {"item": item, "source": source}
+    if getattr(actor, "is_authenticated", False):
+        defaults["created_by"] = actor
+    if code:
+        SupplierItemAlias.objects.update_or_create(
+            supplier_code=supplier_code, supplier_item_code=code,
+            defaults={**defaults, "supplier_item_name": name},
+        )
+    else:
+        SupplierItemAlias.objects.update_or_create(
+            supplier_code=supplier_code, supplier_item_code="", supplier_item_name=name,
+            defaults=defaults,
+        )
+    audit.record(module="inventory", action="record_alias", entity_type="SupplierItemAlias",
+                 entity_id=f"{supplier_code}:{code or name}", actor=actor,
+                 after={"supplier_code": supplier_code, "supplier_item_code": code,
+                        "supplier_item_name": name, "item_sku": item.sku, "source": source})
 
 
 @dataclass(frozen=True)

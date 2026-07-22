@@ -61,6 +61,29 @@ class ItemAdapter:
     def lookup(self, actor, field, value):
         return None  # no ref fields wired into create_item yet (see module docstring)
 
+    def resolve(self, actor, value, context):
+        """Supplier-aware item resolution (duck-typed hook the masters engine calls when an item
+        ``missing_ref`` needs a link proposal). Uses the incoming supplier's context so an alias for
+        that supplier's own code/name resolves to the canonical SKU — the multi-supplier fix. Returns
+        ``{sku, confidence, method}`` or ``None`` (the caller then proposes creating a new item)."""
+        res = contracts.resolve_item(
+            supplier_code=(context or {}).get("supplier_code", ""), code=value, name=value,
+        )
+        if res.item is None:
+            return None
+        return {"sku": res.item.sku, "confidence": res.confidence, "method": res.method}
+
+    def capture(self, actor, value, context, sku):
+        """Learning loop: record the human-confirmed supplier→canonical match so the next document
+        from that supplier resolves deterministically. No supplier context ⇒ nothing to learn."""
+        supplier_code = (context or {}).get("supplier_code", "")
+        if not supplier_code or not sku:
+            return
+        contracts.record_alias(
+            supplier_code=supplier_code, item_sku=sku,
+            supplier_item_code=value, source="imported", actor=actor,
+        )
+
     def validate(self, actor, row: dict) -> list[Issue]:
         return []
 
