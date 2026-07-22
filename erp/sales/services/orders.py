@@ -388,7 +388,7 @@ def _invoiced_line(ln: SalesOrderLine) -> dict:
 
 
 @transaction.atomic
-def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
+def invoice_order(order: SalesOrder, actor=None, payment_terms_days: int = 30) -> SalesOrder:
     _require(order, OrderStatus.DELIVERED)
     net = order.subtotal_minor
     vat = compute_tax(net, order.tax_code) if order.tax_code else 0
@@ -421,7 +421,8 @@ def invoice_order(order: SalesOrder, actor=None) -> SalesOrder:
     order.tax_minor = vat
     order.invoiced_minor = gross
     order.invoice_number = entry.number
-    order.save(update_fields=["status", "tax_minor", "invoiced_minor", "invoice_number", "updated_at"])
+    order.due_date = order.order_date + dt.timedelta(days=payment_terms_days)
+    order.save(update_fields=["status", "tax_minor", "invoiced_minor", "invoice_number", "due_date", "updated_at"])
     audit.record(module="sales", action="invoice_order", entity_type="SalesOrder",
                  entity_id=order.number, actor=actor, after=_snapshot(order))
     # Enriched payload so subscribers (e-invoicing) can build a record without reaching into sales.

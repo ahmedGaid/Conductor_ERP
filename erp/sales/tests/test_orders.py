@@ -1,6 +1,7 @@
 """Sales order lifecycle — the cross-module order-to-cash flow."""
 from __future__ import annotations
 
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -58,6 +59,7 @@ def test_full_order_to_cash_flow_keeps_books_balanced():
     invoice_order(order)
     assert order.status == OrderStatus.INVOICED
     assert order.invoice_number
+    assert order.due_date == order.order_date + timedelta(days=30)
     assert general_ledger("1100").closing_balance == 1500_00  # AR
     assert general_ledger("4000").closing_balance == 1500_00  # Revenue
 

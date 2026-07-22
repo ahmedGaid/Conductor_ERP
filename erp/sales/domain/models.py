@@ -67,6 +67,7 @@ class SalesOrder(AuditedModel):
     )
     approved_at = models.DateTimeField(null=True, blank=True)
     invoice_number = models.CharField(max_length=32, blank=True, default="")
+    due_date = models.DateField(null=True, blank=True)
     credit_note_number = models.CharField(max_length=32, blank=True, default="")
     notes = models.CharField(max_length=255, blank=True, default="")
 
