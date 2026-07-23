@@ -6,15 +6,89 @@
 }
 
 .automations__card {
-  display: block;
-  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-3);
   border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
   background-color: var(--color-surface-alt);
   text-decoration: none;
   color: var(--color-text);
+  transition: border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.automations__card:hover {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface-hover);
+}
+
+.automations__card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.automations__card-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.automations__card-name {
+  font-weight: 500;
+}
+
+.automations__card-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .automations__footer {
   display: flex;
-  gap: var(--space-3);
+  align-items: center;
+  gap: var(--space-4);
+  margin-block-start: var(--space-4);
+}
+
+.automations__footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+
+.automations__footer-link--muted {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.template-form__summary {
+  margin-block: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+
+.template-form__summary h2 {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-block-end: var(--space-2);
+}
+
+.template-form__summary ul {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }

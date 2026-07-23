@@ -4,18 +4,82 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  /* No visual gap between steps — the connector line has to read as continuous, so the rhythm
+     comes from padding inside .steplist__step-body instead of a gap here. */
+  gap: 0;
 }
 
 .steplist__step {
+  display: flex;
+  gap: var(--space-3);
+  padding-block-end: var(--space-3);
+}
+
+.steplist__connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.steplist__connector::after {
+  content: "";
+  flex: 1;
+  inline-size: 2px;
+  margin-block-start: var(--space-2);
+  background-color: var(--color-border);
+}
+
+.steplist__step--last .steplist__connector::after {
+  content: none;
+}
+
+.steplist__step-body {
+  flex: 1;
+  min-inline-size: 0;
   padding: var(--space-3);
   border-radius: var(--radius-md);
   background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  margin-block-end: var(--space-1);
 }
 
-.steplist__label {
+.steplist__step-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-end: var(--space-2);
+}
+
+.steplist__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: 50%;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.steplist__remove {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+}
+
+.steplist__remove:hover {
+  color: var(--color-danger);
+  background-color: var(--color-surface-hover);
 }
 
 .steplist__condition {
@@ -29,4 +93,22 @@
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-block: var(--space-3);
+}
+
+.steplist__add .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.steplist__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  text-align: center;
 }

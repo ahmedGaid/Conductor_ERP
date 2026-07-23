@@ -300,23 +300,57 @@
     "title": "الأتمتة",
     "subtitle": "أتمتة تعمل من تلقاء نفسها، بلغة بسيطة.",
     "templatesHeading": "ابدأ من قالب جاهز",
+    "templateDescription": {
+      "approval_above_amount": "يوقف الطلب حتى يوافق عليه صاحب الدور المحدد.",
+      "low_stock_alert": "يُخطِر شخصًا بمجرد انخفاض مخزون صنف ما.",
+      "overdue_invoice_reminder": "يُذكِّر العميل عند تأخر سداد فاتورته.",
+      "new_lead_followup": "يتابع عميلًا محتملًا تلقائيًا بعد عدد أيام محدد.",
+      "ticket_escalation": "يُصعِّد تذكرة الدعم عند بقائها مفتوحة طويلاً."
+    },
     "startFromScratch": "ابدأ من الصفر",
     "advanced": "متقدم (محرر مسارات العمل)",
     "field": {
       "amount": "المبلغ",
       "approverRole": "من يوافق",
+      "approverRolePlaceholder": "اختر دورًا",
       "recipient": "من يُخطَر",
+      "recipientPlaceholder": "اختر شخصًا",
       "daysOverdue": "عدد أيام التأخير",
-      "daysSinceCreated": "بعد كم يوم"
+      "daysSinceCreated": "بعد كم يوم",
+      "operator": "المقارنة",
+      "value": "القيمة"
     },
+    "conditionField": {
+      "amount_minor": "المبلغ",
+      "days_overdue": "عدد أيام التأخير",
+      "quantity": "الكمية",
+      "days_since_created": "عدد الأيام منذ الإنشاء"
+    },
+    "conditionFieldPlaceholder": "اختر ما تريد التحقق منه",
+    "conditionOperator": {
+      ">": "أكبر من",
+      "<": "أقل من",
+      "==": "يساوي"
+    },
+    "conditionOperatorPlaceholder": "اختر نوع المقارنة",
     "save": "حفظ",
     "saved": "تم حفظ الأتمتة",
+    "startFromScratchHint": "أضف الخطوات بالترتيب الذي ستحدث به — وافق، أخطِر، أو تحقق من شرط.",
+    "summary": {
+      "heading": "ماذا ستفعل هذه الأتمتة",
+      "name": "أتمتة باسم \"{{name}}\".",
+      "nameBlank": "أعطِ هذه الأتمتة اسمًا للمتابعة.",
+      "line": "{{label}}: {{value}}",
+      "blank": "{{label}}: لم يُحدَّد بعد"
+    },
     "steps": {
       "when": "عند",
       "do": "قم بـ",
       "if": "إذا",
       "otherwise": "وإلا",
       "addStep": "أضف خطوة",
+      "remove": "احذف هذه الخطوة",
+      "emptyHint": "لا توجد خطوات بعد. أضف خطوة أدناه لتبدأ بناء هذه الأتمتة.",
       "type": {
         "approval": "اطلب موافقة أحدهم",
         "notification": "أرسل إشعارًا",

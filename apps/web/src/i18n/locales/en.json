@@ -300,23 +300,57 @@
     "title": "Automations",
     "subtitle": "Automations that run themselves, in plain language.",
     "templatesHeading": "Start from a template",
+    "templateDescription": {
+      "approval_above_amount": "Holds the request until someone with the right role approves it.",
+      "low_stock_alert": "Notifies someone as soon as an item's stock runs low.",
+      "overdue_invoice_reminder": "Reminds a customer when their invoice is overdue.",
+      "new_lead_followup": "Follows up on a lead automatically after a set number of days.",
+      "ticket_escalation": "Escalates a support ticket when it's been open too long."
+    },
     "startFromScratch": "Start from scratch",
     "advanced": "Advanced (workflow canvas)",
     "field": {
       "amount": "Amount",
       "approverRole": "Who approves",
+      "approverRolePlaceholder": "Choose a role",
       "recipient": "Who to notify",
+      "recipientPlaceholder": "Choose a person",
       "daysOverdue": "Days overdue",
-      "daysSinceCreated": "After how many days"
+      "daysSinceCreated": "After how many days",
+      "operator": "Comparison",
+      "value": "Value"
     },
+    "conditionField": {
+      "amount_minor": "Amount",
+      "days_overdue": "Days overdue",
+      "quantity": "Quantity",
+      "days_since_created": "Days since created"
+    },
+    "conditionFieldPlaceholder": "Choose what to check",
+    "conditionOperator": {
+      ">": "is greater than",
+      "<": "is less than",
+      "==": "equals"
+    },
+    "conditionOperatorPlaceholder": "Choose a comparison",
     "save": "Save",
     "saved": "Automation saved",
+    "startFromScratchHint": "Add steps in the order they should happen — approve, notify, or check a condition.",
+    "summary": {
+      "heading": "What this will do",
+      "name": "Automation named \"{{name}}\".",
+      "nameBlank": "Give this automation a name to continue.",
+      "line": "{{label}}: {{value}}",
+      "blank": "{{label}}: not set yet"
+    },
     "steps": {
       "when": "When",
       "do": "Do",
       "if": "If",
       "otherwise": "Otherwise",
       "addStep": "Add a step",
+      "remove": "Remove this step",
+      "emptyHint": "No steps yet. Add one below to start building this automation.",
       "type": {
         "approval": "Ask someone to approve",
         "notification": "Send a notification",
