@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { usePreferences } from "../preferences/PreferencesContext";
 import { orderedVisibleWidgets } from "./settings/dashboardWidgets";
@@ -85,26 +85,8 @@ export function DashboardPage() {
   const secondaryWidgets = widgets.filter((w) => w !== "attention" && w !== "confidence");
 
   // "More insight" (expenses/cash flow/journals/shortcuts) stays closed by default so the first
-  // glance is short: numbers, what needs you, confidence, done. The negative-cash-balance hint on
-  // the KPI strip still needs to reveal and scroll to the cash-flow panel inside it, so opening it
-  // programmatically has to happen before the scroll — the ref flags that scroll as pending until
-  // the panel has actually mounted.
+  // glance is short: numbers, what needs you, confidence, done.
   const [moreExpanded, setMoreExpanded] = useState(false);
-  const scrollToCashRef = useRef(false);
-
-  useEffect(() => {
-    if (moreExpanded && scrollToCashRef.current) {
-      scrollToCashRef.current = false;
-      requestAnimationFrame(() => {
-        document.getElementById("dash-cashflow-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    }
-  }, [moreExpanded]);
-
-  function handleCashHintClick() {
-    scrollToCashRef.current = true;
-    setMoreExpanded(true);
-  }
 
   return (
     <section className="dash">
@@ -157,7 +139,7 @@ export function DashboardPage() {
                 value: formatMinor(data.cash.closing_balance),
                 hint: t("dashboard.asOfNow"),
                 negative: data.cash.closing_balance < 0,
-                onHintClick: data.cash.closing_balance < 0 ? handleCashHintClick : undefined,
+                hintTo: data.cash.closing_balance < 0 ? "/accounting/cash-flow" : undefined,
               },
             ]}
           />
@@ -212,7 +194,8 @@ interface KpiItem {
   invertDelta?: boolean;
   negative?: boolean;
   hint?: string;
-  onHintClick?: () => void;
+  /** When set (with `negative`), the hint links to the full report instead of being plain text. */
+  hintTo?: string;
 }
 
 // The four headline numbers as one text-forward strip, not four bordered cards — the numbers
@@ -244,23 +227,25 @@ function KpiStrip({ items }: { items: KpiItem[] }) {
           >
             <span className="dash__kpi-label" aria-hidden="true">{it.label}</span>
             <span className="dash__kpi-value" aria-hidden="true"><Bdi>{it.value}</Bdi></span>
-            <span className="dash__kpi-foot" aria-hidden="true">
+            <span className="dash__kpi-foot">
               {hasDelta ? (
-                <span className={good ? "dash__kpi-delta dash__kpi-delta--up" : "dash__kpi-delta dash__kpi-delta--down"}>
+                <span
+                  className={good ? "dash__kpi-delta dash__kpi-delta--up" : "dash__kpi-delta dash__kpi-delta--down"}
+                  aria-hidden="true"
+                >
                   <NavIcon name={good ? "trendUp" : "trendDown"} />
                   <Bdi>{Math.abs(it.delta as number)}%</Bdi>
                 </span>
               ) : null}
-              {it.negative && it.onHintClick ? (
-                <button
-                  type="button"
-                  className="dash__kpi-hint dash__kpi-hint--negative dash__kpi-hint--link"
-                  onClick={it.onHintClick}
-                >
+              {it.negative && it.hintTo ? (
+                <Link to={it.hintTo} className="dash__kpi-hint dash__kpi-hint--negative dash__kpi-hint--link">
                   {hintText}
-                </button>
+                </Link>
               ) : (
-                <span className={it.negative ? "dash__kpi-hint dash__kpi-hint--negative" : "dash__kpi-hint"}>
+                <span
+                  className={it.negative ? "dash__kpi-hint dash__kpi-hint--negative" : "dash__kpi-hint"}
+                  aria-hidden="true"
+                >
                   {hintText}
                 </span>
               )}
@@ -448,7 +433,7 @@ function CashFlowPanel({ report }: { report: CashFlowReport }) {
   const { t } = useTranslation();
   const max = Math.max(report.cash_in, report.cash_out, 1);
   return (
-    <div className="card dash__panel" id="dash-cashflow-panel">
+    <div className="card dash__panel">
       <div className="dash__panel-head">
         <h2>{t("accounting.tabs.cashFlow")}</h2>
       </div>
