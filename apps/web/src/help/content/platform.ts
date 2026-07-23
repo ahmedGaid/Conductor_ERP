@@ -206,6 +206,21 @@ export const workflowCanvasGuide: HelpGuide = {
   ],
 };
 
+export const instancesListGuide: HelpGuide = {
+  title: { en: "Workflow runs", ar: "تشغيلات المسارات" },
+  purpose: {
+    en: "Every run of every workflow, across the whole app — which one, when it started, and whether it's still going, finished, or waiting on your approval.",
+    ar: "كل تشغيل لكل مسار عمل، في التطبيق بأكمله — أيّها، ومتى بدأ، وهل ما زال جارياً أو انتهى أو ينتظر موافقتك.",
+  },
+  howItWorks: {
+    en: "A run starts automatically when its trigger fires (an event, a schedule, or a manual start from the workflow canvas). Click any row to open its step-by-step viewer.",
+    ar: "يبدأ التشغيل تلقائياً عند إطلاق مُشغّله (حدث، أو جدول زمني، أو بدء يدوي من لوحة المسار). انقر أي صف لفتح عارضه خطوة بخطوة.",
+  },
+  related: [
+    { to: "/workflows", label: { en: "Workflows", ar: "المسارات" } },
+  ],
+};
+
 export const executionViewerGuide: HelpGuide = {
   title: { en: "Run viewer", ar: "عارض التشغيل" },
   purpose: {
@@ -385,6 +400,21 @@ export const aiUsageGuide: HelpGuide = {
   },
   related: [
     { to: "/assistant/ops", label: { en: "Assistant health", ar: "صحة المساعد" } },
+  ],
+};
+
+export const importWizardGuide: HelpGuide = {
+  title: { en: "Import wizard", ar: "معالج الاستيراد" },
+  purpose: {
+    en: "Bring in a spreadsheet of customers, items, orders, or opening balances — the wizard walks you from upload to a mapped, checked result.",
+    ar: "استورد جدول بيانات للعملاء أو الأصناف أو الطلبات أو الأرصدة الافتتاحية — يرشدك المعالج من الرفع إلى نتيجة مطابقة ومفحوصة.",
+  },
+  howItWorks: {
+    en: "Upload a file, then map its columns to the right fields — the wizard suggests a mapping and shows how confident it is. Continue to see what will be created or matched before anything is saved.",
+    ar: "ارفع ملفاً، ثم طابق أعمدته بالحقول الصحيحة — يقترح المعالج مطابقة ويعرض مدى ثقته بها. تابع لترى ما سيُنشأ أو يُطابَق قبل حفظ أي شيء.",
+  },
+  mistakes: [
+    { en: "A row that can't be matched isn't discarded silently — it's flagged for you to fix or skip before the import finishes.", ar: "الصف الذي يتعذّر مطابقته لا يُهمَل بصمت — بل يُعلَّم لتصلحه أو تتجاوزه قبل انتهاء الاستيراد." },
   ],
 };
 

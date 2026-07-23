@@ -160,6 +160,22 @@ export const settingsBranchesGuide: HelpGuide = {
   related: [{ to: "/settings/organization", label: { en: "Organization defaults", ar: "إعدادات المؤسسة" } }],
 };
 
+export const settingsEinvoiceGuide: HelpGuide = {
+  title: { en: "E-invoicing configuration", ar: "إعداد الفوترة الإلكترونية" },
+  purpose: {
+    en: "Administrator-only. Connect Conductor to the Egyptian Tax Authority's e-invoicing service — client credentials, environment (sandbox/production), and your issuer tax profile.",
+    ar: "للمسؤول فقط. اربط Conductor بخدمة الفوترة الإلكترونية لمصلحة الضرائب المصرية — بيانات الاعتماد، والبيئة (تجريبية/إنتاج)، وبيانات المُصدر الضريبية.",
+  },
+  howItWorks: {
+    en: "Enter the client ID/secret and issuer details, then click 'Test connection' to confirm the Authority accepts them before relying on live submission. The client secret is encrypted at rest and never shown again after saving.",
+    ar: "أدخل معرّف/سر العميل وبيانات المُصدر، ثم انقر 'اختبار الاتصال' للتأكد من قبول المصلحة لها قبل الاعتماد على الإرسال الفعلي. سر العميل مُشفّر عند التخزين ولا يُعرض مجدداً بعد الحفظ.",
+  },
+  mistakes: [
+    { en: "A failed test doesn't stop invoicing — it just means submission stays simulated until credentials are fixed.", ar: "فشل الاختبار لا يوقف الفوترة — بل يعني بقاء الإرسال محاكاة حتى تصحيح بيانات الاعتماد." },
+  ],
+  related: [{ to: "/einvoice", label: { en: "E-invoices", ar: "الفواتير الإلكترونية" } }],
+};
+
 export const settingsWebhooksGuide: HelpGuide = {
   title: { en: "Webhooks", ar: "الويب هوكس" },
   purpose: {

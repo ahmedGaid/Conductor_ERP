@@ -259,3 +259,18 @@ export const batchesGuide: HelpGuide = {
     { to: "/inventory/movements", label: { en: "Stock movement", ar: "حركة المخزون" } },
   ],
 };
+
+export const supplierAliasesGuide: HelpGuide = {
+  title: { en: "Supplier item aliases", ar: "أسماء الموردين البديلة للأصناف" },
+  purpose: {
+    en: "How each supplier names or codes the items you buy from them, so imports and the assistant match a supplier's own wording to the right item instead of creating a duplicate.",
+    ar: "كيف يسمّي أو يرمّز كل مورد الأصناف التي تشتريها منه، ليطابق الاستيراد والمساعد الذكي تسمية المورد بالصنف الصحيح بدلاً من إنشاء صنف مكرَّر.",
+  },
+  howItWorks: {
+    en: "An alias is learned automatically the first time you confirm a match between a supplier's code or name and one of your items — you rarely need to add one by hand. From then on, that supplier's wording resolves straight to the same item, in either language.",
+    ar: "يُتعلَّم الاسم البديل تلقائياً أول مرة تؤكد فيها تطابقاً بين رمز أو اسم المورد وأحد أصنافك — نادراً ما تحتاج لإضافته يدوياً. بعدها، تُطابق تسمية ذلك المورد الصنف نفسه مباشرة، بأي من اللغتين.",
+  },
+  related: [
+    { to: "/inventory/items", label: { en: "Items", ar: "الأصناف" } },
+  ],
+};
