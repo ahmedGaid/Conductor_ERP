@@ -110,8 +110,16 @@ function InteractiveMapping({ upload, entity, profile, onMapped }: MapModeProps)
 
   const [mapping, setMapping] = useState<Record<string, string>>(() => {
     if (profile) {
+      // A saved profile can drift from the current file — a re-exported sheet with fewer/renamed
+      // columns, or (defensively) a profile saved with a stale/invalid field. Only keep entries
+      // whose column still exists in this upload and whose field is still valid for this entity;
+      // anything else is silently dropped rather than poisoning the mapping the way an unfiltered
+      // suggestion did (same failure mode as the mapping_suggestion path above).
+      const headerSet = new Set(upload.headers);
       const inverted: Record<string, string> = {};
-      for (const [field, column] of Object.entries(profile.mapping)) inverted[column] = field;
+      for (const [field, column] of Object.entries(profile.mapping)) {
+        if (validFieldNames.has(field) && headerSet.has(column)) inverted[column] = field;
+      }
       return inverted;
     }
     // `upload.mapping_suggestion` is computed server-side against the *top detected candidate*
