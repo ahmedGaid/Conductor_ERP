@@ -651,6 +651,11 @@
       "firstProfitableMonth": "This month is profitable — your first. Well done.",
       "dismiss": "Dismiss"
     },
+    "moreInsight": {
+      "title": "More insight",
+      "show": "Show",
+      "hide": "Hide"
+    },
     "vsLastMonth": "vs last month",
     "asOfNow": "as of now",
     "deltaUp": "increase",
