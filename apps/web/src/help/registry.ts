@@ -25,8 +25,11 @@ import {
   opsGuide,
   systemGuide,
   userGuideGuide,
+  workflowAdvancedGuide,
   workflowCanvasGuide,
   workflowsGuide,
+  templateFormGuide,
+  stepListBuilderGuide,
 } from "./content/platform";
 import {
   balanceSheetGuide,
@@ -108,6 +111,9 @@ import { customerPricingGuide, priceListDetailGuide, priceListsGuide } from "./c
 export const HELP_GUIDES: Record<string, HelpGuide> = {
   "/": dashboardGuide,
   "/workflows": workflowsGuide,
+  "/workflows/advanced": workflowAdvancedGuide,
+  "/workflows/templates/:templateId": templateFormGuide,
+  "/workflows/build": stepListBuilderGuide,
   "/workflows/new": workflowCanvasGuide,
   "/workflows/:id": workflowCanvasGuide,
   "/instances/:id": executionViewerGuide,

@@ -155,25 +155,88 @@ export const dashboardGuide: HelpGuide = {
 };
 
 export const workflowsGuide: HelpGuide = {
-  title: { en: "Workflows", ar: "مسارات العمل" },
+  title: { en: "Automations", ar: "الأتمتة" },
   purpose: {
-    en: "Design and run automated business processes — for example an approval chain or a multi-step procedure — without writing code.",
-    ar: "صمّم وشغّل عمليات عمل آلية — مثل سلسلة موافقات أو إجراء متعدد الخطوات — دون كتابة برمجة.",
+    en: "Set up business rules that run themselves — approvals, alerts, reminders — without writing code. Pick a ready-made template and fill in two or three fields.",
+    ar: "أعدّ قواعد عمل تعمل من تلقاء نفسها — موافقات وتنبيهات وتذكيرات — دون كتابة برمجة. اختر قالباً جاهزاً وأكمل حقلين أو ثلاثة.",
   },
   howItWorks: {
-    en: "A workflow is a diagram of steps connected by arrows. You build it once; each time it 'starts', the system walks the steps in order, pausing for approvals where needed. This list shows every workflow you've built.",
-    ar: "مسار العمل مخطط من خطوات تربطها أسهم. تبنيه مرة واحدة؛ وكلما 'بدأ'، ينفّذ النظام الخطوات بالترتيب متوقفاً عند الموافقات حين يلزم. تعرض هذه القائمة كل مسار بنيته.",
+    en: "Each template is a pre-built process you personalise with your own numbers and roles. After saving, the automation runs automatically whenever its trigger fires (an event or a daily schedule). 'Start from scratch' opens the step-list builder for more control.",
+    ar: "كل قالب هو عملية جاهزة تضبطها بأرقامك وأدوارك. بعد الحفظ، تعمل الأتمتة تلقائياً عند إطلاق مُشغّلها (حدث أو جدول يومي). 'ابدأ من الصفر' يفتح منشئ الخطوات للتحكم الأوسع.",
   },
   tasks: [
     {
-      name: { en: "Open or create a workflow", ar: "افتح أو أنشئ مساراً" },
+      name: { en: "Create an automation from a template", ar: "أنشئ أتمتة من قالب" },
       steps: [
-        { en: "Click a workflow in the list to open its canvas, or choose 'New'.", ar: "انقر مساراً في القائمة لفتح لوحته، أو اختر 'جديد'." },
-        { en: "Build the steps, then save and run it.", ar: "ابنِ الخطوات ثم احفظ وشغّل." },
+        { en: "Click a template card to open its form.", ar: "انقر بطاقة القالب لفتح نموذجه." },
+        { en: "Fill in the name and the required fields, then click Save.", ar: "أدخل الاسم والحقول المطلوبة ثم انقر حفظ." },
+        { en: "The automation is now active — it will run whenever its trigger fires.", ar: "الأتمتة الآن نشطة — ستعمل عند كل إطلاق لمُشغّلها." },
       ],
     },
   ],
   related: [
+    { to: "/workflows/build", label: { en: "Build from scratch", ar: "ابنِ من الصفر" } },
+    { to: "/workflows/instances", label: { en: "View runs", ar: "عرض التشغيلات" } },
+  ],
+};
+
+export const templateFormGuide: HelpGuide = {
+  title: { en: "Automation template", ar: "قالب الأتمتة" },
+  purpose: {
+    en: "Fill in a few fields to create a ready-to-run automation from a pre-built template.",
+    ar: "أكمل بضعة حقول لإنشاء أتمتة جاهزة للتشغيل من قالب مُعدّ مسبقاً.",
+  },
+  howItWorks: {
+    en: "Give the automation a name, then fill in the template's fields (amounts, roles, or thresholds). The system expands the template into a full workflow and activates it immediately on save.",
+    ar: "أعطِ الأتمتة اسماً ثم أكمل حقول القالب (مبالغ وأدوار أو حدود). ينشئ النظام مساراً كاملاً من القالب ويُفعّله فور الحفظ.",
+  },
+  tips: [
+    { en: "The name is what appears in the runs list — use something you'll recognise later.", ar: "الاسم هو ما يظهر في قائمة التشغيلات — اختر شيئاً ستتذكره." },
+    { en: "You can edit the generated workflow on the canvas any time after saving.", ar: "يمكنك تعديل المسار المُنشأ في اللوحة في أي وقت بعد الحفظ." },
+  ],
+  related: [
+    { to: "/workflows", label: { en: "Back to automations", ar: "العودة إلى الأتمتة" } },
+  ],
+};
+
+export const stepListBuilderGuide: HelpGuide = {
+  title: { en: "Step builder", ar: "منشئ الخطوات" },
+  purpose: {
+    en: "Build a custom automation step by step — without drawing a diagram — using a simple list of actions.",
+    ar: "ابنِ أتمتة مخصصة خطوة بخطوة — دون رسم مخطط — باستخدام قائمة بسيطة من الإجراءات.",
+  },
+  howItWorks: {
+    en: "Add steps in order using the '+' buttons. Each step is one action: send a notification, request approval, or check a condition. A condition step branches the flow — the Yes path continues, the No path ends. Save converts the list into a workflow.",
+    ar: "أضف الخطوات بالترتيب باستخدام أزرار '+'. كل خطوة هي إجراء واحد: إرسال إشعار أو طلب موافقة أو التحقق من شرط. خطوة الشرط تفرّع المسار — مسار 'نعم' يكمل ومسار 'لا' ينهي. الحفظ يحوّل القائمة إلى مسار عمل.",
+  },
+  sections: [
+    {
+      heading: { en: "Step types", ar: "أنواع الخطوات" },
+      items: [
+        { term: { en: "Notification", ar: "إشعار" }, desc: { en: "Sends an in-app alert to a user or role.", ar: "يُرسل تنبيهاً داخل التطبيق إلى مستخدم أو دور." } },
+        { term: { en: "Approval", ar: "موافقة" }, desc: { en: "Pauses the flow until someone approves or rejects.", ar: "يوقف المسار حتى يوافق شخص أو يرفض." } },
+        { term: { en: "Condition", ar: "شرط" }, desc: { en: "Checks a rule and splits the flow into Yes/No branches.", ar: "يتحقق من قاعدة ويقسّم المسار إلى فرعَي نعم/لا." } },
+      ],
+    },
+  ],
+  related: [
+    { to: "/workflows", label: { en: "Back to automations", ar: "العودة إلى الأتمتة" } },
+    { to: "/workflows/advanced", label: { en: "Advanced canvas", ar: "اللوحة المتقدمة" } },
+  ],
+};
+
+export const workflowAdvancedGuide: HelpGuide = {
+  title: { en: "Workflow list", ar: "قائمة المسارات" },
+  purpose: {
+    en: "Browse every workflow in the system and open its canvas to view or edit the full diagram.",
+    ar: "تصفّح كل مسارات العمل في النظام وافتح لوحة أي منها لعرض المخطط الكامل أو تعديله.",
+  },
+  howItWorks: {
+    en: "Each row is a workflow you or your team built. Click it to open the canvas. 'New' creates a blank canvas workflow. For most automations the template-based builder at /workflows is the faster starting point.",
+    ar: "كل صف هو مسار بنيته أنت أو فريقك. انقره لفتح اللوحة. 'جديد' ينشئ مسار لوحة فارغ. لمعظم الأتمتات، منشئ القوالب في /workflows هو نقطة البداية الأسرع.",
+  },
+  related: [
+    { to: "/workflows", label: { en: "Automations (templates)", ar: "الأتمتة (القوالب)" } },
     { to: "/workflows/new", label: { en: "New workflow", ar: "مسار جديد" } },
   ],
 };
