@@ -1184,10 +1184,18 @@
       "received": "الكمية المستلمة",
       "expiry": "أقرب انتهاء",
       "expiresToday": "تنتهي اليوم",
-      "expiresInOne": "يوم واحد متبقٍ",
-      "expiresIn": "{{count}} يوم متبقٍ",
-      "expiredAgoOne": "انتهت منذ يوم واحد",
-      "expiredAgo": "انتهت منذ {{count}} يوم",
+      "expiresIn_zero": "0 يوم متبقٍ",
+      "expiresIn_one": "يوم واحد متبقٍ",
+      "expiresIn_two": "يومان متبقيان",
+      "expiresIn_few": "{{count}} أيام متبقية",
+      "expiresIn_many": "{{count}} يومًا متبقيًا",
+      "expiresIn_other": "{{count}} يوم متبقٍ",
+      "expiredAgo_zero": "انتهت منذ 0 يوم",
+      "expiredAgo_one": "انتهت منذ يوم واحد",
+      "expiredAgo_two": "انتهت منذ يومين",
+      "expiredAgo_few": "انتهت منذ {{count}} أيام",
+      "expiredAgo_many": "انتهت منذ {{count}} يومًا",
+      "expiredAgo_other": "انتهت منذ {{count}} يوم",
       "viewStock": "عرض المخزون",
       "empty": "لا توجد دفعات مسجلة بعد.",
       "hint": "استلم مخزونًا بدفعة وتاريخ انتهاء لتتبعه هنا."
@@ -1271,14 +1279,30 @@
       "orderCreated": "تم إنشاء الطلب",
       "quotationCreated": "تم إنشاء عرض السعر",
       "cancelled": "تم إلغاء الطلب",
-      "bulkApproved": "تمت الموافقة على {{count}} طلبات",
-      "bulkApprovedOne": "تمت الموافقة على طلب واحد",
-      "bulkConfirmed": "تم تأكيد {{count}} طلبات",
-      "bulkConfirmedOne": "تم تأكيد طلب واحد",
-      "bulkQuoteSubmitted": "تم إرسال {{count}} عروض أسعار",
-      "bulkQuoteSubmittedOne": "تم إرسال عرض سعر واحد",
-      "bulkQuoteApproved": "تمت الموافقة على {{count}} عروض أسعار",
-      "bulkQuoteApprovedOne": "تمت الموافقة على عرض سعر واحد"
+      "bulkApproved_zero": "تمت الموافقة على 0 طلب",
+      "bulkApproved_one": "تمت الموافقة على طلب واحد",
+      "bulkApproved_two": "تمت الموافقة على طلبين",
+      "bulkApproved_few": "تمت الموافقة على {{count}} طلبات",
+      "bulkApproved_many": "تمت الموافقة على {{count}} طلبًا",
+      "bulkApproved_other": "تمت الموافقة على {{count}} طلب",
+      "bulkConfirmed_zero": "تم تأكيد 0 طلب",
+      "bulkConfirmed_one": "تم تأكيد طلب واحد",
+      "bulkConfirmed_two": "تم تأكيد طلبين",
+      "bulkConfirmed_few": "تم تأكيد {{count}} طلبات",
+      "bulkConfirmed_many": "تم تأكيد {{count}} طلبًا",
+      "bulkConfirmed_other": "تم تأكيد {{count}} طلب",
+      "bulkQuoteSubmitted_zero": "تم إرسال 0 عرض سعر",
+      "bulkQuoteSubmitted_one": "تم إرسال عرض سعر واحد",
+      "bulkQuoteSubmitted_two": "تم إرسال عرضي سعر",
+      "bulkQuoteSubmitted_few": "تم إرسال {{count}} عروض أسعار",
+      "bulkQuoteSubmitted_many": "تم إرسال {{count}} عرض سعر",
+      "bulkQuoteSubmitted_other": "تم إرسال {{count}} عرض سعر",
+      "bulkQuoteApproved_zero": "تمت الموافقة على 0 عرض سعر",
+      "bulkQuoteApproved_one": "تمت الموافقة على عرض سعر واحد",
+      "bulkQuoteApproved_two": "تمت الموافقة على عرضي سعر",
+      "bulkQuoteApproved_few": "تمت الموافقة على {{count}} عروض أسعار",
+      "bulkQuoteApproved_many": "تمت الموافقة على {{count}} عرض سعر",
+      "bulkQuoteApproved_other": "تمت الموافقة على {{count}} عرض سعر"
     },
     "tabs": {
       "orders": "الطلبات",
@@ -1388,11 +1412,19 @@
       "approval": "الموافقة",
       "lineDetails": "تفاصيل عرض السعر",
       "validUntil": "صالح حتى",
-      "validityExpired": "انتهت الصلاحية منذ {{count}} يوم",
-      "validityExpiredOne": "انتهت الصلاحية منذ يوم واحد",
+      "validityExpired_zero": "انتهت الصلاحية منذ 0 يوم",
+      "validityExpired_one": "انتهت الصلاحية منذ يوم واحد",
+      "validityExpired_two": "انتهت الصلاحية منذ يومين",
+      "validityExpired_few": "انتهت الصلاحية منذ {{count}} أيام",
+      "validityExpired_many": "انتهت الصلاحية منذ {{count}} يومًا",
+      "validityExpired_other": "انتهت الصلاحية منذ {{count}} يوم",
       "validityExpiresToday": "تنتهي الصلاحية اليوم",
-      "validityExpiresInOne": "يوم واحد متبقٍ على الصلاحية",
-      "validityExpiresIn": "{{count}} يوم متبقٍ على الصلاحية",
+      "validityExpiresIn_zero": "0 يوم متبقٍ على الصلاحية",
+      "validityExpiresIn_one": "يوم واحد متبقٍ على الصلاحية",
+      "validityExpiresIn_two": "يومان متبقيان على الصلاحية",
+      "validityExpiresIn_few": "{{count}} أيام متبقية على الصلاحية",
+      "validityExpiresIn_many": "{{count}} يومًا متبقيًا على الصلاحية",
+      "validityExpiresIn_other": "{{count}} يوم متبقٍ على الصلاحية",
       "needsApproval": "يحتاج موافقة",
       "autoApprove": "موافقة تلقائية",
       "convertedTo": "حُوِّل إلى",
@@ -2038,12 +2070,6 @@
       "saveProfileSaved": "تم الحفظ",
       "continue": "متابعة"
     },
-    "stats": {
-      "rowsOf": "{{count}} {{entity}}",
-      "newRefs": "{{count}}{{suffix}} {{entity}} جديد",
-      "issues": "{{count}} صف يحتاج مراجعة",
-      "duplicatesInFile": "{{count}} صف مكرر داخل الملف"
-    },
     "entity": {
       "customers": "العملاء",
       "suppliers": "الموردون",
@@ -2095,6 +2121,193 @@
       "order_ref": "رقم الطلب",
       "entry_ref": "رقم القيد",
       "opening_ref": "المرجع الافتتاحي"
+    },
+    "issues": {
+      "dateInvalid": "هذا التاريخ غير صحيح — تحقق من الصيغة",
+      "dateAmbiguous": "قُرئ على أن اليوم أولًا — تأكد أنه التاريخ المقصود",
+      "moneyInvalid": "هذا لا يبدو كمبلغ",
+      "numberInvalid": "هذا لا يبدو كرقم",
+      "currencyUnknown": "لا نتعرّف على هذه العملة",
+      "phoneInvalid": "هذا لا يبدو كرقم هاتف",
+      "emailInvalid": "هذا لا يبدو كبريد إلكتروني",
+      "taxIdInvalid": "هذا لا يبدو كرقم تسجيل ضريبي",
+      "taxIdLength": "طول الرقم الضريبي مختلف عن المعتاد — تحقق منه",
+      "requiredMissing": "هذا الحقل مطلوب",
+      "missingRef": "لم نجد هذا — أضِفه في الخطة أدناه",
+      "missingRefChip": "\"{{value}}\" غير موجود بعد — أضِفه في الخطة أدناه",
+      "probableDuplicate": "يبدو أن هذا موجود بالفعل",
+      "duplicateInFile": "هذا يتكرر مع صف آخر في الملف"
+    },
+    "review": {
+      "tabsLabel": "تصفية الصفوف",
+      "tab": {
+        "all": "الكل",
+        "valid": "جاهز",
+        "error": "يحتاج مراجعة",
+        "duplicate": "تكرارات محتملة",
+        "skipped": "تم تخطّيه"
+      },
+      "status": {
+        "pending": "قيد الانتظار",
+        "valid": "جاهز",
+        "error": "يحتاج مراجعة",
+        "duplicate": "تكرار محتمل",
+        "skipped": "تم تخطّيه",
+        "imported": "تم الاستيراد",
+        "reverted": "تم التراجع"
+      },
+      "rowHeader": "الصف",
+      "statusHeader": "الحالة",
+      "emptyTab": {
+        "title": "لا يوجد شيء هنا",
+        "hint": "لا صفوف ضمن هذا العرض."
+      },
+      "prevPage": "السابق",
+      "nextPage": "التالي",
+      "pageOf": "{{from}}–{{to}} من {{total}}"
+    },
+    "duplicate": {
+      "empty": {
+        "title": "لا توجد تكرارات محتملة",
+        "hint": "كل صف يبدو مختلفًا عمّا هو مسجَّل بالفعل."
+      },
+      "inFileOnly": "لم نجد مطابقة قريبة — يمكنك الدمج يدويًا مع سجل موجود إن لاحظت أحدها.",
+      "similarity": {
+        "veryLikely": "على الأرجح نفس السجل",
+        "likely": "يُرجَّح أنه نفس السجل",
+        "possible": "قد يكون نفس السجل"
+      },
+      "decided": {
+        "merge": "سيُدمج",
+        "create": "سيُنشأ سجل جديد",
+        "ignore": "سيُتخطّى"
+      },
+      "action": {
+        "merge": "دمج",
+        "create": "إنشاء جديد",
+        "ignore": "تجاهل"
+      }
+    },
+    "creationPlan": {
+      "title": "سجلات جديدة يحتاجها هذا الاستيراد",
+      "hint": "هذه المراجع غير موجودة بعد. راجع ووافق على ما تريد إنشاءه — لن يُضاف شيء دون موافقتك.",
+      "groupCount": "{{count}} من {{entity}}",
+      "willCreate": "سيُنشأ",
+      "willLink": "سيُربط بسجل موجود",
+      "outcome": {
+        "created": "تم الإنشاء",
+        "linked": "تم الربط"
+      },
+      "blocked": {
+        "blocked_unsupported": "غير مدعوم بعد",
+        "blocked_permission": "لا تملك صلاحية إنشاء هذا"
+      },
+      "approve": "الموافقة على {{count}} والمتابعة",
+      "allDone": "تم — كل المراجع محلولة"
+    },
+    "autofix": {
+      "trigger": "إصلاح {{count}} صف تلقائيًا",
+      "modalTitle": "راجع الإصلاحات",
+      "modalHint": "لن يتغيّر شيء حتى تطبّق. أزل التحديد عمّا لا تريده.",
+      "rowField": "الصف {{row}}، {{field}}",
+      "apply": "تطبيق {{count}} إصلاح",
+      "applied": "تم إصلاح {{count}} صف"
+    },
+    "summary": {
+      "title": "جاهز للاستيراد",
+      "strategyLabel": "كيفية التعامل مع السجلات الموجودة",
+      "strategy": {
+        "create_only": {
+          "name": "إنشاء فقط",
+          "desc": "تخطّي أي صف يطابق سجلًا موجودًا."
+        },
+        "update_only": {
+          "name": "تحديث فقط",
+          "desc": "تحديث السجلات الموجودة فقط — بلا إنشاء جديد."
+        },
+        "upsert": {
+          "name": "إنشاء أو تحديث",
+          "desc": "إنشاء سجلات جديدة وتحديث المطابقة منها."
+        },
+        "skip_existing": {
+          "name": "تخطّي الموجود",
+          "desc": "إنشاء السجلات الجديدة فقط دون المساس بالموجود."
+        }
+      },
+      "atomicity": "الكل أو لا شيء — التراجع عن كل شيء إذا فشل أي صف",
+      "continueAfterErrors": "الاستمرار رغم الصفوف التي بها أخطاء",
+      "planPending": "{{count}} سجل جديد ما زال بحاجة لموافقتك أعلاه",
+      "importCta": "إنشاء {{create}}، تحديث {{update}}، تخطّي {{skip}}"
+    },
+    "run": {
+      "stage": {
+        "importing": "جارٍ استيراد الصفوف…",
+        "queued": "في الانتظار — سيبدأ قريبًا…"
+      },
+      "rowsOf": "{{done}} من {{total}} صف",
+      "perSecond": "{{rate}} صف/ثانية",
+      "etaLeft": "متبقٍ {{eta}}",
+      "pausedNotice": "مُعلَّق — يحتفظ بالـ {{count}} صف المستوردة بالفعل",
+      "pause": "إيقاف مؤقت",
+      "resume": "استئناف",
+      "cancel": "إلغاء",
+      "pauseRequested": "جارٍ الإيقاف بعد الدفعة الحالية من الصفوف…",
+      "cancelRequested": "جارٍ الإلغاء — مع الاحتفاظ بما استُورد بالفعل…",
+      "cancelConfirm": {
+        "title": "إلغاء هذا الاستيراد؟",
+        "body": "يحتفظ بالـ {{count}} صف المستوردة بالفعل. كل ما هو معلَّق يُتخطّى ولا يُستورد.",
+        "confirm": "إلغاء الاستيراد"
+      }
+    },
+    "report": {
+      "doneTitle": "اكتمل الاستيراد",
+      "rolledBackTitle": "تم التراجع عن الاستيراد",
+      "created": "تم إنشاء {{count}} {{entity}}",
+      "updated": "تم تحديث {{count}}",
+      "skipped": "تم تخطّي {{count}}",
+      "errors": "{{count}} خطأ",
+      "mastersTitle": "أُنشئ أيضًا أثناء الاستيراد",
+      "newMasters": "{{count}} {{entity}} جديد",
+      "duration": "استغرق {{seconds}} ثانية",
+      "downloadCsv": "تنزيل التقرير (CSV)",
+      "rollback": {
+        "trigger": "التراجع عن هذا الاستيراد",
+        "confirmTitle": "التراجع عن هذا الاستيراد؟",
+        "confirmBody": "يزيل كل سجل أنشأه هذا الاستيراد. تحديثات السجلات الموجودة والمستندات المرحّلة لا يمكن التراجع عنها — وهي مُدرجة بعد ذلك.",
+        "confirm": "التراجع عن الاستيراد",
+        "done": "تم التراجع عن الاستيراد",
+        "summary": "تم التراجع عن {{reverted}}، وتعذّر التراجع تلقائيًا عن {{skipped}}."
+      }
+    },
+    "history": {
+      "title": "الاستيرادات",
+      "lede": "كل ملف استوردته، وما حدث له.",
+      "newImport": "استيراد جديد",
+      "empty": {
+        "title": "أول استيراد لك على بُعد نقرة واحدة",
+        "hint": "استورد العملاء والطلبات والفواتير وغيرها من ملف إكسل."
+      },
+      "fileHeader": "الملف",
+      "entityHeader": "النوع",
+      "byHeader": "بواسطة",
+      "whenHeader": "متى",
+      "rowsHeader": "الصفوف",
+      "statusHeader": "الحالة",
+      "rollbackHeader": "التراجع",
+      "rowsCount": "{{count}} صف",
+      "errorsCount": "{{count}} خطأ",
+      "rolledBack": "تم التراجع عنه",
+      "rollbackAvailable": "متاح",
+      "status": {
+        "mapping": "المطابقة",
+        "previewing": "قيد المراجعة",
+        "ready": "قيد المراجعة",
+        "running": "قيد التنفيذ",
+        "paused": "مُعلَّق",
+        "done": "تم",
+        "failed": "فشل",
+        "rolled_back": "تم التراجع عنه"
+      }
     }
   },
   "toast": {

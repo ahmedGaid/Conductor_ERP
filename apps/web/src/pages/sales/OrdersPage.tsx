@@ -301,7 +301,7 @@ export function OrdersPage() {
                 approvable,
                 (r) => ({ ...r, approved: true }),
                 (id) => approveOrder(id),
-                t(approvable.length === 1 ? "sales.toast.bulkApprovedOne" : "sales.toast.bulkApproved", { count: approvable.length }),
+                t("sales.toast.bulkApproved", { count: approvable.length }),
               )
             }
           >
@@ -316,7 +316,7 @@ export function OrdersPage() {
                 confirmable,
                 (r) => ({ ...r, status: "confirmed" }),
                 (id) => confirmOrder(id),
-                t(confirmable.length === 1 ? "sales.toast.bulkConfirmedOne" : "sales.toast.bulkConfirmed", { count: confirmable.length }),
+                t("sales.toast.bulkConfirmed", { count: confirmable.length }),
               )
             }
           >

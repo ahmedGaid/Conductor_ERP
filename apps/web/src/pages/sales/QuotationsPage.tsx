@@ -254,7 +254,7 @@ export function QuotationsPage() {
                 submittable,
                 "submitted",
                 (id) => submitQuotation(id),
-                t(submittable.length === 1 ? "sales.toast.bulkQuoteSubmittedOne" : "sales.toast.bulkQuoteSubmitted", { count: submittable.length }),
+                t("sales.toast.bulkQuoteSubmitted", { count: submittable.length }),
               )
             }
           >
@@ -269,7 +269,7 @@ export function QuotationsPage() {
                 approvable,
                 "approved",
                 (id) => approveQuotation(id),
-                t(approvable.length === 1 ? "sales.toast.bulkQuoteApprovedOne" : "sales.toast.bulkQuoteApproved", { count: approvable.length }),
+                t("sales.toast.bulkQuoteApproved", { count: approvable.length }),
               )
             }
           >

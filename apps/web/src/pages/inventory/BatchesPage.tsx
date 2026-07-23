@@ -150,10 +150,10 @@ export function BatchesPage() {
                           <Bdi>{b.earliest_expiry}</Bdi>
                           <Badge tone={expiryTone(days)}>
                             {days < 0
-                              ? t(Math.abs(days) === 1 ? "inventory.batches.expiredAgoOne" : "inventory.batches.expiredAgo", { count: Math.abs(days) })
+                              ? t("inventory.batches.expiredAgo", { count: Math.abs(days) })
                               : days === 0
                                 ? t("inventory.batches.expiresToday")
-                                : t(days === 1 ? "inventory.batches.expiresInOne" : "inventory.batches.expiresIn", { count: days })}
+                                : t("inventory.batches.expiresIn", { count: days })}
                           </Badge>
                         </span>
                       ) : (

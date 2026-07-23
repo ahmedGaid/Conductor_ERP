@@ -1184,10 +1184,18 @@
       "received": "Received qty",
       "expiry": "Earliest expiry",
       "expiresToday": "Expires today",
-      "expiresInOne": "1 day left",
-      "expiresIn": "{{count}} days left",
-      "expiredAgoOne": "expired 1 day ago",
-      "expiredAgo": "expired {{count}} days ago",
+      "expiresIn_zero": "0 days left",
+      "expiresIn_one": "1 day left",
+      "expiresIn_two": "2 days left",
+      "expiresIn_few": "{{count}} days left",
+      "expiresIn_many": "{{count}} days left",
+      "expiresIn_other": "{{count}} days left",
+      "expiredAgo_zero": "expired 0 days ago",
+      "expiredAgo_one": "expired 1 day ago",
+      "expiredAgo_two": "expired 2 days ago",
+      "expiredAgo_few": "expired {{count}} days ago",
+      "expiredAgo_many": "expired {{count}} days ago",
+      "expiredAgo_other": "expired {{count}} days ago",
       "viewStock": "View stock",
       "empty": "No batches recorded yet.",
       "hint": "Receive stock with a batch/lot and expiry to see it traced here."
@@ -1271,14 +1279,30 @@
       "orderCreated": "Order created",
       "quotationCreated": "Quotation created",
       "cancelled": "Order cancelled",
-      "bulkApproved": "{{count}} orders approved",
-      "bulkApprovedOne": "1 order approved",
-      "bulkConfirmed": "{{count}} orders confirmed",
-      "bulkConfirmedOne": "1 order confirmed",
-      "bulkQuoteSubmitted": "{{count}} quotations submitted",
-      "bulkQuoteSubmittedOne": "1 quotation submitted",
-      "bulkQuoteApproved": "{{count}} quotations approved",
-      "bulkQuoteApprovedOne": "1 quotation approved"
+      "bulkApproved_zero": "0 orders approved",
+      "bulkApproved_one": "1 order approved",
+      "bulkApproved_two": "2 orders approved",
+      "bulkApproved_few": "{{count}} orders approved",
+      "bulkApproved_many": "{{count}} orders approved",
+      "bulkApproved_other": "{{count}} orders approved",
+      "bulkConfirmed_zero": "0 orders confirmed",
+      "bulkConfirmed_one": "1 order confirmed",
+      "bulkConfirmed_two": "2 orders confirmed",
+      "bulkConfirmed_few": "{{count}} orders confirmed",
+      "bulkConfirmed_many": "{{count}} orders confirmed",
+      "bulkConfirmed_other": "{{count}} orders confirmed",
+      "bulkQuoteSubmitted_zero": "0 quotations submitted",
+      "bulkQuoteSubmitted_one": "1 quotation submitted",
+      "bulkQuoteSubmitted_two": "2 quotations submitted",
+      "bulkQuoteSubmitted_few": "{{count}} quotations submitted",
+      "bulkQuoteSubmitted_many": "{{count}} quotations submitted",
+      "bulkQuoteSubmitted_other": "{{count}} quotations submitted",
+      "bulkQuoteApproved_zero": "0 quotations approved",
+      "bulkQuoteApproved_one": "1 quotation approved",
+      "bulkQuoteApproved_two": "2 quotations approved",
+      "bulkQuoteApproved_few": "{{count}} quotations approved",
+      "bulkQuoteApproved_many": "{{count}} quotations approved",
+      "bulkQuoteApproved_other": "{{count}} quotations approved"
     },
     "tabs": {
       "orders": "Orders",
@@ -1388,11 +1412,19 @@
       "approval": "Approval",
       "lineDetails": "Quotation details",
       "validUntil": "Valid until",
-      "validityExpired": "Expired {{count}} days ago",
-      "validityExpiredOne": "Expired 1 day ago",
+      "validityExpired_zero": "Expired 0 days ago",
+      "validityExpired_one": "Expired 1 day ago",
+      "validityExpired_two": "Expired 2 days ago",
+      "validityExpired_few": "Expired {{count}} days ago",
+      "validityExpired_many": "Expired {{count}} days ago",
+      "validityExpired_other": "Expired {{count}} days ago",
       "validityExpiresToday": "Expires today",
-      "validityExpiresInOne": "1 day left to accept",
-      "validityExpiresIn": "{{count}} days left to accept",
+      "validityExpiresIn_zero": "0 days left to accept",
+      "validityExpiresIn_one": "1 day left to accept",
+      "validityExpiresIn_two": "2 days left to accept",
+      "validityExpiresIn_few": "{{count}} days left to accept",
+      "validityExpiresIn_many": "{{count}} days left to accept",
+      "validityExpiresIn_other": "{{count}} days left to accept",
       "needsApproval": "Needs approval",
       "autoApprove": "Auto-approved",
       "convertedTo": "Converted to",
@@ -2038,12 +2070,6 @@
       "saveProfileSaved": "Saved",
       "continue": "Continue"
     },
-    "stats": {
-      "rowsOf": "{{count}} {{entity}}",
-      "newRefs": "{{count}}{{suffix}} new {{entity}}",
-      "issues": "{{count}} rows need a closer look",
-      "duplicatesInFile": "{{count}} rows repeat within the file"
-    },
     "entity": {
       "customers": "customers",
       "suppliers": "suppliers",
@@ -2095,6 +2121,193 @@
       "order_ref": "Order no.",
       "entry_ref": "Entry no.",
       "opening_ref": "Opening reference"
+    },
+    "issues": {
+      "dateInvalid": "This date doesn't look right — check the format",
+      "dateAmbiguous": "Read as day-first — check this is the date you meant",
+      "moneyInvalid": "This doesn't look like an amount",
+      "numberInvalid": "This doesn't look like a number",
+      "currencyUnknown": "We don't recognize this currency",
+      "phoneInvalid": "This doesn't look like a phone number",
+      "emailInvalid": "This doesn't look like an email address",
+      "taxIdInvalid": "This doesn't look like a tax ID",
+      "taxIdLength": "This tax ID is a different length than usual — check it",
+      "requiredMissing": "This is required",
+      "missingRef": "We couldn't find this — add it in the plan below",
+      "missingRefChip": "\"{{value}}\" doesn't exist yet — add it in the plan below",
+      "probableDuplicate": "This looks like it might already exist",
+      "duplicateInFile": "This repeats another row in the file"
+    },
+    "review": {
+      "tabsLabel": "Filter rows",
+      "tab": {
+        "all": "All",
+        "valid": "Ready",
+        "error": "Needs attention",
+        "duplicate": "Possible duplicates",
+        "skipped": "Skipped"
+      },
+      "status": {
+        "pending": "Pending",
+        "valid": "Ready",
+        "error": "Needs attention",
+        "duplicate": "Possible duplicate",
+        "skipped": "Skipped",
+        "imported": "Imported",
+        "reverted": "Reverted"
+      },
+      "rowHeader": "Row",
+      "statusHeader": "Status",
+      "emptyTab": {
+        "title": "Nothing here",
+        "hint": "No rows in this view."
+      },
+      "prevPage": "Previous",
+      "nextPage": "Next",
+      "pageOf": "{{from}}–{{to}} of {{total}}"
+    },
+    "duplicate": {
+      "empty": {
+        "title": "No possible duplicates",
+        "hint": "Every row looks distinct from what's already on file."
+      },
+      "inFileOnly": "No close match found — you can still merge into an existing record manually if you spot one.",
+      "similarity": {
+        "veryLikely": "very likely the same",
+        "likely": "likely the same",
+        "possible": "possibly the same"
+      },
+      "decided": {
+        "merge": "will merge",
+        "create": "will create new",
+        "ignore": "will be skipped"
+      },
+      "action": {
+        "merge": "Merge",
+        "create": "Create new",
+        "ignore": "Ignore"
+      }
+    },
+    "creationPlan": {
+      "title": "New records this import needs",
+      "hint": "These references don't exist yet. Review and approve the ones you want created — nothing is added without your say.",
+      "groupCount": "{{count}} {{entity}}",
+      "willCreate": "will create",
+      "willLink": "will link to an existing record",
+      "outcome": {
+        "created": "created",
+        "linked": "linked"
+      },
+      "blocked": {
+        "blocked_unsupported": "not supported yet",
+        "blocked_permission": "you don't have permission to create this"
+      },
+      "approve": "Approve {{count}} and continue",
+      "allDone": "All set — every reference resolves"
+    },
+    "autofix": {
+      "trigger": "Auto-fix {{count}} rows",
+      "modalTitle": "Review the fixes",
+      "modalHint": "Nothing changes until you apply. Untick anything you don't want.",
+      "rowField": "Row {{row}}, {{field}}",
+      "apply": "Apply {{count}} fixes",
+      "applied": "Fixed {{count}} rows"
+    },
+    "summary": {
+      "title": "Ready to import",
+      "strategyLabel": "How to handle existing records",
+      "strategy": {
+        "create_only": {
+          "name": "Create only",
+          "desc": "Skip any row that matches an existing record."
+        },
+        "update_only": {
+          "name": "Update only",
+          "desc": "Only update existing records — never create new ones."
+        },
+        "upsert": {
+          "name": "Create or update",
+          "desc": "Create new records, update matching ones."
+        },
+        "skip_existing": {
+          "name": "Skip existing",
+          "desc": "Create new records only, leave existing ones untouched."
+        }
+      },
+      "atomicity": "All or nothing — undo everything if any row fails",
+      "continueAfterErrors": "Keep going past rows with errors",
+      "planPending": "{{count}} new records still need your approval above",
+      "importCta": "Create {{create}}, update {{update}}, skip {{skip}}"
+    },
+    "run": {
+      "stage": {
+        "importing": "Importing rows…",
+        "queued": "Queued — waiting to start…"
+      },
+      "rowsOf": "{{done}} of {{total}} rows",
+      "perSecond": "{{rate}} rows/s",
+      "etaLeft": "{{eta}} left",
+      "pausedNotice": "Paused — keeps the {{count}} rows already imported",
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel",
+      "pauseRequested": "Pausing after the current batch of rows…",
+      "cancelRequested": "Cancelling — keeping what's already imported…",
+      "cancelConfirm": {
+        "title": "Cancel this import?",
+        "body": "Keeps the {{count}} rows already imported. Everything still pending is skipped, not imported.",
+        "confirm": "Cancel import"
+      }
+    },
+    "report": {
+      "doneTitle": "Import complete",
+      "rolledBackTitle": "Import rolled back",
+      "created": "{{count}} {{entity}} created",
+      "updated": "{{count}} updated",
+      "skipped": "{{count}} skipped",
+      "errors": "{{count}} errors",
+      "mastersTitle": "Also created along the way",
+      "newMasters": "{{count}} new {{entity}}",
+      "duration": "Took {{seconds}}s",
+      "downloadCsv": "Download report (CSV)",
+      "rollback": {
+        "trigger": "Undo this import",
+        "confirmTitle": "Undo this import?",
+        "confirmBody": "Removes every record this import created. Updates to existing records and posted documents can't be undone — those are listed after.",
+        "confirm": "Undo import",
+        "done": "Import undone",
+        "summary": "Reverted {{reverted}}, {{skipped}} couldn't be reverted automatically."
+      }
+    },
+    "history": {
+      "title": "Imports",
+      "lede": "Every file you've brought in, and what happened to it.",
+      "newImport": "New import",
+      "empty": {
+        "title": "Your first import is one click away",
+        "hint": "Bring in customers, orders, invoices, and more from a spreadsheet."
+      },
+      "fileHeader": "File",
+      "entityHeader": "Type",
+      "byHeader": "By",
+      "whenHeader": "When",
+      "rowsHeader": "Rows",
+      "statusHeader": "Status",
+      "rollbackHeader": "Rollback",
+      "rowsCount": "{{count}} rows",
+      "errorsCount": "{{count}} errors",
+      "rolledBack": "Already undone",
+      "rollbackAvailable": "Available",
+      "status": {
+        "mapping": "Mapping",
+        "previewing": "Reviewing",
+        "ready": "Reviewing",
+        "running": "Running",
+        "paused": "Paused",
+        "done": "Done",
+        "failed": "Failed",
+        "rolled_back": "Rolled back"
+      }
     }
   },
   "toast": {

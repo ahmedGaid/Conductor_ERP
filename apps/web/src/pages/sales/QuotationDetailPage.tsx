@@ -254,10 +254,10 @@ export function QuotationDetailPage() {
                     <Bdi>{data.validity_until}</Bdi>{" "}
                     <Badge tone={validityTone(days)}>
                       {days < 0
-                        ? t(Math.abs(days) === 1 ? "sales.quotations.validityExpiredOne" : "sales.quotations.validityExpired", { count: Math.abs(days) })
+                        ? t("sales.quotations.validityExpired", { count: Math.abs(days) })
                         : days === 0
                           ? t("sales.quotations.validityExpiresToday")
-                          : t(days === 1 ? "sales.quotations.validityExpiresInOne" : "sales.quotations.validityExpiresIn", { count: days })}
+                          : t("sales.quotations.validityExpiresIn", { count: days })}
                     </Badge>
                   </dd>
                 </div>
