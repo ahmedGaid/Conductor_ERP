@@ -296,6 +296,36 @@
       "saveFailed": "That change didn't save. Please try again."
     }
   },
+  "automations": {
+    "title": "Automations",
+    "subtitle": "Automations that run themselves, in plain language.",
+    "templatesHeading": "Start from a template",
+    "startFromScratch": "Start from scratch",
+    "advanced": "Advanced (workflow canvas)",
+    "field": {
+      "amount": "Amount",
+      "approverRole": "Who approves",
+      "recipient": "Who to notify",
+      "daysOverdue": "Days overdue",
+      "daysSinceCreated": "After how many days"
+    },
+    "save": "Save",
+    "saved": "Automation saved",
+    "steps": {
+      "when": "When",
+      "do": "Do",
+      "if": "If",
+      "otherwise": "Otherwise",
+      "addStep": "Add a step",
+      "type": {
+        "approval": "Ask someone to approve",
+        "notification": "Send a notification",
+        "condition": "Check a condition",
+        "assistant": "Let the assistant draft something",
+        "apiCall": "Call another system"
+      }
+    }
+  },
   "knowledge": {
     "title": "Knowledge base",
     "subtitle": "Documents the assistant can search and quote from — upload policies, procedures, price lists, or catalogs.",
