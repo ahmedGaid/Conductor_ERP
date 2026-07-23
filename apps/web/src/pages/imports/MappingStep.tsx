@@ -7,13 +7,13 @@ import {
   createImportProfile,
   entityLabelKey,
   postImportMapping,
-  type ImportBatch,
   type ImportFieldSpec,
   type ImportMappingResult,
   type ImportProfileHit,
   type ImportUploadResult,
 } from "../../api/smartImports";
 import { useToast } from "../../app/ToastContext";
+import { ComboBox, type ComboBoxOption } from "../../components/ComboBox";
 
 function confidenceWord(c: number): "high" | "medium" | "low" {
   if (c >= 90) return "high";
@@ -33,72 +33,14 @@ function ConfidencePill({ confidence }: { confidence: number }) {
   );
 }
 
-function StatsSummary({ batch, entityLabel }: { batch: ImportBatch; entityLabel: string }) {
-  const { t } = useTranslation();
-  const stats = batch.stats;
-  const newRefLines = Object.entries(stats.new_refs ?? {}).filter(([, vals]) => vals.length > 0);
-  const issueTotal = Object.values(stats.issues_by_code ?? {}).reduce((a, b) => a + b, 0);
-
-  return (
-    <div className="imports-stats">
-      <p className="imports-stats__headline" dir="auto">
-        {t("imports.stats.rowsOf", { count: stats.rows ?? 0, entity: entityLabel })}
-      </p>
-      {newRefLines.length > 0 && (
-        <ul className="imports-stats__list">
-          {newRefLines.map(([entity, vals]) => (
-            <li key={entity} dir="auto">
-              {t("imports.stats.newRefs", {
-                count: vals.length,
-                suffix: vals.length >= 50 ? "+" : "",
-                entity: t(entityLabelKey(entity), entity),
-              })}
-            </li>
-          ))}
-        </ul>
-      )}
-      {(issueTotal > 0 || (stats.duplicates_in_file ?? 0) > 0) && (
-        <ul className="imports-stats__list imports-stats__list--muted">
-          {issueTotal > 0 && <li dir="auto">{t("imports.stats.issues", { count: issueTotal })}</li>}
-          {(stats.duplicates_in_file ?? 0) > 0 && (
-            <li dir="auto">{t("imports.stats.duplicatesInFile", { count: stats.duplicates_in_file })}</li>
-          )}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-interface MapModeProps {
+interface MappingStepProps {
   upload: ImportUploadResult;
   entity: string;
   profile?: ImportProfileHit;
-  batch?: undefined;
   onMapped: (result: ImportMappingResult) => void;
 }
 
-interface StatsModeProps {
-  upload?: undefined;
-  entity?: undefined;
-  profile?: undefined;
-  batch: ImportBatch;
-  onMapped: (result: ImportMappingResult) => void;
-}
-
-export function MappingStep(props: MapModeProps | StatsModeProps) {
-  if (props.batch) {
-    const label = props.batch.entity; // resolved to a translated label below via entityLabelKey
-    return <ResumedStats batch={props.batch} rawEntity={label} />;
-  }
-  return <InteractiveMapping {...props} />;
-}
-
-function ResumedStats({ batch, rawEntity }: { batch: ImportBatch; rawEntity: string }) {
-  const { t } = useTranslation();
-  return <StatsSummary batch={batch} entityLabel={t(entityLabelKey(rawEntity), rawEntity)} />;
-}
-
-function InteractiveMapping({ upload, entity, profile, onMapped }: MapModeProps) {
+export function MappingStep({ upload, entity, profile, onMapped }: MappingStepProps) {
   const { t } = useTranslation();
   const toast = useToast();
   const fields: ImportFieldSpec[] = upload.entity_fields[entity] ?? [];
@@ -106,6 +48,11 @@ function InteractiveMapping({ upload, entity, profile, onMapped }: MapModeProps)
   const requiredFields = fields.filter((f) => f.required);
   const optionalFields = fields.filter((f) => !f.required);
   const fieldLabel = (name: string) => t(`imports.field.${name}`, name);
+  const fieldOptions: ComboBoxOption[] = [
+    { value: "", label: t("imports.mapping.ignore") },
+    ...requiredFields.map((f) => ({ value: f.name, label: fieldLabel(f.name) })),
+    ...optionalFields.map((f) => ({ value: f.name, label: fieldLabel(f.name) })),
+  ];
   const entityLabel = t(upload.candidates.find((c) => c.entity === entity)?.label_key ?? entityLabelKey(entity), entity);
 
   const [mapping, setMapping] = useState<Record<string, string>>(() => {
@@ -210,29 +157,14 @@ function InteractiveMapping({ upload, entity, profile, onMapped }: MapModeProps)
                   <td dir="auto">{column}</td>
                   <td dir="auto" className="muted">{samples.join("، ")}</td>
                   <td>
-                    <select
+                    <ComboBox
                       className="imports-mapping__select"
+                      options={fieldOptions}
                       value={mapping[column] ?? ""}
-                      onChange={(e) =>
-                        setMapping((m) => ({ ...m, [column]: e.target.value }))
-                      }
-                    >
-                      <option value="">{t("imports.mapping.ignore")}</option>
-                      {requiredFields.length > 0 && (
-                        <optgroup label={t("imports.mapping.requiredGroup")}>
-                          {requiredFields.map((f) => (
-                            <option key={f.name} value={f.name}>{fieldLabel(f.name)}</option>
-                          ))}
-                        </optgroup>
-                      )}
-                      {optionalFields.length > 0 && (
-                        <optgroup label={t("imports.mapping.optionalGroup")}>
-                          {optionalFields.map((f) => (
-                            <option key={f.name} value={f.name}>{fieldLabel(f.name)}</option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </select>
+                      onChange={(v) => setMapping((m) => ({ ...m, [column]: v }))}
+                      placeholder={t("imports.mapping.ignore")}
+                      aria-label={t("imports.mapping.fieldHeader")}
+                    />
                   </td>
                   <td>
                     {suggestion?.field && validFieldNames.has(suggestion.field) ? (
