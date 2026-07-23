@@ -77,6 +77,11 @@ class StartInstanceSerializer(serializers.Serializer):
     payload = serializers.DictField(required=False, default=dict)
 
 
+class TemplateCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=200)
+    params = serializers.DictField()
+
+
 class DecisionSerializer(serializers.Serializer):
     decision = serializers.ChoiceField(choices=["approve", "reject"])
     comment = serializers.CharField(required=False, allow_blank=True, default="")

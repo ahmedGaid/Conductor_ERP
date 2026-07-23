@@ -11,7 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import approvals, services
+from . import approvals, services, templates, triggers
 from .engine import engine
 from .models import ApprovalStatus, Workflow, WorkflowInstance
 from .serializers import (
@@ -19,6 +19,7 @@ from .serializers import (
     InstanceDetailSerializer,
     InstanceSerializer,
     StartInstanceSerializer,
+    TemplateCreateSerializer,
     WorkflowGraphSerializer,
     WorkflowListItemSerializer,
 )
@@ -44,6 +45,32 @@ class WorkflowListCreateView(APIView):
             nodes=s.validated_data["nodes"],
             edges=s.validated_data["edges"],
         )
+        return _envelope(WorkflowGraphSerializer(wf).data, status=201)
+
+
+class TemplateCatalogView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        return _envelope(templates.TEMPLATE_CATALOG)
+
+
+class TemplateCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, template_id: str) -> Response:
+        s = TemplateCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        graph = templates.expand(template_id, s.validated_data["params"])
+        wf = services.save_graph(
+            name=s.validated_data["name"], nodes=graph["nodes"], edges=graph["edges"],
+        )
+        if graph["trigger"]:
+            triggers.create_trigger(
+                workflow_id=wf.id,
+                event_name=graph["trigger"]["event_name"],
+                condition=graph["trigger"].get("condition"),
+            )
         return _envelope(WorkflowGraphSerializer(wf).data, status=201)
 
 
