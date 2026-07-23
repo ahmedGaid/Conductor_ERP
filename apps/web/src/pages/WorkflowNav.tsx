@@ -3,9 +3,10 @@ import { NavLink } from "react-router-dom";
 
 import "./WorkflowNav.css";
 
-const TABS: { key: string; to: string; end?: boolean }[] = [
+const TABS: { key: string; to: string; label?: string; end?: boolean }[] = [
   { key: "workflows", to: "/workflows", end: true },
   { key: "instances", to: "/workflows/instances" },
+  { key: "advanced", to: "/workflows/advanced", label: "automations.advanced" },
 ];
 
 export function WorkflowNav() {
@@ -15,14 +16,14 @@ export function WorkflowNav() {
       <h1 className="module-head__title">{t("nav.workflows")}</h1>
       <p className="module-head__desc">{t("moduleIntro.workflows")}</p>
       <nav className="wfnav" aria-label={t("nav.workflows")}>
-        {TABS.map(({ key, to, end }) => (
+        {TABS.map(({ key, to, end, label }) => (
           <NavLink
             key={key}
             to={to}
             end={end}
             className={({ isActive }) => (isActive ? "wfnav__tab wfnav__tab--active" : "wfnav__tab")}
           >
-            {t(`workflow.tabs.${key}`)}
+            {t(label ?? `workflow.tabs.${key}`)}
           </NavLink>
         ))}
       </nav>
