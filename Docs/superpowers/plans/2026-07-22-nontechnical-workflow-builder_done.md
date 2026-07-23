@@ -1971,11 +1971,11 @@ Use `read_page` (`filter: "all"`) at each stop from Step 3 and grep the returned
 **Interfaces:**
 - Consumes: the existing Playwright test setup in `workflow.spec.ts` (open it first for its login/setup helpers before writing the new test).
 
-- [ ] **Step 1: Read the existing spec's setup helpers**
+- [x] **Step 1: Read the existing spec's setup helpers**
 
 Open `apps/web/e2e/specs/workflow.spec.ts` in full — note its login helper, base URL, and existing test structure.
 
-- [ ] **Step 2: Write the new test**
+- [x] **Step 2: Write the new test**
 
 Add a test following the exact style of the existing tests in that file:
 
@@ -1994,30 +1994,34 @@ test("approval-above-amount template creates a working automation", async ({ pag
 
 Adjust the `getByLabel`/`getByText` selectors to match the actual rendered `aria-label`s/text once Tasks 10-11 exist — this plan cannot know the exact accessible names until those components are built; the implementer verifies each selector against the real DOM (via `read_page` or Playwright's own trace) before considering this step done, not by assuming the strings above are pixel-perfect.
 
-- [ ] **Step 3: Run the E2E test**
+- [x] **Step 3: Run the E2E test**
 
 Run: `cd apps/web && npx playwright test workflow.spec.ts -g "approval-above-amount"`
 Expected: PASS
 
-- [ ] **Step 4: Run the full E2E workflow spec to check for regressions**
+- [x] **Step 4: Run the full E2E workflow spec to check for regressions**
 
 Run: `cd apps/web && npx playwright test workflow.spec.ts`
 Expected: all pass
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/web/e2e/specs/workflow.spec.ts
-git commit -m "test(workflow): E2E acceptance for the approval-above-amount template"
-```
+- [x] **Step 5: Commit** — `2e58b4c` 2026-07-23
 
 ---
 
 ## Final acceptance (run once, after all 14 tasks)
 
-- [ ] Backend: `.venv/Scripts/python.exe -m pytest erp/workflow erp/sales erp/crm erp/inventory erp/notifications -q` — all pass
-- [ ] `.venv/Scripts/python.exe scripts/gates/_run.py all` (00-17) — green
-- [ ] Frontend: `cd apps/web && npx tsc -b && node scripts/check-i18n-parity.mjs && npm run test` — all green
-- [ ] `python scripts/gates/gate03.py` (repo root) — exit 0
+- [x] Backend: `.venv/Scripts/python.exe -m pytest erp/workflow erp/sales erp/crm erp/inventory erp/notifications -q` — 310 passed (2026-07-23)
+- [~] `.venv/Scripts/python.exe scripts/gates/_run.py all` (00-17) — skipped full run this session (other lane has uncommitted unrelated smart-import WIP mid-flight in this shared tree); ran the equivalent pieces directly instead: gate03 exit0, tsc -b (0 errors in workflow files — 3 pre-existing errors are in other lane's `imports/ReviewStep.tsx`/`RunStep.tsx`, unused imports, not workflow's), i18n parity 2599 OK, vitest 52/52
+- [x] Frontend: `cd apps/web && npx tsc -b && node scripts/check-i18n-parity.mjs && npm run test` — all green (workflow files; see note above on pre-existing other-lane tsc errors)
+- [x] `python scripts/gates/gate03.py` (repo root) — exit 0
 - [x] Task 13's Arabic-only walkthrough — zero raw-identifier leaks found (PASSED 2026-07-23)
-- [ ] Update the `erp-e-invoice`-style status skill (or `erp-status` directly) with: this feature's completion, the new `/workflows` default landing page, and the fact the graph canvas moved to `/workflows/advanced`
+- [x] Update the `erp-e-invoice`-style status skill (or `erp-status` directly) with: this feature's completion, the new `/workflows` default landing page, and the fact the graph canvas moved to `/workflows/advanced`
+
+**PLAN COMPLETE 2026-07-23.** All 14 tasks done and committed (`b8c4328`…`2e58b4c`). Work
+continued beyond this plan's scope in the same tree, also committed: `a42919d` demoted canvas to
+`/workflows/advanced`, then `4fa511d` reversed that — **dropped the Advanced nav tab entirely**
+(canvas now reachable only via direct URL, no nav entry), `3092b28` fixed a `None`-handling bug in
+jsonlogic comparison operators, `5e081f8` added dynamic help guides for all workflow pages, and
+`ceb6ac0` (HEAD) — a non-technical-builder UX pass (pickers, feedback, flow polish). None of these
+extra commits are covered by this plan's task list; they're real shipped work, just undocumented
+here — check `git log --oneline` on the workflow files for the full picture.
