@@ -15,6 +15,22 @@ interface InstanceApi {
   node_runs: { node_key: string; status: string; output: unknown }[];
 }
 
+test("approval-above-amount template creates a working automation", async ({ page, t }) => {
+  await page.goto("/#/workflows");
+  // Click via href so the selector is locale-agnostic
+  await page.locator('a[href*="approval_above_amount"]').click();
+  await page.waitForURL(/#\/workflows\/templates\/approval_above_amount$/);
+
+  // Name input label is the automations.title key ("Automations" / "الأتمتة")
+  await page.getByLabel(t("automations.title")).fill("E2E approval template test");
+  // Field labels come from the backend template payload — values match the automations.field.* keys
+  await page.getByLabel(t("automations.field.amount")).fill("500000");
+  await page.getByLabel(t("automations.field.approverRole")).fill("finance_manager");
+
+  await page.getByRole("button", { name: t("automations.save") }).click();
+  await expect(page.getByText(t("automations.saved"))).toBeVisible();
+});
+
 test("workflow: run to completion", async ({ page, t, apiPost, apiGet }) => {
   const workflow = await apiPost<WorkflowApi>("/workflow/workflows", {
     name: `E2E Workflow ${Date.now()}`,
