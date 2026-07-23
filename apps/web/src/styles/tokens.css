@@ -38,6 +38,7 @@
   --palette-danger-700: #b91c1c;
   --palette-danger-600: #dc2626;
   --palette-danger-100: #fee2e2;
+  --palette-info-700: #0e7490;
   --palette-info-600: #0891b2;
   --palette-info-100: #cffafe;
 
@@ -88,6 +89,7 @@
   --color-danger-subtle: var(--palette-danger-100);
   --color-on-danger: #fff;
   --color-info: var(--palette-info-600);
+  --color-info-strong: var(--palette-info-700);
   --color-info-subtle: var(--palette-info-100);
 
   /* ---- Status colour mapping (instance / node run / order states) ---- */
@@ -237,6 +239,7 @@
   --color-danger-subtle: rgba(220, 38, 38, 0.20);
   --color-on-danger: #fff;
   --color-info: #22d3ee;
+  --color-info-strong: #67e8f9;
   --color-info-subtle: rgba(8, 145, 178, 0.20);
 
   /* Status pills — tinted bg + luminous text on dark. */
