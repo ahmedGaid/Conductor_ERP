@@ -641,7 +641,10 @@
       "vat": { "ok": "VAT ready", "warn": "VAT period needs setup" },
       "backups": { "ok": "Backups up to date", "warn": "Backups not confirmed" },
       "stock": { "ok": "Stock health good", "warn": "Some items running low" },
-      "assistant": { "ok": "Assistant connected", "warn": "Assistant not connected" }
+      "assistant": { "ok": "Assistant connected", "warn": "Assistant not connected" },
+      "allOk": "All systems normal.",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details"
     },
     "milestone": {
       "invoiceCount": "You've invoiced {{count}} orders — nice milestone.",
@@ -650,6 +653,8 @@
     },
     "vsLastMonth": "vs last month",
     "asOfNow": "as of now",
+    "deltaUp": "increase",
+    "deltaDown": "decrease",
     "totalRevenue": "Total Revenue",
     "totalExpenses": "Total Expenses",
     "netProfit": "Net Profit",

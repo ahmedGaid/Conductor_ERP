@@ -1,8 +1,10 @@
 # Product
 
-## Register
+<!-- impeccable:product-schema 1 -->
 
-product
+## Platform
+
+web
 
 ## Users
 
@@ -36,6 +38,17 @@ sparingly and always *means* something (status, links, key figures), never decor
   decoration. (An indigo brand-recolour was tried and rejected — the near-black chrome stays.)
 - Consumer-app playfulness (bouncy motion, emoji, illustration-heavy) — too casual for finance.
 - Cream/beige “editorial SaaS” — the warm off-white + big-serif generic AI default.
+
+## Brand Commitments
+
+- **Linear is the explicit UI/UX reference**, binding — not a mood-board suggestion. Every surface
+  is judged against it: "would Linear ship this?"
+- **Speed is a brand attribute, not a metric.** The product must feel very fast — instant response,
+  no visible loading stutter, no waiting on choreography. Slow is off-brand, not just a performance bug.
+- **Reliability and trust are the product.** It's finance software holding a business's real money and
+  records; every interaction must read as dependable and correct, never flashy or improvised.
+- **Minimal, premium, "billion-dollar company" — never SMB-tool or startup-scrappy.** Restraint reads
+  as confidence. When in doubt, remove, don't add.
 
 ## Design Principles
 

@@ -86,7 +86,7 @@ export function GettingStarted() {
               </span>
               {!s.done && (
                 <span className="dash__start-arrow" aria-hidden="true">
-                  ›
+                  <NavIcon name="chevronRight" />
                 </span>
               )}
             </Link>

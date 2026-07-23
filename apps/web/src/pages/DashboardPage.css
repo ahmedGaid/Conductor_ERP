@@ -116,6 +116,13 @@
   margin-inline-start: auto;
   color: var(--color-text-subtle);
 }
+.dash__attn-arrow .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+[dir="rtl"] .dash__attn-arrow .navicon {
+  transform: scaleX(-1);
+}
 
 .dash__attn-clear {
   margin: 0;
@@ -176,6 +183,44 @@
 
 .dash__confidence-text {
   font-weight: var(--font-weight-medium);
+}
+
+.dash__confidence-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+}
+.dash__confidence-toggle:hover {
+  color: var(--color-text);
+}
+
+.dash__confidence-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.dash__confidence-summary-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-success-subtle);
+  color: var(--color-success-strong);
+  flex-shrink: 0;
+}
+.dash__confidence-summary-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
 }
 
 /* Calm milestone moments — a quiet, dismissible one-line acknowledgment */
@@ -298,6 +343,13 @@
 .dash__start-arrow {
   margin-inline-start: auto;
   color: var(--color-text-subtle);
+}
+.dash__start-arrow .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+[dir="rtl"] .dash__start-arrow .navicon {
+  transform: scaleX(-1);
 }
 
 /* Top expenses */
@@ -433,9 +485,21 @@
   color: var(--color-text-muted);
 }
 
+.dash__shortcut-icon .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
 .dash__shortcut-arrow {
   margin-inline-start: auto;
   color: var(--color-text-subtle);
+}
+.dash__shortcut-arrow .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+[dir="rtl"] .dash__shortcut-arrow .navicon {
+  transform: scaleX(-1);
 }
 
 @media (max-width: 60rem) {

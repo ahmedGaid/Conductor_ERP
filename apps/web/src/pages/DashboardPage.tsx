@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { usePreferences } from "../preferences/PreferencesContext";
 import { orderedVisibleWidgets } from "./settings/dashboardWidgets";
@@ -134,6 +134,11 @@ export function DashboardPage() {
               icon="accounting"
               hint={t("dashboard.asOfNow")}
               negative={data.cash.closing_balance < 0}
+              onHintClick={
+                data.cash.closing_balance < 0
+                  ? () => document.getElementById("dash-cashflow-panel")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  : undefined
+              }
             />
           </div>
 
@@ -223,7 +228,7 @@ function AttentionPanel({ data }: { data: DashboardData }) {
               <Link className={`dash__attn-item${it.tone ? ` dash__attn-item--${it.tone}` : ""}`} to={it.to}>
                 <span className="dash__attn-icon" aria-hidden="true"><NavIcon name={it.icon} /></span>
                 <span className="dash__attn-text">{it.text}</span>
-                <span className="dash__attn-arrow" aria-hidden="true">›</span>
+                <span className="dash__attn-arrow" aria-hidden="true"><NavIcon name="chevronRight" /></span>
               </Link>
             </li>
           ))}
@@ -247,33 +252,57 @@ const CONFIDENCE_META: Record<ConfidenceSignal["key"], { icon: string; to: strin
 // colour alone (monochrome-chrome rule).
 function ConfidencePanel({ signals }: { signals: ConfidenceSignal[] }) {
   const { t } = useTranslation();
+  const allOk = signals.every((s) => s.status === "ok");
+  // Collapsed to a one-line summary when everything's fine — the full checklist (every signal,
+  // regardless of state) is still one click away, never removed, just not the default weight on a
+  // screen that's already 6-8 panels deep. Auto-expands whenever anything needs a look.
+  const [expanded, setExpanded] = useState(!allOk);
   if (signals.length === 0) return null;
 
   return (
     <div className="card dash__panel dash__confidence">
       <div className="dash__panel-head">
         <h2>{t("dashboard.confidence.title")}</h2>
+        {allOk && (
+          <button
+            type="button"
+            className="dash__confidence-toggle"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? t("dashboard.confidence.hideDetails") : t("dashboard.confidence.showDetails")}
+          </button>
+        )}
       </div>
-      <ul className="dash__confidence-list">
-        {signals.map((s) => {
-          const meta = CONFIDENCE_META[s.key];
-          return (
-            <li key={s.key}>
-              <Link
-                className={`dash__confidence-item dash__confidence-item--${s.status}`}
-                to={meta.to}
-              >
-                <span className="dash__confidence-icon" aria-hidden="true">
-                  <NavIcon name={s.status === "ok" ? "checkCircle" : meta.icon} />
-                </span>
-                <span className="dash__confidence-text">
-                  {t(`dashboard.confidence.${s.key}.${s.status}`)}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      {allOk && !expanded ? (
+        <p className="dash__confidence-summary">
+          <span className="dash__confidence-summary-icon" aria-hidden="true">
+            <NavIcon name="checkCircle" />
+          </span>
+          {t("dashboard.confidence.allOk")}
+        </p>
+      ) : (
+        <ul className="dash__confidence-list">
+          {signals.map((s) => {
+            const meta = CONFIDENCE_META[s.key];
+            return (
+              <li key={s.key}>
+                <Link
+                  className={`dash__confidence-item dash__confidence-item--${s.status}`}
+                  to={meta.to}
+                >
+                  <span className="dash__confidence-icon" aria-hidden="true">
+                    <NavIcon name={s.status === "ok" ? "checkCircle" : meta.icon} />
+                  </span>
+                  <span className="dash__confidence-text">
+                    {t(`dashboard.confidence.${s.key}.${s.status}`)}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
@@ -316,7 +345,7 @@ function CashFlowPanel({ report }: { report: CashFlowReport }) {
   const { t } = useTranslation();
   const max = Math.max(report.cash_in, report.cash_out, 1);
   return (
-    <div className="card dash__panel">
+    <div className="card dash__panel" id="dash-cashflow-panel">
       <div className="dash__panel-head">
         <h2>{t("accounting.tabs.cashFlow")}</h2>
       </div>
@@ -397,9 +426,9 @@ function Shortcuts() {
         {SHORTCUTS.map((s) => (
           <li key={s.key}>
             <Link className="dash__shortcut" to={s.to}>
-              <span className="dash__shortcut-icon" aria-hidden="true">+</span>
+              <span className="dash__shortcut-icon" aria-hidden="true"><NavIcon name="plus" /></span>
               <span>{t(`dashboard.action.${s.key}`)}</span>
-              <span className="dash__shortcut-arrow" aria-hidden="true">›</span>
+              <span className="dash__shortcut-arrow" aria-hidden="true"><NavIcon name="chevronRight" /></span>
             </Link>
           </li>
         ))}
