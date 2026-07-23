@@ -651,6 +651,11 @@
       "firstProfitableMonth": "هذا الشهر رابح — الأول من نوعه. عمل رائع.",
       "dismiss": "إغلاق"
     },
+    "moreInsight": {
+      "title": "مزيد من التفاصيل",
+      "show": "عرض",
+      "hide": "إخفاء"
+    },
     "vsLastMonth": "مقارنة بالشهر الماضي",
     "asOfNow": "حتى الآن",
     "deltaUp": "زيادة",

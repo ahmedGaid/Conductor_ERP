@@ -24,7 +24,6 @@ import { useAsync } from "../hooks/useAsync";
 import { ErrorState } from "../components/ErrorState";
 import { GettingStarted } from "./GettingStarted";
 import { MilestoneBanner } from "./MilestoneBanner";
-import { StatCard } from "../components/StatCard";
 import { NavIcon } from "../app/icons";
 import { Bdi } from "../components/Bdi";
 import { ListSkeleton } from "../components/ListSkeleton";
@@ -83,6 +82,11 @@ export function DashboardPage() {
   const { data, loading, error, reload } = useAsync(loadDashboard, [], "dashboard");
   const { prefs } = usePreferences();
   const widgets = orderedVisibleWidgets(prefs?.dashboard_layout);
+  const secondaryWidgets = widgets.filter((w) => w !== "attention" && w !== "confidence");
+
+  // "More insight" (expenses/cash flow/journals/shortcuts) stays closed by default so the first
+  // glance is short: numbers, what needs you, confidence, done.
+  const [moreExpanded, setMoreExpanded] = useState(false);
 
   return (
     <section className="dash">
@@ -108,64 +112,148 @@ export function DashboardPage() {
 
       {data && (
         <>
-          <div className="dash__kpis">
-            <StatCard
-              label={t("dashboard.totalRevenue")}
-              value={formatMinor(data.current.total_revenue)}
-              icon="trendUp"
-              delta={pctChange(data.current.total_revenue, data.previous.total_revenue)}
-            />
-            <StatCard
-              label={t("dashboard.totalExpenses")}
-              value={formatMinor(data.current.total_expenses)}
-              icon="trendDown"
-              delta={pctChange(data.current.total_expenses, data.previous.total_expenses)}
-              invertDelta
-            />
-            <StatCard
-              label={t("dashboard.netProfit")}
-              value={formatMinor(data.current.net_income)}
-              icon="reports"
-              delta={pctChange(data.current.net_income, data.previous.net_income)}
-            />
-            <StatCard
-              label={t("dashboard.cashBalance")}
-              value={formatMinor(data.cash.closing_balance)}
-              icon="accounting"
-              hint={t("dashboard.asOfNow")}
-              negative={data.cash.closing_balance < 0}
-              onHintClick={
-                data.cash.closing_balance < 0
-                  ? () => document.getElementById("dash-cashflow-panel")?.scrollIntoView({ behavior: "smooth", block: "start" })
-                  : undefined
-              }
-            />
-          </div>
+          <KpiStrip
+            items={[
+              {
+                key: "revenue",
+                label: t("dashboard.totalRevenue"),
+                value: formatMinor(data.current.total_revenue),
+                delta: pctChange(data.current.total_revenue, data.previous.total_revenue),
+              },
+              {
+                key: "expenses",
+                label: t("dashboard.totalExpenses"),
+                value: formatMinor(data.current.total_expenses),
+                delta: pctChange(data.current.total_expenses, data.previous.total_expenses),
+                invertDelta: true,
+              },
+              {
+                key: "profit",
+                label: t("dashboard.netProfit"),
+                value: formatMinor(data.current.net_income),
+                delta: pctChange(data.current.net_income, data.previous.net_income),
+              },
+              {
+                key: "cash",
+                label: t("dashboard.cashBalance"),
+                value: formatMinor(data.cash.closing_balance),
+                hint: t("dashboard.asOfNow"),
+                negative: data.cash.closing_balance < 0,
+                hintTo: data.cash.closing_balance < 0 ? "/accounting/cash-flow" : undefined,
+              },
+            ]}
+          />
 
           {widgets.includes("attention") && <AttentionPanel data={data} />}
           {widgets.includes("confidence") && <ConfidencePanel signals={data.confidence} />}
 
-          <div className="dash__row">
-            {widgets
-              .filter((w) => w !== "attention" && w !== "confidence")
-              .map((w) => {
-                switch (w) {
-                  case "expenses":
-                    return <TopExpenses key={w} report={data.current} />;
-                  case "cashflow":
-                    return <CashFlowPanel key={w} report={data.cash} />;
-                  case "journals":
-                    return <RecentJournals key={w} journals={data.journals} />;
-                  case "shortcuts":
-                    return <Shortcuts key={w} />;
-                  default:
-                    return null;
-                }
-              })}
-          </div>
+          {secondaryWidgets.length > 0 && (
+            <div className="dash__more">
+              <div className="dash__panel-head">
+                <h2>{t("dashboard.moreInsight.title")}</h2>
+                <button
+                  type="button"
+                  className="dash__more-toggle"
+                  aria-expanded={moreExpanded}
+                  onClick={() => setMoreExpanded((v) => !v)}
+                >
+                  {moreExpanded ? t("dashboard.moreInsight.hide") : t("dashboard.moreInsight.show")}
+                </button>
+              </div>
+              {moreExpanded && (
+                <div className="dash__row">
+                  {secondaryWidgets.map((w) => {
+                    switch (w) {
+                      case "expenses":
+                        return <TopExpenses key={w} report={data.current} />;
+                      case "cashflow":
+                        return <CashFlowPanel key={w} report={data.cash} />;
+                      case "journals":
+                        return <RecentJournals key={w} journals={data.journals} />;
+                      case "shortcuts":
+                        return <Shortcuts key={w} />;
+                      default:
+                        return null;
+                    }
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </section>
+  );
+}
+
+interface KpiItem {
+  key: string;
+  label: string;
+  value: string;
+  delta?: number | null;
+  invertDelta?: boolean;
+  negative?: boolean;
+  hint?: string;
+  /** When set (with `negative`), the hint links to the full report instead of being plain text. */
+  hintTo?: string;
+}
+
+// The four headline numbers as one text-forward strip, not four bordered cards — the numbers
+// carry the weight, no shell needed around them.
+function KpiStrip({ items }: { items: KpiItem[] }) {
+  const { t } = useTranslation();
+  return (
+    <div className="dash__kpi-strip">
+      {items.map((it) => {
+        const hasDelta = it.delta !== undefined && it.delta !== null;
+        const good = hasDelta ? (it.invertDelta ? (it.delta as number) < 0 : (it.delta as number) >= 0) : false;
+        const trendWord = hasDelta ? t(good ? "dashboard.deltaUp" : "dashboard.deltaDown") : undefined;
+        const hintText = it.negative ? t("dashboard.cashNegative") : (it.hint ?? t("dashboard.vsLastMonth"));
+        const ariaLabel = [
+          it.label,
+          it.value,
+          hasDelta ? `${Math.abs(it.delta as number)}% ${trendWord}` : null,
+          hintText,
+        ]
+          .filter(Boolean)
+          .join(", ");
+
+        return (
+          <div
+            key={it.key}
+            className={it.negative ? "dash__kpi dash__kpi--negative" : "dash__kpi"}
+            role="group"
+            aria-label={ariaLabel}
+          >
+            <span className="dash__kpi-label" aria-hidden="true">{it.label}</span>
+            <span className="dash__kpi-value" aria-hidden="true"><Bdi>{it.value}</Bdi></span>
+            <span className="dash__kpi-foot">
+              {hasDelta ? (
+                <span
+                  className={good ? "dash__kpi-delta dash__kpi-delta--up" : "dash__kpi-delta dash__kpi-delta--down"}
+                  aria-hidden="true"
+                >
+                  <NavIcon name={good ? "trendUp" : "trendDown"} />
+                  <Bdi>{Math.abs(it.delta as number)}%</Bdi>
+                </span>
+              ) : null}
+              {it.negative && it.hintTo ? (
+                <Link to={it.hintTo} className="dash__kpi-hint dash__kpi-hint--negative dash__kpi-hint--link">
+                  {hintText}
+                </Link>
+              ) : (
+                <span
+                  className={it.negative ? "dash__kpi-hint dash__kpi-hint--negative" : "dash__kpi-hint"}
+                  aria-hidden="true"
+                >
+                  {hintText}
+                </span>
+              )}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -215,7 +303,7 @@ function AttentionPanel({ data }: { data: DashboardData }) {
       text: t("dashboard.attention.failedMessages", { count: failedMessages }) });
 
   return (
-    <div className="card dash__panel dash__attn">
+    <div className={`card dash__panel dash__attn${items.length ? " dash__attn--active" : ""}`}>
       <div className="dash__panel-head">
         <h2>{t("dashboard.attention.title")}</h2>
       </div>
@@ -345,7 +433,7 @@ function CashFlowPanel({ report }: { report: CashFlowReport }) {
   const { t } = useTranslation();
   const max = Math.max(report.cash_in, report.cash_out, 1);
   return (
-    <div className="card dash__panel" id="dash-cashflow-panel">
+    <div className="card dash__panel">
       <div className="dash__panel-head">
         <h2>{t("accounting.tabs.cashFlow")}</h2>
       </div>

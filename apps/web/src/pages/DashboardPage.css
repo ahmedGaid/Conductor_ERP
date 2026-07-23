@@ -18,10 +18,88 @@
   font-family: var(--font-latin);
 }
 
-.dash__kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
+/* KPI strip — the four headline numbers as one text-forward row, not four bordered cards */
+.dash__kpi-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  padding-block-end: var(--space-5);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.dash__kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-inline-start: var(--space-6);
+  border-inline-start: 1px solid var(--color-border);
+}
+
+.dash__kpi:first-child {
+  padding-inline-start: 0;
+  border-inline-start: none;
+}
+
+.dash__kpi-label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.dash__kpi-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash__kpi--negative .dash__kpi-value {
+  color: var(--color-warning-strong);
+}
+
+.dash__kpi-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 1.25rem;
+  font-size: var(--font-size-sm);
+}
+
+.dash__kpi-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  font-weight: var(--font-weight-semibold);
+}
+.dash__kpi-delta .navicon {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+.dash__kpi-delta--up {
+  color: var(--color-success-strong);
+}
+.dash__kpi-delta--down {
+  color: var(--color-danger-strong);
+}
+
+.dash__kpi-hint {
+  color: var(--color-text-subtle);
+}
+.dash__kpi-hint--negative {
+  color: var(--color-warning-strong);
+  font-weight: var(--font-weight-semibold);
+}
+.dash__kpi-hint--link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.dash__kpi-hint--link:hover {
+  color: var(--color-danger-strong);
 }
 
 .dash__row {
@@ -128,6 +206,25 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+
+/* The one dominant block on the page — the moment there's something to act on, this panel gets
+   more room and a bigger heading than every other panel (scale, not colour, carries the emphasis).
+   An empty ("all clear") attention panel skips this and stays as quiet as any other card. */
+.dash__attn--active {
+  padding-block: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+.dash__attn--active .dash__panel-head h2 {
+  font-size: var(--font-size-lg);
+}
+.dash__attn--active .dash__attn-icon {
+  inline-size: 2rem;
+  block-size: 2rem;
+}
+.dash__attn--active .dash__attn-icon .navicon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
 }
 
 /* System confidence — the calm, positive complement to "Needs attention today" */
@@ -352,6 +449,26 @@
   transform: scaleX(-1);
 }
 
+/* "More insight" disclosure — a bare header, never a card: the grid it reveals is already made
+   of cards, and a card wrapping cards is always wrong. */
+.dash__more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dash__more-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+}
+.dash__more-toggle:hover {
+  color: var(--color-text);
+}
+
 /* Top expenses */
 .dash__exp-list {
   list-style: none;
@@ -503,9 +620,6 @@
 }
 
 @media (max-width: 60rem) {
-  .dash__kpis {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .dash__row,
   .dash__row--split {
     grid-template-columns: 1fr;
@@ -513,7 +627,18 @@
 }
 
 @media (max-width: 38rem) {
-  .dash__kpis {
-    grid-template-columns: 1fr;
+  .dash__kpi-strip {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .dash__kpi {
+    padding-inline-start: 0;
+    padding-block-start: var(--space-4);
+    border-inline-start: none;
+    border-block-start: 1px solid var(--color-border);
+  }
+  .dash__kpi:first-child {
+    padding-block-start: 0;
+    border-block-start: none;
   }
 }
