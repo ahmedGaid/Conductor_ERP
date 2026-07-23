@@ -276,3 +276,12 @@ Override `E2E_BASE_URL` to point at a built bundle instead of the Vite dev serve
 `E2E_ADMIN_USERNAME` / `E2E_ADMIN_PASSWORD` if a box isn't seeded with the default admin login.
 A trace is captured on first retry (`playwright-report/`, `test-results/` — gitignored); open it
 with `npx playwright show-report`.
+
+`npm run e2e` includes `e2e/specs/a11y.spec.ts` (post-handover-v1_1 `FILE_06`) — an axe-core scan
+of 8 top screens (dashboard, sales/purchasing orders, accounting journals, inventory stock-on-hand,
+CRM pipeline, new-order form, Settings → Accessibility) in both `ar` and `en`, failing on
+`serious`/`critical` violations only. Run just this spec with:
+
+```powershell
+npx playwright test -c e2e/playwright.config.ts a11y
+```

@@ -4,6 +4,43 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## a11y check — new dev-dependency approved (post-handover-v1_1 FILE_06, 2026-07-23)
+
+**Decision gate (team rule 7 — no new dependency without asking):** founder picked **FILE_06 (a11y
+CI check)** from the Phase-2 Nice-to-Have menu via the `/erp-resume` picker, knowingly choosing the
+option flagged as needing a new dep. Added **`@axe-core/playwright`** (dev-only, not shipped) —
+the standard axe-core wrapper for Playwright, already the suite's E2E tool
+(`twenty-harvest/FILE_04`). Scoped to `serious`/`critical` impact violations only for v1 (not a
+full zero-violations bar) on 8 top screens, ar+en. Not wired into `.github/workflows/ci.yml` — same
+precedent as the rest of the e2e suite (needs a live server; release-time step, not a push/PR gate,
+per `RUNBOOK.md`).
+
+**Real findings, first run — three fixed, one flagged:**
+1. **Fixed.** Purchasing/Inventory module accent colours (`[data-module="purchasing"]`/
+   `[data-module="inventory"]` `--color-accent` in `tokens.css`) failed WCAG AA (3.52:1 / 3.19:1 on
+   white, need 4.5:1) — every in-page link/text in those two modules read under-contrast. Swapped
+   each module's base accent to its former `-strong` shade, picked a new darker `-strong` one step
+   below (both now comfortably clear 4.5:1; dark-mode module accents already passed, untouched).
+2. **Fixed.** `--color-text-muted` (ink-500, #6b7280) read 4.83:1 on white but only 4.39:1 on its
+   own standard companion background (`--color-surface-alt`, ink-100) — caught on the segmented
+   status-filter tabs (Sales/Purchasing/CRM list pages) and the ⌘K search field. Unlike `-subtle`
+   below, `muted` is meant to be comfortably readable secondary text, not a deliberately faint
+   tier, so this was a plain near-miss, not a design tradeoff — repointed to ink-600 (6.87:1 on
+   ink-100, 7.56:1 on white). Dark theme's muted tier already passed both its backgrounds (6.90/
+   7.70), untouched.
+3. **NOT fixed, flagged instead.** `--color-text-subtle` (ink-400, #9ca3af) reads 2.53:1 on white —
+   badly fails AA — on sidebar group labels, ⌘K kbd hints, and the ComboBox/DatePicker placeholder
+   text. This one IS a deliberate calmer/near-decorative faint tier, and the app already ships an
+   opt-in escape hatch for it (`data-contrast="high"`, Settings → Accessibility, which darkens
+   exactly this token). Darkening the DEFAULT unconditionally is a brand/product call, not an
+   a11y-CI fix — excluded those 3 selectors from the axe scan (`e2e/lib/a11y.ts`) with a comment,
+   rather than either silently overriding the calmer default or leaving the check permanently red
+   on a known, mitigated tradeoff. Founder call needed: keep as opt-in, or tighten the default.
+4. **Fixed.** The new-order line-items table (`NewOrderPage.tsx`) had 3 inputs (quantity, unit
+   price, discount) with no accessible label at all (axe `label` rule, critical — sighted users
+   read the column header, screen-reader users got nothing) — added `aria-label` reusing the
+   existing column-header i18n keys, no new locale strings needed.
+
 ## E-invoicing claims discipline: the module says what it does, and `eta_client` stays unwired (2026-07-20)
 
 `brand-philosophy-review` §04j P1, executed under `pre-handover-hardening/FILE_01` (Branch B — ship

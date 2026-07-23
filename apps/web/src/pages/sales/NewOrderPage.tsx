@@ -235,14 +235,14 @@ export function NewOrderPage() {
                       />
                     </td>
                     <td className="sales-table__num">
-                      <input className="latin" inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} />
+                      <input className="latin" inputMode="decimal" aria-label={t("inventory.onHand.quantity")} value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} />
                     </td>
                     <td className="sales-table__num">
-                      <input className="latin" inputMode="decimal" value={l.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value, priceSource: undefined })} placeholder="0.00" />
+                      <input className="latin" inputMode="decimal" aria-label={t("sales.newOrder.unitPrice")} value={l.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value, priceSource: undefined })} placeholder="0.00" />
                       {l.priceSource && <span className="sales-price-source">{l.priceSource}</span>}
                     </td>
                     <td className="sales-table__num">
-                      <input className="latin" inputMode="decimal" value={l.discount} onChange={(e) => setLine(i, { discount: e.target.value })} placeholder="0.00" />
+                      <input className="latin" inputMode="decimal" aria-label={t("sales.newOrder.discount")} value={l.discount} onChange={(e) => setLine(i, { discount: e.target.value })} placeholder="0.00" />
                     </td>
                     <td className="sales-table__num"><Bdi>{formatMinor(lineTotal)}</Bdi></td>
                     <td>
