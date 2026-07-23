@@ -49,6 +49,20 @@ export interface WorkflowGraph {
   edges: GraphEdge[];
 }
 
+/** One field a template asks the user to fill in before it's expanded into a workflow graph. */
+export interface WorkflowTemplateField {
+  key: string;
+  type: "money" | "role" | "person" | "number";
+  label: { ar: string; en: string };
+}
+
+/** One entry of the fixed non-technical workflow template catalog (erp/workflow/templates.py). */
+export interface WorkflowTemplate {
+  id: string;
+  name: { ar: string; en: string };
+  fields: WorkflowTemplateField[];
+}
+
 export interface WorkflowListItem {
   id: string;
   name: string;
