@@ -7,6 +7,7 @@ export type NodeType =
   | "assistant_action"
   | "condition"
   | "script"
+  | "notification"
   | "end";
 
 /** One entry of the assistant action catalog an `assistant_action` node may be pointed at. */

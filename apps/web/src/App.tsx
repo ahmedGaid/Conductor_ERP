@@ -74,6 +74,8 @@ const AutomationsPage = lazyPage(
   () => import("./pages/workflows/AutomationsPage"), "AutomationsPage");
 const TemplateFormPage = lazyPage(
   () => import("./pages/workflows/TemplateFormPage"), "TemplateFormPage");
+const StepListBuilderPage = lazyPage(
+  () => import("./pages/workflows/StepListBuilderPage"), "StepListBuilderPage");
 const InstanceListPage = lazyPage(() => import("./pages/InstanceListPage"), "InstanceListPage");
 const ExecutionViewerPage = lazyPage(
   () => import("./pages/ExecutionViewerPage"), "ExecutionViewerPage");
@@ -261,6 +263,7 @@ function AppRoutes() {
           <Route path="/workflows" element={<AutomationsPage />} />
           <Route path="/workflows/advanced" element={<WorkflowListPage />} />
           <Route path="/workflows/templates/:templateId" element={<TemplateFormPage />} />
+          <Route path="/workflows/build" element={<StepListBuilderPage />} />
           <Route path="/workflows/instances" element={<InstanceListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />
