@@ -12,7 +12,14 @@ import {
 import { EmptyState } from "../../components/EmptyState";
 import { UploadStep } from "./UploadStep";
 import { MappingStep } from "./MappingStep";
+import { ReviewStep } from "./ReviewStep";
+import { RunStep } from "./RunStep";
 import "./imports.css";
+
+// Statuses reachable only after the user has actually clicked Import inside Review (or is
+// resuming a batch that's mid-run, interrupted, finished, or reversed) — everything else means
+// "still reviewing" (or the transient `previewing` step mid-mapping-request).
+const RUN_STATUSES = new Set(["running", "paused", "done", "rolled_back", "failed"]);
 
 const STEPS = ["upload", "map", "review", "import"] as const;
 type StepKey = (typeof STEPS)[number];
@@ -27,7 +34,8 @@ type Phase =
   | { kind: "upload" }
   | { kind: "map"; detected: Detected }
   | { kind: "resuming" }
-  | { kind: "stats"; batch: ImportBatch }
+  | { kind: "review"; batch: ImportBatch }
+  | { kind: "run"; batchId: string }
   | { kind: "lost" };
 
 function stepFor(phase: Phase): StepKey {
@@ -38,15 +46,19 @@ function stepFor(phase: Phase): StepKey {
       return "map";
     case "resuming":
     case "lost":
-    case "stats":
+    case "review":
       return "review";
+    case "run":
+      return "import";
   }
 }
 
 /**
- * Upload -> Detect -> Map -> (stats). The last two rail steps (Review, Import) are filled in a
- * later session (FILE_13/14) — the stats summary shown after mapping is this session's stand-in
- * for Review, not the real review grid.
+ * Upload -> Detect -> Map -> Review -> Run/Report (session 14's `RunStep`, which renders
+ * `ImportReport` itself once the batch reaches `done`/`rolled_back`). Resuming a batch (page
+ * reload, or `/imports/{id}` from history) routes by status: `running`/`paused`/`done`/
+ * `rolled_back`/`failed` mean the user already clicked Import at some point, so they land on Run;
+ * anything else (still `ready`/`previewing`, i.e. reviewed but not yet run) lands back on Review.
  *
  * `AppShell` keys its page providers on `location.pathname` (app-wide, for a clean per-page reset)
  * — ANY pathname change remounts this component and wipes local state/refs. Upload and Map both
@@ -70,7 +82,9 @@ export function ImportWizard() {
         // Headers/samples only ever live in the upload response, never persisted on the batch —
         // this path (a batch id already in the URL) only exists once mapping is done, so a
         // "mapping" status here means something went wrong server-side, not a normal reload.
-        setPhase(batch.status === "mapping" ? { kind: "lost" } : { kind: "stats", batch });
+        if (batch.status === "mapping") setPhase({ kind: "lost" });
+        else if (RUN_STATUSES.has(batch.status)) setPhase({ kind: "run", batchId: batch.id });
+        else setPhase({ kind: "review", batch });
       })
       .catch(() => {
         if (!cancelled) setPhase({ kind: "lost" });
@@ -91,11 +105,19 @@ export function ImportWizard() {
     [navigate],
   );
 
+  const onImported = useCallback((batchId: string) => {
+    setPhase({ kind: "run", batchId });
+  }, []);
+
   const activeStep = stepFor(phase);
   const activeIndex = STEPS.indexOf(activeStep);
 
   return (
-    <section className="imports-page">
+    <section
+      className={
+        phase.kind === "review" || phase.kind === "run" ? "imports-page imports-page--wide" : "imports-page"
+      }
+    >
       <header className="imports-page__head">
         <h1 className="imports-page__title">{t("imports.wizard.title")}</h1>
         <p className="imports-page__lede">{t("imports.wizard.lede")}</p>
@@ -121,26 +143,35 @@ export function ImportWizard() {
         })}
       </ol>
 
-      <div className="imports-card card">
-        {phase.kind === "upload" && <UploadStep onDetected={onDetected} />}
-        {phase.kind === "resuming" && <div className="imports-loading" aria-busy="true" />}
-        {phase.kind === "map" && (
-          <MappingStep
-            upload={phase.detected.upload}
-            entity={phase.detected.entity}
-            profile={phase.detected.profile}
-            onMapped={onMapped}
-          />
-        )}
-        {phase.kind === "stats" && <MappingStep batch={phase.batch} onMapped={onMapped} />}
-        {phase.kind === "lost" && (
-          <EmptyState
-            title={t("imports.wizard.mappingLost.title")}
-            hint={t("imports.wizard.mappingLost.hint")}
-            action={{ label: t("imports.wizard.startOver"), to: "/imports/new" }}
-          />
-        )}
-      </div>
+      {phase.kind === "review" || phase.kind === "run" ? (
+        // Review/Run build their own bordered surfaces (plan section, summary sidebar, report
+        // card) around plain content — one more enclosing card here would nest card-in-card.
+        phase.kind === "review" ? (
+          <ReviewStep batch={phase.batch} onImported={onImported} />
+        ) : (
+          <RunStep batchId={phase.batchId} />
+        )
+      ) : (
+        <div className="imports-card card">
+          {phase.kind === "upload" && <UploadStep onDetected={onDetected} />}
+          {phase.kind === "resuming" && <div className="imports-loading" aria-busy="true" />}
+          {phase.kind === "map" && (
+            <MappingStep
+              upload={phase.detected.upload}
+              entity={phase.detected.entity}
+              profile={phase.detected.profile}
+              onMapped={onMapped}
+            />
+          )}
+          {phase.kind === "lost" && (
+            <EmptyState
+              title={t("imports.wizard.mappingLost.title")}
+              hint={t("imports.wizard.mappingLost.hint")}
+              action={{ label: t("imports.wizard.startOver"), to: "/imports/new" }}
+            />
+          )}
+        </div>
+      )}
     </section>
   );
 }

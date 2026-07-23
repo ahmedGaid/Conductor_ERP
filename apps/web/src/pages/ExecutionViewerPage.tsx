@@ -83,7 +83,7 @@ export function ExecutionViewerPage() {
                   {t("instance.approve")}
                 </button>
                 <button
-                  className="btn btn--danger btn--sm"
+                  className="btn btn--caution btn--sm"
                   type="button"
                   onClick={() => decide("reject")}
                 >

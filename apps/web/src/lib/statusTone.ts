@@ -5,11 +5,18 @@ import type { BadgeTone } from "../components/Badge";
 // explicit entry falls back to `pending` — exactly the base recipe's old default.
 
 const SALES_TONES: Record<string, BadgeTone> = {
+  // Order statuses
+  draft: "neutral",
   confirmed: "running",
   delivered: "waiting",
   invoiced: "accent",
   paid: "completed",
   cancelled: "failed",
+  // Quotation statuses (shared tone map — order/quotation status names don't collide)
+  submitted: "pending",
+  approved: "waiting",
+  rejected: "failed",
+  converted: "completed",
 };
 
 const PURCHASING_TONES: Record<string, BadgeTone> = {

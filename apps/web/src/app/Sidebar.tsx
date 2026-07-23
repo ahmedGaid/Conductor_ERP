@@ -203,7 +203,7 @@ export function Sidebar() {
                 {withTip(
                   t("nav.imports"),
                   <NavLink
-                    to="/imports/new"
+                    to="/imports"
                     className={({ isActive }) =>
                       isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
                     }

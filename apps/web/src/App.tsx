@@ -170,6 +170,7 @@ const NewPurchaseRequestPage = lazyPage(
 const PurchaseRequestDetailPage = lazyPage(
   () => import("./pages/purchasing/PurchaseRequestDetailPage"), "PurchaseRequestDetailPage");
 const ImportWizard = lazyPage(() => import("./pages/imports/ImportWizard"), "ImportWizard");
+const ImportHistory = lazyPage(() => import("./pages/imports/ImportHistory"), "ImportHistory");
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, restoring } = useAuth();
@@ -251,6 +252,7 @@ function AppRoutes() {
           <Route path="/settings/developers" element={<ApiKeysPage />} />
           <Route path="/settings/einvoice" element={<EInvoicePage />} />
           <Route path="/settings/system" element={<SystemPage />} />
+          <Route path="/imports" element={<ImportHistory />} />
           <Route path="/imports/:id" element={<ImportWizard />} />
           <Route path="/settings/ai-usage" element={<AIUsagePage />} />
           <Route path="/admin/users" element={<UsersPage />} />

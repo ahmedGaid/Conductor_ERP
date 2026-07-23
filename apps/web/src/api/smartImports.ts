@@ -56,12 +56,15 @@ export interface ImportBatch {
   status: string;
   strategy: string;
   mapping: Record<string, string>;
+  fields: ImportFieldSpec[];
+  file_name: string | null;
   row_count: number;
   processed_count: number;
   error_count: number;
   stats: ImportStats;
   profile_id: string | null;
   created_by: number;
+  created_by_name: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,7 +75,21 @@ export interface ImportStats {
   new_refs?: Record<string, string[]>;
   issues_by_code?: Record<string, number>;
   duplicates_in_file?: number;
+  // written by the background runner (erp/imports/runner.py) while a batch is actually running
+  stage?: "importing";
+  rows_done?: number;
+  rows_per_sec?: number;
+  eta_seconds?: number | null;
+  last_error?: string;
+  rollback?: { reverted: number; skipped: number; cannot: RollbackCannotEntry[]; reverted_masters: string[] };
   [key: string]: unknown;
+}
+
+export interface RollbackCannotEntry {
+  row?: number;
+  pk?: string;
+  master?: { entity: string; value: string; pk: string };
+  reason: string;
 }
 
 export interface ImportMappingResult {
@@ -119,4 +136,196 @@ export function createImportProfile(
     method: "POST",
     body: JSON.stringify({ name, entity, mapping }),
   });
+}
+
+// --- Review (session 13): rows, inline fix, autofix, creation plan, execute -------------------
+
+export type ImportRowStatus = "pending" | "valid" | "error" | "duplicate" | "skipped" | "imported" | "reverted";
+
+export interface ImportIssueCandidate {
+  pk?: string; // an existing DB record
+  row_number?: number; // another row in this same file
+  label: string;
+  score: number;
+}
+
+export interface ImportIssue {
+  field: string;
+  code: string;
+  message: string;
+  meta?: { entity?: string; value?: string; candidates?: ImportIssueCandidate[]; [key: string]: unknown };
+}
+
+export interface ImportRowDecision {
+  duplicate?: "merge" | "create" | "ignore";
+  target_pk?: string;
+  edits?: Record<string, unknown>;
+}
+
+export interface ImportRowRow {
+  row_number: number;
+  raw: Record<string, unknown>;
+  normalized: Record<string, unknown>;
+  status: ImportRowStatus;
+  issues: ImportIssue[];
+  decision: ImportRowDecision;
+  result_ref: Record<string, unknown>;
+}
+
+export interface ImportRowsPage {
+  rows: ImportRowRow[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
+export function getImportRows(
+  batchId: string,
+  opts: { status?: string; page?: number; page_size?: number } = {},
+): Promise<ImportRowsPage> {
+  const params = new URLSearchParams();
+  if (opts.status) params.set("status", opts.status);
+  if (opts.page) params.set("page", String(opts.page));
+  if (opts.page_size) params.set("page_size", String(opts.page_size));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return apiFetch<ImportRowsPage>(`/imports/${batchId}/rows${qs}`);
+}
+
+export function patchImportRow(
+  batchId: string,
+  rowNumber: number,
+  patch: { decision?: ImportRowDecision; edits?: Record<string, unknown> },
+): Promise<ImportRowRow> {
+  return apiFetch<ImportRowRow>(`/imports/${batchId}/rows/${rowNumber}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export interface ImportFix {
+  row_id: string;
+  row: number;
+  field: string;
+  from: unknown;
+  to: unknown;
+  code: string;
+}
+
+export function getAutofixPreview(batchId: string): Promise<{ fixes: ImportFix[] }> {
+  return apiFetch<{ fixes: ImportFix[] }>(`/imports/${batchId}/autofix`, { method: "POST" });
+}
+
+export function applyAutofix(
+  batchId: string,
+  fixes: ImportFix[],
+): Promise<{ counts: Record<string, number> }> {
+  return apiFetch<{ counts: Record<string, number> }>(`/imports/${batchId}/autofix/apply`, {
+    method: "POST",
+    body: JSON.stringify({ fixes }),
+  });
+}
+
+export interface ImportCreationPlanEntry {
+  entity: string;
+  value: string;
+  action: "create" | "link" | "blocked_unsupported" | "blocked_permission";
+  proposed?: Record<string, unknown>;
+  link_pk?: string;
+  confidence?: number;
+  editable: boolean;
+  outcome?: "created" | "linked";
+}
+
+// No `approved` key in the body → server BUILDS the plan (masters.build_creation_plan). Every
+// distinct missing_ref becomes one proposed entry — never called automatically, so the review
+// screen must trigger it once on mount.
+export function buildCreationPlan(batchId: string): Promise<{ entries: ImportCreationPlanEntry[] }> {
+  return apiFetch<{ entries: ImportCreationPlanEntry[] }>(`/imports/${batchId}/creation-plan`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+// `approved` (even empty) → server EXECUTES exactly those entries (masters.execute_creation_plan).
+export function executeCreationPlan(
+  batchId: string,
+  approved: { entity: string; value: string }[],
+): Promise<{ resolved: number; revalidated: Record<string, number> }> {
+  return apiFetch(`/imports/${batchId}/creation-plan`, {
+    method: "POST",
+    body: JSON.stringify({ approved }),
+  });
+}
+
+export interface ImportRowIssueEntry {
+  row: number;
+  issues: ImportIssue[];
+}
+
+export interface ImportReport {
+  batch_id: string;
+  entity: string;
+  status: string;
+  imported: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: number;
+  error_rows: ImportRowIssueEntry[];
+  warnings: ImportRowIssueEntry[];
+  created_masters: { entity: string; value: string; pk: string }[];
+  duration_seconds: number | null;
+  row_outcomes: { row: number; status: ImportRowStatus; result_ref: Record<string, unknown> }[];
+}
+
+export function executeImport(
+  batchId: string,
+  opts: { strategy?: string; atomicity?: boolean; continue_after_errors?: boolean },
+): Promise<{ queued: boolean; report?: ImportReport; batch?: ImportBatch }> {
+  return apiFetch(`/imports/${batchId}/execute`, {
+    method: "POST",
+    body: JSON.stringify(opts),
+  });
+}
+
+export function getImportReport(batchId: string): Promise<ImportReport> {
+  return apiFetch<ImportReport>(`/imports/${batchId}/report`);
+}
+
+export function pauseImport(batchId: string): Promise<{ queued: boolean }> {
+  return apiFetch(`/imports/${batchId}/pause`, { method: "POST" });
+}
+
+export function resumeImport(batchId: string): Promise<ImportBatch> {
+  return apiFetch<ImportBatch>(`/imports/${batchId}/resume`, { method: "POST" });
+}
+
+export function cancelImport(batchId: string): Promise<{ queued: boolean }> {
+  return apiFetch(`/imports/${batchId}/cancel`, { method: "POST" });
+}
+
+export interface ImportRollbackResult {
+  reverted: number;
+  skipped: number;
+  cannot: RollbackCannotEntry[];
+}
+
+export function rollbackImport(batchId: string): Promise<ImportRollbackResult> {
+  return apiFetch<ImportRollbackResult>(`/imports/${batchId}/rollback`, { method: "POST" });
+}
+
+export interface ImportBatchesPage {
+  batches: ImportBatch[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
+export function listImportBatches(opts: { entity?: string; page?: number; page_size?: number } = {}): Promise<ImportBatchesPage> {
+  const params = new URLSearchParams();
+  if (opts.entity) params.set("entity", opts.entity);
+  if (opts.page) params.set("page", String(opts.page));
+  if (opts.page_size) params.set("page_size", String(opts.page_size));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return apiFetch<ImportBatchesPage>(`/imports${qs}`);
 }

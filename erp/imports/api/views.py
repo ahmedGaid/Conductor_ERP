@@ -73,18 +73,27 @@ def _require_status(batch: ImportBatch, *allowed: str) -> None:
 
 
 def _batch_row(batch: ImportBatch) -> dict:
+    # `entity_fields` on the upload response only covers the moment of upload — a resumed batch
+    # (page reload, or the review screen opened straight from `/imports/<id>`) has no other way to
+    # learn its entity's field kinds (text/number/money/date/ref/enum), which the review grid needs
+    # to render the right inline-edit input per column. Every batch has exactly one entity by the
+    # time it's out of `mapping` status, so this is cheap and always in sync with the adapter.
+    fields = [_field_row(f) for f in get_adapter(batch.entity).fields] if batch.entity else []
     return {
         "id": batch.pk,
         "entity": batch.entity,
         "status": batch.status,
         "strategy": batch.strategy,
         "mapping": batch.mapping,
+        "fields": fields,
+        "file_name": batch.source_file.name if batch.source_file_id else None,
         "row_count": batch.row_count,
         "processed_count": batch.processed_count,
         "error_count": batch.error_count,
         "stats": batch.stats,
         "profile_id": batch.profile_id,
         "created_by": batch.created_by_id,
+        "created_by_name": (batch.created_by.get_full_name() or batch.created_by.username) if batch.created_by_id else None,
         "created_at": batch.created_at.isoformat(),
         "updated_at": batch.updated_at.isoformat(),
     }
@@ -473,7 +482,7 @@ class BatchListView(APIView):
     permission_classes = [IsAuthenticated, _CanImport]
 
     def get(self, request: Request) -> Response:
-        qs = ImportBatch.objects.all().order_by("-created_at")
+        qs = ImportBatch.objects.select_related("created_by", "source_file").order_by("-created_at")
         if not _is_elevated(request.user):
             qs = qs.filter(created_by=request.user)
         entity = request.query_params.get("entity")

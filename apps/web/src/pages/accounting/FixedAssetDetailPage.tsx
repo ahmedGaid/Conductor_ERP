@@ -137,7 +137,7 @@ export function FixedAssetDetailPage() {
                 <span>{t("accounting.assets.proceeds")}</span>
                 <input className="latin" inputMode="decimal" value={proceeds} onChange={(e) => setProceeds(e.target.value)} required />
               </label>
-              <button className="btn btn--danger" type="submit">
+              <button className="btn btn--caution" type="submit">
                 {t("accounting.assets.dispose")}
               </button>
               {formError && <p className="error-text">{formError}</p>}

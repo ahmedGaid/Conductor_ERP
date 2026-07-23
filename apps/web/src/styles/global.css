@@ -203,6 +203,18 @@ h3 {
   border-color: var(--color-danger);
   color: var(--color-text-on-brand);
 }
+/* Outline red — negative but non-destructive actions (reject, dispose). Filled
+   red is reserved for actions that lose data (delete, revoke). */
+.btn--caution {
+  background-color: transparent;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+.btn--caution:hover {
+  background-color: var(--color-danger-subtle);
+  border-color: var(--color-danger-strong);
+  color: var(--color-danger-strong);
+}
 .btn--ghost {
   border-color: transparent;
   background-color: transparent;
