@@ -71,6 +71,8 @@ class TemplateCreateView(APIView):
                 event_name=graph["trigger"]["event_name"],
                 condition=graph["trigger"].get("condition"),
             )
+        elif graph.get("schedule"):
+            triggers.create_trigger(workflow_id=wf.id, schedule=graph["schedule"])
         return _envelope(WorkflowGraphSerializer(wf).data, status=201)
 
 

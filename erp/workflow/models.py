@@ -75,8 +75,9 @@ class WorkflowTrigger(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workflow = models.ForeignKey(Workflow, on_delete=models.CASCADE, related_name="triggers")
-    event_name = models.CharField(max_length=64)
+    event_name = models.CharField(max_length=64, blank=True, default="")
     condition = models.JSONField(null=True, blank=True)
+    schedule = models.CharField(max_length=64, blank=True, default="")  # e.g. "low_stock", "overdue_invoice:7"
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

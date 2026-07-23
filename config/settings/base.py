@@ -269,6 +269,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "einvoice.reconcile_submitted",
         "schedule": 300.0,  # seconds — check every 5 minutes for elapsed poll-backoff windows
     },
+    "run-scheduled-workflow-triggers": {
+        "task": "workflow.run_scheduled_triggers",
+        "schedule": crontab(hour=7, minute=15),  # 07:15 Africa/Cairo daily
+    },
 }
 
 # Where scheduled report exports are written.

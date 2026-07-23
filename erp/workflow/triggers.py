@@ -13,15 +13,19 @@ from .lib.jsonlogic import jsonlogic
 from .models import Workflow, WorkflowTrigger
 
 
-def create_trigger(*, workflow_id, event_name: str, condition: dict | None = None) -> WorkflowTrigger:
-    if event_name not in WEBHOOK_EVENT_CATALOG:
+def create_trigger(
+    *, workflow_id, event_name: str = "", condition: dict | None = None, schedule: str = "",
+) -> WorkflowTrigger:
+    if event_name and event_name not in WEBHOOK_EVENT_CATALOG:
         raise ValidationError(f"unknown event: {event_name}")
+    if not event_name and not schedule:
+        raise ValidationError("a trigger needs either an event_name or a schedule")
     try:
         workflow = Workflow.objects.get(id=workflow_id)
     except Workflow.DoesNotExist as exc:
         raise NotFoundError("workflow not found") from exc
     return WorkflowTrigger.objects.create(
-        workflow=workflow, event_name=event_name, condition=condition,
+        workflow=workflow, event_name=event_name, condition=condition, schedule=schedule,
     )
 
 
