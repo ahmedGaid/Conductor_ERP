@@ -1,0 +1,20 @@
+.automations__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+
+.automations__card {
+  display: block;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.automations__footer {
+  display: flex;
+  gap: var(--space-3);
+}

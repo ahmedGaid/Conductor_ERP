@@ -2,6 +2,8 @@
 import { apiFetch } from "./client";
 import type { WorkflowGraph, WorkflowTemplate } from "./types";
 
+export type { WorkflowTemplate };
+
 export function listTemplates(): Promise<WorkflowTemplate[]> {
   return apiFetch<WorkflowTemplate[]>("/workflow/workflows/templates");
 }

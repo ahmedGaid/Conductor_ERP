@@ -70,6 +70,10 @@ const CampaignDetailPage = lazyPage(
   () => import("./pages/crm/CampaignDetailPage"), "CampaignDetailPage");
 const UserGuidePage = lazyPage(() => import("./pages/UserGuidePage"), "UserGuidePage");
 const WorkflowListPage = lazyPage(() => import("./pages/WorkflowListPage"), "WorkflowListPage");
+const AutomationsPage = lazyPage(
+  () => import("./pages/workflows/AutomationsPage"), "AutomationsPage");
+const TemplateFormPage = lazyPage(
+  () => import("./pages/workflows/TemplateFormPage"), "TemplateFormPage");
 const InstanceListPage = lazyPage(() => import("./pages/InstanceListPage"), "InstanceListPage");
 const ExecutionViewerPage = lazyPage(
   () => import("./pages/ExecutionViewerPage"), "ExecutionViewerPage");
@@ -254,7 +258,9 @@ function AppRoutes() {
           <Route path="/pricing" element={<PriceListsPage />} />
           <Route path="/pricing/customers" element={<CustomerPricingPage />} />
           <Route path="/pricing/:id" element={<PriceListDetailPage />} />
-          <Route path="/workflows" element={<WorkflowListPage />} />
+          <Route path="/workflows" element={<AutomationsPage />} />
+          <Route path="/workflows/advanced" element={<WorkflowListPage />} />
+          <Route path="/workflows/templates/:templateId" element={<TemplateFormPage />} />
           <Route path="/workflows/instances" element={<InstanceListPage />} />
           <Route path="/workflows/new" element={<WorkflowCanvasPage />} />
           <Route path="/workflows/:id" element={<WorkflowCanvasPage />} />
