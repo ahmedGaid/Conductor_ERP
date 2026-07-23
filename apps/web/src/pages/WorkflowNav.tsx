@@ -6,7 +6,6 @@ import "./WorkflowNav.css";
 const TABS: { key: string; to: string; label?: string; end?: boolean }[] = [
   { key: "workflows", to: "/workflows", end: true },
   { key: "instances", to: "/workflows/instances" },
-  { key: "advanced", to: "/workflows/advanced", label: "automations.advanced" },
 ];
 
 export function WorkflowNav() {

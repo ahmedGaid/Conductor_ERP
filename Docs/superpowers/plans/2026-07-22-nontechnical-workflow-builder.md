@@ -1913,21 +1913,21 @@ git commit -m "feat(workflow): step-list builder — linear steps + one-branch c
 **Interfaces:**
 - Consumes: existing `WorkflowNav.tsx` tab structure (open it first — it currently renders "Workflows"/"Runs" tabs per the 2026-07-20 P1 fix; read its exact JSX before editing).
 
-- [ ] **Step 1: Read the current nav**
+- [x] **Step 1: Read the current nav**
 
 Open `apps/web/src/pages/WorkflowNav.tsx` in full.
 
-- [ ] **Step 2: Add an "Advanced" tab**
+- [x] **Step 2: Add an "Advanced" tab**
 
 Following the exact pattern of the existing "Workflows"/"Runs" `<NavLink>` (or equivalent) entries in that file, add a third tab linking to `/workflows/advanced`, labelled via `t("automations.advanced")` (already added in Task 8).
 
-- [ ] **Step 3: Confirm `/workflows` now defaults to Automations, not the canvas**
+- [x] **Step 3: Confirm `/workflows` now defaults to Automations, not the canvas**
 
 Run: `cd apps/web && npx tsc -b` (confirms no dangling references to the old default route)
 
 Manually verify in the running dev server: navigate to `/workflows`, confirm `AutomationsPage` renders (not the canvas list); navigate to `/workflows/advanced`, confirm the existing `WorkflowListPage`/canvas still works unchanged.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit** — `a42919d` 2026-07-23
 
 ```bash
 git add apps/web/src/pages/WorkflowNav.tsx
@@ -1940,25 +1940,26 @@ git commit -m "feat(workflow): demote graph canvas to /workflows/advanced"
 
 **Files:** none created — this is a verification task using the running app.
 
-- [ ] **Step 1: Start the dev servers**
+- [x] **Step 1: Start the dev servers**
 
 Use the `preview_start` tool (or `run-dev.ps1` per `erp-status`) to start both Django (`:8000`) and Vite (`:5173`/`:5174`).
 
-- [ ] **Step 2: Set the UI language to Arabic**
+- [x] **Step 2: Set the UI language to Arabic**
 
 Log in, go to Settings → Profile, set language to `ar` (per `erp-status`'s documented language-switch location — the 4th `.setrow`).
 
-- [ ] **Step 3: Drive the whole builder in Arabic, screenshot/read_page at each stop**
+- [x] **Step 3: Drive the whole builder in Arabic, screenshot/read_page at each stop**
 
 Walk: `/workflows` (confirm template names render in Arabic, not template ids) → click "Ask for approval above an amount" template card (confirm it reads `طلب موافقة عند تجاوز مبلغ`, not `approval_above_amount`) → fill the form (confirm field labels are `المبلغ`/`من يوافق`, not `amount`/`approver_role`) → save → confirm the toast reads `تم حفظ الأتمتة` → navigate to `/workflows/build` → add each step type via the "+" buttons (confirm every button label is Arabic, not `notification`/`approval`/`condition`) → open the condition step form (confirm no raw JSON, no English leaking).
 
-- [ ] **Step 4: Confirm zero Latin-script identifier leakage**
+- [x] **Step 4: Confirm zero Latin-script identifier leakage**
 
 Use `read_page` (`filter: "all"`) at each stop from Step 3 and grep the returned text for any of: `approval_above_amount`, `low_stock_alert`, `overdue_invoice_reminder`, `new_lead_followup`, `ticket_escalation`, `amount_minor`, `approver_role`, `api_call`, `assistant_action`. None should appear anywhere in the rendered Arabic UI.
 
-- [ ] **Step 5: Record the result**
+- [x] **Step 5: Record the result**
 
-If any raw identifier leaked, fix the specific missing i18n mapping in Task 8's files (or Task 5's `TEMPLATE_CATALOG`/`fields` — the backend must already be sending display names, not raw keys, per Task 5/6) and re-run Step 3-4 for that one screen. This task isn't done until Step 4 finds nothing.
+**PASSED 2026-07-23.** All five template names render in Arabic. Form labels Arabic (الأتمتة / المبلغ / من يوافق). Toast reads `تم حفظ الأتمتة`. StepListBuilder add-step buttons all Arabic (أرسل إشعارًا / اطلب موافقة أحدهم / تحقق من شرط). Notification + condition step forms: no leaks. Zero raw-identifier leaks across all screens.
+**Bug found + fixed during this task:** workflow migrations 0005–0007 (notification NodeType + WorkflowTrigger model + schedule field) were not applied to the dev DB → save returned 500. Fixed with `manage.py migrate workflow` (and `migrate` for 2 other pending: inventory + sales).
 
 ---
 
@@ -2018,5 +2019,5 @@ git commit -m "test(workflow): E2E acceptance for the approval-above-amount temp
 - [ ] `.venv/Scripts/python.exe scripts/gates/_run.py all` (00-17) — green
 - [ ] Frontend: `cd apps/web && npx tsc -b && node scripts/check-i18n-parity.mjs && npm run test` — all green
 - [ ] `python scripts/gates/gate03.py` (repo root) — exit 0
-- [ ] Task 13's Arabic-only walkthrough — zero raw-identifier leaks found
+- [x] Task 13's Arabic-only walkthrough — zero raw-identifier leaks found (PASSED 2026-07-23)
 - [ ] Update the `erp-e-invoice`-style status skill (or `erp-status` directly) with: this feature's completion, the new `/workflows` default landing page, and the fact the graph canvas moved to `/workflows/advanced`
