@@ -81,14 +81,15 @@ def jsonlogic(rule: Any, data: dict | None = None) -> Any:
         return ev[0] == ev[1]
     if op in ("!=", "!=="):
         return ev[0] != ev[1]
-    if op == ">":
-        return ev[0] > ev[1]
-    if op == ">=":
-        return ev[0] >= ev[1]
-    if op == "<":
-        return ev[0] < ev[1]
-    if op == "<=":
-        return ev[0] <= ev[1]
+    if op in (">", ">=", "<", "<="):
+        a, b = (0 if v is None else v for v in ev[:2])
+        if op == ">":
+            return a > b
+        if op == ">=":
+            return a >= b
+        if op == "<":
+            return a < b
+        return a <= b
     if op == "!":
         return not _truthy(ev[0])
     if op == "!!":
