@@ -3173,6 +3173,13 @@
       "lastUpdated": "Last edited {{when}}",
       "continue": "Continue",
       "discard": "Discard"
+    },
+    "workflow": {
+      "sales.customer.create": "Customer draft",
+      "inventory.item.create": "Item draft",
+      "sales.order.create": "Sales order draft",
+      "purchasing.order.create": "Purchase order draft",
+      "imports.smart.create": "Import in progress"
     }
   },
   "document": {

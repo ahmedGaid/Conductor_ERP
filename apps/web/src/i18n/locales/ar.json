@@ -3173,6 +3173,13 @@
       "lastUpdated": "آخر تعديل {{when}}",
       "continue": "متابعة",
       "discard": "تجاهل"
+    },
+    "workflow": {
+      "sales.customer.create": "مسودة عميل",
+      "inventory.item.create": "مسودة صنف",
+      "sales.order.create": "مسودة أمر بيع",
+      "purchasing.order.create": "مسودة أمر شراء",
+      "imports.smart.create": "استيراد قيد التنفيذ"
     }
   },
   "document": {
