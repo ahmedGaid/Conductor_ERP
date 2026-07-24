@@ -53,6 +53,8 @@ urlpatterns = [
     path("api/audit/", include("erp.audit.api.urls")),
     # Smart Import Engine API (zero-prep Excel/CSV migration) — smart-import FILE_11.
     path("api/imports/", include("erp.imports.api.urls")),
+    # Persistent draft recovery (WorkSession) — draft-recovery Project 1.
+    path("api/worksessions/", include("erp.worksessions.api.urls")),
     # Built React SPA at the site root (Phase 11). Last, so admin/api/health win; the HashRouter
     # keeps every client route in the URL fragment, so only "" ever reaches the server.
     path("", spa_index, name="spa"),
