@@ -122,7 +122,7 @@ def test_readiness_blocks_undecided_duplicate_rows(gizmo_adapter):
 
     with pytest.raises(engine.ReadinessError) as exc:
         engine.execute_batch(actor, batch)
-    assert "no decision" in exc.value.reasons[0]
+    assert exc.value.reasons[0] == {"code": "undecided_duplicates", "count": 1}
 
 
 def test_readiness_blocks_unresolved_creation_plan_entries(gizmo_adapter):
@@ -133,15 +133,14 @@ def test_readiness_blocks_unresolved_creation_plan_entries(gizmo_adapter):
 
     with pytest.raises(engine.ReadinessError) as exc:
         engine.execute_batch(actor, batch)
-    assert "not yet approved" in exc.value.reasons[0]
+    assert exc.value.reasons[0] == {"code": "pending_creation_plan", "count": 1}
 
 
 def test_readiness_blocks_errors_unless_continue_after_errors_is_set(gizmo_adapter):
     actor = _manager("rd3")
     batch = _make_batch()
-    batch.error_count = 2
-    batch.save(update_fields=["error_count"])
     _make_row(batch, 1, {"code": "G1", "name": "One"})
+    _make_row(batch, 2, {"code": "G2", "name": ""}, status=ImportRow.Status.ERROR)
 
     with pytest.raises(engine.ReadinessError):
         engine.execute_batch(actor, batch)
@@ -159,7 +158,7 @@ def test_upsert_blocked_when_the_adapter_has_no_update_support():
 
     with pytest.raises(engine.ReadinessError) as exc:
         engine.execute_batch(actor, batch)
-    assert "does not support updates" in exc.value.reasons[0]
+    assert exc.value.reasons[0] == {"code": "adapter_no_update_support", "entity": "customers"}
 
 
 # --- strategy dispatch -----------------------------------------------------------------------

@@ -24,7 +24,7 @@ reports ``cannot_revert`` — both exercised here against a small in-memory fake
 one end-to-end pass against the real ``customers`` adapter.
 
 Grouped (document) adapters set ``adapter.group_by`` (FILE_15): rows bucket into one write call per
-document (``_build_groups``/``_execute_chunk_grouped``) instead of one per row — see those
+document (``grouping.build_groups``/``_execute_chunk_grouped``) instead of one per row — see those
 functions' docstrings. Every adapter with ``group_by = None`` (every master today) runs the
 original one-row-one-write path unchanged.
 """
@@ -38,22 +38,26 @@ from django.db import transaction
 from erp.audit.models import AuditEntry
 from erp.audit.services import record as audit_record
 
+from . import grouping
 from .models import ImportBatch, ImportRow
 from .registry import Issue
 from .registry import get as get_adapter
-from .registry import group_key as _group_key
 from .validate import execute_status
 
 CHUNK = 200  # rows per transaction — small enough to keep locks short, big enough to be fast
 
 
 class ReadinessError(Exception):
-    """Raised before any row is touched — the batch isn't ready to run/resume. ``reasons`` is an
-    actionable, blame-free list; never a bare message."""
+    """Raised before any row is touched — the batch isn't ready to run/resume. ``reasons`` is a
+    list of ``{"code": ..., "count"?: ..., ...}`` dicts, never pre-formatted English sentences —
+    those were leaking straight into the UI as a raw, un-translatable, developer-facing string
+    (FILE_17 acceptance). The API layer/frontend map each ``code`` to a translated, actionable
+    message (and, for the row-scoped codes, jump straight to the tab that shows exactly which
+    rows are blocking)."""
 
-    def __init__(self, reasons: list[str]):
+    def __init__(self, reasons: list[dict]):
         self.reasons = reasons
-        super().__init__("; ".join(reasons))
+        super().__init__("; ".join(r["code"] for r in reasons))
 
 
 # --- readiness -----------------------------------------------------------------------------------
@@ -73,36 +77,31 @@ def _needs_update_support(batch: ImportBatch) -> bool:
     )
 
 
-def _readiness_reasons(adapter, batch: ImportBatch) -> list[str]:
-    reasons: list[str] = []
+def _readiness_reasons(adapter, batch: ImportBatch) -> list[dict]:
+    reasons: list[dict] = []
 
     undecided = _undecided_duplicates(batch)
     if undecided:
-        reasons.append(
-            f"{len(undecided)} duplicate row(s) have no decision yet — merge, create, or ignore each first"
-        )
+        reasons.append({"code": "undecided_duplicates", "count": len(undecided)})
 
     if _needs_update_support(batch) and not getattr(adapter, "supports_update", False):
-        reasons.append(
-            f"adapter '{adapter.entity}' does not support updates — choose create_only or "
-            "skip_existing, or resolve merge decisions to create instead"
-        )
+        reasons.append({"code": "adapter_no_update_support", "entity": adapter.entity})
 
     pending_plan = [
         e for e in (batch.stats or {}).get("creation_plan", [])
         if e.get("action") in ("create", "link") and "outcome" not in e
     ]
     if pending_plan:
-        reasons.append(
-            f"{len(pending_plan)} proposed master record(s) not yet approved — resolve the "
-            "creation plan first (erp.imports.masters.execute_creation_plan)"
-        )
+        reasons.append({"code": "pending_creation_plan", "count": len(pending_plan)})
 
-    if batch.error_count and not (batch.stats or {}).get("continue_after_errors"):
-        reasons.append(
-            f"{batch.error_count} row(s) still have unresolved errors — fix them, or set "
-            "batch.stats['continue_after_errors'] = True to run around them"
-        )
+    # Read the CURRENT row statuses, never ``batch.error_count`` — that field is a denormalized
+    # counter several write paths (inline edits, duplicate decisions) can leave stale, and the
+    # readiness gate is the one place a stale "still has errors" can never be worked around by the
+    # user (unlike a display count, this one silently blocks Create forever). Querying live here
+    # makes the gate self-healing regardless of which path last touched a row.
+    error_count = batch.rows.filter(status=ImportRow.Status.ERROR).count()
+    if error_count and not (batch.stats or {}).get("continue_after_errors"):
+        reasons.append({"code": "unresolved_errors", "count": error_count})
 
     return reasons
 
@@ -125,7 +124,7 @@ def resume_batch(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
     loop as ``execute_batch`` — pending-row selection is what makes re-running safe: already-
     imported/skipped rows are durable and are never touched again."""
     if batch.status not in (ImportBatch.Status.PAUSED, ImportBatch.Status.RUNNING):
-        raise ReadinessError([f"batch is '{batch.status}', not paused/running — nothing to resume"])
+        raise ReadinessError([{"code": "not_resumable", "status": batch.status}])
     return _run(actor, batch, on_chunk=on_chunk)
 
 
@@ -152,7 +151,7 @@ def _run(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
         ordered_rows = list(ImportRow.objects.filter(id__in=row_ids).order_by("row_number"))
         units: list[tuple[list[int], Issue | None]] = [
             ([row.id for row in group["rows"]], group["issue"])
-            for group in _build_groups(adapter, ordered_rows)
+            for group in grouping.build_groups(adapter, ordered_rows)
         ]
     else:
         units = [([rid], None) for rid in row_ids]
@@ -311,82 +310,13 @@ def _result_ref(adapter, normalized: dict, record, action: str) -> dict:
 
 
 # --- execute — grouped (document adapters, ``adapter.group_by`` set — FILE_15) ------------------
-def _build_groups(adapter, rows: list[ImportRow]) -> list[dict]:
-    """Bucket ``rows`` (ordered by ``row_number``, already VALID/DUPLICATE) into documents by
-    ``registry.group_key``. A blank-key row attaches to whichever group came right before it in
-    file order UNLESS it still carries its own header data (``adapter.header_fields`` all blank is
-    the merged-cell signal; any of them non-blank on a blank-key row is ambiguous, never guessed
-    at) — that case, and a blank-key row with no group open yet, becomes its own one-row "orphan"
-    group carrying a ``missing_group_key`` issue. Returns ``[{"rows": [...], "issue": Issue|None}]``
-    in first-seen order (orphans last); ``issue`` set means the whole group errors without ever
-    calling ``adapter.write``."""
-    header_fields = getattr(adapter, "header_fields", [])
-    buckets: dict[Any, list[ImportRow]] = {}
-    order: list[Any] = []
-    orphans: list[ImportRow] = []
-    current_key: Any = None
-
-    for row in rows:
-        key = _group_key(adapter, row.normalized)
-        if key is None:
-            has_header_data = any(row.normalized.get(f) not in (None, "") for f in header_fields)
-            if current_key is None or has_header_data:
-                orphans.append(row)
-                continue
-            key = current_key
-        else:
-            current_key = key
-        if key not in buckets:
-            buckets[key] = []
-            order.append(key)
-        buckets[key].append(row)
-
-    groups = [
-        {"rows": buckets[key], "issue": _header_conflict_issue(header_fields, buckets[key])}
-        for key in order
-    ]
-    if orphans:
-        groups.append({
-            "rows": orphans,
-            "issue": Issue(
-                field=adapter.group_by, code="missing_group_key",
-                message="imports.issues.missingGroupKey",
-            ),
-        })
-    return groups
-
-
-def _header_conflict_issue(header_fields: list[str], rows: list[ImportRow]) -> Issue | None:
-    """The first header field that carries two different non-blank values across ``rows`` — a
-    dirty-data case (e.g. two customer names under one invoice number), never silently resolved."""
-    for field_name in header_fields:
-        seen = None
-        for row in rows:
-            value = row.normalized.get(field_name)
-            if value in (None, ""):
-                continue
-            if seen is None:
-                seen = value
-            elif value != seen:
-                return Issue(
-                    field=field_name, code="inconsistent_document",
-                    message="imports.issues.inconsistentDocument",
-                )
-    return None
-
-
+# Grouping/header-consistency logic lives in ``grouping.py`` — shared with the analyze/validate
+# preview pass, so execute and preview can never disagree (FILE_15 CONFIRMED SCOPE, 2026-07-23).
 def _group_payload(header_fields: list[str], rows: list[ImportRow]) -> dict:
-    """One document's write payload: each header field taken from the first row that has it
-    (the merged-cell pattern — normally the group's first row), plus every row's normalized values
+    """One document's write payload: the forward-filled header (``grouping.forward_filled_header``
+    — the merged-cell pattern, normally the group's first row) plus every row's normalized values
     as ``lines``."""
-    header: dict = {}
-    for field_name in header_fields:
-        for row in rows:
-            value = row.normalized.get(field_name)
-            if value not in (None, ""):
-                header[field_name] = value
-                break
-    return {**header, "lines": [row.normalized for row in rows]}
+    return {**grouping.forward_filled_header(header_fields, rows), "lines": [row.normalized for row in rows]}
 
 
 def _validate_group(adapter, actor, batch: ImportBatch, payload: dict) -> list[Issue]:

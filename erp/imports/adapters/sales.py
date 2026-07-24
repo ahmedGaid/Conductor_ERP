@@ -40,6 +40,7 @@ from erp.sales.services.orders import OrderLineInput
 from erp.sales.services.pending_payments import create_pending_payment
 from erp.sales.services.quotations import QuoteLineInput
 
+from .. import grouping
 from ..registry import FieldSpec, Issue, register
 from ._rbac import require_role
 
@@ -253,13 +254,9 @@ class SalesQuotationAdapter:
         )
 
         warnings: list[Issue] = []
-        file_total = group.get("file_total_minor")
-        if file_total is not None and int(file_total) != quote.subtotal_minor:
-            warnings.append(Issue(
-                field="file_total_minor", code="total_mismatch",
-                message="imports.issues.totalMismatch",
-                meta={"file_total_minor": int(file_total), "computed_total_minor": quote.subtotal_minor},
-            ))
+        mismatch = grouping.total_mismatch_issue(group.get("file_total_minor"), quote.subtotal_minor)
+        if mismatch is not None:
+            warnings.append(mismatch)
         return quote, warnings
 
     def exists(self, actor, group: dict):
@@ -420,13 +417,9 @@ class SalesOrderAdapter:
         )
 
         warnings: list[Issue] = []
-        file_total = group.get("file_total_minor")
-        if file_total is not None and int(file_total) != order.subtotal_minor:
-            warnings.append(Issue(
-                field="file_total_minor", code="total_mismatch",
-                message="imports.issues.totalMismatch",
-                meta={"file_total_minor": int(file_total), "computed_total_minor": order.subtotal_minor},
-            ))
+        mismatch = grouping.total_mismatch_issue(group.get("file_total_minor"), order.subtotal_minor)
+        if mismatch is not None:
+            warnings.append(mismatch)
         return order, warnings
 
     def exists(self, actor, group: dict):
@@ -592,13 +585,9 @@ class SalesInvoiceAdapter:
         )
 
         warnings: list[Issue] = []
-        file_total = group.get("file_total_minor")
-        if file_total is not None and int(file_total) != order.subtotal_minor:
-            warnings.append(Issue(
-                field="file_total_minor", code="total_mismatch",
-                message="imports.issues.totalMismatch",
-                meta={"file_total_minor": int(file_total), "computed_total_minor": order.subtotal_minor},
-            ))
+        mismatch = grouping.total_mismatch_issue(group.get("file_total_minor"), order.subtotal_minor)
+        if mismatch is not None:
+            warnings.append(mismatch)
         return order, warnings
 
     def exists(self, actor, group: dict):

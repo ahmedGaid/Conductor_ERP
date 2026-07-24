@@ -174,6 +174,47 @@ def test_analyze_flags_duplicate_in_file_only_on_repeat(widget_adapter):
     assert any(i["code"] == "duplicate_in_file" for i in rows[3].issues)  # repeat: flagged
 
 
+class _GroupedWidgetAdapter(_WidgetAdapter):
+    """Same shape as ``_WidgetAdapter``, but a document adapter (FILE_15 pattern) — natural_key IS
+    the group_by field, exactly like every real document adapter (sales/purchase orders+invoices,
+    journal entries). A flat-Excel document repeats that key on every one of its lines by design."""
+
+    entity = "grouped_widgets"
+    label_key = "imports.entity.widgets"
+    group_by = "code"
+    header_fields = ["code", "owner"]
+
+
+@pytest.fixture()
+def grouped_widget_adapter():
+    adapter = _GroupedWidgetAdapter()
+    registry.register(adapter)
+    try:
+        yield adapter
+    finally:
+        registry.REGISTER.pop("grouped_widgets", None)
+
+
+def test_analyze_does_not_flag_a_documents_own_repeated_key_as_duplicate_in_file(grouped_widget_adapter):
+    """Regression (FILE_15 CONFIRMED SCOPE live smoke, 2026-07-23): a grouped adapter's natural_key
+    equals its group_by field, so every line of ONE legitimate multi-line document repeats it —
+    that must never trip the master-adapter-style in-file-duplicate check, or every document with
+    more than one line becomes unexecutable without a bogus duplicate decision."""
+    actor = _manager("a5b")
+    attachment = _attachment(actor, [
+        ["Code", "Owner"],
+        ["W1", "Acme"],  # document W1, line 1
+        ["W1", "Acme"],  # document W1, line 2 — same key, NOT a duplicate, just line 2
+    ])
+    batch = _batch("grouped_widgets", {"code": "Code", "owner": "Owner"}, attachment)
+
+    stats = analyze(actor, batch)
+
+    rows = list(ImportRow.objects.filter(batch=batch).order_by("row_number"))
+    assert stats["duplicates_in_file"] == 0
+    assert all(i["code"] != "duplicate_in_file" for r in rows for i in r.issues)
+
+
 def test_batched_ref_lookup_query_count_independent_of_row_count(widget_adapter):
     """distinct owners = 2 (Acme, Wonka) across many rows → lookup queries stay O(2), not O(rows)."""
     actor = _manager("a6")
@@ -276,6 +317,8 @@ def test_revalidate_rows_flips_error_to_valid_after_edit(widget_adapter):
     bad_row = ImportRow.objects.get(batch=batch, row_number=1)
     other_row = ImportRow.objects.get(batch=batch, row_number=2)
     assert bad_row.status == ImportRow.Status.ERROR
+    batch.refresh_from_db()
+    assert batch.error_count == 1
     bad_row.decision = {"edits": {"owner": "Acme"}}
     bad_row.save(update_fields=["decision"])
 
@@ -286,5 +329,11 @@ def test_revalidate_rows_flips_error_to_valid_after_edit(widget_adapter):
     assert bad_row.status == ImportRow.Status.VALID
     assert bad_row.normalized["owner"] == "Acme"
     assert counts == {"valid": 1, "error": 0, "duplicate": 0}
+    # `ImportBatch.error_count` is what the EXECUTE readiness gate actually reads
+    # (`engine._readiness_reasons`) — it must track the fix, not stay stuck at whatever
+    # `validate_batch` saw before this edit (the bug this test guards against: a batch where
+    # every row was fixed by hand could never pass the readiness gate).
+    batch.refresh_from_db()
+    assert batch.error_count == 0
     # untouched sibling row: same status it had after the batch validate, not re-evaluated here
     assert other_row_after.status == other_row.status

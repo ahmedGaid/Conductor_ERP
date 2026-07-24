@@ -57,6 +57,9 @@ export interface ImportBatch {
   strategy: string;
   mapping: Record<string, string>;
   fields: ImportFieldSpec[];
+  // Grouped (document) entities only (FILE_15) — null/empty for every master adapter.
+  group_by: string | null;
+  header_fields: string[];
   file_name: string | null;
   row_count: number;
   processed_count: number;
@@ -162,6 +165,16 @@ export interface ImportRowDecision {
   edits?: Record<string, unknown>;
 }
 
+// Present only for a grouped (document) entity's rows (FILE_15) — null for every master adapter.
+export interface ImportGroupMeta {
+  group_id: string;
+  is_first: boolean;
+  key: string | null;
+  header: Record<string, unknown>;
+  computed_total_minor: number | null;
+  line_count: number;
+}
+
 export interface ImportRowRow {
   row_number: number;
   raw: Record<string, unknown>;
@@ -170,6 +183,7 @@ export interface ImportRowRow {
   issues: ImportIssue[];
   decision: ImportRowDecision;
   result_ref: Record<string, unknown>;
+  group_meta: ImportGroupMeta | null;
 }
 
 export interface ImportRowsPage {
