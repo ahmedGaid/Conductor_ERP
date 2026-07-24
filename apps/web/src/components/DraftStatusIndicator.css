@@ -1,0 +1,9 @@
+.draft-status {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.draft-status[data-state="saving"] {
+  opacity: 0.7;
+}

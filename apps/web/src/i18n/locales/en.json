@@ -2141,7 +2141,32 @@
       "missingRef": "We couldn't find this — add it in the plan below",
       "missingRefChip": "\"{{value}}\" doesn't exist yet — add it in the plan below",
       "probableDuplicate": "This looks like it might already exist",
-      "duplicateInFile": "This repeats another row in the file"
+      "duplicateInFile": "This repeats another row in the file",
+      "missingGroupKey": "No document to attach this line to",
+      "inconsistentDocument": "Disagrees with the rest of this document on {{field}}",
+      "totalMismatch": "The file's total doesn't match the computed total"
+    },
+    "readiness": {
+      "undecidedDuplicates_zero": "No duplicate rows need a decision",
+      "undecidedDuplicates_one": "1 row is marked a possible duplicate and still needs a decision — open the Possible Duplicates tab and choose merge, create, or skip",
+      "undecidedDuplicates_two": "2 rows are marked possible duplicates and still need a decision — open the Possible Duplicates tab and choose merge, create, or skip for each",
+      "undecidedDuplicates_few": "{{count}} rows are marked possible duplicates and still need a decision — open the Possible Duplicates tab and choose merge, create, or skip for each",
+      "undecidedDuplicates_many": "{{count}} rows are marked possible duplicates and still need a decision — open the Possible Duplicates tab and choose merge, create, or skip for each",
+      "undecidedDuplicates_other": "{{count}} rows are marked possible duplicates and still need a decision — open the Possible Duplicates tab and choose merge, create, or skip for each",
+      "unresolvedErrors_zero": "No rows need fixing",
+      "unresolvedErrors_one": "1 row still needs fixing — open the Needs Attention tab to see it",
+      "unresolvedErrors_two": "2 rows still need fixing — open the Needs Attention tab to see them",
+      "unresolvedErrors_few": "{{count}} rows still need fixing — open the Needs Attention tab to see them",
+      "unresolvedErrors_many": "{{count}} rows still need fixing — open the Needs Attention tab to see them",
+      "unresolvedErrors_other": "{{count}} rows still need fixing — open the Needs Attention tab to see them",
+      "pendingCreationPlan_zero": "No proposed records are waiting for approval",
+      "pendingCreationPlan_one": "1 proposed new record hasn't been approved yet — review the creation plan below",
+      "pendingCreationPlan_two": "2 proposed new records haven't been approved yet — review the creation plan below",
+      "pendingCreationPlan_few": "{{count}} proposed new records haven't been approved yet — review the creation plan below",
+      "pendingCreationPlan_many": "{{count}} proposed new records haven't been approved yet — review the creation plan below",
+      "pendingCreationPlan_other": "{{count}} proposed new records haven't been approved yet — review the creation plan below",
+      "adapterNoUpdateSupport": "This import type can only create new records, not update existing ones — switch to Create Only or Skip Existing",
+      "notResumable": "This batch isn't running or paused, so there's nothing to resume"
     },
     "review": {
       "tabsLabel": "Filter rows",
@@ -2163,13 +2188,22 @@
       },
       "rowHeader": "Row",
       "statusHeader": "Status",
+      "editableHint": "Click any cell to edit its value — it saves and re-checks automatically",
       "emptyTab": {
         "title": "Nothing here",
         "hint": "No rows in this view."
       },
       "prevPage": "Previous",
       "nextPage": "Next",
-      "pageOf": "{{from}}–{{to}} of {{total}}"
+      "pageOf": "{{from}}–{{to}} of {{total}}",
+      "group": {
+        "lines_zero": "{{count}} lines",
+        "lines_one": "{{count}} line",
+        "lines_two": "{{count}} lines",
+        "lines_few": "{{count}} lines",
+        "lines_many": "{{count}} lines",
+        "lines_other": "{{count}} lines"
+      }
     },
     "duplicate": {
       "empty": {
@@ -3118,6 +3152,27 @@
         "return": "Return",
         "journal": "Journal entry"
       }
+    }
+  },
+  "drafts": {
+    "recovery": {
+      "title": "Continue where you left off?",
+      "hint": "You have an unfinished {{entity}} from {{when}}.",
+      "continue": "Continue",
+      "discard": "Discard"
+    },
+    "status": {
+      "saving": "Saving…",
+      "saved": "Changes saved"
+    },
+    "conflict": "This draft changed in another tab. Your latest edit will win when you save.",
+    "page": {
+      "title": "Unfinished work",
+      "lede": "Drafts you started but haven't finished. Pick up where you left off, or clear them.",
+      "empty": "No unfinished drafts.",
+      "lastUpdated": "Last edited {{when}}",
+      "continue": "Continue",
+      "discard": "Discard"
     }
   },
   "document": {
