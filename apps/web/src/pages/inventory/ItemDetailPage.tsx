@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
-import { getItem, suggestItemEtaCode, updateItemEtaCoding, type EtaCodeStatus } from "../../api/inventory";
+import { getItem, suggestItemEtaCode, updateItem, updateItemEtaCoding, type EtaCodeStatus, type Item } from "../../api/inventory";
 import { listCustomFieldDefs } from "../../api/customFields";
 import { formatCustomFieldValue } from "../../lib/customFields";
 import { useAsync } from "../../hooks/useAsync";
+import { useDraftRecovery } from "../../hooks/useDraftRecovery";
 import { runOptimistic } from "../../lib/optimistic";
 import { useToast } from "../../app/ToastContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
@@ -17,11 +18,27 @@ import { ListSkeleton } from "../../components/ListSkeleton";
 import { formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { Disclosure } from "../../components/Disclosure";
+import { DraftRecoveryBanner } from "../../components/DraftRecoveryBanner";
+import { DraftStatusIndicator } from "../../components/DraftStatusIndicator";
 import { EntityLink } from "../../components/EntityLink";
 import { RecordTimeline } from "../../components/RecordTimelineLazy";
 import { InventoryNav } from "./InventoryNav";
 import { MovementsTable } from "./MovementsTable";
 import "./inventory.css";
+
+interface ItemEditDraft {
+  name: string;
+  uom: string;
+  reorderPoint: string;
+  isActive: boolean;
+}
+
+function itemDraftFrom(item: Item | null): ItemEditDraft {
+  return {
+    name: item?.name ?? "", uom: item?.uom ?? "unit",
+    reorderPoint: item?.reorder_point ?? "0", isActive: item?.is_active ?? true,
+  };
+}
 
 export function ItemDetailPage() {
   const { t, i18n } = useTranslation();
@@ -48,6 +65,60 @@ export function ItemDetailPage() {
     setEtaItemCode(data.item.eta_item_code);
     setEtaCodeStatus(data.item.eta_code_status);
   }, [data?.item.sku, data?.item.gpc_code, data?.item.eta_item_code, data?.item.eta_code_status]);
+
+  // Edit form — name/uom/reorder point/active. sku and type are immutable (see ItemUpdateSerializer).
+  const [editName, setEditName] = useState("");
+  const [editUom, setEditUom] = useState("unit");
+  const [editReorder, setEditReorder] = useState("0");
+  const [editActive, setEditActive] = useState(true);
+  const [savingEdit, setSavingEdit] = useState(false);
+  useEffect(() => {
+    if (!data) return;
+    setEditName(data.item.name);
+    setEditUom(data.item.uom);
+    setEditReorder(data.item.reorder_point);
+    setEditActive(data.item.is_active);
+  }, [data?.item.sku]);
+
+  const item = data?.item ?? null;
+  const editBaseline = useMemo(() => itemDraftFrom(item), [item]);
+  const editDraft = useMemo<ItemEditDraft>(
+    () => ({ name: editName, uom: editUom, reorderPoint: editReorder, isActive: editActive }),
+    [editName, editUom, editReorder, editActive],
+  );
+  const editRecovery = useDraftRecovery<ItemEditDraft>({
+    workflowKey: "inventory.item.edit",
+    entityType: "item",
+    relatedEntityId: sku,
+    value: editDraft,
+    baseline: editBaseline,
+    schemaVersion: 1,
+    enabled: !!item,
+  });
+
+  function applyEditDraft(d: ItemEditDraft) {
+    setEditName(d.name ?? "");
+    setEditUom(d.uom ?? "unit");
+    setEditReorder(d.reorderPoint ?? "0");
+    setEditActive(d.isActive ?? true);
+  }
+
+  async function onSaveEdit() {
+    if (!data) return;
+    setSavingEdit(true);
+    const payload = { name: editName.trim(), uom: editUom.trim() || "unit", reorder_point: editReorder, is_active: editActive };
+    await runOptimistic({
+      current: data,
+      mutate,
+      optimistic: (cur) => ({ ...cur, item: { ...cur.item, ...payload } }),
+      request: () => updateItem(sku, payload),
+      settle: (predicted, updated) => ({ ...predicted, item: updated }),
+      toast,
+      success: t("common.saved"),
+    });
+    void editRecovery.complete(sku);
+    setSavingEdit(false);
+  }
 
   async function onSaveCoding() {
     if (!data) return;
@@ -178,6 +249,43 @@ export function ItemDetailPage() {
 
           <h3 className="inv-section-title">{t("inventory.detail.movements")}</h3>
           <MovementsTable movements={data.movements} show="item" />
+
+          {editRecovery.recoverable && (
+            <DraftRecoveryBanner
+              entityLabel={t("drafts.workflow.inventory.item.edit")}
+              lastActiveAt={editRecovery.recoverable.lastActiveAt}
+              onContinue={() => {
+                const payload = editRecovery.recover();
+                if (payload) applyEditDraft(payload);
+              }}
+              onDiscard={() => void editRecovery.discard()}
+            />
+          )}
+          <Disclosure summary={t("inventory.detail.editItem")}>
+            <div className="card inv-toolbar">
+              <label className="inv-field">
+                <span>{t("sales.customer.name")}</span>
+                <input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </label>
+              <label className="inv-field">
+                <span>{t("inventory.item.uom")}</span>
+                <input className="latin" value={editUom} onChange={(e) => setEditUom(e.target.value)} />
+              </label>
+              <label className="inv-field">
+                <span>{t("inventory.item.reorderPoint")}</span>
+                <input className="latin" inputMode="decimal" value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
+              </label>
+              <label className="inv-field inv-field--check">
+                <input type="checkbox" checked={editActive} onChange={(e) => setEditActive(e.target.checked)} />
+                <span>{t("inventory.item.active")}</span>
+              </label>
+              {editRecovery.conflict && <p className="muted" role="status">{t("drafts.conflict")}</p>}
+              <DraftStatusIndicator status={editRecovery.status} savedAt={editRecovery.savedAt} />
+              <button className="btn btn--sm btn--primary" type="button" onClick={() => void onSaveEdit()} disabled={savingEdit}>
+                {t("common.save")}
+              </button>
+            </div>
+          </Disclosure>
 
           <Disclosure summary={t("inventory.eta.title")}>
             <p className="muted">{t("inventory.eta.hint")}</p>

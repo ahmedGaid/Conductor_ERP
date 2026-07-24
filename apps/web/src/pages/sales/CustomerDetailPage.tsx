@@ -1,21 +1,42 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
-import { listCustomers, listOrders } from "../../api/sales";
+import { listCustomers, listOrders, updateCustomer, type Customer } from "../../api/sales";
 import { generalLedger } from "../../api/accounting";
 import { listCustomFieldDefs } from "../../api/customFields";
-import { formatCustomFieldValue } from "../../lib/customFields";
+import { buildCustomData, validateCustomFieldValues, formatCustomFieldValue, type CustomFieldValues } from "../../lib/customFields";
+import { CustomFieldsForm } from "../../components/CustomFieldsForm";
 import { useAsync } from "../../hooks/useAsync";
+import { useDraftRecovery } from "../../hooks/useDraftRecovery";
 import { useToast } from "../../app/ToastContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { copyShareLink, printDocument } from "../../lib/documentActions";
-import { formatMinor } from "../../lib/money";
+import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
+import { Disclosure } from "../../components/Disclosure";
+import { DraftRecoveryBanner } from "../../components/DraftRecoveryBanner";
+import { DraftStatusIndicator } from "../../components/DraftStatusIndicator";
 import { PartyDetailView, type PartyOrderRow } from "../../components/PartyDetailView";
 import { SalesNav } from "./SalesNav";
 import "./sales.css";
+
+interface CustomerEditDraft {
+  name: string;
+  limit: string;
+  taxReg: string;
+  nationalId: string;
+  custom: CustomFieldValues;
+}
+
+function draftFrom(c: Customer | null): CustomerEditDraft {
+  return {
+    name: c?.name ?? "", limit: c?.credit_limit_minor ? minorToAmount(c.credit_limit_minor) : "",
+    taxReg: c?.tax_registration_number ?? "", nationalId: c?.national_id ?? "",
+    custom: (c?.custom_data as CustomFieldValues | undefined) ?? {},
+  };
+}
 
 // Accounts Receivable — the customer sub-ledger. Matches AR_ACCOUNT in erp/sales/services/orders.py.
 const AR_ACCOUNT_CODE = "1100";
@@ -25,7 +46,7 @@ export function CustomerDetailPage() {
   const isArabic = i18n.resolvedLanguage?.startsWith("ar") ?? true;
   const { code = "" } = useParams();
 
-  const { data: customers } = useAsync(listCustomers, [], "sales:customers");
+  const { data: customers, reload: reloadCustomers } = useAsync(listCustomers, [], "sales:customers");
   const { data: customFieldDefs } = useAsync(
     () => listCustomFieldDefs("sales.customer"),
     [],
@@ -42,6 +63,88 @@ export function CustomerDetailPage() {
     () => (orders ?? []).filter((o) => o.customer_code === code),
     [orders, code],
   );
+
+  // Edit form — local state synced once from the loaded record, then edited freely (a background
+  // refresh from our own save must not clobber mid-typing state, hence the once-per-record sync).
+  const [editName, setEditName] = useState("");
+  const [editLimit, setEditLimit] = useState("");
+  const [editTaxReg, setEditTaxReg] = useState("");
+  const [editNationalId, setEditNationalId] = useState("");
+  const [editCustom, setEditCustom] = useState<CustomFieldValues>({});
+  const [editIdentityError, setEditIdentityError] = useState("");
+  const [editCustomErrors, setEditCustomErrors] = useState<Record<string, string>>({});
+  const [editBusy, setEditBusy] = useState(false);
+  const toastEdit = useToast();
+  useEffect(() => {
+    if (!customer) return;
+    setEditName(customer.name);
+    setEditLimit(customer.credit_limit_minor ? minorToAmount(customer.credit_limit_minor) : "");
+    setEditTaxReg(customer.tax_registration_number);
+    setEditNationalId(customer.national_id);
+    setEditCustom((customer.custom_data as CustomFieldValues | undefined) ?? {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer?.code]);
+
+  const editBaseline = useMemo(() => draftFrom(customer), [customer]);
+  const editDraft = useMemo<CustomerEditDraft>(
+    () => ({ name: editName, limit: editLimit, taxReg: editTaxReg, nationalId: editNationalId, custom: editCustom }),
+    [editName, editLimit, editTaxReg, editNationalId, editCustom],
+  );
+  const editRecovery = useDraftRecovery<CustomerEditDraft>({
+    workflowKey: "sales.customer.edit",
+    entityType: "customer",
+    relatedEntityId: code,
+    value: editDraft,
+    baseline: editBaseline,
+    schemaVersion: 1,
+    enabled: !!customer,
+  });
+
+  function applyEditDraft(d: CustomerEditDraft) {
+    setEditName(d.name ?? "");
+    setEditLimit(d.limit ?? "");
+    setEditTaxReg(d.taxReg ?? "");
+    setEditNationalId(d.nationalId ?? "");
+    setEditCustom(d.custom ?? {});
+  }
+
+  async function onSaveEdit() {
+    const national = editNationalId.trim();
+    const taxRegistration = editTaxReg.trim();
+    if (national && !/^\d{14}$/.test(national)) {
+      setEditIdentityError(t("sales.customer.nationalIdInvalid"));
+      return;
+    }
+    if (taxRegistration && !/^\d+$/.test(taxRegistration)) {
+      setEditIdentityError(t("sales.customer.taxRegInvalid"));
+      return;
+    }
+    setEditIdentityError("");
+    const defs = customFieldDefs ?? [];
+    const errors = validateCustomFieldValues(defs, editCustom);
+    if (Object.keys(errors).length > 0) {
+      setEditCustomErrors(errors);
+      return;
+    }
+    setEditCustomErrors({});
+    setEditBusy(true);
+    try {
+      await updateCustomer(code, {
+        name: editName.trim(),
+        credit_limit_minor: parseToMinor(editLimit) ?? 0,
+        tax_registration_number: taxRegistration,
+        national_id: national,
+        custom_data: buildCustomData(defs, editCustom),
+      });
+      void editRecovery.complete(code);
+      reloadCustomers();
+      toastEdit.show(t("common.saved"), "success");
+    } catch (err) {
+      toastEdit.show(err instanceof Error ? err.message : String(err), "error");
+    } finally {
+      setEditBusy(false);
+    }
+  }
 
   const name = customer?.name ?? mine[0]?.customer_name ?? code;
   const notFound = !!customers && !!orders && !customer && mine.length === 0;
@@ -117,6 +220,56 @@ export function CustomerDetailPage() {
       error={error}
       onRetry={reload}
       notFound={notFound}
+      extra={
+        !notFound && customer ? (
+          <>
+            {editRecovery.recoverable && (
+              <DraftRecoveryBanner
+                entityLabel={t("drafts.workflow.sales.customer.edit")}
+                lastActiveAt={editRecovery.recoverable.lastActiveAt}
+                onContinue={() => {
+                  const payload = editRecovery.recover();
+                  if (payload) applyEditDraft(payload);
+                }}
+                onDiscard={() => void editRecovery.discard()}
+              />
+            )}
+            <Disclosure summary={t("party.editCustomer")}>
+              <div className="card sales-toolbar">
+                <label className="sales-field">
+                  <span>{t("sales.customer.name")}</span>
+                  <input value={editName} onChange={(e) => setEditName(e.target.value)} required />
+                </label>
+                <label className="sales-field">
+                  <span>{t("sales.customer.creditLimit")}</span>
+                  <input className="latin" inputMode="decimal" value={editLimit} onChange={(e) => setEditLimit(e.target.value)} placeholder="0.00" />
+                </label>
+                <label className="sales-field">
+                  <span>{t("sales.customer.taxRegistrationNumber")}</span>
+                  <input className="latin" inputMode="numeric" value={editTaxReg} onChange={(e) => setEditTaxReg(e.target.value)} placeholder={t("sales.customer.optional")} />
+                </label>
+                <label className="sales-field">
+                  <span>{t("sales.customer.nationalId")}</span>
+                  <input className="latin" inputMode="numeric" value={editNationalId} onChange={(e) => setEditNationalId(e.target.value)} placeholder={t("sales.customer.nationalIdHint")} />
+                </label>
+                {editIdentityError && <p className="custom-field-error" role="alert">{editIdentityError}</p>}
+                <CustomFieldsForm
+                  defs={customFieldDefs ?? []}
+                  values={editCustom}
+                  onChange={(k, v) => setEditCustom((prev) => ({ ...prev, [k]: v }))}
+                  errors={editCustomErrors}
+                  fieldClassName="sales-field"
+                />
+                {editRecovery.conflict && <p className="muted" role="status">{t("drafts.conflict")}</p>}
+                <DraftStatusIndicator status={editRecovery.status} savedAt={editRecovery.savedAt} />
+                <button type="button" className="btn btn--primary" onClick={() => void onSaveEdit()} disabled={editBusy}>
+                  {t("common.save")}
+                </button>
+              </div>
+            </Disclosure>
+          </>
+        ) : undefined
+      }
     />
   );
 }

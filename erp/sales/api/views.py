@@ -25,9 +25,11 @@ from ..domain.models import Customer, PendingPayment, Quotation, SalesOrder
 from ..imports import CUSTOMER_IMPORT
 from .serializers import (
     CustomerSerializer,
+    CustomerUpdateSerializer,
     LinesActionSerializer,
     MatchPendingPaymentSerializer,
     OrderCreateSerializer,
+    OrderLinesUpdateSerializer,
     OrderSerializer,
     PaymentSerializer,
     PendingPaymentSerializer,
@@ -109,6 +111,40 @@ class CustomerListCreateView(APIView):
         return _envelope(CustomerSerializer(customer).data, status=201)
 
 
+class CustomerDetailView(APIView):
+    """One customer by business-key code. ``PATCH`` covers every field but ``code`` itself (draft-
+    recovery edit path — see ``sales.customer.edit`` workflow)."""
+
+    permission_classes = [IsAuthenticated, _CanSell]
+
+    def get(self, request: Request, code) -> Response:
+        return _envelope(CustomerSerializer(get_object_or_404(Customer, code=code)).data)
+
+    def patch(self, request: Request, code) -> Response:
+        customer = get_object_or_404(Customer, code=code)
+        s = CustomerUpdateSerializer(data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        before = {
+            "name": customer.name, "credit_limit_minor": customer.credit_limit_minor,
+            "is_active": customer.is_active, "tax_registration_number": customer.tax_registration_number,
+            "national_id": customer.national_id, "custom_data": customer.custom_data,
+        }
+        fields = []
+        for key, value in s.validated_data.items():
+            if key == "custom_data":
+                value = validate_custom_data("sales.customer", value)
+            setattr(customer, key, value)
+            fields.append(key)
+        if fields:
+            customer.save(update_fields=[*fields, "updated_at"])
+            audit.record(
+                module="sales", action="update_customer", entity_type="Customer",
+                entity_id=customer.code, actor=request.user, before=before,
+                after={k: getattr(customer, k) for k in before},
+            )
+        return _envelope(CustomerSerializer(customer).data)
+
+
 class CustomerImportView(APIView):
     """CSV import for customers — upload to preview, re-post with commit=true to apply.
 
@@ -173,6 +209,26 @@ class OrderDetailView(APIView):
 
     def get(self, request: Request, order_id) -> Response:
         return _envelope(OrderSerializer(get_object_or_404(_scoped_orders(request), id=order_id)).data)
+
+    def patch(self, request: Request, order_id) -> Response:
+        """Edit-record path (draft-recovery ``sales.order.edit``): replace a **draft** order's lines.
+        ``update_order_lines`` itself enforces the draft-only gate; a non-draft order 400s here."""
+        order = get_object_or_404(_scoped_orders(request, SalesOrder.objects.all()), id=order_id)
+        s = OrderLinesUpdateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        services.update_order_lines(
+            order,
+            lines=[
+                services.OrderLineInput(
+                    item_sku=ln["item_sku"], quantity=ln["quantity"],
+                    unit_price_minor=ln["unit_price"], description=ln.get("description", ""),
+                    discount_minor=ln.get("discount", 0),
+                )
+                for ln in s.validated_data["lines"]
+            ],
+            actor=request.user,
+        )
+        return _envelope(OrderSerializer(_order_qs().get(id=order.id)).data)
 
 
 # Audit action → workflow tracker stage key (see apps/web/src/lib/workflow.ts). Approval gates the

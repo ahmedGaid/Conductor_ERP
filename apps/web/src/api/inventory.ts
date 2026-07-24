@@ -100,6 +100,24 @@ export function updateItemEtaCoding(
   });
 }
 
+// sku/type are immutable — see ItemUpdateSerializer's docstring for why.
+export function updateItem(
+  sku: string,
+  payload: Partial<{
+    name: string;
+    category_code: string | null;
+    uom: string;
+    reorder_point: string;
+    is_active: boolean;
+    custom_data: Record<string, unknown>;
+  }>,
+): Promise<Item> {
+  return apiFetch<Item>(`/inventory/items/${encodeURIComponent(sku)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function listWarehouses(): Promise<Warehouse[]> {
   return apiFetch<Warehouse[]>("/inventory/warehouses");
 }

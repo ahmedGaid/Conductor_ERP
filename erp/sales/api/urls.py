@@ -13,6 +13,7 @@ urlpatterns = [
         views.CustomerImportTemplateView.as_view(),
         name="customer-import-template",
     ),
+    path("customers/<str:code>", views.CustomerDetailView.as_view(), name="customer-detail"),
     path("orders", views.OrderListCreateView.as_view(), name="order-list"),
     path("orders/<uuid:order_id>", views.OrderDetailView.as_view(), name="order-detail"),
     path("orders/<uuid:order_id>/history", views.OrderHistoryView.as_view(), name="order-history"),

@@ -27,6 +27,7 @@ from .serializers import (
     PaymentSerializer,
     PendingPaymentSerializer,
     POCreateSerializer,
+    POLinesUpdateSerializer,
     POSerializer,
     RejectSerializer,
     RequestCreateSerializer,
@@ -127,6 +128,25 @@ class PODetailView(APIView):
 
     def get(self, request: Request, order_id) -> Response:
         return _envelope(POSerializer(get_object_or_404(_scoped_pos(request), id=order_id)).data)
+
+    def patch(self, request: Request, order_id) -> Response:
+        """Edit-record path (draft-recovery ``purchasing.order.edit``): replace a **draft** order's
+        lines. ``update_order_lines`` itself enforces the draft-only gate."""
+        order = get_object_or_404(_scoped_pos(request, PurchaseOrder.objects.all()), id=order_id)
+        s = POLinesUpdateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        services.update_order_lines(
+            order,
+            lines=[
+                services.POLineInput(
+                    item_sku=ln["item_sku"], quantity=ln["quantity"],
+                    unit_cost_minor=ln["unit_cost"], description=ln.get("description", ""),
+                )
+                for ln in s.validated_data["lines"]
+            ],
+            actor=request.user,
+        )
+        return _envelope(POSerializer(_po_qs().get(id=order.id)).data)
 
 
 # Audit action → workflow tracker stage key (see apps/web/src/lib/workflow.ts). Approval gates the

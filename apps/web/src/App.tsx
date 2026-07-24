@@ -140,6 +140,7 @@ const SupplierAliasesPage = lazyPage(
   () => import("./pages/inventory/SupplierAliasesPage"), "SupplierAliasesPage");
 const OrdersPage = lazyPage(() => import("./pages/sales/OrdersPage"), "OrdersPage");
 const NewOrderPage = lazyPage(() => import("./pages/sales/NewOrderPage"), "NewOrderPage");
+const EditOrderPage = lazyPage(() => import("./pages/sales/EditOrderPage"), "EditOrderPage");
 const OrderDetailPage = lazyPage(
   () => import("./pages/sales/OrderDetailPage"), "OrderDetailPage");
 const CustomersPage = lazyPage(() => import("./pages/sales/CustomersPage"), "CustomersPage");
@@ -155,6 +156,8 @@ const PurchaseOrdersPage = lazyPage(
   () => import("./pages/purchasing/PurchaseOrdersPage"), "PurchaseOrdersPage");
 const NewPurchaseOrderPage = lazyPage(
   () => import("./pages/purchasing/NewPurchaseOrderPage"), "NewPurchaseOrderPage");
+const EditPurchaseOrderPage = lazyPage(
+  () => import("./pages/purchasing/EditPurchaseOrderPage"), "EditPurchaseOrderPage");
 const ImportInvoicePage = lazyPage(
   () => import("./pages/purchasing/ImportInvoicePage"), "ImportInvoicePage");
 const PurchaseOrderDetailPage = lazyPage(
@@ -304,6 +307,7 @@ function AppRoutes() {
           <Route path="/sales" element={<OrdersPage />} />
           <Route path="/sales/orders/new" element={<NewOrderPage />} />
           <Route path="/sales/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/sales/orders/:id/edit" element={<EditOrderPage />} />
           <Route path="/sales/orders/:id/invoice" element={<InvoiceDocumentPage />} />
           <Route path="/sales/quotations" element={<QuotationsPage />} />
           <Route path="/sales/quotations/new" element={<NewQuotationPage />} />
@@ -314,6 +318,7 @@ function AppRoutes() {
           <Route path="/purchasing/orders/new" element={<NewPurchaseOrderPage />} />
           <Route path="/purchasing/orders/import" element={<ImportInvoicePage />} />
           <Route path="/purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
+          <Route path="/purchasing/orders/:id/edit" element={<EditPurchaseOrderPage />} />
           <Route path="/purchasing/requests" element={<PurchaseRequestsPage />} />
           <Route path="/purchasing/requests/new" element={<NewPurchaseRequestPage />} />
           <Route path="/purchasing/requests/:id" element={<PurchaseRequestDetailPage />} />

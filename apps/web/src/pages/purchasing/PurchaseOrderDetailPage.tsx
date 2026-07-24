@@ -234,6 +234,11 @@ export function PurchaseOrderDetailPage() {
           ),
       },
     ];
+    // Lines are only editable while the order hasn't left draft (the service contract enforces this
+    // too — the menu entry just doesn't offer a move that would 400 server-side).
+    if (data.status === "draft") {
+      menu.push({ key: "edit", label: t("document.edit"), icon: "edit", onClick: () => navigate(`/purchasing/orders/${data.id}/edit`) });
+    }
     if (data.status === "billed") {
       menu.push({
         key: "return",

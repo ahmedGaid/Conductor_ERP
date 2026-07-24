@@ -47,8 +47,19 @@ class ItemSerializer(serializers.Serializer):
         }
 
 
-class ItemEtaCodingSerializer(serializers.Serializer):
-    """Partial update — the ETA product-identity fields only (FILE_06)."""
+class ItemUpdateSerializer(serializers.Serializer):
+    """Partial update for an existing item. ``sku`` and ``type`` are immutable once created — the SKU
+    is the identity other records reference, and the type drives whether order lines even accept the
+    item (``UnknownItemError`` checks ``type == "stock"``); changing either under existing stock
+    movements/order lines would silently invalidate them. Includes the ETA product-identity fields
+    (FILE_06), previously their own endpoint — same PATCH, wider field set."""
+
+    name = serializers.CharField(max_length=200, required=False)
+    category_code = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    uom = serializers.CharField(max_length=16, required=False)
+    reorder_point = serializers.DecimalField(max_digits=18, decimal_places=4, required=False)
+    is_active = serializers.BooleanField(required=False)
+    custom_data = serializers.JSONField(required=False)
     gpc_code = serializers.CharField(max_length=32, required=False, allow_blank=True)
     eta_item_code = serializers.CharField(max_length=64, required=False, allow_blank=True)
     eta_code_status = serializers.ChoiceField(choices=EtaCodeStatus.choices, required=False)

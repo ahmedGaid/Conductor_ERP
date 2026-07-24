@@ -79,6 +79,11 @@ export function getPurchaseOrderHistory(id: string): Promise<StageHistoryEntry[]
   return apiFetch<StageHistoryEntry[]>(`/purchasing/orders/${id}/history`);
 }
 
+// Replace a draft order's lines wholesale (edit-record path). Draft-only — the server 400s otherwise.
+export function updatePOLines(id: string, lines: NewPOLine[]): Promise<PurchaseOrder> {
+  return apiFetch<PurchaseOrder>(`/purchasing/orders/${id}`, { method: "PATCH", body: JSON.stringify({ lines }) });
+}
+
 export interface NewPOLine {
   item_sku: string;
   quantity: string;

@@ -1208,6 +1208,7 @@
     "detail": {
       "backToItems": "Back to items",
       "backToWarehouses": "Back to warehouses",
+      "editItem": "Edit item",
       "onHandValue": "On-hand value",
       "stockByWarehouse": "Stock by warehouse",
       "stockByItem": "Stock by item",
@@ -1256,6 +1257,7 @@
     "totalBilled": "Total billed",
     "balance": "Balance",
     "openParty": "Open page",
+    "editCustomer": "Edit customer",
     "notFound": "Not found",
     "notFoundHint": "No customer or supplier with this code.",
     "col": {
@@ -1374,6 +1376,10 @@
       "taxCode": "Tax",
       "noTax": "No tax",
       "subtotal": "Subtotal"
+    },
+    "edit": {
+      "notDraft": "This order can no longer be edited",
+      "notDraftHint": "Only a draft order's lines can be changed. Once it's confirmed, use return or cancel instead."
     },
     "invoice": {
       "title": "Invoice",
@@ -1540,6 +1546,10 @@
       "create": "Create PO",
       "taxCode": "Tax",
       "noTax": "No tax"
+    },
+    "edit": {
+      "notDraft": "This order can no longer be edited",
+      "notDraftHint": "Only a draft order's lines can be changed. Once it's confirmed, use return or cancel instead."
     },
     "detail": {
       "billed": "Billed",
@@ -1937,6 +1947,7 @@
     "moreDetails": "Details",
     "editField": "Edit {{field}}",
     "saved": "Saved",
+    "save": "Save",
     "cancel": "Cancel",
     "status": "Status",
     "date": "Date",
@@ -3176,14 +3187,19 @@
     },
     "workflow": {
       "sales.customer.create": "Customer draft",
+      "sales.customer.edit": "Customer edit",
       "inventory.item.create": "Item draft",
+      "inventory.item.edit": "Item edit",
       "sales.order.create": "Sales order draft",
+      "sales.order.edit": "Sales order edit",
       "purchasing.order.create": "Purchase order draft",
+      "purchasing.order.edit": "Purchase order edit",
       "imports.smart.create": "Import in progress"
     }
   },
   "document": {
     "moreActions": "More actions",
+    "edit": "Edit",
     "duplicate": "Duplicate",
     "print": "Print",
     "exportPdf": "Export PDF",

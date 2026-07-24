@@ -1208,6 +1208,7 @@
     "detail": {
       "backToItems": "العودة إلى الأصناف",
       "backToWarehouses": "العودة إلى المخازن",
+      "editItem": "تعديل الصنف",
       "onHandValue": "قيمة المخزون المتاح",
       "stockByWarehouse": "المخزون حسب المخزن",
       "stockByItem": "المخزون حسب الصنف",
@@ -1256,6 +1257,7 @@
     "totalBilled": "إجمالي المشتريات",
     "balance": "الرصيد",
     "openParty": "فتح الصفحة",
+    "editCustomer": "تعديل بيانات العميل",
     "notFound": "غير موجود",
     "notFoundHint": "لا يوجد عميل أو مورد بهذا الرمز.",
     "col": {
@@ -1374,6 +1376,10 @@
       "taxCode": "الضريبة",
       "noTax": "بدون ضريبة",
       "subtotal": "الإجمالي الفرعي"
+    },
+    "edit": {
+      "notDraft": "لم يعد يمكن تعديل هذا الطلب",
+      "notDraftHint": "يمكن تعديل بنود الطلب في حالة المسودة فقط. بعد التأكيد استخدم المرتجع أو الإلغاء بدلاً من ذلك."
     },
     "invoice": {
       "title": "فاتورة",
@@ -1540,6 +1546,10 @@
       "create": "إنشاء أمر الشراء",
       "taxCode": "الضريبة",
       "noTax": "بدون ضريبة"
+    },
+    "edit": {
+      "notDraft": "لم يعد يمكن تعديل هذا الأمر",
+      "notDraftHint": "يمكن تعديل بنود أمر الشراء في حالة المسودة فقط. بعد التأكيد استخدم المرتجع أو الإلغاء بدلاً من ذلك."
     },
     "detail": {
       "billed": "المفوتر",
@@ -1937,6 +1947,7 @@
     "moreDetails": "تفاصيل",
     "editField": "تعديل {{field}}",
     "saved": "تم الحفظ",
+    "save": "حفظ",
     "cancel": "إلغاء",
     "status": "الحالة",
     "date": "التاريخ",
@@ -3176,14 +3187,19 @@
     },
     "workflow": {
       "sales.customer.create": "مسودة عميل",
+      "sales.customer.edit": "تعديل عميل",
       "inventory.item.create": "مسودة صنف",
+      "inventory.item.edit": "تعديل صنف",
       "sales.order.create": "مسودة أمر بيع",
+      "sales.order.edit": "تعديل أمر بيع",
       "purchasing.order.create": "مسودة أمر شراء",
+      "purchasing.order.edit": "تعديل أمر شراء",
       "imports.smart.create": "استيراد قيد التنفيذ"
     }
   },
   "document": {
     "moreActions": "إجراءات أخرى",
+    "edit": "تعديل",
     "duplicate": "تكرار",
     "print": "طباعة",
     "exportPdf": "تصدير PDF",

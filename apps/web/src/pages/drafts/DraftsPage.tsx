@@ -14,12 +14,20 @@ function routeFor(d: WorkSessionDraft): string {
   switch (d.workflow_key) {
     case "sales.customer.create":
       return "/sales/customers";
+    case "sales.customer.edit":
+      return d.related_entity_id ? `/sales/customers/${d.related_entity_id}` : "/sales/customers";
     case "inventory.item.create":
       return "/inventory/items";
+    case "inventory.item.edit":
+      return d.related_entity_id ? `/inventory/items/${d.related_entity_id}` : "/inventory/items";
     case "sales.order.create":
       return "/sales/orders/new";
+    case "sales.order.edit":
+      return d.related_entity_id ? `/sales/orders/${d.related_entity_id}/edit` : "/sales";
     case "purchasing.order.create":
       return "/purchasing/orders/new";
+    case "purchasing.order.edit":
+      return d.related_entity_id ? `/purchasing/orders/${d.related_entity_id}/edit` : "/purchasing";
     case "imports.smart.create":
       return d.related_entity_id ? `/imports/${d.related_entity_id}` : "/imports/new";
     default:
