@@ -127,8 +127,8 @@ Response uses the standard `{data}` envelope.
 - `GET /worksessions/active?workflow_key=&related_entity_id=` → the one active draft, or `null`.
 - `POST /worksessions` → `upsert_draft`; body `{workflow_key, payload, entity_type,
   related_entity_id, schema_version, client_version, expected_version}`. Response includes
-  `{session, conflict}`. Also reachable via `sendBeacon` (see 5.1) — accept a `text/plain` beacon
-  body and parse JSON so the browser's unload path can post without a preflight.
+  `{session, conflict}`. The unload flush hits this same endpoint via `fetch(keepalive:true)` (see
+  5.1) — a normal authenticated JSON POST, no special server handling needed.
 - `POST /worksessions/{id}/discard`
 - `POST /worksessions/{id}/complete` → body `{related_entity_id?}`.
 
@@ -177,8 +177,10 @@ Behaviour:
   backstop — reconciled on mount, cleared on complete/discard. The feature does **not** depend on
   localStorage as the source of truth (server is authoritative).
 - **On unload/hide:** `visibilitychange`→hidden and `pagehide` flush the latest pending payload via
-  `navigator.sendBeacon` to `POST /worksessions`. This survives tab-close/crash and needs no
-  `beforeunload` prompt.
+  `fetch("POST /worksessions", { keepalive: true })`. `keepalive` lets the request outlive the page
+  (tab-close/crash) **and** carry the in-memory JWT `Authorization` header — which `sendBeacon`
+  cannot set, so a beacon would post unauthenticated (401). Body is well under keepalive's 64 KB
+  limit. No `beforeunload` prompt.
 - **Cross-tab / multi-device conflict:** a `storage` event listener notices a sibling tab's write;
   the server `client_version` returned on each save detects a stale write → set `conflict=true`,
   which the page surfaces as a warn banner ("This draft changed elsewhere — keep editing / reload").
@@ -205,7 +207,8 @@ Unit-test each; the hook is a thin React shell over these.
   drafts: entity/workflow name, last-updated, current step/progress, Continue / Discard. Satisfies
   "if multiple drafts exist, show a list." Designed empty state.
 - `api/workSessions.ts` — typed wrappers (`getActiveDraft`, `listDrafts`, `saveDraft`,
-  `discardDraft`, `completeDraft`) over `apiFetch`, plus a `beaconDraft` using `navigator.sendBeacon`.
+  `discardDraft`, `completeDraft`) over `apiFetch`, plus a `flushDraft` unload variant using
+  `fetch(keepalive:true)` with the bearer header.
 
 ### 5.4 Wiring the five creation flows
 
@@ -248,7 +251,7 @@ New screens ⇒ Conductor Quality Review + brand-feel checklist per entity.
 ## 7. Cross-cutting requirements → where satisfied
 
 - **Survives close/tab-close/crash/restart/nav/offline/idle** → server-authoritative drafts (4.1)
-  + localStorage mirror + `sendBeacon` on hide/unload (5.1).
+  + localStorage mirror + `fetch(keepalive)` flush on hide/unload (5.1).
 - **Detect existing draft, never silently overwrite, clear recovery UI, Continue/New/Discard** →
   mount fetch + `DraftRecoveryBanner` (5.1, 5.3).
 - **Multiple drafts distinguishable** → drafts surface (5.3), `list_active` (4.2).
