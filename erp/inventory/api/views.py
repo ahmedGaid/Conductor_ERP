@@ -38,8 +38,8 @@ from .serializers import (
     CategorySerializer,
     CountLineSetSerializer,
     IssueSerializer,
-    ItemEtaCodingSerializer,
     ItemSerializer,
+    ItemUpdateSerializer,
     MovementSerializer,
     ReceiveSerializer,
     StockCountCreateSerializer,
@@ -138,26 +138,36 @@ class ItemDetailView(APIView):
         })
 
     def patch(self, request: Request, sku) -> Response:
-        """Update the ETA product-identity fields (FILE_06) — gpc_code / eta_item_code /
-        eta_code_status. The only editable fields on an existing item; everything else is set at
-        creation or via a dedicated action (e.g. reorder point)."""
+        """Edit-record path (draft-recovery ``inventory.item.edit``) plus the ETA product-identity
+        fields (FILE_06). ``sku``/``type`` are immutable (see ``ItemUpdateSerializer``)."""
         item = get_object_or_404(Item.objects.select_related("category"), sku=sku)
-        s = ItemEtaCodingSerializer(data=request.data, partial=True)
+        s = ItemUpdateSerializer(data=request.data, partial=True)
         s.is_valid(raise_exception=True)
-        before = {
-            "gpc_code": item.gpc_code, "eta_item_code": item.eta_item_code,
-            "eta_code_status": item.eta_code_status,
-        }
+
+        def _snapshot() -> dict:
+            return {
+                "name": item.name, "category_code": item.category.code if item.category_id else None,
+                "uom": item.uom, "reorder_point": str(item.reorder_point), "is_active": item.is_active,
+                "custom_data": item.custom_data, "gpc_code": item.gpc_code,
+                "eta_item_code": item.eta_item_code, "eta_code_status": item.eta_code_status,
+            }
+
+        before = _snapshot()
         fields = []
         for key, value in s.validated_data.items():
+            if key == "category_code":
+                item.category = Category.objects.filter(code=value).first() if value else None
+                fields.append("category")
+                continue
+            if key == "custom_data":
+                value = validate_custom_data("inventory.item", value)
             setattr(item, key, value)
             fields.append(key)
         if fields:
             item.save(update_fields=[*fields, "updated_at"])
             audit.record(
-                module="inventory", action="set_item_eta_coding", entity_type="Item",
-                entity_id=item.sku, actor=request.user, before=before,
-                after={k: getattr(item, k) for k in before},
+                module="inventory", action="update_item", entity_type="Item",
+                entity_id=item.sku, actor=request.user, before=before, after=_snapshot(),
             )
         return _envelope(ItemSerializer(item).data)
 

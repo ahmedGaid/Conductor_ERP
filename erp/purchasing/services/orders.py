@@ -162,6 +162,35 @@ def create_order(
 
 
 @transaction.atomic
+def update_order_lines(order: PurchaseOrder, lines: list[POLineInput], actor=None) -> PurchaseOrder:
+    """Replace a **draft** order's lines wholesale (edit-record path). Mirrors
+    ``erp.sales.services.orders.update_order_lines`` — once an order leaves draft, its lines move
+    through receive/return instead — this never touches a confirmed order."""
+    _require(order, POStatus.DRAFT)
+    if not lines:
+        raise EmptyOrderError()
+    for ln in lines:
+        info = inventory.find_item(ln.item_sku)
+        if info is None or info.type != "stock" or not info.is_active:
+            raise UnknownItemError(data={"sku": ln.item_sku})
+    order.lines.all().delete()
+    subtotal = 0
+    for i, ln in enumerate(lines, start=1):
+        total = _round_minor(Decimal(ln.quantity) * Decimal(ln.unit_cost_minor))
+        PurchaseOrderLine.objects.create(
+            order=order, line_no=i, item_sku=ln.item_sku, description=ln.description,
+            quantity=Decimal(ln.quantity), unit_cost_minor=ln.unit_cost_minor,
+            line_total_minor=total,
+        )
+        subtotal += total
+    order.subtotal_minor = subtotal
+    order.save(update_fields=["subtotal_minor"])
+    audit.record(module="purchasing", action="update_order_lines", entity_type="PurchaseOrder",
+                 entity_id=order.number, actor=actor, after=_snapshot(order))
+    return order
+
+
+@transaction.atomic
 def approve_order(order: PurchaseOrder, actor=None) -> PurchaseOrder:
     """Manager sign-off for an above-threshold order (required before confirm).
 

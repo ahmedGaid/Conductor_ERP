@@ -47,6 +47,23 @@ class CustomerSerializer(serializers.Serializer):
         }
 
 
+class CustomerUpdateSerializer(serializers.Serializer):
+    """Partial update — everything but the business-key ``code``, which callers already use to
+    reference this customer elsewhere (imports, receipts) and never changes after creation."""
+
+    name = serializers.CharField(max_length=200, required=False)
+    credit_limit_minor = serializers.IntegerField(min_value=0, required=False)
+    is_active = serializers.BooleanField(required=False)
+    tax_registration_number = serializers.CharField(
+        max_length=32, required=False, allow_blank=True, trim_whitespace=True)
+    national_id = serializers.CharField(
+        max_length=14, required=False, allow_blank=True, trim_whitespace=True)
+    custom_data = serializers.JSONField(required=False)
+
+    validate_tax_registration_number = CustomerSerializer.validate_tax_registration_number
+    validate_national_id = CustomerSerializer.validate_national_id
+
+
 class OrderLineInputSerializer(serializers.Serializer):
     item_sku = serializers.CharField(max_length=64)
     description = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
@@ -107,6 +124,13 @@ class LinesActionSerializer(serializers.Serializer):
         if not rows:
             return None
         return {row["line_no"]: row["quantity"] for row in rows}
+
+
+class OrderLinesUpdateSerializer(serializers.Serializer):
+    """Replace a draft order's lines wholesale (edit-record path). Mirrors ``OrderCreateSerializer``'s
+    ``lines`` shape; the order's customer/warehouse/tax are set at creation and not edited here."""
+
+    lines = OrderLineInputSerializer(many=True)
 
 
 class OrderLineSerializer(serializers.Serializer):

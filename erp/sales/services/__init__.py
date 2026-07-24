@@ -15,6 +15,7 @@ from .orders import (
     invoice_order,
     receive_payment,
     return_order,
+    update_order_lines,
 )
 from .orders import (
     requires_approval as order_requires_approval,
@@ -49,6 +50,7 @@ __all__ = [
     "order_requires_approval",
     "receive_payment",
     "return_order",
+    "update_order_lines",
     "APPROVAL_THRESHOLD_MINOR",
     "QuoteLineInput",
     "approve_quotation",

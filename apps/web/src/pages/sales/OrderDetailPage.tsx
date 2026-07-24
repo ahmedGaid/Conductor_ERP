@@ -250,6 +250,11 @@ export function OrderDetailPage() {
           ),
       },
     ];
+    // Lines are only editable while the order hasn't left draft (the service contract enforces this
+    // too — the menu entry just doesn't offer a move that would 400 server-side).
+    if (data.status === "draft") {
+      menu.push({ key: "edit", label: t("document.edit"), icon: "edit", onClick: () => navigate(`/sales/orders/${data.id}/edit`) });
+    }
     // Fast-path the same-day counter sale: drive draft→confirmed→delivered→invoiced in one move.
     // Additive shortcut to the granular primary action; hidden once nothing remains to fast-path or
     // when an above-threshold order still needs its approval (the server would refuse the confirm step).

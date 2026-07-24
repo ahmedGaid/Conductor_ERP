@@ -74,6 +74,23 @@ export function createCustomer(payload: {
   return apiFetch<Customer>("/sales/customers", { method: "POST", body: JSON.stringify(payload) });
 }
 
+export function updateCustomer(
+  code: string,
+  payload: Partial<{
+    name: string;
+    credit_limit_minor: number;
+    is_active: boolean;
+    tax_registration_number: string;
+    national_id: string;
+    custom_data: Record<string, unknown>;
+  }>,
+): Promise<Customer> {
+  return apiFetch<Customer>(`/sales/customers/${encodeURIComponent(code)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function listOrders(status?: OrderStatus): Promise<SalesOrder[]> {
   const qs = status ? `?status=${status}` : "";
   return apiFetch<SalesOrder[]>(`/sales/orders${qs}`);
@@ -85,6 +102,11 @@ export function getOrder(id: string): Promise<SalesOrder> {
 
 export function getOrderHistory(id: string): Promise<StageHistoryEntry[]> {
   return apiFetch<StageHistoryEntry[]>(`/sales/orders/${id}/history`);
+}
+
+// Replace a draft order's lines wholesale (edit-record path). Draft-only — the server 400s otherwise.
+export function updateOrderLines(id: string, lines: NewOrderLine[]): Promise<SalesOrder> {
+  return apiFetch<SalesOrder>(`/sales/orders/${id}`, { method: "PATCH", body: JSON.stringify({ lines }) });
 }
 
 export interface NewOrderLine {

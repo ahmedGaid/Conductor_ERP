@@ -12,6 +12,9 @@ import { useRowSelection } from "../../hooks/useRowSelection";
 import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
+import { useDraftRecovery } from "../../hooks/useDraftRecovery";
+import { DraftRecoveryBanner } from "../../components/DraftRecoveryBanner";
+import { DraftStatusIndicator } from "../../components/DraftStatusIndicator";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { useActionFeedback } from "../../app/ActionFeedbackContext";
@@ -35,6 +38,21 @@ import { SalesNav } from "./SalesNav";
 import { ListSkeleton } from "../../components/ListSkeleton";
 import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./sales.css";
+
+// The shape autosaved as a draft. Kept as one object so the draft is a single value the hook can
+// diff, while the fields stay in their own useState (the form reads/writes them field by field).
+interface CustomerDraft {
+  code: string;
+  name: string;
+  limit: string;
+  taxReg: string;
+  nationalId: string;
+  custom: CustomFieldValues;
+}
+
+const EMPTY_CUSTOMER_DRAFT: CustomerDraft = {
+  code: "", name: "", limit: "", taxReg: "", nationalId: "", custom: {},
+};
 
 export function CustomersPage() {
   const { t, i18n } = useTranslation();
@@ -109,6 +127,29 @@ export function CustomersPage() {
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef, onCancel: () => setShowForm(false) });
 
+  // Autosave the half-typed customer so closing the tab (or a crash) doesn't lose it.
+  const draft = useMemo<CustomerDraft>(
+    () => ({ code, name, limit, taxReg, nationalId, custom: customValues }),
+    [code, name, limit, taxReg, nationalId, customValues],
+  );
+  const recovery = useDraftRecovery<CustomerDraft>({
+    workflowKey: "sales.customer.create",
+    entityType: "customer",
+    value: draft,
+    baseline: EMPTY_CUSTOMER_DRAFT,
+    schemaVersion: 1,
+  });
+
+  function applyDraft(d: CustomerDraft) {
+    setCode(d.code ?? "");
+    setName(d.name ?? "");
+    setLimit(d.limit ?? "");
+    setTaxReg(d.taxReg ?? "");
+    setNationalId(d.nationalId ?? "");
+    setCustomValues(d.custom ?? {});
+    setShowForm(true);
+  }
+
   // Publish the page's live facts for the Help drawer's Live tab.
   useSetHelpSignals({
     codeSet: code.trim() !== "",
@@ -169,6 +210,8 @@ export function CustomersPage() {
       toast,
     }).then((created) => {
       if (created) showCustomerReceipt(fb, t, created, { navigate });
+      // The workflow finished — the draft must not come back on the next visit.
+      void recovery.complete(created ? String(created.id) : undefined);
     });
     setCode("");
     setName("");
@@ -193,6 +236,18 @@ export function CustomersPage() {
           </button>
         )}
       </div>
+
+      {recovery.recoverable && (
+        <DraftRecoveryBanner
+          entityLabel={t("drafts.workflow.sales.customer.create")}
+          lastActiveAt={recovery.recoverable.lastActiveAt}
+          onContinue={() => {
+            const payload = recovery.recover();
+            if (payload) applyDraft(payload);
+          }}
+          onDiscard={() => void recovery.discard()}
+        />
+      )}
 
       <ImportDialog
         open={importOpen}
@@ -234,6 +289,8 @@ export function CustomersPage() {
           errors={customErrors}
           fieldClassName="sales-field"
         />
+        {recovery.conflict && <p className="muted" role="status">{t("drafts.conflict")}</p>}
+        <DraftStatusIndicator status={recovery.status} savedAt={recovery.savedAt} />
         <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
           {t("common.cancel")}
         </button>

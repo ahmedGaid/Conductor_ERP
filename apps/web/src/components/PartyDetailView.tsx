@@ -50,6 +50,8 @@ interface PartyDetailViewProps {
   onRetry: () => void;
   /** Shown when the party code doesn't resolve to a known customer/supplier. */
   notFound?: boolean;
+  /** Extra content rendered right after the summary card (e.g. an edit form). */
+  extra?: ReactNode;
 }
 
 export function PartyDetailView({
@@ -70,6 +72,7 @@ export function PartyDetailView({
   error,
   onRetry,
   notFound,
+  extra,
 }: PartyDetailViewProps) {
   const { t } = useTranslation();
 
@@ -105,6 +108,8 @@ export function PartyDetailView({
               ))}
             </div>
           </div>
+
+          {extra}
 
           <div>
             <h3 className="party-section-title">{ordersTitle}</h3>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NavIcon } from "../../app/icons";
@@ -10,6 +10,7 @@ import { listItems, listWarehouses } from "../../api/inventory";
 import { listTaxCodes } from "../../api/accounting";
 import { resolvePrice, type PriceResolution } from "../../api/pricing";
 import { useAsync } from "../../hooks/useAsync";
+import { useDraftRecovery } from "../../hooks/useDraftRecovery";
 import { useFormKeys } from "../../hooks/useFormKeys";
 import { useSmartDefault } from "../../hooks/useSmartDefault";
 import { useToast } from "../../app/ToastContext";
@@ -17,6 +18,8 @@ import { setLastUsed } from "../../lib/lastUsed";
 import { formatMinor, minorToAmount, parseToMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { ComboBox } from "../../components/ComboBox";
+import { DraftRecoveryBanner } from "../../components/DraftRecoveryBanner";
+import { DraftStatusIndicator } from "../../components/DraftStatusIndicator";
 import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { SalesNav } from "./SalesNav";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
@@ -32,6 +35,17 @@ interface DraftLine {
 }
 
 const emptyLine = (): DraftLine => ({ item_sku: "", quantity: "1", unit_price: "", discount: "" });
+
+// The shape autosaved as a draft. Kept as one object so the draft is a single value the hook can
+// diff, while the fields stay in their own useState (the form reads/writes them field by field).
+interface OrderDraft {
+  customer: string;
+  warehouse: string;
+  taxCode: string;
+  lines: DraftLine[];
+}
+
+const EMPTY_ORDER_DRAFT: OrderDraft = { customer: "", warehouse: "", taxCode: "", lines: [emptyLine()] };
 
 // Prefill carried by the Duplicate action on an existing order (see OrderDetailPage). Prices/discounts
 // arrive as integer minor units and are shown as editable major-unit strings.
@@ -85,6 +99,26 @@ export function NewOrderPage() {
     markFormDirty(isDirty);
     return () => markFormDirty(false);
   }, [customer, warehouse, taxCode, lines]);
+
+  // Autosave the half-built order so closing the tab (or a crash) doesn't lose it.
+  const draft = useMemo<OrderDraft>(
+    () => ({ customer, warehouse, taxCode, lines }),
+    [customer, warehouse, taxCode, lines],
+  );
+  const recovery = useDraftRecovery<OrderDraft>({
+    workflowKey: "sales.order.create",
+    entityType: "order",
+    value: draft,
+    baseline: EMPTY_ORDER_DRAFT,
+    schemaVersion: 1,
+  });
+
+  function applyDraft(d: OrderDraft) {
+    setCustomer(d.customer ?? "");
+    setWarehouse(d.warehouse ?? "");
+    setTaxCode(d.taxCode ?? "");
+    setLines(d.lines?.length ? d.lines : [emptyLine()]);
+  }
 
   function setLine(i: number, patch: Partial<DraftLine>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -160,6 +194,8 @@ export function NewOrderPage() {
       setLastUsed("sales:customer", customer);
       setLastUsed("warehouse", warehouse);
       setLastUsed("sales:tax", taxCode);
+      // The workflow finished — the draft must not come back on the next visit.
+      void recovery.complete(String(order.id));
       // The rich "created" receipt is fired on arrival by the order detail page (which owns the
       // optimistic runners its recommended-next step needs). We just hand it the event.
       navigate(`/sales/orders/${order.id}`, { state: { feedback: "created" } });
@@ -175,6 +211,18 @@ export function NewOrderPage() {
   return (
     <section className="sales-page">
       <SalesNav />
+
+      {recovery.recoverable && (
+        <DraftRecoveryBanner
+          entityLabel={t("drafts.workflow.sales.order.create")}
+          lastActiveAt={recovery.recoverable.lastActiveAt}
+          onContinue={() => {
+            const payload = recovery.recover();
+            if (payload) applyDraft(payload);
+          }}
+          onDiscard={() => void recovery.discard()}
+        />
+      )}
 
       <form ref={formRef} className="card sales-page" onSubmit={onSubmit}>
         <WorkflowTracker kind="sales" steps={workflowFor("sales", "new")} />
@@ -281,6 +329,8 @@ export function NewOrderPage() {
           <button type="submit" className="btn btn--primary" disabled={busy}>
             {t("sales.newOrder.create")}
           </button>
+          {recovery.conflict && <p className="muted" role="status">{t("drafts.conflict")}</p>}
+          <DraftStatusIndicator status={recovery.status} savedAt={recovery.savedAt} />
         </div>
         {error && <p className="error-text">{error}</p>}
       </form>

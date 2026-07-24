@@ -9,6 +9,7 @@ import {
   type ImportProfileHit,
   type ImportUploadResult,
 } from "../../api/smartImports";
+import { useDraftRecovery } from "../../hooks/useDraftRecovery";
 import { EmptyState } from "../../components/EmptyState";
 import { UploadStep } from "./UploadStep";
 import { MappingStep } from "./MappingStep";
@@ -37,6 +38,28 @@ type Phase =
   | { kind: "review"; batch: ImportBatch }
   | { kind: "run"; batchId: string }
   | { kind: "lost" };
+
+// The WorkSession draft for Smart Import is thin — the ImportBatch (server-side) is the source of
+// truth for rows/mapping/progress; the draft only points at it (spec section 5.4). It exists once
+// a batch does (upload creates the batch), keyed by workflow_key + related_entity_id = batch id, so
+// the /drafts surface can offer "Import in progress" and route straight back to /imports/{id}.
+interface ImportDraft {
+  step: StepKey;
+}
+const EMPTY_IMPORT_DRAFT: ImportDraft = { step: "upload" };
+
+function batchIdFor(phase: Phase, urlBatchId: string | undefined): string {
+  switch (phase.kind) {
+    case "map":
+      return phase.detected.upload.batch_id;
+    case "review":
+      return phase.batch.id;
+    case "run":
+      return phase.batchId;
+    default:
+      return urlBatchId ?? "";
+  }
+}
 
 function stepFor(phase: Phase): StepKey {
   switch (phase.kind) {
@@ -111,6 +134,25 @@ export function ImportWizard() {
 
   const activeStep = stepFor(phase);
   const activeIndex = STEPS.indexOf(activeStep);
+
+  // A batch only exists once upload succeeds, so the pointer draft only starts there.
+  const activeBatchId = batchIdFor(phase, batchId);
+  const recovery = useDraftRecovery<ImportDraft>({
+    workflowKey: "imports.smart.create",
+    entityType: "import",
+    value: { step: activeStep },
+    baseline: EMPTY_IMPORT_DRAFT,
+    schemaVersion: 1,
+    relatedEntityId: activeBatchId,
+    enabled: activeBatchId !== "",
+  });
+
+  // Once the import actually starts running, the batch itself (visible in Import History) is the
+  // durable record — the pointer draft has done its job and must not reappear as "in progress".
+  useEffect(() => {
+    if (phase.kind === "run") void recovery.complete(phase.batchId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase.kind]);
 
   return (
     <section

@@ -37,6 +37,13 @@ class POCreateSerializer(serializers.Serializer):
     lines = POLineInputSerializer(many=True)
 
 
+class POLinesUpdateSerializer(serializers.Serializer):
+    """Replace a draft order's lines wholesale (edit-record path). Mirrors ``POCreateSerializer``'s
+    ``lines`` shape; the order's supplier/warehouse/tax are set at creation and not edited here."""
+
+    lines = POLineInputSerializer(many=True)
+
+
 class PaymentSerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=1)
 
