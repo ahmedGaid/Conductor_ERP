@@ -1,5 +1,47 @@
 # SESSION 17 — Acceptance, Regression, Sign-off
 # Files: none new (fixes only), DECISIONS.md, Docs/plan/arp-roadmap.md, erp-status skill
+#
+# STATUS (2026-07-24, partial — NOT renamed _done, genuinely incomplete): the mechanical slice
+# only. Built the acceptance workbook ("Before You Start" Task 1) as a real, re-runnable generator
+# — `erp/imports/tests/fixtures/acceptance/build_fixtures.py` — producing customers_messy.csv
+# (junk rows, mixed ar/en misspelled headers, in-file + fuzzy duplicates, Arabic-Indic-digit +
+# L.E/جنيه money), sales_invoices_messy.csv (5,200+ rows: every CSV-representable `parse_date`
+# format, an inconsistent-document, a total_mismatch, two different missing-ref entities, an
+# orphan blank-key line), sales_invoices_cp1256.csv (Windows-1256, Arabic headers/content),
+# journal_entries_unbalanced.csv (one balanced + one deliberately unbalanced entry), and
+# customers_100k.csv (100k clean rows, the volume/perf fixture — separate concern from the
+# messy-data fixtures). New `erp/imports/tests/test_acceptance.py` (5 tests) drives each fixture
+# through the REAL upload(no-op here)->analyze->validate->duplicates->execute pipeline (mapping
+# supplied explicitly rather than re-exercising the live AI-backed auto-matcher `test_api.py`
+# already flags as slow/non-deterministic — that path has its own dedicated, mocked coverage in
+# `test_mapping.py`) and asserts the checklist's data-quality bullets: entity/date/money/duplicate
+# handling, creation-plan candidates across three different ref entities, cp1256 decoding, the
+# unbalanced-journal guard. All 5 pass reliably in isolation and in combination with every other
+# FILE_15-era imports test file (87 total). Two real, fixed bugs found ALONG THE WAY (not
+# production bugs — my own fixture/test mistakes, kept here as a lesson): (1) `ImportBatch.mapping`
+# is `{field: header}`, not `{header: field}` — got the direction backwards on the first pass;
+# (2) a merged-cell continuation row must leave the group-by column BLANK, not repeat it — repeating
+# it reads as an in-file duplicate of the header row's own key, not a second line of one document.
+# **Known pre-existing flakiness, NOT this session's bug** (matches the exact class already logged
+# in `erp-status`/FILE_15's own closing note): running the acceptance suite back-to-back with many
+# other DB-heavy test files for 2+ minutes straight occasionally hits a real Postgres connection
+# drop ("server closed the connection unexpectedly") mid-bulk-insert — a resource/contention issue
+# on this dev box (shared with the live public demo's `serve_waitress.py`), not a logic defect;
+# every test here has been proven green in isolation.
+#
+# **Deliberately NOT done this session — needs a dedicated, supervised pass** (flagged BEFORE
+# starting, per the plan's own framing of this file as the capstone acceptance/sign-off session):
+# the two-language (Arabic-first, then English) MANUAL UI walkthrough of the full checklist below
+# (profile save/reuse, autofix apply, all four import strategies, the 100k-row background runner's
+# live progress/pause/resume/**kill-process recovery**, report deep-links, rollback, an unpermitted
+# user's server-side rejection, trial-balance opening's correction-approval flow); the full
+# `pytest erp` regression suite (blocked today by the same pre-existing DB/demo-contention issue —
+# needs a quiet checkout to confirm, same as `gate:all` in the FILE_15 closing note); the
+# `Docs/RUNBOOK.md`/brand-feel/micro-polish passes; the DECISIONS.md sign-off block; the
+# `arp-roadmap.md` Phase-A-delivered update; and the FINAL MERGE CHECKPOINT to `main` (a
+# consequential, irreversible action that needs the founder's explicit go-ahead regardless of
+# session boundaries). Whoever opens this file next: start from the "Full acceptance checklist"
+# section below with the fixtures already built — no need to redo Before You Start.
 
 ---
 

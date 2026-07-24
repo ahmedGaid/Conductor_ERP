@@ -29,6 +29,28 @@ function fixKey(f: ImportFix): string {
   return `${f.row_id}:${f.field}:${f.code}`;
 }
 
+interface ReadinessReason {
+  code: string;
+  count?: number;
+  entity?: string;
+  status?: string;
+}
+
+// Backend codes (snake_case, from `engine._readiness_reasons`) → i18n key (camelCase, under
+// `imports.readiness.*`) + which tab (if any) actually shows the blocking rows, so "batch not
+// ready" always points the user straight at the rows instead of a generic message.
+const READINESS_KEY: Record<string, string> = {
+  undecided_duplicates: "undecidedDuplicates",
+  unresolved_errors: "unresolvedErrors",
+  pending_creation_plan: "pendingCreationPlan",
+  adapter_no_update_support: "adapterNoUpdateSupport",
+  not_resumable: "notResumable",
+};
+const READINESS_TAB: Record<string, Tab> = {
+  undecided_duplicates: "duplicate",
+  unresolved_errors: "error",
+};
+
 function AutofixModal({
   fixes,
   selected,
@@ -192,7 +214,14 @@ export function ReviewStep({
     setBusyRows((s) => new Set(s).add(rowNumber));
     try {
       const updated = await patchImportRow(batch.id, rowNumber, { edits: { [field]: value } });
-      setRowsPage((p) => (p ? { ...p, rows: p.rows.map((r) => (r.row_number === rowNumber ? updated : r)) } : p));
+      if (batch.group_by) {
+        // A grouped adapter's revalidate re-checks the WHOLE document server-side (a fixed cell
+        // can clear a group-level issue stamped onto every sibling row, not just this one) — a
+        // single-row local patch would leave siblings showing the stale status/tint.
+        await refreshRows();
+      } else {
+        setRowsPage((p) => (p ? { ...p, rows: p.rows.map((r) => (r.row_number === rowNumber ? updated : r)) } : p));
+      }
       void refreshCounts();
     } catch (err) {
       toast.show(err instanceof ApiError ? err.message : t("common.error.title"), "error");
@@ -283,7 +312,26 @@ export function ReviewStep({
       // final report, so this component doesn't need to know which path it took.
       onImported(batch.id);
     } catch (err) {
-      toast.show(err instanceof ApiError ? err.message : t("common.error.title"), "error");
+      const reasons = err instanceof ApiError ? (err.data?.reasons as ReadinessReason[] | undefined) : undefined;
+      if (reasons && reasons.length > 0) {
+        // The backend already knows exactly which decision/rows are blocking — translate each
+        // reason code to a clear, actionable message instead of the generic wrapper error, and
+        // jump straight to the tab that shows exactly which rows (so "I don't know which row"
+        // never happens).
+        for (const reason of reasons) {
+          const key = READINESS_KEY[reason.code];
+          toast.show(
+            key
+              ? t(`imports.readiness.${key}`, { count: reason.count ?? 0, ...reason })
+              : t("common.error.title"),
+            "error",
+          );
+        }
+        const jumpTo = reasons.map((r) => READINESS_TAB[r.code]).find((tab) => tab);
+        if (jumpTo) changeTab(jumpTo);
+      } else {
+        toast.show(err instanceof ApiError ? err.message : t("common.error.title"), "error");
+      }
       setImporting(false);
     }
   }
@@ -334,12 +382,14 @@ export function ReviewStep({
             rows={rowsPage.rows}
             nameField={nameField}
             fields={batch.fields}
+            headerFields={batch.header_fields}
             busyRows={busyRows}
             onDecide={(row, decision, targetPk) => void onDecide(row, decision, targetPk)}
           />
         ) : (
           <PreviewGrid
             fields={batch.fields}
+            headerFields={batch.header_fields}
             rows={rowsPage.rows}
             busyRows={busyRows}
             onEditCell={(row, field, value) => void onEditCell(row, field, value)}

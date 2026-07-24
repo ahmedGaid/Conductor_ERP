@@ -1,0 +1,5 @@
+﻿Entry No,Date,البيان,Account,Debit,Credit,Line Memo
+JE-1,2026-06-01,Cash sale,1000,1000,,Till receipt
+,,,1100,,1000,AR clearance
+JE-2,2026-06-02,Bank transfer,1010,900,,
+,,,1000,,1000,

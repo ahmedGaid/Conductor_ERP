@@ -118,6 +118,10 @@ class ImportRow(TimeStampedModel):
     issues = models.JSONField(default=list)  # [{field, code, message}]
     decision = models.JSONField(default=dict)  # {merge_target, edits, skip}
     result_ref = models.JSONField(default=dict)  # {model, pk} — rollback anchor
+    # Computed by grouping.annotate_groups for a group_by (document) entity: {group_id, is_first,
+    # key, header, computed_total_minor, line_count} — empty dict for every master adapter (FILE_15
+    # CONFIRMED SCOPE, 2026-07-23).
+    group_meta = models.JSONField(default=dict)
 
     class Meta:
         db_table = "imports_row"

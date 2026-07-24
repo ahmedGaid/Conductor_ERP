@@ -47,9 +47,15 @@ def analyze(actor, batch: ImportBatch) -> dict:
 
     for row_number, raw_row in readers.iter_rows(raw_bytes):
         normalized, issues = normalize_row(adapter, batch.mapping, raw_row)
-        issues = _flag_in_file_duplicate(adapter, normalized, issues, seen_natural_keys)
-        if issues and issues[-1].code == "duplicate_in_file":
-            duplicates_in_file += 1
+        if not adapter.group_by:
+            # For a grouped (document) adapter, natural_key IS the group_by field (session
+            # convention — see registry.py), so every line of one legitimate multi-line document
+            # shares it by design. Row-level in-file dedup only makes sense for one-row-per-record
+            # master adapters; grouping.py's own header-conflict/missing-key checks are the
+            # document-shaped equivalent (FILE_15 CONFIRMED SCOPE).
+            issues = _flag_in_file_duplicate(adapter, normalized, issues, seen_natural_keys)
+            if issues and issues[-1].code == "duplicate_in_file":
+                duplicates_in_file += 1
 
         for field_spec in ref_fields:
             value = normalized.get(field_spec.name)

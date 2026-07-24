@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { NavIcon } from "../../app/icons";
 import { Bdi } from "../../components/Bdi";
 import { EmptyState } from "../../components/EmptyState";
+import { formatMinor } from "../../lib/money";
 import type { ImportFieldSpec, ImportIssueCandidate, ImportRowRow } from "../../api/smartImports";
 
 // "Apply to all like this" (spec Task C) is a deliberate v1 cut: grouping "like this" needs a
@@ -24,12 +25,14 @@ function rowLabel(row: ImportRowRow, nameField: string | undefined): string {
 export function DuplicateReview({
   rows,
   nameField,
+  headerFields = [],
   busyRows,
   onDecide,
 }: {
   rows: ImportRowRow[];
   nameField: string | undefined;
   fields: ImportFieldSpec[];
+  headerFields?: string[];
   busyRows: Set<number>;
   onDecide: (rowNumber: number, decision: "merge" | "create" | "ignore", targetPk?: string) => void;
 }) {
@@ -66,6 +69,23 @@ export function DuplicateReview({
                 </span>
               )}
             </div>
+
+            {row.group_meta && (
+              // Grouped (document) entities: the merge/create/ignore decision below applies to the
+              // WHOLE document, not just this line — this line is always the one that carries the
+              // document's own natural key (FILE_15 CONFIRMED SCOPE), so a summary here is enough,
+              // no separate group-aware layout needed.
+              <p className="imports-dup__doc-summary muted">
+                {headerFields
+                  .filter((name) => name !== "file_total_minor" && row.group_meta?.header[name])
+                  .map((name) => String(row.group_meta?.header[name]))
+                  .join(" · ")}
+                {" — "}
+                {t("imports.review.group.lines", { count: row.group_meta.line_count })}
+                {row.group_meta.computed_total_minor !== null &&
+                  ` · ${formatMinor(row.group_meta.computed_total_minor)}`}
+              </p>
+            )}
 
             {candidates.length === 0 ? (
               <p className="imports-dup__note muted">{t("imports.duplicate.inFileOnly")}</p>

@@ -379,6 +379,20 @@
 }
 
 /* --- preview grid -------------------------------------------------------------------------- */
+.imports-grid__hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-block-end: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.imports-grid__hint svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
 .imports-grid__wrap {
   overflow-x: auto;
   border: 1px solid var(--color-border);
@@ -426,7 +440,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  border: 1px solid transparent;
+  border: 1px dashed transparent;
   border-radius: var(--radius-sm);
   padding-block: var(--space-1);
   padding-inline: var(--space-2);
@@ -436,8 +450,26 @@
   cursor: text;
 }
 
-.imports-grid__cell:hover {
-  border-color: var(--color-border);
+.imports-grid__cell:hover,
+.imports-grid__cell:focus-visible {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface-hover);
+}
+
+.imports-grid__cell-edit-icon {
+  display: inline-flex;
+  color: var(--color-text-muted);
+  opacity: 0.35;
+}
+
+.imports-grid__cell-edit-icon svg {
+  inline-size: 0.8rem;
+  block-size: 0.8rem;
+}
+
+.imports-grid__cell:hover .imports-grid__cell-edit-icon,
+.imports-grid__cell:focus-visible .imports-grid__cell-edit-icon {
+  opacity: 1;
 }
 
 .imports-grid__cell--issue {
@@ -493,6 +525,39 @@
 .imports-grid__status--skipped,
 .imports-grid__status--pending { color: var(--color-text-muted); }
 
+/* --- group header row (FILE_15 CONFIRMED SCOPE) — one document's summary before its lines ---- */
+.imports-grid__group-row td {
+  border-block-end: none;
+}
+
+.imports-grid__group-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  padding-block: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.imports-grid__group-row--error .imports-grid__group-cell { background-color: var(--color-danger-subtle); }
+.imports-grid__group-row--duplicate .imports-grid__group-cell { background-color: var(--color-warning-subtle); }
+.imports-grid__group-row--valid .imports-grid__group-cell,
+.imports-grid__group-row--imported .imports-grid__group-cell { background-color: var(--color-success-subtle); }
+.imports-grid__group-row--skipped .imports-grid__group-cell,
+.imports-grid__group-row--pending .imports-grid__group-cell { background-color: var(--color-surface-sunken); }
+
+.imports-grid__group-field { white-space: nowrap; }
+
+.imports-grid__group-total {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+}
+
+.imports-grid__group-total s { color: var(--color-text-muted); }
+
 /* --- duplicate review ---------------------------------------------------------------------- */
 .imports-dup__list {
   list-style: none;
@@ -542,6 +607,12 @@
 .imports-dup__note {
   margin: 0;
   font-size: var(--font-size-sm);
+}
+
+.imports-dup__doc-summary {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
 }
 
 .imports-dup__candidates {

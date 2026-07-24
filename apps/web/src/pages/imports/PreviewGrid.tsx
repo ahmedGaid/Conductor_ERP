@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NavIcon } from "../../app/icons";
@@ -16,6 +16,99 @@ const STATUS_ICON: Record<string, string> = {
   skipped: "archive",
   pending: "info",
 };
+
+// Worst-first priority for a group's collective status chip — reuses the same status vocabulary
+// as every per-row dot (FILE_15 CONFIRMED SCOPE: "reusing the existing STATUS_ICON/status-color
+// vocabulary").
+const STATUS_PRIORITY = ["error", "duplicate", "pending", "valid", "skipped", "imported"] as const;
+
+function worstStatus(rows: ImportRowRow[]): string {
+  for (const s of STATUS_PRIORITY) {
+    if (rows.some((r) => r.status === s)) return s;
+  }
+  return rows[0]?.status ?? "pending";
+}
+
+function groupRowsById(rows: ImportRowRow[]): Map<string, ImportRowRow[]> {
+  const map = new Map<string, ImportRowRow[]>();
+  for (const row of rows) {
+    const gid = row.group_meta?.group_id;
+    if (!gid) continue;
+    const list = map.get(gid);
+    if (list) list.push(row);
+    else map.set(gid, [row]);
+  }
+  return map;
+}
+
+function GroupHeaderRow({
+  fields, headerFields, groupRows, colSpan,
+}: {
+  fields: ImportFieldSpec[];
+  headerFields: string[];
+  groupRows: ImportRowRow[];
+  colSpan: number;
+}) {
+  const { t } = useTranslation();
+  const meta = groupRows[0]?.group_meta;
+  if (!meta) return null;
+
+  const allIssues = groupRows.flatMap((r) => r.issues);
+  const missingKey = allIssues.find((i) => i.code === "missing_group_key");
+  const inconsistent = allIssues.find((i) => i.code === "inconsistent_document");
+  const mismatch = allIssues.find((i) => i.code === "total_mismatch");
+
+  let tone: string;
+  let label: string;
+  if (missingKey) {
+    tone = "error";
+    label = t("imports.issues.missingGroupKey");
+  } else if (inconsistent) {
+    tone = "error";
+    label = t("imports.issues.inconsistentDocument", { field: t(`imports.field.${inconsistent.field}`, inconsistent.field) });
+  } else if (mismatch) {
+    tone = "duplicate"; // reuses the existing orange/warning tone
+    label = t("imports.issues.totalMismatch");
+  } else {
+    tone = worstStatus(groupRows);
+    label = t(`imports.review.status.${tone}`, tone);
+  }
+
+  return (
+    <tr className={`imports-grid__group-row imports-grid__group-row--${tone}`}>
+      <td colSpan={colSpan} className="imports-grid__group-cell">
+        {headerFields
+          .filter((name) => name !== "file_total_minor")
+          .map((name) => {
+            const field = fields.find((f) => f.name === name);
+            const value = meta.header[name];
+            if (!field || value === undefined || value === null || value === "") return null;
+            return (
+              <span key={name} className="imports-grid__group-field">
+                <span className="muted">{t(`imports.field.${name}`, name)}:</span>{" "}
+                <Bdi>{displayValue(field, value)}</Bdi>
+              </span>
+            );
+          })}
+        <span className="imports-grid__group-field">
+          <span className="muted">{t("imports.review.group.lines", { count: meta.line_count })}</span>
+        </span>
+        {meta.computed_total_minor !== null && (
+          <span className="imports-grid__group-total">
+            <Bdi>{formatMinor(meta.computed_total_minor)}</Bdi>
+            {mismatch?.meta?.file_total_minor !== undefined && (
+              <s className="muted">{formatMinor(Number(mismatch.meta.file_total_minor))}</s>
+            )}
+          </span>
+        )}
+        <span className={`imports-grid__status imports-grid__status--${tone}`}>
+          <NavIcon name={STATUS_ICON[tone] ?? "info"} />
+          {label}
+        </span>
+      </td>
+    </tr>
+  );
+}
 
 function displayValue(field: ImportFieldSpec, value: unknown): string {
   if (value === null || value === undefined || value === "") return "";
@@ -104,7 +197,7 @@ function EditCell({ field, value, issue, onSave, onGoToPlan }: EditCellProps) {
     <button
       type="button"
       className={issue ? "imports-grid__cell imports-grid__cell--issue" : "imports-grid__cell"}
-      title={issue ? t(issue.message, { defaultValue: issue.code }) : undefined}
+      title={issue ? t(issue.message, { defaultValue: issue.code }) : t("imports.review.editableHint")}
       onClick={() => {
         setDraft(editValue(field, value));
         setEditing(true);
@@ -112,18 +205,23 @@ function EditCell({ field, value, issue, onSave, onGoToPlan }: EditCellProps) {
     >
       <Bdi>{displayValue(field, value) || <span className="muted">—</span>}</Bdi>
       {issue && <span className="imports-grid__issue-dot" aria-hidden="true" />}
+      <span className="imports-grid__cell-edit-icon">
+        <NavIcon name="edit" />
+      </span>
     </button>
   );
 }
 
 export function PreviewGrid({
   fields,
+  headerFields = [],
   rows,
   busyRows,
   onEditCell,
   onGoToPlan,
 }: {
   fields: ImportFieldSpec[];
+  headerFields?: string[];
   rows: ImportRowRow[];
   busyRows: Set<number>;
   onEditCell: (rowNumber: number, field: string, value: unknown) => void;
@@ -141,43 +239,72 @@ export function PreviewGrid({
     );
   }
 
+  // Grouped (document) entities: header fields (doc number, party, date…) move into the group's
+  // own tinted header row instead of repeating as mostly-blank per-line columns (FILE_15
+  // CONFIRMED SCOPE). Ungrouped entities: zero change — `headerFields` is always empty for them.
+  const grouped = headerFields.length > 0;
+  const lineFields = grouped ? fields.filter((f) => !headerFields.includes(f.name)) : fields;
+  const groupsById = grouped ? groupRowsById(rows) : null;
+  const colSpan = lineFields.length + 2;
+
   return (
-    <div className="imports-grid__wrap">
+    <>
+      <p className="imports-grid__hint">
+        <NavIcon name="edit" />
+        {t("imports.review.editableHint")}
+      </p>
+      <div className="imports-grid__wrap">
       <table className="imports-grid__table">
         <thead>
           <tr>
             <th scope="col" className="imports-grid__row-col">{t("imports.review.rowHeader")}</th>
-            {fields.map((f) => (
+            {lineFields.map((f) => (
               <th key={f.name} scope="col">{t(`imports.field.${f.name}`, f.name)}</th>
             ))}
             <th scope="col">{t("imports.review.statusHeader")}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.row_number} className={busyRows.has(row.row_number) ? "imports-grid__row--busy" : undefined}>
-              <td className="imports-grid__row-col muted">{row.row_number}</td>
-              {fields.map((f) => (
-                <td key={f.name}>
-                  <EditCell
-                    field={f}
-                    value={row.normalized[f.name]}
-                    issue={fieldIssue(row.issues, f.name)}
-                    onSave={(v) => onEditCell(row.row_number, f.name, v)}
-                    onGoToPlan={onGoToPlan}
+          {rows.map((row) => {
+            const gid = row.group_meta?.group_id;
+            const showGroupHeader = grouped && row.group_meta?.is_first && gid && groupsById;
+            return (
+              <Fragment key={row.row_number}>
+                {showGroupHeader && (
+                  <GroupHeaderRow
+                    key={`${gid}-header`}
+                    fields={fields}
+                    headerFields={headerFields}
+                    groupRows={groupsById.get(gid) ?? [row]}
+                    colSpan={colSpan}
                   />
-                </td>
-              ))}
-              <td>
-                <span className={`imports-grid__status imports-grid__status--${row.status}`}>
-                  <NavIcon name={STATUS_ICON[row.status] ?? "info"} />
-                  {t(`imports.review.status.${row.status}`, row.status)}
-                </span>
-              </td>
-            </tr>
-          ))}
+                )}
+                <tr key={row.row_number} className={busyRows.has(row.row_number) ? "imports-grid__row--busy" : undefined}>
+                  <td className="imports-grid__row-col muted">{row.row_number}</td>
+                  {lineFields.map((f) => (
+                    <td key={f.name}>
+                      <EditCell
+                        field={f}
+                        value={row.normalized[f.name]}
+                        issue={fieldIssue(row.issues, f.name)}
+                        onSave={(v) => onEditCell(row.row_number, f.name, v)}
+                        onGoToPlan={onGoToPlan}
+                      />
+                    </td>
+                  ))}
+                  <td>
+                    <span className={`imports-grid__status imports-grid__status--${row.status}`}>
+                      <NavIcon name={STATUS_ICON[row.status] ?? "info"} />
+                      {t(`imports.review.status.${row.status}`, row.status)}
+                    </span>
+                  </td>
+                </tr>
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

@@ -78,7 +78,8 @@ def _batch_row(batch: ImportBatch) -> dict:
     # learn its entity's field kinds (text/number/money/date/ref/enum), which the review grid needs
     # to render the right inline-edit input per column. Every batch has exactly one entity by the
     # time it's out of `mapping` status, so this is cheap and always in sync with the adapter.
-    fields = [_field_row(f) for f in get_adapter(batch.entity).fields] if batch.entity else []
+    adapter = get_adapter(batch.entity) if batch.entity else None
+    fields = [_field_row(f) for f in adapter.fields] if adapter else []
     return {
         "id": batch.pk,
         "entity": batch.entity,
@@ -86,6 +87,10 @@ def _batch_row(batch: ImportBatch) -> dict:
         "strategy": batch.strategy,
         "mapping": batch.mapping,
         "fields": fields,
+        # Grouped (document) entities only (FILE_15 CONFIRMED SCOPE) — null/empty for every
+        # master adapter, so the review grid's existing flat rendering is unaffected.
+        "group_by": adapter.group_by if adapter else None,
+        "header_fields": list(getattr(adapter, "header_fields", [])) if adapter else [],
         "file_name": batch.source_file.name if batch.source_file_id else None,
         "row_count": batch.row_count,
         "processed_count": batch.processed_count,
@@ -108,6 +113,7 @@ def _row_row(row: ImportRow) -> dict:
         "issues": row.issues,
         "decision": row.decision,
         "result_ref": row.result_ref,
+        "group_meta": row.group_meta or None,
     }
 
 
@@ -293,9 +299,30 @@ class BatchRowsView(APIView):
 
         page = max(int(request.query_params.get("page", 1) or 1), 1)
         page_size = min(max(int(request.query_params.get("page_size", DEFAULT_PAGE_SIZE) or DEFAULT_PAGE_SIZE), 1), MAX_PAGE_SIZE)
-        total = qs.count()
-        start = (page - 1) * page_size
-        rows = list(qs[start : start + page_size])
+
+        adapter = get_adapter(batch.entity) if batch.entity else None
+        if adapter is not None and adapter.group_by and not status_filter:
+            # Group-aware paging (FILE_15 CONFIRMED SCOPE): a page holds whole documents, never
+            # splits one across the boundary — ``page`` counts DOCUMENTS here, not rows. Loads every
+            # row of the batch once; document-adapter files are invoice-shaped (small relative to a
+            # 100k-row master import), so this is a deliberate, bounded scope limit, not the general
+            # case. Filtered tabs (error/valid/duplicate/skipped) keep plain row-based paging below.
+            all_rows = list(qs)
+            group_ids: list[str] = []
+            seen: set[str] = set()
+            for row in all_rows:
+                gid = (row.group_meta or {}).get("group_id")
+                if gid is not None and gid not in seen:
+                    seen.add(gid)
+                    group_ids.append(gid)
+            total = len(group_ids)
+            start = (page - 1) * page_size
+            page_ids = set(group_ids[start : start + page_size])
+            rows = [r for r in all_rows if (r.group_meta or {}).get("group_id") in page_ids]
+        else:
+            total = qs.count()
+            start = (page - 1) * page_size
+            rows = list(qs[start : start + page_size])
 
         return _envelope({
             "rows": [_row_row(r) for r in rows],
