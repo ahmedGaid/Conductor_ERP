@@ -126,7 +126,38 @@ export const settingsOrganizationGuide: HelpGuide = {
     en: "These are starting points, not locks: any user can override them in their own Settings. Only the System Admin can change this page.",
     ar: "هذه نقاط بداية وليست قيوداً: يمكن لأي مستخدم تجاوزها في إعداداته. ولا يمكن تغيير هذه الصفحة إلا لمسؤول النظام.",
   },
-  related: [{ to: "/settings/appearance", label: { en: "Appearance", ar: "المظهر" } }],
+  checklist: {
+    name: { en: "Complete your company's tax profile", ar: "أكمل الملف الضريبي للشركة" },
+    doneMessage: {
+      en: "Tax profile complete — you're ready to configure e-invoicing.",
+      ar: "اكتمل الملف الضريبي — أصبحت جاهزاً لإعداد الفوترة الإلكترونية.",
+    },
+    steps: [
+      {
+        label: { en: "Confirm your country", ar: "أكّد الدولة" },
+        done: (s) => Boolean(s.countrySet),
+      },
+      {
+        label: { en: "Enter your VAT/tax number", ar: "أدخل الرقم الضريبي" },
+        hint: { en: "Tax number saved.", ar: "تم حفظ الرقم الضريبي." },
+        done: (s) => Boolean(s.vatNumberSet),
+      },
+      {
+        label: { en: "Turn on e-invoicing when ready", ar: "فعّل الفوترة الإلكترونية عند الجاهزية" },
+        detail: [
+          {
+            en: "Once your tax number is set, switch this on and finish the connection under Settings → E-Invoicing.",
+            ar: "بعد ضبط الرقم الضريبي، فعّل هذا الخيار وأكمل الربط من الإعدادات ← الفوترة الإلكترونية.",
+          },
+        ],
+        done: (s) => Boolean(s.einvoiceEnabled),
+      },
+    ],
+  },
+  related: [
+    { to: "/settings/appearance", label: { en: "Appearance", ar: "المظهر" } },
+    { to: "/settings/einvoice", label: { en: "E-Invoicing", ar: "الفوترة الإلكترونية" } },
+  ],
 };
 
 export const settingsBranchesGuide: HelpGuide = {

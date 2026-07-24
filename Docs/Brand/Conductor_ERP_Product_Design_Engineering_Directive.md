@@ -210,8 +210,19 @@ fight our constraints are recorded with the required change so the limitation st
   — **display-layer mapping only**, never changing the status enum / state machine, and **always via
   i18n keys with ar/en parity** (no hardcoded strings, or gate03 fails).
 - **Navigation extras.** Breadcrumbs, recent pages, favorites in the shell — additive, logical-CSS.
+  **Standing rule (generalized 2026-07-24):** the route breadcrumb (`app/RouteBreadcrumb.tsx`,
+  rendered by `PageHeaderBar` on every route) covers the WHOLE app, not just the five core work
+  modules — every page gets `[module glyph] Module › Section`, reusing that page's own existing
+  tab/nav label so the crumb never invents new copy. New top-level route → add it to the
+  component's module tables in the same PR; never leave a page crumb-less by omission.
 - **Explain before asking.** Complex forms get a one-line purpose + what-happens-after (reuse the help
   content already authored per route).
+- **Dynamic contextual help, every page (standing goal, reaffirmed 2026-07-24).** The Live-tab
+  checklist pattern (alerts + step-by-step hand-holding — `help/HelpSignalsContext.tsx` +
+  `help/HelpCenter.tsx`, guide content in `help/content/*.ts`) is the target state for EVERY page,
+  not an optional extra on a few. Rolled out incrementally, ~3 pages/session (see
+  `Docs/plan/EXECUTION_ORDER.md` pos H for live progress) — never build a page's guide as an
+  afterthought; wire `useSetHelpSignals` in the same session that ships the page where practical.
 
 **Adopt with a required change:**
 - **Forms autosave → explicit draft-save.** Do **not** silently autosave accounting/order/journal

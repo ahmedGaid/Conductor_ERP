@@ -11,6 +11,7 @@ import { getHealth } from "../../api/monitoring";
 import { ACCENTS } from "../../prefs";
 import { Tooltip } from "../../components/Tooltip";
 import { useAsync } from "../../hooks/useAsync";
+import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import { SYSTEM_ADMIN } from "./roles";
@@ -31,6 +32,12 @@ export function OrganizationPage() {
   }, [loaded]);
 
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
+
+  useSetHelpSignals({
+    countrySet: Boolean(org?.country?.trim()),
+    vatNumberSet: Boolean(org?.vat_number?.trim()),
+    einvoiceEnabled: Boolean(org?.einvoice_enabled),
+  });
 
   if (me && !isAdmin) {
     return (
