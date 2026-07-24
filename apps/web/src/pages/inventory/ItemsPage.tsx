@@ -12,6 +12,9 @@ import { useRowSelection } from "../../hooks/useRowSelection";
 import { SelectAllCell, SelectRowCell } from "../../components/SelectionCell";
 import { BulkActionBar } from "../../components/BulkActionBar";
 import { useFormKeys } from "../../hooks/useFormKeys";
+import { useDraftRecovery } from "../../hooks/useDraftRecovery";
+import { DraftRecoveryBanner } from "../../components/DraftRecoveryBanner";
+import { DraftStatusIndicator } from "../../components/DraftStatusIndicator";
 import { ErrorState } from "../../components/ErrorState";
 import { useToast } from "../../app/ToastContext";
 import { optimisticCreate } from "../../lib/optimistic";
@@ -34,6 +37,18 @@ import { useSetHelpSignals } from "../../help/HelpSignalsContext";
 import "./inventory.css";
 
 const ITEM_TYPES: ItemType[] = ["stock", "service"];
+
+// The shape autosaved as a draft. Its baseline is the form's untouched state (uom/type carry
+// defaults), so an empty form is never offered back as recoverable work.
+interface ItemDraft {
+  sku: string;
+  name: string;
+  uom: string;
+  type: ItemType;
+  custom: CustomFieldValues;
+}
+
+const EMPTY_ITEM_DRAFT: ItemDraft = { sku: "", name: "", uom: "unit", type: "stock", custom: {} };
 
 export function ItemsPage() {
   const { t, i18n } = useTranslation();
@@ -124,6 +139,28 @@ export function ItemsPage() {
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeys({ formRef, onCancel: () => setShowForm(false) });
 
+  // Autosave the half-typed item so closing the tab (or a crash) doesn't lose it.
+  const draft = useMemo<ItemDraft>(
+    () => ({ sku, name, uom, type, custom: customValues }),
+    [sku, name, uom, type, customValues],
+  );
+  const recovery = useDraftRecovery<ItemDraft>({
+    workflowKey: "inventory.item.create",
+    entityType: "item",
+    value: draft,
+    baseline: EMPTY_ITEM_DRAFT,
+    schemaVersion: 1,
+  });
+
+  function applyDraft(d: ItemDraft) {
+    setSku(d.sku ?? "");
+    setName(d.name ?? "");
+    setUom(d.uom ?? "unit");
+    setType(d.type ?? "stock");
+    setCustomValues(d.custom ?? {});
+    setShowForm(true);
+  }
+
   // Publish the page's live facts for the Help drawer's Live tab.
   useSetHelpSignals({
     skuSet: sku.trim() !== "",
@@ -167,6 +204,9 @@ export function ItemsPage() {
       request: () => createItem({ sku: s, name: n, uom: u, type, custom_data }),
       toast,
       success: t("inventory.toast.itemCreated"),
+    }).then((created) => {
+      // The workflow finished — the draft must not come back on the next visit.
+      void recovery.complete(created ? String(created.id) : undefined);
     });
     setSku("");
     setName("");
@@ -188,6 +228,18 @@ export function ItemsPage() {
           </button>
         )}
       </div>
+
+      {recovery.recoverable && (
+        <DraftRecoveryBanner
+          entityLabel={t("drafts.workflow.inventory.item.create")}
+          lastActiveAt={recovery.recoverable.lastActiveAt}
+          onContinue={() => {
+            const payload = recovery.recover();
+            if (payload) applyDraft(payload);
+          }}
+          onDiscard={() => void recovery.discard()}
+        />
+      )}
 
       <ImportDialog
         open={importOpen}
@@ -227,6 +279,8 @@ export function ItemsPage() {
           errors={customErrors}
           fieldClassName="inv-field"
         />
+        {recovery.conflict && <p className="muted" role="status">{t("drafts.conflict")}</p>}
+        <DraftStatusIndicator status={recovery.status} savedAt={recovery.savedAt} />
         <button type="button" className="btn btn--sm btn--ghost" onClick={() => setShowForm(false)}>
           {t("common.cancel")}
         </button>
