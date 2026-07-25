@@ -63,7 +63,7 @@ from erp.identity.roles import ACCOUNTANT
 from erp.identity.scoping import scope_queryset
 
 from ..models import ImportBatch
-from ..registry import FieldSpec, Issue, register
+from ..registry import FieldSpec, Issue, batch_lookup_by_tagged_field, register
 from ._rbac import require_role
 
 # Mirrors ``erp.inventory.services.stock.INVENTORY_ACCOUNT`` — not imported directly: ``erp.inventory``
@@ -154,6 +154,13 @@ def _exists(actor, group: dict, *, ref_prefix: str, group_key_field: str):
         return None
     qs = scope_queryset(actor, JournalEntry.objects.all(), "accounting.journal.view")
     return qs.filter(reference=f"{ref_prefix}{ref}").first()
+
+
+def _exists_many(actor, groups: list[dict], *, ref_prefix: str, group_key_field: str):
+    qs = scope_queryset(actor, JournalEntry.objects.all(), "accounting.journal.view")
+    return batch_lookup_by_tagged_field(
+        qs, groups, field="reference", prefix=ref_prefix, key_field=group_key_field,
+    )
 
 
 def _delete_draft(pk) -> None:
@@ -277,6 +284,9 @@ class JournalEntryAdapter:
     def exists(self, actor, group: dict):
         return _exists(actor, group, ref_prefix=self._ref_prefix, group_key_field="entry_ref")
 
+    def exists_many(self, actor, rows: list[dict]):
+        return _exists_many(actor, rows, ref_prefix=self._ref_prefix, group_key_field="entry_ref")
+
     def delete(self, actor, pk) -> None:
         _delete_draft(pk)
 
@@ -385,6 +395,9 @@ class AccountOpeningAdapter:
 
     def exists(self, actor, group: dict):
         return _exists(actor, group, ref_prefix=self._ref_prefix, group_key_field="opening_ref")
+
+    def exists_many(self, actor, rows: list[dict]):
+        return _exists_many(actor, rows, ref_prefix=self._ref_prefix, group_key_field="opening_ref")
 
     def delete(self, actor, pk) -> None:
         _delete_draft(pk)

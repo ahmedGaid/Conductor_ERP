@@ -24,6 +24,15 @@ from .registry import get as get_adapter
 # decision to make (session 07's ``apply_decision``), never a blocker on its own.
 _NON_BLOCKING_CODES = frozenset({"duplicate_in_file", "probable_duplicate"})
 
+# Every ``bulk_update`` in this module MUST pass this. Without an explicit ``batch_size``, Django
+# folds every row of a 100k-row batch into ONE SQL ``UPDATE ... CASE WHEN id = ... THEN ... END``
+# statement — hundreds of thousands of CASE branches in one statement, which Postgres takes
+# essentially forever to plan/execute (FILE_17 acceptance finding: a real 100k-row import's
+# ``bulk_update`` was still running, unfinished, 25+ minutes in — confirmed via
+# ``pg_stat_activity``, not a client timeout). Matches ``analyze.CHUNK_SIZE``, the existing chunk
+# size this same table's ``bulk_create`` already uses.
+_BULK_BATCH_SIZE = 500
+
 # Codes ``normalize_row``/``analyze`` stamped onto the row that ``validate_row`` does NOT
 # recompute — carried over as-is. These all come from parsing the RAW cell text (a bad date
 # string, an unparseable amount, …); ``revalidate_rows`` never reparses raw text, it only folds
@@ -95,12 +104,27 @@ def validate_row(actor, adapter, row: ImportRow, ref_cache: dict) -> list[Issue]
     return issues
 
 
-def _status_for(adapter, actor, row: ImportRow, issues: list[Issue]) -> str:
+def _build_exists_cache(actor, adapter, rows: list[ImportRow]) -> dict[int, object]:
+    """One batched lookup for the whole set of ``rows`` instead of one ``adapter.exists`` query
+    per row — same distinct-values discipline as ``_build_ref_cache``, just for the natural-key
+    duplicate check. ``exists_many`` is optional and duck-typed (like ``update``/``delete``/
+    ``header_fields``): an adapter without it falls back to the original per-row ``exists`` loop,
+    correct but O(rows) queries — fine for a small batch, the reason a 100k-row import validate
+    pass never returned (each of 100k rows was its own synchronous DB round-trip) before adapters
+    picked this up."""
+    exists_many = getattr(adapter, "exists_many", None)
+    if exists_many is None:
+        return {row.pk: adapter.exists(actor, row.normalized) for row in rows}
+    results = exists_many(actor, [row.normalized for row in rows])
+    return dict(zip((row.pk for row in rows), results))
+
+
+def _status_for(issues: list[Issue], *, existing: object | None) -> str:
     if any(i.code not in _NON_BLOCKING_CODES for i in issues):
         return ImportRow.Status.ERROR
     if any(i.code == "duplicate_in_file" for i in issues):
         return ImportRow.Status.DUPLICATE
-    if adapter.exists(actor, row.normalized) is not None:
+    if existing is not None:
         return ImportRow.Status.DUPLICATE
     return ImportRow.Status.VALID
 
@@ -139,6 +163,7 @@ def validate_batch(actor, batch: ImportBatch) -> dict:
     adapter = get_adapter(batch.entity)
     rows = list(batch.rows.all())
     ref_cache = _build_ref_cache(actor, adapter, rows)
+    exists_cache = _build_exists_cache(actor, adapter, rows)
 
     issues_map = {row.pk: validate_row(actor, adapter, row, ref_cache) for row in rows}
     if not adapter.group_by and adapter.natural_key:
@@ -146,7 +171,7 @@ def validate_batch(actor, batch: ImportBatch) -> dict:
     for row in rows:
         issues = issues_map[row.pk]
         row.issues = [i.as_dict() for i in issues]
-        row.status = _status_for(adapter, actor, row, issues)
+        row.status = _status_for(issues, existing=exists_cache.get(row.pk))
 
     update_fields = ["issues", "status"]
     if adapter.group_by:
@@ -159,7 +184,7 @@ def validate_batch(actor, batch: ImportBatch) -> dict:
     counts = {"valid": 0, "error": 0, "duplicate": 0}
     for row in rows:
         counts[row.status] = counts.get(row.status, 0) + 1
-    ImportRow.objects.bulk_update(rows, update_fields)
+    ImportRow.objects.bulk_update(rows, update_fields, batch_size=_BULK_BATCH_SIZE)
 
     batch.error_count = counts.get("error", 0)
     # NOT `Status.READY` — that status is reserved for "a human explicitly clicked Create/Update/
@@ -188,6 +213,7 @@ def revalidate_rows(actor, batch: ImportBatch, row_ids: list[int]) -> dict:
         if edits:
             row.normalized = {**row.normalized, **edits}
     ref_cache = _build_ref_cache(actor, adapter, rows)  # built AFTER edits so a fixed ref resolves
+    exists_cache = _build_exists_cache(actor, adapter, rows)
 
     issues_map = {row.pk: validate_row(actor, adapter, row, ref_cache) for row in rows}
 
@@ -203,18 +229,19 @@ def revalidate_rows(actor, batch: ImportBatch, row_ids: list[int]) -> dict:
             issues_map[row.pk] = [_issue_from_dict(d) for d in row.issues]
         changed_ids = _recompute_in_file_duplicates(adapter, rows + other_rows, issues_map)
         stale = [row for row in other_rows if row.pk in changed_ids]
+        stale_exists_cache = _build_exists_cache(actor, adapter, stale)
         for row in stale:
             issues = issues_map[row.pk]
             row.issues = [i.as_dict() for i in issues]
-            row.status = _status_for(adapter, actor, row, issues)
+            row.status = _status_for(issues, existing=stale_exists_cache.get(row.pk))
         if stale:
-            ImportRow.objects.bulk_update(stale, ["issues", "status"])
+            ImportRow.objects.bulk_update(stale, ["issues", "status"], batch_size=_BULK_BATCH_SIZE)
 
     for row in rows:
         issues = issues_map[row.pk]
         row.issues = [i.as_dict() for i in issues]
-        row.status = _status_for(adapter, actor, row, issues)
-    ImportRow.objects.bulk_update(rows, ["normalized", "issues", "status"])
+        row.status = _status_for(issues, existing=exists_cache.get(row.pk))
+    ImportRow.objects.bulk_update(rows, ["normalized", "issues", "status"], batch_size=_BULK_BATCH_SIZE)
 
     if not adapter.group_by:
         counts = {"valid": 0, "error": 0, "duplicate": 0}
@@ -229,7 +256,7 @@ def revalidate_rows(actor, batch: ImportBatch, row_ids: list[int]) -> dict:
     # invoice-shaped (small), so this trades the O(1) fast path for correctness here.
     all_rows = list(ImportRow.objects.filter(batch=batch).order_by("row_number"))
     grouping.annotate_groups(adapter, all_rows)
-    ImportRow.objects.bulk_update(all_rows, ["issues", "status", "group_meta"])
+    ImportRow.objects.bulk_update(all_rows, ["issues", "status", "group_meta"], batch_size=_BULK_BATCH_SIZE)
 
     counts = {"valid": 0, "error": 0, "duplicate": 0}
     for row in all_rows:

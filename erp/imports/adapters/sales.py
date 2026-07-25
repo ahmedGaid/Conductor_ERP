@@ -41,7 +41,13 @@ from erp.sales.services.pending_payments import create_pending_payment
 from erp.sales.services.quotations import QuoteLineInput
 
 from .. import grouping
-from ..registry import FieldSpec, Issue, register
+from ..registry import (
+    FieldSpec,
+    Issue,
+    batch_lookup_by_tagged_field,
+    batch_lookup_code_or_name,
+    register,
+)
 from ._rbac import require_role
 
 
@@ -94,6 +100,11 @@ class CustomerAdapter:
         if code:
             return qs.filter(code=code).first()
         return qs.filter(name__iexact=(row.get("name") or "").strip()).first()
+
+    def exists_many(self, actor, rows: list[dict]) -> list[Customer | None]:
+        return batch_lookup_code_or_name(
+            scope_queryset(actor, Customer.objects.all(), "sales.customer.view"), rows,
+        )
 
     def existing_labels(self, actor):
         qs = scope_queryset(actor, Customer.objects.all(), "sales.customer.view")
@@ -266,6 +277,10 @@ class SalesQuotationAdapter:
         qs = scope_queryset(actor, Quotation.objects.all(), "sales.quotation.view")
         return qs.filter(notes=f"import:{doc_number}").first()
 
+    def exists_many(self, actor, rows: list[dict]) -> list[Quotation | None]:
+        qs = scope_queryset(actor, Quotation.objects.all(), "sales.quotation.view")
+        return batch_lookup_by_tagged_field(qs, rows, prefix="import:")
+
     def delete(self, actor, pk) -> None:
         """Rollback support — see ``SalesInvoiceAdapter.delete``: a DRAFT quotation has posted
         nothing anywhere yet, so a plain delete is a true, side-effect-free reversal."""
@@ -428,6 +443,10 @@ class SalesOrderAdapter:
             return None
         qs = scope_queryset(actor, SalesOrder.objects.all(), "sales.order.view")
         return qs.filter(notes=f"import-so:{doc_number}").first()
+
+    def exists_many(self, actor, rows: list[dict]) -> list[SalesOrder | None]:
+        qs = scope_queryset(actor, SalesOrder.objects.all(), "sales.order.view")
+        return batch_lookup_by_tagged_field(qs, rows, prefix="import-so:")
 
     def delete(self, actor, pk) -> None:
         """Rollback support — see ``SalesInvoiceAdapter.delete``: a DRAFT order has posted nothing
@@ -596,6 +615,10 @@ class SalesInvoiceAdapter:
             return None
         qs = scope_queryset(actor, SalesOrder.objects.all(), "sales.order.view")
         return qs.filter(notes=f"import:{doc_number}").first()
+
+    def exists_many(self, actor, rows: list[dict]) -> list[SalesOrder | None]:
+        qs = scope_queryset(actor, SalesOrder.objects.all(), "sales.order.view")
+        return batch_lookup_by_tagged_field(qs, rows, prefix="import:")
 
     def delete(self, actor, pk) -> None:
         """Rollback support: a DRAFT order created by this adapter has posted nothing anywhere

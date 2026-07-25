@@ -19,6 +19,16 @@ from .models import ImportBatch, ImportRow
 MAX_CANDIDATES = 3
 SCORE_THRESHOLD = 85
 
+# A bucket the row-count guard can't see coming: two names only get compared when they share a
+# first folded token, but a templated/synthetic file (every row "Volume Test Customer 000123") or
+# just a common Arabic legal-name word ("شركة") collapses thousands of rows into ONE bucket — the
+# inner scoring loop then runs cluster_size^2 times, exactly the blow-up bucketing was meant to
+# avoid (FILE_17 acceptance finding: a 100k-row file with one shared name-token hung the mapping
+# request indefinitely). Past this many entries, skip the fuzzy pass for that bucket — exact-key
+# dedup (validate_batch) already caught true repeats; fuzzy matching is a soft assist, never
+# required, so skipping a pathological cluster is a lesser guarantee, not a crash or a wrong answer.
+MAX_BUCKET_FOR_FUZZY = 300
+
 # Legal-entity suffixes stripped before comparison (ar + en) so "Ahmed" and "Ahmed Trading Co"
 # fold to the same core name. Normalized via the same ``normalize_header`` folding as the words
 # they're matched against (case/diacritic/Arabic-letter insensitive).
@@ -100,20 +110,24 @@ def find_candidates(actor, adapter, batch: ImportBatch) -> None:
         if not value:
             continue
         bucket = _bucket_key(value)
+        existing_bucket = existing_buckets.get(bucket, ())
+        row_bucket = row_buckets.get(bucket, ())
         scored: list[tuple[int, dict]] = []
-        for pk, label in existing_buckets.get(bucket, ()):
-            score = similarity(value, label)
-            if score >= SCORE_THRESHOLD:
-                scored.append((score, {"pk": str(pk), "label": label, "score": score}))
-        for other in row_buckets.get(bucket, ()):
-            if other.id == row.id:
-                continue
-            other_value = row_names[other.id]
-            score = similarity(value, other_value)
-            if score >= SCORE_THRESHOLD:
-                scored.append((score, {
-                    "row_number": other.row_number, "label": other_value, "score": score,
-                }))
+        if len(existing_bucket) <= MAX_BUCKET_FOR_FUZZY:
+            for pk, label in existing_bucket:
+                score = similarity(value, label)
+                if score >= SCORE_THRESHOLD:
+                    scored.append((score, {"pk": str(pk), "label": label, "score": score}))
+        if len(row_bucket) <= MAX_BUCKET_FOR_FUZZY:
+            for other in row_bucket:
+                if other.id == row.id:
+                    continue
+                other_value = row_names[other.id]
+                score = similarity(value, other_value)
+                if score >= SCORE_THRESHOLD:
+                    scored.append((score, {
+                        "row_number": other.row_number, "label": other_value, "score": score,
+                    }))
         if not scored:
             continue
         scored.sort(key=lambda t: -t[0])
@@ -129,4 +143,7 @@ def find_candidates(actor, adapter, batch: ImportBatch) -> None:
         updated.append(row)
 
     if updated:
-        ImportRow.objects.bulk_update(updated, ["status", "issues"])
+        # ``batch_size`` matters at scale — an unbatched ``bulk_update`` on a 100k-row cluster is
+        # one giant CASE-WHEN statement Postgres can take forever to plan (see ``validate.py``'s
+        # ``_BULK_BATCH_SIZE`` for the full story); 500 matches that same constant.
+        ImportRow.objects.bulk_update(updated, ["status", "issues"], batch_size=500)

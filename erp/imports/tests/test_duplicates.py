@@ -11,7 +11,7 @@ from erp.assistant.models import Attachment
 from erp.identity.models import User
 from erp.identity.roles import BRANCH_MANAGER
 from erp.imports.analyze import analyze
-from erp.imports.duplicates import find_candidates, similarity
+from erp.imports.duplicates import MAX_BUCKET_FOR_FUZZY, find_candidates, similarity
 from erp.imports.models import ImportBatch, ImportRow
 from erp.imports.registry import get as get_adapter
 from erp.imports.validate import apply_decision, execute_status, validate_batch
@@ -129,6 +129,25 @@ def test_find_candidates_scales_with_bucketing():
     elapsed = time.monotonic() - started
 
     assert elapsed < 5.0
+
+
+def test_find_candidates_skips_oversized_bucket_instead_of_quadratic_blowup():
+    """A templated file (or a common Arabic legal-name word like 'شركة') can put THOUSANDS of rows
+    in the SAME first-token bucket — the exact case the bucketing guard was meant to price out.
+    Without the size cap this is a real O(cluster^2) hang (FILE_17 acceptance finding: a 100k-row
+    file where every row starts "Volume Test Customer" hung the mapping request indefinitely)."""
+    actor = _manager("fc6")
+    n = MAX_BUCKET_FOR_FUZZY * 10
+    rows = [["Name"]] + [[f"Volume Test Customer {i:06d}"] for i in range(n)]
+    batch = _batch(actor, "customers", {"name": "Name"}, rows)
+    adapter = get_adapter("customers")
+
+    started = time.monotonic()
+    find_candidates(actor, adapter, batch)
+    elapsed = time.monotonic() - started
+
+    assert elapsed < 5.0
+    assert not ImportRow.objects.filter(batch=batch, status=ImportRow.Status.DUPLICATE).exists()
 
 
 # --- decisions: never auto-merge -------------------------------------------------------------------

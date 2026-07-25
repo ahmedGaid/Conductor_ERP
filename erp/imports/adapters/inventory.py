@@ -100,6 +100,12 @@ class ItemAdapter:
     def exists(self, actor, row: dict):
         return Item.objects.filter(sku=(row.get("sku") or "").strip()).first()
 
+    def exists_many(self, actor, rows: list[dict]) -> list[Item | None]:
+        skus = {(r.get("sku") or "").strip() for r in rows}
+        skus.discard("")
+        by_sku = {item.sku: item for item in Item.objects.filter(sku__in=skus)} if skus else {}
+        return [by_sku.get((r.get("sku") or "").strip()) for r in rows]
+
     def existing_labels(self, actor):
         return list(Item.objects.values_list("pk", "name"))
 

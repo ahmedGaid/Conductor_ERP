@@ -46,6 +46,15 @@ from .validate import execute_status
 
 CHUNK = 200  # rows per transaction — small enough to keep locks short, big enough to be fast
 
+# Every ``bulk_update`` in this module passes this. Without an explicit ``batch_size``, Django folds
+# every row into ONE SQL ``UPDATE ... CASE WHEN id = ... THEN ... END`` statement — for
+# ``rollback_batch`` (unchunked, can cover a whole 100k-row batch in one call) that's hundreds of
+# thousands of CASE branches in one statement, which Postgres takes essentially forever to plan/
+# execute (FILE_17 acceptance finding — see ``validate.py``'s ``_BULK_BATCH_SIZE`` for the full
+# story). The per-chunk call sites here are already bounded by ``CHUNK``, but pass it too for the
+# same reason ``analyze.py``'s ``bulk_create`` always has: never leave a bulk write unbounded.
+_BULK_BATCH_SIZE = 500
+
 
 class ReadinessError(Exception):
     """Raised before any row is touched — the batch isn't ready to run/resume. ``reasons`` is a
@@ -241,7 +250,7 @@ def _execute_chunk(actor, adapter, batch: ImportBatch, row_ids: list) -> None:
         else:
             skipped += 1
 
-    ImportRow.objects.bulk_update(rows, ["status", "result_ref", "issues"])
+    ImportRow.objects.bulk_update(rows, ["status", "result_ref", "issues"], batch_size=_BULK_BATCH_SIZE)
 
     batch.refresh_from_db()
     batch.processed_count = batch.processed_count + len(rows)
@@ -410,7 +419,7 @@ def _execute_chunk_grouped(
             for row in rows:
                 row.status = ImportRow.Status.ERROR
                 row.issues = [*row.issues, issue.as_dict()]
-            ImportRow.objects.bulk_update(rows, ["status", "issues"])
+            ImportRow.objects.bulk_update(rows, ["status", "issues"], batch_size=_BULK_BATCH_SIZE)
             errored += len(rows)
             continue
 
@@ -422,7 +431,7 @@ def _execute_chunk_grouped(
             for row in rows:
                 row.status = ImportRow.Status.ERROR
                 row.issues = [*row.issues, *issue_dicts]
-            ImportRow.objects.bulk_update(rows, ["status", "issues"])
+            ImportRow.objects.bulk_update(rows, ["status", "issues"], batch_size=_BULK_BATCH_SIZE)
             errored += len(rows)
             continue
 
@@ -434,7 +443,7 @@ def _execute_chunk_grouped(
             for row in rows:
                 row.status = ImportRow.Status.ERROR
                 row.issues = [*row.issues, fail_issue]
-            ImportRow.objects.bulk_update(rows, ["status", "issues"])
+            ImportRow.objects.bulk_update(rows, ["status", "issues"], batch_size=_BULK_BATCH_SIZE)
             errored += len(rows)
             continue
 
@@ -444,8 +453,10 @@ def _execute_chunk_grouped(
             row.result_ref = result_ref
             if warning_dicts:
                 row.issues = [*row.issues, *warning_dicts]
-        ImportRow.objects.bulk_update(rows, ["status", "result_ref", "issues"] if warning_dicts else
-                                       ["status", "result_ref"])
+        ImportRow.objects.bulk_update(
+            rows, ["status", "result_ref", "issues"] if warning_dicts else ["status", "result_ref"],
+            batch_size=_BULK_BATCH_SIZE,
+        )
         if action == ImportRow.Status.IMPORTED:
             imported += len(rows)
             if result_ref.get("action") == "updated":
@@ -521,7 +532,7 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
         else:
             skipped += 1
     if rows:
-        ImportRow.objects.bulk_update(rows, ["status"])
+        ImportRow.objects.bulk_update(rows, ["status"], batch_size=_BULK_BATCH_SIZE)
 
     created_masters = (batch.stats or {}).get("created_masters", [])
     reverted_master_pks: list[str] = []

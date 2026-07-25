@@ -14,7 +14,7 @@ from erp.crm.domain.models import Lead, LeadSource
 from erp.identity.roles import BRANCH_MANAGER
 from erp.identity.scoping import scope_queryset
 
-from ..registry import FieldSpec, Issue, register
+from ..registry import FieldSpec, Issue, batch_lookup_code_or_name, register
 from ._rbac import require_role
 
 
@@ -85,6 +85,10 @@ class ContactAdapter:
         if email:
             return qs.filter(email__iexact=email).first()
         return qs.filter(name__iexact=(row.get("name") or "").strip()).first()
+
+    def exists_many(self, actor, rows: list[dict]) -> list[Lead | None]:
+        qs = scope_queryset(actor, Lead.objects.all(), "crm.lead.view")
+        return batch_lookup_code_or_name(qs, rows, code_field="email", code_case_insensitive=True)
 
     def existing_labels(self, actor):
         qs = scope_queryset(actor, Lead.objects.all(), "crm.lead.view")

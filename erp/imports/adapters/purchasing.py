@@ -36,7 +36,13 @@ from erp.purchasing.services.orders import POLineInput
 from erp.purchasing.services.pending_payments import create_pending_payment
 
 from .. import grouping
-from ..registry import FieldSpec, Issue, register
+from ..registry import (
+    FieldSpec,
+    Issue,
+    batch_lookup_by_tagged_field,
+    batch_lookup_code_or_name,
+    register,
+)
 from ._rbac import require_role
 
 
@@ -80,6 +86,9 @@ class SupplierAdapter:
         if code:
             return Supplier.objects.filter(code=code).first()
         return Supplier.objects.filter(name__iexact=(row.get("name") or "").strip()).first()
+
+    def exists_many(self, actor, rows: list[dict]) -> list[Supplier | None]:
+        return batch_lookup_code_or_name(Supplier.objects.all(), rows)
 
     def existing_labels(self, actor):
         return list(Supplier.objects.values_list("pk", "name"))
@@ -262,6 +271,10 @@ class PurchaseOrderAdapter:
         qs = scope_queryset(actor, PurchaseOrder.objects.all(), "purchasing.order.view")
         return qs.filter(notes=f"import-po:{doc_number}").first()
 
+    def exists_many(self, actor, rows: list[dict]) -> list[PurchaseOrder | None]:
+        qs = scope_queryset(actor, PurchaseOrder.objects.all(), "purchasing.order.view")
+        return batch_lookup_by_tagged_field(qs, rows, prefix="import-po:")
+
     def delete(self, actor, pk) -> None:
         """Rollback support — see ``PurchaseInvoiceAdapter.delete``: a DRAFT purchase order has
         posted nothing anywhere yet, so a plain delete is a true, side-effect-free reversal."""
@@ -423,6 +436,10 @@ class PurchaseInvoiceAdapter:
             return None
         qs = scope_queryset(actor, PurchaseOrder.objects.all(), "purchasing.order.view")
         return qs.filter(notes=f"import:{doc_number}").first()
+
+    def exists_many(self, actor, rows: list[dict]) -> list[PurchaseOrder | None]:
+        qs = scope_queryset(actor, PurchaseOrder.objects.all(), "purchasing.order.view")
+        return batch_lookup_by_tagged_field(qs, rows, prefix="import:")
 
     def delete(self, actor, pk) -> None:
         """Rollback support — see ``sales.SalesInvoiceAdapter.delete``: a DRAFT purchase order has

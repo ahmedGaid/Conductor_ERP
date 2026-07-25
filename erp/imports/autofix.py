@@ -78,7 +78,9 @@ def apply_fixes(actor, batch: ImportBatch, accepted: list[dict]) -> dict:
                 i for i in row.issues
                 if not (i.get("field") == fix["field"] and i.get("code") == fix["code"])
             ]
-    ImportRow.objects.bulk_update(rows, ["normalized", "issues"])
+    # batch_size: an unbounded bulk_update on a large batch is one giant CASE-WHEN statement
+    # Postgres can take forever to plan (see validate.py's _BULK_BATCH_SIZE docstring).
+    ImportRow.objects.bulk_update(rows, ["normalized", "issues"], batch_size=500)
 
     return revalidate_rows(actor, batch, list(by_row.keys()))
 

@@ -85,6 +85,15 @@ class ImportAdapter(Protocol):
         """Fetch the existing record matching this row's natural key, or None."""
         ...
 
+    # ``exists_many(actor, rows: list[dict]) -> list[object | None]`` is an OPTIONAL, duck-typed
+    # batched equivalent (getattr'd in ``validate._build_exists_cache``, exactly like ``update``/
+    # ``delete``/``header_fields`` below) — one or two queries for the whole batch instead of one
+    # ``exists`` call per row. Results must align 1:1 with the input order. Every adapter whose
+    # ``exists`` can plausibly run at import volume (customers, suppliers, items, documents…)
+    # implements it; an adapter without one just falls back to the O(rows) per-row loop, correct
+    # but the reason a 100k-row validate pass took 100k individual DB round-trips before this was
+    # added (FILE_17 acceptance finding).
+
     def existing_labels(self, actor: Any) -> list[tuple[Any, str]]:
         """(pk, name) pairs for every existing record, RBAC/data-scoped like ``exists`` — the fuzzy
         duplicate pass's one prefetch per entity (session 07). Empty for an entity with no
@@ -128,6 +137,65 @@ def entities() -> list[str]:
 # force every throwaway test adapter and every master adapter to declare an empty list for no
 # reason). Absent ``header_fields`` on a grouped adapter simply means the engine skips the
 # header-consistency check (every field free to vary row-to-row) — a lesser guarantee, not a crash.
+
+
+def batch_lookup_code_or_name(
+    qs, rows: list[dict], *,
+    code_field: str = "code", name_field: str = "name", code_case_insensitive: bool = False,
+):
+    """Shared ``exists_many`` body for the common "unique code (or email), else case-insensitive
+    name" natural key (customers, suppliers, contacts, …) — one query for every distinct code, one
+    for every distinct name needing the fallback, then an in-memory dict lookup per row. Reused
+    across adapter modules instead of each reimplementing the same batching. ``code_case_insensitive``
+    covers fields like email that the single-row ``exists`` matched with ``__iexact``."""
+    from django.db.models.functions import Lower
+
+    codes = {(r.get(code_field) or "").strip() for r in rows}
+    codes.discard("")
+    names = {
+        (r.get(name_field) or "").strip().lower()
+        for r in rows if not (r.get(code_field) or "").strip()
+    }
+    names.discard("")
+
+    by_code = {}
+    if codes:
+        if code_case_insensitive:
+            lower_codes = {c.lower() for c in codes}
+            matched = qs.annotate(_lcode=Lower(code_field)).filter(_lcode__in=lower_codes)
+            by_code = {obj._lcode: obj for obj in matched}
+        else:
+            by_code = {getattr(obj, code_field): obj for obj in qs.filter(**{f"{code_field}__in": codes})}
+    by_name = {}
+    if names:
+        matched = qs.annotate(_lname=Lower(name_field)).filter(_lname__in=names)
+        by_name = {obj._lname: obj for obj in matched}
+
+    results = []
+    for r in rows:
+        code = (r.get(code_field) or "").strip()
+        if code:
+            key = code.lower() if code_case_insensitive else code
+            results.append(by_code.get(key))
+        else:
+            results.append(by_name.get((r.get(name_field) or "").strip().lower()))
+    return results
+
+
+def batch_lookup_by_tagged_field(
+    qs, groups: list[dict], *, field: str = "notes", prefix: str, key_field: str = "doc_number",
+):
+    """Shared ``exists_many`` body for the document adapters (quotations/orders/invoices/journal
+    entries) that tag their created record with ``{field}=f"{prefix}{doc_number}"`` (``notes`` for
+    sales/purchasing documents, ``reference`` for journal entries) — one ``{field}__in`` query for
+    the whole batch instead of one ``.filter({field}=...).first()`` per group."""
+    tags = {(g.get(key_field) or "").strip() for g in groups}
+    tags.discard("")
+    by_tag = {}
+    if tags:
+        wanted = {f"{prefix}{t}" for t in tags}
+        by_tag = {getattr(obj, field): obj for obj in qs.filter(**{f"{field}__in": wanted})}
+    return [by_tag.get(f"{prefix}{(g.get(key_field) or '').strip()}") for g in groups]
 
 
 def group_key(adapter, normalized: dict) -> Any | None:
