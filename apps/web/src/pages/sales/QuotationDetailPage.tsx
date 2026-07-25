@@ -173,7 +173,7 @@ export function QuotationDetailPage() {
       },
     ];
     if (data.status === "submitted" || data.status === "approved") {
-      menu.push({ key: "reject", label: t("sales.quotations.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectQuotation(data.id, ""), "rejected") });
+      menu.push({ key: "reject", label: t("sales.quotations.reject"), icon: "close", danger: true, onClick: () => act("rejected", () => rejectQuotation(data.id, ""), "rejected") });
     }
     return menu;
     // eslint-disable-next-line react-hooks/exhaustive-deps

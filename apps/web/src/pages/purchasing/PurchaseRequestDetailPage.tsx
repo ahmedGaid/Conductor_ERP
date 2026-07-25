@@ -160,7 +160,7 @@ export function PurchaseRequestDetailPage() {
       },
     ];
     if (data.status === "submitted" || data.status === "approved") {
-      menu.push({ key: "reject", label: t("purchasing.requests.reject"), icon: "trash", danger: true, onClick: () => act("rejected", () => rejectRequest(data.id, ""), "rejected") });
+      menu.push({ key: "reject", label: t("purchasing.requests.reject"), icon: "close", danger: true, onClick: () => act("rejected", () => rejectRequest(data.id, ""), "rejected") });
     }
     return menu;
     // eslint-disable-next-line react-hooks/exhaustive-deps

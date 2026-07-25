@@ -248,7 +248,7 @@ export function PurchaseOrderDetailPage() {
       });
     }
     if (cancellable) {
-      menu.push({ key: "cancel", label: t("document.cancelOrder"), icon: "trash", danger: true, onClick: () => setConfirmCancel(true) });
+      menu.push({ key: "cancel", label: t("document.cancelOrder"), icon: "close", danger: true, onClick: () => setConfirmCancel(true) });
     }
     return menu;
     // eslint-disable-next-line react-hooks/exhaustive-deps
