@@ -3210,16 +3210,6 @@
     "completedOn": "All steps completed on {{date}}",
     "cancelConfirmTitle": "Cancel {{number}}?",
     "cancelConfirmBody": "This can’t be undone.",
-    "identityPreview": {
-      "label": "Module identity (preview)",
-      "mono": "None",
-      "accent": "Accent",
-      "tag": "Tag"
-    },
-    "module": {
-      "sales": "Sales",
-      "purchasing": "Purchasing"
-    },
     "paymentDialog": {
       "amount": "Amount",
       "outstandingNow": "Outstanding now",

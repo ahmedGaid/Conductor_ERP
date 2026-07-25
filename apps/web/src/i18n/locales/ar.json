@@ -3210,16 +3210,6 @@
     "completedOn": "اكتملت كل الخطوات في {{date}}",
     "cancelConfirmTitle": "إلغاء {{number}}؟",
     "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء.",
-    "identityPreview": {
-      "label": "هوية الوحدة (معاينة)",
-      "mono": "بدون",
-      "accent": "لون مميّز",
-      "tag": "وسم"
-    },
-    "module": {
-      "sales": "المبيعات",
-      "purchasing": "المشتريات"
-    },
     "paymentDialog": {
       "amount": "المبلغ",
       "outstandingNow": "المتبقي الآن",

@@ -29,7 +29,6 @@ import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentSummary } from "../../components/DocumentSummary";
-import { ModuleIdentitySwitcher } from "../../components/ModuleIdentitySwitcher";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { Disclosure } from "../../components/Disclosure";
 import { RecordTimeline } from "../../components/RecordTimeline";
@@ -202,10 +201,7 @@ export function QuotationDetailPage() {
       <div className="card sales-page">
         <DocumentHeader
           number={data.number}
-          module="sales"
-          moduleLabel={t("document.module.sales")}
           status={<Badge tone={salesTone(data.status)}>{t(`sales.quotationStatus.${data.status}`)}</Badge>}
-          actions={<ModuleIdentitySwitcher />}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> ·{" "}
@@ -213,7 +209,6 @@ export function QuotationDetailPage() {
         </p>
 
         <DocumentSummary
-          module="sales"
           items={[{ label: t("sales.orders.total"), value: <Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi>, hero: true }]}
         />
       </div>

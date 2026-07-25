@@ -34,7 +34,6 @@ import { PartyLink } from "../../components/PartyLink";
 import { EntityLink } from "../../components/EntityLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentSummary, type DocumentSummaryItem } from "../../components/DocumentSummary";
-import { ModuleIdentitySwitcher } from "../../components/ModuleIdentitySwitcher";
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PaymentDialog } from "../../components/PaymentDialog";
@@ -307,10 +306,7 @@ export function PurchaseOrderDetailPage() {
       <div className="card pur-page">
         <DocumentHeader
           number={data.number}
-          module="purchasing"
-          moduleLabel={t("document.module.purchasing")}
           status={<Badge tone={purchasingTone(data.status)}>{t(`purchasing.status.${data.status}`)}</Badge>}
-          actions={<ModuleIdentitySwitcher />}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> ·{" "}
@@ -334,7 +330,7 @@ export function PurchaseOrderDetailPage() {
 
         <hr className="docdetail__rule" />
 
-        <DocumentSummary module="purchasing" items={summaryItems} />
+        <DocumentSummary items={summaryItems} />
       </div>
 
       <Disclosure summary={t("purchasing.detail.orderDetails")} defaultOpen>

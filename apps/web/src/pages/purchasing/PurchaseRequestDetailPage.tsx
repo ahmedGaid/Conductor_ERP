@@ -29,7 +29,6 @@ import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentSummary } from "../../components/DocumentSummary";
-import { ModuleIdentitySwitcher } from "../../components/ModuleIdentitySwitcher";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { Disclosure } from "../../components/Disclosure";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
@@ -189,10 +188,7 @@ export function PurchaseRequestDetailPage() {
       <div className="card pur-page">
         <DocumentHeader
           number={data.number}
-          module="purchasing"
-          moduleLabel={t("document.module.purchasing")}
           status={<Badge tone={purchasingTone(data.status)}>{t(`purchasing.requestStatus.${data.status}`)}</Badge>}
-          actions={<ModuleIdentitySwitcher />}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> ·{" "}
@@ -200,7 +196,6 @@ export function PurchaseRequestDetailPage() {
         </p>
 
         <DocumentSummary
-          module="purchasing"
           items={[{ label: t("sales.orders.total"), value: <Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi>, hero: true }]}
         />
       </div>
