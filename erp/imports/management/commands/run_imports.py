@@ -8,13 +8,17 @@ no human touching anything (spec step 20).
 """
 from __future__ import annotations
 
+import logging
 import time
 
 from django.core.management.base import BaseCommand
 
 from erp.imports import runner
+from erp.imports.models import ImportBatch
 
 IDLE_SLEEP_SECONDS = 5
+
+logger = logging.getLogger("erp.imports")
 
 
 class Command(BaseCommand):
@@ -34,7 +38,24 @@ class Command(BaseCommand):
                 time.sleep(IDLE_SLEEP_SECONDS)
                 continue
 
-            report = runner.run(batch.created_by, batch)
+            try:
+                report = runner.run(batch.created_by, batch)
+            except Exception as exc:  # noqa: BLE001 — one bad batch must never take the shared
+                # daemon down with it (every other user's queued import waits behind this loop).
+                # `claim_next` only claims by status, so an unready batch it re-claims every
+                # HEARTBEAT_STALE_SECONDS would otherwise crash-loop forever, silently blocking
+                # every batch behind it.
+                logger.error("import batch %s failed in background runner", batch.pk, exc_info=exc)
+                stats = dict(batch.stats or {})
+                stats["runner_error"] = str(exc)
+                batch.stats = stats
+                batch.status = ImportBatch.Status.FAILED
+                batch.save(update_fields=["stats", "status"])
+                self.stderr.write(f"batch {batch.pk} ({batch.entity}): FAILED — {exc}")
+                if once:
+                    return
+                continue
+
             self.stdout.write(
                 f"batch {batch.pk} ({batch.entity}): {report['status']} — "
                 f"created={report['created']} updated={report['updated']} "

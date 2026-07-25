@@ -303,6 +303,22 @@ def test_validate_batch_marks_error_when_required_missing():
     assert any(i["code"] == "required_missing" for i in row.issues)
 
 
+def test_validate_batch_lands_on_previewing_never_ready(widget_adapter):
+    """FILE_17 acceptance finding: this used to set the batch straight to `ready` — the same
+    status the background runner claims on sight (`runner.claim_next`) — so a batch could be
+    auto-executed before a human ever confirmed it, even with every row clean. `ready` must only
+    ever be reached through an explicit `/execute` call (`ExecuteView`/`engine.check_readiness`)."""
+    actor = _manager("v6")
+    attachment = _attachment(actor, [["Code", "Owner"], ["W1", "Acme"]])
+    batch = _batch("widgets", {"code": "Code", "owner": "Owner"}, attachment)
+    analyze(actor, batch)
+
+    validate_batch(actor, batch)
+
+    batch.refresh_from_db()
+    assert batch.status == ImportBatch.Status.PREVIEWING
+
+
 # --- revalidate_rows: the inline-edit fast path ---------------------------------------------------
 def test_revalidate_rows_flips_error_to_valid_after_edit(widget_adapter):
     actor = _manager("r1")

@@ -102,6 +102,26 @@ def test_claim_next_returns_none_with_no_ready_or_stale_batch(sprocket_adapter):
     assert runner.claim_next() is None
 
 
+def test_claim_next_never_claims_a_validated_but_unconfirmed_batch(sprocket_adapter):
+    """FILE_17 acceptance finding: `validate_batch` used to set the batch straight to `ready` —
+    the same status `claim_next` claims on sight — so a batch could be auto-executed by the
+    background runner within one poll interval of the mapping step finishing, before a human ever
+    saw the review screen or clicked Create. `previewing` (this test's setup) is the real
+    post-validation, pre-confirm state; only an explicit `/execute` call may reach `ready`."""
+    actor = _manager("cl5")
+    batch = ImportBatch.objects.create(
+        entity="sprockets", strategy=ImportBatch.Strategy.CREATE_ONLY,
+        status=ImportBatch.Status.PREVIEWING, created_by=actor, row_count=1,
+    )
+    ImportRow.objects.create(
+        batch=batch, row_number=1, normalized={"code": "S1", "name": "One"}, status=ImportRow.Status.VALID,
+    )
+
+    assert runner.claim_next() is None
+    batch.refresh_from_db()
+    assert batch.status == ImportBatch.Status.PREVIEWING  # untouched — no execution, no heartbeat
+
+
 def test_claim_next_recovers_a_stale_running_batch(sprocket_adapter):
     actor = _manager("cl2")
     stale = (timezone.now() - timedelta(minutes=10)).isoformat()
@@ -228,3 +248,30 @@ def test_should_run_inline_below_the_sync_limit():
 def test_should_run_inline_false_at_or_above_the_sync_limit():
     batch = ImportBatch(row_count=runner.IMPORTS_SYNC_LIMIT)
     assert runner.should_run_inline(batch) is False
+
+
+# --- daemon resilience (management command) -----------------------------------------------------
+def test_run_imports_command_marks_an_unready_batch_failed_instead_of_crashing(sprocket_adapter):
+    """FILE_17 acceptance regression: a batch left `ready` despite failing the readiness gate
+    (the execute-view bug fixed alongside this test) used to crash the whole `run_imports` daemon
+    with an uncaught ReadinessError — every OTHER queued import silently blocked behind it,
+    forever, since claim_next only claims by status. The command must isolate the failure to the
+    one bad batch and keep serving the rest."""
+    from django.core.management import call_command
+
+    actor = _manager("crash1")
+    batch = ImportBatch.objects.create(
+        entity="sprockets", strategy=ImportBatch.Strategy.CREATE_ONLY,
+        status=ImportBatch.Status.READY, created_by=actor, row_count=1,
+    )
+    # An ERROR row with no continue_after_errors flag fails `_readiness_reasons` — exactly the
+    # state a batch must never reach, but the daemon has to survive it if it does.
+    ImportRow.objects.create(
+        batch=batch, row_number=1, normalized={"code": "S1"}, status=ImportRow.Status.ERROR,
+    )
+
+    call_command("run_imports", "--once")  # must not raise
+
+    batch.refresh_from_db()
+    assert batch.status == ImportBatch.Status.FAILED
+    assert "unresolved_errors" in batch.stats["runner_error"]

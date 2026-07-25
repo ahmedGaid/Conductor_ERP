@@ -162,7 +162,16 @@ def validate_batch(actor, batch: ImportBatch) -> dict:
     ImportRow.objects.bulk_update(rows, update_fields)
 
     batch.error_count = counts.get("error", 0)
-    batch.status = ImportBatch.Status.READY
+    # NOT `Status.READY` — that status is reserved for "a human explicitly clicked Create/Update/
+    # Skip and it passed the readiness gate" (`ExecuteView`/`engine.check_readiness`). The
+    # background runner claims any `ready` batch on sight (`runner.claim_next`) with no separate
+    # notion of "confirmed by a human" — setting `ready` here, straight out of validation, meant a
+    # batch could be auto-executed within one runner poll interval of the mapping step finishing,
+    # before the user had even seen the review screen (FILE_17 acceptance finding). `previewing`
+    # is already what `RowDetailView`/`ExecuteView` treat as an equivalent pre-execute state, and
+    # the frontend already displays both as "Reviewing" — this just makes the backend honor the
+    # same distinction the UI already assumes.
+    batch.status = ImportBatch.Status.PREVIEWING
     batch.save(update_fields=["error_count", "status"])
     return counts
 

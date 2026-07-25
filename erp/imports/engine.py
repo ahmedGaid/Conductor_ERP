@@ -119,6 +119,16 @@ def execute_batch(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
     return _run(actor, batch, on_chunk=on_chunk)
 
 
+def check_readiness(batch: ImportBatch) -> None:
+    """Raise ``ReadinessError`` if ``batch`` isn't ready to run — the same gate ``_run`` applies,
+    exposed so a caller can validate BEFORE committing any state change (e.g. before flipping a
+    batch to ``ready`` and queueing it for the background runner). Never mutates ``batch``."""
+    adapter = get_adapter(batch.entity)
+    reasons = _readiness_reasons(adapter, batch)
+    if reasons:
+        raise ReadinessError(reasons)
+
+
 def resume_batch(actor, batch: ImportBatch, *, on_chunk=None) -> dict:
     """Continue a ``paused`` (or interrupted ``running``) batch. Same readiness gate and chunk
     loop as ``execute_batch`` — pending-row selection is what makes re-running safe: already-

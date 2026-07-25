@@ -181,7 +181,11 @@ def test_full_lifecycle_upload_through_execute_and_report():
     )
     assert mp.status_code == 200, mp.data
     assert mp.data["data"]["stats"]["rows"] == 2
-    assert mp.data["data"]["batch"]["status"] == "ready"
+    # "previewing", not "ready" — validation finishing is not the same as a human confirming the
+    # run (FILE_17 acceptance finding: the background runner claims any `ready` batch on sight, so
+    # setting `ready` straight out of validation let it auto-execute before the user ever saw the
+    # review screen). Only the explicit /execute call below may set `ready`.
+    assert mp.data["data"]["batch"]["status"] == "previewing"
 
     rows_resp = client.get(f"/api/imports/{batch_id}/rows")
     assert rows_resp.data["data"]["total"] == 2
@@ -223,6 +227,32 @@ def test_execute_while_still_mapping_is_409():
     resp = client.post(f"/api/imports/{batch_id}/execute", {}, format="json")
 
     assert resp.status_code == 409
+
+
+def test_execute_with_undecided_duplicate_stays_out_of_ready_status():
+    """FILE_17 acceptance regression: `execute` used to flip the batch to `ready` and save it
+    BEFORE checking readiness, so a 409 (undecided duplicate) left the row permanently stuck in
+    `ready` — a ghost the background runner would later claim and crash on (readiness fails again,
+    uncaught). The status must never move off its pre-execute value when execute is refused."""
+    client, user = _admin_client("dup2")
+    Customer.objects.create(name="Ahmed Trading Co", code="C-EXIST")
+    up = _upload(client, [["Customer Name"], ["Ahmed Trading"]])
+    batch_id = up.data["data"]["batch_id"]
+    client.post(
+        f"/api/imports/{batch_id}/mapping",
+        {"entity": "customers", "mapping": {"name": "Customer Name"}}, format="json",
+    )
+    row = client.get(f"/api/imports/{batch_id}/rows").data["data"]["rows"][0]
+    assert row["status"] == "duplicate"
+    status_before = ImportBatch.objects.get(pk=batch_id).status
+
+    resp = client.post(f"/api/imports/{batch_id}/execute", {}, format="json")
+
+    assert resp.status_code == 409, resp.data
+    assert resp.data["error"]["data"]["reasons"][0]["code"] == "undecided_duplicates"
+    batch = ImportBatch.objects.get(pk=batch_id)
+    assert batch.status == status_before
+    assert batch.status != ImportBatch.Status.READY
 
 
 def test_row_patch_while_running_is_409():

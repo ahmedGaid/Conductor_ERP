@@ -422,6 +422,15 @@ class ExecuteView(APIView):
         if "continue_after_errors" in request.data:
             stats["continue_after_errors"] = bool(request.data["continue_after_errors"])
         batch.stats = stats
+
+        # Check readiness against the in-memory (not-yet-saved) strategy/stats BEFORE writing
+        # `ready` — a batch that fails this must never be left stuck in `ready` (the background
+        # runner claims by status alone and has no way to notice it isn't actually ready).
+        try:
+            engine.check_readiness(batch)
+        except engine.ReadinessError as exc:
+            raise ConflictError("Batch is not ready to execute.", data={"reasons": exc.reasons})
+
         batch.status = ImportBatch.Status.READY
         batch.save(update_fields=["strategy", "stats", "status"])
 
