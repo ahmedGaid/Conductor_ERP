@@ -2343,7 +2343,13 @@
         "confirmBody": "Removes every record this import created. Updates to existing records and posted documents can't be undone — those are listed after.",
         "confirm": "Undo import",
         "done": "Import undone",
-        "summary": "Reverted {{reverted}}, {{skipped}} couldn't be reverted automatically."
+        "summary": "Reverted {{reverted}}, {{skipped}} couldn't be reverted automatically.",
+        "cannotReason": {
+          "no_delete_path": "{{entity}} can't be removed automatically yet — remove it by hand if needed.",
+          "no_update_restore": "This was an update to an existing record — there's no prior version to restore.",
+          "no_adapter": "{{entity}} isn't a record type this import can remove automatically.",
+          "delete_failed": "Couldn't be removed automatically — it may be referenced elsewhere."
+        }
       }
     },
     "history": {

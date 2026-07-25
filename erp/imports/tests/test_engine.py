@@ -309,6 +309,10 @@ def test_rollback_marks_cannot_revert_when_the_adapter_has_no_delete_path():
     assert result["reverted"] == 0
     assert len(result["cannot"]) == 1
     assert "no delete path" in result["cannot"][0]["reason"]
+    # Structured code + entity so the frontend can show a translated, blame-free message instead of
+    # this raw string (which was leaking straight into the UI before FILE_17 acceptance caught it).
+    assert result["cannot"][0]["code"] == "no_delete_path"
+    assert result["cannot"][0]["entity"] == "customers"
     assert Customer.objects.filter(name="Acme RB").exists()  # nothing was actually touched
 
 

@@ -136,13 +136,19 @@ export function ImportReport({
       {rollback && (
         <div className="imports-report__rollback-summary">
           <p dir="auto">
-            {t("imports.report.rollback.summary", { reverted: rollback.reverted, cannot: rollback.cannot.length })}
+            {t("imports.report.rollback.summary", {
+              reverted: rollback.reverted,
+              skipped: rollback.cannot.length,
+            })}
           </p>
           {rollback.cannot.length > 0 && (
             <ul className="imports-report__cannot">
               {rollback.cannot.map((c, i) => (
                 <li key={i} className="muted" dir="auto">
-                  {c.reason}
+                  {t(`imports.report.rollback.cannotReason.${c.code ?? "delete_failed"}`, {
+                    entity: c.entity ? t(entityLabelKey(c.entity)) : "",
+                    defaultValue: t("imports.report.rollback.cannotReason.delete_failed"),
+                  })}
                 </li>
               ))}
             </ul>

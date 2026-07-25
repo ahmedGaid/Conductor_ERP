@@ -487,7 +487,10 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
             try:
                 adapter.delete(actor, ref.get("pk"))
             except Exception as exc:  # noqa: BLE001
-                cannot.append({"row": row.row_number, "pk": ref.get("pk"), "reason": str(exc)})
+                cannot.append({
+                    "row": row.row_number, "pk": ref.get("pk"),
+                    "code": "delete_failed", "reason": str(exc),
+                })
                 cannot_pks.add(dedupe_key)
                 continue
             row.status = ImportRow.Status.REVERTED
@@ -496,11 +499,13 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
         elif action == "created":
             cannot.append({
                 "row": row.row_number, "pk": ref.get("pk"),
+                "code": "no_delete_path", "entity": adapter.entity,
                 "reason": f"adapter '{adapter.entity}' has no delete path",
             })
         elif action == "updated":
             cannot.append({
                 "row": row.row_number, "pk": ref.get("pk"),
+                "code": "no_update_restore",
                 "reason": "an update has no before-image to restore",
             })
         else:
@@ -518,10 +523,12 @@ def rollback_batch(actor, batch: ImportBatch) -> dict:
                 reverted_master_pks.append(master["pk"])
                 continue
             except Exception as exc:  # noqa: BLE001
-                cannot.append({"master": master, "reason": str(exc)})
+                cannot.append({"master": master, "code": "delete_failed", "reason": str(exc)})
                 continue
         cannot.append({
             "master": master,
+            "code": "no_delete_path" if master_adapter else "no_adapter",
+            "entity": master["entity"],
             "reason": f"adapter '{master['entity']}' has no delete path" if master_adapter else
                       f"no import adapter for entity '{master['entity']}'",
         })

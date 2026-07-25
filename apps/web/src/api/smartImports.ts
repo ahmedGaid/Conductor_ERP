@@ -92,6 +92,8 @@ export interface RollbackCannotEntry {
   row?: number;
   pk?: string;
   master?: { entity: string; value: string; pk: string };
+  code?: "no_delete_path" | "no_update_restore" | "no_adapter" | "delete_failed";
+  entity?: string;
   reason: string;
 }
 
