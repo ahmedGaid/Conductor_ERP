@@ -82,6 +82,17 @@
   --color-accent-strong: var(--palette-brand-700);
   --color-accent-subtle: var(--palette-brand-100);
 
+  /* Module identity hues — a per-module wayfinding cue used ONLY inside a page (document number
+     rule, hero figure, module tag), never in the app chrome, and only in the opt-in Accent/Tag
+     module-identity modes. Sales carries the blue accent family; Purchasing an amber one. Colour
+     always pairs with the module word, so it reads as "which module", not decoration. */
+  --color-module-sales: var(--palette-brand-600);
+  --color-module-sales-strong: var(--palette-brand-700);
+  --color-module-sales-subtle: var(--palette-brand-100);
+  --color-module-purchasing: var(--palette-warning-600);
+  --color-module-purchasing-strong: var(--palette-warning-700);
+  --color-module-purchasing-subtle: var(--palette-warning-100);
+
   --color-success: var(--palette-success-600);
   --color-success-strong: var(--palette-success-700);
   --color-success-subtle: var(--palette-success-100);
@@ -230,6 +241,14 @@
   --color-accent: #60a5fa;
   --color-accent-strong: #93c5fd;
   --color-accent-subtle: rgba(37, 99, 235, 0.22);
+
+  /* Module identity hues — luminous on dark, tinted "-subtle" fills (mirrors accent/status). */
+  --color-module-sales: #60a5fa;
+  --color-module-sales-strong: #93c5fd;
+  --color-module-sales-subtle: rgba(37, 99, 235, 0.22);
+  --color-module-purchasing: #f59e0b;
+  --color-module-purchasing-strong: #fbbf24;
+  --color-module-purchasing-subtle: rgba(217, 119, 6, 0.20);
 
   /* Semantic status: luminous "-strong" text, dark translucent "-subtle" fills. */
   --color-success: #22c55e;

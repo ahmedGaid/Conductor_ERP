@@ -34,6 +34,8 @@ import { Bdi } from "../../components/Bdi";
 import { PartyLink } from "../../components/PartyLink";
 import { EntityLink } from "../../components/EntityLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
+import { DocumentSummary, type DocumentSummaryItem } from "../../components/DocumentSummary";
+import { ModuleIdentitySwitcher } from "../../components/ModuleIdentitySwitcher";
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PaymentDialog } from "../../components/PaymentDialog";
@@ -330,12 +332,27 @@ export function OrderDetailPage() {
   const completedAt = history && history.length > 0 ? history[history.length - 1].at : null;
   const completedOn = completedAt ? new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(completedAt)) : null;
 
+  // Summary strip. The hero figure — the one that matters now — is the outstanding balance while
+  // money is owed, otherwise the order total.
+  const owed = data.outstanding_minor > 0;
+  const summaryItems: DocumentSummaryItem[] = [
+    { label: t("sales.orders.total"), value: <Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi>, hero: !owed },
+    ...(data.tax_minor > 0
+      ? [{ label: `${t("sales.detail.vat")}${data.tax_code ? ` (${data.tax_code})` : ""}`, value: <Bdi>{formatMinor(data.tax_minor, data.currency)}</Bdi> }]
+      : []),
+    { label: t("sales.detail.invoiced"), value: <Bdi>{formatMinor(data.invoiced_minor, data.currency)}</Bdi> },
+    { label: t("sales.detail.outstanding"), value: <Bdi>{formatMinor(data.outstanding_minor, data.currency)}</Bdi>, hero: owed },
+  ];
+
   return (
     <section className="sales-page">
       <div className="card sales-page">
         <DocumentHeader
           number={data.number}
+          module="sales"
+          moduleLabel={t("document.module.sales")}
           status={<Badge tone={salesTone(data.status)}>{t(`sales.status.${data.status}`)}</Badge>}
+          actions={<ModuleIdentitySwitcher />}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> ·{" "}
@@ -359,26 +376,7 @@ export function OrderDetailPage() {
 
         <hr className="docdetail__rule" />
 
-        <div className="sales-summary">
-          <div className="sales-summary__item">
-            <span className="sales-summary__label">{t("sales.orders.total")}</span>
-            <span className="sales-summary__value"><Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi></span>
-          </div>
-          {data.tax_minor > 0 && (
-            <div className="sales-summary__item">
-              <span className="sales-summary__label">{t("sales.detail.vat")}{data.tax_code ? ` (${data.tax_code})` : ""}</span>
-              <span className="sales-summary__value"><Bdi>{formatMinor(data.tax_minor, data.currency)}</Bdi></span>
-            </div>
-          )}
-          <div className="sales-summary__item">
-            <span className="sales-summary__label">{t("sales.detail.invoiced")}</span>
-            <span className="sales-summary__value"><Bdi>{formatMinor(data.invoiced_minor, data.currency)}</Bdi></span>
-          </div>
-          <div className="sales-summary__item">
-            <span className="sales-summary__label">{t("sales.detail.outstanding")}</span>
-            <span className="sales-summary__value"><Bdi>{formatMinor(data.outstanding_minor, data.currency)}</Bdi></span>
-          </div>
-        </div>
+        <DocumentSummary module="sales" items={summaryItems} />
       </div>
 
       <Disclosure summary={t("sales.detail.orderDetails")} defaultOpen>

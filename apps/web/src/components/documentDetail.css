@@ -77,3 +77,104 @@
   background: var(--color-border);
   margin-block: var(--space-5);
 }
+
+/* ---- Module identity (opt-in wayfinding cue; --doc-module set inline per module) --------------- */
+
+/* "accent" mode: a short rule in the module hue under the document number — colour paired with the
+   number + the module name in the crumb, so it reads as "which module". */
+.docdetail__head[data-identity="accent"] .docdetail__number {
+  padding-block-end: var(--space-1);
+  border-block-end: 2px solid var(--doc-module);
+}
+
+/* "tag" mode: a small module chip beside the number. Colour always paired with the module word. */
+.docdetail__module-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  padding-block: var(--space-0-5);
+  border-radius: var(--radius-full);
+  background: var(--doc-module-subtle);
+  color: var(--doc-module-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+.docdetail__module-dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--doc-module);
+}
+
+/* ---- Summary strip (shared KPI row) with a single hero figure --------------------------------- */
+.docsummary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+}
+.docsummary__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.docsummary__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+.docsummary__value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+/* The one figure that matters now reads larger; under "accent" it takes the module hue (via the
+   inline --doc-module), always beside its own label so the colour still means something. */
+.docsummary__item--hero .docsummary__value {
+  font-size: var(--font-size-2xl);
+}
+.docsummary[data-identity="accent"] .docsummary__item--hero .docsummary__value {
+  color: var(--doc-module);
+}
+
+/* ---- Module-identity preview switcher (TEMPORARY evaluation control) --------------------------- */
+.docidentity-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+}
+.docidentity-switch__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+.docidentity-switch__seg {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.docidentity-switch__btn {
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: none;
+  border-inline-start: 1px solid var(--color-border);
+  cursor: pointer;
+}
+.docidentity-switch__btn:first-child {
+  border-inline-start: none;
+}
+.docidentity-switch__btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+}
+.docidentity-switch__btn[aria-pressed="true"] {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+  font-weight: var(--font-weight-medium);
+}

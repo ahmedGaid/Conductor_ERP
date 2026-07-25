@@ -28,6 +28,8 @@ import { salesTone } from "../../lib/statusTone";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
+import { DocumentSummary } from "../../components/DocumentSummary";
+import { ModuleIdentitySwitcher } from "../../components/ModuleIdentitySwitcher";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { Disclosure } from "../../components/Disclosure";
 import { RecordTimeline } from "../../components/RecordTimeline";
@@ -200,19 +202,20 @@ export function QuotationDetailPage() {
       <div className="card sales-page">
         <DocumentHeader
           number={data.number}
+          module="sales"
+          moduleLabel={t("document.module.sales")}
           status={<Badge tone={salesTone(data.status)}>{t(`sales.quotationStatus.${data.status}`)}</Badge>}
+          actions={<ModuleIdentitySwitcher />}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="customer" code={data.customer_code}>{data.customer_name}</PartyLink> ·{" "}
           <EntityLink type="warehouse" value={data.warehouse_code} /> · <span className="latin">{data.quote_date}</span>
         </p>
 
-        <div className="sales-summary">
-          <div className="sales-summary__item">
-            <span className="sales-summary__label">{t("sales.orders.total")}</span>
-            <span className="sales-summary__value"><Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi></span>
-          </div>
-        </div>
+        <DocumentSummary
+          module="sales"
+          items={[{ label: t("sales.orders.total"), value: <Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi>, hero: true }]}
+        />
       </div>
 
       <Disclosure summary={t("sales.quotations.lineDetails")} defaultOpen>

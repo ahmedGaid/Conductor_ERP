@@ -28,6 +28,8 @@ import { purchasingTone } from "../../lib/statusTone";
 import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
+import { DocumentSummary } from "../../components/DocumentSummary";
+import { ModuleIdentitySwitcher } from "../../components/ModuleIdentitySwitcher";
 import { type DocMenuItem } from "../../components/DocumentMenu";
 import { Disclosure } from "../../components/Disclosure";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
@@ -187,19 +189,20 @@ export function PurchaseRequestDetailPage() {
       <div className="card pur-page">
         <DocumentHeader
           number={data.number}
+          module="purchasing"
+          moduleLabel={t("document.module.purchasing")}
           status={<Badge tone={purchasingTone(data.status)}>{t(`purchasing.requestStatus.${data.status}`)}</Badge>}
+          actions={<ModuleIdentitySwitcher />}
         />
         <p className="muted docdetail__sub">
           <PartyLink type="supplier" code={data.supplier_code}>{data.supplier_name}</PartyLink> ·{" "}
           <EntityLink type="warehouse" value={data.warehouse_code} /> · <span className="latin">{data.request_date}</span>
         </p>
 
-        <div className="pur-summary">
-          <div className="pur-summary__item">
-            <span className="pur-summary__label">{t("sales.orders.total")}</span>
-            <span className="pur-summary__value"><Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi></span>
-          </div>
-        </div>
+        <DocumentSummary
+          module="purchasing"
+          items={[{ label: t("sales.orders.total"), value: <Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi>, hero: true }]}
+        />
       </div>
 
       <Disclosure summary={t("purchasing.detail.requestDetails")} defaultOpen>
