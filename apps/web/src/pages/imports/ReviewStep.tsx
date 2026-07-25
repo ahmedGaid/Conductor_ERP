@@ -86,37 +86,43 @@ function AutofixModal({
       <div className="imports-autofix__panel">
         <h2 className="imports-autofix__title">{t("imports.autofix.modalTitle")}</h2>
         <p className="imports-autofix__hint muted">{t("imports.autofix.modalHint")}</p>
-        <ul className="imports-autofix__list">
-          {fixes.map((f) => {
-            const key = fixKey(f);
-            return (
-              <li key={key} className="imports-autofix__fix">
-                <label>
-                  <input type="checkbox" checked={selected.has(key)} onChange={() => onToggle(key)} />
-                  <span className="imports-autofix__desc" dir="auto">
-                    {t("imports.autofix.rowField", { row: f.row, field: t(`imports.field.${f.field}`, f.field) })}
-                    {" — "}
-                    <span className="imports-autofix__from">{String(f.from ?? "—")}</span>
-                    {" → "}
-                    <span className="imports-autofix__to">{String(f.to ?? "—")}</span>
-                  </span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
+        {fixes.length === 0 ? (
+          <p className="imports-autofix__empty muted">{t("imports.autofix.empty")}</p>
+        ) : (
+          <ul className="imports-autofix__list">
+            {fixes.map((f) => {
+              const key = fixKey(f);
+              return (
+                <li key={key} className="imports-autofix__fix">
+                  <label>
+                    <input type="checkbox" checked={selected.has(key)} onChange={() => onToggle(key)} />
+                    <span className="imports-autofix__desc" dir="auto">
+                      {t("imports.autofix.rowField", { row: f.row, field: t(`imports.field.${f.field}`, f.field) })}
+                      {" — "}
+                      <span className="imports-autofix__from">{String(f.from ?? "—")}</span>
+                      {" → "}
+                      <span className="imports-autofix__to">{String(f.to ?? "—")}</span>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
         <div className="imports-autofix__actions">
           <button type="button" className="btn" onClick={onClose}>
             {t("common.cancel")}
           </button>
-          <button
-            type="button"
-            className="btn btn--primary"
-            disabled={applying || selected.size === 0}
-            onClick={onApply}
-          >
-            {applying ? t("common.loading") : t("imports.autofix.apply", { count: selected.size })}
-          </button>
+          {fixes.length > 0 && (
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={applying || selected.size === 0}
+              onClick={onApply}
+            >
+              {applying ? t("common.loading") : t("imports.autofix.apply", { count: selected.size })}
+            </button>
+          )}
         </div>
       </div>
     </dialog>

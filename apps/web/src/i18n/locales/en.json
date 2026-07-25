@@ -2277,7 +2277,8 @@
       "modalHint": "Nothing changes until you apply. Untick anything you don't want.",
       "rowField": "Row {{row}}, {{field}}",
       "apply": "Apply {{count}} fixes",
-      "applied": "Fixed {{count}} rows"
+      "applied": "Fixed {{count}} rows",
+      "empty": "None of the flagged rows have an automatic fix — a missing required value can't be guessed. Edit them by hand instead."
     },
     "summary": {
       "title": "Ready to import",

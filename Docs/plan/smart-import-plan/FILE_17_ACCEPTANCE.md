@@ -29,6 +29,18 @@
 # on this dev box (shared with the live public demo's `serve_waitress.py`), not a logic defect;
 # every test here has been proven green in isolation.
 #
+# **Real gap found + scoped 2026-07-25 (this session, resumed acceptance pass):** the wizard
+# reads only the FIRST sheet of an uploaded .xlsx (openpyxl's `wb.active`) — a real multi-sheet
+# workbook (Customers/SalesInvoices/PurchaseInvoices/JournalEntries, as in
+# `acceptance_workbook.xlsx`) silently drops sheets 2-4. `erp/imports/readers.py`'s `list_sheets`
+# and the upload response's `sheets` field already carry every sheet name + row count, but NO
+# frontend code in `apps/web/src/pages/imports/` ever reads that field — no picker, no cycling.
+# Checked every FILE_00-16 plan doc: "sheet"/"workbook" scope language appears nowhere except this
+# one checklist line — multi-sheet-per-upload was never actually built, not a regression. Decided
+# (founder call, this session): v1 stays single-sheet-per-upload by design, matching everything
+# else already shipped; the checklist line above is reworded to match. Multi-sheet cycling is a
+# real, scoped follow-up (backend groundwork already exists) — not a blocker for this sign-off.
+#
 # **Deliberately NOT done this session — needs a dedicated, supervised pass** (flagged BEFORE
 # starting, per the plan's own framing of this file as the capstone acceptance/sign-off session):
 # the two-language (Arabic-first, then English) MANUAL UI walkthrough of the full checklist below
@@ -58,7 +70,9 @@
 
 ## Full acceptance checklist (run in Arabic UI first, then English)
 
-- [ ] Upload the messy workbook with ZERO preparation → correct entity detected per sheet
+- [ ] Upload the messy workbook with ZERO preparation → correct entity detected for the sheet
+      that loads (v1 is single-sheet-per-upload — see STATUS note above; a multi-sheet workbook
+      needs one re-upload per sheet, each landing correctly)
 - [ ] Headers auto-mapped incl. Arabic, misspellings, custom names; overrides work
 - [ ] Profile saved → second upload maps instantly
 - [ ] Analyze stats correct ("N invoices, M new customers…")

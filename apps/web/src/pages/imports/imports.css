@@ -886,6 +886,12 @@
   overflow-y: auto;
 }
 
+.imports-autofix__empty {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  padding-block: var(--space-3);
+}
+
 .imports-autofix__fix label {
   display: flex;
   align-items: flex-start;
