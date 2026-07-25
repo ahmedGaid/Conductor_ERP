@@ -1452,6 +1452,14 @@
       "rejected": "Rejected",
       "converted": "Converted",
       "cancelled": "Cancelled"
+    },
+    "quotationStatusExplain": {
+      "draft": "Draft — send it for approval when it's ready.",
+      "submitted": "Submitted — waiting for approval.",
+      "approved": "Approved — convert it to a sales order to proceed.",
+      "rejected": "Rejected — this quotation is closed.",
+      "converted": "Converted to a sales order.",
+      "cancelled": "Cancelled — this quotation is closed."
     }
   },
   "purchasing": {
@@ -1594,6 +1602,14 @@
       "rejected": "Rejected",
       "converted": "Converted",
       "cancelled": "Cancelled"
+    },
+    "requestStatusExplain": {
+      "draft": "Draft — send it for approval when it's ready.",
+      "submitted": "Submitted — waiting for approval.",
+      "approved": "Approved — convert it to a purchase order to proceed.",
+      "rejected": "Rejected — this request is closed.",
+      "converted": "Converted to a purchase order.",
+      "cancelled": "Cancelled — this request is closed."
     },
     "toast": {
       "approved": "Order approved",
@@ -3208,6 +3224,7 @@
     "linkCopied": "Link copied",
     "linkCopyFailed": "Couldn’t copy link",
     "completedOn": "All steps completed on {{date}}",
+    "noLines": "No line items on this document yet.",
     "cancelConfirmTitle": "Cancel {{number}}?",
     "cancelConfirmBody": "This can’t be undone.",
     "paymentDialog": {

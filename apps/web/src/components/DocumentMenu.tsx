@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
+import type { TFunction } from "i18next";
 
 import { Popover } from "./Popover";
 import { NavIcon } from "../app/icons";
+import type { ToastApi } from "../app/ToastContext";
+import { copyShareLink, printDocument } from "../lib/documentActions";
 import "./documentMenu.css";
 
 export interface DocMenuItem {
@@ -23,6 +26,52 @@ export interface DocMenuItem {
  */
 export function filterMenuItems(items: DocMenuItem[], hasRole: (role: string) => boolean): DocMenuItem[] {
   return items.filter((item) => !item.permission || hasRole(item.permission));
+}
+
+export interface DocumentBaseMenuOptions {
+  t: TFunction;
+  /** Document number — sets the Print / Export-PDF filename. */
+  number: string;
+  /** In-app deep link for Share (e.g. `/sales/quotations/12`, `/go/sales_order/SO-…`). */
+  sharePath: string;
+  toast: ToastApi;
+  onDuplicate: () => void;
+  /** Override Export-PDF (defaults to the browser print of `number`, same as Print). */
+  onExportPdf?: () => void;
+}
+
+/**
+ * The four actions every document detail page shares — Duplicate · Print · Export PDF · Share —
+ * built once so they read and behave identically on every order, quotation, PO and request. Pages
+ * spread the result, then push their own lifecycle items (Submit, Convert, Cancel, …) after it.
+ */
+export function documentBaseMenu({
+  t,
+  number,
+  sharePath,
+  toast,
+  onDuplicate,
+  onExportPdf,
+}: DocumentBaseMenuOptions): DocMenuItem[] {
+  return [
+    { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: onDuplicate },
+    { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(number) },
+    {
+      key: "pdf",
+      label: t("document.exportPdf"),
+      icon: "download",
+      onClick: onExportPdf ?? (() => printDocument(number)),
+    },
+    {
+      key: "share",
+      label: t("document.share"),
+      icon: "share",
+      onClick: () =>
+        void copyShareLink(sharePath).then((ok) =>
+          toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
+        ),
+    },
+  ];
 }
 
 /**

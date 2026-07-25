@@ -21,7 +21,6 @@ import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showQuotationReceipt, type QuoteEvent } from "../../lib/feedback/sales";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
-import { copyShareLink, printDocument } from "../../lib/documentActions";
 import { Bdi } from "../../components/Bdi";
 import { Badge, type BadgeTone } from "../../components/Badge";
 import { salesTone } from "../../lib/statusTone";
@@ -29,7 +28,8 @@ import { EntityLink } from "../../components/EntityLink";
 import { PartyLink } from "../../components/PartyLink";
 import { DocumentHeader, DocumentPrimaryButton, type DocumentPrimary } from "../../components/DocumentHeader";
 import { DocumentSummary } from "../../components/DocumentSummary";
-import { type DocMenuItem } from "../../components/DocumentMenu";
+import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
+import { documentBaseMenu, type DocMenuItem } from "../../components/DocumentMenu";
 import { Disclosure } from "../../components/Disclosure";
 import { RecordTimeline } from "../../components/RecordTimeline";
 import { useSetDocumentCrumb } from "../../app/DocumentCrumb";
@@ -47,6 +47,16 @@ function validityTone(days: number): BadgeTone {
   if (days <= 7) return "waiting";
   return "neutral";
 }
+
+// Plain-language state note tone: colour is carried by the note icon only, always paired with words.
+const QUOTATION_NOTE_TONE: Record<string, StatusTone> = {
+  draft: "active",
+  submitted: "active",
+  approved: "active",
+  converted: "done",
+  rejected: "exception",
+  cancelled: "exception",
+};
 
 export function QuotationDetailPage() {
   const { t } = useTranslation();
@@ -162,17 +172,13 @@ export function QuotationDetailPage() {
   }, [data, t]);
   const barMenu = useMemo<DocMenuItem[]>(() => {
     if (!data) return [];
-    const menu: DocMenuItem[] = [
-      { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
-      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
-      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
-      {
-        key: "share",
-        label: t("document.share"),
-        icon: "share",
-        onClick: () => void copyShareLink(`/sales/quotations/${data.id}`).then((ok) => toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error")),
-      },
-    ];
+    const menu: DocMenuItem[] = documentBaseMenu({
+      t,
+      number: data.number,
+      sharePath: `/sales/quotations/${data.id}`,
+      toast,
+      onDuplicate: duplicate,
+    });
     if (data.status === "submitted" || data.status === "approved") {
       menu.push({ key: "reject", label: t("sales.quotations.reject"), icon: "close", danger: true, onClick: () => act("rejected", () => rejectQuotation(data.id, ""), "rejected") });
     }
@@ -208,6 +214,13 @@ export function QuotationDetailPage() {
           <EntityLink type="warehouse" value={data.warehouse_code} /> · <span className="latin">{data.quote_date}</span>
         </p>
 
+        <DocumentStatusNote
+          tone={QUOTATION_NOTE_TONE[data.status] ?? "active"}
+          title={t(`sales.quotationStatusExplain.${data.status}`)}
+        />
+
+        <hr className="docdetail__rule" />
+
         <DocumentSummary
           items={[{ label: t("sales.orders.total"), value: <Bdi>{formatMinor(data.subtotal_minor, data.currency)}</Bdi>, hero: true }]}
         />
@@ -215,7 +228,7 @@ export function QuotationDetailPage() {
 
       <Disclosure summary={t("sales.quotations.lineDetails")} defaultOpen>
         <div className="sales-table-wrap">
-          <table className="sales-table">
+          <table className="sales-table docline-table">
             <thead>
               <tr>
                 <th>{t("sales.newOrder.item")}</th>
@@ -225,12 +238,14 @@ export function QuotationDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {data.lines.map((l) => (
+              {data.lines.length === 0 ? (
+                <tr><td className="docline-table__empty" colSpan={4}>{t("document.noLines")}</td></tr>
+              ) : data.lines.map((l) => (
                 <tr key={l.line_no}>
-                  <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
-                  <td className="sales-table__num"><Bdi>{l.quantity}</Bdi></td>
-                  <td className="sales-table__num"><Bdi>{formatMinor(l.unit_price_minor)}</Bdi></td>
-                  <td className="sales-table__num"><Bdi>{formatMinor(l.line_total_minor)}</Bdi></td>
+                  <td className="docline-table__title"><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
+                  <td className="sales-table__num" data-label={t("inventory.onHand.quantity")}><Bdi>{l.quantity}</Bdi></td>
+                  <td className="sales-table__num" data-label={t("sales.newOrder.unitPrice")}><Bdi>{formatMinor(l.unit_price_minor)}</Bdi></td>
+                  <td className="sales-table__num" data-label={t("sales.orders.total")}><Bdi>{formatMinor(l.line_total_minor)}</Bdi></td>
                 </tr>
               ))}
             </tbody>

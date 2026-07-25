@@ -1452,6 +1452,14 @@
       "rejected": "مرفوض",
       "converted": "مُحوَّل",
       "cancelled": "ملغي"
+    },
+    "quotationStatusExplain": {
+      "draft": "مسودة — أرسِلها للموافقة عندما تكون جاهزة.",
+      "submitted": "مُرسَل — بانتظار الموافقة.",
+      "approved": "مُوافَق عليه — حوّله إلى أمر بيع للمتابعة.",
+      "rejected": "مرفوض — عرض السعر مغلق.",
+      "converted": "مُحوَّل إلى أمر بيع.",
+      "cancelled": "ملغي — عرض السعر مغلق."
     }
   },
   "purchasing": {
@@ -1594,6 +1602,14 @@
       "rejected": "مرفوض",
       "converted": "مُحوَّل",
       "cancelled": "ملغي"
+    },
+    "requestStatusExplain": {
+      "draft": "مسودة — أرسِلها للموافقة عندما تكون جاهزة.",
+      "submitted": "مُرسَل — بانتظار الموافقة.",
+      "approved": "مُوافَق عليه — حوّله إلى أمر شراء للمتابعة.",
+      "rejected": "مرفوض — طلب الشراء مغلق.",
+      "converted": "مُحوَّل إلى أمر شراء.",
+      "cancelled": "ملغي — طلب الشراء مغلق."
     },
     "toast": {
       "approved": "تمت الموافقة على أمر الشراء",
@@ -3208,6 +3224,7 @@
     "linkCopied": "تم نسخ الرابط",
     "linkCopyFailed": "تعذّر نسخ الرابط",
     "completedOn": "اكتملت كل الخطوات في {{date}}",
+    "noLines": "لا توجد بنود على هذا المستند بعد.",
     "cancelConfirmTitle": "إلغاء {{number}}؟",
     "cancelConfirmBody": "لا يمكن التراجع عن هذا الإجراء.",
     "paymentDialog": {

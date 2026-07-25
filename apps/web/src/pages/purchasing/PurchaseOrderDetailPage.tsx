@@ -26,7 +26,7 @@ import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showPurchaseOrderReceipt, showPurchaseOrderError, type POActionKey, type POEvent } from "../../lib/feedback/purchasing";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor, formatMoneyNumeral, formatQuantity } from "../../lib/money";
-import { copyShareLink, printDocument } from "../../lib/documentActions";
+import { printDocument } from "../../lib/documentActions";
 import { Bdi } from "../../components/Bdi";
 import { Badge } from "../../components/Badge";
 import { purchasingTone } from "../../lib/statusTone";
@@ -37,7 +37,7 @@ import { DocumentSummary, type DocumentSummaryItem } from "../../components/Docu
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PaymentDialog } from "../../components/PaymentDialog";
-import { type DocMenuItem } from "../../components/DocumentMenu";
+import { documentBaseMenu, type DocMenuItem } from "../../components/DocumentMenu";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
 import { Disclosure } from "../../components/Disclosure";
@@ -221,20 +221,13 @@ export function PurchaseOrderDetailPage() {
   }, [data, t]);
   const barMenu = useMemo<DocMenuItem[]>(() => {
     if (!data) return [];
-    const menu: DocMenuItem[] = [
-      { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
-      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
-      { key: "pdf", label: t("document.exportPdf"), icon: "download", onClick: () => printDocument(data.number) },
-      {
-        key: "share",
-        label: t("document.share"),
-        icon: "share",
-        onClick: () =>
-          void copyShareLink(`/go/purchase_order/${data.number}`).then((ok) =>
-            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
-          ),
-      },
-    ];
+    const menu: DocMenuItem[] = documentBaseMenu({
+      t,
+      number: data.number,
+      sharePath: `/go/purchase_order/${data.number}`,
+      toast,
+      onDuplicate: duplicate,
+    });
     // Lines are only editable while the order hasn't left draft (the service contract enforces this
     // too — the menu entry just doesn't offer a move that would 400 server-side).
     if (data.status === "draft") {
@@ -335,7 +328,7 @@ export function PurchaseOrderDetailPage() {
 
       <Disclosure summary={t("purchasing.detail.orderDetails")} defaultOpen>
         <div className="pur-table-wrap">
-          <table className="pur-table">
+          <table className="pur-table docline-table">
             <thead>
               <tr>
                 <th>{t("sales.newOrder.item")}</th>
@@ -347,14 +340,16 @@ export function PurchaseOrderDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {data.lines.map((l) => (
+              {data.lines.length === 0 ? (
+                <tr><td className="docline-table__empty" colSpan={6}>{t("document.noLines")}</td></tr>
+              ) : data.lines.map((l) => (
                 <tr key={l.line_no}>
-                  <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
-                  <td className="pur-table__num"><Bdi>{formatQuantity(Number(l.quantity))}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatQuantity(Number(l.received_qty))}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatQuantity(Number(l.returned_qty))}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatMoneyNumeral(l.unit_cost_minor)}</Bdi></td>
-                  <td className="pur-table__num"><Bdi>{formatMoneyNumeral(l.line_total_minor)}</Bdi></td>
+                  <td className="docline-table__title"><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
+                  <td className="pur-table__num" data-label={t("inventory.onHand.quantity")}><Bdi>{formatQuantity(Number(l.quantity))}</Bdi></td>
+                  <td className="pur-table__num" data-label={t("purchasing.detail.received")}><Bdi>{formatQuantity(Number(l.received_qty))}</Bdi></td>
+                  <td className="pur-table__num" data-label={t("purchasing.detail.returnedQty")}><Bdi>{formatQuantity(Number(l.returned_qty))}</Bdi></td>
+                  <td className="pur-table__num" data-label={`${t("purchasing.newOrder.unitCost")} (EGP)`}><Bdi>{formatMoneyNumeral(l.unit_cost_minor)}</Bdi></td>
+                  <td className="pur-table__num" data-label={`${t("sales.orders.total")} (EGP)`}><Bdi>{formatMoneyNumeral(l.line_total_minor)}</Bdi></td>
                 </tr>
               ))}
             </tbody>

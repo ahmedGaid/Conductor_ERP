@@ -27,7 +27,7 @@ import { useActionFeedback } from "../../app/ActionFeedbackContext";
 import { showOrderReceipt, showOrderError, type OrderActionKey, type OrderEvent } from "../../lib/feedback/sales";
 import { runOptimistic } from "../../lib/optimistic";
 import { formatMinor } from "../../lib/money";
-import { copyShareLink, printDocument } from "../../lib/documentActions";
+import { printDocument } from "../../lib/documentActions";
 import { Badge } from "../../components/Badge";
 import { salesTone } from "../../lib/statusTone";
 import { Bdi } from "../../components/Bdi";
@@ -38,7 +38,7 @@ import { DocumentSummary, type DocumentSummaryItem } from "../../components/Docu
 import { DocumentStatusNote, type StatusTone } from "../../components/DocumentStatusNote";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PaymentDialog } from "../../components/PaymentDialog";
-import { type DocMenuItem } from "../../components/DocumentMenu";
+import { documentBaseMenu, type DocMenuItem } from "../../components/DocumentMenu";
 import { WorkflowTracker } from "../../components/WorkflowTracker";
 import { workflowFor } from "../../lib/workflow";
 import { Disclosure } from "../../components/Disclosure";
@@ -229,28 +229,17 @@ export function OrderDetailPage() {
   }, [data, t]);
   const barMenu = useMemo<DocMenuItem[]>(() => {
     if (!data) return [];
-    const menu: DocMenuItem[] = [
-      { key: "duplicate", label: t("document.duplicate"), icon: "duplicate", onClick: duplicate },
-      { key: "print", label: t("document.print"), icon: "print", onClick: () => printDocument(data.number) },
-      {
-        key: "pdf",
-        label: t("document.exportPdf"),
-        icon: "download",
-        // Once invoiced, "Export PDF" opens the on-brand invoice document (the artifact the customer's
-        // customer sees); before that it just prints the order copy.
-        onClick: () =>
-          data.invoice_number ? navigate(`/sales/orders/${data.id}/invoice`) : printDocument(data.number),
-      },
-      {
-        key: "share",
-        label: t("document.share"),
-        icon: "share",
-        onClick: () =>
-          void copyShareLink(`/go/sales_order/${data.number}`).then((ok) =>
-            toast.show(ok ? t("document.linkCopied") : t("document.linkCopyFailed"), ok ? "success" : "error"),
-          ),
-      },
-    ];
+    const menu: DocMenuItem[] = documentBaseMenu({
+      t,
+      number: data.number,
+      sharePath: `/go/sales_order/${data.number}`,
+      toast,
+      onDuplicate: duplicate,
+      // Once invoiced, "Export PDF" opens the on-brand invoice document (the artifact the customer's
+      // customer sees); before that it just prints the order copy.
+      onExportPdf: () =>
+        data.invoice_number ? navigate(`/sales/orders/${data.id}/invoice`) : printDocument(data.number),
+    });
     // Lines are only editable while the order hasn't left draft (the service contract enforces this
     // too — the menu entry just doesn't offer a move that would 400 server-side).
     if (data.status === "draft") {
@@ -377,7 +366,7 @@ export function OrderDetailPage() {
 
       <Disclosure summary={t("sales.detail.orderDetails")} defaultOpen>
         <div className="sales-table-wrap">
-          <table className="sales-table">
+          <table className="sales-table docline-table">
             <thead>
               <tr>
                 <th>{t("sales.newOrder.item")}</th>
@@ -390,15 +379,17 @@ export function OrderDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {data.lines.map((l) => (
+              {data.lines.length === 0 ? (
+                <tr><td className="docline-table__empty" colSpan={7}>{t("document.noLines")}</td></tr>
+              ) : data.lines.map((l) => (
                 <tr key={l.line_no}>
-                  <td><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
-                  <td className="sales-table__num"><Bdi>{l.quantity}</Bdi></td>
-                  <td className="sales-table__num"><Bdi>{l.delivered_qty}</Bdi></td>
-                  <td className="sales-table__num"><Bdi>{l.returned_qty}</Bdi></td>
-                  <td className="sales-table__num"><Bdi>{formatMinor(l.unit_price_minor)}</Bdi></td>
-                  <td className="sales-table__num"><Bdi>{formatMinor(l.discount_minor)}</Bdi></td>
-                  <td className="sales-table__num"><Bdi>{formatMinor(l.line_total_minor)}</Bdi></td>
+                  <td className="docline-table__title"><EntityLink type="item" value={l.item_sku} />{l.description ? ` · ${l.description}` : ""}</td>
+                  <td className="sales-table__num" data-label={t("inventory.onHand.quantity")}><Bdi>{l.quantity}</Bdi></td>
+                  <td className="sales-table__num" data-label={t("sales.detail.delivered")}><Bdi>{l.delivered_qty}</Bdi></td>
+                  <td className="sales-table__num" data-label={t("sales.detail.returnedQty")}><Bdi>{l.returned_qty}</Bdi></td>
+                  <td className="sales-table__num" data-label={t("sales.newOrder.unitPrice")}><Bdi>{formatMinor(l.unit_price_minor)}</Bdi></td>
+                  <td className="sales-table__num" data-label={t("sales.newOrder.discount")}><Bdi>{formatMinor(l.discount_minor)}</Bdi></td>
+                  <td className="sales-table__num" data-label={t("sales.orders.total")}><Bdi>{formatMinor(l.line_total_minor)}</Bdi></td>
                 </tr>
               ))}
             </tbody>
