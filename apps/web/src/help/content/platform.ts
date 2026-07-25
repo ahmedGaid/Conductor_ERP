@@ -481,6 +481,24 @@ export const importWizardGuide: HelpGuide = {
   ],
 };
 
+export const importHistoryGuide: HelpGuide = {
+  title: { en: "Import history", ar: "سجل الاستيراد" },
+  purpose: {
+    en: "See every spreadsheet import that's been run — who ran it, when, how many rows, and whether it can still be rolled back.",
+    ar: "اطّلع على كل عملية استيراد جدول بيانات نُفِّذت — من نفّذها، متى، كم عدد الصفوف، وهل ما زال يمكن التراجع عنها.",
+  },
+  howItWorks: {
+    en: "Each row is one import batch. Open it to see the full report — what was created, what was skipped, and any rollback option. Start a new import from here or from the module you're importing into.",
+    ar: "كل صف هو دفعة استيراد واحدة. افتحه لترى التقرير الكامل — ما أُنشئ، ما تم تجاوزه، وأي خيار للتراجع. ابدأ استيراداً جديداً من هنا أو من الوحدة التي تستورد إليها.",
+  },
+  mistakes: [
+    { en: "Not every batch can be rolled back — records referenced elsewhere (posted documents, records other data now points to) are honestly listed as cannot-revert instead of silently failing.", ar: "ليست كل دفعة قابلة للتراجع — السجلات المُشار إليها في أماكن أخرى (مستندات مرحّلة، سجلات تعتمد عليها بيانات أخرى) تُعرض بصراحة كـ لا يمكن التراجع بدلاً من الفشل بصمت." },
+  ],
+  related: [
+    { to: "/imports/new", label: { en: "New import", ar: "استيراد جديد" } },
+  ],
+};
+
 export const systemGuide: HelpGuide = {
   title: { en: "System", ar: "النظام" },
   purpose: {

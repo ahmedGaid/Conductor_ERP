@@ -1153,6 +1153,7 @@ def test_bill_po_confirm_bills_and_posts_gl():
     assert msg.meta["proposal"]["status"] == "confirmed"
 
 
+@override_settings(ASSISTANT_ENABLED=True)
 def test_bill_po_over_approval_limit_surfaces_calm_apperror():
     """An actor whose role has a configured 'invoice' ceiling below the bill's gross gets the
     underlying ApprovalLimitExceededError, flowing through ActionExecuteView's existing AppError
@@ -1454,6 +1455,7 @@ def test_approve_pr_confirm_approves_and_is_single_use():
     assert req.status == "approved"
 
 
+@override_settings(ASSISTANT_ENABLED=True)
 def test_approve_pr_over_approval_limit_surfaces_calm_apperror():
     """An actor whose role has a configured 'purchase_request' ceiling below the request's subtotal
     gets the underlying ApprovalLimitExceededError, flowing through ActionExecuteView's existing
