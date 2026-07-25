@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMinor, minorToAmount, parseToMinor } from "./money";
+import { formatMicrocentsUsd, formatMinor, minorToAmount, parseToMinor } from "./money";
 
 describe("formatMinor", () => {
   it("formats whole + fractional minor units with grouping", () => {
@@ -20,6 +20,24 @@ describe("formatMinor", () => {
 
   it("accepts a custom currency", () => {
     expect(formatMinor(500, "USD")).toBe("5.00 USD");
+  });
+});
+
+describe("formatMicrocentsUsd", () => {
+  it("formats a fraction-of-a-cent cost to 4dp", () => {
+    expect(formatMicrocentsUsd(420_000)).toBe("$0.0042");
+  });
+
+  it("groups whole dollars while keeping 4dp", () => {
+    expect(formatMicrocentsUsd(123_456_780_000_000)).toBe("$1,234,567.8000");
+  });
+
+  it("keeps the sign on the outside of the grouped number", () => {
+    expect(formatMicrocentsUsd(-100_000_000)).toBe("-$1.0000");
+  });
+
+  it("handles zero", () => {
+    expect(formatMicrocentsUsd(0)).toBe("$0.0000");
   });
 });
 

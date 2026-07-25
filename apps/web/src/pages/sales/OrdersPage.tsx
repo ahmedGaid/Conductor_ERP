@@ -12,7 +12,7 @@ import { BulkActionBar } from "../../components/BulkActionBar";
 import { useToast } from "../../app/ToastContext";
 import { runOptimistic } from "../../lib/optimistic";
 import { prefetch } from "../../lib/prefetch";
-import { formatMinor, formatMoneyNumeral } from "../../lib/money";
+import { formatMinor } from "../../lib/money";
 import { useListPageActions } from "../../hooks/useListPageActions";
 import { downloadCsv, rowsToCsv, type CsvColumn } from "../../lib/csvExport";
 import { matchesAllFilters, filtersFromParams, type ActiveFilter, type FilterField } from "../../lib/filters";
@@ -223,7 +223,7 @@ export function OrdersPage() {
                 <th>{t("sales.orders.customer")}</th>
                 <th>{t("sales.orders.date")}</th>
                 <th>{t("sales.orders.status")}</th>
-                <th className="sales-table__num">{t("sales.orders.total")} (EGP)</th>
+                <th className="sales-table__num">{t("sales.orders.total")}</th>
                 <th />
               </tr>
             </thead>
@@ -260,7 +260,7 @@ export function OrdersPage() {
                       label={t(`sales.status.${o.status}`)}
                     />
                   </td>
-                  <td className="sales-table__num"><Bdi>{formatMoneyNumeral(o.subtotal_minor)}</Bdi></td>
+                  <td className="sales-table__num"><Bdi>{formatMinor(o.subtotal_minor, o.currency)}</Bdi></td>
                   <td>
                     <RowActions label={t("common.actions")}>
                       {o.status === "draft" && o.requires_approval && !o.approved && (

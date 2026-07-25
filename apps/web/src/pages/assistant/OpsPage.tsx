@@ -14,19 +14,13 @@ import { ListSkeleton } from "../../components/ListSkeleton";
 import { StatCard } from "../../components/StatCard";
 import { ComboBox } from "../../components/ComboBox";
 import { useAsync } from "../../hooks/useAsync";
+import { formatMicrocentsUsd } from "../../lib/money";
 import "./ops.css";
 
 const DAY_OPTIONS = [7, 14, 30];
 const PAGE_SIZE = 20;
 const FEATURES = ["chat", "ask", "agent", "extract", "digest", "suggest", "embed", "eval"];
 const STATUSES = ["ok", "error", "timeout", "cancelled", "guardrail_blocked"];
-
-// Provider cost rides the wire as integer microcents (1e-6 of a currency cent — a finer unit than
-// the ERP's own EGP minor units, since a single call often costs a fraction of one cent). Format
-// only at this edge, same discipline as lib/money.ts.
-function formatCost(microcents: number): string {
-  return `$${(microcents / 100_000_000).toFixed(4)}`;
-}
 
 function DayBars({ daily }: { daily: OpsSummary["daily"] }) {
   const max = Math.max(1, ...daily.map((d) => d.count));
@@ -64,7 +58,7 @@ function TraceRow({ trace, expanded, onToggle }: {
           </span>
         </td>
         <td className="latin muted">{trace.latency_ms}ms</td>
-        <td className="latin muted">{formatCost(trace.cost_microcents)}</td>
+        <td className="latin muted"><Bdi>{formatMicrocentsUsd(trace.cost_microcents)}</Bdi></td>
         <td className="latin muted">{trace.steps.length}</td>
       </tr>
       {expanded && (trace.steps.length > 0 || (trace.meta.routing?.skipped.length ?? 0) > 0) && (
@@ -190,7 +184,7 @@ export function OpsPage() {
               hint={t("ops.inOut")}
               icon="reports"
             />
-            <StatCard label={t("ops.cost")} value={formatCost(s.cost_microcents)} icon="accounting" />
+            <StatCard label={t("ops.cost")} value={formatMicrocentsUsd(s.cost_microcents)} icon="accounting" />
           </div>
 
           <div className="ops-row">
@@ -224,9 +218,15 @@ export function OpsPage() {
                   <li key={b.scope}>
                     <span>{t(`ops.budgets.scope.${b.scope}`)}</span>
                     <span className="latin muted">
-                      {b.limit_microcents == null
-                        ? t("ops.budgets.unconfigured")
-                        : `${b.spend_microcents == null ? "—" : formatCost(b.spend_microcents)} / ${formatCost(b.limit_microcents)}`}
+                      {b.limit_microcents == null ? (
+                        t("ops.budgets.unconfigured")
+                      ) : (
+                        <>
+                          <Bdi>{b.spend_microcents == null ? "—" : formatMicrocentsUsd(b.spend_microcents)}</Bdi>
+                          {" / "}
+                          <Bdi>{formatMicrocentsUsd(b.limit_microcents)}</Bdi>
+                        </>
+                      )}
                     </span>
                   </li>
                 ))}

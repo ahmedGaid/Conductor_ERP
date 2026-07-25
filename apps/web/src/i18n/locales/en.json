@@ -2992,7 +2992,7 @@
         "org": "Organization (monthly)",
         "userDaily": "Per user (daily)",
         "perRequest": "Per request",
-        "consumedOfLimit": "{{consumed}} of {{limit}}",
+        "consumedOfLimit": "<0>{{consumed}}</0> of <1>{{limit}}</1>",
         "notConfigured": "Not configured",
         "action": {
           "block": "Blocks new calls",

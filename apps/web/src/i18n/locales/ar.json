@@ -2992,7 +2992,7 @@
         "org": "المؤسسة (شهرياً)",
         "userDaily": "لكل مستخدم (يومياً)",
         "perRequest": "لكل طلب",
-        "consumedOfLimit": "{{consumed}} من {{limit}}",
+        "consumedOfLimit": "<0>{{consumed}}</0> من <1>{{limit}}</1>",
         "notConfigured": "غير مُعدّ",
         "action": {
           "block": "يمنع الطلبات الجديدة",

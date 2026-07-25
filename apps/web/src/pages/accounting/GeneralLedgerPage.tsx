@@ -7,7 +7,7 @@ import { listCustomers } from "../../api/sales";
 import { listSuppliers } from "../../api/purchasing";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
-import { formatMoneyNumeral, formatMinor } from "../../lib/money";
+import { BASE_CURRENCY, formatMoneyNumeral, formatMinor } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { PartyLink, type PartyType } from "../../components/PartyLink";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
@@ -101,9 +101,9 @@ export function GeneralLedgerPage() {
                 <th>{t("accounting.entry.date")}</th>
                 <th>{t("accounting.journals.number")}</th>
                 <th>{t("accounting.entry.memo")}</th>
-                <th className="acct-table__num">{t("accounting.entry.debit")} (EGP)</th>
-                <th className="acct-table__num">{t("accounting.entry.credit")} (EGP)</th>
-                <th className="acct-table__num">{t("accounting.report.running")} (EGP)</th>
+                <th className="acct-table__num">{t("accounting.entry.debit")} ({BASE_CURRENCY})</th>
+                <th className="acct-table__num">{t("accounting.entry.credit")} ({BASE_CURRENCY})</th>
+                <th className="acct-table__num">{t("accounting.report.running")} ({BASE_CURRENCY})</th>
               </tr>
             </thead>
             <tbody>

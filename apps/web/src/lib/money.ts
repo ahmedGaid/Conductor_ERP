@@ -3,6 +3,9 @@
 
 const MINOR = 100; // 2 minor digits (EGP)
 
+/** Organization's base ERP currency — the one place this is ever spelled out as a literal. */
+export const BASE_CURRENCY = "EGP";
+
 /** 100000 -> "1,000.00" — numeral only, no currency (for table cells where currency lives in header). */
 export function formatMoneyNumeral(minor: number): string {
   const sign = minor < 0 ? "-" : "";
@@ -13,8 +16,19 @@ export function formatMoneyNumeral(minor: number): string {
 }
 
 /** 100000 -> "1,000.00 EGP" (display only; use formatMoneyNumeral in tables). */
-export function formatMinor(minor: number, currency = "EGP"): string {
+export function formatMinor(minor: number, currency = BASE_CURRENCY): string {
   return `${formatMoneyNumeral(minor)} ${currency}`;
+}
+
+/**
+ * AI provider cost: microcents (1e-6 of a USD cent) -> "$1,234.5678". Providers bill in USD with
+ * no FX rate on file, so this is a distinct unit from the ERP's own EGP minor units above — not a
+ * formatMinor variant. 4dp (not 2) because a single call often costs a fraction of one cent.
+ */
+export function formatMicrocentsUsd(microcents: number): string {
+  const sign = microcents < 0 ? "-" : "";
+  const dollars = Math.abs(microcents) / 100_000_000;
+  return `${sign}$${dollars.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
 
 /** 200.0000 -> "200" for whole units, "1.50" for fractional; max 3 decimals (storage precision). */

@@ -335,8 +335,8 @@ export function PurchaseOrderDetailPage() {
                 <th className="pur-table__num">{t("inventory.onHand.quantity")}</th>
                 <th className="pur-table__num">{t("purchasing.detail.received")}</th>
                 <th className="pur-table__num">{t("purchasing.detail.returnedQty")}</th>
-                <th className="pur-table__num">{t("purchasing.newOrder.unitCost")} (EGP)</th>
-                <th className="pur-table__num">{t("sales.orders.total")} (EGP)</th>
+                <th className="pur-table__num">{t("purchasing.newOrder.unitCost")} ({data.currency})</th>
+                <th className="pur-table__num">{t("sales.orders.total")} ({data.currency})</th>
               </tr>
             </thead>
             <tbody>

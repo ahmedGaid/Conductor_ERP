@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { Movement, MovementType } from "../../api/inventory";
-import { formatMoneyNumeral, formatQuantity } from "../../lib/money";
+import { BASE_CURRENCY, formatMoneyNumeral, formatQuantity } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { EntityLink, type EntityType } from "../../components/EntityLink";
 import { EmptyState } from "../../components/EmptyState";
@@ -34,7 +34,7 @@ export function MovementsTable({ movements, show }: { movements: Movement[]; sho
             <th>{t("inventory.movement.type")}</th>
             <th>{show === "item" ? t("inventory.warehouse.code") : t("inventory.item.sku")}</th>
             <th className="inv-table__num">{t("inventory.onHand.quantity")}</th>
-            <th className="inv-table__num">{t("inventory.onHand.value")} (EGP)</th>
+            <th className="inv-table__num">{t("inventory.onHand.value")} ({BASE_CURRENCY})</th>
             <th>{t("inventory.detail.reference")}</th>
             <th>{t("accounting.journals.number")}</th>
           </tr>

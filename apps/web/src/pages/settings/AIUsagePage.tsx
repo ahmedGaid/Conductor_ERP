@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
@@ -12,19 +12,11 @@ import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { StatCard } from "../../components/StatCard";
 import { useAsync } from "../../hooks/useAsync";
+import { formatMicrocentsUsd } from "../../lib/money";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./ProfilePage";
 import "./settings.css";
 import "./aiUsage.css";
-
-// Provider cost rides the wire as integer microcents (1e-6 of a currency cent — see
-// gateway/budgets.py / services/tracing.py PRICING). Providers bill in USD with no FX rate on
-// file (usage.py's own Task A rule: never show a number the endpoint can't derive from stored
-// data), so this formats the real currency instead of a fabricated EGP conversion — same choice
-// api/assistantOps.ts's OpsPage already made for the same field.
-function formatCost(microcents: number): string {
-  return `$${(microcents / 100_000_000).toFixed(4)}`;
-}
 
 function currentMonth(): string {
   return new Date().toISOString().slice(0, 7);
@@ -65,7 +57,7 @@ function BudgetRow({ label, scope, consumedMicrocents }: {
           <span className="setrow__title">{label}</span>
           <span className="setrow__desc">{actionWord}</span>
         </span>
-        <span className="setrow__control latin">{formatCost(scope.limit_microcents)}</span>
+        <span className="setrow__control latin"><Bdi>{formatMicrocentsUsd(scope.limit_microcents)}</Bdi></span>
       </div>
     );
   }
@@ -84,10 +76,14 @@ function BudgetRow({ label, scope, consumedMicrocents }: {
           <div className={`usage-budget__fill usage-budget__fill--${tone}`} style={{ inlineSize: `${Math.min(100, pct)}%` }} />
         </div>
         <span className={`usage-budget__figures usage-budget__figures--${tone} latin`}>
-          {t("settings.aiUsage.budget.consumedOfLimit", {
-            consumed: formatCost(consumedMicrocents),
-            limit: formatCost(scope.limit_microcents),
-          })}
+          <Trans
+            i18nKey="settings.aiUsage.budget.consumedOfLimit"
+            values={{
+              consumed: formatMicrocentsUsd(consumedMicrocents),
+              limit: formatMicrocentsUsd(scope.limit_microcents),
+            }}
+            components={[<Bdi key="consumed">{""}</Bdi>, <Bdi key="limit">{""}</Bdi>]}
+          />
           {" — "}
           {t(`settings.aiUsage.budget.status.${tone}`)}
         </span>
@@ -135,7 +131,7 @@ function UsageContent({ data, month, onPrev, onNext }: {
               icon="reports"
               hint={t("ops.inOut")}
             />
-            <StatCard label={t("settings.aiUsage.totals.cost")} value={formatCost(data.totals.cost_microcents)} icon="accounting" hint={monthLabel(month, i18n.language)} />
+            <StatCard label={t("settings.aiUsage.totals.cost")} value={formatMicrocentsUsd(data.totals.cost_microcents)} icon="accounting" hint={monthLabel(month, i18n.language)} />
             <StatCard
               label={t("settings.aiUsage.totals.cacheHit")}
               value={`${(data.totals.cache_hit_share * 100).toFixed(0)}%`}
@@ -174,7 +170,7 @@ function UsageContent({ data, month, onPrev, onNext }: {
                       <td className="latin">{p.provider}</td>
                       <td className="latin">{p.requests}</td>
                       <td className="latin">{p.input_tokens.toLocaleString("en-US")} / {p.output_tokens.toLocaleString("en-US")}</td>
-                      <td className="latin">{formatCost(p.cost_microcents)}</td>
+                      <td className="latin"><Bdi>{formatMicrocentsUsd(p.cost_microcents)}</Bdi></td>
                     </tr>
                   ))}
                 </tbody>
@@ -200,7 +196,7 @@ function UsageContent({ data, month, onPrev, onNext }: {
                       <td className="latin"><Bdi>{u.username}</Bdi></td>
                       <td className="latin">{u.requests}</td>
                       <td className="latin">{u.input_tokens.toLocaleString("en-US")} / {u.output_tokens.toLocaleString("en-US")}</td>
-                      <td className="latin">{formatCost(u.cost_microcents)}</td>
+                      <td className="latin"><Bdi>{formatMicrocentsUsd(u.cost_microcents)}</Bdi></td>
                     </tr>
                   ))}
                 </tbody>

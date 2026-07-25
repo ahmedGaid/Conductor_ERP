@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { listPeriods, trialBalance } from "../../api/accounting";
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../components/ErrorState";
-import { formatMoneyNumeral } from "../../lib/money";
+import { BASE_CURRENCY, formatMoneyNumeral } from "../../lib/money";
 import { Bdi } from "../../components/Bdi";
 import { useReportPageActions } from "../../hooks/useReportPageActions";
 import { AccountingNav } from "./AccountingNav";
@@ -54,8 +54,8 @@ export function TrialBalancePage() {
               <tr>
                 <th>{t("accounting.account.code")}</th>
                 <th>{t("accounting.account.name")}</th>
-                <th className="acct-table__num">{t("accounting.entry.debit")} (EGP)</th>
-                <th className="acct-table__num">{t("accounting.entry.credit")} (EGP)</th>
+                <th className="acct-table__num">{t("accounting.entry.debit")} ({BASE_CURRENCY})</th>
+                <th className="acct-table__num">{t("accounting.entry.credit")} ({BASE_CURRENCY})</th>
               </tr>
             </thead>
             <tbody>
