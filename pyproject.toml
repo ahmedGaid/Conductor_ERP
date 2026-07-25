@@ -25,6 +25,7 @@ python_files = ["tests.py", "test_*.py", "*_test.py"]
 testpaths = ["erp"]
 markers = [
     "evals: offline golden-dataset eval runner tests (ai-reliability T1.6) — recorded responses, zero network",
+    "pgvector: needs the Postgres `vector` extension (ai-reliability T3.1) — auto-skipped where it is absent",
 ]
 
 [tool.coverage.run]

@@ -312,6 +312,11 @@ ASSISTANT_ENABLED = env.bool(
 ASSISTANT_MODEL = env("ASSISTANT_MODEL", default="")  # "" = the provider's default model
 ASSISTANT_MAX_TOKENS = env.int("ASSISTANT_MAX_TOKENS", default=4096)  # per-request cost cap
 ASSISTANT_RAG_EMBEDDINGS = env.bool("ASSISTANT_RAG_EMBEDDINGS", default=False)  # off = FTS-only search
+# ai-reliability T3.1: when on, knowledge search's semantic arm runs in Postgres via the pgvector
+# `<=>` operator over an HNSW-indexed `embedding_v` column, instead of the Python cosine loop. Off
+# by default and a hard no-op unless the `vector` extension + column exist (migration 0010 skips
+# both when the server lacks the extension), so installs without pgvector keep working unchanged.
+ASSISTANT_PGVECTOR = env.bool("ASSISTANT_PGVECTOR", default=False)
 
 # Per-task-class SDK timeout ceiling, in seconds (ai-reliability T2.2). Keys are the ``feature``
 # label callers already pass to gateway.complete_json/complete_stream — the task-class enum from

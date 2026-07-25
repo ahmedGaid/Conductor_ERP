@@ -6,7 +6,9 @@ Session 02 adds ingestion, session 03 adds search + optional embeddings.
 """
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from django.db import connection
 from django.db.models import F, Q
 
 from erp.audit import services as audit
@@ -21,6 +23,92 @@ from . import files
 # 200-char overlap preserves sentences cut at a boundary.
 CHUNK_CHARS = 1200
 CHUNK_OVERLAP = 200
+
+# ai-reliability T3.1 — pgvector semantic arm. `embedding_v` is a raw-SQL-managed `vector(768)`
+# column (Gemini text-embedding-004 dim), NOT a Django field, so ordinary ORM queries never touch
+# it and search stays byte-identical wherever the column is absent. It only comes alive when the
+# migration added the column (server has the `vector` extension) AND ASSISTANT_PGVECTOR is on.
+EMBED_DIM = 768
+
+_vector_col_present: bool | None = None  # cached; the column only appears/disappears via migration
+
+
+def _has_vector_column() -> bool:
+    """True when the pgvector ``embedding_v`` column exists (migration 0010 added it). Cached for
+    the process — schema doesn't change under us; tests that rebuild schema call
+    :func:`_reset_vector_cache`."""
+    global _vector_col_present
+    if _vector_col_present is None:
+        if connection.vendor != "postgresql":
+            _vector_col_present = False
+        else:
+            with connection.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_name = 'assistant_knowledgechunk' AND column_name = 'embedding_v'"
+                )
+                _vector_col_present = cur.fetchone() is not None
+    return _vector_col_present
+
+
+def _reset_vector_cache() -> None:
+    """Drop the cached column-presence answer (tests only)."""
+    global _vector_col_present
+    _vector_col_present = None
+
+
+def _vector_literal(vec: list[float]) -> str:
+    """Format an embedding as a pgvector text literal ('[a,b,...]') for ``%s::vector`` binding.
+
+    Asserts the dimension so a model change that alters the embedding size fails loudly here
+    instead of writing a vector Postgres would reject at insert time.
+    """
+    if len(vec) != EMBED_DIM:
+        raise ValueError(f"embedding dim {len(vec)} != expected {EMBED_DIM}")
+    return "[" + ",".join(repr(float(x)) for x in vec) + "]"
+
+
+def _write_vector_column(chunk_id: int, vec: list[float]) -> None:
+    """Dual-write the vector column alongside the legacy JSON ``embedding`` (T3.1 keeps both until
+    Phase 7 removes the JSON one). No-op safety is the caller's — only called when the column exists."""
+    with connection.cursor() as cur:
+        cur.execute(
+            "UPDATE assistant_knowledgechunk SET embedding_v = %s::vector WHERE id = %s",
+            [_vector_literal(vec), chunk_id],
+        )
+
+
+def _db_cosine_scores(chunk_ids: list[int], q_emb: list[float]) -> dict[int, float]:
+    """Cosine SIMILARITY (1 − distance) per chunk id, computed by Postgres via the pgvector
+    ``<=>`` operator. Used by :func:`search` when ASSISTANT_PGVECTOR is on, replacing the Python
+    cosine loop for the candidate set (same blend, DB-sourced score)."""
+    if not chunk_ids:
+        return {}
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT id, 1 - (embedding_v <=> %s::vector) FROM assistant_knowledgechunk "
+            "WHERE id = ANY(%s) AND embedding_v IS NOT NULL",
+            [_vector_literal(q_emb), list(chunk_ids)],
+        )
+        return {row[0]: float(row[1]) for row in cur.fetchall()}
+
+
+def vector_search_ids(q_emb: list[float], *, limit: int = 20) -> list[int]:
+    """Top-``limit`` chunk ids by pgvector cosine distance via the HNSW index scan.
+
+    The dedicated vector arm introduced in T3.1 — an ``ORDER BY embedding_v <=> query LIMIT n``
+    that the HNSW index serves directly (the pg-only test asserts the index scan in EXPLAIN).
+    T3.2 fuses this arm with the FTS arm by RRF; T3.1 only makes it exist and be indexed. Empty
+    list when the flag is off or the column is absent."""
+    if not (getattr(settings, "ASSISTANT_PGVECTOR", False) and _has_vector_column()):
+        return []
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT id FROM assistant_knowledgechunk WHERE embedding_v IS NOT NULL "
+            "ORDER BY embedding_v <=> %s::vector LIMIT %s",
+            [_vector_literal(q_emb), limit],
+        )
+        return [row[0] for row in cur.fetchall()]
 
 # Plain-text uploads decoded locally; csv/xlsx flattened via the files.py helpers; everything
 # else (images / PDF) is transcribed through the provider's vision path.
@@ -107,12 +195,15 @@ def ingest_document(*, data: bytes, media_type: str, filename: str, title: str, 
     # Optional semantic index: one embedding per chunk when ASSISTANT_RAG_EMBEDDINGS is on. An
     # outage returns None per call and never fails ingestion (search stays FTS-only for this doc).
     try:
+        vector_col = _has_vector_column()  # dual-write embedding_v when pgvector column exists (T3.1)
         for chunk in KnowledgeChunk.objects.filter(document=doc):
             vec = client.embed_text(chunk.text)
             if vec is None:
                 continue
             chunk.embedding = vec
             chunk.save(update_fields=["embedding"])
+            if vector_col:
+                _write_vector_column(chunk.id, vec)
     except Exception:  # embeddings are an enhancement — ingestion must survive their outage
         pass
     doc.status = "ready"
@@ -192,9 +283,18 @@ def search(query: str, *, limit: int = 6) -> list[dict]:
     if candidates:
         q_emb = client.embed_text(query)
         max_rank = max((c.rank for c in candidates), default=0.0) or 1.0
+        # When ASSISTANT_PGVECTOR is on, the cosine term is computed by Postgres over the
+        # `embedding_v` column instead of the Python loop — same 0.5/0.5 blend, DB-sourced score.
+        # Rows without a vector (e.g. ingested pre-backfill) fall back to the Python cosine below.
+        use_pgvector = (
+            bool(q_emb) and getattr(settings, "ASSISTANT_PGVECTOR", False) and _has_vector_column()
+        )
+        db_scores = _db_cosine_scores([c.id for c in candidates], q_emb) if use_pgvector else {}
         scored = []
         for c in candidates:
-            if q_emb and c.embedding:
+            if c.id in db_scores:
+                score = 0.5 * (c.rank / max_rank) + 0.5 * db_scores[c.id]
+            elif q_emb and c.embedding:
                 score = 0.5 * (c.rank / max_rank) + 0.5 * _cosine(q_emb, c.embedding)
             else:
                 score = c.rank

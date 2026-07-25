@@ -49,7 +49,22 @@
 
 ## Tasks
 
-### [ ] T3.1 — pgvector migration (flagged)
+### [x] T3.1 — pgvector migration (flagged)
+
+> **STATUS 2026-07-25 — code complete, flag-off half verified; flag-on live verify GATED on the
+> Postgres `vector` binary.** Built: settings flag `ASSISTANT_PGVECTOR`; guarded reversible
+> migration `0010_knowledgechunk_pgvector` (raw-SQL `vector(768)` column + HNSW index, added only
+> when the server has the extension — skips silently otherwise, so it's a true no-op on this
+> Windows PG16 which has no `vector` extension); `embedding_v` managed by raw SQL **outside the
+> ORM** so flag-off search is byte-identical wherever the column is absent; dual-write in
+> `ingest_document`; `backfill_embeddings --batch --sleep` (resumable, idempotent); flag-on search
+> re-scores the FTS candidate set via the pgvector `<=>` operator (same 0.5/0.5 blend, DB-sourced
+> cosine) + a dedicated `vector_search_ids()` index-scan arm for T3.2 to fuse. Verified locally:
+> full `pytest erp/assistant` green (flag-off, byte-identical); `makemigrations --check` clean;
+> pure `_vector_literal` dim-assert test. **Gated (like the ETA sandbox round-trip):** the pg-only
+> tests (`@pytest.mark.pgvector`: HNSW index-scan via EXPLAIN, backfill idempotency, flag-on DB
+> cosine) auto-skip until `CREATE EXTENSION vector` is possible — install the pgvector binary into
+> PG16, then run `pytest -m pgvector` + `ASSISTANT_PGVECTOR=1` smoke to close the flag-on Accept.
 
 - **Goal:** chunk embeddings live in a `vector` column with an HNSW index; flag-gated.
 - **Prereq:** Phase 2 done; user approved the decision point.
