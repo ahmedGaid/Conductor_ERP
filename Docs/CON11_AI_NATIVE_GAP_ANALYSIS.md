@@ -179,10 +179,27 @@ end-to-end. B2 (Company Brain/Autonomy) and C (Agent Runtime) are correctly *aft
 need v1's usage data to be worth building.
 
 **6. ONE concrete first implementation slice?**
-Not a new one — see §6. If the founder wants a CON-11-flavored artifact independent of the queue,
-the only genuinely new, small, low-risk slice this investigation surfaced is the Intent-Surface
-registry scoping pass in §3 (a `FILE_00` scoping session, not a build) — everything else CON-11
-asks for is already the next thing in `EXECUTION_ORDER.md`.
+A single **proactive intent nudge**, riding entirely on code that already exists. Low-stock is
+already computed — `create_purchase_request_draft(from_low_stock=true)` reads it today. Surface it
+as one calm, dismissible card ("3 items are below reorder point — prepare a restock request?");
+one tap builds that existing draft action, previews it through the existing `simulate()` diff card,
+and confirms through the existing purchasing contract. **Zero new AI, zero new write-path** — one
+new read query + one card + its dismiss/confirm wiring. This is the smallest thing that
+demonstrates the *whole* CON-11 loop (context → surfaced intent → plan → simulation → human
+judgment → trusted execution) with a **proactive** trigger, not a typed one — which is the half the
+reactive assistant can't already show.
+
+Why this over the Intent-Surface registry (§3): the registry is infrastructure; this is a
+demoable business outcome, and the issue's question is about the *experience*, not the plumbing.
+
+**One caveat, requiring a founder nod:** it pulls a sliver of the deliberately-deferred proactive
+layer (Phase C / L6) forward. It is defensible strictly as a **claims-gate demo slice** — the same
+license the roadmap already grants the workspace 12–13 detour ("demo candidate #1") — **not** as
+"starting Phase C." To stay honest to scope discipline (STRATEGY §5.2 — no settings sprawl, one
+condition), it must ship as exactly one trigger (low stock), one surface, dismissible, with no
+cadence/config knobs; anything beyond that is Phase C proper and waits its turn. If the founder
+would rather not touch the proactive layer at all before Phase B, the fallback slice is the
+Intent-Surface registry scoping pass (§3) — pure frontend architecture, no proactive behaviour.
 
 ---
 
@@ -196,12 +213,18 @@ asks for is already the next thing in `EXECUTION_ORDER.md`.
 - **Optional, cheap, not urgent:** fold one line into `ARP_DEEP_VISION.md`'s change log noting
   CON-11 as a second, independently-derived validation of the L0–L6 model (§10-style entry) —
   purely a provenance note, no scope change.
-- **The one real to-do this investigation found:** file a `FILE_00` scoping stub for the
-  Intent-Surface registry question (§3) into the `R` reservoir (`Docs/plan/master-roadmap/`) or as
-  a stub under `arp-roadmap.md`'s "Craft & Trust polish" section, the same way the attachments/
-  photo-avatars/smart-import-entry-point stubs were filed — **not built now**, just not lost.
+- **If the founder wants a CON-11 artifact to point at now** (a live demo of the AI-native loop,
+  not just a document): build the one proactive-nudge slice from §5 answer #6 — smallest possible,
+  demoable, rides entirely on existing L0–L2 + the existing low-stock draft action. It needs an
+  explicit go-ahead because it touches the deferred proactive layer, and it must ship as one
+  trigger / one surface / dismissible, nothing more.
+- **Either way, file a `FILE_00` scoping stub for the Intent-Surface registry question (§3)** into
+  the `R` reservoir (`Docs/plan/master-roadmap/`) or under `arp-roadmap.md`'s "Craft & Trust
+  polish" section, the same way the attachments / photo-avatars / smart-import-entry-point stubs
+  were filed — **not built now**, just not lost.
 - **Next actual build work stays exactly where `EXECUTION_ORDER.md` already has it:** finish Smart
-  Import (queue position 10), then A2, then B. No change of course.
+  Import (queue position 10), then A2, then B. The proactive nudge, if taken, is a one-session demo
+  detour off that path — not a reordering of it.
 
 ## 7. Confidence & method notes
 
