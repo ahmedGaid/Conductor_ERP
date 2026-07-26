@@ -165,7 +165,40 @@
   file committed.
 - **Output:** retrieval changes are provable, forever.
 
-### [ ] T3.4 — Arabic normalization pipeline
+### [x] T3.4 — Arabic normalization pipeline
+
+> **STATUS 2026-07-26 — done.** New `erp/assistant/textnorm.py::normalize_ar` — one shared pure
+> function: strips tatweel + standard harakat + dagger alif, unifies alef-hamza/madda variants
+> (أ إ آ ٱ → ا) and alef maksura (ى → ي), keeps ta marbuta distinct from ha by default
+> (`MERGE_TA_MARBUTA = False`, documented decision + flip point in the module docstring),
+> lowercases Latin. 33 unit tests (`tests/test_textnorm.py` 24 pure-function cases incl.
+> idempotency + docstring examples; `tests/test_knowledge_textnorm.py` 9 DB cases proving the
+> wiring actually changes matching behavior both directions + ta-marbuta is honored end to end).
+> Wired into `services/knowledge.py`: `_index_search_vectors()` builds each chunk's tsvector from
+> the normalized shadow of its text (raw `text` column untouched — stored/displayed/embedded text
+> stays original spelling); `search()` normalizes the query the same way before building the
+> `SearchQuery`. Embeddings and the icontains fallback both stay on RAW text (embeddings handle
+> Arabic morphology natively; icontains matches the raw stored column) — stated in code comments.
+> New `reingest_knowledge` management command (throttled `--batch`/`--sleep`, resumable by
+> last-id, idempotent by construction — the tsvector is a pure recomputation every run) rebuilds
+> pre-T3.4 chunks; proven idempotent and effective on a simulated legacy chunk in
+> `test_reingest_knowledge_fixes_legacy_diacritized_chunk` / `..._is_idempotent`.
+>
+> **Eval delta:** added 10 `q_ar_norm_*` queries to `retrieval_v1.jsonl` (realistic hamza-drop /
+> alef-maksura spelling variants of terms already in the fixture corpus, referencing existing
+> `doc_key`s — 94 queries total, 64 ar / 30 en, both minimums still cleared). Scored the SAME
+> shipped `knowledge.search` twice — `textnorm.normalize_ar` patched to identity (before) vs the
+> real normalizer (after) — recorded in `evals/results/retrieval_arabic_normalization_delta.json`:
+> **ar MRR +0.031, ar nDCG@10 +0.024, ar recall@5/10 unchanged** (the icontains safety-net and
+> shared-word cosine overlap already recovered these docs within top-10 pre-normalization; the
+> normalizer's effect here is a genuine RANKING lift — the correct doc moves higher — not a
+> recall-count change), **en fully unchanged** (0.0000 delta on every metric, as expected — no
+> Arabic transform touches Latin text beyond casing). Standing `retrieval_baseline_vs_fusion.json`
+> re-run and committed against the expanded 94-query set (the per-run dated file stays gitignored,
+> same convention as every earlier task).
+> **Verified:** `pytest erp/assistant` 586 passed / 5 skipped (pgvector-gated); `makemigrations
+> --check` clean (no model change — tsvector rebuild is data-only); `manage.py check` clean.
+> Backend-only — no apps/web / i18n / migration change.
 
 - **Goal:** one shared normalizer applied at index + query time; measurable recall lift on Arabic.
 - **Prereq:** T3.3 (to measure the lift).

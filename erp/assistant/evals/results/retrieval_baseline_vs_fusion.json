@@ -3,23 +3,23 @@
   "offline": true,
   "note": "Fully offline: fixture embeddings are deterministic local bag-of-token vectors (evals/retrieval.fixture_embed), not live Gemini vectors, and pgvector is off (no whole-corpus HNSW arm) — the vector arm re-ranks the FTS candidate pool via JSON cosine. The suite proves the ranking/fusion PIPELINE reproducibly; absolute recall is bounded by the fixture embedding, not live vectors. Reading the rows: 'fts' is the pure lexical ceiling; 'fusion' (shipped RRF) equals it here because the crude fixture cosine adds no lexical signal beyond tsrank and RRF's rank combination preserves the strong FTS ordering. 'blend' is the removed 0.5*tsrank + 0.5*cosine baseline: it collapses because that fixture cosine is a noisy signal on a different scale, and score-blending lets the noise drag true targets out of the top-k — precisely the score-scale fragility RRF was adopted (T3.2) to remove. So the fusion-over-blend gap demonstrates RRF's robustness to an incomparable second signal, not a production recall delta; a high-quality embedding would narrow it.",
   "corpus_docs": 24,
-  "queries": 84,
-  "queries_ar": 54,
+  "queries": 94,
+  "queries_ar": 64,
   "queries_en": 30,
   "strategies": {
     "fts": {
       "overall": {
-        "recall@5": 0.9345238095238095,
-        "recall@10": 0.9880952380952381,
-        "mrr": 0.7284013605442177,
-        "ndcg@10": 0.782946322550716
+        "recall@5": 0.9414893617021277,
+        "recall@10": 0.9893617021276596,
+        "mrr": 0.7360182370820668,
+        "ndcg@10": 0.7899975953614721
       },
       "by_lang": {
         "ar": {
-          "recall@5": 0.9629629629629629,
+          "recall@5": 0.96875,
           "recall@10": 1.0,
-          "mrr": 0.6659171075837742,
-          "ndcg@10": 0.7353644125880868
+          "mrr": 0.6868675595238095,
+          "ndcg@10": 0.7531556429605458
         },
         "en": {
           "recall@5": 0.8833333333333333,
@@ -31,17 +31,17 @@
     },
     "blend": {
       "overall": {
-        "recall@5": 0.30952380952380953,
-        "recall@10": 0.30952380952380953,
-        "mrr": 0.32142857142857145,
-        "ndcg@10": 0.3172913013602038
+        "recall@5": 0.2872340425531915,
+        "recall@10": 0.2872340425531915,
+        "mrr": 0.2978723404255319,
+        "ndcg@10": 0.2941752054708204
       },
       "by_lang": {
         "ar": {
-          "recall@5": 0.1111111111111111,
-          "recall@10": 0.1111111111111111,
-          "mrr": 0.1111111111111111,
-          "ndcg@10": 0.1111111111111111
+          "recall@5": 0.109375,
+          "recall@10": 0.109375,
+          "mrr": 0.109375,
+          "ndcg@10": 0.109375
         },
         "en": {
           "recall@5": 0.6666666666666666,
@@ -53,17 +53,17 @@
     },
     "fusion": {
       "overall": {
-        "recall@5": 0.9345238095238095,
-        "recall@10": 0.9880952380952381,
-        "mrr": 0.7284013605442177,
-        "ndcg@10": 0.782946322550716
+        "recall@5": 0.9414893617021277,
+        "recall@10": 0.9893617021276596,
+        "mrr": 0.7360182370820668,
+        "ndcg@10": 0.7899975953614721
       },
       "by_lang": {
         "ar": {
-          "recall@5": 0.9629629629629629,
+          "recall@5": 0.96875,
           "recall@10": 1.0,
-          "mrr": 0.6659171075837742,
-          "ndcg@10": 0.7353644125880868
+          "mrr": 0.6868675595238095,
+          "ndcg@10": 0.7531556429605458
         },
         "en": {
           "recall@5": 0.8833333333333333,
@@ -75,10 +75,10 @@
     }
   },
   "fusion_vs_blend": {
-    "recall@5": 0.625,
-    "recall@10": 0.6786,
-    "mrr": 0.407,
-    "ndcg@10": 0.4657
+    "recall@5": 0.6543,
+    "recall@10": 0.7021,
+    "mrr": 0.4381,
+    "ndcg@10": 0.4958
   },
   "fusion_vs_fts": {
     "recall@5": 0.0,

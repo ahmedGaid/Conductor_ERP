@@ -9,11 +9,12 @@ from __future__ import annotations
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db import connection
-from django.db.models import F, Q
+from django.db.models import F, Q, Value
 
 from erp.audit import services as audit
 
 from .. import client  # only for client.embed_text (T2.1 exception — see gateway invariant test)
+from .. import textnorm
 from ..gateway import cache as semantic_cache
 from ..gateway.core import complete_stream
 from ..models import KnowledgeChunk, KnowledgeDocument
@@ -136,6 +137,16 @@ def chunk_text(text: str) -> list[str]:
     return chunks
 
 
+def _index_search_vectors(doc: KnowledgeDocument) -> None:
+    """Build each chunk's tsvector from the ai-reliability T3.4 normalized shadow of its text — the
+    stored ``text`` column stays raw (embeddings and the display text need the original spelling).
+    Shared by :func:`ingest_document` and the ``reingest_knowledge`` management command so index-time
+    normalization has exactly one code path, never two implementations drifting apart."""
+    for chunk in KnowledgeChunk.objects.filter(document=doc):
+        chunk.search = SearchVector(Value(textnorm.normalize_ar(chunk.text)), config="simple")
+        chunk.save(update_fields=["search"])
+
+
 def _extract_text(*, data: bytes, media_type: str, filename: str, actor=None) -> str:
     """Plain text out of any allowed upload.
 
@@ -181,9 +192,7 @@ def ingest_document(*, data: bytes, media_type: str, filename: str, title: str, 
     KnowledgeChunk.objects.bulk_create(
         [KnowledgeChunk(document=doc, seq=i, text=c) for i, c in enumerate(chunks)]
     )
-    KnowledgeChunk.objects.filter(document=doc).update(
-        search=SearchVector("text", config="simple")
-    )
+    _index_search_vectors(doc)
     # Optional semantic index: one embedding per chunk when ASSISTANT_RAG_EMBEDDINGS is on. An
     # outage returns None per call and never fails ingestion (search stays FTS-only for this doc).
     try:
@@ -343,6 +352,12 @@ def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
     degrades to a single-list pass-through. When neither arm finds anything (common for Arabic
     morphology, rare terms) fall back to icontains on the raw query terms.
 
+    ai-reliability T3.4: the FTS arm matches the :mod:`textnorm`-normalized shadow of each chunk
+    (:func:`_index_search_vectors`), so the query is normalized the same way before it becomes a
+    ``SearchQuery`` — one shared normalizer, index side and query side, never two implementations.
+    The vector arm's embedding and the icontains fallback both use the RAW query: embeddings
+    handle Arabic morphology natively, and icontains matches the raw stored chunk text.
+
     Returns [{"document_id", "title", "seq", "text", "score", "arms"}], best first — ``arms`` is
     the per-hit provenance (["fts"], ["vec"], or both). Empty list = genuinely nothing found, which
     the tool layer turns into an honest "no document covers this" (never fabricated documentation).
@@ -353,7 +368,7 @@ def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
         return []
 
     depth = max(RRF_ARM_DEPTH, limit)
-    sq = SearchQuery(query, config="simple", search_type="websearch")
+    sq = SearchQuery(textnorm.normalize_ar(query), config="simple", search_type="websearch")
     fts_candidates = list(
         KnowledgeChunk.objects.filter(document__status="ready", search=sq)
         .annotate(rank=SearchRank(F("search"), sq))

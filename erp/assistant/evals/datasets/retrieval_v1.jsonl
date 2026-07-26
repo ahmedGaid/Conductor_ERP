@@ -82,3 +82,13 @@
 {"id": "q_en_28", "lang": "en", "query": "employee probation period of three months", "relevant": {"hr_probation_en": 2}}
 {"id": "q_en_29", "lang": "en", "query": "line manager submits probation evaluation before confirmation", "relevant": {"hr_probation_en": 2}}
 {"id": "q_en_30", "lang": "en", "query": "annual leave accrues during probation", "relevant": {"hr_probation_en": 2}}
+{"id": "q_ar_norm_01", "lang": "ar", "query": "امر الشراء واجراءات الاعتماد", "relevant": {"purchase_order_ar": 2}}
+{"id": "q_ar_norm_02", "lang": "ar", "query": "الاصناف والكميات والاسعار في عقد التوريد", "relevant": {"supplier_contract_ar": 2}}
+{"id": "q_ar_norm_03", "lang": "ar", "query": "ارسال الفاتورة الالكترونية الي منظومة الضرائب", "relevant": {"einvoice_ar": 2}}
+{"id": "q_ar_norm_04", "lang": "ar", "query": "اذا تجاوز رصيد العميل حد الائتمان الاقصى", "relevant": {"credit_limit_ar": 2}}
+{"id": "q_ar_norm_05", "lang": "ar", "query": "هل يجوز ترحيل رصيد الاجازة السنوية لاكثر من حد معين", "relevant": {"leave_policy_ar": 2}}
+{"id": "q_ar_norm_06", "lang": "ar", "query": "الشيكات الصادرة والايداعات تحت التحصيل في التسوية البنكية", "relevant": {"bank_recon_ar": 2}}
+{"id": "q_ar_norm_07", "lang": "ar", "query": "يبدا احتساب الاهلاك من تاريخ تشغيل الاصل", "relevant": {"depreciation_ar": 2}}
+{"id": "q_ar_norm_08", "lang": "ar", "query": "مطالبة استرداد المصروفات والايصالات الاصلية", "relevant": {"expense_claim_ar": 2}}
+{"id": "q_ar_norm_09", "lang": "ar", "query": "لا يتم استلام البضاعة الا بوجود امر شراء معتمد", "relevant": {"purchase_order_ar": 2}}
+{"id": "q_ar_norm_10", "lang": "ar", "query": "يجب علي المسجل تطبيق النسبة الصحيحة عند اصدار الفاتورة", "relevant": {"vat_rate_ar": 2}}

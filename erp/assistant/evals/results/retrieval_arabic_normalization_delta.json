@@ -1,0 +1,71 @@
+{
+  "suite": "retrieval_v1",
+  "task": "ai-reliability T3.4 — Arabic normalization pipeline",
+  "offline": true,
+  "note": "Same query/corpus set (post-T3.4 dataset additions: 10 new q_ar_norm_* queries using realistic hamza-drop / alef-maksura spelling variants of terms already in the fixture corpus) scored twice against the SAME shipped `knowledge.search` — once with `textnorm.normalize_ar` monkeypatched to identity (BEFORE: what T3.3's code did), once with the real T3.4 normalizer (AFTER). Isolates the normalizer's effect from every other retrieval change. Both runs build the fixture corpus in a rolled-back transaction — nothing persists.",
+  "queries": 94,
+  "queries_ar": 64,
+  "queries_en": 30,
+  "before": {
+    "fusion_overall": {
+      "recall@5": 0.9414893617021277,
+      "recall@10": 0.9893617021276596,
+      "mrr": 0.714741641337386,
+      "ndcg@10": 0.7739580514223044
+    },
+    "fusion_by_lang": {
+      "ar": {
+        "recall@5": 0.96875,
+        "recall@10": 1.0,
+        "mrr": 0.6556175595238095,
+        "ndcg@10": 0.7295975627998934
+      },
+      "en": {
+        "recall@5": 0.8833333333333333,
+        "recall@10": 0.9666666666666667,
+        "mrr": 0.8408730158730158,
+        "ndcg@10": 0.868593760483448
+      }
+    }
+  },
+  "after": {
+    "fusion_overall": {
+      "recall@5": 0.9414893617021277,
+      "recall@10": 0.9893617021276596,
+      "mrr": 0.7360182370820668,
+      "ndcg@10": 0.7899975953614721
+    },
+    "fusion_by_lang": {
+      "ar": {
+        "recall@5": 0.96875,
+        "recall@10": 1.0,
+        "mrr": 0.6868675595238095,
+        "ndcg@10": 0.7531556429605458
+      },
+      "en": {
+        "recall@5": 0.8833333333333333,
+        "recall@10": 0.9666666666666667,
+        "mrr": 0.8408730158730158,
+        "ndcg@10": 0.868593760483448
+      }
+    }
+  },
+  "delta_ar": {
+    "recall@5": 0.0,
+    "recall@10": 0.0,
+    "mrr": 0.0312,
+    "ndcg@10": 0.0236
+  },
+  "delta_en": {
+    "recall@5": 0.0,
+    "recall@10": 0.0,
+    "mrr": 0.0,
+    "ndcg@10": 0.0
+  },
+  "delta_overall": {
+    "recall@5": 0.0,
+    "recall@10": 0.0,
+    "mrr": 0.0213,
+    "ndcg@10": 0.016
+  }
+}
