@@ -109,7 +109,16 @@ The Linear-grade surface every phase demos on. Two plan folders, run in queue or
   detect/map fallback (deterministic passes first).
 - **Unbeatable claim:** "From spreadsheets to a running system in one afternoon."
 - **Exit test:** a real SMB's actual messy files → operating company, zero consultant hours.
-- **Status:** planned (smart-import-plan created; starts after queue positions 1–5).
+- **Status:** **delivered** by `smart-import-plan/` (FILE_01-17, acceptance signed off 2026-07-26 —
+  see DECISIONS.md). `erp/imports` app + adapter registry live for customers/suppliers/items/
+  contacts, sales quotations/orders/invoices, purchase orders/invoices, journal entries, trial-
+  balance opening (with correction-approval), inventory opening; detect → map → clean → dedupe →
+  preview → creation-plan → execute (all four strategies, background runner with live progress/
+  pause/resume/kill-recovery, verified at real 100k-row scale) → rollback → report. NOT built:
+  continuous Excel sync, drag-drop mapping, AI-guessed auto-fix, PDF report, per-document ACLs,
+  multi-sheet-per-upload cycling, employees/projects/assets import types (STRATEGY §5) — the
+  conversational migration-agent layer over this engine stays a scoped future follow-up, not
+  started.
 
 ## Phase A2 — Implementation Consultant (adopted 2026-07-07)
 

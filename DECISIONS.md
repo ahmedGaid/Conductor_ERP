@@ -4,6 +4,94 @@ Running log of choices made where specs were silent or in conflict, plus any dev
 stated requirement. Every entry is traceable so future maintainers (and Claude Code) understand
 *why* the code looks the way it does.
 
+## Smart Import Engine — FILE_17 acceptance sign-off (2026-07-26)
+
+Capstone acceptance session for `smart-import-plan/` (FILE_01-16). Full two-language manual UI
+walkthrough (Arabic-first, then English) against the real running server, the full `pytest erp`
+regression, and the full gate suite all ran this session — not simulated, not deferred. Found and
+fixed four real, previously-undiscovered defects along the way (none were pre-existing production
+bugs from earlier sessions' own testing — every one only surfaces at real scale or a real
+imbalanced trial balance, neither of which small unit-test fixtures exercise):
+
+1. **N+1 duplicate check** — `validate_batch` called `adapter.exists()` once per row: 100k
+   synchronous DB round-trips for a 100k-row import. Fixed with an optional duck-typed
+   `exists_many` batched capability, added to every adapter whose `exists` runs at import volume.
+2. **O(n²) fuzzy-duplicate bucketing** — `duplicates.find_candidates` blocks name comparisons by
+   first folded token to avoid all-pairs scoring, but a templated file (or a common Arabic
+   legal-name word) collapses thousands of rows into one bucket, and the scoring loop still ran
+   `cluster_size²` inside it. Fixed with a size cap (300) past which a bucket's fuzzy pass is
+   skipped — exact-key dedup already caught true repeats.
+3. **Unbounded `bulk_update`** — every `ImportRow.objects.bulk_update()` call across
+   validate/duplicates/autofix/engine omitted `batch_size`, so Django folded an entire 100k-row
+   batch into one SQL `UPDATE` with hundreds of thousands of `CASE WHEN` branches — confirmed via
+   `pg_stat_activity` still running, unfinished, 25+ minutes in. This was the dominant bottleneck;
+   the first two fixes alone were not sufficient. Fixed by passing `batch_size=500` everywhere.
+4. **Trial-balance opening correction had no approval path** — `AccountOpeningAdapter` already
+   proposed a suspense-account balancing line for an out-of-balance trial balance and blocked
+   until `batch.stats['opening_correction']['approved']`, but nothing in the API or UI could ever
+   set that flag — every existing test set it directly in Python. A real imbalanced import (the
+   common case for a first-time trial balance) was permanently stuck with no path forward short of
+   editing the database by hand. Added `OpeningCorrectionApproveView` + a review-screen/report-
+   screen banner showing the actual EGP figures and the suggested line. Also found, along the way,
+   4 completely unlocalized issue messages (`paymentUnmatched`, `unbalancedEntry`,
+   `openingImbalance`, `inventoryDoubleBooked`) invisible to the i18n-parity gate because they're
+   referenced as dynamic runtime strings, never a static `t("...")` call the gate's scanner sees.
+
+Also found and fixed a severe pre-existing bug not on the original checklist: `validate_batch`
+set `batch.status = READY` straight out of validation — the background runner claims any `ready`
+batch on sight, so a batch could be auto-executed within one poll interval of the mapping step
+finishing, before the human had ever seen the review screen. Fixed by landing on `previewing`
+instead (already treated identically everywhere `ready` was, except by the runner's claim query).
+
+**Verified live, this session, against the real server + browser** (not just passing tests):
+100k-row background run — live progress/speed/ETA, pause, resume, kill-process recovery (a
+backdated heartbeat correctly triggers `_claim_stale_running`, continuing from the last committed
+row, never redoing work), cancel-keeps-durable-rows (31,000 imported rows kept, 69,000 correctly
+skipped, batch reaches `done` not stuck); an unpermitted user (`Auditor` role, no
+`BRANCH_MANAGER`) gets a genuine 403 with a blame-free Arabic message hitting the real API
+directly; the trial-balance opening-imbalance-then-approve-then-post round trip, confirmed against
+the actual posted `JournalEntry` in the database. Rollback, autofix, all four strategies, and the
+Arabic/English review screens were walked manually earlier this same session.
+
+**Architecture decisions, reaffirmed as final for v1:**
+- **Adapter-registry pattern** (`erp/imports/registry.py`) — the engine never imports a business
+  module directly, only through one `ImportAdapter` per entity. Every optional capability
+  (`update`, `delete`, `header_fields`, `exists_many`, `ref_context`, `resolve`/`capture`) is
+  duck-typed via `getattr`, never added to the Protocol itself, so no adapter is forced to
+  implement what it doesn't need.
+- **Background runner = DB-backed job queue + management command** (FILE_10 DECISIONS entry),
+  not Celery (already in this repo) — `ImportBatch.status` IS the job row; claiming is an atomic
+  `select_for_update(skip_locked=True)` status flip. No new infrastructure.
+- **`.xls` unsupported** — save-as-`.xlsx` is the documented workaround; `openpyxl` never gained
+  legacy-format support worth the dependency.
+- **Rollback is reversal, never a raw delete around the module** — a created record with a
+  `delete` path on its adapter is removed through that path; an update has no before-image to
+  restore; a posted/referenced record is honestly reported `cannot_revert` with a reason, never
+  guessed at.
+- **Deterministic-first AI usage** — header mapping and entity detection try exact/fuzzy
+  deterministic matching before ever calling a model; auto-fix is deterministic-only in v1 (no AI
+  guess at a missing required value — `imports.autofix.empty` tells the user to edit by hand).
+- **Continuous Excel-sync deferred** — v1 is upload-triggered only, no watched-folder/webhook
+  sync loop.
+- **`employees`/`projects`/`assets` import types deferred** (STRATEGY §5) — no adapter registered;
+  those modules' own create-record UIs are the only path today.
+- **v1 stays single-sheet-per-upload** (reaffirmed this session, see the FILE_17 plan file's own
+  STATUS note) — `readers.list_sheets` and the upload response's `sheets` field already carry
+  every sheet name, but no frontend code reads it. Multi-sheet cycling is real, scoped, future
+  work, not a v1 gap.
+
+**What was NOT built** (state this plainly, per the plan's own sign-off template): continuous
+Excel sync, drag-drop column mapping (mapping is a dropdown-per-column list), AI-guessed auto-fix
+(deterministic transforms only), a PDF report (CSV export only — no PDF primitive existed to
+reuse), per-document ACLs (RBAC is role-level via `BRANCH_MANAGER`/`ACCOUNTANT`, not a per-batch
+or per-row grant), and manual multi-sheet-per-upload cycling.
+
+Full `pytest erp` **1640 passed, 1 skipped**; all 18 gates green; `apps/web` gates (i18n parity
+2683, `tsc -b --force` clean, vitest 52/52, gate03) green. Four commits this session:
+`07574a6` (rollback i18n leak), `b4782f8` (runner human-in-the-loop bypass), `b11c4f1` (the three
+100k-scale bugs), `45452e2` (opening-correction approval flow). Final merge to `main` needs the
+founder's explicit go-ahead — not taken unilaterally regardless of checklist completeness.
+
 ## a11y check — new dev-dependency approved (post-handover-v1_1 FILE_06, 2026-07-23)
 
 **Decision gate (team rule 7 — no new dependency without asking):** founder picked **FILE_06 (a11y

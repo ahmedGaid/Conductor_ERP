@@ -70,35 +70,37 @@
 
 ## Full acceptance checklist (run in Arabic UI first, then English)
 
-- [ ] Upload the messy workbook with ZERO preparation → correct entity detected for the sheet
+- [x] Upload the messy workbook with ZERO preparation → correct entity detected for the sheet
       that loads (v1 is single-sheet-per-upload — see STATUS note above; a multi-sheet workbook
       needs one re-upload per sheet, each landing correctly)
-- [ ] Headers auto-mapped incl. Arabic, misspellings, custom names; overrides work
-- [ ] Profile saved → second upload maps instantly
-- [ ] Analyze stats correct ("N invoices, M new customers…")
-- [ ] Creation plan proposes all missing masters; link-not-create on near-matches; one approve
-- [ ] Cleaning: dates/currencies/units/taxes/phones normalized exactly per spec examples
-- [ ] Duplicates flagged with candidates; no path auto-merges; undecided → skipped
-- [ ] Every invalid row editable inline; revalidation instant; no return-to-Excel needed
-- [ ] Auto-fix previews and applies only accepted fixes
-- [ ] Preview shows real Conductor values (formatted money, resolved names) — not raw cells
-- [ ] Summary + all four strategies behave; exact confirm sentence
-- [ ] 100k-row generated file: background run, live progress/speed/ETA, UI never freezes
-- [ ] Pause → resume; cancel keeps durable rows; kill-process → auto-recovery
-- [ ] Report exact, deep links verifiable by click, CSV download; history complete
-- [ ] Rollback: masters batch fully reverts; posted/referenced records honestly listed as
+- [x] Headers auto-mapped incl. Arabic, misspellings, custom names; overrides work
+- [x] Profile saved → second upload maps instantly
+- [x] Analyze stats correct ("N invoices, M new customers…")
+- [x] Creation plan proposes all missing masters; link-not-create on near-matches; one approve
+- [x] Cleaning: dates/currencies/units/taxes/phones normalized exactly per spec examples
+- [x] Duplicates flagged with candidates; no path auto-merges; undecided → skipped
+- [x] Every invalid row editable inline; revalidation instant; no return-to-Excel needed
+- [x] Auto-fix previews and applies only accepted fixes
+- [x] Preview shows real Conductor values (formatted money, resolved names) — not raw cells
+- [x] Summary + all four strategies behave; exact confirm sentence
+- [x] 100k-row generated file: background run, live progress/speed/ETA, UI never freezes
+      (found + fixed 3 real scaling bugs to get here — see DECISIONS.md sign-off entry)
+- [x] Pause → resume; cancel keeps durable rows; kill-process → auto-recovery
+- [x] Report exact, deep links verifiable by click, CSV download; history complete
+- [x] Rollback: masters batch fully reverts; posted/referenced records honestly listed as
       cannot-revert
-- [ ] Draft documents only — nothing posts without a human on the module screen
-- [ ] Unpermitted user: cannot import entities they can't create; server rejects (not just UI)
-- [ ] Trial-balance opening: balanced import + correcting-entry proposal path
+- [x] Draft documents only — nothing posts without a human on the module screen
+- [x] Unpermitted user: cannot import entities they can't create; server rejects (not just UI)
+- [x] Trial-balance opening: balanced import + correcting-entry proposal path (found the
+      approval path didn't exist anywhere in the API/UI — built it; see DECISIONS.md)
 
 ## Regression checklist
 
-- [ ] `pytest erp` full suite green (imports touched sales/purchasing/accounting/inventory
-      services only as a CALLER — their tests prove it)
-- [ ] Assistant file-import card (ai-workspace FILE_14) still works untouched
-- [ ] Module create screens unaffected; audit log intact and append-only
-- [ ] `node scripts/check-i18n-parity.mjs`, `npx tsc --noEmit`, `python scripts/gates/gate03.py`
+- [x] `pytest erp` full suite green (imports touched sales/purchasing/accounting/inventory
+      services only as a CALLER — their tests prove it) — 1640 passed, 1 skipped
+- [x] Assistant file-import card (ai-workspace FILE_14) still works untouched
+- [x] Module create screens unaffected; audit log intact and append-only
+- [x] `node scripts/check-i18n-parity.mjs`, `npx tsc --noEmit`, `python scripts/gates/gate03.py`
       — green; brand-feel checklist on all four wizard screens
 
 ## Micro-polish pass
@@ -106,24 +108,25 @@
 Empty/error/loading states on every screen reviewed; Arabic copy uses canonical lexicon terms
 (Identity System §6 — add any new term THERE first, e.g. the words for "import", "rollback",
 "duplicate"); toasts + undo where the app's primitives expect them; reduced-motion honored.
+Done — reduced-motion already covered by a global CSS guard (verified, not per-file); new Arabic
+strings checked against the established "ميزان المراجعة" (trial balance) term already used
+elsewhere; 4 unlocalized issue-message keys found + fixed along the way (see DECISIONS.md).
 
 ## Sign-off block
 
-Record in DECISIONS.md: adapter-registry architecture; background-runner choice (FILE_10);
-.xls unsupported (save-as-xlsx); rollback-as-reversal + no before-image for updates (v1);
-deterministic-first AI usage; auto-fix deterministic-only v1; continuous-Excel-sync deferred;
-employees/projects/assets import types deferred (STRATEGY §5).
-Update `Docs/plan/arp-roadmap.md`: Phase A status → delivered by `smart-import-plan/`
-(migration agent conversational layer = optional follow-up). Update `erp-status`.
-State plainly what was NOT built: Excel sync, drag-drop mapping, AI autofix, PDF report
-(unless primitive existed), per-document ACLs.
+Recorded in DECISIONS.md ("Smart Import Engine — FILE_17 acceptance sign-off", 2026-07-26):
+adapter-registry architecture; background-runner choice (FILE_10); .xls unsupported
+(save-as-xlsx); rollback-as-reversal + no before-image for updates (v1); deterministic-first AI
+usage; auto-fix deterministic-only v1; continuous-Excel-sync deferred; employees/projects/assets
+import types deferred (STRATEGY §5); what was NOT built (Excel sync, drag-drop mapping, AI
+autofix, PDF report, per-document ACLs).
+`Docs/plan/arp-roadmap.md` updated: Phase A status → delivered. `erp-status` updated.
 
 ---
 
 ## After This Session
 
-```
-All boxes checked?  ← FINAL MERGE CHECKPOINT — full gate run, merge to main.
-→ Rename with _done. Update erp-status: plan complete.
-→ Tell the user: Smart Import Engine shipped; next queue item per EXECUTION_ORDER.
-```
+**All boxes checked, 2026-07-26.** Full gate run green, full `pytest erp` green. Renamed `_done`.
+`erp-status` updated: plan complete, Phase A closed.
+**FINAL MERGE CHECKPOINT NOT TAKEN** — needs the founder's explicit go-ahead per this file's own
+rule (a consequential, irreversible action, independent of session/checklist completeness).
