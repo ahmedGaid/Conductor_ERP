@@ -87,7 +87,26 @@
   rows); EXPLAIN shows index scan (assert in a pg-only test marked `@pytest.mark.pgvector`).
 - **Output:** vector search that scales past toy corpus size.
 
-### [ ] T3.2 — Hybrid retrieval with RRF
+### [x] T3.2 — Hybrid retrieval with RRF
+
+> **STATUS 2026-07-26 — done, flag-agnostic (works with or without the pgvector binary).**
+> `knowledge.search()` now runs two ranked arms and fuses them by Reciprocal Rank Fusion
+> (`RRF_K=60`, `RRF_ARM_DEPTH=20`), replacing the old 0.5/0.5 blend (the T3.1 `_db_cosine_scores`
+> blend helper is now removed as dead). Arms: **FTS** (tsvector top-20) and **vector** — the
+> pgvector HNSW scan (`vector_search_ids`) when `ASSISTANT_PGVECTOR` is on, else a bounded cosine
+> re-rank of the FTS pool over the legacy JSON `embedding` column (the decision-point fallback).
+> Pure `_rrf_fuse()` handles single-arm degrade (pass-through) and breaks exact rank-symmetry ties
+> toward the semantic arm (passed last). Each hit carries `arms` provenance (`["fts"]`/`["vec"]`/
+> both, `["icontains"]` for the last-resort lexical fallback). One `kind="retrieval"` TraceStep
+> (arm sizes, fused size, top score, mode) is recorded on the agent run — threaded via a reserved
+> `_trace` kwarg through `agent._run_tool` → every tool's `**_` → `search_documents` only. Live
+> chat (`views.run_agent`) records it; the ops UI already renders `kind="retrieval"`. Backend-only
+> — no apps/web / i18n / model / migration change. **Verified:** `pytest erp/assistant` 534 passed
+> / 5 skipped (pgvector-gated auto-skip), new `test_knowledge_rrf.py` 8 tests (5 pure RRF math incl.
+> single-arm degrade + tie-break, 3 DB provenance/trace), `makemigrations --check` clean, `manage.py
+> check` clean. The three pgvector-gated semantic tests pass unchanged under RRF (the semantic-arm
+> tie-break preserves their "vector winner surfaces first" assertion) — re-confirm on a box with the
+> `vector` binary when T3.1's flag-on gate is closed.
 
 - **Goal:** FTS and vector lists fuse by rank, replacing the 0.5/0.5 score blend.
 - **Prereq:** T3.1 (either arm).

@@ -24,6 +24,13 @@ from . import files
 CHUNK_CHARS = 1200
 CHUNK_OVERLAP = 200
 
+# ai-reliability T3.2 — hybrid retrieval by Reciprocal Rank Fusion. The FTS arm and the vector arm
+# each produce a ranked id-list; a chunk's fused score is Σ 1/(RRF_K + rank) over the arms it
+# appears in. Rank fusion is robust to the incomparable score scales of tsrank vs cosine — which is
+# exactly why it replaces the old 0.5/0.5 blend. Each arm contributes its top RRF_ARM_DEPTH ids.
+RRF_K = 60
+RRF_ARM_DEPTH = 20
+
 # ai-reliability T3.1 — pgvector semantic arm. `embedding_v` is a raw-SQL-managed `vector(768)`
 # column (Gemini text-embedding-004 dim), NOT a Django field, so ordinary ORM queries never touch
 # it and search stays byte-identical wherever the column is absent. It only comes alive when the
@@ -76,21 +83,6 @@ def _write_vector_column(chunk_id: int, vec: list[float]) -> None:
             "UPDATE assistant_knowledgechunk SET embedding_v = %s::vector WHERE id = %s",
             [_vector_literal(vec), chunk_id],
         )
-
-
-def _db_cosine_scores(chunk_ids: list[int], q_emb: list[float]) -> dict[int, float]:
-    """Cosine SIMILARITY (1 − distance) per chunk id, computed by Postgres via the pgvector
-    ``<=>`` operator. Used by :func:`search` when ASSISTANT_PGVECTOR is on, replacing the Python
-    cosine loop for the candidate set (same blend, DB-sourced score)."""
-    if not chunk_ids:
-        return {}
-    with connection.cursor() as cur:
-        cur.execute(
-            "SELECT id, 1 - (embedding_v <=> %s::vector) FROM assistant_knowledgechunk "
-            "WHERE id = ANY(%s) AND embedding_v IS NOT NULL",
-            [_vector_literal(q_emb), list(chunk_ids)],
-        )
-        return {row[0]: float(row[1]) for row in cur.fetchall()}
 
 
 def vector_search_ids(q_emb: list[float], *, limit: int = 20) -> list[int]:
@@ -246,65 +238,147 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / (na * nb) if na and nb else 0.0
 
 
-def _row(chunk: KnowledgeChunk, score: float) -> dict:
+def _row(chunk: KnowledgeChunk, score: float, *, arms: list[str] | None = None) -> dict:
     return {
         "document_id": chunk.document_id,
         "title": chunk.document.title,
         "seq": chunk.seq,
         "text": chunk.text,
         "score": round(float(score), 4),
+        # T3.2 provenance: which retrieval arms surfaced this chunk (["fts"], ["vec"], or both).
+        # Consumed by T3.3 metrics and shown in the ops trace detail.
+        "arms": list(arms or []),
     }
 
 
-def search(query: str, *, limit: int = 6) -> list[dict]:
-    """Top matching chunks across ready documents.
+def _pgvector_active() -> bool:
+    """The pgvector semantic arm is live: flag on AND the migration added the column."""
+    return bool(getattr(settings, "ASSISTANT_PGVECTOR", False)) and _has_vector_column()
 
-    Ranking: Postgres full-text (websearch syntax, config "simple") is the baseline. When a
-    query embedding is available, full-text candidates are re-ranked by blending cosine
-    similarity with the FTS rank. When FTS finds nothing (common for Arabic morphology),
-    fall back to icontains on the raw query terms.
 
-    Returns [{"document_id", "title", "seq", "text", "score"}], best first. Empty list =
-    genuinely nothing found — the tool layer turns that into an honest "no document covers
-    this" (never fabricated documentation).
+def _vector_arm(q_emb: list[float] | None, fts_candidates: list[KnowledgeChunk]) -> list[int]:
+    """The semantic ranked id-list that RRF fuses with the FTS arm.
+
+    Prefers the pgvector HNSW scan over the whole corpus (T3.1 ``vector_search_ids``) — which can
+    surface a chunk the FTS arm missed entirely. Without pgvector it degrades to ranking the FTS
+    candidate pool by Python cosine over the legacy JSON ``embedding`` column: a bounded second
+    ordering (the decision-point fallback — "RRF fuses FTS + capped-scan lists"). Empty when no
+    embedding is available at all, so search degrades to a pure-FTS pass-through with no branching
+    at the call site.
+    """
+    if not q_emb:
+        return []
+    hnsw = vector_search_ids(q_emb, limit=RRF_ARM_DEPTH)
+    if hnsw:
+        return hnsw
+    scored = sorted(
+        ((_cosine(q_emb, c.embedding), c.id) for c in fts_candidates if c.embedding),
+        key=lambda t: t[0], reverse=True,
+    )
+    return [cid for _score, cid in scored]
+
+
+def _rrf_fuse(arms: dict[str, list[int]], *, k: int = RRF_K) -> list[tuple[int, float, list[str]]]:
+    """Reciprocal Rank Fusion over named ranked id-lists (k defaults to the standard 60).
+
+    Each value is an ordered list of chunk ids (position 1 = rank 1). A chunk's fused score is
+    ``Σ_arm 1/(k + rank_arm)`` over the arms it appears in; absence from an arm contributes no
+    term. Returns ``[(chunk_id, fused_score, arms_present), ...]`` best first.
+
+    A single non-empty arm degrades to that arm's own order (the score is rank-monotonic), so
+    callers need no single-arm special case. Exact ties — perfectly symmetric ranks across arms —
+    break toward the arm listed LAST in ``arms``: callers pass the semantic (vector) arm last so
+    that when lexical and semantic evidence are exactly balanced, semantic similarity decides.
+    """
+    order = list(arms.keys())
+    scores: dict[int, float] = {}
+    ranks: dict[int, dict[str, int]] = {}
+    for arm_name in order:
+        for rank, cid in enumerate(arms[arm_name], start=1):
+            scores[cid] = scores.get(cid, 0.0) + 1.0 / (k + rank)
+            ranks.setdefault(cid, {})[arm_name] = rank
+
+    def _key(cid: int):
+        # Highest fused score first; on a tie, better rank in the later-listed (semantic) arms
+        # first — absence from an arm sorts last; chunk id is the final deterministic tiebreak.
+        by_arm = tuple(ranks[cid].get(a, 1 << 30) for a in reversed(order))
+        return (-scores[cid], by_arm, cid)
+
+    return [
+        (cid, round(scores[cid], 6), [a for a in order if a in ranks[cid]])
+        for cid in sorted(scores, key=_key)
+    ]
+
+
+def _load_chunks(ids: set[int], fts_candidates: list[KnowledgeChunk]) -> dict[int, KnowledgeChunk]:
+    """Map fused ids → chunk objects, reusing the already-loaded FTS candidates and fetching only
+    the vector-only ids from ready documents (a vector hit from a non-ready doc is dropped here)."""
+    have = {c.id: c for c in fts_candidates if c.id in ids}
+    missing = [i for i in ids if i not in have]
+    if missing:
+        for c in (KnowledgeChunk.objects.filter(id__in=missing, document__status="ready")
+                  .select_related("document")):
+            have[c.id] = c
+    return have
+
+
+def _trace_retrieval(trace, *, fts: int, vec: int, rows: list[dict], fused: bool) -> None:
+    """Record the T3.2 retrieval step: per-arm candidate sizes, fused result size, top score."""
+    if trace is None:
+        return
+    trace.step(
+        kind="retrieval", name="knowledge",
+        detail={"fts": fts, "vec": vec, "fused": len(rows),
+                "top_score": rows[0]["score"] if rows else 0.0,
+                "mode": "rrf" if fused else "icontains"},
+    )
+
+
+def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
+    """Top matching chunks across ready documents, by hybrid retrieval.
+
+    Two ranked arms — Postgres full-text (websearch, config "simple") and the vector arm (pgvector
+    HNSW when ``ASSISTANT_PGVECTOR`` is on, else a bounded cosine re-rank of the FTS pool) — are
+    fused by Reciprocal Rank Fusion (T3.2), replacing the old 0.5/0.5 score blend. A missing arm
+    degrades to a single-list pass-through. When neither arm finds anything (common for Arabic
+    morphology, rare terms) fall back to icontains on the raw query terms.
+
+    Returns [{"document_id", "title", "seq", "text", "score", "arms"}], best first — ``arms`` is
+    the per-hit provenance (["fts"], ["vec"], or both). Empty list = genuinely nothing found, which
+    the tool layer turns into an honest "no document covers this" (never fabricated documentation).
+    ``trace`` (a tracing handle, optional) receives one ``kind="retrieval"`` step.
     """
     query = (query or "").strip()
     if not query:
         return []
 
+    depth = max(RRF_ARM_DEPTH, limit)
     sq = SearchQuery(query, config="simple", search_type="websearch")
-    candidates = list(
+    fts_candidates = list(
         KnowledgeChunk.objects.filter(document__status="ready", search=sq)
         .annotate(rank=SearchRank(F("search"), sq))
         .select_related("document")
-        .order_by("-rank")[: limit * 4]
+        .order_by("-rank")[:depth]
     )
 
-    if candidates:
-        q_emb = client.embed_text(query)
-        max_rank = max((c.rank for c in candidates), default=0.0) or 1.0
-        # When ASSISTANT_PGVECTOR is on, the cosine term is computed by Postgres over the
-        # `embedding_v` column instead of the Python loop — same 0.5/0.5 blend, DB-sourced score.
-        # Rows without a vector (e.g. ingested pre-backfill) fall back to the Python cosine below.
-        use_pgvector = (
-            bool(q_emb) and getattr(settings, "ASSISTANT_PGVECTOR", False) and _has_vector_column()
-        )
-        db_scores = _db_cosine_scores([c.id for c in candidates], q_emb) if use_pgvector else {}
-        scored = []
-        for c in candidates:
-            if c.id in db_scores:
-                score = 0.5 * (c.rank / max_rank) + 0.5 * db_scores[c.id]
-            elif q_emb and c.embedding:
-                score = 0.5 * (c.rank / max_rank) + 0.5 * _cosine(q_emb, c.embedding)
-            else:
-                score = c.rank
-            scored.append((score, c))
-        scored.sort(key=lambda t: t[0], reverse=True)
-        return [_row(c, score) for score, c in scored[:limit]]
+    # Embed only when a vector arm can use it: whenever pgvector is live (whole-corpus HNSW scan),
+    # or — without pgvector — only when there are FTS candidates to re-rank (no point otherwise).
+    q_emb = client.embed_text(query) if (_pgvector_active() or fts_candidates) else None
+    vec_ids = _vector_arm(q_emb, fts_candidates)
+    fts_ids = [c.id for c in fts_candidates]
 
-    # FTS found nothing (Arabic morphology, rare terms): OR raw words via icontains.
+    if fts_ids or vec_ids:
+        fused = _rrf_fuse({"fts": fts_ids, "vec": vec_ids})[:limit]
+        chunks = _load_chunks({cid for cid, _s, _a in fused}, fts_candidates)
+        rows = [_row(chunks[cid], score, arms=arms) for cid, score, arms in fused if cid in chunks]
+        _trace_retrieval(trace, fts=len(fts_ids), vec=len(vec_ids), rows=rows, fused=True)
+        return rows
+
+    # Neither arm produced anything: OR the raw words (≥3 chars) via icontains — a lexical safety
+    # net below the tsvector (Arabic morphology, rare terms).
     words = [w for w in query.split() if len(w) >= 3]
     if not words:
+        _trace_retrieval(trace, fts=0, vec=0, rows=[], fused=False)
         return []
     term_q = Q()
     for w in words:
@@ -314,4 +388,6 @@ def search(query: str, *, limit: int = 6) -> list[dict]:
         .filter(term_q)
         .select_related("document")[:limit]
     )
-    return [_row(c, 0.0) for c in fallback]
+    rows = [_row(c, 0.0, arms=["icontains"]) for c in fallback]
+    _trace_retrieval(trace, fts=0, vec=0, rows=rows, fused=False)
+    return rows

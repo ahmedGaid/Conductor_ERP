@@ -241,10 +241,12 @@ def _document_history(actor, *, entity_type: str = "", entity_id: str = "", limi
 
 # --- Knowledge base tool (RAG) — company documents uploaded by an administrator -------------------
 
-def _search_documents(actor, *, query: str = "", limit: int = 6, **_) -> dict:
+def _search_documents(actor, *, query: str = "", limit: int = 6, _trace=None, **_) -> dict:
     from .services import knowledge  # local import — mirrors how services import each other
 
-    hits = knowledge.search(str(query or ""), limit=int(limit or 6))
+    # ``_trace`` (reserved, injected by the agent tool seam — see agent._run_tool) lets knowledge
+    # search record a T3.2 ``kind="retrieval"`` step on the run's Trace. None on paths without one.
+    hits = knowledge.search(str(query or ""), limit=int(limit or 6), trace=_trace)
     if not hits:
         return {"found": False,
                 "note": "No company document covers this. Say so honestly; do not invent "

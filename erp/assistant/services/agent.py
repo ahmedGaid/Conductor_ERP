@@ -165,17 +165,19 @@ def _dedup(citations: list[dict]) -> list[dict]:
     return out
 
 
-def _run_tool(actor, decision: dict) -> tuple[dict, bool]:
+def _run_tool(actor, decision: dict, *, trace=None) -> tuple[dict, bool]:
     """Execute one planner tool decision as the actor. Returns ``(result, ok)``; any refusal, bad
     argument, or exception becomes an ``{"error": ...}`` result the model can read and correct —
-    the loop never crashes on a tool call."""
+    the loop never crashes on a tool call. ``trace`` (the run's handle) is passed to every tool as
+    the reserved ``_trace`` kwarg — swallowed by each tool's ``**_`` except search_documents, which
+    uses it to record a T3.2 retrieval step."""
     name = decision.get("tool") or "none"
     tool = TOOLS.get(name)
     if tool is None:
         return {"error": f"There is no tool named '{name}'. Choose one from the catalog."}, False
     kwargs = {k: decision[k] for k in _ARG_FIELDS if decision.get(k) is not None and k in tool.args}
     try:
-        result = tool.run(actor, **kwargs)
+        result = tool.run(actor, _trace=trace, **kwargs)
     except Exception:  # bad argument shape etc. — feed a calm note back, don't tear down the loop
         return {"error": "That request could not be run. Try different arguments or another tool."}, False
     return result, "error" not in result
@@ -386,7 +388,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         seen_calls.add(signature)
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         _t0 = time.monotonic()
-        data, ok = _run_tool(actor, decision)
+        data, ok = _run_tool(actor, decision, trace=trace)
         blocked = isinstance(data, dict) and "blocker" in data
         trace.step(kind="tool", name=name, ok=ok and not blocked,
                   latency_ms=int((time.monotonic() - _t0) * 1000),
@@ -414,7 +416,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         why = "Checking company documents"
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         _t0 = time.monotonic()
-        data, ok = _run_tool(actor, {"tool": name, "query": q})
+        data, ok = _run_tool(actor, {"tool": name, "query": q}, trace=trace)
         trace.step(kind="tool", name=name, ok=ok, latency_ms=int((time.monotonic() - _t0) * 1000),
                   detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
         results.append({"tool": name, "why": why, "data": data})
@@ -440,7 +442,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         why = "Checking the live data"
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         _t0 = time.monotonic()
-        data, ok = _run_tool(actor, {**last_decision, "tool": name})
+        data, ok = _run_tool(actor, {**last_decision, "tool": name}, trace=trace)
         trace.step(kind="tool", name=name, ok=ok, latency_ms=int((time.monotonic() - _t0) * 1000),
                   detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
         results.append({"tool": name, "why": why, "data": data})
