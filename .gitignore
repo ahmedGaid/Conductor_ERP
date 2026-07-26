@@ -75,3 +75,11 @@ conductor-dev.log
 
 # Demo docker-compose override — hardcodes DJANGO_SECRET_KEY + DB password, local-only
 docker-compose.demo.yml
+
+# Founder's real ETA registration paperwork (personal ID, tax docs, contracts) — reference only,
+# never goes into git history
+/Docs/E invoice/
+Images/Screenshot_3.png
+Images/Screenshot_4.png
+Images/Screenshot_5.png
+Images/Screenshot_6.png

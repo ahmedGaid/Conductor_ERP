@@ -137,7 +137,7 @@ export function EInvoicePage() {
           />
         </SettingRow>
 
-        <SettingRow title={t("settings.einvoice.identityUrl")} desc={t("settings.einvoice.identityUrlDesc")} htmlFor="eta-identity">
+        <SettingRow block title={t("settings.einvoice.identityUrl")} desc={t("settings.einvoice.identityUrlDesc")} htmlFor="eta-identity">
           <input
             id="eta-identity"
             type="url"
@@ -149,7 +149,7 @@ export function EInvoicePage() {
           />
         </SettingRow>
 
-        <SettingRow title={t("settings.einvoice.apiUrl")} desc={t("settings.einvoice.apiUrlDesc")} htmlFor="eta-api">
+        <SettingRow block title={t("settings.einvoice.apiUrl")} desc={t("settings.einvoice.apiUrlDesc")} htmlFor="eta-api">
           <input
             id="eta-api"
             type="url"

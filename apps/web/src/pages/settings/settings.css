@@ -111,6 +111,9 @@
 .setrow--block .setrow__control {
   inline-size: 100%;
 }
+.setrow--block .setrow__control input {
+  inline-size: 100%;
+}
 
 /* Segmented (single-choice pill group). */
 /* The segmented control's styles now live with the shared component (components/SegmentedControl.css),

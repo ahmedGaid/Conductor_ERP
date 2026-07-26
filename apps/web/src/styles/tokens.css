@@ -237,7 +237,9 @@
   --color-success-subtle: rgba(22, 163, 74, 0.18);
   --color-warning: #f59e0b;
   --color-warning-strong: #fbbf24;
-  --color-warning-subtle: rgba(217, 119, 6, 0.18);
+  /* Amber uniquely reads as brown when alpha-blended dark like the other status hues, so it
+     gets a brighter base + higher alpha than success/danger/info's shared formula. */
+  --color-warning-subtle: rgba(245, 158, 11, 0.22);
   --color-danger: #ef4444;
   --color-danger-strong: #f87171;
   --color-danger-subtle: rgba(220, 38, 38, 0.20);

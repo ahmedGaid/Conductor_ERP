@@ -12,15 +12,19 @@ export function SettingRow({
   title,
   desc,
   htmlFor,
+  block,
   children,
 }: {
   title: string;
   desc?: string;
   htmlFor?: string;
+  /** Stack label above a full-width control instead of the default label/control row —
+   *  for controls whose value (a long URL, etc.) needs the full card width to stay legible. */
+  block?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="setrow">
+    <div className={block ? "setrow setrow--block" : "setrow"}>
       <div className="setrow__label">
         <label className="setrow__title" htmlFor={htmlFor}>
           {title}
