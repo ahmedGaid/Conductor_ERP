@@ -54,3 +54,28 @@ real judge grader (T1.7) is `graders.grade_judge()` — called live by `manage.p
 --yes-live` against `calibration_v1.jsonl` (30 hand-labeled ar/en pairs), which requires >= 90%
 agreement before judge verdicts count, and unit-tested offline by injecting a recorded judge
 output as `judge_call`.
+
+## Retrieval suite (T3.3)
+
+A separate suite measures `knowledge.search` quality, independent of the ask/agent golden set.
+
+- `retrieval_corpus_v1.jsonl` — the fixture corpus. One line per doc: `{doc_key, lang, title,
+  text}`. Each doc is authored under `CHUNK_CHARS` so it ingests to exactly one chunk, so the
+  retrieval unit is the document and a query's relevant map keys cleanly by `doc_key`.
+- `retrieval_v1.jsonl` — the query set. One line per query: `{id, lang, query, relevant}` where
+  `relevant` is `{doc_key: grade}` with grade 2 (ideal), 1 (related), 0 (irrelevant). Minimums
+  (enforced by `tests/test_retrieval_eval.py`): ≥ 80 queries, ≥ 50 Arabic; every `doc_key`
+  referenced must exist in the corpus.
+
+Run it: `manage.py run_evals --suite retrieval`. It builds the corpus in a rolled-back transaction
+(never pollutes the dev DB), scores three strategies — `fts` (lexical baseline), `blend` (the
+removed 0.5·tsrank + 0.5·cosine pre-fusion baseline, reconstructed only to measure against), and
+`fusion` (the shipped RRF path) — with recall@5/10, MRR, nDCG@10 (pure functions in
+`evals/retrieval_metrics.py`), and writes `evals/results/retrieval_<date>.json` plus the standing
+`evals/results/retrieval_baseline_vs_fusion.json`.
+
+Fully offline and deterministic: provider embeddings are replaced by a committed local
+bag-of-tokens vector (`evals/retrieval.fixture_embed`), so no network / API key / pgvector binary
+is needed. Absolute recall is therefore bounded by the fixture embedding, not live Gemini vectors —
+the suite proves the ranking/fusion *pipeline* reproducibly. See the `note` in the results file for
+how to read the fts/blend/fusion rows.

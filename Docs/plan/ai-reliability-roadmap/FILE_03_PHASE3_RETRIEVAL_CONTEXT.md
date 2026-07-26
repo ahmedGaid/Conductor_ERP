@@ -123,7 +123,29 @@
   comment explains why fusion reorders it).
 - **Output:** retrieval robust to score-scale mismatch.
 
-### [ ] T3.3 — Retrieval eval set + metrics
+### [x] T3.3 — Retrieval eval set + metrics
+
+> **STATUS 2026-07-26 — done, fully offline (no provider / key / pgvector binary).** New pure
+> metrics `evals/retrieval_metrics.py` (recall@5/10, MRR, nDCG@10 with exponential gain + log2
+> discount) unit-tested against hand-computed values (`tests/test_retrieval_metrics.py`, 13 tests).
+> Fixture corpus `datasets/retrieval_corpus_v1.jsonl` = 24 single-chunk ERP docs (14 ar / 10 en:
+> VAT, e-invoice, supplier/PO, inventory, payroll, leave, GL/assets, AR aging, RMA, cash flow…);
+> query set `datasets/retrieval_v1.jsonl` = 84 labelled queries (54 ar / 30 en), graded 0/1/2 by
+> `doc_key`. Suite `evals/retrieval.py` builds the corpus in a rolled-back txn and scores three
+> strategies — `fts` (lexical baseline), `blend` (the removed 0.5·tsrank+0.5·cosine pre-fusion
+> baseline, reconstructed to measure against), `fusion` (shipped RRF). Offline via a committed
+> deterministic bag-of-tokens embedding (`fixture_embed`) patched over `client.embed_text`. New
+> `run_evals --suite retrieval` writes `results/retrieval_<date>.json` + the standing
+> `results/retrieval_baseline_vs_fusion.json`; runs in ~8s (<60s). **Numbers (offline fixture):**
+> fts & fusion recall@5 0.935 / recall@10 0.988 / MRR 0.728 / nDCG@10 0.783 (identical — the crude
+> fixture cosine adds no lexical signal beyond tsrank and RRF preserves the FTS order); `blend`
+> collapses to recall@5 0.310, showing RRF's robustness to an incomparable second signal — the
+> score-scale fragility T3.2 removed (fusion vs blend +0.625 recall@5 ≫ the +5-point bar; caveat
+> in the results `note`: a live embedding narrows the gap; a true recall lift needs the
+> whole-corpus pgvector HNSW arm, still flag/binary-gated from T3.1). Verified: `pytest erp/assistant`
+> green incl. new `tests/test_retrieval_eval.py` (6, marked `retrieval`) + metrics (13);
+> `makemigrations --check` clean; `manage.py check` clean. No model / migration / apps.web / i18n
+> change. **Next (T3.4):** Arabic normalization pipeline — measure the ar recall lift on this suite.
 
 - **Goal:** recall@k and MRR are computed per search, per language, in CI.
 - **Prereq:** T3.2.

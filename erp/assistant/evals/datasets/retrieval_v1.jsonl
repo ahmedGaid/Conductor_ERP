@@ -1,0 +1,84 @@
+{"id": "q_ar_01", "lang": "ar", "query": "متى يقدم الإقرار الضريبي لضريبة القيمة المضافة؟", "relevant": {"vat_return_ar": 2, "vat_rate_ar": 1}}
+{"id": "q_ar_02", "lang": "ar", "query": "غرامة التأخير في تقديم الإقرار الشهري", "relevant": {"vat_return_ar": 2}}
+{"id": "q_ar_03", "lang": "ar", "query": "سداد الضريبة المستحقة لمصلحة الضرائب", "relevant": {"vat_return_ar": 2, "einvoice_ar": 1}}
+{"id": "q_ar_04", "lang": "ar", "query": "ما نسبة ضريبة القيمة المضافة؟", "relevant": {"vat_rate_ar": 2, "vat_return_ar": 1}}
+{"id": "q_ar_05", "lang": "ar", "query": "السلع المعفاة من الضريبة", "relevant": {"vat_rate_ar": 2}}
+{"id": "q_ar_06", "lang": "ar", "query": "تطبيق النسبة الصحيحة عند إصدار الفاتورة", "relevant": {"vat_rate_ar": 2}}
+{"id": "q_ar_07", "lang": "ar", "query": "كيف أسترجع المنتج خلال أربعة عشر يوماً؟", "relevant": {"refund_policy_ar": 2}}
+{"id": "q_ar_08", "lang": "ar", "query": "سياسة الاسترجاع والمرتجعات", "relevant": {"refund_policy_ar": 2}}
+{"id": "q_ar_09", "lang": "ar", "query": "رد قيمة المنتج بنفس وسيلة الدفع", "relevant": {"refund_policy_ar": 2}}
+{"id": "q_ar_10", "lang": "ar", "query": "شروط الدفع في عقد التوريد", "relevant": {"supplier_contract_ar": 2}}
+{"id": "q_ar_11", "lang": "ar", "query": "مطابقة فاتورة المورد مع أمر الشراء", "relevant": {"supplier_contract_ar": 2, "purchase_order_ar": 1}}
+{"id": "q_ar_12", "lang": "ar", "query": "رفض البضاعة غير المطابقة للمواصفات", "relevant": {"supplier_contract_ar": 2}}
+{"id": "q_ar_13", "lang": "ar", "query": "إجراءات اعتماد أمر الشراء", "relevant": {"purchase_order_ar": 2, "supplier_contract_ar": 1}}
+{"id": "q_ar_14", "lang": "ar", "query": "من يعتمد طلب الشراء؟", "relevant": {"purchase_order_ar": 2}}
+{"id": "q_ar_15", "lang": "ar", "query": "استلام البضاعة بأمر شراء معتمد", "relevant": {"purchase_order_ar": 2}}
+{"id": "q_ar_16", "lang": "ar", "query": "كيف يتم الجرد المخزني ومطابقة الأرصدة؟", "relevant": {"inventory_count_ar": 2}}
+{"id": "q_ar_17", "lang": "ar", "query": "تسجيل فروق الجرد كعجز أو زيادة", "relevant": {"inventory_count_ar": 2}}
+{"id": "q_ar_18", "lang": "ar", "query": "إيقاف صرف الأصناف أثناء الجرد", "relevant": {"inventory_count_ar": 2}}
+{"id": "q_ar_19", "lang": "ar", "query": "كيف تحسب الرواتب الشهرية للموظفين؟", "relevant": {"payroll_ar": 2}}
+{"id": "q_ar_20", "lang": "ar", "query": "خصم التأمينات الاجتماعية وضريبة كسب العمل", "relevant": {"payroll_ar": 2}}
+{"id": "q_ar_21", "lang": "ar", "query": "خصم أقساط السلف من صافي الراتب", "relevant": {"payroll_ar": 2}}
+{"id": "q_ar_22", "lang": "ar", "query": "كم مدة الإجازة السنوية للموظف؟", "relevant": {"leave_policy_ar": 2}}
+{"id": "q_ar_23", "lang": "ar", "query": "اعتماد طلب الإجازة من المدير المباشر", "relevant": {"leave_policy_ar": 2}}
+{"id": "q_ar_24", "lang": "ar", "query": "الإجازة المرضية وتقرير طبي معتمد", "relevant": {"leave_policy_ar": 2}}
+{"id": "q_ar_25", "lang": "ar", "query": "إصدار الفاتورة الإلكترونية وإرسالها للمنظومة", "relevant": {"einvoice_ar": 2}}
+{"id": "q_ar_26", "lang": "ar", "query": "رمز التعريف الفريد والتوقيع الإلكتروني للفاتورة", "relevant": {"einvoice_ar": 2}}
+{"id": "q_ar_27", "lang": "ar", "query": "أكواد السلع في الفاتورة الإلكترونية", "relevant": {"einvoice_ar": 2}}
+{"id": "q_ar_28", "lang": "ar", "query": "متى يصدر الإشعار الدائن للعميل؟", "relevant": {"credit_note_ar": 2, "refund_policy_ar": 1}}
+{"id": "q_ar_29", "lang": "ar", "query": "خفض رصيد مديونية العميل بإشعار دائن", "relevant": {"credit_note_ar": 2, "credit_limit_ar": 1}}
+{"id": "q_ar_30", "lang": "ar", "query": "ربط الإشعار الدائن بالفاتورة الأصلية", "relevant": {"credit_note_ar": 2}}
+{"id": "q_ar_31", "lang": "ar", "query": "ما هو حد الائتمان للعملاء؟", "relevant": {"credit_limit_ar": 2}}
+{"id": "q_ar_32", "lang": "ar", "query": "منع أمر بيع عند تجاوز حد الائتمان", "relevant": {"credit_limit_ar": 2}}
+{"id": "q_ar_33", "lang": "ar", "query": "اعتماد رفع حد الائتمان من المدير المالي", "relevant": {"credit_limit_ar": 2}}
+{"id": "q_ar_34", "lang": "ar", "query": "كيف تتم التسوية البنكية الشهرية؟", "relevant": {"bank_recon_ar": 2}}
+{"id": "q_ar_35", "lang": "ar", "query": "الشيكات الصادرة غير المصروفة في التسوية", "relevant": {"bank_recon_ar": 2}}
+{"id": "q_ar_36", "lang": "ar", "query": "معالجة مصاريف البنك والفوائد غير المسجلة", "relevant": {"bank_recon_ar": 2}}
+{"id": "q_ar_37", "lang": "ar", "query": "كيف يحسب إهلاك الأصول الثابتة؟", "relevant": {"depreciation_ar": 2}}
+{"id": "q_ar_38", "lang": "ar", "query": "طريقة القسط الثابت والعمر الإنتاجي", "relevant": {"depreciation_ar": 2}}
+{"id": "q_ar_39", "lang": "ar", "query": "مجمع الإهلاك والقيمة الدفترية للأصل", "relevant": {"depreciation_ar": 2}}
+{"id": "q_ar_40", "lang": "ar", "query": "كيف أقدم مطالبة استرداد المصروفات؟", "relevant": {"expense_claim_ar": 2}}
+{"id": "q_ar_41", "lang": "ar", "query": "المصروفات القابلة للاسترداد مثل السفر والانتقالات", "relevant": {"expense_claim_ar": 2}}
+{"id": "q_ar_42", "lang": "ar", "query": "رفض المطالبات بدون إيصالات", "relevant": {"expense_claim_ar": 2}}
+{"id": "q_ar_43", "lang": "ar", "query": "التأخير في سداد الضريبة ومقابل التأخير", "relevant": {"vat_return_ar": 2}}
+{"id": "q_ar_44", "lang": "ar", "query": "الخدمات التعليمية والصحية المعفاة من الضريبة", "relevant": {"vat_rate_ar": 2}}
+{"id": "q_ar_45", "lang": "ar", "query": "المنتجات المخفضة لا تخضع للاسترجاع", "relevant": {"refund_policy_ar": 2}}
+{"id": "q_ar_46", "lang": "ar", "query": "شروط الضمان والتسليم في عقد المورد", "relevant": {"supplier_contract_ar": 2}}
+{"id": "q_ar_47", "lang": "ar", "query": "حدود الصلاحية في اعتماد أمر الشراء", "relevant": {"purchase_order_ar": 2}}
+{"id": "q_ar_48", "lang": "ar", "query": "تحليل فروق الجرد المتكررة", "relevant": {"inventory_count_ar": 2}}
+{"id": "q_ar_49", "lang": "ar", "query": "صرف الراتب عبر تحويل بنكي نهاية الشهر", "relevant": {"payroll_ar": 2}}
+{"id": "q_ar_50", "lang": "ar", "query": "ترحيل رصيد الإجازة السنوية", "relevant": {"leave_policy_ar": 2}}
+{"id": "q_ar_51", "lang": "ar", "query": "المستند الضريبي في منظومة الفاتورة الإلكترونية", "relevant": {"einvoice_ar": 2, "credit_note_ar": 1}}
+{"id": "q_ar_52", "lang": "ar", "query": "مراجعة حد الائتمان بناء على انتظام السداد", "relevant": {"credit_limit_ar": 2}}
+{"id": "q_ar_53", "lang": "ar", "query": "مطابقة رصيد الحساب البنكي مع الدفاتر", "relevant": {"bank_recon_ar": 2}}
+{"id": "q_ar_54", "lang": "ar", "query": "بدء احتساب الإهلاك من تاريخ تشغيل الأصل", "relevant": {"depreciation_ar": 2}}
+{"id": "q_en_01", "lang": "en", "query": "annual taxable turnover registration threshold for VAT", "relevant": {"vat_registration_en": 2}}
+{"id": "q_en_02", "lang": "en", "query": "tax registration number on every invoice", "relevant": {"vat_registration_en": 2}}
+{"id": "q_en_03", "lang": "en", "query": "penalties for failure to register on time", "relevant": {"vat_registration_en": 2}}
+{"id": "q_en_04", "lang": "en", "query": "how are new suppliers onboarded and approved", "relevant": {"supplier_onboarding_en": 2}}
+{"id": "q_en_05", "lang": "en", "query": "procurement manager approves supplier before purchase order", "relevant": {"supplier_onboarding_en": 2}}
+{"id": "q_en_06", "lang": "en", "query": "supplier compliance checks and rejection", "relevant": {"supplier_onboarding_en": 2}}
+{"id": "q_en_07", "lang": "en", "query": "warehouse stock transfer between warehouses", "relevant": {"warehouse_transfer_en": 2}}
+{"id": "q_en_08", "lang": "en", "query": "discrepancy between shipped and received quantities", "relevant": {"warehouse_transfer_en": 2}}
+{"id": "q_en_09", "lang": "en", "query": "approved transfer order for moving inventory", "relevant": {"warehouse_transfer_en": 2}}
+{"id": "q_en_10", "lang": "en", "query": "sales order fulfillment and delivery note", "relevant": {"sales_order_en": 2}}
+{"id": "q_en_11", "lang": "en", "query": "order exceeding customer credit limit held for approval", "relevant": {"sales_order_en": 2, "ar_aging_en": 1}}
+{"id": "q_en_12", "lang": "en", "query": "partial deliveries when stock is insufficient", "relevant": {"sales_order_en": 2}}
+{"id": "q_en_13", "lang": "en", "query": "general ledger month-end closing process", "relevant": {"gl_closing_en": 2}}
+{"id": "q_en_14", "lang": "en", "query": "reconcile sub-ledgers to control accounts before closing", "relevant": {"gl_closing_en": 2}}
+{"id": "q_en_15", "lang": "en", "query": "trial balance reviewed before the period is closed", "relevant": {"gl_closing_en": 2}}
+{"id": "q_en_16", "lang": "en", "query": "fixed asset register acquisition cost and useful life", "relevant": {"fixed_asset_en": 2}}
+{"id": "q_en_17", "lang": "en", "query": "recording asset disposals with gain or loss", "relevant": {"fixed_asset_en": 2}}
+{"id": "q_en_18", "lang": "en", "query": "assets tagged and verified by physical inspection", "relevant": {"fixed_asset_en": 2}}
+{"id": "q_en_19", "lang": "en", "query": "accounts receivable aging report buckets by days overdue", "relevant": {"ar_aging_en": 2}}
+{"id": "q_en_20", "lang": "en", "query": "provision for doubtful debts from the aging report", "relevant": {"ar_aging_en": 2}}
+{"id": "q_en_21", "lang": "en", "query": "customers exceeding credit limit for collection follow-up", "relevant": {"ar_aging_en": 2, "sales_order_en": 1}}
+{"id": "q_en_22", "lang": "en", "query": "return merchandise authorization before goods sent back", "relevant": {"rma_en": 2}}
+{"id": "q_en_23", "lang": "en", "query": "approved returns generate a credit note", "relevant": {"rma_en": 2}}
+{"id": "q_en_24", "lang": "en", "query": "damaged or out-of-policy returns refused", "relevant": {"rma_en": 2}}
+{"id": "q_en_25", "lang": "en", "query": "cash flow statement operating investing financing activities", "relevant": {"cash_flow_en": 2}}
+{"id": "q_en_26", "lang": "en", "query": "operating cash flow from net profit adjusted for depreciation", "relevant": {"cash_flow_en": 2, "gl_closing_en": 1}}
+{"id": "q_en_27", "lang": "en", "query": "closing cash balance agrees with bank reconciliation", "relevant": {"cash_flow_en": 2}}
+{"id": "q_en_28", "lang": "en", "query": "employee probation period of three months", "relevant": {"hr_probation_en": 2}}
+{"id": "q_en_29", "lang": "en", "query": "line manager submits probation evaluation before confirmation", "relevant": {"hr_probation_en": 2}}
+{"id": "q_en_30", "lang": "en", "query": "annual leave accrues during probation", "relevant": {"hr_probation_en": 2}}

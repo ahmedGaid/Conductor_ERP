@@ -26,6 +26,7 @@ testpaths = ["erp"]
 markers = [
     "evals: offline golden-dataset eval runner tests (ai-reliability T1.6) — recorded responses, zero network",
     "pgvector: needs the Postgres `vector` extension (ai-reliability T3.1) — auto-skipped where it is absent",
+    "retrieval: offline retrieval-eval suite (ai-reliability T3.3) — fixture corpus + metrics, zero network",
 ]
 
 [tool.coverage.run]
