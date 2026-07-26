@@ -2171,7 +2171,11 @@
       "duplicateInFile": "This repeats another row in the file",
       "missingGroupKey": "No document to attach this line to",
       "inconsistentDocument": "Disagrees with the rest of this document on {{field}}",
-      "totalMismatch": "The file's total doesn't match the computed total"
+      "totalMismatch": "The file's total doesn't match the computed total",
+      "paymentUnmatched": "We couldn't match this payment to an order — it will be recorded unapplied",
+      "unbalancedEntry": "Debits and credits don't match on this entry — off by {{amount}}",
+      "openingImbalance": "The opening trial balance is off by {{amount}} — review the suggested correction below to continue",
+      "inventoryDoubleBooked": "This entry has an inventory line, but opening stock quantities were already imported — posting both would count inventory twice"
     },
     "readiness": {
       "undecidedDuplicates_zero": "No duplicate rows need a decision",
@@ -2270,6 +2274,18 @@
       },
       "approve": "Approve {{count}} and continue",
       "allDone": "All set — every reference resolves"
+    },
+    "openingCorrection": {
+      "title": "The opening trial balance doesn't balance",
+      "hint": "Debits and credits are off by {{amount}}. Approve the suggested correction to post a balanced opening entry, or cancel and fix the file instead.",
+      "totalDebit": "Total debits",
+      "totalCredit": "Total credits",
+      "difference": "Difference",
+      "suggestedLine": "Suggested correction: {{account}} — {{side}} {{amount}}",
+      "sideDebit": "debit",
+      "sideCredit": "credit",
+      "approve": "Approve correction",
+      "approved": "Correction approved — the opening entry now balances"
     },
     "autofix": {
       "trigger": "Auto-fix {{count}} rows",

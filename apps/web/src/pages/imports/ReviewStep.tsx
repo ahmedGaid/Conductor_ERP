@@ -5,6 +5,7 @@ import { useToast } from "../../app/ToastContext";
 import { ApiError } from "../../api/client";
 import {
   applyAutofix,
+  approveOpeningCorrection,
   buildCreationPlan,
   executeCreationPlan,
   executeImport,
@@ -18,6 +19,7 @@ import {
 } from "../../api/smartImports";
 import { CreationPlan } from "./CreationPlan";
 import { DuplicateReview } from "./DuplicateReview";
+import { OpeningCorrectionBanner } from "./OpeningCorrectionBanner";
 import { PreviewGrid } from "./PreviewGrid";
 import { SummaryPanel, type ReviewCounts } from "./SummaryPanel";
 
@@ -156,6 +158,9 @@ export function ReviewStep({
   const [autofixFixes, setAutofixFixes] = useState<ImportFix[] | null>(null);
   const [autofixSelected, setAutofixSelected] = useState<Set<string>>(new Set());
   const [autofixApplying, setAutofixApplying] = useState(false);
+
+  const [openingCorrection, setOpeningCorrection] = useState(batch.stats?.opening_correction ?? null);
+  const [openingApproving, setOpeningApproving] = useState(false);
 
   const [strategy, setStrategy] = useState<"create_only" | "update_only" | "upsert" | "skip_existing">(
     (batch.strategy as "create_only" | "update_only" | "upsert" | "skip_existing") ?? "create_only",
@@ -305,6 +310,19 @@ export function ReviewStep({
     }
   }
 
+  async function onApproveOpeningCorrection() {
+    setOpeningApproving(true);
+    try {
+      const res = await approveOpeningCorrection(batch.id);
+      setOpeningCorrection(res.batch.stats?.opening_correction ?? null);
+      await Promise.all([refreshCounts(), refreshRows()]);
+    } catch (err) {
+      toast.show(err instanceof ApiError ? err.message : t("common.error.title"), "error");
+    } finally {
+      setOpeningApproving(false);
+    }
+  }
+
   async function onImport() {
     setImporting(true);
     try {
@@ -365,6 +383,14 @@ export function ReviewStep({
             </button>
           ))}
         </nav>
+
+        {openingCorrection && (
+          <OpeningCorrectionBanner
+            correction={openingCorrection}
+            approving={openingApproving}
+            onApprove={() => void onApproveOpeningCorrection()}
+          />
+        )}
 
         <CreationPlan
           entries={plan}

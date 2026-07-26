@@ -57,6 +57,9 @@ function GroupHeaderRow({
   const missingKey = allIssues.find((i) => i.code === "missing_group_key");
   const inconsistent = allIssues.find((i) => i.code === "inconsistent_document");
   const mismatch = allIssues.find((i) => i.code === "total_mismatch");
+  const unbalanced = allIssues.find((i) => i.code === "unbalanced_entry");
+  const openingImbalance = allIssues.find((i) => i.code === "opening_imbalance");
+  const doubleBooked = allIssues.find((i) => i.code === "inventory_double_booked");
 
   let tone: string;
   let label: string;
@@ -69,6 +72,19 @@ function GroupHeaderRow({
   } else if (mismatch) {
     tone = "duplicate"; // reuses the existing orange/warning tone
     label = t("imports.issues.totalMismatch");
+  } else if (unbalanced) {
+    tone = "error";
+    label = t("imports.issues.unbalancedEntry", {
+      amount: formatMinor(Math.abs(Number(unbalanced.meta?.difference_minor ?? 0))),
+    });
+  } else if (openingImbalance) {
+    tone = "error";
+    label = t("imports.issues.openingImbalance", {
+      amount: formatMinor(Math.abs(Number(openingImbalance.meta?.difference_minor ?? 0))),
+    });
+  } else if (doubleBooked) {
+    tone = "error";
+    label = t("imports.issues.inventoryDoubleBooked");
   } else {
     tone = worstStatus(groupRows);
     label = t(`imports.review.status.${tone}`, tone);

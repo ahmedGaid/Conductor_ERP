@@ -85,6 +85,16 @@ export interface ImportStats {
   eta_seconds?: number | null;
   last_error?: string;
   rollback?: { reverted: number; skipped: number; cannot: RollbackCannotEntry[]; reverted_masters: string[] };
+  // written by AccountOpeningAdapter.validate_group when a trial-balance import doesn't balance —
+  // a human approves it via approveOpeningCorrection, never auto-applied.
+  opening_correction?: {
+    total_debit_minor: number;
+    total_credit_minor: number;
+    difference_minor: number;
+    suspense_account: string;
+    proposed_line: { account_ref: string; debit_minor: number; credit_minor: number };
+    approved: boolean;
+  };
   [key: string]: unknown;
 }
 
@@ -238,6 +248,18 @@ export function applyAutofix(
   return apiFetch<{ counts: Record<string, number> }>(`/imports/${batchId}/autofix/apply`, {
     method: "POST",
     body: JSON.stringify({ fixes }),
+  });
+}
+
+// Approves the suspense-account balancing line AccountOpeningAdapter proposed for an out-of-balance
+// trial balance, then re-validates so the batch's rows leave `error` — the only way to unblock an
+// imbalanced account_opening import (FILE_17 acceptance: previously nothing could set this flag).
+export function approveOpeningCorrection(
+  batchId: string,
+): Promise<{ batch: ImportBatch; counts: Record<string, number> }> {
+  return apiFetch(`/imports/${batchId}/opening-correction/approve`, {
+    method: "POST",
+    body: JSON.stringify({}),
   });
 }
 

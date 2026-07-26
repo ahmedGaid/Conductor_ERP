@@ -294,6 +294,62 @@ def test_approved_suspense_correction_imports_a_balanced_opening(coa):
     assert suspense_lines[0].credit == 100_00
 
 
+def test_opening_correction_approve_endpoint_unblocks_a_real_failed_execute(coa):
+    """The real round trip, through the actual API — not the earlier tests' direct ``batch.stats``
+    write: a first execute attempt fails and blocks on the imbalance (exactly like
+    ``test_imbalanced_opening_blocks_and_proposes_a_suspense_line``); the review screen's ONLY way
+    to unblock it is ``OpeningCorrectionApproveView``, which previously didn't exist — nothing in
+    the API or UI could ever set ``opening_correction.approved`` before this endpoint was added
+    (FILE_17 acceptance finding)."""
+    from rest_framework.test import APIClient
+
+    actor = _manager("ao5")
+    batch = _batch("account_opening")
+    _opening_rows(batch, [
+        ("1000", 500_00, 0),
+        ("1200", 300_00, 0),
+        ("3000", 0, 700_00),
+    ])
+
+    first = engine.execute_batch(actor, batch)
+    assert first["created"] == 0
+    batch.refresh_from_db()
+    assert batch.status == ImportBatch.Status.DONE
+    assert batch.stats["opening_correction"]["approved"] is False
+    assert all(row.status == ImportRow.Status.ERROR for row in batch.rows.all())
+
+    client = APIClient()
+    client.force_authenticate(user=actor)
+    resp = client.post(f"/api/imports/{batch.id}/opening-correction/approve")
+
+    assert resp.status_code == 200
+    batch.refresh_from_db()
+    assert batch.stats["opening_correction"]["approved"] is True
+    assert batch.status == ImportBatch.Status.PREVIEWING
+    assert not batch.rows.filter(status=ImportRow.Status.ERROR).exists()
+
+    second = engine.execute_batch(actor, batch)
+    assert second["created"] == 3
+    entry = JournalEntry.objects.get(reference="import-open:opening")
+    total_debit = sum(ln.debit for ln in entry.lines.all())
+    total_credit = sum(ln.credit for ln in entry.lines.all())
+    assert total_debit == total_credit == 800_00
+
+
+def test_opening_correction_approve_endpoint_400s_without_a_correction(coa):
+    from rest_framework.test import APIClient
+
+    actor = _manager("ao6")
+    batch = _batch("account_opening")
+    _opening_rows(batch, [("1000", 800_00, 0), ("3000", 0, 800_00)])  # already balanced
+
+    client = APIClient()
+    client.force_authenticate(user=actor)
+    resp = client.post(f"/api/imports/{batch.id}/opening-correction/approve")
+
+    assert resp.status_code == 400
+
+
 def test_approved_opening_trial_balance_stays_balanced_after_posting(coa):
     """The Phase-A promise, end to end: an approved opening entry, once posted, leaves the trial
     balance balanced to the piastre."""

@@ -9,11 +9,13 @@ import { useAsync } from "../../hooks/useAsync";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ErrorState } from "../../components/ErrorState";
 import {
+  approveOpeningCorrection,
   entityLabelKey,
   getImportReport,
   rollbackImport,
   type ImportBatch,
 } from "../../api/smartImports";
+import { OpeningCorrectionBanner } from "./OpeningCorrectionBanner";
 
 // Only entities with an actual list page today get a deep link (spec: "verifiable by click") —
 // an entity without one just reads as plain text rather than a link to nowhere.
@@ -51,9 +53,11 @@ function groupMasters(masters: { entity: string; value: string; pk: string }[]):
 export function ImportReport({
   batch,
   onRolledBack,
+  onNeedsReview,
 }: {
   batch: ImportBatch;
   onRolledBack?: () => void;
+  onNeedsReview?: () => void;
 }) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -64,8 +68,24 @@ export function ImportReport({
   );
   const [rollbackOpen, setRollbackOpen] = useState(false);
   const [rollingBack, setRollingBack] = useState(false);
+  const [openingApproving, setOpeningApproving] = useState(false);
 
   const entityLabel = t(entityLabelKey(batch.entity), batch.entity);
+  const openingCorrection = batch.stats?.opening_correction;
+
+  async function onApproveOpeningCorrection() {
+    setOpeningApproving(true);
+    try {
+      await approveOpeningCorrection(batch.id);
+      // The batch just left `done` (back to `previewing`) — hand control back to the wizard so it
+      // re-routes to Review instead of RunStep re-rendering this same Report with stale status.
+      onNeedsReview?.();
+    } catch (err) {
+      toast.show(err instanceof ApiError ? err.message : t("common.error.title"), "error");
+    } finally {
+      setOpeningApproving(false);
+    }
+  }
 
   async function onRollback() {
     setRollingBack(true);
@@ -94,6 +114,14 @@ export function ImportReport({
           {batch.status === "rolled_back" ? t("imports.report.rolledBackTitle") : t("imports.report.doneTitle")}
         </h2>
       </header>
+
+      {openingCorrection && (
+        <OpeningCorrectionBanner
+          correction={openingCorrection}
+          approving={openingApproving}
+          onApprove={() => void onApproveOpeningCorrection()}
+        />
+      )}
 
       <ul className="imports-report__counts">
         <li>

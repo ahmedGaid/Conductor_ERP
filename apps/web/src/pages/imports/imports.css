@@ -738,6 +738,75 @@
   font-size: var(--font-size-sm);
 }
 
+/* --- opening-correction banner (trial-balance imbalance) ------------------------------------- */
+.imports-opening-correction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-color: var(--color-warning-strong);
+}
+
+.imports-opening-correction__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.imports-opening-correction__head svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  flex-shrink: 0;
+  color: var(--color-warning-strong);
+  margin-block-start: 0.125rem;
+}
+
+.imports-opening-correction__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.imports-opening-correction__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.imports-opening-correction__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.imports-opening-correction__figures dt {
+  font-size: var(--font-size-xs);
+}
+
+.imports-opening-correction__figures dd {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.imports-opening-correction__suggestion {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.imports-opening-correction__foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.imports-opening-correction__done {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+}
+
 /* --- summary panel --------------------------------------------------------------------------- */
 .imports-summary {
   display: flex;

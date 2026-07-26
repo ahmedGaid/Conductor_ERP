@@ -17,6 +17,10 @@ urlpatterns = [
     path("<uuid:pk>/autofix", views.AutofixPreviewView.as_view(), name="batch-autofix"),
     path("<uuid:pk>/autofix/apply", views.AutofixApplyView.as_view(), name="batch-autofix-apply"),
     path("<uuid:pk>/creation-plan", views.CreationPlanView.as_view(), name="batch-creation-plan"),
+    path(
+        "<uuid:pk>/opening-correction/approve", views.OpeningCorrectionApproveView.as_view(),
+        name="batch-opening-correction-approve",
+    ),
     path("<uuid:pk>/execute", views.ExecuteView.as_view(), name="batch-execute"),
     path("<uuid:pk>/pause", views.PauseView.as_view(), name="batch-pause"),
     path("<uuid:pk>/resume", views.ResumeView.as_view(), name="batch-resume"),

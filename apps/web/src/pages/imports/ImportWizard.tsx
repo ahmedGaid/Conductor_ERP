@@ -132,6 +132,12 @@ export function ImportWizard() {
     setPhase({ kind: "run", batchId });
   }, []);
 
+  // Approving an opening-trial-balance correction (ImportReport, reached after a blocked
+  // account_opening execute) moves the batch back to `previewing` — outside RunStep's own
+  // done/running vocabulary, so re-enter through "resuming": the same status-routing effect that
+  // handles a page reload sends a `previewing` batch to ReviewStep instead.
+  const onNeedsReview = useCallback(() => setPhase({ kind: "resuming" }), []);
+
   const activeStep = stepFor(phase);
   const activeIndex = STEPS.indexOf(activeStep);
 
@@ -191,7 +197,7 @@ export function ImportWizard() {
         phase.kind === "review" ? (
           <ReviewStep batch={phase.batch} onImported={onImported} />
         ) : (
-          <RunStep batchId={phase.batchId} />
+          <RunStep batchId={phase.batchId} onNeedsReview={onNeedsReview} />
         )
       ) : (
         <div className="imports-card card">

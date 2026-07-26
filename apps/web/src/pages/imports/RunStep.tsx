@@ -26,7 +26,7 @@ function formatEta(seconds: number | null | undefined): string | null {
   return `${minutes}m`;
 }
 
-export function RunStep({ batchId }: { batchId: string }) {
+export function RunStep({ batchId, onNeedsReview }: { batchId: string; onNeedsReview?: () => void }) {
   const { t } = useTranslation();
   const toast = useToast();
   const { data: batch, error, reload, mutate } = useAsync<ImportBatch>(
@@ -58,7 +58,7 @@ export function RunStep({ batchId }: { batchId: string }) {
     // A real refetch (not an optimistic patch) — the reversal summary needs the server's
     // authoritative `stats.rollback` (reverted/skipped/cannot counts), which only exists after
     // `rollback_batch` writes it.
-    return <ImportReport batch={batch} onRolledBack={reload} />;
+    return <ImportReport batch={batch} onRolledBack={reload} onNeedsReview={onNeedsReview} />;
   }
 
   const stats = batch.stats ?? {};

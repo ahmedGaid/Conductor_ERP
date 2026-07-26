@@ -382,6 +382,29 @@ class AutofixApplyView(APIView):
         return _envelope({"counts": counts})
 
 
+class OpeningCorrectionApproveView(APIView):
+    """POST — a human approves the suspense-account balancing line ``AccountOpeningAdapter`` proposed
+    for an out-of-balance trial balance (``batch.stats['opening_correction']``). Flags it approved,
+    then re-validates so ``validate_group`` reruns, injects the now-approved line, and the batch's
+    rows flip out of ``error`` (FILE_17 acceptance: this was the only way to unblock an imbalanced
+    ``account_opening`` import — previously nothing in the API or UI could ever set this flag)."""
+
+    permission_classes = [IsAuthenticated, _CanImport]
+
+    def post(self, request: Request, pk) -> Response:
+        batch = _get_owned_batch(request.user, pk)
+        correction = (batch.stats or {}).get("opening_correction")
+        if not correction:
+            raise ValidationError("This batch has no opening correction to approve.")
+        stats = dict(batch.stats or {})
+        stats["opening_correction"] = {**correction, "approved": True}
+        batch.stats = stats
+        batch.save(update_fields=["stats"])
+        counts = validate_svc.validate_batch(request.user, batch)
+        batch.refresh_from_db()
+        return _envelope({"batch": _batch_row(batch), "counts": counts})
+
+
 # --- creation plan (masters) --------------------------------------------------------------------
 class CreationPlanView(APIView):
     permission_classes = [IsAuthenticated, _CanImport]
