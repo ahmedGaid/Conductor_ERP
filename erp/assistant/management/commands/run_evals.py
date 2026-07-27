@@ -4,7 +4,11 @@ network. Prints a scoreboard and writes ``evals/results/<date>.json``.
 ``--suite retrieval`` (ai-reliability T3.3) instead runs the offline retrieval suite: it builds the
 committed fixture corpus in a rolled-back transaction, scores the fts / blend / fusion strategies
 with recall@5/10, MRR, nDCG@10, and writes both a dated result and the baseline-vs-fusion
-comparison. Deterministic and offline (fixture embeddings) — no provider, no pgvector binary."""
+comparison. Deterministic and offline (fixture embeddings) — no provider, no pgvector binary.
+
+``--suite long_thread`` (ai-reliability T3.7) runs the rolling-summary continuity suite: 5 golden
+cases proving a fact planted early in a thread is still reachable by the planner's envelope once
+the thread outgrows the raw-history tail and a summary refresh has fired."""
 from __future__ import annotations
 
 import json
@@ -14,7 +18,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from ...evals import loader, retrieval, runner
+from ...evals import loader, long_thread, retrieval, runner
 
 RESULTS_DIR = Path(__file__).resolve().parents[2] / "evals" / "results"
 COMPARISON_PATH = RESULTS_DIR / "retrieval_baseline_vs_fusion.json"
@@ -24,15 +28,19 @@ class Command(BaseCommand):
     help = "Grade the golden eval set offline against recorded responses (zero network)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--suite", choices=["golden", "retrieval"], default="golden",
+        parser.add_argument("--suite", choices=["golden", "retrieval", "long_thread"],
+                            default="golden",
                             help="'golden' (default) replays recorded ask/agent cases; "
-                                 "'retrieval' runs the offline retrieval metric suite (T3.3)")
+                                 "'retrieval' runs the offline retrieval metric suite (T3.3); "
+                                 "'long_thread' runs the rolling-summary continuity suite (T3.7)")
         parser.add_argument("--min", type=float, default=0.0,
                             help="minimum pass rate (0-1) required; exits non-zero below it")
 
     def handle(self, *args, **options):
         if options["suite"] == "retrieval":
             return self._handle_retrieval(options)
+        if options["suite"] == "long_thread":
+            return self._handle_long_thread(options)
         return self._handle_golden(options)
 
     # --- golden suite (T1.6) --------------------------------------------------------------------
@@ -106,3 +114,24 @@ class Command(BaseCommand):
             if exc is not sentinel:
                 raise
         return holder["scoreboard"]
+
+    # --- long-thread continuity suite (T3.7) ------------------------------------------------------
+
+    def _handle_long_thread(self, options):
+        scoreboard = long_thread.score_suite()
+
+        self.stdout.write(f"Long-thread suite: {scoreboard['total']} cases")
+        self.stdout.write(f"pass={scoreboard['pass']} fail={scoreboard['fail']} "
+                          f"pass_rate={scoreboard['pass_rate']:.0%}")
+        for r in scoreboard["results"]:
+            if r["status"] == "fail":
+                self.stdout.write(self.style.ERROR(f"  [fail] {r['id']} ({r['lang']})"))
+
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        out_path = RESULTS_DIR / f"long_thread_{date.today().isoformat()}.json"
+        out_path.write_text(json.dumps(scoreboard, ensure_ascii=False, indent=2), encoding="utf-8")
+        self.stdout.write(f"\nWrote {out_path}")
+
+        if scoreboard["pass_rate"] < options["min"]:
+            raise CommandError(
+                f"pass rate {scoreboard['pass_rate']:.0%} below --min {options['min']:.0%}")

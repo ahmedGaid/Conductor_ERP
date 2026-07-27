@@ -1,4 +1,5 @@
-"""Celery tasks for the assistant module — the ambient morning digest + weekly ops report.
+"""Celery tasks for the assistant module — the ambient morning digest + weekly ops report, and
+(T3.7) the rolling conversation-summary refresh fired post-response from the chat flow.
 
 The Celery beat schedule (see ``CELERY_BEAT_SCHEDULE`` in settings) fires ``send_ai_digests`` once a
 day; the task itself decides which users are due today (daily vs. weekly preference), same shape as
@@ -24,3 +25,20 @@ def send_ai_weekly_report() -> str:
     from .services import send_weekly_report
 
     return str(send_weekly_report())
+
+
+@shared_task(name="assistant.refresh_thread_summary")
+def refresh_thread_summary(conversation_id: int) -> bool:
+    """Fold new older-than-tail turns into a conversation's rolling summary (T3.7). Fired
+    fire-and-forget right after an assistant turn is persisted (``summarize.maybe_trigger``) —
+    runs after the response, never blocking it. Returns ``False`` if the conversation is already
+    gone (deleted mid-flight) instead of raising — nothing left to summarize."""
+    from .models import Conversation
+    from .services.summarize import refresh_summary
+
+    try:
+        conversation = Conversation.objects.get(id=conversation_id)
+    except Conversation.DoesNotExist:
+        return False
+    refresh_summary(conversation)
+    return True

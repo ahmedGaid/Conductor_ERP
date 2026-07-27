@@ -428,3 +428,89 @@ def test_loop_routes_list_question_to_query_data_and_answers_from_rows(monkeypat
     result = json.loads(captured["messages"][0]["content"])["data"][0]["result"]
     assert result["mode"] == "list"
     assert {r["sku"] for r in result["rows"]} == {"A", "B"}
+
+
+# --- rolling conversation summaries (ai-reliability T3.7) -----------------------------------------
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_planner_prompt_carries_the_conversation_summary(monkeypatch):
+    """A maintained summary rides as its own envelope section in the planner's per-round input —
+    the mechanism T3.7 exists for (turns older than the raw-history tail are represented by the
+    summary instead of silently dropping out of the prompt)."""
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    conv.summary = "The user previously asked about sales order SO-7734."
+    conv.save()
+
+    captured = {}
+
+    def fake(system, round_user, schema, **_):
+        captured["round_user"] = round_user
+        return {"action": "answer"}
+
+    monkeypatch.setattr(agent, "complete_json", fake)
+    _stream(monkeypatch, "Ok.")
+
+    _run(user, conv, question="what was that order number again?")
+
+    assert "SO-7734" in captured["round_user"]
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_no_summary_section_when_conversation_has_no_summary(monkeypatch):
+    user = _actor()
+    conv = Conversation.objects.create(user=user)  # summary stays "" (model default)
+
+    captured = {}
+
+    def fake(system, round_user, schema, **_):
+        captured["round_user"] = round_user
+        return {"action": "answer"}
+
+    monkeypatch.setattr(agent, "complete_json", fake)
+    _stream(monkeypatch, "Ok.")
+
+    _run(user, conv, question="hello")
+
+    assert "earlier_conversation_summary" not in json.loads(captured["round_user"])
+
+
+def test_recent_turns_excludes_messages_already_folded_into_the_summary():
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    for i in range(5):
+        conv.messages.create(role="user", content=f"old turn {i}")
+    folded_upto = conv.messages.order_by("id").last()
+    conv.summary_upto_message = folded_upto
+    conv.save()
+    conv.messages.create(role="user", content="new turn")
+
+    history = agent._recent_turns(conv, exclude_id=None)
+
+    assert [h["content"] for h in history] == ["new turn"]
+
+
+@override_settings(ASSISTANT_ENABLED=True, ASSISTANT_PROVIDER="anthropic")
+def test_run_triggers_summary_check_after_persisting_the_turn(monkeypatch):
+    """``summarize.maybe_trigger`` fires post-response (after the assistant message is saved),
+    never before — it decides on the FINAL state of the conversation, including this turn."""
+    from erp.assistant.services import summarize as summarize_mod
+
+    user = _actor()
+    conv = Conversation.objects.create(user=user)
+    _script(monkeypatch, [{"action": "answer"}])
+    _stream(monkeypatch, "Hi.")
+
+    seen = {}
+
+    def fake_trigger(conversation):
+        seen["conversation_id"] = conversation.id
+        seen["assistant_message_already_saved"] = conversation.messages.filter(
+            role="assistant").exists()
+
+    monkeypatch.setattr(summarize_mod, "maybe_trigger", fake_trigger)
+
+    _run(user, conv)
+
+    assert seen["conversation_id"] == conv.id
+    assert seen["assistant_message_already_saved"] is True

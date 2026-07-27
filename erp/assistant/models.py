@@ -22,6 +22,14 @@ class Conversation(models.Model):
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Rolling summary (ai-reliability T3.7): a maintained digest of every turn older than the
+    # envelope's raw-history tail, so a long thread stays cheap without losing early turns.
+    # ``summary_upto_message`` marks the last message already folded in — everything after it
+    # (outside the tail) is what the next refresh has yet to summarize.
+    summary = models.TextField(blank=True, default="")
+    summary_upto_message = models.ForeignKey(
+        "Message", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+    )
 
     class Meta:
         ordering = ["-pinned", "-updated_at"]

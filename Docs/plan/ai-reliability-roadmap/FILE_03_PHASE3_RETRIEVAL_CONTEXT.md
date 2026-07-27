@@ -272,7 +272,7 @@
 - **Output:** `context_overflow` error class goes extinct — and the user can see why the
   assistant never loses the thread.
 
-### [ ] T3.7 — Rolling conversation summaries
+### [x] T3.7 — Rolling conversation summaries
 
 - **Goal:** threads beyond N turns carry a maintained summary instead of losing early turns.
 - **Prereq:** T3.6.
@@ -292,6 +292,29 @@
 - **Accept:** unit tests for trigger logic + staleness; long-thread eval cases pass; summary
   refresh visible as `feature="digest"` trace.
 - **Output:** long threads stay cheap AND coherent.
+- **STATUS: DONE 2026-07-28.** `Conversation.summary` + `summary_upto_message` (migration
+  `0012_conversation_summary_and_more`); `services/summarize.py` (`TAIL_MESSAGES=20` mirrors
+  `agent._HISTORY_TURNS`, `STALE_MESSAGE_GAP=10`, `TOKEN_TRIGGER=1500` — trigger reads as "≥10
+  new older messages AND their tokens > 1500"); `prompts/thread_summary.md`; refresh calls
+  `gateway.core.complete_json(feature="digest", ...)`, fail-open like rerank.py (a provider
+  error just keeps the prior summary). Hooked into both `agent.run` and `agent.resume_detour`
+  right after their `_persist()` — fire-and-forget via new Celery task
+  `assistant.refresh_thread_summary` (`tasks.py`), never blocking the SSE stream.
+  `_recent_turns` now excludes messages already folded into the summary
+  (`id__gt=summary_upto_message_id`); `_loop_user` carries the summary as its own envelope
+  section (priority 1, between `gathered`@0 and `history`@2) surfaced in the round payload as
+  `earlier_conversation_summary`. New eval suite `evals/long_thread.py` (`--suite long_thread`)
+  — 5 golden cases (3 ar / 2 en, `datasets/long_thread_v1.jsonl`) each seed a conversation past
+  both trigger thresholds with a fact planted at turn 3, drive real `summarize.refresh_summary`
+  to convergence through a deterministic fixture summarizer, then run one real `agent.run` round
+  with the planner decision captured — asserts the fact reaches the constructed prompt
+  specifically via the summary (`found_via_summary`), not raw history. All 5 pass. 12 new unit
+  tests (`test_summarize.py`: trigger/staleness/refresh/Celery hand-off) + 4 new `test_agent.py`
+  tests (envelope wiring, `_recent_turns` filtering, post-persist hook timing). Verified: full
+  `pytest erp` 1758 passed / 6 skipped (was 1650/5 pre-session — 108 net new, all T3.7's), golden
+  eval suite unchanged (118 pass / 30 fail, byte-identical failing-id set to the 2026-07-23
+  baseline — pre-existing fixture drift, not a T3.7 regression), retrieval suite unchanged,
+  `makemigrations --check` + `manage.py check` clean.
 
 ### [ ] T3.8 — Page-context distillation
 

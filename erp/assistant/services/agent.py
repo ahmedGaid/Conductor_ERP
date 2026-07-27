@@ -28,7 +28,7 @@ from ..gateway.core import complete_json, complete_stream, model_id, provider
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
-from . import actions, context, envelope, files, imports, suggestions
+from . import actions, context, envelope, files, imports, suggestions, summarize
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS, _answer_prompt_ref
 from .prompt_registry import get as get_prompt
 from .tracing import NULL_HANDLE, estimate_tokens, mark_cancelled, trace_call
@@ -136,10 +136,17 @@ def _last_user_text(conversation) -> str:
 
 def _recent_turns(conversation, exclude_id: int | None) -> list[dict]:
     """The last ~20 persisted turns (oldest first), minus the just-created user message, as plain
-    role/content dicts for the planner prompt."""
+    role/content dicts for the planner prompt.
+
+    T3.7: once the conversation has a rolling summary, turns it already covers are excluded here —
+    they're represented by the summary section instead (see ``_loop_user``), never duplicated into
+    raw history. ``summarize.TAIL_MESSAGES`` mirrors this same window, so once the summary is kept
+    fresh the two caps agree and this filter is a no-op beyond what the slice below already does."""
     qs = conversation.messages.all()
     if exclude_id is not None:
         qs = qs.exclude(id=exclude_id)
+    if conversation.summary_upto_message_id is not None:
+        qs = qs.filter(id__gt=conversation.summary_upto_message_id)
     tail = list(qs.order_by("-id")[:_HISTORY_TURNS])[::-1]
     return [{"role": m.role, "content": m.content} for m in tail]
 
@@ -163,7 +170,7 @@ def _recent_vision_attachments(conversation, exclude_id: int | None) -> list:
 
 
 def _loop_user(question: str, history: list[dict], results: list[dict], file_notes: list[str],
-               *, model: str, max_tokens: int) -> tuple[str, dict]:
+               *, model: str, max_tokens: int, summary: str = "") -> tuple[str, dict]:
     """The per-round planner input: prior turns, the current question, and everything gathered so
     far (each tool's why + result), so the model decides the next step in context.
 
@@ -171,20 +178,28 @@ def _loop_user(question: str, history: list[dict], results: list[dict], file_not
     (more history) — exactly the multi-round accumulation T3.6 exists to bound. Both go through the
     envelope manager as their own sections (``gathered`` kept at higher priority: the data this
     round actually needs beats older conversation) instead of the old hard ``_HISTORY_TURNS`` cap.
+
+    T3.7: when the conversation has a maintained summary, it rides as its own section — priority
+    just above ``history`` — so turns older than the raw-history tail are represented by the
+    summary instead of being dropped outright once the envelope runs short of budget.
     """
     gathered = [{"tool": r["tool"], "why": r["why"], "result": r["data"]} for r in results]
     sections = [
         envelope.Section("gathered", 0, json.dumps(gathered, ensure_ascii=False),
                          max_share=0.7, degrade_fn=_degrade_list_half),
-        envelope.Section("history", 1, json.dumps(history, ensure_ascii=False),
-                         max_share=0.4, degrade_fn=_degrade_list_half),
     ]
+    if summary:
+        sections.append(envelope.Section("summary", 1, summary))
+    sections.append(envelope.Section("history", 2, json.dumps(history, ensure_ascii=False),
+                                     max_share=0.4, degrade_fn=_degrade_list_half))
     kept, meta = envelope.assemble(sections, model=model, max_tokens=max_tokens)
     payload = {
         "conversation_so_far": json.loads(kept.get("history", "[]")),
         "question": question,
         "gathered": json.loads(kept.get("gathered", "[]")),
     }
+    if "summary" in kept:
+        payload["earlier_conversation_summary"] = kept["summary"]
     if file_notes:
         payload["attached_files"] = file_notes
     return json.dumps(payload, ensure_ascii=False), meta
@@ -310,6 +325,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                 )
 
     history = _recent_turns(conversation, exclude_id=user_msg.id if user_msg else None)
+    thread_summary = conversation.summary if conversation is not None else ""
 
     # --- the loop: plan → run a tool → repeat, until answer / clarify / round cap -----------------
     loop_system = _loop_prompt.render(catalog=catalog_text(), query_grammar=query_grammar_text(),
@@ -355,7 +371,8 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         # media rides every round: the planner keeps its eyes on the attachment until it proposes
         # (usually round 1), so it can read supplier/lines from an image instead of guessing them.
         round_user, loop_envelope_meta = _loop_user(
-            q, history, results, file_notes, model=model, max_tokens=max_tokens)
+            q, history, results, file_notes, model=model, max_tokens=max_tokens,
+            summary=thread_summary)
         _t0 = time.monotonic()
         decision = complete_json(loop_system, round_user, _LOOP_SCHEMA, media=media)
         trace.step(kind="llm", name=f"round{_round + 1}", ok=True,
@@ -605,6 +622,9 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                                   "answer_data": data_meta}
         yield {"type": "citations", "citations": citations}
         msg = _persist()
+        if msg is not None and conversation is not None:
+            # T3.7: post-response only — never blocks this stream (fire-and-forget Celery task).
+            summarize.maybe_trigger(conversation)
         if proposal is not None and msg is not None:
             yield {"type": "proposal", "message_id": msg.id,
                    "proposal": {**proposal, "status": "pending"}}
@@ -743,6 +763,8 @@ def resume_detour(*, actor, conversation, source_message, resolved):
             yield {"type": "token", "text": chunk}
         yield {"type": "citations", "citations": citations}
         msg = _persist()
+        if msg is not None:
+            summarize.maybe_trigger(conversation)  # T3.7: post-response only, never blocks the stream
         if proposal is not None and msg is not None:
             yield {"type": "proposal", "message_id": msg.id, "proposal": {**proposal}}
         yield {"type": "done", "message_id": msg.id if msg else None, "used_tool": used_tool,
