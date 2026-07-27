@@ -9,6 +9,7 @@ import type {
   AttachmentInfo,
   ChatMessage,
   ChatStep,
+  EnvelopeInfo,
   ImportTask,
 } from "../api/assistant";
 import { getMe } from "../api/identity";
@@ -134,6 +135,22 @@ function StepsSummary({ steps }: { steps: ChatStep[] }) {
   );
 }
 
+// A quiet context-budget meter (ai-reliability T3.6): tokens only surface on hover — the icon
+// alone is the whole footprint in the actions row, matching Copy/Regenerate right beside it.
+function EnvelopeMeter({ info }: { info: EnvelopeInfo }) {
+  const { t } = useTranslation();
+  const label = t("assistant.contextTokens", {
+    used: info.tokens.toLocaleString(), budget: info.budget.toLocaleString(),
+  });
+  return (
+    <Tooltip label={label} placement="bottom">
+      <span className="msg__action msg__action--meter" tabIndex={0} aria-label={label}>
+        <NavIcon name="info" />
+      </span>
+    </Tooltip>
+  );
+}
+
 interface MessageListProps {
   messages: ChatMessage[];
   streaming: boolean;
@@ -221,6 +238,7 @@ export function MessageList({
             const proposal = m.meta?.proposal as ActionProposal | undefined;
             const suggestion = m.meta?.suggestion as AssistantSuggestion | undefined;
             const importTask = m.meta?.import as ImportTask | undefined;
+            const envelopeInfo = m.meta?.envelope as EnvelopeInfo | undefined;
             // A synthetic "detour return" turn (session 13) is recorded honestly, but shown as a calm
             // localised divider — not an English user bubble — so the transcript stays on-brand.
             if (m.meta?.kind === "detour_return") {
@@ -266,6 +284,9 @@ export function MessageList({
             return (
               <li key={m.id} className="msg msg--assistant">
                 {steps.length > 0 && <StepsSummary steps={steps} />}
+                {envelopeInfo?.compacted && (
+                  <p className="conversation__hint" dir="auto">{t("assistant.contextCompacted")}</p>
+                )}
                 <Markdown text={m.content} onNavigate={onNavigate} />
                 {proposal && (
                   <ActionCard
@@ -306,6 +327,7 @@ export function MessageList({
                       <NavIcon name="duplicate" />
                     </button>
                   </Tooltip>
+                  {envelopeInfo && <EnvelopeMeter info={envelopeInfo} />}
                   {m.id === lastAssistantId && !streaming && (
                     <Tooltip label={t("assistant.regenerate")} placement="bottom">
                       <button

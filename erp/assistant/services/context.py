@@ -10,6 +10,8 @@ from erp.identity import access
 from erp.identity import services as identity_services
 from erp.inventory import contracts as inventory
 
+from ..gateway.core import model_id
+from . import envelope
 from .prompt_registry import get as get_prompt
 
 _identity_prompt = get_prompt("identity")
@@ -118,6 +120,25 @@ def _company_block(actor) -> str:
     return " ".join(lines)
 
 
+def _degrade_page_block(text: str) -> str | None:
+    """Drop the two lines most likely to run long (active filters, recently-visited list) before
+    dropping the whole page section — the record/module lines are what the model actually needs."""
+    lines = text.split("\n")
+    kept = [ln for ln in lines
+            if not (ln.startswith("- Active list filters:") or ln.startswith("- Recently visited:"))]
+    return "\n".join(kept) if len(kept) < len(lines) and len(kept) > 1 else None
+
+
+def _degrade_recent_actions_block(text: str) -> str | None:
+    """Keep only the most recent proposal line instead of up to 5 — "suggestions context" is the
+    lowest-priority section (T3.6), so it gives way first under budget pressure."""
+    lines = text.split("\n")
+    header, bullets = lines[0], lines[1:]
+    if len(bullets) <= 1:
+        return None
+    return "\n".join([header, *bullets[-1:]])
+
+
 def _recent_actions_block(conversation) -> str | None:
     if conversation is None:
         return None
@@ -163,16 +184,41 @@ def answer_language_directive(question: str) -> str:
     )
 
 
-def build_system_prompt(actor, page: dict | None = None, conversation=None) -> str:
-    """Assemble the envelope: identity, user, page (optional), company, personas."""
-    sections = [_IDENTITY, _user_block(actor)]
+def build_system_prompt_with_meta(actor, page: dict | None = None, conversation=None,
+                                  *, model: str | None = None) -> tuple[str, dict]:
+    """Assemble the envelope: identity, user, page (optional), company, recent actions, personas —
+    fitted to ``model``'s token budget (T3.6) instead of joined unconditionally. Returns
+    ``(prompt, meta)``; ``meta`` is the per-section composition record for ``Trace.meta.envelope``.
+
+    Priority order below IS render order (envelope.assemble never reorders) — identity+persona and
+    the answering rules stay first/last exactly as before; only the two genuinely unbounded blocks
+    (page enrichment, recent-actions) have a shorter form to fall back to under real pressure. At
+    this envelope's actual size (a few hundred to low thousands of tokens) against any of the four
+    providers' windows, trimming essentially never fires today — the guarantee is structural, for
+    when a page/conversation payload grows.
+    """
+    from django.conf import settings
+
+    sections = [envelope.Section("identity", 0, _IDENTITY)]
+    sections.append(envelope.Section("user", 1, _user_block(actor)))
     page_section = _page_block(page)
     if page_section:
-        sections.append(page_section)
-    sections.append(_company_block(actor))
+        sections.append(envelope.Section("page", 2, page_section, max_share=0.3,
+                                         degrade_fn=_degrade_page_block))
+    sections.append(envelope.Section("company", 3, _company_block(actor)))
     recent_actions = _recent_actions_block(conversation)
     if recent_actions:
-        sections.append(recent_actions)
-    sections.append(_PERSONA)
-    sections.append(_SOURCES)
-    return "\n\n".join(sections)
+        sections.append(envelope.Section("suggestions", 4, recent_actions, max_share=0.2,
+                                         degrade_fn=_degrade_recent_actions_block))
+    sections.append(envelope.Section("persona", 5, _PERSONA))
+    sections.append(envelope.Section("sources", 6, _SOURCES))
+
+    kept, meta = envelope.assemble(
+        sections, model=model or model_id(), max_tokens=settings.ASSISTANT_MAX_TOKENS)
+    return "\n\n".join(kept.values()), meta
+
+
+def build_system_prompt(actor, page: dict | None = None, conversation=None) -> str:
+    """Same as ``build_system_prompt_with_meta`` without the composition record — the call sites
+    that don't (yet) hold a trace handle to record it against."""
+    return build_system_prompt_with_meta(actor, page, conversation)[0]

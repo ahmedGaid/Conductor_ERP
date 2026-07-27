@@ -612,6 +612,10 @@
   inline-size: 0.95rem;
   block-size: 0.95rem;
 }
+/* The context-budget meter (T3.6) is informational only — no click action. */
+.msg__action--meter {
+  cursor: help;
+}
 
 /* Streaming: the live answer plus a soft blinking caret. */
 .msg__streaming {

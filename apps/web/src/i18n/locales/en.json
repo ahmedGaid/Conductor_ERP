@@ -54,6 +54,8 @@
     "ask": "Ask",
     "thinking": "Thinking…",
     "streamRetrying": "Reconnecting — picking up where we left off…",
+    "contextCompacted": "Older parts of this conversation were summarized to make room for this answer.",
+    "contextTokens": "{{used}} / {{budget}} tokens",
     "tryLabel": "Try asking",
     "sources": "From your records",
     "open": "Open assistant",

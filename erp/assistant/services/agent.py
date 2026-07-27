@@ -20,13 +20,15 @@ from __future__ import annotations
 import json
 import time
 
+from django.conf import settings
+
 from erp.audit import services as audit
 
 from ..gateway.core import complete_json, complete_stream, model_id, provider
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
-from . import actions, context, files, imports, suggestions
+from . import actions, context, envelope, files, imports, suggestions
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS, _answer_prompt_ref
 from .prompt_registry import get as get_prompt
 from .tracing import NULL_HANDLE, estimate_tokens, mark_cancelled, trace_call
@@ -34,7 +36,9 @@ from .tracing import NULL_HANDLE, estimate_tokens, mark_cancelled, trace_call
 # Most rounds a question ever needs; hit it and the loop is forced to answer with what it has.
 MAX_ROUNDS = 6
 
-# How much prior conversation the planner sees each round (keeps the prompt bounded).
+# How much prior conversation a round's DB query fetches (envelope.assemble decides how much of
+# that actually enters the prompt — see ``_degrade_list_half``); a generous fetch ceiling here is
+# just a cheap upper bound on the query, not the token-budget control itself (T3.6).
 _HISTORY_TURNS = 20
 
 _loop_prompt = get_prompt("agent_loop")
@@ -94,14 +98,32 @@ _LOOP_SCHEMA = {
 }
 
 
-def _answer_system(actor, page: dict | None, conversation=None, question: str = "") -> str:
+def _answer_system(actor, page: dict | None, conversation=None, question: str = "",
+                   *, model: str | None = None) -> tuple[str, dict]:
     # Same envelope + data-answering constraints as the single-shot path; DATA now holds every
     # round's result rather than one. The computed reply-language directive closes it, as in ask.
-    return "\n\n".join((
-        context.build_system_prompt(actor, page, conversation),
-        _ANSWER_TONE,
-        context.answer_language_directive(question),
-    ))
+    # Returns the composition record alongside the string (T3.6) — the answer tone + language
+    # directive are small fixed blocks, always included, not worth their own envelope section.
+    prompt, meta = context.build_system_prompt_with_meta(actor, page, conversation, model=model)
+    return "\n\n".join((prompt, _ANSWER_TONE, context.answer_language_directive(question))), meta
+
+
+def _degrade_list_half(content: str) -> str | None:
+    """Drop the OLDEST half of a JSON array, keeping the most recent entries — shared by the
+    planner's per-round history/gathered sections and the final answer's results payload (T3.6).
+    Older turns and earlier tool calls are the least likely to matter to the current step; a
+    single shared policy means history and tool-results never drift onto different degrade rules."""
+    try:
+        items = json.loads(content)
+    except ValueError:
+        return None
+    if not isinstance(items, list) or len(items) <= 1:
+        return None
+    return json.dumps(items[len(items) // 2:], ensure_ascii=False)
+
+
+def _any_compacted(*metas: dict) -> bool:
+    return any(v.get("trimmed") or v.get("dropped") for m in metas for v in m.values())
 
 
 def _last_user_text(conversation) -> str:
@@ -140,17 +162,32 @@ def _recent_vision_attachments(conversation, exclude_id: int | None) -> list:
     return []
 
 
-def _loop_user(question: str, history: list[dict], results: list[dict], file_notes: list[str]) -> str:
+def _loop_user(question: str, history: list[dict], results: list[dict], file_notes: list[str],
+               *, model: str, max_tokens: int) -> tuple[str, dict]:
     """The per-round planner input: prior turns, the current question, and everything gathered so
-    far (each tool's why + result), so the model decides the next step in context."""
+    far (each tool's why + result), so the model decides the next step in context.
+
+    ``history`` and ``gathered`` grow every round (more tool results) and every conversation turn
+    (more history) — exactly the multi-round accumulation T3.6 exists to bound. Both go through the
+    envelope manager as their own sections (``gathered`` kept at higher priority: the data this
+    round actually needs beats older conversation) instead of the old hard ``_HISTORY_TURNS`` cap.
+    """
+    gathered = [{"tool": r["tool"], "why": r["why"], "result": r["data"]} for r in results]
+    sections = [
+        envelope.Section("gathered", 0, json.dumps(gathered, ensure_ascii=False),
+                         max_share=0.7, degrade_fn=_degrade_list_half),
+        envelope.Section("history", 1, json.dumps(history, ensure_ascii=False),
+                         max_share=0.4, degrade_fn=_degrade_list_half),
+    ]
+    kept, meta = envelope.assemble(sections, model=model, max_tokens=max_tokens)
     payload = {
-        "conversation_so_far": history,
+        "conversation_so_far": json.loads(kept.get("history", "[]")),
         "question": question,
-        "gathered": [{"tool": r["tool"], "why": r["why"], "result": r["data"]} for r in results],
+        "gathered": json.loads(kept.get("gathered", "[]")),
     }
     if file_notes:
         payload["attached_files"] = file_notes
-    return json.dumps(payload, ensure_ascii=False)
+    return json.dumps(payload, ensure_ascii=False), meta
 
 
 def _dedup(citations: list[dict]) -> list[dict]:
@@ -308,11 +345,17 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     total_in_tokens = 0
     total_out_tokens = 0
     hit_round_cap = False
+    # T3.6: one budget for the whole run — the primary provider's model and the reply ceiling never
+    # change mid-turn, so this is computed once rather than re-resolved every round.
+    model = model_id()
+    max_tokens = settings.ASSISTANT_MAX_TOKENS
+    loop_envelope_meta: dict = {}
 
     for _round in range(MAX_ROUNDS):
         # media rides every round: the planner keeps its eyes on the attachment until it proposes
         # (usually round 1), so it can read supplier/lines from an image instead of guessing them.
-        round_user = _loop_user(q, history, results, file_notes)
+        round_user, loop_envelope_meta = _loop_user(
+            q, history, results, file_notes, model=model, max_tokens=max_tokens)
         _t0 = time.monotonic()
         decision = complete_json(loop_system, round_user, _LOOP_SCHEMA, media=media)
         trace.step(kind="llm", name=f"round{_round + 1}", ok=True,
@@ -490,6 +533,8 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         )
         return msg
 
+    sys_meta: dict = {}
+    data_meta: dict = {}
     try:
         if clarify_text is not None:
             # A clarifying question IS the answer for this turn — no model stream, no citations.
@@ -497,8 +542,15 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             citations = []
             yield {"type": "token", "text": clarify_text}
         else:
+            data_section = envelope.Section(
+                "answer_data", 0,
+                json.dumps([{"tool": r["tool"], "result": r["data"]} for r in results],
+                          ensure_ascii=False),
+                degrade_fn=_degrade_list_half,
+            )
+            kept_data, data_meta = envelope.assemble([data_section], model=model, max_tokens=max_tokens)
             user = json.dumps(
-                {"question": q, "data": [{"tool": r["tool"], "result": r["data"]} for r in results]},
+                {"question": q, "data": json.loads(kept_data.get("answer_data", "[]"))},
                 ensure_ascii=False,
             )
             if file_notes:
@@ -522,7 +574,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                          "after they fix it you will continue"
                          + (f" ({suggestion['resume']})" if suggestion.get("resume") else "")
                          + ". Do NOT claim anything was created or fixed yet.")
-            answer_system = _answer_system(actor, page, conversation, q)
+            answer_system, sys_meta = _answer_system(actor, page, conversation, q, model=model)
             _t0 = time.monotonic()
             _first = True
             _retrying = {"n": 0}
@@ -545,8 +597,12 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                       detail={"prompt_ref": _answer_prompt_ref()})
             total_in_tokens += estimate_tokens(answer_system + user)
             total_out_tokens += estimate_tokens("".join(parts))
-        trace.usage(provider=provider(), model=model_id(), estimated=True,
+        trace.usage(provider=provider(), model=model, estimated=True,
                    input_tokens=total_in_tokens, output_tokens=total_out_tokens)
+        # T3.6: the final composition this run actually assembled — system-prompt sections, the
+        # last round's planner history/gathered, and the answer's own data payload.
+        trace.meta["envelope"] = {"system": sys_meta, "planner_data": loop_envelope_meta,
+                                  "answer_data": data_meta}
         yield {"type": "citations", "citations": citations}
         msg = _persist()
         if proposal is not None and msg is not None:
@@ -557,7 +613,12 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         if suggestion is not None and msg is not None:
             yield {"type": "suggestion", "message_id": msg.id,
                    "suggestion": {**suggestion, "status": "open"}}
-        yield {"type": "done", "message_id": msg.id, "used_tool": used_tool}
+        # T3.6 step 5: lets the client render a quiet usage meter and, when this turn actually
+        # trimmed or dropped something, a calm compaction notice instead of silent truncation.
+        yield {"type": "done", "message_id": msg.id, "used_tool": used_tool,
+               "conversation_tokens": total_in_tokens + total_out_tokens,
+               "budget_tokens": envelope.budget_for(model, max_tokens),
+               "compacted": _any_compacted(sys_meta, loop_envelope_meta, data_meta)}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer
 
@@ -658,17 +719,21 @@ def resume_detour(*, actor, conversation, source_message, resolved):
         )
         return msg
 
+    model = model_id()
+    max_tokens = settings.ASSISTANT_MAX_TOKENS
     try:
         user = json.dumps(
             {"detour_return": note, "record": resolved, "proposal_ready": proposal is not None},
             ensure_ascii=False,
         )
+        # A detour has no new question of its own — the reply language follows the last thing the
+        # user actually wrote in this conversation.
+        answer_system, sys_meta = _answer_system(
+            actor, None, conversation, _last_user_text(conversation), model=model)
         _retrying = {"n": 0}
         for chunk in complete_stream(
             [{"role": "user", "content": user + "\n\n" + instruction}],
-            # A detour has no new question of its own — the reply language follows the last thing
-            # the user actually wrote in this conversation.
-            system=_answer_system(actor, None, conversation, _last_user_text(conversation)),
+            system=answer_system,
             on_retry=lambda: _retrying.__setitem__("n", _retrying["n"] + 1),
         ):
             if _retrying["n"]:
@@ -680,6 +745,9 @@ def resume_detour(*, actor, conversation, source_message, resolved):
         msg = _persist()
         if proposal is not None and msg is not None:
             yield {"type": "proposal", "message_id": msg.id, "proposal": {**proposal}}
-        yield {"type": "done", "message_id": msg.id if msg else None, "used_tool": used_tool}
+        yield {"type": "done", "message_id": msg.id if msg else None, "used_tool": used_tool,
+               "conversation_tokens": estimate_tokens(answer_system + user + "".join(parts)),
+               "budget_tokens": envelope.budget_for(model, max_tokens),
+               "compacted": _any_compacted(sys_meta)}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial welcome-back

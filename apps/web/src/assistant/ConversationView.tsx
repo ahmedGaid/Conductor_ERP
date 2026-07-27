@@ -16,6 +16,7 @@ import {
   type ChatEvent,
   type ChatMessage,
   type ChatStep,
+  type EnvelopeInfo,
   type ImportTask,
 } from "../api/assistant";
 import { NavIcon } from "../app/icons";
@@ -189,6 +190,7 @@ export function ConversationView() {
     let proposal: ActionProposal | null = null;
     let suggestion: AssistantSuggestion | null = null;
     let importTask: ImportTask | null = null;
+    let envelopeInfo: EnvelopeInfo | null = null;
     let errMsg: string | null = null;
     // The event handling is identical for a fresh answer and a detour resume — only the request
     // differs (resume replays paused work server-side; no new question, no page context needed).
@@ -242,6 +244,11 @@ export function ConversationView() {
           } else if (e.type === "done") {
             usedTool = e.used_tool ?? null;
             if (e.message_id != null) messageId = e.message_id;
+            if (e.budget_tokens != null && e.conversation_tokens != null) {
+              envelopeInfo = {
+                tokens: e.conversation_tokens, budget: e.budget_tokens, compacted: !!e.compacted,
+              };
+            }
           } else if (e.type === "error") {
             // T2.7: a budget block gets its own designed ar/en line, not the raw backend string
             // (which is English-only) — same "distinct code, distinct notice" precedent as T2.6's
@@ -267,6 +274,7 @@ export function ConversationView() {
             ...(proposal ? { proposal } : {}),
             ...(suggestion ? { suggestion } : {}),
             ...(importTask ? { import: importTask } : {}),
+            ...(envelopeInfo ? { envelope: envelopeInfo } : {}),
           },
           created_at: new Date().toISOString(),
         };

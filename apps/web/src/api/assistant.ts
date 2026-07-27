@@ -152,6 +152,14 @@ export interface ChatStep {
   state?: "running" | "done";
 }
 
+// The context-budget meter for one turn (ai-reliability T3.6): how much of the model's window this
+// answer used, and whether the envelope manager had to trim or drop anything to fit.
+export interface EnvelopeInfo {
+  tokens: number;
+  budget: number;
+  compacted: boolean;
+}
+
 // A record link on a proposal/result card — a real record the action touches or created.
 export interface ActionRecord {
   type: "customer" | "supplier" | "item" | "order" | "purchaseRequest" | "purchaseOrder" | "quotation";
@@ -291,6 +299,7 @@ export interface ChatMessage {
     proposal?: ActionProposal;
     suggestion?: AssistantSuggestion;
     import?: ImportTask;
+    envelope?: EnvelopeInfo;
     // A synthetic "detour_return" user turn (session 13): rendered as a calm localised divider, not a
     // raw bubble. entity/label localise its text ("Back from creating supplier ABC Trading").
     kind?: string;
@@ -478,6 +487,11 @@ export interface ChatEvent {
   suggestion?: AssistantSuggestion;
   // `import` event (session 14): a mapping-stage spreadsheet import card, keyed by message_id.
   import?: ImportTask;
+  // `done` event (ai-reliability T3.6): this turn's context-budget usage — lets the client render
+  // a quiet meter and, when `compacted`, a calm "older parts were summarized" notice.
+  conversation_tokens?: number;
+  budget_tokens?: number;
+  compacted?: boolean;
 }
 
 // Same auth headers apiFetch sends (bearer + Accept-Language). Kept local because a raw stream

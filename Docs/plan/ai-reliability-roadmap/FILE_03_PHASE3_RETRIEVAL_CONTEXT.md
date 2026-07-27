@@ -237,7 +237,7 @@
 - **Accept:** offline tests via recordings; fail-open test; decision file committed with numbers.
 - **Output:** better top-5 when it matters, no cost when it doesn't.
 
-### [ ] T3.6 — Context budget manager
+### [x] T3.6 — Context budget manager
 
 - **Goal:** the envelope assembles within an explicit token budget; overflow is impossible.
 - **Prereq:** T3.2 (retrieval section), Phase 1 traces.
