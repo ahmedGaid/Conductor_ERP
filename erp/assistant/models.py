@@ -131,6 +131,7 @@ class Trace(models.Model):
         EMBED = "embed"
         EVAL = "eval"
         WORKFLOW = "workflow"  # an action run as a step inside a workflow (assistant_action node)
+        RERANK = "rerank"  # ai-reliability T3.5 — LLM relevance scoring over fused retrieval candidates
 
     class Status(models.TextChoices):
         OK = "ok"

@@ -318,6 +318,15 @@ ASSISTANT_RAG_EMBEDDINGS = env.bool("ASSISTANT_RAG_EMBEDDINGS", default=False)  
 # both when the server lacks the extension), so installs without pgvector keep working unchanged.
 ASSISTANT_PGVECTOR = env.bool("ASSISTANT_PGVECTOR", default=False)
 
+# ai-reliability T3.5: when on, knowledge search's fused top candidates are rescored by an LLM
+# relevance pass before the top-K enter the prompt (see erp/assistant/services/rerank.py). Off by
+# default and eval-gated — flip on only once evals/results/rerank_decision.json records a real
+# nDCG lift within the latency budget (T3.5 step 3); the ambiguity gap below skips the extra call
+# entirely when the fused top pick is already a clear winner (RRF score units — see
+# rerank._ambiguous docstring for why this is a tuned constant, not a statistical threshold).
+ASSISTANT_RERANK = env.bool("ASSISTANT_RERANK", default=False)
+ASSISTANT_RERANK_AMBIGUITY_GAP = env.float("ASSISTANT_RERANK_AMBIGUITY_GAP", default=0.004)
+
 # Per-task-class SDK timeout ceiling, in seconds (ai-reliability T2.2). Keys are the ``feature``
 # label callers already pass to gateway.complete_json/complete_stream — the task-class enum from
 # Docs/plan/ai-reliability-roadmap/FILE_02 (T2.3/T2.4 formalize routing per class; this just bounds
@@ -342,8 +351,8 @@ ASSISTANT_TASK_TIMEOUTS = {
 # chat/ask/agent_*/extract are hard-denied in gateway/cache.py regardless of this set. TTLs are
 # seconds; None (or an unlisted task) = no expiry — a judge grade of a fixed transcript never
 # goes stale, only a cache.bump("judge") invalidates it.
-ASSISTANT_CACHE_TASKS = {"digest", "suggest", "judge"}
-ASSISTANT_CACHE_TTLS = {"digest": 20 * 3600, "suggest": 6 * 3600, "judge": None}
+ASSISTANT_CACHE_TASKS = {"digest", "suggest", "judge", "rerank"}
+ASSISTANT_CACHE_TTLS = {"digest": 20 * 3600, "suggest": 6 * 3600, "judge": None, "rerank": 6 * 3600}
 
 # Semantic cache for knowledge Q&A (ai-reliability T2.8): a near-duplicate question (cosine ≥
 # threshold, same user, current knowledge version) reuses a verified answer instead of re-running

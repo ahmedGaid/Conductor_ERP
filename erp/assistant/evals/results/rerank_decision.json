@@ -1,0 +1,52 @@
+{
+  "task": "ai-reliability T3.5 — LLM rerank stage",
+  "decision": "OFF",
+  "flag": "ASSISTANT_RERANK",
+  "flag_default": false,
+  "date": "2026-07-27",
+  "summary": "Mechanism verified correct via live end-to-end calls (real provider, real reorder on a real ambiguous case). Kept OFF because the current retrieval_v1 fixture gives it zero opportunity to fire (no measurable eval lift is possible) AND the one real latency measurement available is far over budget. Either finding alone would be enough to withhold ON; both point the same way.",
+  "methodology": {
+    "suite": "retrieval_v1 (evals/datasets/retrieval_v1.jsonl, 94 queries, 64 ar / 30 en, same fixture as evals/results/retrieval_baseline_vs_fusion.json)",
+    "how": "knowledge.search() run over the full fixture set with ASSISTANT_RERANK=True and ASSISTANT_RERANK_AMBIGUITY_GAP forced to 999 (i.e. the ambiguity gate itself disabled, so every eligible query gets every chance to rerank) inside a rolled-back transaction, fixture embeddings patched exactly as the offline suite does (evals/retrieval.fixture_embeddings). A spy in place of rerank.maybe_rerank counted how many queries actually reached the fused branch and with how many candidates, without making network calls (see below for a separate live confirmation that the real call path works).",
+    "note": "Not run through `run_evals` / not a permanent CLI flag — this was a one-off calibration measurement (throwaway script, not committed) because the retrieval_v1 fixture cannot exercise rerank at all (see coverage_on_fixture below); a permanent live-network suite mode would be dead code until a richer fixture exists."
+  },
+  "coverage_on_fixture": {
+    "total_queries": 94,
+    "reached_fused_branch": 31,
+    "reached_fused_branch_pct": 0.33,
+    "of_those_with_2plus_candidates": 0,
+    "real_rerank_invocations": 0,
+    "why": "63/94 queries (67%) never reach the RRF-fused path at all — they resolve via knowledge.search's icontains lexical safety net (config=\"simple\" FTS ANDs every query word with no stopword list, so natural-language questions frequently fail to match at all and fall through). icontains results are outside T3.5's scope by design (rerank operates on 'fused candidates' per the phase spec, not the lexical fallback). Of the 31/94 that DO reach fusion, every single one produced exactly 1 fused candidate (fixture corpus is 24 single-chunk docs; the eval queries are precise enough that FTS+vector usually agree on exactly one match) — rerank.maybe_rerank's ambiguity gate requires >=2 candidates to even consider reranking, so it returned immediately every time regardless of the gap threshold. Net effect: 0 of 94 queries ever produced a real model call, so the suite's aggregate metrics are bit-identical to the flag-off 'fusion' baseline (recall@5=0.9415, recall@10=0.9894, MRR=0.7360, nDCG@10=0.7900 — see retrieval_baseline_vs_fusion.json) and the accept bar (nDCG@10 >= +3 points) cannot be evaluated on this fixture as it stands.",
+    "recommendation": "Before re-attempting this decision, extend retrieval_v1 with queries that deliberately have 2+ close candidates (e.g. near-duplicate policy docs) — the current fixture was built for T3.3/T3.4 (fusion, Arabic normalization), not for exercising an ambiguity-gated rerank stage."
+  },
+  "live_mechanism_verification": {
+    "method": "Two real, non-fixture calls through the full production path (erp/assistant/services/knowledge.py search() -> rerank.maybe_rerank() -> gateway.core.complete_json(feature=\"rerank\")), real API keys, real DB rows in a rolled-back transaction, throwaway scripts, not committed.",
+    "case_1_isolated": {
+      "what": "Direct complete_json(feature=\"rerank\") call, 2 excerpts (a refund-window passage and an unrelated shipping passage), real query.",
+      "result": "Correct: scored the relevant excerpt higher (score 2) than the irrelevant one (score 0).",
+      "latency_ms": 10339,
+      "provider_path": "gemini (did not complete in time) -> mistral (succeeded)"
+    },
+    "case_2_full_pipeline": {
+      "what": "3 real KnowledgeDocument rows ingested (Return Shipping / Refund Policy / Return Window), query \"refund return days\" through knowledge.search(limit=3).",
+      "fused_result": "Refund Policy (score 0.0164) and Return Window (score 0.0161) — RRF gap 0.0003, correctly judged ambiguous (<= the 0.004 default gate) and correctly triggered a real rerank call.",
+      "latency_ms": 8356,
+      "provider_path": "gemini (did not complete in time) -> mistral (succeeded)",
+      "flag_off_latency_ms": 14.1,
+      "note": "Rerank ran and returned a valid ordering; the fused and reranked order happened to agree on this one case, which is expected for a genuinely close, roughly-equal-quality pair — the point of this probe was proving the wiring and latency, not measuring lift (that needs the eval set fix above)."
+    },
+    "conclusion": "The code path (flag check -> ambiguity gate -> prompt render -> gateway call -> score parse -> reorder -> fail-open) is correct and exercised for real. The latency is the blocker, not correctness."
+  },
+  "latency_vs_budget": {
+    "budget_ms": 400,
+    "budget_note": "T3.5 accept bar: added p95 latency <= 400ms, cache warm.",
+    "observed_cold_ms": [10339, 8356],
+    "observed_flag_off_ms": 14.1,
+    "verdict": "FAIL — both observed cold calls are ~20-25x the budget. Both went through the same path: the gateway's chain head (gemini) did not return in time for this call shape and fell over to mistral, which then answered quickly. This is a property of the current gateway/provider routing for the `rerank` task class as configured today (short EXCERPT_CHARS, JSON schema with a `scores` array) — not something introduced by rerank.py's own logic, and not investigated further here (out of T3.5's scope; a gateway/provider routing task, not a retrieval task). A cache-warm repeat of the exact same fused candidate set would be fast (T2.5 exact-cache now allowlists \"rerank\", ASSISTANT_CACHE_TTLS[\"rerank\"]=6h) but was not separately measured — the cold path already fails the bar on its own."
+  },
+  "next_steps_if_revisited": [
+    "Extend retrieval_v1.jsonl with deliberately close-candidate queries so the ambiguity gate has real opportunities to fire in the offline suite.",
+    "Investigate why the gemini provider doesn't complete in time for the rerank schema/shape before assuming rerank itself needs a design change.",
+    "Re-run this same methodology once both of the above are addressed; only then reconsider ASSISTANT_RERANK=True."
+  ]
+}

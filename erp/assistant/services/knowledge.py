@@ -18,7 +18,7 @@ from .. import textnorm
 from ..gateway import cache as semantic_cache
 from ..gateway.core import complete_stream
 from ..models import KnowledgeChunk, KnowledgeDocument
-from . import files
+from . import files, rerank
 
 # ~1200 chars per chunk keeps a retrieved set of 6 chunks well inside the prompt budget;
 # 200-char overlap preserves sentences cut at a boundary.
@@ -358,6 +358,11 @@ def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
     The vector arm's embedding and the icontains fallback both use the RAW query: embeddings
     handle Arabic morphology natively, and icontains matches the raw stored chunk text.
 
+    ai-reliability T3.5: when ``ASSISTANT_RERANK`` is on, the fused candidates (up to
+    ``RRF_ARM_DEPTH``, not just ``limit``) are handed to :func:`rerank.maybe_rerank`, which narrows
+    them to ``limit`` by LLM relevance score instead of raw fused rank — fail-open and flag-gated,
+    so behavior is byte-identical to the plain fused truncation whenever the flag is off.
+
     Returns [{"document_id", "title", "seq", "text", "score", "arms"}], best first — ``arms`` is
     the per-hit provenance (["fts"], ["vec"], or both). Empty list = genuinely nothing found, which
     the tool layer turns into an honest "no document covers this" (never fabricated documentation).
@@ -383,9 +388,13 @@ def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
     fts_ids = [c.id for c in fts_candidates]
 
     if fts_ids or vec_ids:
-        fused = _rrf_fuse({"fts": fts_ids, "vec": vec_ids})[:limit]
+        # Flag off: keep loading exactly `limit` chunks (byte-identical to pre-T3.5 behavior).
+        # Flag on: load the full fused depth so rerank has real candidates to choose among.
+        fuse_depth = RRF_ARM_DEPTH if rerank.enabled() else limit
+        fused = _rrf_fuse({"fts": fts_ids, "vec": vec_ids})[:fuse_depth]
         chunks = _load_chunks({cid for cid, _s, _a in fused}, fts_candidates)
-        rows = [_row(chunks[cid], score, arms=arms) for cid, score, arms in fused if cid in chunks]
+        fused_rows = [_row(chunks[cid], score, arms=arms) for cid, score, arms in fused if cid in chunks]
+        rows = rerank.maybe_rerank(query, fused_rows, top_k=limit, trace=trace)
         _trace_retrieval(trace, fts=len(fts_ids), vec=len(vec_ids), rows=rows, fused=True)
         return rows
 
