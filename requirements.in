@@ -22,7 +22,7 @@ waitress>=3.0,<4.0             # pure-python WSGI server (Windows-friendly; guni
 anthropic>=0.92,<1.0           # AI assistant (plan session 02); optional at runtime — off without an API key
 google-genai>=1.0,<2.0         # AI assistant alt provider (client request 2026-07-02): Gemini via GEMINI_API_KEY
 cryptography>=44,<50           # e-invoice CAdES signing (FILE_03): PKCS#12 load + RSA/SHA-256 (already transitive via google-auth; now direct)
-asn1crypto>=1.5,<2.0           # e-invoice CAdES-BES CMS structure (FILE_03); pure-python, offline-safe
+asn1crypto>=1.5.1,<2.0           # e-invoice CAdES-BES CMS structure (FILE_03); pure-python, offline-safe
 
 # Dev / test
 pytest>=8.3
