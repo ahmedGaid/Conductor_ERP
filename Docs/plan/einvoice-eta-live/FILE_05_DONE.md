@@ -41,3 +41,35 @@ ETA pre-production credentials + company tax profile (`ETA_ISSUER_*`, RIN) + sig
 - Poll verdict:
 - Archive verified (`simulated=False`, document retrievable):
 - Screenshots:
+
+### Attempt log — 2026-07-26 (blocked, no fabricated result)
+
+Checked every candidate source for real ETA preprod credentials before touching Settings →
+E-Invoicing:
+- `Docs/E invoice/` (all files) — regulatory/legal PDFs (law 188/2023, GS1, decree 289) + a generic
+  ETA self-registration walkthrough (`E-INVOICING-SELF-REGISTRATION.pdf`, screenshots show demo
+  data `Taxpayer1`/`113317713`) + seminars/docx. **No client_id/secret/RIN/signing cert anywhere.**
+- Repo `.env` — 0 `ETA_*` keys set.
+- DB `ETASettings` (admin-config pivot row `00000000-0000-0000-0000-000000000001`) —
+  `environment=""`, `client_id=""`, `enabled=False`. Untouched default.
+- No `.pfx`/`.p12` file anywhere in the repo tree.
+
+**Conclusion: real ETA pre-production credentials + signing cert have not been issued/supplied yet.**
+Obtaining them is a founder-side action outside this repo: complete self-registration at
+`https://profile.eta.gov.eg/signUp` (needs a USB e-signature token + ITIDA e-seal certificate +
+company tax registration number + national ID — Windows-only client, per the guide), which yields
+a portal login, from which the preprod API `client_id`/`client_secret`/RIN and a signing PFX are
+obtained separately. No document in the repo substitutes for this. Did not run
+`eta_sandbox_smoke`/gate10 against fake values — a "success" there would be meaningless (and against
+the claims-discipline rule: nothing may claim a Tax-Authority verdict without `is_live()`).
+Stopping here per the session goal's exit clause; plumbing remains fully built and mock-tested,
+STOP-gate unchanged.
+
+**Follow-up (same day):** also opened the 4 `.docx` files (binary — extracted via zip/XML, not
+directly Read-able): `شرح المستندات المطلوبة.docx`, `نسخة_طلب_اصدار_فواتير_عن_طريق_البورتال.docx`,
+`ضرائب 3.docx` — all company-registration/portal-application letters, e-signature vendor (Egypt
+Trust) process steps, and invoice-count threshold rules (200/222 invoices/month decides portal vs
+ERP-integration path). `نسخة_مقدم_لمصلحة_الضرائب_المصرية.docx` filename has no matching file on disk
+(only the other three exist). Confirms: obtaining ETA preprod API creds + signing cert is a
+physical government/vendor process (board-chairman signature, national ID, in-person office visit
+to Egypt Trust) — no document contains issued credentials to copy in. Investigation exhausted.
