@@ -5,6 +5,7 @@ facts, and a recent-AI-actions block sourced from the conversation's proposal me
 """
 from __future__ import annotations
 
+import calendar
 import datetime
 
 import pytest
@@ -17,6 +18,7 @@ from erp.core.models import Branch
 from erp.identity import services as identity_services
 from erp.identity.models import RolePermission, User
 from erp.inventory.domain.models import Warehouse
+from erp.sales.domain.models import Customer, SalesOrder
 
 pytestmark = pytest.mark.django_db
 
@@ -79,6 +81,45 @@ def test_page_language_instructs_arabic_when_ui_is_arabic():
     prompt = context.build_system_prompt(user, page=page)
 
     assert "interface is set to Arabic" in prompt
+
+
+def test_page_section_carries_distilled_record_snapshot():
+    """T3.8: a page record the distiller can resolve (real id, registered type) gets a compact
+    typed snapshot appended after the plain record line."""
+    user = _user()
+    user.is_superuser = True
+    user.save(update_fields=["is_superuser"])
+    customer = Customer.objects.create(code="C-1", name="Acme")
+    order = SalesOrder.objects.create(
+        number="SO-1", customer=customer, order_date=datetime.date(2026, 6, 1),
+        warehouse_code="MAIN", status="confirmed", subtotal_minor=125_000,
+    )
+    page = {
+        "module": "sales", "path": f"/sales/orders/{order.id}",
+        "record": {"type": "sales.orders", "id": str(order.id), "label": "SO-1"},
+        "language": "ar", "recent": [],
+    }
+
+    prompt = context.build_system_prompt(user, page=page)
+
+    assert "They are viewing sales.orders SO-1." in prompt
+    assert "- Record detail: status confirmed; total 1,250.00 EGP." in prompt
+
+
+def test_page_section_falls_back_when_record_unresolved():
+    """An id the distiller can't resolve (wrong shape, or a type with no distiller at all) leaves
+    the plain record line as-is — no crash, no dangling 'Record detail:' line."""
+    user = _user()
+    page = {
+        "module": "sales", "path": "/sales/orders/42",
+        "record": {"type": "sales.orders", "id": "42", "label": "SO-2026-000042"},
+        "language": "ar", "recent": [],
+    }
+
+    prompt = context.build_system_prompt(user, page=page)
+
+    assert "They are viewing sales.orders SO-2026-000042." in prompt
+    assert "Record detail:" not in prompt
 
 
 def test_page_section_absent_when_no_page():
@@ -168,9 +209,10 @@ def test_company_block_includes_branch_warehouse_and_fiscal_period():
         code=str(today.year), start_date=today.replace(month=1, day=1),
         end_date=today.replace(month=12, day=31),
     )
+    last_day = calendar.monthrange(today.year, today.month)[1]
     Period.objects.create(
         fiscal_year=year, code=f"{today.year}-{today.month:02d}",
-        start_date=today.replace(day=1), end_date=today.replace(day=28),
+        start_date=today.replace(day=1), end_date=today.replace(day=last_day),
         status=PeriodStatus.OPEN,
     )
 

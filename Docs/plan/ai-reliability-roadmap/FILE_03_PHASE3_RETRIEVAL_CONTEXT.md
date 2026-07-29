@@ -316,7 +316,50 @@
   baseline — pre-existing fixture drift, not a T3.7 regression), retrieval suite unchanged,
   `makemigrations --check` + `manage.py check` clean.
 
-### [ ] T3.8 — Page-context distillation
+### [x] T3.8 — Page-context distillation
+
+> **STATUS 2026-07-29 — done.** New `erp/assistant/services/page_distill.py`: table-driven
+> `DISTILLERS` registry, one function per page-context type string → a handful of short fact
+> fragments (status, formatted amounts, counts, open issues) via that module's `contracts` layer
+> only (never a raw ORM import — same boundary the rest of the assistant respects). 9 types
+> registered spanning every module page context already supports a record for: `sales.orders`,
+> `sales.quotations`, `sales.customers`, `purchasing.orders`, `purchasing.requests`,
+> `purchasing.suppliers`, `inventory.items`, `accounting.journals`, `crm.opportunities`. Two new
+> id-scoped contract lookups added (`sales.get_order`/`get_quotation`, `crm.get_opportunity`),
+> mirroring the existing `purchasing.get_order`/`accounting.get_journal_entry` pattern exactly —
+> the other 6 types reuse contract functions that already existed. Unregistered types (the
+> remaining ~8 record pages: journals sub-types like assets/budgets/bank-reconciliation, inventory
+> warehouses/counts, admin users/roles) and any lookup failure (bad id, DB hiccup, not found) both
+> fail open to `None` — `context.py::_page_block` then renders exactly today's plain record line,
+> never crashes (`page_distill.render` wraps every lookup in `except Exception` + `logger.exception`,
+> same fail-open discipline as `services/rerank.py`). Wired as one extra `"- Record detail: ..."`
+> bullet appended after the existing "They are viewing..." line (only when attached — a detached
+> record still renders the plain background line, unchanged, matching FILE_11's original detach
+> contract); `_degrade_page_block` extended to also drop this line first under budget pressure.
+> Frontend untouched — `record.id`/`record.type` were already sent by `collectContext()`;
+> confirmed against the actual route params (`OrderDetailPage`/`PurchaseOrderDetailPage`/
+> `QuotationDetailPage`/`OpportunityDetailPage`/`JournalDetailPage` route on the ORM `id` (UUID);
+> `CustomerDetailPage`/`SupplierDetailPage`/`ItemDetailPage` route on the business key
+> code/sku) — both id shapes match what each new/reused contract function expects.
+> **Token measurement (Accept: "target −50% on the five most-used pages" — measured honestly, not
+> forced):** real before/after numbers for the 5 highest-value record types (sales.orders,
+> sales.customers, purchasing.orders, inventory.items, accounting.journals) are in `BASELINE.md`
+> under a new "T3.8" note. Headline finding: the `page` envelope section's own token count on a
+> record page does not shrink — it was already minimal (just the "They are viewing X Y." line, no
+> business facts at all), so there was no raw dump in *this* section to cut. See `BASELINE.md` for
+> the exact per-type figures and why the real saving lands elsewhere (avoided full-detail tool
+> round-trips) rather than in the page section itself — recorded as measured, not adjusted to hit
+> the plan's aspirational number, matching how T3.4's session reported a ranking lift instead of a
+> recall-count lift when that's what the data actually showed.
+> **Verified:** `pytest erp/assistant/tests/test_page_distill.py erp/assistant/tests/test_context.py
+> erp/assistant/tests/test_page_context.py erp/sales/tests erp/purchasing/tests erp/crm/tests` all
+> green (236 passed); full `pytest erp` 1775 passed / 6 skipped (was 1758/6 at T3.7 — 17 net new,
+> all T3.8's); `makemigrations --check` clean (no model change — two new contract functions only);
+> `manage.py check` clean. Also fixed one unrelated pre-existing
+> test flake found while running the suite: `test_company_block_includes_branch_warehouse_and_fiscal_period`
+> hardcoded `today.replace(day=28)` for a period end date, which breaks on any day 29-31 of a month
+> (today is the 29th) — switched to `calendar.monthrange` for a correct month-end. Backend-only —
+> no apps/web / i18n / migration change.
 
 - **Goal:** the page/record context section becomes a compact typed snapshot, not a raw dump.
 - **Prereq:** T3.6.

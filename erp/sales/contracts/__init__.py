@@ -131,6 +131,13 @@ def _scoped_orders(actor):
     return scope_queryset(actor, SalesOrder.objects.all(), "sales.order.view")
 
 
+def get_order(actor, order_id) -> SalesOrder | None:
+    """One sales order (the ORM record) scoped to the actor — mirrors
+    ``purchasing.contracts.get_order``. Used by the assistant's page-context distiller (T3.8) to
+    snapshot the record the user is viewing. ``None`` if out of scope or gone."""
+    return _scoped_orders(actor).select_related("customer").filter(id=order_id).first()
+
+
 def _period_range(period: str) -> tuple[datetime.date, datetime.date, str]:
     today = datetime.date.today()
     if period == "last_month":
@@ -229,6 +236,12 @@ def _scoped_quotations(actor):
     return scope_queryset(actor, Quotation.objects.all(), "sales.quotation.view")
 
 
+def get_quotation(actor, quotation_id) -> Quotation | None:
+    """One quotation (the ORM record) scoped to the actor — mirrors ``get_order``. Used by the
+    assistant's page-context distiller (T3.8). ``None`` if out of scope or gone."""
+    return _scoped_quotations(actor).select_related("customer").filter(id=quotation_id).first()
+
+
 def find_quotations(actor, *, query: str, limit: int = 8) -> list[dict]:
     """Find quotations by number or customer — scoped to the actor, most recent first. Carries lines
     + status so the assistant's convert action can build a proposal without a second lookup."""
@@ -313,6 +326,8 @@ __all__ = [
     "overdue_receivables",
     "find_orders",
     "find_order",
+    "get_order",
+    "get_quotation",
     "find_customers",
     "find_quotations",
     "customer_profile",

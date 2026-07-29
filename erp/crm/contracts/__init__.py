@@ -40,6 +40,13 @@ def _scoped_opportunities(actor):
     return scope_queryset(actor, Opportunity.objects.all(), "crm.opportunity.view")
 
 
+def get_opportunity(actor, opportunity_id) -> Opportunity | None:
+    """One opportunity (the ORM record) scoped to the actor — mirrors
+    ``sales.contracts.get_order``. Used by the assistant's page-context distiller (T3.8). ``None``
+    if out of scope or gone."""
+    return _scoped_opportunities(actor).filter(id=opportunity_id).first()
+
+
 def find_opportunities(actor, *, query: str = "", limit: int = 8) -> list[dict]:
     """Find opportunities by number, name or customer code — scoped to the actor."""
     q = (query or "").strip()
@@ -62,6 +69,7 @@ __all__ = [
     "convert_lead",
     "OppLineInput",
     "find_opportunities",
+    "get_opportunity",
     "create_opportunity",
     "advance_stage",
     "win_opportunity",

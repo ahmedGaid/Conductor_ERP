@@ -12,6 +12,7 @@ from erp.inventory import contracts as inventory
 
 from ..gateway.core import model_id
 from . import envelope
+from . import page_distill
 from .prompt_registry import get as get_prompt
 
 _identity_prompt = get_prompt("identity")
@@ -57,7 +58,7 @@ def _user_block(actor) -> str:
     return "\n".join(lines)
 
 
-def _page_block(page: dict | None) -> str | None:
+def _page_block(actor, page: dict | None) -> str | None:
     if not page:
         return None
     lines = ["Page:"]
@@ -83,6 +84,12 @@ def _page_block(page: dict | None) -> str | None:
             )
         else:
             lines.append(f"- They are viewing {record.get('type', 'record')} {record['label']}.")
+            # T3.8: a compact typed snapshot (status/amounts/counts) in place of the model reaching
+            # for a full detail tool just to answer "what's the status/margin on this" — table-driven
+            # per record type (page_distill.py), fails open to no line at all when unregistered/gone.
+            snapshot = page_distill.render(actor, record.get("type"), record.get("id"))
+            if snapshot:
+                lines.append(f"- Record detail: {snapshot}.")
     recent = page.get("recent") or []
     if recent:
         lines.append(f"- Recently visited: {', '.join(recent)}.")
@@ -121,11 +128,13 @@ def _company_block(actor) -> str:
 
 
 def _degrade_page_block(text: str) -> str | None:
-    """Drop the two lines most likely to run long (active filters, recently-visited list) before
-    dropping the whole page section — the record/module lines are what the model actually needs."""
+    """Drop the lines most likely to run long (active filters, recently-visited list, the T3.8
+    record-detail snapshot) before dropping the whole page section — the bare record/module lines
+    are what the model actually needs."""
     lines = text.split("\n")
     kept = [ln for ln in lines
-            if not (ln.startswith("- Active list filters:") or ln.startswith("- Recently visited:"))]
+            if not (ln.startswith("- Active list filters:") or ln.startswith("- Recently visited:")
+                    or ln.startswith("- Record detail:"))]
     return "\n".join(kept) if len(kept) < len(lines) and len(kept) > 1 else None
 
 
@@ -201,7 +210,7 @@ def build_system_prompt_with_meta(actor, page: dict | None = None, conversation=
 
     sections = [envelope.Section("identity", 0, _IDENTITY)]
     sections.append(envelope.Section("user", 1, _user_block(actor)))
-    page_section = _page_block(page)
+    page_section = _page_block(actor, page)
     if page_section:
         sections.append(envelope.Section("page", 2, page_section, max_share=0.3,
                                          degrade_fn=_degrade_page_block))

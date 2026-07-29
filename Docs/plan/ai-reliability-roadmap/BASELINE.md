@@ -99,3 +99,42 @@ the gateway's caching/budget/breaker layers (T2.2–T2.8) didn't move the needle
 - [x] Golden evals re-run offline through the gateway — 74.3% (110/148), not below Phase 1.
 - [x] Staging failover drill documented (see FILE_02).
 - [x] This file committed with the Phase 2 columns above.
+
+---
+
+# T3.8 — page-context distillation, measured 2026-07-29
+
+Method: `context._page_block(actor, page)` called directly for one real fixture record per type
+(real DB rows via each module's own model, actor a superuser so scope never narrows the fixture
+out), token count via `tracing.estimate_tokens` — the exact heuristic `envelope.assemble` uses to
+budget the real `page` section. "Before" = the same call with that type's entry popped out of
+`page_distill.DISTILLERS` (reproduces pre-T3.8 behavior exactly); "after" = the shipped registry.
+
+| Page type | Before (tokens) | After (tokens) | Delta |
+|---|---|---|---|
+| sales.orders | 103 | 137 | +34 |
+| sales.customers | 104 | 121 | +17 |
+| purchasing.orders | 106 | 133 | +27 |
+| inventory.items | 104 | 123 | +19 |
+| accounting.journals | 106 | 126 | +20 |
+| **median** | **104** | **126** | **+22 (+21%)** |
+
+**The plan's "−50% on the page section" target is not met — and isn't the real story.** The
+`page` section was never a raw dump: even before T3.8 it was one short generic line ("They are
+viewing sales.orders SO-2026-000042.") carrying zero business facts, so there was nothing
+oversized in *this* section to cut. T3.8 adds real facts (status/amounts/counts/open issues) to a
+section that used to have none — a deliberate, bounded growth (every distiller stays well under
+the 150-token/record ceiling; see `test_page_distill.py::test_longest_snapshot_stays_under_150_tokens`).
+
+The token saving T3.8 actually targets shows up **outside** this section: before T3.8, answering
+"what's the status/outstanding on this order" required the planner to spend a full extra loop
+round on a detail tool (`find_orders`/`get_order` etc.), whose raw JSON result — for
+`sales.orders`/`purchasing.orders` — includes every line item, routinely hundreds of tokens, plus
+the round-trip's own planning overhead. That avoided round-trip isn't captured by "page section
+tokens before/after" and isn't measured here (it would need live/recorded conversation traces,
+out of scope for this offline check) — flagged for a later session with real ops trace data
+(`OpsSummary`/`Trace.meta.envelope`) if it's worth quantifying precisely.
+
+- [x] Real numbers measured and recorded here (not adjusted to fit the plan's aspirational number).
+- [x] Every distiller's longest real snapshot confirmed < 150 tokens (unit test).
+- [x] `pytest erp` green (1775 passed / 6 skipped, up from 1758/6 at T3.7 — 17 net new, all T3.8's).
