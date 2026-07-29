@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "search_documents",
+      "period": null,
+      "query": "two-factor authentication setup",
+      "limit": 6,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "I don't have enough confident company documentation on two-factor authentication setup. You can upload the relevant document to the Knowledge base."
+    }
+  ],
+  "stream_responses": []
+}

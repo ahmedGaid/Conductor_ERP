@@ -6,7 +6,8 @@ preservation, Latin lowercase) gets its own case with real Arabic samples, plus 
 """
 from __future__ import annotations
 
-from erp.assistant.textnorm import MERGE_TA_MARBUTA, normalize_ar
+from erp.assistant.textnorm import (MERGE_TA_MARBUTA, is_query_stopword, normalize_ar,
+                                    strip_query_stopwords)
 
 
 def test_merge_ta_marbuta_defaults_off():
@@ -150,3 +151,40 @@ def test_real_erp_domain_sentence():
     assert normalized.startswith("يجب علي")
     assert "الي مصلحه" not in normalized  # ta marbuta of مصلحة must NOT have merged to ه
     assert "مصلحة" in normalized
+
+
+# --- ai-reliability T3.9 — query-side stopword strip ----------------------------------------------
+
+
+def test_strips_english_question_words():
+    assert strip_query_stopwords(normalize_ar("what is the refund policy?")) == "refund policy?"
+
+
+def test_strips_arabic_question_words():
+    assert strip_query_stopwords(normalize_ar("ما هي سياسة الاسترجاع؟")) == "سياسة الاسترجاع؟"
+    assert strip_query_stopwords(normalize_ar("إيه هي سياسة الإجازات")) == "سياسة الاجازات"
+
+
+def test_keeps_business_words_that_merely_look_short():
+    # "vat" and "hr" carry the whole question — a stopword list that ate them would be worse than
+    # no list at all.
+    assert strip_query_stopwords(normalize_ar("what is the VAT rate")) == "vat rate"
+
+
+def test_all_stopwords_input_is_returned_unchanged():
+    # Nothing left to AND on; an empty tsquery matches nothing, strictly worse than the original.
+    assert strip_query_stopwords(normalize_ar("what is it")) == "what is it"
+
+
+def test_empty_and_none_are_safe():
+    assert strip_query_stopwords("") == ""
+    assert strip_query_stopwords(None) == ""
+
+
+def test_is_query_stopword_takes_raw_or_normalized_input():
+    assert is_query_stopword("What") is True          # raw casing
+    assert is_query_stopword("إيه") is True           # raw hamza-alef, normalizes to ايه
+    assert is_query_stopword("policy?") is False      # trailing punctuation kept out of the way
+    assert is_query_stopword("ما") is True
+    assert is_query_stopword("مطالبة") is False
+    assert is_query_stopword("") is True

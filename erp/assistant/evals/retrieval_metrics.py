@@ -84,3 +84,67 @@ def mean_metrics(per_query: list) -> dict:
     if not per_query:
         return {key: 0.0 for key in keys}
     return {key: sum(m[key] for m in per_query) / len(per_query) for key in keys}
+
+
+# --- T3.9: confidence-threshold tuning ("I don't know" discipline) ------------------------------
+#
+# Separate from ranking quality above: here each query has a single fused *top score* and a true
+# label — answerable (>=1 labeled-relevant doc) or not. A threshold turns the score into a binary
+# decision (answer / decline); these functions find the threshold that best matches the labels.
+
+def confidence_confusion(labels: list, threshold: float) -> dict:
+    """Confusion counts + precision/recall/F1 of the "answer" decision (predict confident when
+    ``top_score >= threshold``) against true answerability, at one threshold.
+
+    ``labels`` is ``[(top_score, answerable), ...]``. False positives (confident on an
+    unanswerable query) are the hallucination risk this threshold exists to bound; false negatives
+    (declining an answerable query) are the cost of being too cautious — F1 weighs both equally.
+    """
+    tp = fp = fn = tn = 0
+    for score, answerable in labels:
+        confident = score >= threshold
+        if confident and answerable:
+            tp += 1
+        elif confident and not answerable:
+            fp += 1
+        elif not confident and answerable:
+            fn += 1
+        else:
+            tn += 1
+    precision = tp / (tp + fp) if (tp + fp) else 0.0
+    recall = tp / (tp + fn) if (tp + fn) else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
+    return {"threshold": threshold, "precision": precision, "recall": recall, "f1": f1,
+            "tp": tp, "fp": fp, "fn": fn, "tn": tn}
+
+
+def best_confidence_threshold(labels: list) -> dict:
+    """The threshold — scanned over every observed top score, so it's always an achievable cut —
+    that best separates answerable from unanswerable queries.
+
+    Plain argmax-F1 is unsafe here: retrieval eval sets are typically lopsided (far more
+    answerable than unanswerable queries), and F1's harmonic mean lets a handful of false
+    positives hide behind a large recall term — the threshold that maximizes raw F1 can be the
+    trivial "answer everything" one, which gives zero protection against the exact failure T3.9
+    exists to prevent (see ``retrieval_confidence_threshold.json`` for the real numbers that
+    exposed this). A false "confident" on an unanswerable query risks a fabricated-sounding
+    answer; a false decline on an answerable one just asks the user to rephrase — so false
+    positives are minimized FIRST, and F1 only chooses among the thresholds tied at that minimum
+    (ties broken toward the higher threshold — the stricter of two equally-good cuts).
+
+    Empty input has nothing to separate; returns an all-zero result rather than raising.
+    """
+    if not labels:
+        return {"threshold": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0,
+                "tp": 0, "fp": 0, "fn": 0, "tn": 0}
+    candidates = sorted({score for score, _answerable in labels})
+    scored = [confidence_confusion(labels, threshold) for threshold in candidates]
+    min_fp = min(result["fp"] for result in scored)
+    best = None
+    for result in scored:
+        if result["fp"] != min_fp:
+            continue
+        if (best is None or result["f1"] > best["f1"]
+                or (result["f1"] == best["f1"] and result["threshold"] > best["threshold"])):
+            best = result
+    return best

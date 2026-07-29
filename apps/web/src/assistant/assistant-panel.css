@@ -742,6 +742,67 @@
   block-size: 0.9rem;
 }
 
+/* T3.9: the designed "insufficient sources" decline — icon + one line + action(s), never a bare
+   answer bubble, so a below-confidence search reads as an honest, designed state. */
+.msg-noanswer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+.msg-noanswer__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+.msg-noanswer__icon .navicon {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+.msg-noanswer__text {
+  margin: 0;
+  line-height: 1.6;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+.msg-noanswer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.msg-noanswer__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  text-decoration: none;
+  cursor: pointer;
+}
+.msg-noanswer__action:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-strong);
+}
+.msg-noanswer__action .navicon {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
 /* Suggested follow-ups after an answer. */
 .msg-followups {
   align-self: stretch;

@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "search_documents",
+      "period": null,
+      "query": "سياسة العمل عن بعد",
+      "limit": 6,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "لا تتوفر لدي معلومات كافية من مستندات الشركة عن سياسة العمل عن بعد. يمكنك رفع المستند الخاص بهذه السياسة إلى قاعدة المعرفة ليتسنى لي الإجابة عليه لاحقاً."
+    }
+  ],
+  "stream_responses": []
+}

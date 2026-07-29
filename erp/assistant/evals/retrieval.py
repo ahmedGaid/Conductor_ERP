@@ -42,6 +42,12 @@ from .runner import eval_actor
 DATASETS_DIR = Path(__file__).resolve().parent / "datasets"
 CORPUS_PATH = DATASETS_DIR / "retrieval_corpus_v1.jsonl"
 QUERIES_PATH = DATASETS_DIR / "retrieval_v1.jsonl"
+# ai-reliability T3.9 — a sibling dataset of genuinely uncovered topics (no ``relevant`` key: by
+# construction nothing in the fixture corpus should match). Kept separate from QUERIES_PATH rather
+# than mixed in with an empty ``relevant: {}`` because the recall/MRR/nDCG suite above asserts
+# every one of ITS queries has a labeled-relevant doc (a data-quality guard against a mis-authored
+# query) — that invariant would break if unanswerable queries lived in the same file.
+UNANSWERABLE_PATH = DATASETS_DIR / "retrieval_unanswerable_v1.jsonl"
 
 STRATEGIES = ("fts", "blend", "fusion")
 SEARCH_LIMIT = 10  # recall@10 is the widest metric, so retrieve at least that many
@@ -85,6 +91,10 @@ def load_corpus(path: Path = CORPUS_PATH) -> list[dict]:
 
 def load_queries(path: Path = QUERIES_PATH) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def load_unanswerable(path: Path = UNANSWERABLE_PATH) -> list[dict]:
+    return load_queries(path)
 
 
 def build_corpus(corpus: list[dict], *, actor=None) -> dict[int, str]:
@@ -248,4 +258,63 @@ def comparison_report(scoreboard: dict) -> dict:
         "strategies": strat,
         "fusion_vs_blend": _delta(fusion, blend),
         "fusion_vs_fts": _delta(fusion, fts),
+    }
+
+
+# --- T3.9: confidence-threshold tuning ("I don't know" discipline) ------------------------------
+
+def confidence_labels(*, limit: int = SEARCH_LIMIT) -> list[dict]:
+    """The fused top score + true answerability for every labeled query — the 94
+    :data:`QUERIES_PATH` queries (all answerable by construction) plus the
+    :data:`UNANSWERABLE_PATH` ones — via the real shipped ``knowledge.search`` (fixture-embedded,
+    offline). This is the raw material :func:`comparison_report`'s sibling, T3.9's
+    ``CONFIDENCE_THRESHOLD``, is tuned from: the threshold that best separates these two score
+    populations by F1 (see :func:`retrieval_metrics.best_confidence_threshold`).
+    """
+    corpus = load_corpus()
+    labeled = ([dict(q, answerable=True) for q in load_queries()]
+               + [dict(q, answerable=False) for q in load_unanswerable()])
+    with fixture_embeddings():
+        build_corpus(corpus)
+        rows = []
+        for q in labeled:
+            hits = knowledge.search(q["query"], limit=limit)
+            top_score = hits[0]["score"] if hits else 0.0
+            rows.append({"id": q["id"], "lang": q["lang"], "top_score": top_score,
+                        "answerable": q["answerable"]})
+    return rows
+
+
+def confidence_report(labels: list[dict] | None = None) -> dict:
+    """The committed threshold-tuning artifact: best F1-maximizing threshold + every query's raw
+    score, so a future re-tune (a corpus/query-set change) can be diffed against this one."""
+    labels = labels if labels is not None else confidence_labels()
+    pairs = [(row["top_score"], row["answerable"]) for row in labels]
+    best = metrics.best_confidence_threshold(pairs)
+    # What ships, scored on the same labels, so the artifact always shows whether the constant in
+    # knowledge.py still matches what the data says. They are expected to be equal; a drift between
+    # best_threshold and shipped_threshold in a future run is the signal to re-tune.
+    shipped = metrics.confidence_confusion(pairs, knowledge.CONFIDENCE_THRESHOLD)
+    return {
+        "suite": "retrieval_v1_confidence",
+        "offline": True,
+        "note": (
+            "Offline via the same fixture_embed as the retrieval suite (see comparison_report's "
+            "note) — absolute scores are bounded by the fixture embedding, not live vectors, but "
+            "the answerable/unanswerable SEPARATION the threshold exploits is a property of the "
+            "RRF fusion + FTS ranking pipeline, which the fixture exercises faithfully."
+        ),
+        "queries": len(labels),
+        "answerable": sum(1 for row in labels if row["answerable"]),
+        "unanswerable": sum(1 for row in labels if not row["answerable"]),
+        "best_threshold": best,
+        "shipped_threshold": shipped,
+        "shipped_threshold_note": (
+            "knowledge.CONFIDENCE_THRESHOLD = 0.6 * RANK1_SCORE — this scan's fp-minimizing pick, "
+            "i.e. at least 60% of a question's content words present. It sits BELOW the "
+            "single-arm rank-1 score on purpose: a deployment without ASSISTANT_RAG_EMBEDDINGS / a "
+            "Gemini key only ever has the FTS arm, and every hit it can produce must still clear "
+            "the floor. Re-tune when this row stops matching best_threshold above."
+        ),
+        "per_query": labels,
     }

@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "search_documents",
+      "period": null,
+      "query": "office dress code policy",
+      "limit": 6,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "I couldn't find a confident match in company documentation for the dress code policy. You can browse the Knowledge base for what's available."
+    }
+  ],
+  "stream_responses": []
+}

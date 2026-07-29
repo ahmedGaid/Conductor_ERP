@@ -32,6 +32,32 @@ CHUNK_OVERLAP = 200
 RRF_K = 60
 RRF_ARM_DEPTH = 20
 
+# The RRF score of a chunk ranked #1 by exactly ONE arm — this pipeline's natural score unit, and
+# the rung the icontains fallback tier is mapped onto (see _icontains_score). A single-arm score is
+# the realistic ceiling for a customer running without ASSISTANT_RAG_EMBEDDINGS / a Gemini key (the
+# "assistant is optional" stance this app is built on), so nothing derived from it may assume the
+# vector arm exists.
+RANK1_SCORE = 1.0 / (RRF_K + 1)
+
+# ai-reliability T3.9 — "I don't know" discipline. Below this top score, a search_documents result
+# isn't confident enough to ground an answer, and ask.py switches to the honest decline prompt
+# instead. Tuned via `manage.py run_evals --suite confidence` against the labeled answerable
+# (retrieval_v1) / unanswerable (retrieval_unanswerable_v1) query sets; the full run lives in
+# evals/results/retrieval_confidence_threshold.json.
+#
+# Two findings from that scan are baked in here. First, naive argmax-F1 picks threshold=0.0 (answer
+# everything) because the label set is lopsided — 94 answerable vs 15 unanswerable — and F1's
+# recall term hides a handful of false positives, so selection minimizes false positives FIRST and
+# only uses F1 among the safest cuts (retrieval_metrics.best_confidence_threshold). Second, the cut
+# it lands on is 0.6 * RANK1_SCORE: every unanswerable query in the set tops out at 0.5 coverage,
+# every answerable one this clears is a real hit, giving precision 1.000 / recall 0.926.
+#
+# Below RANK1_SCORE by construction, which is what makes it deployment-safe: any FTS-only hit
+# ranked in the arm's top depth still clears it, so a no-embeddings install keeps answering. In
+# practice the floor therefore bites on exactly two things — the icontains tier below full-ish
+# coverage, and finding nothing at all.
+CONFIDENCE_THRESHOLD = 0.6 * RANK1_SCORE
+
 # ai-reliability T3.1 — pgvector semantic arm. `embedding_v` is a raw-SQL-managed `vector(768)`
 # column (Gemini text-embedding-004 dim), NOT a Django field, so ordinary ORM queries never touch
 # it and search stays byte-identical wherever the column is absent. It only comes alive when the
@@ -343,6 +369,34 @@ def _trace_retrieval(trace, *, fts: int, vec: int, rows: list[dict], fused: bool
     )
 
 
+def _icontains_score(text: str, words: list[str]) -> float:
+    """Score an icontains-fallback hit on the ONE signal that tier has: how much of the question it
+    actually covers — the share of content words present in the chunk, scaled onto the RRF ladder so
+    a single ``score`` field keeps one meaning across all three tiers.
+
+    Full coverage (every content word present) lands exactly on ``RANK1_SCORE``, the same rung as a
+    hit ranked #1 by one real arm: a chunk containing all of them is real evidence even though
+    token-level FTS missed it, which is the normal Arabic-morphology case. Coverage scales down
+    linearly from there, so the "matched one common word out of five" hit — the noisy end of an OR
+    query — falls under ``CONFIDENCE_THRESHOLD`` and reads as a decline. Matching is done on the
+    normalized shadow of both sides so it agrees with the FTS arm's view of the same words.
+    """
+    if not words:
+        return 0.0
+    haystack = textnorm.normalize_ar(text)
+    hits = sum(1 for w in words if textnorm.normalize_ar(w) in haystack)
+    return (hits / len(words)) * RANK1_SCORE
+
+
+def is_confident(rows: list[dict]) -> bool:
+    """T3.9: whether the top hit from :func:`search` clears ``CONFIDENCE_THRESHOLD`` — the gate
+    ``tools._search_documents`` uses to decide between a grounded, cited answer and the honest
+    "insufficient sources" decline. All three tiers are comparable on this scale: a fused hit
+    ranked #1 by at least one arm scores 1/(RRF_K+1), and :func:`_icontains_score` puts a
+    full-coverage fallback hit on that same rung."""
+    return bool(rows) and rows[0]["score"] >= CONFIDENCE_THRESHOLD
+
+
 def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
     """Top matching chunks across ready documents, by hybrid retrieval.
 
@@ -373,7 +427,11 @@ def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
         return []
 
     depth = max(RRF_ARM_DEPTH, limit)
-    sq = SearchQuery(textnorm.normalize_ar(query), config="simple", search_type="websearch")
+    # T3.9: strip function words before the tsquery — "simple" config has no stopword list and
+    # websearch ANDs every term, so an unstripped natural question matches nothing (see
+    # textnorm.strip_query_stopwords). Query side only; the index still holds every word.
+    sq = SearchQuery(textnorm.strip_query_stopwords(textnorm.normalize_ar(query)),
+                     config="simple", search_type="websearch")
     fts_candidates = list(
         KnowledgeChunk.objects.filter(document__status="ready", search=sq)
         .annotate(rank=SearchRank(F("search"), sq))
@@ -398,9 +456,12 @@ def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
         _trace_retrieval(trace, fts=len(fts_ids), vec=len(vec_ids), rows=rows, fused=True)
         return rows
 
-    # Neither arm produced anything: OR the raw words (≥3 chars) via icontains — a lexical safety
-    # net below the tsvector (Arabic morphology, rare terms).
-    words = [w for w in query.split() if len(w) >= 3]
+    # Neither arm produced anything: OR the content words (≥3 chars, stopwords dropped) via
+    # icontains — a lexical safety net below the tsvector (Arabic morphology, rare terms). Words
+    # stay RAW here: icontains is a substring match against the untouched chunk text, and that
+    # substring behavior is exactly what bridges the morphology gap the tsvector's token equality
+    # cannot ("الاسترجاع" contains "استرجاع").
+    words = [w for w in query.split() if len(w) >= 3 and not textnorm.is_query_stopword(w)]
     if not words:
         _trace_retrieval(trace, fts=0, vec=0, rows=[], fused=False)
         return []
@@ -410,8 +471,10 @@ def search(query: str, *, limit: int = 6, trace=None) -> list[dict]:
     fallback = list(
         KnowledgeChunk.objects.filter(document__status="ready")
         .filter(term_q)
-        .select_related("document")[:limit]
+        .select_related("document")[:RRF_ARM_DEPTH]
     )
-    rows = [_row(c, 0.0, arms=["icontains"]) for c in fallback]
+    scored = sorted(((_icontains_score(c.text, words), c) for c in fallback),
+                    key=lambda pair: pair[0], reverse=True)[:limit]
+    rows = [_row(c, score, arms=["icontains"]) for score, c in scored]
     _trace_retrieval(trace, fts=0, vec=0, rows=rows, fused=False)
     return rows

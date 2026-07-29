@@ -247,12 +247,17 @@ def _search_documents(actor, *, query: str = "", limit: int = 6, _trace=None, **
     # ``_trace`` (reserved, injected by the agent tool seam — see agent._run_tool) lets knowledge
     # search record a T3.2 ``kind="retrieval"`` step on the run's Trace. None on paths without one.
     hits = knowledge.search(str(query or ""), limit=int(limit or 6), trace=_trace)
-    if not hits:
-        return {"found": False,
-                "note": "No company document covers this. Say so honestly; do not invent "
-                        "documentation content."}
+    # T3.9: a hit that exists but never cleared the confidence floor (e.g. an icontains-only
+    # substring match) is treated identically to no hit at all — a weak match isn't grounds for a
+    # cited, confident answer. ``confident`` rides along so ask.py can pick the honest-decline
+    # prompt without re-running the search.
+    if not hits or not knowledge.is_confident(hits):
+        return {"found": False, "confident": False,
+                "note": "No company document covers this with enough confidence. Say so "
+                        "honestly; do not invent documentation content."}
     return {
         "found": True,
+        "confident": True,
         "passages": [
             {"document": h["title"], "section": h["seq"], "text": h["text"]} for h in hits
         ],

@@ -105,3 +105,58 @@ def test_mean_metrics_macro_averages_per_query():
 
 def test_mean_metrics_empty_is_zero():
     assert m.mean_metrics([]) == {"recall@5": 0.0, "recall@10": 0.0, "mrr": 0.0, "ndcg@10": 0.0}
+
+
+# --- T3.9: confidence-threshold tuning -----------------------------------------------------------
+
+def test_confidence_confusion_counts_and_f1_hand_computed():
+    # 2 answerable (scores .8/.3), 2 unanswerable (scores .5/.1); threshold .4 -> confident: .8, .5
+    labels = [(0.8, True), (0.3, True), (0.5, False), (0.1, False)]
+    result = m.confidence_confusion(labels, threshold=0.4)
+    assert result == {"threshold": 0.4, "precision": pytest.approx(0.5), "recall": pytest.approx(0.5),
+                      "f1": pytest.approx(0.5), "tp": 1, "fp": 1, "fn": 1, "tn": 1}
+
+
+def test_confidence_confusion_all_zero_when_no_labels_confident():
+    labels = [(0.1, True), (0.2, False)]
+    result = m.confidence_confusion(labels, threshold=0.9)
+    assert result["tp"] == 0 and result["fp"] == 0
+    assert result["precision"] == 0.0  # 0/0 pinned to 0, not a ZeroDivisionError
+    assert result["f1"] == 0.0
+
+
+def test_best_confidence_threshold_finds_the_perfect_separator():
+    # A clean gap between the answerable cluster (.8/.9) and the unanswerable one (.1/.2): any
+    # threshold in (0.2, 0.8] separates them perfectly, but only observed scores are candidates.
+    labels = [(0.9, True), (0.8, True), (0.2, False), (0.1, False)]
+    best = m.best_confidence_threshold(labels)
+    assert best["threshold"] == pytest.approx(0.8)
+    assert best["f1"] == pytest.approx(1.0)
+    assert (best["tp"], best["fp"], best["fn"], best["tn"]) == (2, 0, 0, 2)
+
+
+def test_best_confidence_threshold_minimizes_false_positives_over_raw_f1():
+    # threshold=0.4 answers everything: f1=0.889, the highest RAW f1 of any candidate here — but
+    # it still answers the one unanswerable query (fp=1), zero protection. threshold=0.6 has a
+    # lower raw f1 (0.857) but is the fp-minimizing (fp=0) cut, so it must win: this is the exact
+    # pathology the function exists to avoid (see its docstring and
+    # evals/results/retrieval_confidence_threshold.json for the real numbers that exposed it).
+    labels = [(0.9, True), (0.7, True), (0.6, True), (0.4, True), (0.5, False)]
+    raw_f1_best = max(
+        (m.confidence_confusion(labels, thr) for thr in {s for s, _ in labels}),
+        key=lambda r: r["f1"],
+    )
+    assert raw_f1_best["threshold"] == pytest.approx(0.4)
+    assert raw_f1_best["fp"] == 1  # confirms the naive pick is unsafe
+
+    best = m.best_confidence_threshold(labels)
+    assert best["fp"] == 0
+    assert best["threshold"] == pytest.approx(0.6)
+    assert best["f1"] == pytest.approx(6 / 7)
+
+
+def test_best_confidence_threshold_empty_is_zero():
+    assert m.best_confidence_threshold([]) == {
+        "threshold": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0,
+        "tp": 0, "fp": 0, "fn": 0, "tn": 0,
+    }

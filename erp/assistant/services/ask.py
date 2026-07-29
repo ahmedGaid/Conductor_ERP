@@ -31,6 +31,7 @@ MAX_QUESTION_CHARS = 1000
 
 _router_prompt = get_prompt("router")
 _answer_tone_prompt = get_prompt("answer_tone")
+_insufficient_sources_prompt = get_prompt("insufficient_sources")
 
 _ROUTER_SYSTEM = _router_prompt.template
 
@@ -80,23 +81,35 @@ _ROUTER_SCHEMA = {
 # Appended after the context envelope (identity/user/page/company/persona) — the data-answering
 # constraints that never change per request.
 _ANSWER_TONE = _answer_tone_prompt.template
+# T3.9: swapped in for _ANSWER_TONE when search_documents came back below the confidence floor —
+# forces the honest "insufficient sources" decline instead of leaving the general answer prompt to
+# improvise one from an empty DATA payload.
+_INSUFFICIENT_SOURCES = _insufficient_sources_prompt.template
 
 
-def _answer_system(actor, page: dict | None, question: str = "") -> str:
+def _answer_system(actor, page: dict | None, question: str = "", *, low_confidence: bool = False) -> str:
     # The language directive goes absolutely last — it is computed from the question, not inferred
     # by the model (see context.answer_language_directive).
     return "\n\n".join((
         context.build_system_prompt(actor, page),
-        _ANSWER_TONE,
+        _INSUFFICIENT_SOURCES if low_confidence else _ANSWER_TONE,
         context.answer_language_directive(question),
     ))
 
 
-def _answer_prompt_ref() -> str:
+def _answer_prompt_ref(*, low_confidence: bool = False) -> str:
     """The combined ref of every template in the answer system prompt (context envelope's
-    static blocks + the closing answer-tone block) — shared by ask.py and agent.py since both
+    static blocks + the closing tone/decline block) — shared by ask.py and agent.py since both
     build the same envelope + tone combination."""
-    return f"{context.CONTEXT_PROMPT_REF}+{_answer_tone_prompt.ref}"
+    closing = _insufficient_sources_prompt.ref if low_confidence else _answer_tone_prompt.ref
+    return f"{context.CONTEXT_PROMPT_REF}+{closing}"
+
+
+def _is_low_confidence(used: str | None, result: dict) -> bool:
+    """T3.9: search_documents came back below the confidence floor (or found nothing at all) —
+    the answer call should decline honestly instead of improvising from empty/weak DATA. Other
+    tools don't carry this "found" semantics, so they never trigger it."""
+    return used == "search_documents" and not result.get("found", True)
 
 _ANSWER_SCHEMA = {
     "type": "object",
@@ -135,6 +148,9 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
 
     if cached is not None:
         answer, citations, used, from_cache = cached["answer"], cached["citations"], "search_documents", True
+        # The semantic cache doesn't persist the low_confidence flag — a cached decline still shows
+        # its honest text, just without the designed no-answer card on a replay.
+        low_confidence = False
     else:
         from_cache = False
         route = complete_json(
@@ -156,12 +172,13 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
             citations = tool.cite(result)
             used = name
 
+        low_confidence = _is_low_confidence(used, result)
         answer_obj = complete_json(
-            _answer_system(actor, page, q),
+            _answer_system(actor, page, q, low_confidence=low_confidence),
             json.dumps({"question": q, "data": result}, ensure_ascii=False),
             _ANSWER_SCHEMA, feature="ask", actor=actor,
             conversation_id=conversation.id if conversation is not None else None,
-            prompt_ref=_answer_prompt_ref(),
+            prompt_ref=_answer_prompt_ref(low_confidence=low_confidence),
         )
         answer = (answer_obj.get("answer") or "").strip()
 
@@ -173,7 +190,8 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
     if conversation is not None:
         conversation.messages.create(
             role="assistant", content=answer,
-            meta={"citations": citations, "used_tool": used, "from_cache": from_cache},
+            meta={"citations": citations, "used_tool": used, "from_cache": from_cache,
+                 **({"low_confidence": True} if low_confidence else {})},
         )
         conversation.save()  # touch updated_at after the reply lands
 
@@ -181,7 +199,8 @@ def answer_question(*, question: str, actor, conversation=None, page: dict | Non
         module="assistant", action="ask", entity_type="Question", entity_id=used or "none",
         actor=actor, after={"tool": used, "citations": len(citations), "from_cache": from_cache},
     )
-    return {"answer": answer, "citations": citations, "used_tool": used, "from_cache": from_cache}
+    return {"answer": answer, "citations": citations, "used_tool": used, "from_cache": from_cache,
+            "low_confidence": low_confidence}
 
 
 def _route_and_run(question: str, actor, conversation_id=None):
@@ -251,6 +270,7 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
                 file_notes.append(described["text"])
 
     result, citations, used = _route_and_run(q, actor, conversation_id=conversation.id)
+    low_confidence = _is_low_confidence(used, result)
 
     parts: list[str] = []
     saved = False
@@ -263,7 +283,8 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
         answer = "".join(parts).strip()
         msg = conversation.messages.create(
             role="assistant", content=answer,
-            meta={"citations": citations, "used_tool": used},
+            meta={"citations": citations, "used_tool": used,
+                 **({"low_confidence": True} if low_confidence else {})},
         )
         conversation.save()  # touch updated_at after the reply lands
         audit.record(
@@ -277,15 +298,16 @@ def stream_answer(*, question: str, actor, conversation, page: dict | None = Non
         if file_notes:
             user += "\n\nAttached files:\n" + "\n\n".join(file_notes)
         for chunk in complete_stream(
-            [{"role": "user", "content": user}], system=_answer_system(actor, page, q), media=media,
+            [{"role": "user", "content": user}],
+            system=_answer_system(actor, page, q, low_confidence=low_confidence), media=media,
             feature="chat", actor=actor, conversation_id=conversation.id,
-            prompt_ref=_answer_prompt_ref(),
+            prompt_ref=_answer_prompt_ref(low_confidence=low_confidence),
         ):
             parts.append(chunk)
             yield {"type": "token", "text": chunk}
         yield {"type": "citations", "citations": citations}
         msg = _persist()
         # ``used_tool`` lets the client offer curated follow-up questions for that tool (session 06).
-        yield {"type": "done", "message_id": msg.id, "used_tool": used}
+        yield {"type": "done", "message_id": msg.id, "used_tool": used, "low_confidence": low_confidence}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer

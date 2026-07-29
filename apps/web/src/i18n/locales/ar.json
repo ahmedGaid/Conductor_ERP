@@ -88,6 +88,10 @@
     "citation": {
       "fromDocs": "من مستندات الشركة"
     },
+    "noAnswer": {
+      "openKnowledge": "فتح قاعدة المعرفة",
+      "rephrase": "إعادة صياغة السؤال"
+    },
     "action": {
       "confirm": "تأكيد",
       "dismiss": "تجاهل",

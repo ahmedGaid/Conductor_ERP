@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "search_documents",
+      "period": null,
+      "query": "برنامج نقاط الولاء",
+      "limit": 6,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "لم أعثر على مستند بثقة كافية يوضح برنامج نقاط الولاء. جرّب إعادة صياغة سؤالك بتفاصيل أدق."
+    }
+  ],
+  "stream_responses": []
+}

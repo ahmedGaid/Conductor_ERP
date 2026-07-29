@@ -8,7 +8,13 @@ comparison. Deterministic and offline (fixture embeddings) — no provider, no p
 
 ``--suite long_thread`` (ai-reliability T3.7) runs the rolling-summary continuity suite: 5 golden
 cases proving a fact planted early in a thread is still reachable by the planner's envelope once
-the thread outgrows the raw-history tail and a summary refresh has fired."""
+the thread outgrows the raw-history tail and a summary refresh has fired.
+
+``--suite confidence`` (ai-reliability T3.9) tunes the "I don't know" discipline's confidence
+floor: scores every retrieval_v1 (answerable) and retrieval_unanswerable_v1 (not) query's fused
+top score, then finds the threshold that best separates them (fp-minimizing, not raw-F1 — see
+``retrieval_metrics.best_confidence_threshold``). Writes the tuned threshold + every query's raw
+score to the committed comparison file for ``knowledge.CONFIDENCE_THRESHOLD`` to cite."""
 from __future__ import annotations
 
 import json
@@ -22,17 +28,19 @@ from ...evals import loader, long_thread, retrieval, runner
 
 RESULTS_DIR = Path(__file__).resolve().parents[2] / "evals" / "results"
 COMPARISON_PATH = RESULTS_DIR / "retrieval_baseline_vs_fusion.json"
+CONFIDENCE_PATH = RESULTS_DIR / "retrieval_confidence_threshold.json"
 
 
 class Command(BaseCommand):
     help = "Grade the golden eval set offline against recorded responses (zero network)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--suite", choices=["golden", "retrieval", "long_thread"],
+        parser.add_argument("--suite", choices=["golden", "retrieval", "long_thread", "confidence"],
                             default="golden",
                             help="'golden' (default) replays recorded ask/agent cases; "
                                  "'retrieval' runs the offline retrieval metric suite (T3.3); "
-                                 "'long_thread' runs the rolling-summary continuity suite (T3.7)")
+                                 "'long_thread' runs the rolling-summary continuity suite (T3.7); "
+                                 "'confidence' tunes the T3.9 no-answer confidence threshold")
         parser.add_argument("--min", type=float, default=0.0,
                             help="minimum pass rate (0-1) required; exits non-zero below it")
 
@@ -41,6 +49,8 @@ class Command(BaseCommand):
             return self._handle_retrieval(options)
         if options["suite"] == "long_thread":
             return self._handle_long_thread(options)
+        if options["suite"] == "confidence":
+            return self._handle_confidence(options)
         return self._handle_golden(options)
 
     # --- golden suite (T1.6) --------------------------------------------------------------------
@@ -114,6 +124,38 @@ class Command(BaseCommand):
             if exc is not sentinel:
                 raise
         return holder["scoreboard"]
+
+    # --- confidence-threshold tuning (T3.9) -------------------------------------------------------
+
+    def _handle_confidence(self, options):
+        report = self._score_confidence_rolled_back()
+        best = report["best_threshold"]
+
+        self.stdout.write(
+            f"Confidence suite: {report['queries']} queries "
+            f"({report['answerable']} answerable / {report['unanswerable']} unanswerable)")
+        self.stdout.write(
+            f"  best threshold={best['threshold']:.4f}  precision={best['precision']:.3f} "
+            f"recall={best['recall']:.3f} f1={best['f1']:.3f}  "
+            f"(tp={best['tp']} fp={best['fp']} fn={best['fn']} tn={best['tn']})")
+
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        dated = RESULTS_DIR / f"retrieval_confidence_{date.today().isoformat()}.json"
+        dated.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        CONFIDENCE_PATH.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        self.stdout.write(f"\nWrote {dated}\nWrote {CONFIDENCE_PATH}")
+
+    def _score_confidence_rolled_back(self) -> dict:
+        sentinel = RuntimeError("rollback")
+        holder: dict = {}
+        try:
+            with transaction.atomic():
+                holder["report"] = retrieval.confidence_report()
+                raise sentinel  # unwind the transaction — fixtures must not persist
+        except RuntimeError as exc:
+            if exc is not sentinel:
+                raise
+        return holder["report"]
 
     # --- long-thread continuity suite (T3.7) ------------------------------------------------------
 

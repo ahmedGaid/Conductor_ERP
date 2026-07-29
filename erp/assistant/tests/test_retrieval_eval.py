@@ -11,6 +11,7 @@ import pytest
 
 from erp.assistant.evals import retrieval
 from erp.assistant.evals import retrieval_metrics as metrics
+from erp.assistant.services import knowledge
 
 pytestmark = pytest.mark.retrieval
 
@@ -94,3 +95,58 @@ def test_comparison_report_has_fusion_deltas():
     assert set(report["fusion_vs_blend"]) == {"recall@5", "recall@10", "mrr", "ndcg@10"}
     assert report["offline"] is True
     assert report["queries_ar"] >= 50
+
+
+# --- T3.9: confidence-threshold tuning -----------------------------------------------------------
+
+def test_unanswerable_query_set_meets_minimum_and_has_no_relevant_key():
+    queries = retrieval.load_unanswerable()
+    ids = [q["id"] for q in queries]
+    assert len(ids) == len(set(ids)), "duplicate unanswerable query id"
+    assert len(queries) >= 15
+    for q in queries:
+        assert q["lang"] in ("ar", "en")
+        assert q["query"].strip()
+        assert "relevant" not in q, f"{q['id']} looks answerable (has a relevant map)"
+
+
+@pytest.mark.django_db
+def test_confidence_labels_unanswerable_never_clears_the_floor():
+    """The separation ``CONFIDENCE_THRESHOLD`` exploits, asserted on the labels themselves.
+
+    With pgvector off (today's production default) a query with zero FTS token overlap never
+    reaches the vector arm either — ``search`` only embeds when FTS found candidates to re-rank —
+    so it falls to the icontains safety net, scored by content-word coverage. An unanswerable
+    query can pick up a partial score there (it may share ONE word with some chunk), which is why
+    this asserts the floor rather than a bare zero: no unanswerable query reaches
+    ``CONFIDENCE_THRESHOLD``, while answerable ones clear it comfortably. See
+    ``retrieval_confidence_threshold.json`` for the full distribution."""
+    labels = retrieval.confidence_labels()
+    answerable = [row for row in labels if row["answerable"]]
+    unanswerable = [row for row in labels if not row["answerable"]]
+    assert len(answerable) >= 80
+    assert len(unanswerable) >= 15
+    assert max(r["top_score"] for r in unanswerable) < knowledge.CONFIDENCE_THRESHOLD
+    cleared = [r for r in answerable if r["top_score"] >= knowledge.CONFIDENCE_THRESHOLD]
+    assert len(cleared) / len(answerable) >= 0.9
+
+
+@pytest.mark.django_db
+def test_confidence_report_best_threshold_gives_real_protection_not_just_raw_f1():
+    report = retrieval.confidence_report()
+    best = report["best_threshold"]
+    assert report["answerable"] >= 80 and report["unanswerable"] >= 15
+    # threshold=0 answers everything, including every unanswerable query (fp = all of them). On a
+    # lopsided label set (94 answerable vs 15 unanswerable) F1's recall term can let that unsafe
+    # cut outscore a safe one, so ``best_confidence_threshold`` minimizes fp FIRST and only then
+    # maximizes F1 — it must never return the answer-everything threshold, whatever F1 says.
+    always_confident = metrics.confidence_confusion(
+        [(row["top_score"], row["answerable"]) for row in report["per_query"]], threshold=0.0,
+    )
+    assert always_confident["fp"] == report["unanswerable"]
+    assert best["threshold"] > 0.0
+    assert best["fp"] == 0, "tuned threshold must give zero false positives on this fixture"
+    # Since T3.9 scored the icontains tier by content-word coverage the two goals stopped fighting:
+    # the safe cut now also wins on raw F1. Asserted so a retrieval change that re-muddies the
+    # separation — dropping the safe cut back below answer-everything — shows up here.
+    assert best["f1"] > always_confident["f1"]

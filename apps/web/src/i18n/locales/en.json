@@ -88,6 +88,10 @@
     "citation": {
       "fromDocs": "From company documents"
     },
+    "noAnswer": {
+      "openKnowledge": "Open Knowledge base",
+      "rephrase": "Try rephrasing"
+    },
     "action": {
       "confirm": "Confirm",
       "dismiss": "Dismiss",

@@ -39,6 +39,14 @@
 
 ## Success metrics (phase exit)
 
+> **VERIFIED 2026-07-29 at T3.9 — 3 of 4 met, 1 carried forward.** Full numbers and reasoning in
+> `BASELINE.md` ("Phase 3 acceptance"). Retrieval: **met** (recall@5 0.979, MRR 0.995).
+> Groundedness: **not met** — 86.9% (53/61) vs the ≥ 95% bar, unchanged from Phase 1; all 8 misses
+> are the citation-*format* gap (title cited instead of `POL-*`/`SOP-*` id), so wrong-citation rate
+> reads as met while the headline does not. Closing it is a prompt/grader change outside every
+> Phase 3 task's scope — the one open exit item. `context_overflow` and envelope tokens: accepted
+> at T3.6 / T3.8 respectively, not re-measured here.
+
 - Retrieval eval set (built T3.3): recall@5 ≥ 0.85, MRR ≥ 0.75 on golden retrieval queries
   (baseline measured before T3.1 lands for comparison).
 - Groundedness on citation golden cases ≥ 95%; wrong-citation rate < 2%.
@@ -218,7 +226,17 @@
   higher) and English unchanged; re-ingest idempotent.
 - **Output:** Arabic search that survives spelling variance.
 
-### [ ] T3.5 — LLM rerank stage (eval-gated)
+### [x] T3.5 — LLM rerank stage (eval-gated)
+
+> **STATUS 2026-07-27 — done, shipped OFF.** Built in full (`services/rerank.py`, registered
+> `prompts/rerank.md`, `ASSISTANT_RERANK` flag, ambiguity gate, fail-open path, offline tests) and
+> then the eval gate said don't turn it on — which is the task's designed outcome, not a shortfall:
+> step 3's whole point is "keep ON only if the numbers earn it". Decision + numbers committed to
+> `evals/results/rerank_decision.json` (`decision: OFF`, `flag_default: false`): the retrieval_v1
+> fixture gives the ambiguity gate zero opportunity to fire, so no eval lift is measurable, and the
+> one real latency measurement is far over the ≤400 ms budget. Box checked here at phase acceptance
+> (T3.9) because the deliverable — mechanism + decision file — is complete; revisit conditions are
+> in that file's `next_steps_if_revisited`.
 
 - **Goal:** top-20 fused → top-5 by LLM relevance scoring, kept only if evals show lift.
 - **Prereq:** T3.3, gateway `rerank` task class routing (add in this task).
@@ -380,7 +398,37 @@
   BASELINE.md.
 - **Output:** page awareness at a fraction of the token bill.
 
-### [ ] T3.9 — "I don't know" discipline + phase acceptance
+### [x] T3.9 — "I don't know" discipline + phase acceptance
+
+> **STATUS 2026-07-29 — done; Phase 3 accepted.** Backend: `knowledge.CONFIDENCE_THRESHOLD` +
+> `is_confident()` gate the fused top score; `tools._search_documents` returns
+> `{"found": false, "confident": false}` below it, exactly as it already did for zero hits, so a
+> weak match can never become a cited answer. `ask.py` swaps the closing prompt block from
+> `answer_tone` to the new registered `prompts/insufficient_sources.md` when that happens
+> (`_answer_system(..., low_confidence=True)`, and the prompt ref recorded on the trace changes with
+> it), on both the non-streaming and streaming paths; `low_confidence` rides out on the message meta
+> and the SSE `done` frame. Frontend: `NoAnswerCard` in `MessageList.tsx` — icon + the model's own
+> honest line + two next-step actions (open the Knowledge base, admin-gated the same way citation
+> document links are; rephrase, which refills the composer with the original question) — never a
+> bare answer bubble. Eval: new `retrieval_unanswerable_v1.jsonl` (15 queries), new
+> `run_evals --suite confidence` tuner, 10 new `ask_insufficient_*` golden cases (5 ar / 5 en)
+> asserting decline **and** a next step, all passing.
+> **The finding that made this task bigger than it looks:** tuning the threshold surfaced a real
+> retrieval defect underneath it. The tsvector's `simple` config has no stopword list and
+> `websearch_to_tsquery` ANDs every term, so a natural-language question only matched a chunk that
+> also contained "what"/"is"/"the" — real questions missed the FTS arm entirely and fell to the
+> `icontains` net, which scored a flat `0.0`. At the originally-proposed floor that would have
+> declined **63 of 94 answerable eval queries**. Fixed query-side only (the index still holds every
+> word): `textnorm.strip_query_stopwords` before the `SearchQuery`, and `knowledge._icontains_score`
+> scoring the fallback tier by content-word coverage on the same RRF ladder instead of a flat zero.
+> Retrieval improved across the board (fusion MRR 0.766 → 0.995, nDCG@10 0.802 → 0.988, recall@5
+> 0.947 → 0.979; ar MRR 0.687 → 0.992), with two multi-relevant-doc queries knowingly trading their
+> grade-1 secondary doc for tighter matching — all numbers, including that loss, in `BASELINE.md`.
+> **Accept met:** unanswerable cases 15/15 (100%) ≥ 90%; golden 128/158 (81.0%) vs the 110/148
+> (74.3%) baseline, no new failure classes; `BASELINE.md` updated with measured numbers.
+> **Verified:** `pytest erp/assistant` 664 passed / 5 skipped; `run_evals` golden + retrieval +
+> confidence suites all re-run offline; `apps/web` i18n parity (2730 keys) + `tsc -b` + Vitest
+> (64/64) + `scripts/gates/gate03.py` all exit 0.
 
 - **Goal:** below-confidence retrieval yields a designed honest no-answer, never a guess; phase
   signed off.

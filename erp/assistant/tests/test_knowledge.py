@@ -212,6 +212,66 @@ def test_search_empty_result_is_empty_list():
     assert knowledge.search("") == []
 
 
+# --- T3.9: confidence gate -----------------------------------------------------------------------
+
+def test_is_confident_false_on_empty_or_zero_coverage():
+    assert knowledge.is_confident([]) is False
+    assert knowledge.is_confident([{"score": 0.0}]) is False
+
+
+def test_is_confident_true_above_threshold_false_at_the_boundary_below():
+    assert knowledge.is_confident([{"score": knowledge.CONFIDENCE_THRESHOLD}]) is True
+    assert knowledge.is_confident([{"score": knowledge.CONFIDENCE_THRESHOLD + 0.001}]) is True
+    assert knowledge.is_confident([{"score": knowledge.CONFIDENCE_THRESHOLD - 0.001}]) is False
+
+
+def test_is_confident_only_looks_at_the_top_hit():
+    rows = [{"score": knowledge.CONFIDENCE_THRESHOLD}, {"score": 0.0}]
+    assert knowledge.is_confident(rows) is True
+    assert knowledge.is_confident(list(reversed(rows))) is False
+
+
+def test_icontains_score_scales_with_content_word_coverage():
+    words = ["refund", "policy", "returns"]
+    text = "Refund policy: customers can return items within 14 days."
+    # "returns" is absent — 2 of 3 content words present.
+    assert knowledge._icontains_score(text, words) == pytest.approx(
+        (2 / 3) * knowledge.RANK1_SCORE)
+    # Every content word present tops out on the single-arm rank-1 rung, so it reads as confident.
+    full = knowledge._icontains_score(text, ["refund", "policy", "days"])
+    assert full == pytest.approx(knowledge.RANK1_SCORE)
+    assert knowledge.is_confident([{"score": full}]) is True
+    # One common word out of five is the noisy end of the OR query — below the floor, a decline.
+    thin = knowledge._icontains_score(text, ["refund", "vat", "payroll", "branch", "invoice"])
+    assert knowledge.is_confident([{"score": thin}]) is False
+
+
+def test_icontains_score_matches_through_arabic_normalization():
+    # The query writes hamza-alef + diacritics, the document writes bare alef: same word after
+    # normalize_ar, so coverage sees it (this is the morphology gap the tier exists to bridge).
+    assert knowledge._icontains_score("سياسة الاسترجاع خلال ١٤ يوم", ["إسترجاع"]) == pytest.approx(
+        knowledge.RANK1_SCORE)
+    assert knowledge._icontains_score("سياسة الاسترجاع", []) == 0.0
+
+
+@pytest.mark.django_db
+def test_search_finds_documents_for_a_natural_language_question():
+    """T3.9 regression: the tsvector uses config "simple" (no stopword dictionary) and websearch
+    ANDs every term, so an unstripped question only matched a chunk containing "what"/"is"/"the"
+    too — real questions fell to the icontains tier and read as unconfident. The query-side
+    stopword strip puts them back on the FTS arm."""
+    actor = _admin("nl_question")
+    knowledge.ingest_document(
+        data=b"Refund policy: customers can return items within 14 days.",
+        media_type="text/plain", filename="refunds.txt", title="Refund Policy", actor=actor,
+    )
+    keyword_rows = knowledge.search("refund policy")
+    question_rows = knowledge.search("what is the refund policy?")
+    assert [r["title"] for r in question_rows] == [r["title"] for r in keyword_rows] == ["Refund Policy"]
+    assert question_rows[0]["arms"] == keyword_rows[0]["arms"]
+    assert knowledge.is_confident(question_rows) is True
+
+
 def test_search_blends_embeddings_when_available(monkeypatch):
     actor = _admin("search_blend")
     # both match the "refund"&"policy" websearch query; FTS ranks A first (more occurrences)

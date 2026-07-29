@@ -83,3 +83,63 @@ def normalize_ar(text: str | None) -> str:
     if MERGE_TA_MARBUTA:
         result = result.translate(_TA_MARBUTA_MAP)
     return result.lower()
+
+
+# ai-reliability T3.9 — query-side only. The tsvector is built with config "simple", which has NO
+# stopword dictionary, and the query side uses websearch_to_tsquery, which ANDs every bare term.
+# Together that means a natural question ("what is the refund policy?" / "ايه هي سياسة الاسترجاع؟")
+# only matches a chunk that literally contains "what", "is" and "the" as well — so real questions
+# fell through the FTS arm entirely and landed in the score-0.0 icontains fallback. Stripping the
+# function words before the SearchQuery restores AND-matching on the words that carry the meaning.
+#
+# Deliberately query-side ONLY: the index keeps every word (a stored chunk must stay searchable by
+# exact phrase, and dropping words from the tsvector would lose the "simple" config's phrase
+# ordering). This is not a second normalizer — it runs AFTER ``normalize_ar`` on its output, so
+# both ends still share the one transform in this module.
+#
+# Conservative by design: question words, pronouns, prepositions, conjunctions and auxiliaries in
+# both languages — nothing that could name a business concept. Arabic entries are written in their
+# ALREADY-NORMALIZED form (bare alef, ya for alef-maksura), since that is what they look like by
+# the time this runs.
+_QUERY_STOPWORDS = frozenset("""
+what which who whom whose when where why how
+is are am was were be been being do does did done
+the a an of in on at to for from by with about into over after before
+and or but if so than then that this these those there here
+i we you he she it they me us my our your his her its their
+can could will would shall should may might must
+please tell show give list find get need want know
+""".split()) | frozenset("""
+ما ماذا من في علي عن الي مع هل كيف متي اين لماذا لمن
+هي هو هم هن انا نحن انت انتم
+هذا هذه ذلك تلك التي الذي الذين
+و او ثم لكن بل قد كان كانت يكون تكون
+كل بعض اي عند بعد قبل عند لدي
+يوجد هناك ايه ازاي فين امتي ليه مين
+عايز عاوز ممكن لو اذا مش لا نعم
+""".split())
+
+
+def is_query_stopword(word: str | None) -> bool:
+    """Whether one word is a query function word. Takes RAW or normalized input — it normalizes
+    and trims punctuation itself, so callers matching against raw document text (the icontains
+    fallback in ``services/knowledge.py``) can filter their raw terms without normalizing them."""
+    if not word:
+        return True
+    return normalize_ar(word).strip("؟?!.,;:\"'()[]") in _QUERY_STOPWORDS
+
+
+def strip_query_stopwords(text: str | None) -> str:
+    """Drop function words from an ALREADY-``normalize_ar``-ed query so the FTS arm ANDs only the
+    meaning-bearing terms (see ``_QUERY_STOPWORDS`` for why). Pure function.
+
+    Returns the input unchanged when every term is a stopword — a query like "how do i?" has no
+    content left, and an empty tsquery would match nothing at all, which is strictly worse than the
+    original behavior. Punctuation is left to ``websearch_to_tsquery``; only whitespace splitting
+    happens here, so quoted phrases keep their quotes and still bind as phrases.
+    """
+    if not text:
+        return text or ""
+    terms = text.split()
+    kept = [t for t in terms if not is_query_stopword(t)]
+    return " ".join(kept) if kept else text

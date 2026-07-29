@@ -135,6 +135,47 @@ function StepsSummary({ steps }: { steps: ChatStep[] }) {
   );
 }
 
+// T3.9: the designed "insufficient sources" decline — never a bare answer bubble. The model's own
+// phrased text (already honest, ar/en, blame-free per the insufficient_sources prompt) is the one
+// line; the actions are the same two next-steps that prompt offers the model, made clickable:
+// open the Knowledge base (admin only — same gate as CitationLink's document link) and rephrase
+// (refills the composer with the ORIGINAL question via onEdit, same affordance as editing any turn).
+function NoAnswerCard({
+  text,
+  canOpenKnowledge,
+  onRephrase,
+  onNavigate,
+}: {
+  text: string;
+  canOpenKnowledge: boolean;
+  onRephrase?: () => void;
+  onNavigate?: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="msg-noanswer" role="status">
+      <span className="msg-noanswer__icon" aria-hidden="true">
+        <NavIcon name="search" />
+      </span>
+      <p className="msg-noanswer__text" dir="auto">{text}</p>
+      <div className="msg-noanswer__actions">
+        {canOpenKnowledge && (
+          <Link className="msg-noanswer__action" to="/assistant/knowledge" onClick={onNavigate}>
+            <NavIcon name="knowledge" />
+            {t("assistant.noAnswer.openKnowledge")}
+          </Link>
+        )}
+        {onRephrase && (
+          <button type="button" className="msg-noanswer__action" onClick={onRephrase}>
+            <NavIcon name="edit" />
+            {t("assistant.noAnswer.rephrase")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // A quiet context-budget meter (ai-reliability T3.6): tokens only surface on hover — the icon
 // alone is the whole footprint in the actions row, matching Copy/Regenerate right beside it.
 function EnvelopeMeter({ info }: { info: EnvelopeInfo }) {
@@ -231,7 +272,7 @@ export function MessageList({
     <div className="conversation__stream">
       <div className="conversation__scroll" ref={scrollRef} onScroll={onScroll}>
         <ul className="conversation__messages">
-          {messages.map((m) => {
+          {messages.map((m, i) => {
             const cites = (m.meta?.citations as AskCitation[] | undefined) ?? [];
             const atts = (m.meta?.attachments as AttachmentInfo[] | undefined) ?? [];
             const steps = (m.meta?.steps as ChatStep[] | undefined) ?? [];
@@ -287,7 +328,19 @@ export function MessageList({
                 {envelopeInfo?.compacted && (
                   <p className="conversation__hint" dir="auto">{t("assistant.contextCompacted")}</p>
                 )}
-                <Markdown text={m.content} onNavigate={onNavigate} />
+                {m.meta?.low_confidence ? (
+                  <NoAnswerCard
+                    text={m.content}
+                    canOpenKnowledge={canOpenKnowledge}
+                    onRephrase={(() => {
+                      const priorUser = [...messages.slice(0, i)].reverse().find((x) => x.role === "user");
+                      return priorUser ? () => onEdit(priorUser.content) : undefined;
+                    })()}
+                    onNavigate={onNavigate}
+                  />
+                ) : (
+                  <Markdown text={m.content} onNavigate={onNavigate} />
+                )}
                 {proposal && (
                   <ActionCard
                     messageId={m.id}

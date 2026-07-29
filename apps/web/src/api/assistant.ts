@@ -118,6 +118,9 @@ export interface AskAnswer {
   answer: string;
   citations: AskCitation[];
   used_tool: string | null;
+  // T3.9: a below-confidence document search — the answer is a designed decline, not a grounded
+  // one; the client renders it as the no-answer card instead of a normal answer bubble.
+  low_confidence?: boolean;
 }
 
 export function askAssistant(question: string, context?: PageContext): Promise<AskAnswer> {
@@ -305,6 +308,8 @@ export interface ChatMessage {
     kind?: string;
     entity?: string;
     label?: string;
+    // T3.9: a below-confidence document search — rendered as the designed no-answer card.
+    low_confidence?: boolean;
   } & Record<string, unknown>;
   created_at: string;
 }

@@ -1,0 +1,25 @@
+{
+  "json_responses": [
+    {
+      "tool": "search_documents",
+      "period": null,
+      "query": "customer loyalty points program",
+      "limit": 6,
+      "status": null,
+      "supplier": null,
+      "warehouse": null,
+      "days": null,
+      "entity_type": null,
+      "entity_id": null,
+      "entity": null,
+      "filters": null,
+      "group_by": null,
+      "aggregate": null,
+      "metric": null
+    },
+    {
+      "answer": "I don't have a confident source for the loyalty points program in company documents. Try rephrasing with more specific wording."
+    }
+  ],
+  "stream_responses": []
+}
