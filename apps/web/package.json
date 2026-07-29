@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/check-i18n-parity.mjs",
     "build": "tsc -b && vite build",
-    "postbuild": "node scripts/check-bundle-size.mjs",
+    "postbuild": "node scripts/check-bundle-size.mjs && node scripts/precompress-dist.mjs",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "preview": "vite preview"
   },

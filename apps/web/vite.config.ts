@@ -27,6 +27,11 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    // Off deliberately: WhiteNoise serves everything in dist/ verbatim (WHITENOISE_ROOT, see
+    // config/settings/prod.py), so a shipped .map hands the full unminified source to anyone
+    // who can reach the site — and on the public demo that is anyone with the link. The maps
+    // also dwarfed the bundle they described (1.7 MB map for a 780 kB chunk). Debug a
+    // production stack trace by rebuilding locally with `sourcemap: true`, not by serving it.
+    sourcemap: false,
   },
 });
