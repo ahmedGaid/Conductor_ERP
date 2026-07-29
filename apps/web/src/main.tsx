@@ -12,6 +12,7 @@ import "./styles/print.css";
 import "./styles/module-accents.css";
 import "./i18n";
 import App from "./App";
+import { BootSkeleton } from "./app/BootSkeleton";
 
 const container = document.getElementById("root");
 if (!container) {
@@ -20,7 +21,8 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <Suspense fallback={null}>
+    {/* Never `null`: a suspending lazy route or i18n catalog would paint a blank page. */}
+    <Suspense fallback={<BootSkeleton />}>
       <App />
     </Suspense>
   </StrictMode>,

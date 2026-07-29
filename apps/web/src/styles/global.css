@@ -161,6 +161,67 @@ h3 {
   }
 }
 
+/* ---- Boot skeleton ----
+   The app frame, drawn before the app exists. Two consumers share these rules: the static copy
+   inlined in index.html (paints the moment the stylesheet lands, while the JS bundle is still
+   downloading and parsing) and <BootSkeleton /> (the Suspense fallback, once React has mounted
+   but a lazy route or the i18n catalog is still in flight). Between them there is no moment where
+   Conductor is a blank white page. The static copy is discarded automatically: createRoot()
+   clears #root on its first commit.
+
+   Wordless on purpose — index.html is served before the language is known, so any copy here would
+   have to guess ar or en. The frame's own shape says "loading" in both. */
+.boot-skeleton {
+  display: flex;
+  block-size: 100vh;
+  background-color: var(--color-bg);
+  /* Held back briefly so a warm load flashes structure it is about to replace. */
+  animation: boot-skeleton-in var(--dur-slow) var(--ease-out) 200ms both;
+}
+.boot-skeleton__sidebar {
+  flex: 0 0 var(--sidebar-size);
+  border-inline-end: 1px solid var(--color-border);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.boot-skeleton__main {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.boot-skeleton__topbar {
+  block-size: 2.25rem;
+  border-block-end: 1px solid var(--color-border);
+  padding-block-end: var(--space-4);
+}
+.boot-skeleton__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.boot-skeleton__nav-item {
+  block-size: 1.75rem;
+}
+/* The sidebar is chrome on a narrow screen — the frame collapses with it. */
+@media (max-width: 48rem) {
+  .boot-skeleton__sidebar {
+    display: none;
+  }
+}
+@keyframes boot-skeleton-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ---- Buttons ---- */
 .btn {
   display: inline-flex;

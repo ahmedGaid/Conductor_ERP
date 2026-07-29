@@ -40,7 +40,33 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Boot skeleton — the app frame, painted from the stylesheet while the JS bundle is still
+         downloading and parsing. Kept in sync with src/app/BootSkeleton.tsx (the Suspense
+         fallback); both are styled by the .boot-skeleton rules in src/styles/global.css.
+         createRoot() clears #root on its first commit, so this is discarded automatically. -->
+    <div id="root">
+      <div class="boot-skeleton" aria-hidden="true">
+        <div class="boot-skeleton__sidebar">
+          <span class="skeleton boot-skeleton__nav-item"></span>
+          <span class="skeleton boot-skeleton__nav-item"></span>
+          <span class="skeleton boot-skeleton__nav-item"></span>
+          <span class="skeleton boot-skeleton__nav-item"></span>
+          <span class="skeleton boot-skeleton__nav-item"></span>
+          <span class="skeleton boot-skeleton__nav-item"></span>
+        </div>
+        <div class="boot-skeleton__main">
+          <div class="boot-skeleton__topbar">
+            <span class="skeleton skeleton--title"></span>
+          </div>
+          <div class="boot-skeleton__body">
+            <span class="skeleton skeleton--row"></span>
+            <span class="skeleton skeleton--row"></span>
+            <span class="skeleton skeleton--row"></span>
+            <span class="skeleton skeleton--row"></span>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
