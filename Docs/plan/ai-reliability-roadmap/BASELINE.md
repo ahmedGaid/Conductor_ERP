@@ -297,3 +297,18 @@ production rows exist yet — the counters to watch after rollout are named inst
 - [x] `python manage.py makemigrations --check` and `manage.py check` clean.
 - [x] `apps/web`: i18n parity green (2756 keys, ar+en), `tsc -b` clean, Vitest 64/64,
       `scripts/gates/gate03.py` exit 0, `scripts/gates/_run.py 18` PASSED.
+- [x] Memory page screenshotted for the phase record (T4.4 accept), both states x both languages:
+      `phase4-memory/memory-{empty,full}-{ar,en}.png` — captured against a real server/DB, not mocks.
+- [x] Brand-feel checklist run on the page (it is a trust surface). It caught three things a green
+      gate cannot see, all fixed before commit: the row delete button collapsed to a 26x12 hit area
+      as a flex item (now 36x36); the pattern-proposal card carried the page's only saturated
+      accent (now monochrome with the assistant sparkle — colour never decorates); and the proposal
+      sentence read `... as your Default warehouse?` with a capitalised label mid-sentence (copy
+      restructured to lead with the setting, ar+en). Settings now sort above notes in the list.
+
+**Bug the screenshots caught (fixed, `test_a_shown_proposal_stops_coming_back_once_it_is_answered`
++ the re-read assertion):** `build_memory_proposal` marked the day's proposal "shown" on *read*, so
+the client's second fetch (StrictMode remount, another tab, any refetch) returned `null` and the
+card vanished before the user could answer it. The throttle now stores the shown proposal and keeps
+returning it until it is confirmed (slot set) or dismissed (suppressed) — the cap is one proposal
+per day, not one read.

@@ -113,6 +113,9 @@ export function MemoryPage() {
       {!loading && !error && proposal && (
         <div className="card memory-proposal">
           <p className="memory-proposal__text">
+            <span className="memory-proposal__mark" aria-hidden="true">
+              <NavIcon name="sparkle" />
+            </span>
             {t("memory.proposal.body", {
               setting: t(`memory.slot.${proposal.slot}`, proposal.slot),
               value: proposal.value,

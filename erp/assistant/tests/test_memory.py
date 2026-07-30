@@ -276,8 +276,9 @@ def test_one_proposal_per_user_per_day_and_dismissal_suppresses_it():
 
     first = suggestions.build_memory_proposal(user)
     assert first["slot"] == "default_warehouse" and first["value"] == "WH-13"
-    # Same day: silence, however many detectors would fire.
-    assert suggestions.build_memory_proposal(user) is None
+    # A re-read the same day returns the SAME proposal — the cap is one proposal, not one read
+    # (a remount or a second tab must not swallow the card).
+    assert suggestions.build_memory_proposal(user) == first
 
     later = timezone.now() + datetime.timedelta(days=2)
     assert suggestions.build_memory_proposal(user, now=later) is not None
@@ -292,6 +293,29 @@ def test_one_proposal_per_user_per_day_and_dismissal_suppresses_it():
     after_expiry = later + datetime.timedelta(days=91)
     assert memory_service._control_row(user, "_suppress:default_warehouse",
                                        now=after_expiry) is None
+
+
+def test_a_shown_proposal_stops_coming_back_once_it_is_answered():
+    user = _user()
+    for _ in range(3):
+        _confirmed_proposal(user, {"warehouse_code": "WH-14"})
+    shown = suggestions.build_memory_proposal(user)
+    assert shown is not None
+
+    # Confirming it (the API's confirm path) sets the slot — the stored proposal is answered.
+    memory_service.remember(user, scope="user", kind="slot", key="default_warehouse",
+                            value="WH-14", source="pattern")
+    assert suggestions.build_memory_proposal(user) is None
+
+
+def test_a_dismissed_proposal_stops_coming_back_the_same_day():
+    user = _user()
+    for _ in range(3):
+        _confirmed_proposal(user, {"warehouse_code": "WH-15"})
+    assert suggestions.build_memory_proposal(user) is not None
+
+    memory_service.suppress_proposal(user, "default_warehouse")
+    assert suggestions.build_memory_proposal(user) is None
 
 
 def test_control_rows_are_never_recalled_or_listed():

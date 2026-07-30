@@ -421,7 +421,7 @@
       "digest_time": "Daily digest time"
     },
     "proposal": {
-      "body": "You've chosen {{value}} {{times}} times. Save it as your {{setting}}?",
+      "body": "{{setting}}: you've chosen {{value}} {{times}} times. Save it as the default?",
       "save": "Save it",
       "dismiss": "No thanks",
       "saved": "Saved.",

@@ -421,7 +421,7 @@
       "digest_time": "وقت الملخّص اليومي"
     },
     "proposal": {
-      "body": "اخترت {{value}} {{times}} مرات. أحفظه كـ«{{setting}}»؟",
+      "body": "{{setting}}: اخترت {{value}} {{times}} مرات. أحفظه كافتراضي؟",
       "save": "احفظه",
       "dismiss": "لا، شكرًا",
       "saved": "تم الحفظ.",

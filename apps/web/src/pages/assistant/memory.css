@@ -51,9 +51,21 @@
   margin-block-start: var(--space-1);
   font-size: var(--font-size-xs);
 }
+/* Sized explicitly: as a flex item next to a multi-line body the button would otherwise collapse
+   to the icon's line box (observed 26x12) and lose its hit area. */
 .memory-row__delete {
   color: var(--color-text-muted);
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  padding: 0;
+}
+.memory-row__delete .navicon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
 }
 .memory-row__delete:hover {
   color: var(--color-danger);
@@ -69,7 +81,9 @@
   font-size: var(--font-size-xs);
 }
 
-/* The one-a-day pattern proposal: a notice, never a nag. */
+/* The one-a-day pattern proposal: a notice, never a nag. Monochrome on purpose — the sparkle
+   says "the assistant noticed this"; an accent bar here would be the only saturated thing on a
+   page that is otherwise all chrome. */
 .memory-proposal {
   display: flex;
   flex-wrap: wrap;
@@ -77,11 +91,21 @@
   justify-content: space-between;
   gap: var(--space-3);
   margin-block-end: var(--space-4);
-  border-inline-start: 2px solid var(--color-info);
 }
 .memory-proposal__text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
   margin: 0;
   flex: 1 1 18rem;
+}
+.memory-proposal__mark {
+  color: var(--color-text-muted);
+  flex: 0 0 auto;
+}
+.memory-proposal__mark .navicon {
+  inline-size: 1rem;
+  block-size: 1rem;
 }
 .memory-proposal__actions {
   display: flex;

@@ -132,7 +132,7 @@ def build_memory_proposal(actor, *, now=None) -> dict | None:
     proposal = memory_service.next_proposal(actor, now=now)
     if proposal is None:
         return None
-    memory_service.mark_proposal_shown(actor, now=now)
+    memory_service.mark_proposal_shown(actor, proposal, now=now)
     return {
         "kind": "memory_proposal",
         "slot": proposal["slot"],

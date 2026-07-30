@@ -18,6 +18,7 @@ a new slot value never overwrites the old row.
 """
 from __future__ import annotations
 
+import json
 from datetime import timedelta
 
 from django.db import models, transaction
@@ -245,7 +246,15 @@ def list_for_actor(actor) -> dict[str, list[dict]]:
     personal = _active(UserMemory.objects.filter(user=actor)).exclude(
         key__startswith=_CONTROL_PREFIX)
     org = _active(OrgMemory.objects.all()).exclude(key__startswith=_CONTROL_PREFIX)
-    return {"personal": [_row_dict(r) for r in personal], "org": [_row_dict(r) for r in org]}
+    return {"personal": _ordered(personal), "org": _ordered(org)}
+
+
+def _ordered(queryset) -> list[dict]:
+    """Settings first (they decide behaviour and read as a short labelled list), then the
+    remembered sentences, newest first within each group — a slot buried between two paragraphs is
+    hard to scan for."""
+    rows = sorted(queryset, key=lambda r: (r.kind != MemoryKind.SLOT, -r.created_at.timestamp()))
+    return [_row_dict(r) for r in rows]
 
 
 def _row_dict(row) -> dict:
@@ -390,10 +399,18 @@ DETECTORS = (detect_repeated_slot_choice, detect_language_correction)
 
 def next_proposal(user, *, now=None) -> dict | None:
     """At most ONE memory proposal per user per day, none for a slot they already dismissed
-    (calm > clever). Returns the proposal dict, or ``None``."""
+    (calm > clever). Returns the proposal dict, or ``None``.
+
+    Once shown, the SAME proposal keeps coming back for the rest of the day — the cap is one
+    proposal, not one read. Anything else makes the card vanish on a refetch (a remount, a second
+    tab, a pull-to-refresh) and leaves the user with no way to answer it. It stops coming back when
+    they act on it: confirming sets the slot (so the stored proposal no longer differs from the
+    current value) and dismissing suppresses it.
+    """
     now = now or timezone.now()
-    if _control_row(user, "_proposal_shown", now=now) is not None:
-        return None
+    shown = _control_row(user, "_proposal_shown", now=now)
+    if shown is not None:
+        return _still_open(user, _decode_proposal(shown.value), now=now)
     for detector in DETECTORS:
         proposal = detector(user, now=now)
         if proposal and _control_row(user, _suppress_key(proposal["slot"]), now=now) is None:
@@ -401,10 +418,31 @@ def next_proposal(user, *, now=None) -> dict | None:
     return None
 
 
-def mark_proposal_shown(user, *, now=None) -> None:
-    """Start the one-a-day clock. Called when a proposal is actually surfaced, not when detected."""
+def _decode_proposal(raw: str) -> dict | None:
+    try:
+        proposal = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    return proposal if isinstance(proposal, dict) and proposal.get("slot") else None
+
+
+def _still_open(user, proposal: dict | None, *, now) -> dict | None:
+    """A stored proposal is only worth re-showing while it is still unanswered."""
+    if proposal is None:
+        return None
+    if _control_row(user, _suppress_key(proposal["slot"]), now=now) is not None:
+        return None  # dismissed
+    if slots_for(user).get(proposal["slot"]) == proposal["value"]:
+        return None  # confirmed (or set by hand since)
+    return proposal
+
+
+def mark_proposal_shown(user, proposal: dict | None = None, *, now=None) -> None:
+    """Start the one-a-day clock, remembering WHICH proposal was shown so re-reads return it
+    unchanged instead of silently swallowing it."""
     now = now or timezone.now()
-    _control_set(user, "_proposal_shown", expires_at=now + _PROPOSAL_THROTTLE, now=now)
+    _control_set(user, "_proposal_shown", expires_at=now + _PROPOSAL_THROTTLE, now=now,
+                 value=json.dumps(proposal, ensure_ascii=False) if proposal else "")
 
 
 def suppress_proposal(user, slot: str, *, now=None) -> None:
@@ -427,9 +465,11 @@ def _control_row(user, key: str, *, now=None):
         Q(expires_at__isnull=True) | Q(expires_at__gt=now)).first()
 
 
-def _control_set(user, key: str, *, expires_at, now=None) -> None:
+def _control_set(user, key: str, *, expires_at, now=None, value: str = "") -> None:
     """Control rows are replaced, not superseded — they are bookkeeping, not remembered belief,
-    so there is no history worth keeping and no audit event to raise."""
+    so there is no history worth keeping and no audit event to raise. ``value`` carries the row's
+    payload (the shown proposal, as JSON) or the key itself when there is nothing to store."""
     UserMemory.objects.filter(user=user, key=key).delete()
     UserMemory.objects.create(user=user, kind=MemoryKind.FACT, key=key,
-                              value=key, source=MemorySource.PATTERN, expires_at=expires_at)
+                              value=value or key, source=MemorySource.PATTERN,
+                              expires_at=expires_at)
