@@ -48,7 +48,7 @@
 
 ## Tasks
 
-### [ ] T4.1 — Memory models + write service
+### [x] T4.1 — Memory models + write service
 
 - **Goal:** tables + a single governed write path exist.
 - **Prereq:** Phase 3 done.
@@ -69,7 +69,7 @@
   content but audit event exists, invariant test fails on direct model import elsewhere.
 - **Output:** one door in, one door out, audited.
 
-### [ ] T4.2 — Explicit "remember this" flow
+### [x] T4.2 — Explicit "remember this" flow
 
 - **Goal:** users can ask the assistant to remember; it proposes a confirm card.
 - **Prereq:** T4.1; existing confirm registry (`services/actions.py`).
@@ -89,7 +89,7 @@
   parity green.
 - **Output:** memory on request, human-confirmed.
 
-### [ ] T4.3 — Pattern-derived memory proposals
+### [x] T4.3 — Pattern-derived memory proposals
 
 - **Goal:** repeated corrections/choices become memory *suggestions*, still human-confirmed.
 - **Prereq:** T4.2; existing `services/suggestions.py`.
@@ -107,7 +107,7 @@
   suggestion flow test green.
 - **Output:** the assistant notices, asks, never assumes.
 
-### [ ] T4.4 — Memory page (view/edit/delete)
+### [x] T4.4 — Memory page (view/edit/delete)
 
 - **Goal:** users see and control everything remembered; admins the org scope.
 - **Prereq:** T4.1.
@@ -126,7 +126,7 @@
   populated states screenshotted for the phase record.
 - **Output:** memory users can trust because they can see it.
 
-### [ ] T4.5 — Envelope integration + memory-lift evals
+### [x] T4.5 — Envelope integration + memory-lift evals
 
 - **Goal:** recall feeds the envelope; evals prove it helps.
 - **Prereq:** T4.1, T3.6 envelope manager.
@@ -142,7 +142,7 @@
   rest of the golden set.
 - **Output:** memory that demonstrably changes outcomes.
 
-### [ ] T4.6 — Leakage & injection test suite (blocking) + phase acceptance
+### [x] T4.6 — Leakage & injection test suite (blocking) + phase acceptance
 
 - **Goal:** cross-user/org leakage is impossible-by-test; phase signed off.
 - **Prereq:** all above.

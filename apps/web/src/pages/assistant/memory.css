@@ -1,0 +1,89 @@
+/* What the assistant remembers (T4.4). A trust surface: quiet rows, one clear delete each.
+   Token-driven + logical CSS only. */
+
+.memory-section + .memory-section {
+  margin-block-start: var(--space-4);
+}
+.memory-section__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  margin-block-end: var(--space-2);
+}
+.memory-section__note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-block-end: var(--space-3);
+}
+
+.memory-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.memory-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-block-end: 1px solid var(--color-border);
+}
+.memory-row:last-child {
+  border-block-end: none;
+  padding-block-end: 0;
+}
+.memory-row__body {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+.memory-row__value {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.memory-row__slot {
+  color: var(--color-text-muted);
+  margin-inline-end: var(--space-2);
+}
+.memory-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  margin-block-start: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+.memory-row__delete {
+  color: var(--color-text-muted);
+  flex: 0 0 auto;
+}
+.memory-row__delete:hover {
+  color: var(--color-danger);
+}
+
+.memory-chip {
+  display: inline-block;
+  padding-inline: var(--space-2);
+  padding-block: var(--space-0-5);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* The one-a-day pattern proposal: a notice, never a nag. */
+.memory-proposal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+  border-inline-start: 2px solid var(--color-info);
+}
+.memory-proposal__text {
+  margin: 0;
+  flex: 1 1 18rem;
+}
+.memory-proposal__actions {
+  display: flex;
+  gap: var(--space-2);
+}

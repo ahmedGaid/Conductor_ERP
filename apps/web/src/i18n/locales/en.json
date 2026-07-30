@@ -43,7 +43,8 @@
     "knowledgeAdmin": "Knowledge base",
     "opsAdmin": "Assistant health",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar"
+    "expandSidebar": "Expand sidebar",
+    "memory": "Assistant memory"
   },
   "assistant": {
     "title": "Assistant",
@@ -393,6 +394,41 @@
     "fileTooLarge": "File is too large (max 5 MB)",
     "fileType": "File type not supported"
   },
+  "memory": {
+    "title": "What the assistant remembers",
+    "subtitle": "Everything saved about you and your organization. You can delete any of it, any time.",
+    "personal": "Personal",
+    "organization": "Organization",
+    "organizationNote": "Visible to everyone who works in this organization.",
+    "forget": "Delete",
+    "forgetConfirm": "This will be removed for good and the assistant will stop using it.",
+    "forgotten": "Deleted.",
+    "forgetFailed": "That didn't delete. Please try again.",
+    "empty": {
+      "title": "Nothing remembered yet",
+      "body": "Ask the assistant to remember something (\"remember that my default warehouse is Cairo\"), or accept a suggestion it offers, and it will appear here."
+    },
+    "source": {
+      "explicit": "You asked",
+      "pattern": "From a repeated pattern",
+      "settings": "From this page"
+    },
+    "slot": {
+      "language": "Reply language",
+      "number_format": "Number format",
+      "default_branch": "Default branch",
+      "default_warehouse": "Default warehouse",
+      "digest_time": "Daily digest time"
+    },
+    "proposal": {
+      "body": "You've chosen {{value}} {{times}} times. Save it as your {{setting}}?",
+      "save": "Save it",
+      "dismiss": "No thanks",
+      "saved": "Saved.",
+      "dismissed": "I won't suggest it again.",
+      "failed": "That didn't save. Please try again."
+    }
+  },
   "ops": {
     "title": "Assistant health",
     "subtitle": "What the assistant did, what it cost, and whether it's healthy.",
@@ -643,11 +679,26 @@
     },
     "confidence": {
       "title": "System confidence",
-      "books": { "ok": "Books balanced", "warn": "Books need review" },
-      "vat": { "ok": "VAT ready", "warn": "VAT period needs setup" },
-      "backups": { "ok": "Backups up to date", "warn": "Backups not confirmed" },
-      "stock": { "ok": "Stock health good", "warn": "Some items running low" },
-      "assistant": { "ok": "Assistant connected", "warn": "Assistant not connected" },
+      "books": {
+        "ok": "Books balanced",
+        "warn": "Books need review"
+      },
+      "vat": {
+        "ok": "VAT ready",
+        "warn": "VAT period needs setup"
+      },
+      "backups": {
+        "ok": "Backups up to date",
+        "warn": "Backups not confirmed"
+      },
+      "stock": {
+        "ok": "Stock health good",
+        "warn": "Some items running low"
+      },
+      "assistant": {
+        "ok": "Assistant connected",
+        "warn": "Assistant not connected"
+      },
       "allOk": "All systems normal.",
       "showDetails": "Show details",
       "hideDetails": "Hide details"

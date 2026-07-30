@@ -644,6 +644,66 @@ export function deleteKnowledge(id: number): Promise<void> {
   return apiFetch<void>(`/assistant/knowledge/${id}`, { method: "DELETE" });
 }
 
+// --- memory (ai-reliability T4.4) ---------------------------------------------------------------
+
+export type MemoryScope = "user" | "org";
+
+export interface MemoryRow {
+  id: number;
+  kind: "slot" | "fact";
+  key: string;
+  value: string;
+  source: "explicit" | "pattern" | "settings";
+  confidence: number;
+  created_at: string;
+}
+
+export interface MemoryProposal {
+  kind: "memory_proposal";
+  slot: string;
+  value: string;
+  occurrences: number;
+  detector: string;
+}
+
+export interface MemoryListing {
+  personal: MemoryRow[];
+  org: MemoryRow[];
+  slots: Record<string, string>;
+  slot_keys: string[];
+  proposal: MemoryProposal | null;
+}
+
+export function listMemory(): Promise<MemoryListing> {
+  return apiFetch<MemoryListing>("/assistant/memory");
+}
+
+export function setMemorySlot(
+  key: string,
+  value: string,
+  scope: MemoryScope = "user",
+): Promise<{ id: number; key: string; value: string }> {
+  return apiFetch<{ id: number; key: string; value: string }>("/assistant/memory", {
+    method: "PUT",
+    body: JSON.stringify({ key, value, scope }),
+  });
+}
+
+export function forgetMemory(id: number, scope: MemoryScope = "user"): Promise<void> {
+  return apiFetch<void>(`/assistant/memory/${id}?scope=${scope}`, { method: "DELETE" });
+}
+
+export function decideMemoryProposal(
+  decision: "confirm" | "dismiss",
+  slot: string,
+  value: string,
+): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>("/assistant/memory/proposals", {
+    method: "POST",
+    body: JSON.stringify({ decision, slot, value }),
+  });
+}
+
 // Ops view (ai-reliability T1.8) types/fetchers live in ./assistantOps — that page is route-split
 // (App.tsx lazy-loads OpsPage), so keeping them out of this eagerly-loaded module keeps the main
 // bundle inside its gzip budget (scripts/check-bundle-size.mjs).

@@ -1641,6 +1641,92 @@ def _execute_log_activity(actor, payload: dict) -> dict:
     }
 
 
+# --- Action: remember something (ai-reliability T4.2) -------------------------------------------
+
+# Never remembered, however the request is phrased: a secret is not a preference, and a memory row
+# is readable by its owner forever. Deterministic markers, checked before anything else.
+_MEMORY_REFUSED_MARKERS = ("password", "passcode", "api key", "secret key", "token", "otp",
+                           "credit card", "cvv", "كلمة السر", "كلمة المرور", "رقم البطاقة",
+                           "رمز التحقق")
+
+
+def _mentions_another_user(actor, text: str) -> bool:
+    """True when the sentence names another account — one user's memory never carries facts about
+    another person's data (the leakage posture starts at the write, not the read)."""
+    from django.contrib.auth import get_user_model
+
+    lowered = text.casefold()
+    others = (get_user_model().objects.exclude(pk=getattr(actor, "pk", None))
+              .values_list("username", flat=True)[:500])
+    return any(len(name or "") >= 3 and name.casefold() in lowered for name in others)
+
+
+def _build_remember_memory(actor, *, scope=None, type=None, key=None, value=None, **_) -> dict:
+    """Prepare the confirm card for a memory write. The card shows the sentence verbatim — the user
+    reads exactly what will be remembered before it exists."""
+    from . import memory as memory_service
+
+    text = " ".join(str(value or "").split())
+    if not text:
+        return {"error": "What exactly should I remember?"}
+    lowered = text.casefold()
+    if any(marker in lowered for marker in _MEMORY_REFUSED_MARKERS):
+        return {"error": "I won't remember passwords or other secrets. Ask me to remember a "
+                         "preference or a working detail instead."}
+    if _mentions_another_user(actor, text):
+        return {"error": "I only remember things about you and your own work, not about another "
+                         "user's data."}
+
+    raw_scope = (scope or "").strip().casefold()
+    is_org = raw_scope in ("org", "organization", "organisation", "company", "المؤسسة", "الشركة")
+    memory_scope = memory_service.SCOPE_ORG if is_org else memory_service.SCOPE_USER
+    if is_org and not _can(actor, SYSTEM_ADMIN):
+        return {"error": "Only a System Admin can save something for the whole organization. "
+                         "I can remember it for you personally instead."}
+
+    slot_key = (key or "").strip()
+    wants_slot = slot_key or (type or "").strip().casefold() in ("slot", "setting")
+    kind = "slot" if wants_slot else "fact"
+    if kind == "slot":
+        if slot_key not in memory_service.SLOT_KEYS:
+            return {"error": "That isn't one of the settings I keep. I can remember it as a note "
+                             "instead."}
+        allowed = memory_service._SLOT_ENUMS.get(slot_key)
+        if allowed is not None and text not in allowed:
+            return {"error": f"For {slot_key} I can only keep one of: {', '.join(sorted(allowed))}."}
+    if len(text) > memory_service.MAX_VALUE_CHARS:
+        return {"error": "That is too long to remember. Keep it to one short sentence."}
+
+    where = "the whole organization" if is_org else "you"
+    summary = [f"Remember for {where}: \"{text}\""]
+    if kind == "slot":
+        summary = [f"Set {slot_key} to \"{text}\" for {where}"]
+    return {
+        "action": "remember_memory",
+        "summary": summary,
+        "records": [],
+        "risks": ["Anyone who can see this workspace's organization memory will see this."]
+                 if is_org else [],
+        "total": None,
+        "affected": 1,
+        "payload": {"scope": memory_scope, "kind": kind, "key": slot_key if kind == "slot" else "",
+                    "value": text},
+    }
+
+
+def _execute_remember_memory(actor, payload: dict) -> dict:
+    from . import memory as memory_service
+
+    row = memory_service.remember(
+        actor, scope=payload["scope"], kind=payload["kind"], key=payload.get("key") or "",
+        value=payload["value"], source="explicit",
+    )
+    return {
+        "summary": "Remembered. You can review or delete it on the memory page.",
+        "links": [{"type": "memory", "value": str(row.id), "label": payload["value"][:60]}],
+    }
+
+
 # --- registry -----------------------------------------------------------------------------------
 
 # The harness spec's irreversible list: these kinds can NEVER ship with requires_confirm=False,
@@ -1717,6 +1803,24 @@ ACTIONS: dict[str, Action] = {a.name: a for a in [
         effects=(Effect("customer", "create"),),
         risk="draft",
         idempotency=("name",),  # execute payload key (build decision's arg is "query")
+    ),
+    Action(
+        "remember_memory",
+        "Remember something the user explicitly asked you to remember (a preference, a working "
+        "habit, a correction) so future answers use it. Use ONLY when they ask — 'remember that…', "
+        "'احفظ أن…', 'من الآن استخدم…'. Set scope to org only for a company-wide fact (admins "
+        "only); set key to a known setting name (language, number_format, default_branch, "
+        "default_warehouse, digest_time) when the request is one of those, otherwise leave it null "
+        "and the sentence is kept as a note.",
+        {"value": "the exact sentence or value to remember",
+         "scope": "personal (default) or org",
+         "type": "setting when it maps to a known key, otherwise fact",
+         "key": "the setting name, when type is setting"},
+        _build_remember_memory, _execute_remember_memory,
+        kind="update",
+        effects=(Effect("assistant_memory", "update"),),
+        risk="draft",
+        idempotency=("scope", "kind", "key", "value"),
     ),
     Action(
         "create_quotation_draft",
@@ -1979,7 +2083,7 @@ for _a in ACTIONS.values():
 ACTION_ARG_FIELDS = ("customer", "items", "supplier", "warehouse", "from_low_stock", "query",
                     "item", "quantity", "from_warehouse", "to_warehouse", "reorder_point", "scope",
                     "lines", "date", "reference", "type", "code", "parent", "memo", "name",
-                    "value", "expected_close", "stage", "note", "amount")
+                    "value", "expected_close", "stage", "note", "amount", "key")
 
 
 def catalog_text() -> str:

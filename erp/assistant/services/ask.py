@@ -91,7 +91,7 @@ def _answer_system(actor, page: dict | None, question: str = "", *, low_confiden
     # The language directive goes absolutely last — it is computed from the question, not inferred
     # by the model (see context.answer_language_directive).
     return "\n\n".join((
-        context.build_system_prompt(actor, page),
+        context.build_system_prompt(actor, page, message=question),
         _INSUFFICIENT_SOURCES if low_confidence else _ANSWER_TONE,
         context.answer_language_directive(question),
     ))

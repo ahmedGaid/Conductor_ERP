@@ -262,6 +262,93 @@ class SemanticCache(models.Model):
         return f"{self.user_id}:{self.question_text[:30]}"
 
 
+class MemoryKind(models.TextChoices):
+    """A memory row is either a typed *slot* (one value per enumerated key, deterministic
+    behaviour) or a free *fact* (a short sentence, recalled by similarity). The two are never
+    conflated: slots decide defaults, facts only inform the answer."""
+
+    SLOT = "slot"
+    FACT = "fact"
+
+
+class MemorySource(models.TextChoices):
+    """How the memory came to exist. There is no ``chat`` value on purpose — nothing is ever
+    scraped from raw conversation text (ai-reliability T4.1 write-path whitelist)."""
+
+    EXPLICIT = "explicit"    # the user asked for it, through a confirm card
+    PATTERN = "pattern"      # a detector proposed it, the user confirmed the card
+    SETTINGS = "settings"    # edited directly on the Memory page
+
+
+class MemoryRow(models.Model):
+    """Shared shape of ``UserMemory``/``OrgMemory`` (ai-reliability T4.1 — Phase 4 memory).
+
+    Superseding, not updating: a new slot value points the old row at itself through
+    ``superseded_by``, so the history of what the assistant used to believe stays readable while
+    only the active row (``superseded_by IS NULL``) is ever recalled.
+    """
+
+    kind = models.CharField(max_length=8, choices=MemoryKind.choices)
+    # Slot name (see ``services.memory.SLOT_KEYS``). Blank for user-visible facts; a reserved
+    # ``_``-prefixed key marks an internal control fact (proposal suppression/throttle) that
+    # ``recall`` never injects — see ``services/memory.py``.
+    key = models.CharField(max_length=48, blank=True, default="")
+    value = models.TextField()
+    embedding = models.JSONField(null=True, blank=True)  # facts only, when embeddings are on
+    source = models.CharField(max_length=10, choices=MemorySource.choices)
+    confidence = models.PositiveSmallIntegerField(default=100)  # 0–100
+    expires_at = models.DateTimeField(null=True, blank=True)
+    superseded_by = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL,
+                                      related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.kind}:{self.key or self.value[:30]}"
+
+
+class UserMemory(MemoryRow):
+    """What the assistant remembers about ONE user. Never readable by another user — every read
+    goes through ``services.memory.recall``/the actor-scoped API, and the leakage suite
+    (``tests/test_memory_leakage.py``) is a blocking test."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                             related_name="ai_memories")
+
+    class Meta(MemoryRow.Meta):
+        abstract = False
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "key"],
+                condition=models.Q(kind="slot", superseded_by__isnull=True),
+                name="uniq_active_user_memory_slot",
+            ),
+        ]
+        indexes = [models.Index(fields=["user", "kind"])]
+
+
+class OrgMemory(MemoryRow):
+    """An org-wide fact or default (fiscal customs, default warehouse…). Written only by an
+    admin-confirmed flow; ``written_by`` records who confirmed it."""
+
+    written_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="ai_org_memories")
+
+    class Meta(MemoryRow.Meta):
+        abstract = False
+        constraints = [
+            models.UniqueConstraint(
+                fields=["key"],
+                condition=models.Q(kind="slot", superseded_by__isnull=True),
+                name="uniq_active_org_memory_slot",
+            ),
+        ]
+
+
 class Budget(models.Model):
     """A spend ceiling (ai-reliability T2.7): one row per scope. ``request`` is checked against a
     single call's estimated cost; ``user`` and ``org`` are checked against ``SpendRollup`` (every

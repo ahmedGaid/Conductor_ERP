@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .memory import MemoryDetailView, MemoryProposalView, MemoryView
 from .ops import OpsSummaryView, OpsTracesView
 from .usage import UsageView
 from .views import (
@@ -36,6 +37,9 @@ urlpatterns = [
     path("conversations/<int:pk>", ConversationDetailView.as_view(), name="assistant-conversation"),
     path("knowledge", KnowledgeView.as_view(), name="assistant-knowledge"),
     path("knowledge/<int:pk>", KnowledgeDetailView.as_view(), name="assistant-knowledge-detail"),
+    path("memory", MemoryView.as_view(), name="assistant-memory"),
+    path("memory/proposals", MemoryProposalView.as_view(), name="assistant-memory-proposals"),
+    path("memory/<int:pk>", MemoryDetailView.as_view(), name="assistant-memory-detail"),
     path("ops/summary", OpsSummaryView.as_view(), name="assistant-ops-summary"),
     path("ops/traces", OpsTracesView.as_view(), name="assistant-ops-traces"),
     path("usage", UsageView.as_view(), name="assistant-usage"),

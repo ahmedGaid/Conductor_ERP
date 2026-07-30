@@ -104,7 +104,8 @@ def _answer_system(actor, page: dict | None, conversation=None, question: str = 
     # round's result rather than one. The computed reply-language directive closes it, as in ask.
     # Returns the composition record alongside the string (T3.6) — the answer tone + language
     # directive are small fixed blocks, always included, not worth their own envelope section.
-    prompt, meta = context.build_system_prompt_with_meta(actor, page, conversation, model=model)
+    prompt, meta = context.build_system_prompt_with_meta(actor, page, conversation, model=model,
+                                                         message=question)
     return "\n\n".join((prompt, _ANSWER_TONE, context.answer_language_directive(question))), meta
 
 

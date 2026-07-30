@@ -217,6 +217,8 @@ matches the other: typing "امر البيع" finds "أمر البيع"; "فات
 | Knowledge base (documents the assistant searches/quotes) | قاعدة المعرفة | مكتبة المستندات / الأرشيف (reserve for a future generic document store, a different concept, 2026-07-04) |
 | Saved view (a named list filter preset) | طريقة عرض | عرض (bare عرض is reserved for عرض سعر = quotation; always use the compound **طريقة عرض**, 2026-07-05) |
 | Activity timeline (per-record activity feed) | سجل النشاط | التاريخ (reserved for a document's business date, a different concept, 2026-07-05) |
+| Assistant memory (what the assistant keeps about you / the organization across conversations) | ذاكرة المساعد | الذاكرة وحدها / الحفظ التلقائي (bare **الذاكرة** reads as device memory; "تلقائي" is precisely what it is not — every memory is human-confirmed, 2026-07-30) |
+| Remember (asking the assistant to keep something) | يتذكّر / «احفظ أن…» | تذكير (reserve for reminders/notifications — a reminder fires at a time, a memory informs an answer, 2026-07-30) |
 | ARP (the category — Agentic Resource Planning) | الإدارة الذكية للموارد (acronym stays Latin **ARP**, like ERP before it) | تخطيط الموارد الوكيلي (stiff, textbook); marketing signature is «نظام يدير معك، لا يُدار فقط» — usable only after the claims gate opens (`Docs/ARP_STRATEGY.md` §2, 2026-07-02) |
 | Assign (a role to a user) | إسناد | تعيين (reserve **إسناد** app-wide — matches the existing "الدور المُسند" = assigned role, 2026-07-07) |
 | Overdue (a money doc past its due date) | متأخر | فائت / متجاوز (use **متأخر** — the collections word Egyptian SMBs say; the due-date meta marker, 2026-07-07) |

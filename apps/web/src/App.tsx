@@ -58,6 +58,7 @@ const UserDetailPage = lazyPage(() => import("./pages/admin/UserDetailPage"), "U
 const RolesPage = lazyPage(() => import("./pages/admin/RolesPage"), "RolesPage");
 const AssistantPage = lazyPage(() => import("./pages/assistant/AssistantPage"), "AssistantPage");
 const KnowledgePage = lazyPage(() => import("./pages/assistant/KnowledgePage"), "KnowledgePage");
+const MemoryPage = lazyPage(() => import("./pages/assistant/MemoryPage"), "MemoryPage");
 const OpsPage = lazyPage(() => import("./pages/assistant/OpsPage"), "OpsPage");
 const RoleDetailPage = lazyPage(() => import("./pages/admin/RoleDetailPage"), "RoleDetailPage");
 const PipelinePage = lazyPage(() => import("./pages/crm/PipelinePage"), "PipelinePage");
@@ -327,6 +328,7 @@ function AppRoutes() {
           <Route path="/einvoice" element={<EInvoicesPage />} />
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/assistant/knowledge" element={<KnowledgePage />} />
+          <Route path="/assistant/memory" element={<MemoryPage />} />
           <Route path="/assistant/ops" element={<OpsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/help/guide" element={<UserGuidePage />} />

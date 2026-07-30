@@ -17,6 +17,7 @@ from urllib.parse import quote
 from erp.identity import access
 from erp.identity.roles import BRANCH_MANAGER
 
+from . import memory as memory_service
 from .actions import ACTIONS, _can
 
 # entity key (blocker vocabulary) → where to fix it + what fixing requires.
@@ -118,3 +119,26 @@ def build_suggestion(actor, blocker: dict, resume_hint: str = "") -> dict:
 
     return {"issue": issue, "options": options, "no_permission": no_permission,
             "resume": (resume_hint or "").strip()}
+
+
+def build_memory_proposal(actor, *, now=None) -> dict | None:
+    """The pattern-derived memory suggestion (ai-reliability T4.3), or ``None``.
+
+    The detectors are deterministic and read-only (``services/memory.py``); this only shapes the
+    card and starts the one-a-day clock, so a user never gets a second nudge the same day even if
+    two detectors fire. Confirming or dismissing goes through ``/api/assistant/memory/proposals`` —
+    a proposal is never a write.
+    """
+    proposal = memory_service.next_proposal(actor, now=now)
+    if proposal is None:
+        return None
+    memory_service.mark_proposal_shown(actor, now=now)
+    return {
+        "kind": "memory_proposal",
+        "slot": proposal["slot"],
+        "value": proposal["value"],
+        "occurrences": proposal["occurrences"],
+        "detector": proposal["detector"],
+        "options": [{"kind": "confirm_memory", "label_key": "memory.proposal.save"},
+                    {"kind": "dismiss_memory", "label_key": "memory.proposal.dismiss"}],
+    }

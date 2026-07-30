@@ -12,6 +12,7 @@ from erp.inventory import contracts as inventory
 
 from ..gateway.core import model_id
 from . import envelope
+from . import memory as memory_service
 from . import page_distill
 from .prompt_registry import get as get_prompt
 
@@ -194,7 +195,8 @@ def answer_language_directive(question: str) -> str:
 
 
 def build_system_prompt_with_meta(actor, page: dict | None = None, conversation=None,
-                                  *, model: str | None = None) -> tuple[str, dict]:
+                                  *, model: str | None = None,
+                                  message: str = "") -> tuple[str, dict]:
     """Assemble the envelope: identity, user, page (optional), company, recent actions, personas —
     fitted to ``model``'s token budget (T3.6) instead of joined unconditionally. Returns
     ``(prompt, meta)``; ``meta`` is the per-section composition record for ``Trace.meta.envelope``.
@@ -214,20 +216,28 @@ def build_system_prompt_with_meta(actor, page: dict | None = None, conversation=
     if page_section:
         sections.append(envelope.Section("page", 2, page_section, max_share=0.3,
                                          degrade_fn=_degrade_page_block))
-    sections.append(envelope.Section("company", 3, _company_block(actor)))
+    # Memory (T4.5): below the page snapshot (what the user is looking at right now still wins),
+    # above the company/retrieval blocks. Capped at a tenth of the budget and degraded facts-first —
+    # a slot decides behaviour, a fact only colours the answer.
+    memory_block = memory_service.recall(actor, message)
+    if memory_block:
+        sections.append(envelope.Section("memory", 3, memory_block, max_share=0.1,
+                                         degrade_fn=memory_service.degrade_block))
+    sections.append(envelope.Section("company", 4, _company_block(actor)))
     recent_actions = _recent_actions_block(conversation)
     if recent_actions:
-        sections.append(envelope.Section("suggestions", 4, recent_actions, max_share=0.2,
+        sections.append(envelope.Section("suggestions", 5, recent_actions, max_share=0.2,
                                          degrade_fn=_degrade_recent_actions_block))
-    sections.append(envelope.Section("persona", 5, _PERSONA))
-    sections.append(envelope.Section("sources", 6, _SOURCES))
+    sections.append(envelope.Section("persona", 6, _PERSONA))
+    sections.append(envelope.Section("sources", 7, _SOURCES))
 
     kept, meta = envelope.assemble(
         sections, model=model or model_id(), max_tokens=settings.ASSISTANT_MAX_TOKENS)
     return "\n\n".join(kept.values()), meta
 
 
-def build_system_prompt(actor, page: dict | None = None, conversation=None) -> str:
+def build_system_prompt(actor, page: dict | None = None, conversation=None,
+                        *, message: str = "") -> str:
     """Same as ``build_system_prompt_with_meta`` without the composition record — the call sites
     that don't (yet) hold a trace handle to record it against."""
-    return build_system_prompt_with_meta(actor, page, conversation)[0]
+    return build_system_prompt_with_meta(actor, page, conversation, message=message)[0]
