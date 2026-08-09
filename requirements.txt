@@ -57,12 +57,6 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.3.0
     # via celery
-colorama==0.4.6
-    # via
-    #   bandit
-    #   build
-    #   click
-    #   pytest
 coverage[toml]==7.15.2
     # via pytest-cov
 cryptography==49.0.0
@@ -85,7 +79,7 @@ djangorestframework==3.15.2
     # via
     #   -r requirements.in
     #   djangorestframework-simplejwt
-djangorestframework-simplejwt==5.3.1
+djangorestframework-simplejwt==5.5.1
     # via -r requirements.in
 docstring-parser==0.18.0
     # via anthropic
@@ -223,9 +217,7 @@ typing-inspection==0.4.2
 tzdata==2026.3
     # via
     #   celery
-    #   django
     #   kombu
-    #   psycopg
 urllib3==2.7.0
     # via requests
 vine==5.1.0
