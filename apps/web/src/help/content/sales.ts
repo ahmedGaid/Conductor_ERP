@@ -115,6 +115,22 @@ export const newOrderGuide: HelpGuide = {
   ],
 };
 
+export const editOrderGuide: HelpGuide = {
+  title: { en: "Edit sales order", ar: "تعديل طلب المبيعات" },
+  purpose: {
+    en: "Change the customer, warehouse, or lines on an order that hasn't been confirmed yet.",
+    ar: "غيّر العميل أو المخزن أو السطور في طلب لم يُؤكَّد بعد.",
+  },
+  howItWorks: {
+    en: "Only draft orders can be edited — once an order is confirmed this page won't open. Your changes autosave as you type; if you leave and come back, a banner offers to continue where you left off.",
+    ar: "لا يمكن تعديل إلا الطلبات في حالة مسودة — بمجرد تأكيد الطلب لن تفتح هذه الصفحة. تُحفظ تغييراتك تلقائياً أثناء الكتابة؛ وإن غادرت وعدت، يعرض شريط متابعة العمل من حيث توقفت.",
+  },
+  related: [
+    { to: "/sales/orders/:id", label: { en: "Order detail", ar: "تفاصيل الطلب" } },
+    { to: "/drafts", label: { en: "Unfinished work", ar: "العمل غير المكتمل" } },
+  ],
+};
+
 export const orderDetailGuide: HelpGuide = {
   title: { en: "Order detail", ar: "تفاصيل الطلب" },
   purpose: {

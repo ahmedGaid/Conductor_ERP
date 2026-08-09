@@ -70,6 +70,48 @@ export const knowledgeGuide: HelpGuide = {
   ],
 };
 
+export const draftsGuide: HelpGuide = {
+  title: { en: "Unfinished work", ar: "العمل غير المكتمل" },
+  purpose: {
+    en: "Every form you started but didn't finish — customers, items, orders, edits — in one place, so nothing typed is ever lost.",
+    ar: "كل نموذج بدأته ولم تُنهه — عملاء، أصناف، طلبات، تعديلات — في مكان واحد، حتى لا يضيع ما كتبته أبداً.",
+  },
+  howItWorks: {
+    en: "While you fill a create or edit form, it autosaves in the background. If you navigate away or come back later, it's listed here with when it was last edited. Continue reopens the form exactly as you left it; Discard removes it for good.",
+    ar: "أثناء تعبئة نموذج إنشاء أو تعديل، يُحفظ تلقائياً في الخلفية. إن غادرت الصفحة أو عدت لاحقاً، يظهر هنا مع وقت آخر تعديل. متابعة تعيد فتح النموذج كما تركته تماماً؛ وتجاهل يحذفه نهائياً.",
+  },
+};
+
+export const memoryGuide: HelpGuide = {
+  title: { en: "Assistant memory", ar: "ذاكرة المساعد" },
+  purpose: {
+    en: "See everything the assistant has saved about you and your organization, and delete any of it, any time.",
+    ar: "شاهد كل ما حفظه المساعد الذكي عنك وعن مؤسستك، واحذف أي شيء منه في أي وقت.",
+  },
+  howItWorks: {
+    en: "The assistant saves a fact when you explicitly ask it to remember something, or when it notices a repeated pattern and offers to save it — you always confirm or dismiss the offer first. Personal entries are yours only; organization entries are visible to everyone who works there. Deleting an entry removes it for good and the assistant stops using it immediately.",
+    ar: "يحفظ المساعد الذكي معلومة عندما تطلب منه ذلك صراحةً، أو عندما يلاحظ نمطاً متكرراً ويعرض حفظه — وتوافق أو ترفض العرض دائماً أولاً. المدخلات الشخصية لك وحدك؛ ومدخلات المؤسسة تظهر لكل من يعمل فيها. حذف مدخل يزيله نهائياً ويتوقف المساعد عن استخدامه فوراً.",
+  },
+  tasks: [
+    {
+      name: { en: "Delete a saved memory", ar: "احذف معلومة محفوظة" },
+      steps: [
+        { en: "Find the entry under Personal or Organization and click delete.", ar: "ابحث عن المدخل تحت شخصي أو المؤسسة وانقر حذف." },
+        { en: "Confirm — this can't be undone.", ar: "أكّد — لا يمكن التراجع عن هذا." },
+      ],
+    },
+    {
+      name: { en: "Respond to a suggestion", ar: "ردّ على اقتراح" },
+      steps: [
+        { en: "When a proposal card appears, choose 'Save it' to confirm or 'No thanks' to dismiss.", ar: "عند ظهور بطاقة اقتراح، اختر 'احفظه' للتأكيد أو 'لا، شكراً' للرفض." },
+      ],
+    },
+  ],
+  related: [
+    { to: "/assistant", label: { en: "Assistant", ar: "المساعد الذكي" } },
+  ],
+};
+
 export const opsGuide: HelpGuide = {
   title: { en: "Assistant health", ar: "صحة المساعد" },
   purpose: {

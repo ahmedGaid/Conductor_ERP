@@ -102,6 +102,22 @@ export const newPurchaseOrderGuide: HelpGuide = {
   ],
 };
 
+export const editPurchaseOrderGuide: HelpGuide = {
+  title: { en: "Edit purchase order", ar: "تعديل أمر الشراء" },
+  purpose: {
+    en: "Change the supplier, warehouse, or lines on an order that hasn't been confirmed yet.",
+    ar: "غيّر المورّد أو المخزن أو السطور في أمر لم يُؤكَّد بعد.",
+  },
+  howItWorks: {
+    en: "Only draft orders can be edited — once an order is confirmed this page won't open. Your changes autosave as you type; if you leave and come back, a banner offers to continue where you left off.",
+    ar: "لا يمكن تعديل إلا الأوامر في حالة مسودة — بمجرد تأكيد الأمر لن تفتح هذه الصفحة. تُحفظ تغييراتك تلقائياً أثناء الكتابة؛ وإن غادرت وعدت، يعرض شريط متابعة العمل من حيث توقفت.",
+  },
+  related: [
+    { to: "/purchasing/orders/:id", label: { en: "Purchase order detail", ar: "تفاصيل أمر الشراء" } },
+    { to: "/drafts", label: { en: "Unfinished work", ar: "العمل غير المكتمل" } },
+  ],
+};
+
 export const purchaseOrderDetailGuide: HelpGuide = {
   title: { en: "Purchase order detail", ar: "تفاصيل أمر الشراء" },
   purpose: {
