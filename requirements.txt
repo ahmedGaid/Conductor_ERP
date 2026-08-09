@@ -57,12 +57,6 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.3.0
     # via celery
-colorama==0.4.6
-    # via
-    #   bandit
-    #   build
-    #   click
-    #   pytest
 coverage[toml]==7.15.2
     # via pytest-cov
 cryptography==49.0.0
@@ -164,9 +158,7 @@ pygments==2.20.0
     #   pytest
     #   rich
 pyjwt==2.13.0
-    # via
-    #   djangorestframework-simplejwt
-    #   redis
+    # via djangorestframework-simplejwt
 pyotp==2.10.0
     # via -r requirements.in
 pyproject-hooks==1.2.0
@@ -188,7 +180,7 @@ python-json-logger==4.1.0
     # via -r requirements.in
 pyyaml==6.0.3
     # via bandit
-redis==5.3.1
+redis==8.0.1
     # via -r requirements.in
 requests==2.34.2
     # via
@@ -223,9 +215,7 @@ typing-inspection==0.4.2
 tzdata==2026.3
     # via
     #   celery
-    #   django
     #   kombu
-    #   psycopg
 urllib3==2.7.0
     # via requests
 vine==5.1.0
