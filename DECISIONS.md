@@ -3053,3 +3053,44 @@ alias speculatively at extraction (proposal) time — that learns the model's gu
 confirmation. Tests: `erp/inventory/tests/test_barcode_mpn.py` (7), plus the assistant alias/learning
 cases in `test_extraction.py` + `test_actions.py`. `pytest erp/assistant erp/inventory erp/imports
 erp/purchasing` **991 passed** (2 pre-existing approval-limit failures unrelated), no migration drift.
+
+## ai-reliability Phase 5 T5.1 — AgentRun/AgentStep durable persistence (2026-08-11)
+
+**Problem.** The agent loop (`services/agent.py`) lived entirely in process memory — a crash,
+worker restart, or client disconnect mid-turn left no trace of which tool calls had actually run.
+Phase 5's plan-then-execute/resume/workflow-graph work (T5.2–T5.10) all needs a row-per-run,
+row-per-step ledger to check against, resume from, and audit — this task builds that ledger without
+changing the loop's behavior.
+
+**Decision (write-ahead, not after-the-fact logging).** Two new models: `AgentRun` (uuid pk, actor
+FK, conversation FK, goal, `status` — `planning|running|waiting_confirm|paused|done|failed|
+cancelled`, `plan` JSON — empty until T5.2's typed planner exists, `current_step`, `result` JSON,
+trace FK, timestamps) and `AgentStep` (run FK, `seq`, `tool`, `args` JSON, `status` — `pending|
+validated|running|ok|repaired|failed|skipped`, `result_summary` JSON — sizes/outcome only, never
+raw tool payloads, `error`, timestamps; unique on `(run, seq)`). `agent.run()` opens an `AgentRun`
+row alongside the existing `Trace` and closes both through the same three exits (answered /
+exception / `GeneratorExit` on client disconnect) so they always land in a matching terminal state.
+Each tool round calls `_step_start` (creates the row `pending`, flips it `running`, before the tool
+executes) then `_step_finish` (`ok`/`failed` after) — write-ahead means a crash between those two
+calls leaves an honest `running` row, not a silent gap. `_fail_lingering_steps` sweeps any row still
+`pending`/`running` when the generator exits by exception or `GeneratorExit`, so nothing hangs
+forever unresolved. In-memory loop behavior is unchanged — this task adds durability, not new
+decision logic (per the plan's own scope: T5.2's planner/re-plan logic comes later).
+
+**Rejected:** deriving row state from `TraceStep` after the fact (Trace is an audit log, not a
+resumable/queryable run ledger — Phase 5's resume/checkpoint tasks need `AgentRun`/`AgentStep` as
+first-class rows, not something reconstructed from trace details). Also rejected: waiting for
+T5.2's typed planner before adding persistence — the plan explicitly orders T5.1 first so every
+later Phase 5 task (resume, parallel steps, clarify-parking) has the ledger already in place.
+
+Tests: `erp/assistant/tests/test_agent_runs.py` (3) — a 3-tool-round run persists `OK` rows at each
+seq with correct args and a `DONE` run row; a mid-run provider exception leaves the one completed
+step `OK` and the run `FAILED` (nothing swept away); a client disconnect (`generator.close()`)
+while a step is mid-flight leaves that step `FAILED`/`"cancelled"` and the run `CANCELLED`, not
+stuck `running` forever. `pytest erp/assistant` 732 passed / 5 skipped (unchanged skip count —
+pgvector-gated), full `pytest erp/assistant/tests/test_agent.py` (21) green unchanged, `makemigrations
+--check` clean, `gate:all` 00–17 green (gate 11 hit one transient DNS-resolution flake on the full
+run, reproduced clean standalone — pre-existing test infra flake, unrelated to this diff; confirmed
+by re-running gate 11 alone). Plan file `FILE_05_PHASE5_AGENT_ORCHESTRATION.md` T5.1 box checked;
+file NOT renamed `_done` (T5.2–T5.10 remain). **Next in file order: T5.9 (detached durable
+streaming) — numbered out of sequence deliberately, executes second per the plan's own note.**

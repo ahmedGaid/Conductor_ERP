@@ -70,7 +70,7 @@
 
 ## Tasks
 
-### [ ] T5.1 — AgentRun/AgentStep persistence
+### [x] T5.1 — AgentRun/AgentStep persistence
 
 - **Goal:** every agent run is a durable DB object with typed step states.
 - **Prereq:** Phase 4 done.

@@ -374,6 +374,83 @@ class Budget(models.Model):
         return f"{self.scope}<={self.limit_microcents}({self.action})"
 
 
+class AgentRun(models.Model):
+    """One durable agent-loop invocation (ai-reliability T5.1 — Phase 5 orchestration).
+
+    Every state transition is written BEFORE the loop acts on it (write-ahead), so a run row
+    always reflects reality even if the process dies mid-turn — the durability half of "runs you
+    can inspect, resume, and audit". ``plan`` stays empty until T5.2's typed planner fills it;
+    today's reactive round-by-round loop has no upfront plan to persist yet.
+    """
+
+    class Status(models.TextChoices):
+        PLANNING = "planning"
+        RUNNING = "running"
+        WAITING_CONFIRM = "waiting_confirm"
+        PAUSED = "paused"
+        DONE = "done"
+        FAILED = "failed"
+        CANCELLED = "cancelled"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="agent_runs",
+    )
+    conversation = models.ForeignKey(
+        Conversation, null=True, blank=True, on_delete=models.SET_NULL, related_name="agent_runs",
+    )
+    goal = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.RUNNING)
+    plan = models.JSONField(default=list, blank=True)
+    current_step = models.PositiveIntegerField(default=0)
+    result = models.JSONField(null=True, blank=True)
+    trace = models.ForeignKey(
+        Trace, null=True, blank=True, on_delete=models.SET_NULL, related_name="agent_run",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["conversation", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.status}:{self.id}"
+
+
+class AgentStep(models.Model):
+    """One tool round inside an :class:`AgentRun` (ai-reliability T5.1). ``result_summary``
+    follows the Trace/TraceStep payload policy: sizes and outcomes only, never raw tool output."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending"
+        VALIDATED = "validated"
+        RUNNING = "running"
+        OK = "ok"
+        REPAIRED = "repaired"
+        FAILED = "failed"
+        SKIPPED = "skipped"
+
+    run = models.ForeignKey(AgentRun, on_delete=models.CASCADE, related_name="steps")
+    seq = models.PositiveIntegerField()
+    tool = models.CharField(max_length=100, blank=True, default="")
+    args = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    result_summary = models.JSONField(null=True, blank=True)
+    error = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["run_id", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["run", "seq"], name="uniq_agent_step_run_seq"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.run_id}#{self.seq}:{self.tool}"
+
+
 class SpendRollup(models.Model):
     """Atomic running spend for a ``user`` or ``org`` scope over one period (ai-reliability T2.7).
     ``period`` is date-keyed: the calendar day for ``user`` (resets at midnight), the first of the

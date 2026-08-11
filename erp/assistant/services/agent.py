@@ -25,6 +25,7 @@ from django.conf import settings
 from erp.audit import services as audit
 
 from ..gateway.core import complete_json, complete_stream, model_id, provider
+from ..models import AgentRun, AgentStep
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
@@ -236,32 +237,86 @@ def _run_tool(actor, decision: dict, *, trace=None) -> tuple[dict, bool]:
     return result, "error" not in result
 
 
+def _step_args(decision: dict) -> dict:
+    """The scalar args a round decided on — never the full tool result (Trace/TraceStep policy)."""
+    return {k: decision[k] for k in _ARG_FIELDS if decision.get(k) is not None}
+
+
+def _step_start(agent_run: AgentRun | None, seq: int, tool: str, decision: dict) -> AgentStep | None:
+    """Write-ahead: persist the step BEFORE the tool call it describes runs, so a crash mid-call
+    leaves a ``running`` row (never a silent gap) — the caller's own except turns it ``failed``."""
+    if agent_run is None:
+        return None
+    step = AgentStep.objects.create(run=agent_run, seq=seq, tool=tool, args=_step_args(decision),
+                                    status=AgentStep.Status.PENDING)
+    AgentStep.objects.filter(pk=step.pk).update(status=AgentStep.Status.RUNNING)
+    AgentRun.objects.filter(pk=agent_run.pk).update(current_step=seq)
+    return step
+
+
+def _step_finish(step: AgentStep | None, *, ok: bool, data: dict) -> None:
+    if step is None:
+        return
+    status = AgentStep.Status.OK if ok else AgentStep.Status.FAILED
+    error = "" if ok else str((data or {}).get("error") or (data or {}).get("blocker") or "")[:255]
+    AgentStep.objects.filter(pk=step.pk).update(
+        status=status, error=error,
+        result_summary={"result_size": len(json.dumps(data, ensure_ascii=False))},
+    )
+
+
+def _fail_lingering_steps(agent_run: AgentRun | None, error_class: str) -> None:
+    """A run that ends by exception or cancellation before a step's own finish call — any step
+    still ``pending``/``running`` gets an honest terminal row instead of hanging forever."""
+    if agent_run is None:
+        return
+    AgentStep.objects.filter(
+        run=agent_run, status__in=[AgentStep.Status.PENDING, AgentStep.Status.RUNNING],
+    ).update(status=AgentStep.Status.FAILED, error=error_class[:255])
+
+
 def run(*, actor, conversation, question: str, page: dict | None = None,
         regenerate: bool = False, attachment_ids=None):
     """Same as ``_run_impl`` — opens one Trace for the whole agent run (planner rounds + tool
     calls as TraceSteps) and closes it however the run ends: answered, hit MAX_ROUNDS, raised, or
-    the client disconnected mid-stream (``Trace.meta.stop``)."""
+    the client disconnected mid-stream (``Trace.meta.stop``). Also opens the durable ``AgentRun``
+    row (T5.1) alongside the Trace — same three exits, so both always land in a matching terminal
+    state."""
     cm = trace_call("agent", actor=actor, conversation_id=getattr(conversation, "id", None),
                     prompt_ref=_loop_prompt.ref)
     handle = cm.__enter__()
+    agent_run = AgentRun.objects.create(
+        actor=actor if getattr(actor, "is_authenticated", False) else None,
+        conversation=conversation, goal=(question or "")[:MAX_QUESTION_CHARS],
+    )
     try:
         yield from _run_impl(actor=actor, conversation=conversation, question=question, page=page,
-                             regenerate=regenerate, attachment_ids=attachment_ids, trace=handle)
+                             regenerate=regenerate, attachment_ids=attachment_ids, trace=handle,
+                             agent_run=agent_run)
     except GeneratorExit:
         handle.meta["stop"] = "cancelled"
         mark_cancelled(handle)
         cm.__exit__(None, None, None)
+        _fail_lingering_steps(agent_run, "cancelled")
+        AgentRun.objects.filter(pk=agent_run.pk).update(
+            status=AgentRun.Status.CANCELLED, trace_id=handle.trace_id or None)
         raise
     except BaseException as exc:
         handle.meta.setdefault("stop", "error")
         cm.__exit__(type(exc), exc, exc.__traceback__)
+        _fail_lingering_steps(agent_run, exc.__class__.__name__)
+        AgentRun.objects.filter(pk=agent_run.pk).update(
+            status=AgentRun.Status.FAILED, trace_id=handle.trace_id or None)
         raise
     else:
         cm.__exit__(None, None, None)
+        AgentRun.objects.filter(pk=agent_run.pk).update(
+            status=AgentRun.Status.DONE, trace_id=handle.trace_id or None)
 
 
 def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
-              regenerate: bool = False, attachment_ids=None, trace=NULL_HANDLE):
+              regenerate: bool = False, attachment_ids=None, trace=NULL_HANDLE,
+              agent_run: AgentRun | None = None):
     """Generator over the agentic chat pipeline — yields SSE-ready event dicts.
 
     Event protocol (extends session 02's token/citations/done/error):
@@ -447,10 +502,12 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                          "change the arguments, or answer."}})
             continue
         seen_calls.add(signature)
+        step_row = _step_start(agent_run, len(steps) + 1, name, decision)
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         _t0 = time.monotonic()
         data, ok = _run_tool(actor, decision, trace=trace)
         blocked = isinstance(data, dict) and "blocker" in data
+        _step_finish(step_row, ok=ok and not blocked, data=data)
         trace.step(kind="tool", name=name, ok=ok and not blocked,
                   latency_ms=int((time.monotonic() - _t0) * 1000),
                   detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
@@ -475,9 +532,12 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             and not any(r["tool"] == "search_documents" for r in results)):
         name = "search_documents"
         why = "Checking company documents"
+        guard_decision = {"tool": name, "query": q}
+        step_row = _step_start(agent_run, len(steps) + 1, name, guard_decision)
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         _t0 = time.monotonic()
-        data, ok = _run_tool(actor, {"tool": name, "query": q}, trace=trace)
+        data, ok = _run_tool(actor, guard_decision, trace=trace)
+        _step_finish(step_row, ok=ok, data=data)
         trace.step(kind="tool", name=name, ok=ok, latency_ms=int((time.monotonic() - _t0) * 1000),
                   detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
         results.append({"tool": name, "why": why, "data": data})
@@ -501,9 +561,12 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             and guard_entity in _QUERY_REGISTRY):
         name = "query_data"
         why = "Checking the live data"
+        guard_decision = {**last_decision, "tool": name}
+        step_row = _step_start(agent_run, len(steps) + 1, name, guard_decision)
         yield {"type": "step", "tool": name, "label": why, "state": "running"}
         _t0 = time.monotonic()
-        data, ok = _run_tool(actor, {**last_decision, "tool": name}, trace=trace)
+        data, ok = _run_tool(actor, guard_decision, trace=trace)
+        _step_finish(step_row, ok=ok, data=data)
         trace.step(kind="tool", name=name, ok=ok, latency_ms=int((time.monotonic() - _t0) * 1000),
                   detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
         results.append({"tool": name, "why": why, "data": data})
@@ -518,6 +581,11 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     # working (client reads it from ``done`` and from the reloaded message meta).
     used_tool = next((s["tool"] for s in reversed(steps) if s["ok"]), None)
     trace.meta["stop"] = "step_budget" if hit_round_cap else "answered"
+    if agent_run is not None:
+        AgentRun.objects.filter(pk=agent_run.pk).update(
+            current_step=len(steps),
+            result={"used_tool": used_tool, "intent": intent, "citations": len(citations)},
+        )
 
     parts: list[str] = []
     saved = False
