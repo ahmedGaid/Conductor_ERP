@@ -2,10 +2,13 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  cancelStream,
   chatStream,
   createConversation,
   getConversation,
+  reconnectChatStream,
   resumeDetour,
+  retryTurnStream,
   uploadAttachment,
   ALLOWED_ATTACHMENT_TYPES,
   MAX_ATTACHMENT_BYTES,
@@ -19,6 +22,7 @@ import {
   type EnvelopeInfo,
   type ImportTask,
 } from "../api/assistant";
+import { ApiError } from "../api/client";
 import { NavIcon } from "../app/icons";
 import { useToast } from "../app/ToastContext";
 import { collectContext } from "./context";
@@ -59,6 +63,10 @@ export function ConversationView() {
   const [streamSteps, setStreamSteps] = useState<ChatStep[]>([]);
   const [streamNotice, setStreamNotice] = useState<string | null>(null);
   const [streamError, setStreamError] = useState<string | null>(null);
+  // T5.9: the error banner came from the conversation's persisted `last_stream_error` (worker died,
+  // discovered on load/reconnect), not a live client-side failure — `retry()` needs to know which
+  // recovery path applies (retry-turn vs. a plain regenerate).
+  const [persistedError, setPersistedError] = useState(false);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [dragging, setDragging] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -75,8 +83,23 @@ export function ConversationView() {
     let alive = true;
     setLoading(true);
     setStreamError(null);
-    getConversation(conversationId)
-      .then((d) => alive && setMessages(d.messages))
+    setPersistedError(false);
+    const convId = conversationId;
+    getConversation(convId)
+      .then((d) => {
+        if (!alive) return;
+        setMessages(d.messages);
+        // T5.9: pick up where a detached turn left off — a live worker still running (reconnect
+        // to its relay) or one that died before finishing (offer retry via its own record).
+        if (d.conversation.active_stream_id) {
+          const checkpoint = [...d.messages].reverse()
+            .find((m) => m.role === "assistant" && m.meta?.streaming === true);
+          if (checkpoint) void reconnect(convId, checkpoint.id);
+        } else if (d.conversation.last_stream_error) {
+          setPersistedError(true);
+          setStreamError(t("assistant.streamInterrupted"));
+        }
+      })
       .catch((err) => alive && toast.show(err instanceof Error ? err.message : String(err), "error"))
       .finally(() => alive && setLoading(false));
     return () => {
@@ -85,6 +108,77 @@ export function ConversationView() {
     // toast is stable; re-run only on id change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
+
+  // T5.9: rejoin a detached turn's live relay after a reload/network drop — patches the SAME
+  // checkpoint message in place (it's already visible with its partial content from the load
+  // above) instead of accumulating into a separate floating `streamText` bubble.
+  async function reconnect(convId: number, checkpointMessageId: number) {
+    setStreaming(true);
+    setStreamNotice(null);
+    const ac = new AbortController();
+    abortRef.current = ac;
+    let acc = messages?.find((m) => m.id === checkpointMessageId)?.content ?? "";
+    let citations: AskCitation[] = [];
+    let usedTool: string | null = null;
+    let proposal: ActionProposal | null = null;
+    let suggestion: AssistantSuggestion | null = null;
+    let importTask: ImportTask | null = null;
+    let envelopeInfo: EnvelopeInfo | null = null;
+    let interrupted = false;
+    const patch = (extra: Partial<ChatMessage["meta"]> = {}, content = acc) =>
+      setMessages((m) =>
+        (m ?? []).map((x) =>
+          x.id === checkpointMessageId ? { ...x, content, meta: { ...x.meta, ...extra } } : x,
+        ),
+      );
+    try {
+      await reconnectChatStream(convId, (e) => {
+        if (e.type === "token" && e.text) {
+          acc += e.text;
+          patch();
+        } else if (e.type === "citations" && e.citations) {
+          citations = e.citations;
+        } else if (e.type === "proposal" && e.proposal) {
+          proposal = e.proposal;
+        } else if (e.type === "suggestion" && e.suggestion) {
+          suggestion = e.suggestion;
+        } else if (e.type === "import" && e.import) {
+          importTask = e.import;
+        } else if (e.type === "done") {
+          usedTool = e.used_tool ?? null;
+          if (e.budget_tokens != null && e.conversation_tokens != null) {
+            envelopeInfo = {
+              tokens: e.conversation_tokens, budget: e.budget_tokens, compacted: !!e.compacted,
+            };
+          }
+        } else if (e.type === "stream-error") {
+          interrupted = true;
+        } else if (e.type === "error") {
+          interrupted = true;
+        }
+      }, ac.signal);
+    } catch {
+      // A dropped relay (not a turn failure) — the worker may still be running; a manual reopen
+      // reconciles with server truth. Leave whatever text arrived rather than erroring the turn.
+    } finally {
+      patch({
+        streaming: undefined,
+        ...(citations.length ? { citations } : {}),
+        ...(usedTool ? { used_tool: usedTool } : {}),
+        ...(proposal ? { proposal } : {}),
+        ...(suggestion ? { suggestion } : {}),
+        ...(importTask ? { import: importTask } : {}),
+        ...(envelopeInfo ? { envelope: envelopeInfo } : {}),
+      });
+      if (interrupted) {
+        setPersistedError(true);
+        setStreamError(t("assistant.streamInterrupted"));
+      }
+      setStreaming(false);
+      abortRef.current = null;
+      refreshConversations();
+    }
+  }
 
   // Cancel any in-flight stream on unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -173,6 +267,9 @@ export function ConversationView() {
       attachment_ids?: number[];
       // Session 13: resume paused work after a guided detour instead of asking a new question.
       resume?: { message_id: number; resolved: { entity: string; id: string; label: string } | null };
+      // T5.9: re-enqueue the last failed detached turn via the server's own record of it (there is
+      // no live client-side draft to resend after a reload finds `last_stream_error`).
+      retryTurn?: boolean;
     },
   ) {
     setStreaming(true);
@@ -180,6 +277,7 @@ export function ConversationView() {
     setStreamSteps([]);
     setStreamNotice(null);
     setStreamError(null);
+    setPersistedError(false);
     const ac = new AbortController();
     abortRef.current = ac;
     let acc = "";
@@ -192,8 +290,9 @@ export function ConversationView() {
     let importTask: ImportTask | null = null;
     let envelopeInfo: EnvelopeInfo | null = null;
     let errMsg: string | null = null;
-    // The event handling is identical for a fresh answer and a detour resume — only the request
-    // differs (resume replays paused work server-side; no new question, no page context needed).
+    let persistedForThisRun = false;
+    // The event handling is identical across a fresh answer, a detour resume, and a T5.9 retry —
+    // only the request differs (resume/retry replay server-side state; no new question needed).
     const startStream = (onEvent: (e: ChatEvent) => void) =>
       opts.resume
         ? resumeDetour(
@@ -201,6 +300,8 @@ export function ConversationView() {
             onEvent,
             ac.signal,
           )
+        : opts.retryTurn
+        ? retryTurnStream(convId, onEvent, ac.signal)
         : chatStream(
             { conversation_id: convId, context: collectContext({ detached: contextDetached }), ...opts },
             onEvent,
@@ -254,12 +355,24 @@ export function ConversationView() {
             // (which is English-only) — same "distinct code, distinct notice" precedent as T2.6's
             // streamRetrying.
             errMsg = e.code === "AI-007" ? t("assistant.budgetExceeded") : e.message ?? t("assistant.errorLine");
+          } else if (e.type === "stream-error") {
+            // T5.9: the worker that was running this turn went dark (reaped) while this same tab
+            // was still watching — same designed line + retry affordance as a reload finding
+            // `last_stream_error`, just discovered live instead of on load.
+            persistedForThisRun = true;
+            errMsg = t("assistant.streamInterrupted");
           }
         },
       );
     } catch (err) {
-      // A stop (abort) is not an error — the partial answer below still commits.
-      if (!ac.signal.aborted) errMsg = err instanceof Error ? err.message : String(err);
+      if (err instanceof ApiError && err.status === 409) {
+        // T5.9: another turn already claimed this conversation — calm, not an error; the existing
+        // live relay (this tab's or another one's) keeps going untouched.
+        toast.show(t("assistant.streamBusy"), "info");
+      } else if (!ac.signal.aborted) {
+        // A stop (abort) is not an error — the partial answer below still commits.
+        errMsg = err instanceof Error ? err.message : String(err);
+      }
     } finally {
       if (acc.trim() || proposal || suggestion || importTask) {
         const asstMsg: ChatMessage = {
@@ -283,6 +396,10 @@ export function ConversationView() {
       } else if (errMsg) {
         setStreamError(errMsg);
       }
+      // T5.9: independent of whether a partial got committed above — the turn itself was
+      // interrupted server-side, so retry must go through retry-turn (server truth), not a plain
+      // regenerate (which would only have this tab's own, possibly-incomplete local text to redo).
+      if (persistedForThisRun) setPersistedError(true);
       setStreaming(false);
       setStreamText("");
       setStreamSteps([]);
@@ -359,11 +476,17 @@ export function ConversationView() {
 
   async function retry() {
     if (streaming || conversationId == null) return;
-    await runStream(conversationId, { regenerate: true });
+    // T5.9: a persisted (server-discovered) failure has no live local draft worth resending — go
+    // through retry-turn, which replays the server's own record of the last question instead.
+    await runStream(conversationId, persistedError ? { retryTurn: true } : { regenerate: true });
   }
 
   function stop() {
     abortRef.current?.abort();
+    // T5.9: detached turns keep running server-side after the local fetch is aborted — tell the
+    // worker to actually stop too. Best-effort/fire-and-forget: the running stream's own `done`
+    // event (stop="cancelled") is what settles the UI, not this call's response.
+    if (conversationId != null) void cancelStream(conversationId).catch(() => {});
   }
 
   function editPrompt(text: string) {

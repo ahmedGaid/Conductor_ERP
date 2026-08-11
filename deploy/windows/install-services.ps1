@@ -82,8 +82,11 @@ Install-Service -Name "Conductor-Web" `
   -AppArgs "deploy\serve_waitress.py" -DependsOn "postgresql-x64-16"
 
 # Celery worker: solo pool is required on Windows (prefork is POSIX-only). Depends on Redis.
+# -Q celery,ai_stream: consumes the default queue AND the T5.9 detached-streaming queue - without
+# both names here, a worker started with no -Q only drains "celery" and every chat/agent turn
+# routed to "ai_stream" would sit unpicked in Redis forever.
 Install-Service -Name "Conductor-Worker" `
-  -AppArgs "-m celery -A config worker --loglevel=info --pool=solo" -DependsOn "Redis"
+  -AppArgs "-m celery -A config worker --loglevel=info --pool=solo -Q celery,ai_stream" -DependsOn "Redis"
 
 # Celery beat: the periodic scheduler. Depends on Redis.
 Install-Service -Name "Conductor-Beat" `

@@ -11,6 +11,7 @@ import json
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.http import Http404, StreamingHttpResponse
@@ -33,6 +34,7 @@ from ..errors import (
     ActionFailedError,
     ActionForbiddenError,
     AssistantUnavailableError,
+    StreamBusyError,
     VerifierFailed,
 )
 from ..gateway import status as gateway_status
@@ -275,6 +277,12 @@ class ChatView(APIView):
         if attachment_ids and not regenerate:
             files.fetch_unclaimed(attachment_ids, user=request.user)
 
+        if settings.ASSISTANT_DETACHED_STREAMING:
+            return _start_detached(
+                request.user, conversation, message=message, page=page,
+                regenerate=regenerate, attachment_ids=attachment_ids,
+            )
+
         def _events():
             try:
                 for event in services.run_agent(
@@ -294,6 +302,129 @@ class ChatView(APIView):
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
         return response
+
+
+# --- Detached durable streaming (ai-reliability T5.9) -------------------------------------------
+# The generator that used to stream straight into this HTTP response instead runs in a Celery
+# worker; these views only claim the turn, subscribe to its Redis relay, and pipe events through —
+# same SSE wire protocol as the in-request path above, so the frontend's one reader handles both.
+
+_STREAM_TERMINAL_EVENTS = {"done", "error", "stream-error"}
+
+
+def _start_detached(actor, conversation, *, message: str, page, regenerate: bool,
+                    attachment_ids) -> Response:
+    """Claim the conversation's stream slot and enqueue the worker turn. Busy (another turn
+    already claimed it) returns a calm typed 409 instead of a stream — the panel shows "still
+    answering" and leaves the existing live relay (if any) alone."""
+    from ..services import stream_relay
+    from ..tasks import run_detached_stream
+
+    stream_relay.reap_if_dead(conversation)  # a dead worker's stale claim must not read as "busy"
+    stream_id = stream_relay.claim_stream(conversation)
+    if stream_id is None:
+        raise StreamBusyError()
+    # Subscribe BEFORE enqueuing: Redis buffers everything published to a channel once a
+    # subscriber is registered, even before this process calls listen/get_message — enqueuing
+    # first would risk losing the turn's earliest events to a race.
+    pubsub = stream_relay.open_subscription(conversation.id)
+    run_detached_stream.delay(
+        stream_id=str(stream_id), conversation_id=conversation.id,
+        actor_id=getattr(actor, "id", None), question=message, page=page,
+        regenerate=regenerate, attachment_ids=attachment_ids,
+    )
+    return _relay_response(pubsub, conversation)
+
+
+def _relay_response(pubsub, conversation=None) -> StreamingHttpResponse:
+    from ..services import stream_relay
+
+    def _events():
+        try:
+            for event in stream_relay.iter_events(pubsub):
+                yield _sse(event)
+                if event.get("type") in _STREAM_TERMINAL_EVENTS:
+                    return
+            # iter_events gave up (idle timeout) without ever seeing a terminal event — the worker
+            # went dark while THIS relay was the only listener, so no OTHER read path ever got a
+            # chance to reap it. Reap now (so the claim doesn't linger) and say why the stream just
+            # stopped, instead of leaving the client with a silently-ended connection.
+            if conversation is not None:
+                conversation.refresh_from_db(fields=["active_stream_id"])
+                if stream_relay.reap_if_dead(conversation):
+                    yield _sse({"type": "stream-error", "reason": "interrupted"})
+        except (BrokenPipeError, ConnectionResetError, GeneratorExit):
+            raise  # client disconnected — the worker keeps running; nothing to persist here
+
+    response = StreamingHttpResponse(_events(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+class ChatStreamView(APIView):
+    """Reconnect to an in-progress detached turn (T5.9) after a reload or dropped connection — no
+    new claim, no new task, a pure relay. The partial answer itself is already visible via the
+    normal conversation fetch (the worker checkpoints it into the DB every ~2s); this endpoint
+    only carries the REST of a still-running turn. 404 when there is nothing live to relay (the
+    turn already finished, or its worker died and got reaped) — the client already has the truth
+    either from the message list or from ``last_stream_error``."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, pk: int) -> StreamingHttpResponse:
+        from ..services import stream_relay
+
+        conversation = get_object_or_404(Conversation, pk=pk, user=request.user)
+        stream_relay.reap_if_dead(conversation)
+        conversation.refresh_from_db(fields=["active_stream_id"])
+        if conversation.active_stream_id is None:
+            raise Http404
+        pubsub = stream_relay.open_subscription(conversation.id)
+        return _relay_response(pubsub, conversation)
+
+
+class ChatRetryView(APIView):
+    """Re-enqueue the last failed detached turn (T5.9) — for when the tab that started it is gone
+    (reload/new session) and there is no live client-side error state to retry from, only the
+    conversation's own ``last_stream_error``. Re-answers the last user message fresh (same
+    semantics as ``regenerate``), which also clears out the interrupted attempt's stale partial
+    checkpoint row before the new one is created."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, pk: int) -> Response | StreamingHttpResponse:
+        from ..services import stream_relay
+
+        conversation = get_object_or_404(Conversation, pk=pk, user=request.user)
+        stream_relay.reap_if_dead(conversation)
+        conversation.refresh_from_db(fields=["last_stream_error", "active_stream_id"])
+        if conversation.active_stream_id is not None:
+            raise StreamBusyError()
+        if not conversation.last_stream_error:
+            raise ValidationError("There is no failed turn to retry.")
+        if not conversation.messages.filter(role="user").exists():
+            raise ValidationError("There is no failed turn to retry.")
+        return _start_detached(
+            request.user, conversation, message="", page=None, regenerate=True,
+            attachment_ids=[],
+        )
+
+
+class ChatCancelView(APIView):
+    """Stop button for a detached turn (T5.9): publishes the cancel signal the worker polls
+    between rounds/chunks. A no-op (200, nothing to cancel) when nothing is running — cheaper and
+    calmer than 404ing a button click that lost a race with the turn finishing on its own."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, pk: int) -> Response:
+        from ..services import stream_relay
+
+        conversation = get_object_or_404(Conversation, pk=pk, user=request.user)
+        if conversation.active_stream_id is not None:
+            stream_relay.request_cancel(conversation.active_stream_id)
+        return _envelope({"ok": True})
 
 
 class ActionExecuteView(APIView):
@@ -614,6 +745,10 @@ def _summary(conversation: Conversation) -> dict:
         "archived": conversation.archived,
         "updated_at": conversation.updated_at.isoformat(),
         "preview": _first_line(conversation),
+        # T5.9: lets the client know whether to reconnect (a detached turn is still running) or
+        # offer a retry (the last one was interrupted) on load — null/null the rest of the time.
+        "active_stream_id": conversation.active_stream_id,
+        "last_stream_error": conversation.last_stream_error,
     }
 
 
@@ -668,7 +803,11 @@ class ConversationDetailView(APIView):
         return get_object_or_404(Conversation, pk=pk, user=request.user)
 
     def get(self, request: Request, pk: int) -> Response:
-        return _envelope(_detail(self._get(request, pk)))
+        from ..services import stream_relay
+
+        conversation = self._get(request, pk)
+        stream_relay.reap_if_dead(conversation)  # a stale claim must not read as "still running"
+        return _envelope(_detail(conversation))
 
     def patch(self, request: Request, pk: int) -> Response:
         conversation = self._get(request, pk)

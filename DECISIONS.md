@@ -3094,3 +3094,80 @@ run, reproduced clean standalone — pre-existing test infra flake, unrelated to
 by re-running gate 11 alone). Plan file `FILE_05_PHASE5_AGENT_ORCHESTRATION.md` T5.1 box checked;
 file NOT renamed `_done` (T5.2–T5.10 remain). **Next in file order: T5.9 (detached durable
 streaming) — numbered out of sequence deliberately, executes second per the plan's own note.**
+
+## ai-reliability Phase 5 T5.9 — Detached durable streaming (2026-08-11)
+
+**Problem** (`[Twenty study 2026-07-16]`). A chat/agent turn lived entirely inside one HTTP
+request: `ChatView.post` opened a `StreamingHttpResponse` wrapping `services.run_agent(...)`
+directly. A page refresh, a network drop, or the request worker dying mid-turn silently lost
+whatever was in flight — no partial answer, no error, no way back in. Twenty's own fix (verified
+in `stream-agent-chat.job.ts`/`agent-chat-streaming.service.ts`, see `TWENTY_AI_STUDY.md`) is to
+detach execution from the request entirely; this task adapts that shape onto this loop's existing
+SSE contract without changing the loop's semantics.
+
+**Decision.** `Conversation` gains `active_stream_id` (claim) + `last_stream_error` (JSON) —
+starting a detached turn is an optimistic `UPDATE ... WHERE active_stream_id IS NULL`
+(`stream_relay.claim_stream`); busy raises a new typed `StreamBusyError` (`AI-009`, 409) instead of
+opening a second stream. The claimed turn runs inside a Celery task
+(`assistant.run_detached_stream`, its own `ai_stream` queue so a long batch job can never queue
+ahead of a live chat turn) that calls the SAME `agent.run(...)` generator and publishes every
+yielded event to a Redis channel (`assistant:conv:{id}`) instead of writing straight into a
+response; the HTTP view only opens a subscription (BEFORE enqueuing — Redis buffers everything
+published to a channel once a subscriber is registered, closing the race) and relays frames
+byte-for-byte, so the wire protocol the frontend already speaks never changes. A worker heartbeat
+(`assistant-stream-alive:{id}`, 30s TTL, refreshed every 5s) is the liveness signal: any read path
+(a new claim attempt, the reconnect endpoint, `ConversationDetailView.get`, or the relay itself
+after a 30s idle timeout) that finds a claim with no heartbeat reaps it — clears the claim, records
+`last_stream_error`, publishes a `stream-error` event — rather than leaving the conversation stuck.
+`agent.run()`/`_run_impl()` gained one optional `stream_id` kwarg (`None` by default — the
+in-request path is byte-identical when unset): when set, it creates ONE checkpoint `Message` row
+via `get_or_create(stream_id=...)` right after the (regenerate-aware) user-turn resolution, and its
+own `_persist()` updates that SAME row instead of creating a new one. The worker task also writes
+the accumulating token text into that row every ~2s — a courtesy for "reload mid-answer", always
+overwritten by `_persist()`'s own authoritative final write, so a redelivered/duplicate partial
+write is harmless. Cancel (stop button) publishes `assistant:cancel:{id}`; the worker polls it
+between events and calls `gen.close()`, which routes through `agent.run()`'s EXISTING
+`GeneratorExit` handling (the same one that already covers an HTTP client disconnect) — one
+cancellation code path, two triggers. `ASSISTANT_DETACHED_STREAMING` (default off) chooses the path
+per-request at the view level, so an install with no worker running (or `CELERY_TASK_ALWAYS_EAGER`,
+as in CI) keeps the in-request path unchanged and every existing test is unaffected.
+
+**Rejected:** a generic job queue with client-side polling (Twenty's own chosen shape is pub/sub +
+heartbeat specifically to keep the SSE UX identical — polling would mean rewriting the frontend's
+streaming reader); making retry-turn reconstruct the failed turn from client-supplied text (the
+server already has the last user message — `regenerate` semantics already solve exactly this,
+reused rather than re-invented); a separate `WorkflowResume`-style ledger for T5.9's own scope (that
+full resume/idempotency story is T5.5's job — this task is scoped to "the turn survives losing the
+connection," not "a completed write step is never re-executed after a restart").
+
+**Real bug caught by the drill tests, not by inspection:** `stream_relay.reap_if_dead` cleared
+`active_stream_id` on the in-memory `Conversation` object but only wrote `last_stream_error` to the
+DB via a bare `.update()` — the caller's own Python object never got the field, so
+`ConversationDetailView.get`'s `_detail()` serialized a stale `None` right after a reap. A test
+built around `conv.refresh_from_db()` would have masked this (and initially did, in an earlier,
+weaker version of the reap test); the drill (b) test — which reads the field back through the REAL
+view, the way a reloading browser tab actually would — caught it immediately. Fixed by having
+`mark_stream_error` return the error dict and `reap_if_dead` assign it on the in-memory object too.
+
+Tests: new `erp/assistant/tests/test_detached_streaming.py` (10, real Redis — no fake, matching
+`scripts/gates/gate00.py`'s own Redis-reachability proof): claim race (two claimants, one wins,
+release lets a third through), reap clears a dead claim / leaves a live one alone, idempotent
+checkpoint (same `stream_id` run twice upserts one row, never two), the full view->task->Redis
+round trip (`CELERY_TASK_ALWAYS_EAGER=True`, matching CI), busy 409, retry-turn's precondition
+checks, cancel's signal, and the two accept-criteria drills by name: **drill (a)** (refresh
+mid-answer) runs the worker task directly with a monkeypatched clock so the test can read the
+checkpoint row from INSIDE the token stream — proving the row a reload would fetch already holds
+the true partial — then confirms the turn still completes; **drill (b)** (kill -9 the worker)
+leaves a claim with a heartbeat that was never touched (exactly what a `SIGKILL` looks like from
+the outside), confirms a normal conversation-load reaps it with a typed `last_stream_error`, then
+confirms retry-turn claims a fresh stream. `pytest erp/assistant` 742 passed / 5 skipped (was 732;
++10, all this task's, skip count unchanged), `makemigrations --check` + `manage.py check` clean,
+`gate:all` 00–18 green. Plan file T5.9 box checked (file stays open — T5.2–T5.8, T5.10 remain).
+**Gotcha:** `deploy/windows/install-services.ps1`'s worker service starts with no `-Q` flag, which
+means it only ever drains the DEFAULT queue — routing `run_detached_stream` to its own `ai_stream`
+queue (deliberate, so a long batch job can't queue ahead of a live chat turn) would silently starve
+it forever without also adding `-Q celery,ai_stream` to that same service definition; fixed in the
+same commit, documented in `RUNBOOK.md` "Detached AI streaming". **Next in file order:** T5.2
+(typed planner) is the next unchecked box, but the plan orders T5.9's Twenty-study additions ahead
+of the numeric sequence deliberately — T5.10 (structured clarify + budget stop) is next per its own
+placement note, T5.2 remains open behind it.

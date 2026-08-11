@@ -30,6 +30,15 @@ class Conversation(models.Model):
     summary_upto_message = models.ForeignKey(
         "Message", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
     )
+    # Detached durable streaming (ai-reliability T5.9): the turn currently running in a Celery
+    # worker on this conversation's behalf, or null when idle. Claimed by an optimistic UPDATE
+    # (``active_stream_id IS NULL`` -> new uuid) so two rapid sends can't both start a turn; the
+    # worker (or a reap on a stale heartbeat) clears it back to null when the turn ends.
+    active_stream_id = models.UUIDField(null=True, blank=True, default=None)
+    # The last detached turn's failure, or null. Set by the reap path when a claim's heartbeat
+    # expires (worker died) or by the task itself on an unhandled error; cleared on the next claim.
+    # Shape: {"reason": "interrupted" | "error", "at": isoformat}.
+    last_stream_error = models.JSONField(null=True, blank=True, default=None)
 
     class Meta:
         ordering = ["-pinned", "-updated_at"]
@@ -46,6 +55,11 @@ class Message(models.Model):
     # citations / tool steps / action proposals ride along as structured JSON (session 09/10 fill these)
     meta = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Detached durable streaming (T5.9): set only on the one assistant row a detached turn
+    # checkpoints into. The deterministic identity a job retry upserts against instead of
+    # duplicating — ``get_or_create(stream_id=...)`` in the worker task never creates a second row
+    # for the same turn. Null for every in-request-path message (the vast majority).
+    stream_id = models.UUIDField(null=True, blank=True, default=None, db_index=True)
 
     class Meta:
         ordering = ["created_at"]

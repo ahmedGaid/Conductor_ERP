@@ -63,6 +63,16 @@ class VerifierFailed(AppError):
     message = "The draft could not be saved because a check failed. Nothing was written."
 
 
+class StreamBusyError(AppError):
+    """Detached streaming (T5.9): a turn already claimed this conversation's stream slot — the
+    calm "still answering" surface, never a hard error. The client's existing live relay (if it
+    has one) is unaffected; a reconnect (e.g. after reload) is the way to watch it finish."""
+
+    code = "AI-009"
+    status_code = 409
+    message = "Still answering — it will appear here"
+
+
 class BudgetExceeded(AppError):
     """A cost/token budget (request, user/day, or org/month — ai-reliability T2.7) is exhausted;
     the call was blocked before any provider was tried. Blame-free and distinct from a provider

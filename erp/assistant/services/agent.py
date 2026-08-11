@@ -276,12 +276,17 @@ def _fail_lingering_steps(agent_run: AgentRun | None, error_class: str) -> None:
 
 
 def run(*, actor, conversation, question: str, page: dict | None = None,
-        regenerate: bool = False, attachment_ids=None):
+        regenerate: bool = False, attachment_ids=None, stream_id=None):
     """Same as ``_run_impl`` — opens one Trace for the whole agent run (planner rounds + tool
     calls as TraceSteps) and closes it however the run ends: answered, hit MAX_ROUNDS, raised, or
     the client disconnected mid-stream (``Trace.meta.stop``). Also opens the durable ``AgentRun``
     row (T5.1) alongside the Trace — same three exits, so both always land in a matching terminal
-    state."""
+    state.
+
+    ``stream_id`` (T5.9): when set, the run is a detached worker turn — the assistant reply
+    checkpoints into one deterministic ``Message`` row (keyed by this id) instead of only being
+    created at the very end, so a job retry upserts rather than duplicates. ``None`` (default) is
+    the unchanged in-request path: no checkpoint row, no new event type, identical behavior."""
     cm = trace_call("agent", actor=actor, conversation_id=getattr(conversation, "id", None),
                     prompt_ref=_loop_prompt.ref)
     handle = cm.__enter__()
@@ -292,7 +297,7 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     try:
         yield from _run_impl(actor=actor, conversation=conversation, question=question, page=page,
                              regenerate=regenerate, attachment_ids=attachment_ids, trace=handle,
-                             agent_run=agent_run)
+                             agent_run=agent_run, stream_id=stream_id)
     except GeneratorExit:
         handle.meta["stop"] = "cancelled"
         mark_cancelled(handle)
@@ -316,7 +321,7 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
 
 def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
               regenerate: bool = False, attachment_ids=None, trace=NULL_HANDLE,
-              agent_run: AgentRun | None = None):
+              agent_run: AgentRun | None = None, stream_id=None):
     """Generator over the agentic chat pipeline — yields SSE-ready event dicts.
 
     Event protocol (extends session 02's token/citations/done/error):
@@ -346,6 +351,21 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         if not conversation.title:
             conversation.title = q[:60]
         conversation.save()  # also touches updated_at
+
+    # T5.9: a detached worker turn checkpoints into one deterministic row — created AFTER the
+    # regenerate cleanup above (which deletes assistant rows past the last user message) so a
+    # retry's stale partial from the interrupted attempt is gone before this one is created, and
+    # ``get_or_create`` makes a redelivered task (Celery ACKS_LATE) upsert instead of duplicate.
+    checkpoint_message = None
+    if stream_id is not None:
+        # ``meta.streaming`` is how the client tells this placeholder row apart from a settled
+        # answer on reload — a live worker is still writing it, so it isn't safe to treat as final
+        # yet. The eventual ``_persist()`` write below replaces ``meta`` wholesale, dropping the
+        # flag the moment the turn actually settles.
+        checkpoint_message, _ = conversation.messages.get_or_create(
+            stream_id=stream_id, defaults={"role": "assistant", "content": "", "meta": {"streaming": True}},
+        )
+        yield {"type": "checkpoint", "message_id": checkpoint_message.id}
 
     # Attached files: text/tabular fold into the planner input as text; images/PDF ride the vision
     # path — handed to BOTH the planner (so it can read them to fill a propose) and the final answer.
@@ -611,7 +631,15 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             meta["suggestion"] = {**suggestion, "status": "open"}
             if pending is not None:
                 meta["pending"] = pending
-        msg = conversation.messages.create(role="assistant", content=answer, meta=meta)
+        if checkpoint_message is not None:
+            # Same row the periodic partial-content checkpoint (worker task) was writing into —
+            # this is the authoritative final write, always the last thing to touch it.
+            checkpoint_message.content = answer
+            checkpoint_message.meta = meta
+            checkpoint_message.save(update_fields=["content", "meta"])
+            msg = checkpoint_message
+        else:
+            msg = conversation.messages.create(role="assistant", content=answer, meta=meta)
         conversation.save()  # touch updated_at after the reply lands
         audit.record(
             module="assistant", action="ask", entity_type="Question", entity_id=used_tool or "none",

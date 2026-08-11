@@ -96,6 +96,21 @@ Invoke-RestMethod http://127.0.0.1:8000/system-check     # db/redis/storage/work
 - Keep Postgres and Redis on the same host for a single-tenant install; both are in the backup story
   only for Postgres (Redis holds transient broker/cache state and is safe to lose).
 
+### Detached AI streaming (ai-reliability T5.9)
+`ASSISTANT_DETACHED_STREAMING` (env, default `false`): when `true`, a chat/agent turn runs inside
+the Celery worker instead of the HTTP request — it survives page refresh, network drop, and a
+worker restart (claim + Redis relay + heartbeat + reap; `erp/assistant/services/stream_relay.py`).
+Requires a running worker consuming the `ai_stream` queue — `install-services.ps1` already passes
+`-Q celery,ai_stream`; a manual dev worker needs the same flag:
+```
+python -m celery -A config worker --loglevel=info --pool=solo -Q celery,ai_stream
+```
+Leave the flag off (default) on any install with no worker running, or where
+`CELERY_TASK_ALWAYS_EAGER=true` (CI) — the in-request path (unchanged) is always the fallback,
+chosen per-request at the view level. A stuck claim (worker died without a clean exit) self-heals:
+the next read of that conversation (reload, or the reconnect endpoint) reaps a claim whose
+heartbeat expired (30s TTL) and offers retry — no manual DB fix needed.
+
 ## 4. Day-2 operations
 ```powershell
 # Status / restart

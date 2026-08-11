@@ -246,6 +246,11 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_ACKS_LATE = True  # recover jobs after a worker crash
 CELERY_RESULT_EXTENDED = True
 CELERY_TIMEZONE = TIME_ZONE  # beat crontab times below are Africa/Cairo, not UTC
+# T5.9: ``assistant.run_detached_stream`` is routed to its own queue via the task decorator
+# (``@shared_task(..., queue="ai_stream")``) so a long batch job already queued (import, scheduled
+# report) can never sit in front of a live chat turn. Redis needs no predeclared queue — the
+# worker just has to be started listening on it too: see deploy/windows/install-services.ps1
+# (``-Q celery,ai_stream``) and RUNBOOK.md "Detached AI streaming".
 
 # Periodic jobs (Celery beat). The scheduled-report task fires hourly and itself decides which saved
 # report definitions are due (daily/weekly/monthly), writing their CSV exports to REPORTS_DIR.
@@ -317,6 +322,14 @@ ASSISTANT_RAG_EMBEDDINGS = env.bool("ASSISTANT_RAG_EMBEDDINGS", default=False)  
 # by default and a hard no-op unless the `vector` extension + column exist (migration 0010 skips
 # both when the server lacks the extension), so installs without pgvector keep working unchanged.
 ASSISTANT_PGVECTOR = env.bool("ASSISTANT_PGVECTOR", default=False)
+
+# ai-reliability T5.9 (Twenty study 2026-07-16): when on, a chat/agent turn runs inside a Celery
+# worker instead of the HTTP request — it survives page refresh, network drop, and worker restart
+# (claim + Redis relay + heartbeat + reap; see erp/assistant/services/stream_relay.py). Off by
+# default: an install with no worker running (or CELERY_TASK_ALWAYS_EAGER, as in CI) keeps using
+# the in-request path unchanged, and existing tests are unaffected. Flip on once a worker is
+# confirmed running (see RUNBOOK.md "Detached AI streaming").
+ASSISTANT_DETACHED_STREAMING = env.bool("ASSISTANT_DETACHED_STREAMING", default=False)
 
 # ai-reliability T3.5: when on, knowledge search's fused top candidates are rescored by an LLM
 # relevance pass before the top-K enter the prompt (see erp/assistant/services/rerank.py). Off by

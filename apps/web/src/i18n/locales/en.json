@@ -73,6 +73,8 @@
     "jumpNew": "New reply",
     "errorLine": "Something went wrong. Please try again.",
     "budgetExceeded": "The AI assistant's spending limit has been reached for now. Ask an administrator to raise it.",
+    "streamBusy": "Still answering — it will appear here.",
+    "streamInterrupted": "That answer was interrupted. You can try again.",
     "status": {
       "degraded": "The assistant is running slower than usual — answers still come through.",
       "down": "The assistant is temporarily unavailable. Please try again shortly."

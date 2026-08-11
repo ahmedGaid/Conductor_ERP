@@ -89,7 +89,7 @@
   asserts row states at each phase; a mid-run exception leaves an accurate `failed` row.
 - **Output:** runs you can inspect, resume, and audit.
 
-### [ ] T5.9 — Detached durable streaming `[Twenty study 2026-07-16 — NEW]`
+### [x] T5.9 — Detached durable streaming `[Twenty study 2026-07-16 — NEW]`
 
 > Numbered T5.9 because T5.2–T5.8 are pinned by cross-references (DECISIONS.md, FILE_06/07/08,
 > os-foundations, agent-actions). **Executes HERE, second in the phase, right after T5.1.**

@@ -134,6 +134,13 @@ export function askAssistant(question: string, context?: PageContext): Promise<A
 // Each conversation is private to its owner (the server filters to request.user and 404s a foreign
 // id). The list is the workspace's thread history; a conversation opens to its messages.
 
+// A detached turn still running (T5.9): reconnect to watch it finish instead of starting a new
+// one. Shape mirrors the server's stored ``last_stream_error`` (null once retried/superseded).
+export interface StreamError {
+  reason: "interrupted" | "error";
+  at: string;
+}
+
 export interface ConversationSummary {
   id: number;
   title: string;
@@ -141,6 +148,8 @@ export interface ConversationSummary {
   archived: boolean;
   updated_at: string;
   preview: string;
+  active_stream_id: string | null;
+  last_stream_error: StreamError | null;
 }
 
 // One step the agent took to answer (session 09): a tool call the model chose, with a human label
@@ -310,6 +319,9 @@ export interface ChatMessage {
     label?: string;
     // T3.9: a below-confidence document search — rendered as the designed no-answer card.
     low_confidence?: boolean;
+    // T5.9: this row is a detached turn's still-writing checkpoint — absent once the turn settles
+    // (the final persist overwrites `meta` wholesale, dropping the flag).
+    streaming?: boolean;
   } & Record<string, unknown>;
   created_at: string;
 }
@@ -438,6 +450,8 @@ export function getConversation(
       archived: d.archived,
       updated_at: d.updated_at,
       preview: d.preview,
+      active_stream_id: d.active_stream_id,
+      last_stream_error: d.last_stream_error,
     },
     messages: d.messages,
   }));
@@ -471,7 +485,13 @@ export interface ChatEvent {
     | "proposal"
     | "suggestion"
     | "import"
-    | "retrying";
+    | "retrying"
+    // T5.9: the detached worker created its checkpoint row (client can ignore — cosmetic; the
+    // reload-mid-answer path reads the same content back through the normal message fetch).
+    | "checkpoint"
+    // T5.9: the worker that was running this turn went dark (reaped on a dead heartbeat) — same
+    // terminal handling as `error`, distinct reason so the client can offer retry specifically.
+    | "stream-error";
   text?: string;
   citations?: AskCitation[];
   message_id?: number;
@@ -497,6 +517,9 @@ export interface ChatEvent {
   conversation_tokens?: number;
   budget_tokens?: number;
   compacted?: boolean;
+  // `checkpoint` event (T5.9): the detached worker's placeholder row id.
+  // `stream-error` event (T5.9): why the worker went dark.
+  reason?: "interrupted" | "error";
 }
 
 // Same auth headers apiFetch sends (bearer + Accept-Language). Kept local because a raw stream
@@ -510,38 +533,11 @@ function streamHeaders(): Record<string, string> {
   };
 }
 
-// The shared SSE reader for every assistant stream (chat + detour resume): POST a JSON body, replay
-// once through the refresh cookie on a 401, then dispatch each `data:` frame as a ChatEvent. Kept in
-// one place so both streams share identical framing, auth and error handling.
-async function sseStream(
-  path: string,
-  body: unknown,
-  onEvent: (e: ChatEvent) => void,
-  signal?: AbortSignal,
-): Promise<void> {
-  const send = () =>
-    fetch(path, {
-      method: "POST",
-      headers: streamHeaders(),
-      body: JSON.stringify(body),
-      signal,
-    });
-
-  let res = await send();
-  // Expired access token: renew through the refresh cookie once and replay (mirrors apiFetch).
-  if (res.status === 401 && (await refreshAccess())) res = await send();
-
-  if (!res.ok || !res.body) {
-    let msg = `Request failed (${res.status})`;
-    try {
-      const env = (await res.json()) as { error?: { message?: unknown } };
-      if (typeof env?.error?.message === "string") msg = env.error.message;
-    } catch {
-      /* non-JSON body — keep the generic message */
-    }
-    throw new ApiError(msg, res.status);
-  }
-
+// Reads a `text/event-stream` body frame-by-frame, dispatching each `data:` line as a ChatEvent.
+// Shared tail for every stream reader below (POST sends + the T5.9 GET reconnect) so they can
+// never drift on framing.
+async function consumeFrames(res: Response, onEvent: (e: ChatEvent) => void): Promise<void> {
+  if (!res.body) throw new ApiError(`Request failed (${res.status})`, res.status);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -567,6 +563,88 @@ async function sseStream(
   } finally {
     reader.releaseLock();
   }
+}
+
+// A non-2xx / bodyless response: read the server's `{error:{message}}` envelope (T2.7-style typed
+// errors — e.g. AI-009 "still answering" — read `ApiError.status`/`.message` to special-case).
+async function throwStreamError(res: Response): Promise<never> {
+  let msg = `Request failed (${res.status})`;
+  try {
+    const env = (await res.json()) as { error?: { message?: unknown } };
+    if (typeof env?.error?.message === "string") msg = env.error.message;
+  } catch {
+    /* non-JSON body — keep the generic message */
+  }
+  throw new ApiError(msg, res.status);
+}
+
+// The shared SSE reader for every assistant POST stream (chat + detour resume + T5.9 retry): POST
+// a JSON body, replay once through the refresh cookie on a 401, then dispatch each `data:` frame.
+async function sseStream(
+  path: string,
+  body: unknown,
+  onEvent: (e: ChatEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const send = () =>
+    fetch(path, {
+      method: "POST",
+      headers: streamHeaders(),
+      body: JSON.stringify(body),
+      signal,
+    });
+
+  let res = await send();
+  // Expired access token: renew through the refresh cookie once and replay (mirrors apiFetch).
+  if (res.status === 401 && (await refreshAccess())) res = await send();
+  if (!res.ok || !res.body) await throwStreamError(res);
+  await consumeFrames(res, onEvent);
+}
+
+// T5.9: reconnect to a detached turn that's still running after a reload/network drop — GET, no
+// body, no new claim. A 404 means nothing is live to relay (the turn already finished, or its
+// worker died and got reaped); the caller already has the truth from the conversation's own
+// `active_stream_id`/`last_stream_error`, so this is a quiet no-op, not an error.
+async function reconnectStream(
+  conversationId: number,
+  onEvent: (e: ChatEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const send = () => fetch(`/api/assistant/conversations/${conversationId}/stream`, {
+    method: "GET", headers: streamHeaders(), signal,
+  });
+  let res = await send();
+  if (res.status === 401 && (await refreshAccess())) res = await send();
+  if (res.status === 404) return;
+  if (!res.ok || !res.body) await throwStreamError(res);
+  await consumeFrames(res, onEvent);
+}
+
+export function reconnectChatStream(
+  conversationId: number,
+  onEvent: (e: ChatEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return reconnectStream(conversationId, onEvent, signal);
+}
+
+// T5.9: re-enqueue the last failed detached turn — for when the tab that started it is gone and
+// there is no live client-side error state, only the conversation's persisted `last_stream_error`.
+export function retryTurnStream(
+  conversationId: number,
+  onEvent: (e: ChatEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return sseStream(`/api/assistant/conversations/${conversationId}/retry-turn`, {}, onEvent, signal);
+}
+
+// T5.9: stop button for a detached turn — publishes the cancel signal the worker polls between
+// rounds/chunks. Always resolves (a no-op if nothing is running); the running stream's own `done`/
+// `error` event (stop="cancelled") is what actually settles the UI.
+export function cancelStream(conversationId: number): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(`/assistant/conversations/${conversationId}/cancel-stream`, {
+    method: "POST",
+  });
 }
 
 export function chatStream(
