@@ -8,7 +8,7 @@ amqp==5.3.1
     # via kombu
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.117.0
+anthropic==0.120.0
     # via -r requirements.in
 anyio==4.14.2
     # via
@@ -23,6 +23,8 @@ asgiref==3.12.1
     # via
     #   django
     #   django-cors-headers
+asn1crypto==1.5.1
+    # via -r requirements.in
 ast-serialize==0.6.0
     # via mypy
 bandit==1.9.4
@@ -57,16 +59,12 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.3.0
     # via celery
-colorama==0.4.6
-    # via
-    #   bandit
-    #   build
-    #   click
-    #   pytest
 coverage[toml]==7.15.2
     # via pytest-cov
 cryptography==49.0.0
-    # via google-auth
+    # via
+    #   -r requirements.in
+    #   google-auth
 distro==1.9.0
     # via
     #   anthropic
@@ -223,9 +221,7 @@ typing-inspection==0.4.2
 tzdata==2026.3
     # via
     #   celery
-    #   django
     #   kombu
-    #   psycopg
 urllib3==2.7.0
     # via requests
 vine==5.1.0
