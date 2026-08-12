@@ -130,7 +130,7 @@
   wins), reap, idempotent checkpoint, retry. Gates green.
 - **Output:** Twenty-grade delivery mechanics under the existing loop — turns that cannot be lost.
 
-### [ ] T5.2 — Typed planner
+### [x] T5.2 — Typed planner
 
 - **Goal:** the model emits a validated Plan object before any tool executes.
 - **Prereq:** T5.1.
@@ -150,6 +150,22 @@
 - **Accept:** golden agent cases run through planner path (recordings updated); fallback +
   replan-cap tests; UI smoke ar/en; plan visible in ops trace.
 - **Output:** users watch a plan execute, not a spinner.
+- **STATUS 2026-08-12 — DONE.** `services/planner.py` + `prompts/agent_plan.md` +
+  `ASSISTANT_TYPED_PLANNER` flag (default **off**, same discipline as T5.9/T3.1: every planner
+  failure — invalid twice, provider down, or a deliberate `direct` — lands the run on the unchanged
+  reactive loop, so flipping it on is a cost/UX call, never a correctness one). Plan persists to
+  `AgentRun.plan` + `Trace.meta.plan`; a new SSE `plan` event paints the whole turn as **pending**
+  step lines that tick to running/done in the existing step-progress component (no new UI concept);
+  ops trace detail renders the committed plan or the fallback reason. 18 new tests in
+  `tests/test_planner.py` (pure `validate` rules, one-retry repair, both fallback exits, plan walk,
+  replan, replan-cap, flag-off). `pytest erp/assistant` 760 passed/5 skipped (was 742, +18).
+  **Real find, not inspection:** the loop's duplicate-call guard `continue`d past the plan cursor,
+  so a stuck step burned every remaining round and only ever triggered ONE replan — a repeated
+  identical call now counts as a step that did not advance (the guard still stops it executing).
+  **Honest gap:** golden agent recordings were NOT re-recorded through the planner path (needs a
+  provider run, `record_evals`) — the planner path is proven by the new tests, not by goldens; the
+  ar/en UI smoke is likewise code-level (i18n parity + shared component) rather than a live
+  two-language browser pass. Both carry to the founder-paced acceptance, same as Phase 4's.
 
 ### [ ] T5.3 — Tool-call validation layer + repair loop
 

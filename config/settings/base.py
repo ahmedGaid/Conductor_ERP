@@ -331,6 +331,14 @@ ASSISTANT_PGVECTOR = env.bool("ASSISTANT_PGVECTOR", default=False)
 # confirmed running (see RUNBOOK.md "Detached AI streaming").
 ASSISTANT_DETACHED_STREAMING = env.bool("ASSISTANT_DETACHED_STREAMING", default=False)
 
+# ai-reliability T5.2: when on, the agent loop asks for a validated PLAN before any tool runs — the
+# panel shows the whole turn as pending steps that tick to done, and a failed step re-plans from the
+# current state (twice, then it says plainly which step it could not finish). Off by default: the
+# plan costs one extra model call per multi-step turn, and every failure mode inside the planner
+# (invalid JSON, provider down, or a deliberate "this needs no plan") already falls back to the
+# unchanged reactive loop — so flipping it on is a cost/UX decision, never a correctness one.
+ASSISTANT_TYPED_PLANNER = env.bool("ASSISTANT_TYPED_PLANNER", default=False)
+
 # ai-reliability T3.5: when on, knowledge search's fused top candidates are rescored by an LLM
 # relevance pass before the top-K enter the prompt (see erp/assistant/services/rerank.py). Off by
 # default and eval-gated — flip on only once evals/results/rerank_decision.json records a real

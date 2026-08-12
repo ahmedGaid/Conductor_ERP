@@ -161,7 +161,8 @@ export interface ChatStep {
   label?: string;
   why?: string;
   ok?: boolean;
-  state?: "running" | "done";
+  // "pending" (T5.2) is a step the plan intends to run but hasn't started yet.
+  state?: "pending" | "running" | "done";
 }
 
 // The context-budget meter for one turn (ai-reliability T3.6): how much of the model's window this
@@ -477,6 +478,9 @@ export function deleteConversation(id: number): Promise<void> {
 
 export interface ChatEvent {
   type:
+    // T5.2: the typed planner's plan for this turn — the steps it intends to run, painted as
+    // pending lines before the first one starts (and re-sent if a failed step forces a replan).
+    | "plan"
     | "step"
     | "token"
     | "citations"
@@ -504,8 +508,10 @@ export interface ChatEvent {
   // `step` events (session 09): one tool call the agent is running / has finished.
   tool?: string;
   label?: string;
-  state?: "running" | "done";
+  state?: "pending" | "running" | "done";
   ok?: boolean;
+  // `plan` events (T5.2): every step the turn intends to run, in order.
+  steps?: { tool: string; label: string; needs_confirm?: boolean }[];
   // `proposal` event (session 10): a prepared write awaiting the user's confirm, keyed by message_id.
   proposal?: ActionProposal;
   // `suggestion` event (session 12): a blocker turned actionable, keyed by message_id.

@@ -89,7 +89,12 @@ export interface OpsTrace {
   cost_microcents: number;
   status: "ok" | "error" | "timeout" | "cancelled" | "guardrail_blocked";
   error_class: string;
-  meta: { routing?: OpsTraceRouting } & Record<string, unknown>;
+  meta: {
+    routing?: OpsTraceRouting;
+    // T5.2: the typed planner's committed steps, or why it fell back to the reactive loop.
+    plan?: { step: number; tool: string; why: string; needs_confirm: boolean }[];
+    plan_fallback?: string;
+  } & Record<string, unknown>;
   steps: OpsTraceStep[];
 }
 

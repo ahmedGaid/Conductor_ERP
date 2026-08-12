@@ -310,14 +310,32 @@ export function ConversationView() {
     try {
       await startStream(
         (e) => {
-          if (e.type === "step" && e.tool) {
+          if (e.type === "plan" && e.steps) {
+            // T5.2: the whole turn painted up front. Steps already finished stay as they are (a
+            // replan only ever re-plans what is still ahead), so the user never watches a done
+            // line revert to pending.
+            const finished = steps.filter((s) => s.state === "done");
+            steps = [
+              ...finished,
+              ...e.steps.map((s) => ({ tool: s.tool, label: s.label, state: "pending" as const })),
+            ];
+            setStreamSteps(steps);
+          } else if (e.type === "step" && e.tool) {
             // Steps arrive strictly running-then-done; a `done` closes the last open line.
             if (e.state === "running") {
-              steps = [...steps, { tool: e.tool, label: e.label ?? "", state: "running" }];
+              // With a plan, the running step is one the panel already shows as pending — claim
+              // that line instead of appending a duplicate. Without a plan (or for a guard step
+              // the plan never listed) there is nothing to claim, so it appends as before.
+              const claim = steps.findIndex((s) => s.state === "pending" && s.tool === e.tool);
+              steps =
+                claim === -1
+                  ? [...steps, { tool: e.tool, label: e.label ?? "", state: "running" }]
+                  : steps.map((s, i) =>
+                      i === claim ? { ...s, label: e.label || s.label, state: "running" } : s,
+                    );
             } else {
-              steps = steps.map((s, i) =>
-                i === steps.length - 1 ? { ...s, state: "done", ok: e.ok } : s,
-              );
+              const open = steps.map((s) => s.state).lastIndexOf("running");
+              steps = steps.map((s, i) => (i === open ? { ...s, state: "done", ok: e.ok } : s));
             }
             setStreamSteps(steps);
           } else if (e.type === "retrying") {
@@ -326,6 +344,12 @@ export function ConversationView() {
             setStreamNotice(t("assistant.streamRetrying"));
           } else if (e.type === "token" && e.text) {
             setStreamNotice(null);
+            if (!acc && steps.some((s) => s.state === "pending")) {
+              // The answer has started, so any step the plan listed but the run decided it didn't
+              // need is never going to happen — drop those lines rather than leave them hanging.
+              steps = steps.filter((s) => s.state !== "pending");
+              setStreamSteps(steps);
+            }
             acc += e.text;
             setStreamText(acc);
           } else if (e.type === "citations" && e.citations) {

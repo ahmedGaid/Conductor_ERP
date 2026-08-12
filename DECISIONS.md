@@ -3171,3 +3171,59 @@ same commit, documented in `RUNBOOK.md` "Detached AI streaming". **Next in file 
 (typed planner) is the next unchecked box, but the plan orders T5.9's Twenty-study additions ahead
 of the numeric sequence deliberately — T5.10 (structured clarify + budget stop) is next per its own
 placement note, T5.2 remains open behind it.
+
+## ai-reliability Phase 5 T5.2 — Typed planner (2026-08-12)
+
+**Problem.** The loop decided one step at a time (`agent.py`'s `MAX_ROUNDS` reactive rounds). Two
+consequences: the user watched a spinner and learned what the assistant was doing only as each step
+landed, and nothing ever committed to a shape for the turn — so a failed step had no notion of "the
+plan" to route around, only the next round's fresh guess.
+
+**Decision.** A validated Plan object is produced BEFORE any tool executes, behind
+`ASSISTANT_TYPED_PLANNER` (default **off**). `services/planner.py` owns it:
+
+- `prompts/agent_plan.md` (new prompt id, `agent_plan` task class — the class already had a timeout
+  entry and no caller; caching is hard-denied for `agent_*` in `gateway/cache.py`, so no risk of a
+  cached plan).
+- Plan schema `[{step, tool, args_intent (free text), why, needs_confirm}]`, max 8 steps.
+  `args_intent` stays free text on purpose: the plan commits to WHICH tool and WHY, and the
+  existing per-round call still fills the exact flat args, so nothing about arg handling changes.
+- **The registry is the authority, not the model.** `needs_confirm` is recomputed from
+  `actions.ACTIONS[...].requires_confirm`, and a step naming anything outside `TOOLS`/`ACTIONS`
+  invalidates the plan. Step numbers are renumbered from the accepted steps (a skipped/repeated
+  number would desync the executor cursor). A write action truncates anything planned after it —
+  the confirm card ends the turn, so a later step could never run.
+- **Never a dead end.** Invalid → one retry with the validation reasons fed back verbatim; still
+  invalid, or the provider raised, or the model said `direct: true` (a one-step request) → the
+  unchanged reactive loop, with the reason on `Trace.meta.plan_fallback`.
+- **Executor.** The plan rides every round's payload (`plan` + `current_step`) with a system
+  directive; a successful step advances the cursor; a failed one replans from the current state
+  (bounded outcome summary, never the raw results) — `planner.MAX_REPLANS` = 2, then the run stops
+  and the answer prompt is told to name the step it could not finish and offer one next move
+  (`Trace.meta.stop = "plan_failed"`).
+
+**Why a flag, not a default-on.** Same reasoning as T5.9/T3.1: the plan costs one extra model call
+per multi-step turn, and every planner failure already degrades to the pre-T5.2 behaviour. Flipping
+it on is therefore a cost/UX decision, never a correctness one — and the 742 pre-existing assistant
+tests keep exercising the reactive path unchanged.
+
+**UI.** New SSE `plan` event carries the intended steps; the panel paints them as **pending** lines
+in the existing step-progress component (`StepIcon` gains a dash glyph, `.msg-steps__item--pending`
+a subtle-text rule) and each `running` event claims its matching pending line instead of appending.
+A step the run never needed is dropped when the answer starts streaming. Ops trace detail renders
+the committed plan (`Trace.meta.plan`) or the fallback reason (`ops.plan.*`, ar/en).
+
+**Real find (a test, not inspection).** The loop's duplicate-call guard `continue`d before the plan
+cursor logic, so an identical repeated call never counted as a non-advancing step: a stuck plan step
+burned every remaining round and could only ever trigger ONE replan. The guard still refuses to
+execute the duplicate — it now also reports the step as failed, which is what makes the replan cap
+reachable. Found by the replan-cap test asserting 3 plan events and getting 2.
+
+**Verified.** `pytest erp/assistant` 760 passed / 5 skipped (was 742 — +18, all this task's, in the
+new `tests/test_planner.py`), `makemigrations --check` clean (no model change — `AgentRun.plan` was
+already provisioned by T5.1), apps/web i18n parity 2760, `tsc -b --force` 0 errors, vitest 64/64,
+`gate:all` 00–18 green. **Honest gaps carried to acceptance:** golden agent recordings were not
+re-recorded through the planner path (needs a provider run via `record_evals`), and the ar/en UI
+smoke is code-level (i18n parity + one shared component) rather than a live two-language browser
+pass. **Next in file order:** T5.10 (structured clarify + mid-turn cost stop) per its own placement
+note; T5.3 (tool-call validation + repair loop) is the next numeric box.

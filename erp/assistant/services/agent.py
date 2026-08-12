@@ -29,7 +29,7 @@ from ..models import AgentRun, AgentStep
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
-from . import actions, context, envelope, files, imports, suggestions, summarize
+from . import actions, context, envelope, files, imports, planner, suggestions, summarize
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS, _answer_prompt_ref
 from .prompt_registry import get as get_prompt
 from .tracing import NULL_HANDLE, estimate_tokens, mark_cancelled, trace_call
@@ -172,7 +172,8 @@ def _recent_vision_attachments(conversation, exclude_id: int | None) -> list:
 
 
 def _loop_user(question: str, history: list[dict], results: list[dict], file_notes: list[str],
-               *, model: str, max_tokens: int, summary: str = "") -> tuple[str, dict]:
+               *, model: str, max_tokens: int, summary: str = "",
+               plan: list[dict] | None = None, plan_cursor: int = 0) -> tuple[str, dict]:
     """The per-round planner input: prior turns, the current question, and everything gathered so
     far (each tool's why + result), so the model decides the next step in context.
 
@@ -204,6 +205,12 @@ def _loop_user(question: str, history: list[dict], results: list[dict], file_not
         payload["earlier_conversation_summary"] = kept["summary"]
     if file_notes:
         payload["attached_files"] = file_notes
+    if plan:
+        # T5.2: the plan rides every round unbudgeted — it is a handful of short lines, and it is
+        # the one section whose loss would leave the round blind to what it is supposed to be doing.
+        payload["plan"] = plan
+        remaining = plan[plan_cursor:]
+        payload["current_step"] = remaining[0] if remaining else None
     return json.dumps(payload, ensure_ascii=False), meta
 
 
@@ -263,6 +270,29 @@ def _step_finish(step: AgentStep | None, *, ok: bool, data: dict) -> None:
         status=status, error=error,
         result_summary={"result_size": len(json.dumps(data, ensure_ascii=False))},
     )
+
+
+def _plan_gathered(results: list[dict]) -> list[dict]:
+    """What a replan is told about the steps already run (T5.2). Deliberately NOT the raw results:
+    a replan needs to know which step failed and why, not to re-read every row the run has seen —
+    so this stays a bounded outcome summary, the same discipline TraceStep.detail follows."""
+    out: list[dict] = []
+    for r in results:
+        data = r["data"] if isinstance(r["data"], dict) else {}
+        entry = {"tool": r["tool"], "why": r["why"], "ok": "error" not in data}
+        if "error" in data:
+            entry["error"] = str(data["error"])[:200]
+        out.append(entry)
+    return out
+
+
+_PLAN_DIRECTIVE = (
+    "\n\nA plan for this turn was prepared in advance and its steps are already shown to the user. "
+    "Each round you are given that plan and the step to do now: run exactly that step's tool, "
+    "filling its arguments from the step's args_intent and the user's question. If that tool "
+    "genuinely cannot serve the step, choose the closest correct one instead — the plan guides you, "
+    "it never traps you. When the plan's steps are all done, choose answer."
+)
 
 
 def _fail_lingering_steps(agent_run: AgentRun | None, error_class: str) -> None:
@@ -325,6 +355,8 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     """Generator over the agentic chat pipeline — yields SSE-ready event dicts.
 
     Event protocol (extends session 02's token/citations/done/error):
+      ``{"type": "plan", "steps": [{"tool", "label", "needs_confirm"}]}`` — T5.2, once per plan
+        (and again after a replan): the steps the turn intends to run, painted as pending lines,
       ``{"type": "step", "tool", "label", "state": "running"|"done", "ok"?}`` — one per tool call,
       ``{"type": "token", "text"}`` — final answer prose, streamed,
       ``{"type": "citations", "citations"}`` / ``{"type": "done", "message_id", "used_tool"}``.
@@ -410,14 +442,16 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     # it), pronouns and bare references resolve to that record — the planner reaches for the
     # matching detail tool with the record's identifier instead of asking "which order?".
     record = (page or {}).get("record") or {}
+    page_preamble = ""
     if record.get("label") and not (page or {}).get("detached"):
-        loop_system = (
+        page_preamble = (
             f"The user is currently viewing {record.get('type', 'record')} "
             f"{record.get('id', '')} ({record['label']}). Pronouns and bare references "
             "('this order', 'هذا الأمر', 'it', 'the customer', 'هذا العميل') resolve to this "
             "page record — never ask which record is meant. Prefer tools scoped to it, passing "
             f"its number or name ('{record['label']}') as the query.\n\n"
-        ) + loop_system
+        )
+        loop_system = page_preamble + loop_system
     # The planner writes user-facing prose too — the `clarify` question never passes through the
     # answer path, so it needs the same computed language rule or an Arabic question can come back
     # with an English "which order did you mean?" (caught by refusal_ar_08).
@@ -443,12 +477,43 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     max_tokens = settings.ASSISTANT_MAX_TOKENS
     loop_envelope_meta: dict = {}
 
+    # --- T5.2: the typed planner. One extra call decides the whole turn's shape up front; the loop
+    # below then walks it instead of improvising round by round. Every failure mode here lands on
+    # the SAME reactive loop that shipped before this task — a planner that is down, confused, or
+    # simply says "this is a one-step question" costs one call and changes nothing else.
+    plan_steps: list[dict] = []
+    plan_cursor = 0
+    replans = 0
+    plan_failure: dict | None = None
+    if settings.ASSISTANT_TYPED_PLANNER:
+        if agent_run is not None:
+            AgentRun.objects.filter(pk=agent_run.pk).update(status=AgentRun.Status.PLANNING)
+        outcome = planner.make_plan(
+            question=q, history=history, media=media, actor=actor,
+            conversation_id=getattr(conversation, "id", None), trace=trace,
+            extra_system=page_preamble)
+        if outcome.planned:
+            plan_steps = outcome.as_list()
+            loop_system += _PLAN_DIRECTIVE
+            trace.meta["plan"] = plan_steps
+            # The panel paints the whole plan as pending lines before the first tool runs — the
+            # user reads what will happen rather than watching a spinner (plan step 3). The
+            # existing step-progress component renders it; only the "pending" state is new.
+            yield {"type": "plan", "steps": [{"tool": s["tool"], "label": s["why"],
+                                              "needs_confirm": s["needs_confirm"]}
+                                             for s in plan_steps]}
+        else:
+            trace.meta["plan_fallback"] = outcome.fallback_reason
+        if agent_run is not None:
+            AgentRun.objects.filter(pk=agent_run.pk).update(
+                status=AgentRun.Status.RUNNING, plan=plan_steps)
+
     for _round in range(MAX_ROUNDS):
         # media rides every round: the planner keeps its eyes on the attachment until it proposes
         # (usually round 1), so it can read supplier/lines from an image instead of guessing them.
         round_user, loop_envelope_meta = _loop_user(
             q, history, results, file_notes, model=model, max_tokens=max_tokens,
-            summary=thread_summary)
+            summary=thread_summary, plan=plan_steps, plan_cursor=plan_cursor)
         _t0 = time.monotonic()
         decision = complete_json(loop_system, round_user, _LOOP_SCHEMA, media=media)
         trace.step(kind="llm", name=f"round{_round + 1}", ok=True,
@@ -516,29 +581,69 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             (k, str(decision.get(k))) for k in _ARG_FIELDS if decision.get(k) is not None
         )))
         if signature in seen_calls:
+            # A repeated identical call runs nothing; the model reads the note and self-corrects.
+            # Under a plan it also counts as a step that did not advance (T5.2) — otherwise a stuck
+            # step would burn every remaining round without ever triggering a replan.
             trace.step(kind="validation", name=name, ok=False, detail={"reason": "duplicate_call"})
             results.append({"tool": name, "why": why, "data": {
                 "error": "You already ran this exact call this turn. Use its earlier result, "
                          "change the arguments, or answer."}})
-            continue
-        seen_calls.add(signature)
-        step_row = _step_start(agent_run, len(steps) + 1, name, decision)
-        yield {"type": "step", "tool": name, "label": why, "state": "running"}
-        _t0 = time.monotonic()
-        data, ok = _run_tool(actor, decision, trace=trace)
-        blocked = isinstance(data, dict) and "blocker" in data
-        _step_finish(step_row, ok=ok and not blocked, data=data)
-        trace.step(kind="tool", name=name, ok=ok and not blocked,
-                  latency_ms=int((time.monotonic() - _t0) * 1000),
-                  detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
-        if blocked:  # no tool emits blockers today, but the convention is tool-wide (Task A)
-            last_blocker = data["blocker"]
-        results.append({"tool": name, "why": why, "data": data})
-        steps.append({"tool": name, "why": why, "ok": ok and not blocked})
-        if ok and not blocked:
-            tool = TOOLS.get(name)
-            citations.extend(tool.cite(data) if tool else [])
-        yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": ok and not blocked}
+            step_ok = False
+        else:
+            seen_calls.add(signature)
+            step_row = _step_start(agent_run, len(steps) + 1, name, decision)
+            yield {"type": "step", "tool": name, "label": why, "state": "running"}
+            _t0 = time.monotonic()
+            data, ok = _run_tool(actor, decision, trace=trace)
+            blocked = isinstance(data, dict) and "blocker" in data
+            step_ok = ok and not blocked
+            _step_finish(step_row, ok=step_ok, data=data)
+            trace.step(kind="tool", name=name, ok=step_ok,
+                      latency_ms=int((time.monotonic() - _t0) * 1000),
+                      detail={"result_size": len(json.dumps(data, ensure_ascii=False))})
+            if blocked:  # no tool emits blockers today, but the convention is tool-wide (Task A)
+                last_blocker = data["blocker"]
+            results.append({"tool": name, "why": why, "data": data})
+            steps.append({"tool": name, "why": why, "ok": step_ok})
+            if step_ok:
+                tool = TOOLS.get(name)
+                citations.extend(tool.cite(data) if tool else [])
+            yield {"type": "step", "tool": name, "label": why, "state": "done", "ok": step_ok}
+        if plan_steps:
+            if step_ok:
+                plan_cursor += 1
+                continue
+            # A step failed. Replan from the CURRENT state (what ran, what it returned) rather than
+            # from the original question — twice at most, then the run stops pretending and says
+            # plainly which step it could not complete.
+            failed = plan_steps[plan_cursor] if plan_cursor < len(plan_steps) else {"tool": name}
+            if replans >= planner.MAX_REPLANS:
+                plan_failure = {"step": plan_cursor + 1, "tool": failed.get("tool", name),
+                                "why": failed.get("why", why)}
+                trace.meta["plan_stop"] = "replan_cap"
+                break
+            replans += 1
+            outcome = planner.make_plan(
+                question=q, history=history, gathered=_plan_gathered(results), media=media,
+                actor=actor, conversation_id=getattr(conversation, "id", None), trace=trace,
+                extra_system=page_preamble,
+                failure=f"step {plan_cursor + 1} ('{failed.get('why', why)}', tool "
+                        f"{failed.get('tool', name)}) failed and cannot be retried as planned.")
+            if outcome.planned:
+                plan_steps = outcome.as_list()
+                plan_cursor = 0
+                trace.meta["plan"] = plan_steps
+                trace.meta["replans"] = replans
+                yield {"type": "plan", "steps": [{"tool": s["tool"], "label": s["why"],
+                                                  "needs_confirm": s["needs_confirm"]}
+                                                 for s in plan_steps]}
+                if agent_run is not None:
+                    AgentRun.objects.filter(pk=agent_run.pk).update(plan=plan_steps)
+            else:
+                # The planner declined to re-plan — finish the turn on the reactive loop rather
+                # than end it; the rounds already spent still count against MAX_ROUNDS.
+                plan_steps = []
+                trace.meta["plan_fallback"] = outcome.fallback_reason
     else:
         hit_round_cap = True
 
@@ -600,7 +705,10 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     # ``used_tool`` = the last tool that succeeded — keeps session-06's per-tool follow-up chips
     # working (client reads it from ``done`` and from the reloaded message meta).
     used_tool = next((s["tool"] for s in reversed(steps) if s["ok"]), None)
-    trace.meta["stop"] = "step_budget" if hit_round_cap else "answered"
+    if plan_failure is not None:
+        trace.meta["stop"] = "plan_failed"
+    else:
+        trace.meta["stop"] = "step_budget" if hit_round_cap else "answered"
     if agent_run is not None:
         AgentRun.objects.filter(pk=agent_run.pk).update(
             current_step=len(steps),
@@ -680,6 +788,17 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                          "and shown in a card below. Briefly say you read the file (name the target and "
                          "row count if useful), and that they can adjust the column mapping and preview "
                          "the rows before anything is created. Do NOT claim any records were created.")
+            if plan_failure is not None:
+                # T5.2: the typed failure. Two replans could not get past this step, so the answer
+                # says so plainly — naming the step, keeping whatever the earlier steps did find,
+                # and offering the user the next move. Never a silent partial answer, never blame.
+                user += (
+                    f"\n\nOne planned step could not be completed: step {plan_failure['step']} "
+                    f"({plan_failure['why']}). Answer with whatever the other steps DID find, then "
+                    "say calmly and blame-free which part you could not finish and offer one next "
+                    "step the user can take (rephrasing it, giving the missing detail, or opening "
+                    "that screen themselves). Do NOT guess the missing part and do NOT claim the "
+                    "whole request was answered.")
             if suggestion is not None:
                 # Issue → fix → the promised return: the card carries the buttons; the prose
                 # carries the plan ("After you save the supplier, I'll bring you back...").

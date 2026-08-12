@@ -487,6 +487,10 @@
     "routing": {
       "skipped": "Skipped providers"
     },
+    "plan": {
+      "title": "Planned steps",
+      "fallback": "No plan was used ({{reason}}) — the assistant decided each step as it went."
+    },
     "budgets": {
       "title": "Spend vs budget",
       "scope": {

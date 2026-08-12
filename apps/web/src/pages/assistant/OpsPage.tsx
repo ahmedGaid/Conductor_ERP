@@ -61,9 +61,30 @@ function TraceRow({ trace, expanded, onToggle }: {
         <td className="latin muted"><Bdi>{formatMicrocentsUsd(trace.cost_microcents)}</Bdi></td>
         <td className="latin muted">{trace.steps.length}</td>
       </tr>
-      {expanded && (trace.steps.length > 0 || (trace.meta.routing?.skipped.length ?? 0) > 0) && (
+      {expanded &&
+        (trace.steps.length > 0 ||
+          (trace.meta.routing?.skipped.length ?? 0) > 0 ||
+          (trace.meta.plan?.length ?? 0) > 0 ||
+          !!trace.meta.plan_fallback) && (
         <tr className="ops-trace-row__detail">
           <td colSpan={8}>
+            {/* T5.2: what the typed planner decided for this run — the ordered steps it committed
+                to, or the reason it handed the turn back to the reactive loop. */}
+            {trace.meta.plan && trace.meta.plan.length > 0 && (
+              <ol className="ops-plan" aria-label={t("ops.plan.title")}>
+                {trace.meta.plan.map((s, i) => (
+                  <li key={i}>
+                    <span className="latin">{s.tool}</span>
+                    <span className="muted"> — {s.why}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {trace.meta.plan_fallback && (
+              <p className="ops-routing-skipped muted">
+                {t("ops.plan.fallback", { reason: trace.meta.plan_fallback })}
+              </p>
+            )}
             {trace.meta.routing && trace.meta.routing.skipped.length > 0 && (
               <p className="ops-routing-skipped muted latin">
                 {t("ops.routing.skipped")}:{" "}

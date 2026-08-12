@@ -96,6 +96,9 @@ function CitationLink({
 // carnival. After the answer lands it collapses to one "Checked N sources" line that expands on
 // click: calm by default, the full trail one tap away.
 function StepIcon({ step }: { step: ChatStep }) {
+  // T5.2: a planned-but-not-started step reads as a quiet dash — clearly "not yet", never a
+  // half-lit clock that could be mistaken for work already happening.
+  if (step.state === "pending") return <NavIcon name="minus" />;
   if (step.state === "running") return <NavIcon name="clock" />;
   return <NavIcon name={step.ok === false ? "close" : "check"} />;
 }

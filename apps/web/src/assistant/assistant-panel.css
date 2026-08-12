@@ -668,6 +668,12 @@
   inline-size: 0.85rem;
   block-size: 0.85rem;
 }
+/* T5.2: a planned step that hasn't started. Quieter than a finished one — the eye should land on
+   what is happening now, with the rest of the plan legible behind it. No motion: nothing is
+   running yet. */
+.msg-steps__item--pending {
+  color: var(--color-text-subtle);
+}
 .msg-steps__item--running {
   color: var(--color-text);
 }

@@ -143,6 +143,15 @@
   background-color: var(--color-surface-sunken);
 }
 
+/* T5.2: the run's planned steps, in the order the planner committed to them. */
+.ops-plan {
+  margin: 0;
+  padding-inline-start: calc(var(--table-pad-inline) + var(--space-4));
+  padding-block: var(--space-2);
+  font-size: var(--font-size-sm);
+  background-color: var(--color-surface-sunken);
+}
+
 .ops-step-table {
   inline-size: 100%;
   border-collapse: collapse;
