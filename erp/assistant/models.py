@@ -401,6 +401,7 @@ class AgentRun(models.Model):
         PLANNING = "planning"
         RUNNING = "running"
         WAITING_CONFIRM = "waiting_confirm"
+        WAITING_CLARIFY = "waiting_clarify"
         PAUSED = "paused"
         DONE = "done"
         FAILED = "failed"
@@ -418,6 +419,10 @@ class AgentRun(models.Model):
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.RUNNING)
     plan = models.JSONField(default=list, blank=True)
     current_step = models.PositiveIntegerField(default=0)
+    # T5.10: what a parked run needs to continue — the gathered results, the plan cursor, and the
+    # question it stopped on. Written only while the run waits for a human (``waiting_clarify``),
+    # and cleared the moment it resumes, so a settled run carries no stale copy of its own data.
+    parked = models.JSONField(default=dict, blank=True)
     result = models.JSONField(null=True, blank=True)
     trace = models.ForeignKey(
         Trace, null=True, blank=True, on_delete=models.SET_NULL, related_name="agent_run",

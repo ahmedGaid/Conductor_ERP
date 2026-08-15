@@ -1,0 +1,19 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "جلب إجمالي المبيعات",
+      "tool": "sales_summary",
+      "period": "this_month",
+      "intent": "report"
+    },
+    {
+      "action": "answer",
+      "why": "لدي الرقم",
+      "intent": "report"
+    }
+  ],
+  "stream_responses": [
+    "إجمالي المبيعات هذا الشهر: 12,500.00 EGP عبر 18 أمر بيع."
+  ]
+}

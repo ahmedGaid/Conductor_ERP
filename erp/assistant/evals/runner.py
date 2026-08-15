@@ -141,8 +141,16 @@ def _run_agent(case: dict, recording: dict, *, actor) -> dict:
         done = next(e for e in reversed(events) if e["type"] == "done")
         citations_event = next((e for e in events if e["type"] == "citations"), {"citations": []})
         answer_text = "".join(e["text"] for e in events if e["type"] == "token")
+        # T5.10: a turn can end by ASKING. The parked card is streamed as its own event; a
+        # free-text question has no card, so the decision is read back off the message meta the
+        # run just wrote — both shapes reach the clarify grader the same way.
+        clarify_event = next((e for e in events if e["type"] == "clarify"), None)
+        card = clarify_event["clarify"] if clarify_event else None
+        if card is None:
+            last = conversation.messages.filter(role="assistant").last()
+            card = (last.meta or {}).get("clarify") if last else None
         return {"answer": answer_text, "citations": citations_event["citations"],
-                "used_tool": done.get("used_tool")}
+                "used_tool": done.get("used_tool"), "clarify": card}
     finally:
         conversation.delete()
 

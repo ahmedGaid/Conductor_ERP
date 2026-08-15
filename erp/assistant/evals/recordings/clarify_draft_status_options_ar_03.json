@@ -1,0 +1,23 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need one detail",
+      "question": "أي أوامر بيع تقصد؟",
+      "options": [
+        {
+          "label": "المسودات فقط"
+        },
+        {
+          "label": "المؤكدة فقط",
+          "recommended": true
+        },
+        {
+          "label": "الكل"
+        }
+      ],
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": []
+}

@@ -232,7 +232,7 @@
   heartbeat (dead within ~30 s), not only the 10-minute staleness sweep — the sweep stays as the
   backstop for installs running the in-request fallback.
 
-### [ ] T5.10 — Structured clarify + mid-turn cost stop `[Twenty study 2026-07-16 — NEW]`
+### [x] T5.10 — Structured clarify + mid-turn cost stop `[Twenty study 2026-07-16 — NEW]`
 
 > Numbered T5.10 for the same cross-reference reason as T5.9. **Executes HERE, right after T5.5
 > and before the benchmark suite** (the bench must exercise both behaviors).

@@ -661,6 +661,56 @@ class DetourResumeView(APIView):
         return response
 
 
+class ClarifyAnswerView(APIView):
+    """Answer a parked clarifying question (ai-reliability T5.10) — the resume half of a structured
+    clarify. Body: ``{"message_id": int, "answer": str}``, where ``answer`` is the option label the
+    user tapped or the sentence they typed (the card always allows both).
+
+    The card lives on the assistant message as ``meta.clarify`` and is single-use, exactly like a
+    proposal: answering it a second time is a 409, so a double-tap or a stale tab can never fork the
+    run. Streams the continuation over the same SSE contract as ``ChatView``.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request):
+        if not client.enabled():
+            raise Http404
+        message = get_object_or_404(
+            Message, pk=request.data.get("message_id"),
+            conversation__user=request.user, role=Message.Role.ASSISTANT,
+        )
+        card = (message.meta or {}).get("clarify")
+        if not card:
+            raise Http404  # no parked question on this turn
+        if card.get("status") != "open":
+            raise ActionAlreadyHandledError
+        answer = request.data.get("answer")
+        if not isinstance(answer, str) or not answer.strip():
+            raise ValidationError("An answer is required.")
+        conversation = message.conversation
+
+        def _events():
+            try:
+                for event in services.resume_clarify(
+                    actor=request.user, conversation=conversation,
+                    source_message=message, answer=answer,
+                ):
+                    yield _sse(event)
+            except (BrokenPipeError, ConnectionResetError, GeneratorExit):
+                raise  # client cancelled — the partial answer is already persisted; exit quietly
+            except AppError as exc:
+                yield _sse({"type": "error", "message": exc.message, "code": exc.code})
+            except Exception:  # pragma: no cover - unexpected; never leak a trace to the client
+                logger.exception("assistant clarify resume failed")
+                yield _sse({"type": "error", "message": AssistantUnavailableError.message})
+
+        response = StreamingHttpResponse(_events(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
+
+
 def _import_card(request: Request):
     """Resolve (and own-check) the assistant message carrying an import card + its persisted task.
 

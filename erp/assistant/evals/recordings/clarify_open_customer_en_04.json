@@ -1,0 +1,12 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need one detail",
+      "question": "Which customer is this sales order for?",
+      "options": null,
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": []
+}

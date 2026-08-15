@@ -299,6 +299,36 @@ export interface ImportTask {
   report?: ImportReport;
 }
 
+// A parked clarifying question (ai-reliability T5.10). Options are a shortcut past typing, never a
+// cage: `allow_free_text` is always true, so the composer stays usable under every card. Answering
+// it resumes the SAME agent run — the work already gathered is kept, not repeated.
+export interface ClarifyOption {
+  label: string;
+  description?: string;
+  recommended?: boolean;
+}
+
+export interface AssistantClarify {
+  question: string;
+  options: ClarifyOption[];
+  allow_free_text: boolean;
+  status: "open" | "answered";
+  // The answer the user gave (set once settled) — rendered back on the card so a reload reads
+  // like the conversation happened.
+  answer?: string;
+  run_id?: string;
+}
+
+// How a turn ended (T5.10 step 5) — one closed vocabulary shared by the ops tile and the panel.
+export type StopReason =
+  | "answered"
+  | "clarify"
+  | "budget"
+  | "step_budget"
+  | "plan_failed"
+  | "cancelled"
+  | "error";
+
 export interface ChatMessage {
   id: number;
   role: "user" | "assistant";
@@ -311,8 +341,11 @@ export interface ChatMessage {
     steps?: ChatStep[];
     proposal?: ActionProposal;
     suggestion?: AssistantSuggestion;
+    clarify?: AssistantClarify;
     import?: ImportTask;
     envelope?: EnvelopeInfo;
+    // T5.10: why the turn stopped — the panel reads it to show the calm budget notice on reload.
+    stop_reason?: StopReason;
     // A synthetic "detour_return" user turn (session 13): rendered as a calm localised divider, not a
     // raw bubble. entity/label localise its text ("Back from creating supplier ABC Trading").
     kind?: string;
@@ -488,6 +521,8 @@ export interface ChatEvent {
     | "error"
     | "proposal"
     | "suggestion"
+    // T5.10: a structured clarifying question with options — the run is parked until it is answered.
+    | "clarify"
     | "import"
     | "retrying"
     // T5.9: the detached worker created its checkpoint row (client can ignore — cosmetic; the
@@ -516,6 +551,8 @@ export interface ChatEvent {
   proposal?: ActionProposal;
   // `suggestion` event (session 12): a blocker turned actionable, keyed by message_id.
   suggestion?: AssistantSuggestion;
+  // `clarify` event (T5.10): the parked question + its options, keyed by message_id.
+  clarify?: AssistantClarify;
   // `import` event (session 14): a mapping-stage spreadsheet import card, keyed by message_id.
   import?: ImportTask;
   // `done` event (ai-reliability T3.6): this turn's context-budget usage — lets the client render
@@ -523,6 +560,8 @@ export interface ChatEvent {
   conversation_tokens?: number;
   budget_tokens?: number;
   compacted?: boolean;
+  // `done` event (T5.10): how this turn ended — "budget" renders the calm early-stop notice.
+  stop_reason?: StopReason;
   // `checkpoint` event (T5.9): the detached worker's placeholder row id.
   // `stream-error` event (T5.9): why the worker went dark.
   reason?: "interrupted" | "error";
@@ -682,6 +721,17 @@ export function resumeDetour(
   signal?: AbortSignal,
 ): Promise<void> {
   return sseStream("/api/assistant/detours/resume", body, onEvent, signal);
+}
+
+// Answer a parked clarifying question (ai-reliability T5.10). `message_id` is the turn carrying the
+// card; `answer` is the option the user tapped or the sentence they typed. Streams the continuation
+// of the SAME run over the ChatEvent contract — single-use, so a second answer is a 409.
+export function answerClarify(
+  body: { conversation_id: number; message_id: number; answer: string },
+  onEvent: (e: ChatEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return sseStream("/api/assistant/clarify/answer", body, onEvent, signal);
 }
 
 // --- Knowledge base (plan session 06) ------------------------------------------------------------

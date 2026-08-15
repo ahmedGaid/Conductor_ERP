@@ -3227,3 +3227,64 @@ re-recorded through the planner path (needs a provider run via `record_evals`), 
 smoke is code-level (i18n parity + one shared component) rather than a live two-language browser
 pass. **Next in file order:** T5.10 (structured clarify + mid-turn cost stop) per its own placement
 note; T5.3 (tool-call validation + repair loop) is the next numeric box.
+
+## ai-reliability Phase 5 T5.10 — Structured clarify + mid-turn cost stop (2026-08-15)
+
+**Problem.** Two ways a turn could waste what it had already done. (1) A `clarify` decision was a
+dead end: the loop wrote the question as the turn's answer and threw away everything gathered, so
+the user's reply started a brand-new run that re-did the same lookups. (2) Budgets were enforced
+only *before* a call (`gateway/budgets.check`), so a runaway multi-round turn spent the money first
+and the ceiling was noticed after.
+
+**Decision.**
+
+- **Clarify options.** The loop decision schema gains `options: [{label, description?,
+  recommended?}]`. `services/clarify.py` is a pure module that normalises them: at most 4, at least
+  2 (fewer is not a choice — it degrades to free text), duplicate labels dropped case-insensitively,
+  **at most one** recommended (the first; a card that recommends everything recommends nothing),
+  labels ≤60 chars. `allow_free_text` is always true — the composer stays open under every card, so
+  options are a shortcut past typing, never a cage. A free-text-only clarify stays legal.
+- **Parking.** A clarify **with options** parks the run: `AgentRun.status = waiting_clarify` and a
+  new `AgentRun.parked` JSON field holds `{question, gathered, plan, plan_cursor, intent}` (oldest
+  gathered results dropped past `MAX_PARKED_CHARS` = 200k). The card rides the assistant message
+  meta like a proposal does, so a reload re-renders it. `POST /api/assistant/clarify/answer` settles
+  the card (single-use → 409 on a second answer), writes the answer as an honest user turn, and
+  resumes **the same run** through `agent.resume_clarify`: the answer joins `gathered` as
+  `{tool: "user_answer", ...}` and `_run_impl` re-enters with `resume_state` — planner not re-run,
+  nothing already fetched fetched twice. A free-text-only clarify does **not** park (it is answered
+  by typing, which is an ordinary next turn — exactly the pre-T5.10 behaviour).
+- **Why only options park.** A parked run needs a click target that carries the run id back. Typing
+  into the composer cannot know which run it belongs to without inventing a second resume path, so
+  the card is the one that parks — and the card is exactly the case where the answers are known.
+- **Mid-turn budget.** `budgets.check_round(actor, spent_so_far)` returns a bool (never raises: a
+  turn out of money still has real data and must answer calmly, not error). Called at **round
+  boundaries only**, never inside the answer stream. **The `request` scope is deliberately not
+  consulted there** — it is a per-CALL ceiling the pre-call gate already applies to every round, and
+  comparing a whole turn's accumulated spend against it cut healthy multi-round turns short (caught
+  by `test_runaway_is_capped_at_max_rounds` and the T5.1 tracing test, not by inspection). Only the
+  period budgets (user/day, org/month) can stop a turn mid-flight; `notify` mode logs and never cuts.
+- **Stop taxonomy.** One closed vocabulary on `Trace.meta.stop` + the message meta: `answered ·
+  clarify · budget · step_budget · plan_failed · cancelled · error`. `/ops/summary` returns
+  `agent_stops` (count per reason) and the ops page renders it as a tile; the panel shows a calm
+  ar/en line under a `budget`-stopped answer, never an error.
+- **Prompt rules** (`agent_loop.md` → 1.2.0, imported from the Twenty study's intent): never ask
+  what a tool can look up; never ask on a trivial choice with an obvious default; at most one
+  focused question; options only when the sensible answers are a short known set; mark at most one
+  recommended; open answers (a name, a number, a date) get no options.
+
+**Rejected.** A separate "other…" option on the card (the composer already is free text — a fifth
+button would be a second way to do one thing). Storing gathered results on the Trace instead of the
+run (traces are sizes-and-outcomes only, by policy — parked state is operational, not audit).
+
+**Verified.** `pytest erp` 1921 passed / 5 skipped (+28, all in new `tests/test_clarify.py`:
+pure option rules, parking, resume-with-results-intact, typed-answer path, no-refetch, API
+single-use/own-check/empty-answer, budget stop + calm partial answer, per-call ceiling not cutting a
+turn, and the 7 prompt-rule eval cases run end-to-end through the eval runner). New
+`expected.clarify` grader kind (`{asks, options}`) + 7 golden cases with recordings — 3 that must
+ask WITH options, 1 open question that must not offer any, 3 the tools settle without asking.
+`gate:all` 00–18 green, i18n parity 2775 both locales, `tsc --noEmit` clean, vitest 64/64,
+`makemigrations --check` clean (migration `0016_clarify_parking`).
+
+**Honest gap.** T5.5 (resume + human-gate parking for **confirm**) is still open: this task built
+its own parking for clarify (`waiting_clarify`, `AgentRun.parked`, the resume endpoint shape), so
+T5.5 should generalise that machinery for `waiting_confirm` rather than invent a second one.

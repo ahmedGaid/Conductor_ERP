@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  answerClarify,
   cancelStream,
   chatStream,
   createConversation,
@@ -14,6 +15,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   type ActionProposal,
   type AskCitation,
+  type AssistantClarify,
   type AssistantSuggestion,
   type AttachmentInfo,
   type ChatEvent,
@@ -21,6 +23,7 @@ import {
   type ChatStep,
   type EnvelopeInfo,
   type ImportTask,
+  type StopReason,
 } from "../api/assistant";
 import { ApiError } from "../api/client";
 import { NavIcon } from "../app/icons";
@@ -270,6 +273,9 @@ export function ConversationView() {
       // T5.9: re-enqueue the last failed detached turn via the server's own record of it (there is
       // no live client-side draft to resend after a reload finds `last_stream_error`).
       retryTurn?: boolean;
+      // T5.10: answer a parked clarifying question — continues the SAME agent run rather than
+      // asking anything new (the answer turn is written server-side).
+      clarifyAnswer?: { message_id: number; answer: string };
     },
   ) {
     setStreaming(true);
@@ -287,6 +293,8 @@ export function ConversationView() {
     let messageId: number | null = null;
     let proposal: ActionProposal | null = null;
     let suggestion: AssistantSuggestion | null = null;
+    let clarifyCard: AssistantClarify | null = null;
+    let stopReason: StopReason | null = null;
     let importTask: ImportTask | null = null;
     let envelopeInfo: EnvelopeInfo | null = null;
     let errMsg: string | null = null;
@@ -294,7 +302,13 @@ export function ConversationView() {
     // The event handling is identical across a fresh answer, a detour resume, and a T5.9 retry —
     // only the request differs (resume/retry replay server-side state; no new question needed).
     const startStream = (onEvent: (e: ChatEvent) => void) =>
-      opts.resume
+      opts.clarifyAnswer
+        ? answerClarify(
+            { conversation_id: convId, ...opts.clarifyAnswer },
+            onEvent,
+            ac.signal,
+          )
+        : opts.resume
         ? resumeDetour(
             { conversation_id: convId, message_id: opts.resume.message_id, resolved: opts.resume.resolved },
             onEvent,
@@ -362,12 +376,18 @@ export function ConversationView() {
             // A blocker turned actionable (session 12) — rides the message meta like a proposal.
             suggestion = e.suggestion;
             if (e.message_id != null) messageId = e.message_id;
+          } else if (e.type === "clarify" && e.clarify) {
+            // T5.10: the run parked on a question — the card carries its options and the run id
+            // the answer resumes.
+            clarifyCard = e.clarify;
+            if (e.message_id != null) messageId = e.message_id;
           } else if (e.type === "import" && e.import) {
             // A spreadsheet import card (session 14) — mapping stage, keyed to its message id.
             importTask = e.import;
             if (e.message_id != null) messageId = e.message_id;
           } else if (e.type === "done") {
             usedTool = e.used_tool ?? null;
+            stopReason = e.stop_reason ?? null;
             if (e.message_id != null) messageId = e.message_id;
             if (e.budget_tokens != null && e.conversation_tokens != null) {
               envelopeInfo = {
@@ -398,7 +418,7 @@ export function ConversationView() {
         errMsg = err instanceof Error ? err.message : String(err);
       }
     } finally {
-      if (acc.trim() || proposal || suggestion || importTask) {
+      if (acc.trim() || proposal || suggestion || importTask || clarifyCard) {
         const asstMsg: ChatMessage = {
           // Use the real server id when we got one, so a proposal card can execute against it.
           id: messageId ?? -Date.now() - 1,
@@ -410,6 +430,8 @@ export function ConversationView() {
             ...(steps.length ? { steps } : {}),
             ...(proposal ? { proposal } : {}),
             ...(suggestion ? { suggestion } : {}),
+            ...(clarifyCard ? { clarify: clarifyCard } : {}),
+            ...(stopReason ? { stop_reason: stopReason } : {}),
             ...(importTask ? { import: importTask } : {}),
             ...(envelopeInfo ? { envelope: envelopeInfo } : {}),
           },
@@ -487,6 +509,21 @@ export function ConversationView() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingResume, conversationId, loading, messages]);
+
+  // T5.10: the user answered a parked clarify — either by tapping an option or by typing. The
+  // stream continues the same run; afterwards the thread is reloaded from server truth so the
+  // settled card and the server-written answer turn replace the optimistic view.
+  async function answerClarifyQuestion(messageId: number, answer: string) {
+    if (streaming || conversationId == null) return;
+    const convId = conversationId;
+    await runStream(convId, { clarifyAnswer: { message_id: messageId, answer } });
+    try {
+      const d = await getConversation(convId);
+      setMessages(d.messages);
+    } catch {
+      /* keep the optimistic view if the reload fails; a manual reopen will reconcile */
+    }
+  }
 
   async function regenerate() {
     if (streaming || conversationId == null) return;
@@ -632,6 +669,7 @@ export function ConversationView() {
           onNavigate={onNavigate}
           onResolveAction={resolveAction}
           onResolveImport={resolveImport}
+          onAnswerClarify={(id, answer) => void answerClarifyQuestion(id, answer)}
         />
       )}
 

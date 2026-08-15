@@ -1,0 +1,24 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need one detail",
+      "question": "بأي فترة تريد المقارنة؟",
+      "options": [
+        {
+          "label": "الشهر الماضي",
+          "description": "مقارنة الشهر الحالي بالشهر الماضي",
+          "recommended": true
+        },
+        {
+          "label": "نفس الشهر العام الماضي"
+        },
+        {
+          "label": "الربع السابق"
+        }
+      ],
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": []
+}

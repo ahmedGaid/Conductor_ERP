@@ -24,12 +24,15 @@ from django.conf import settings
 
 from erp.audit import services as audit
 
+from ..gateway import budgets
 from ..gateway.core import complete_json, complete_stream, model_id, provider
 from ..models import AgentRun, AgentStep
 from ..query_registry import REGISTRY as _QUERY_REGISTRY
 from ..query_registry import query_grammar_text
 from ..tools import TOOLS, catalog_text
-from . import actions, context, envelope, files, imports, planner, suggestions, summarize
+from . import (
+    actions, clarify, context, envelope, files, imports, planner, suggestions, summarize,
+)
 from .ask import _ANSWER_TONE, _ARG_FIELDS, _ROUTER_SCHEMA, MAX_QUESTION_CHARS, _answer_prompt_ref
 from .prompt_registry import get as get_prompt
 from .tracing import NULL_HANDLE, estimate_tokens, mark_cancelled, trace_call
@@ -83,6 +86,25 @@ _LOOP_SCHEMA = {
         "why": {"type": ["string", "null"], "description": "<=8 words, shown to the user"},
         "question": {"type": ["string", "null"],
                      "description": "the clarifying question when action=clarify"},
+        # T5.10: the answer choices that turn a clarifying question into one tap. Optional — a
+        # genuinely open question (a name, a number, a date) is still asked as plain text.
+        "options": {
+            "type": ["array", "null"],
+            "description": "when action=clarify: 2-4 answers the user can pick from, at most one "
+                           "marked recommended; null when the answer is open-ended",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "label": {"type": "string", "description": "the choice, <=60 characters"},
+                    "description": {"type": ["string", "null"],
+                                    "description": "one short line: what picking this means"},
+                    "recommended": {"type": ["boolean", "null"],
+                                    "description": "true on AT MOST one option"},
+                },
+                "required": ["label", "description", "recommended"],
+                "additionalProperties": False,
+            },
+        },
         "resume": {"type": ["string", "null"],
                    "description": "when action=suggest: one sentence — what you will continue "
                                   "after the user fixes the blocker"},
@@ -93,7 +115,8 @@ _LOOP_SCHEMA = {
         **_ROUTER_SCHEMA["properties"],
         **_ACTION_FIELDS,
     },
-    "required": ["action", "why", "question", "resume", "intent", *_ROUTER_SCHEMA["required"],
+    "required": ["action", "why", "question", "options", "resume", "intent",
+                 *_ROUTER_SCHEMA["required"],
                  *_ACTION_FIELDS.keys()],
     "additionalProperties": False,
 }
@@ -286,6 +309,28 @@ def _plan_gathered(results: list[dict]) -> list[dict]:
     return out
 
 
+# How much gathered data a parked run keeps (T5.10). A parked run is resumed by a human within
+# seconds or minutes, so this is generous — but a run that read a thousand rows must not turn one
+# clarify into a megabyte row, so the oldest results drop first (the newest are what the answer
+# leans on) and the plan/question always survive.
+MAX_PARKED_CHARS = 200_000
+
+
+def _parked_gathered(results: list[dict]) -> list[dict]:
+    """The gathered results a parked run keeps, oldest dropped until the payload fits."""
+    kept = list(results)
+    while kept and len(json.dumps(kept, ensure_ascii=False, default=str)) > MAX_PARKED_CHARS:
+        kept.pop(0)
+    return kept
+
+
+_RESUME_DIRECTIVE = (
+    "\n\nYou asked the user a question earlier in this same turn and they have just answered it: "
+    "their reply is in the gathered results as 'user_answer'. Continue from there — use the answer "
+    "to fill what was missing, never ask it again, and never redo the lookups already gathered."
+)
+
+
 _PLAN_DIRECTIVE = (
     "\n\nA plan for this turn was prepared in advance and its steps are already shown to the user. "
     "Each round you are given that plan and the step to do now: run exactly that step's tool, "
@@ -317,17 +362,40 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
     checkpoints into one deterministic ``Message`` row (keyed by this id) instead of only being
     created at the very end, so a job retry upserts rather than duplicates. ``None`` (default) is
     the unchanged in-request path: no checkpoint row, no new event type, identical behavior."""
-    cm = trace_call("agent", actor=actor, conversation_id=getattr(conversation, "id", None),
-                    prompt_ref=_loop_prompt.ref)
-    handle = cm.__enter__()
     agent_run = AgentRun.objects.create(
         actor=actor if getattr(actor, "is_authenticated", False) else None,
         conversation=conversation, goal=(question or "")[:MAX_QUESTION_CHARS],
     )
+    yield from _drive(actor=actor, conversation=conversation, question=question, page=page,
+                      regenerate=regenerate, attachment_ids=attachment_ids, stream_id=stream_id,
+                      agent_run=agent_run)
+
+
+def _settle(agent_run: AgentRun, handle) -> None:
+    """Close a run that ended without raising. A run PARKED mid-turn (T5.10: it asked the user a
+    question and is waiting for the answer) is not done — the terminal write must not overwrite the
+    waiting state, so the status update excludes exactly those rows and the trace id lands either
+    way. The exclude is done in SQL, not read-then-write: the resume endpoint may be flipping the
+    same row from another request."""
+    updated = AgentRun.objects.filter(pk=agent_run.pk).exclude(
+        status__in=[AgentRun.Status.WAITING_CLARIFY, AgentRun.Status.WAITING_CONFIRM],
+    ).update(status=AgentRun.Status.DONE, trace_id=handle.trace_id or None)
+    if not updated:
+        AgentRun.objects.filter(pk=agent_run.pk).update(trace_id=handle.trace_id or None)
+
+
+def _drive(*, actor, conversation, question: str, agent_run: AgentRun, page: dict | None = None,
+           regenerate: bool = False, attachment_ids=None, stream_id=None, resume_state=None):
+    """One traced pass of the loop over an EXISTING run row — the shared body of a fresh ``run``
+    and a ``resume_clarify``. Both need identical terminal handling (answered, cancelled, raised),
+    so it is written once here rather than twice."""
+    cm = trace_call("agent", actor=actor, conversation_id=getattr(conversation, "id", None),
+                    prompt_ref=_loop_prompt.ref)
+    handle = cm.__enter__()
     try:
         yield from _run_impl(actor=actor, conversation=conversation, question=question, page=page,
                              regenerate=regenerate, attachment_ids=attachment_ids, trace=handle,
-                             agent_run=agent_run, stream_id=stream_id)
+                             agent_run=agent_run, stream_id=stream_id, resume_state=resume_state)
     except GeneratorExit:
         handle.meta["stop"] = "cancelled"
         mark_cancelled(handle)
@@ -345,13 +413,12 @@ def run(*, actor, conversation, question: str, page: dict | None = None,
         raise
     else:
         cm.__exit__(None, None, None)
-        AgentRun.objects.filter(pk=agent_run.pk).update(
-            status=AgentRun.Status.DONE, trace_id=handle.trace_id or None)
+        _settle(agent_run, handle)
 
 
 def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
               regenerate: bool = False, attachment_ids=None, trace=NULL_HANDLE,
-              agent_run: AgentRun | None = None, stream_id=None):
+              agent_run: AgentRun | None = None, stream_id=None, resume_state: dict | None = None):
     """Generator over the agentic chat pipeline — yields SSE-ready event dicts.
 
     Event protocol (extends session 02's token/citations/done/error):
@@ -368,7 +435,13 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     ``trace`` (default a no-op handle) records this run's steps — see the ``run()`` wrapper above.
     """
     # --- resolve the question + persist / clean up the user turn (mirrors stream_answer) ----------
-    if regenerate:
+    if resume_state is not None:
+        # T5.10 resume: this pass CONTINUES a turn that parked on a clarify. The user's answer is
+        # already in the transcript (the endpoint wrote it) and ``question`` is the original goal —
+        # so nothing is persisted here and nothing is cleaned up.
+        q = (question or "").strip()[:MAX_QUESTION_CHARS]
+        user_msg = None
+    elif regenerate:
         user_msg = conversation.messages.filter(role="user").last()
         q = (user_msg.content if user_msg else "").strip()[:MAX_QUESTION_CHARS]
         if user_msg is not None:
@@ -421,8 +494,9 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     # that refers to "the attached image" ('ok, create that invoice', 'take the items from it') keeps
     # the attachment in the planner's eyes instead of going blind. Only when the current turn has no
     # vision media; the file is read fresh each such turn (bounded to one prior image-bearing turn).
-    if not media and user_msg is not None:
-        for att in _recent_vision_attachments(conversation, exclude_id=user_msg.id):
+    if not media and (user_msg is not None or resume_state is not None):
+        for att in _recent_vision_attachments(
+                conversation, exclude_id=user_msg.id if user_msg is not None else None):
             described = files.describe_for_model(att)
             if described.get("media"):
                 media.append(described["media"])
@@ -471,6 +545,8 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     total_in_tokens = 0
     total_out_tokens = 0
     hit_round_cap = False
+    budget_stop = False           # T5.10: a round boundary crossed the spend ceiling
+    clarify_card: dict | None = None  # T5.10: the structured question, when the loop asked one
     # T3.6: one budget for the whole run — the primary provider's model and the reply ceiling never
     # change mid-turn, so this is computed once rather than re-resolved every round.
     model = model_id()
@@ -485,7 +561,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     plan_cursor = 0
     replans = 0
     plan_failure: dict | None = None
-    if settings.ASSISTANT_TYPED_PLANNER:
+    if settings.ASSISTANT_TYPED_PLANNER and resume_state is None:
         if agent_run is not None:
             AgentRun.objects.filter(pk=agent_run.pk).update(status=AgentRun.Status.PLANNING)
         outcome = planner.make_plan(
@@ -508,7 +584,36 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             AgentRun.objects.filter(pk=agent_run.pk).update(
                 status=AgentRun.Status.RUNNING, plan=plan_steps)
 
+    # T5.10: a resumed run picks up its own state — the results it had gathered before it asked,
+    # the plan it was walking, and where in that plan it stopped. Nothing is re-fetched and the
+    # planner is not re-run: the turn continues, it does not restart.
+    if resume_state is not None:
+        results = list(resume_state.get("gathered") or [])
+        plan_steps = list(resume_state.get("plan") or [])
+        plan_cursor = int(resume_state.get("plan_cursor") or 0)
+        intent = resume_state.get("intent") or None
+        loop_system += _RESUME_DIRECTIVE
+        if plan_steps:
+            loop_system += _PLAN_DIRECTIVE
+            yield {"type": "plan", "steps": [{"tool": st["tool"], "label": st["why"],
+                                              "needs_confirm": st["needs_confirm"]}
+                                             for st in plan_steps]}
+
     for _round in range(MAX_ROUNDS):
+        # T5.10: the money check sits HERE, at a round boundary — before the next round is paid
+        # for, never inside the answer stream. Everything gathered so far is kept and answered
+        # from; only further gathering stops. Round 1 is never blocked this way: the pre-call gate
+        # (``budgets.check``) already decided whether this turn may start at all.
+        if _round and budgets.check_round(
+                actor=actor,
+                # Same arithmetic as the pre-call estimate, with the turn's REAL output-token
+                # estimate in place of the per-call ceiling — this spend has already happened.
+                spent_so_far=budgets.estimate_cost_microcents(
+                    model, total_in_tokens, total_out_tokens)):
+            budget_stop = True
+            trace.step(kind="validation", name="budget_round", ok=False,
+                       detail={"round": _round + 1, "stop": "budget"})
+            break
         # media rides every round: the planner keeps its eyes on the attachment until it proposes
         # (usually round 1), so it can read supplier/lines from an image instead of guessing them.
         round_user, loop_envelope_meta = _loop_user(
@@ -526,7 +631,10 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             intent = decision.get("intent")
         action = decision.get("action")
         if action == "clarify":
+            # T5.10: the question still ends this pass of the loop, but with options it no longer
+            # ends the WORK — the card below parks the run and the user's pick resumes it.
             clarify_text = (decision.get("question") or "").strip()
+            clarify_card = clarify.build_card(decision)
             break
         if action == "propose":
             # The model proposes a write; we build it (validate + price, no write) and end the turn.
@@ -653,7 +761,8 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     # as an invented document name/content. Prompt wording alone has been hardened twice already
     # with no durable effect (see DECISIONS.md), so force one real search here rather than trust
     # the model to remember. This only fires for document-shaped intents and only once.
-    if (clarify_text is None and proposal is None and intent in ("document_search", "mixed")
+    if (clarify_text is None and proposal is None and not budget_stop
+            and intent in ("document_search", "mixed")
             and not any(r["tool"] == "search_documents" for r in results)):
         name = "search_documents"
         why = "Checking company documents"
@@ -679,7 +788,7 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     # yet answered anyway: run that query for real before the answer streams. The fully-unnamed
     # case (no entity anywhere) stays open — see the erp-status backlog entry.
     guard_entity = ((last_decision or {}).get("entity") or "").strip()
-    if (clarify_text is None and proposal is None and suggestion is None
+    if (clarify_text is None and proposal is None and suggestion is None and not budget_stop
             and intent in ("lookup", "report")
             and not any(s["ok"] for s in steps)
             and not any(r["tool"] == "query_data" for r in results)
@@ -705,15 +814,42 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
     # ``used_tool`` = the last tool that succeeded — keeps session-06's per-tool follow-up chips
     # working (client reads it from ``done`` and from the reloaded message meta).
     used_tool = next((s["tool"] for s in reversed(steps) if s["ok"]), None)
+    # One closed vocabulary for how a turn ended (T5.10 step 5) — read by the ops stop tile and by
+    # the panel, so every exit names itself the same way: answered · clarify · budget · step_budget
+    # · plan_failed · cancelled · error (the last two are written by ``_drive``).
     if plan_failure is not None:
-        trace.meta["stop"] = "plan_failed"
+        stop_reason = "plan_failed"
+    elif budget_stop:
+        stop_reason = "budget"
+    elif clarify.parks(clarify_card):
+        stop_reason = "clarify"
+    elif hit_round_cap:
+        stop_reason = "step_budget"
     else:
-        trace.meta["stop"] = "step_budget" if hit_round_cap else "answered"
+        stop_reason = "answered"
+    trace.meta["stop"] = stop_reason
     if agent_run is not None:
         AgentRun.objects.filter(pk=agent_run.pk).update(
             current_step=len(steps),
             result={"used_tool": used_tool, "intent": intent, "citations": len(citations)},
         )
+    # T5.10 parking: an options clarify leaves the run WAITING, not done — its gathered results and
+    # plan cursor are written down so the user's answer resumes exactly here instead of paying for
+    # the same lookups again. Written BEFORE the card is streamed: a user who clicks the instant it
+    # appears must find the state already saved.
+    if clarify.parks(clarify_card):
+        if agent_run is not None:
+            AgentRun.objects.filter(pk=agent_run.pk).update(
+                status=AgentRun.Status.WAITING_CLARIFY,
+                parked={"question": q, "gathered": _parked_gathered(results), "plan": plan_steps,
+                        "plan_cursor": plan_cursor, "intent": intent,
+                        "clarify": {"question": clarify_card["question"]}},
+            )
+            clarify_card["run_id"] = str(agent_run.id)
+        else:
+            # No durable run row (the legacy in-request path with persistence off): the question is
+            # still asked, it just cannot be resumed — so it must not pretend to offer buttons.
+            clarify_card["options"] = []
 
     parts: list[str] = []
     saved = False
@@ -724,7 +860,12 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
             return None
         saved = True
         answer = "".join(parts).strip()
-        meta = {"citations": citations, "used_tool": used_tool, "steps": steps, "intent": intent}
+        meta = {"citations": citations, "used_tool": used_tool, "steps": steps, "intent": intent,
+                "stop_reason": stop_reason}
+        if clarify_card is not None:
+            # The clarify card rides the message meta exactly like a proposal does — so a reload
+            # re-renders the parked question, its options, and (once answered) its settled state.
+            meta["clarify"] = clarify_card
         if proposal is not None:
             # The proposal rides in the assistant message meta (status starts "pending"); the card is
             # keyed by this message id and the execute endpoint re-reads the payload from here.
@@ -788,6 +929,14 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                          "and shown in a card below. Briefly say you read the file (name the target and "
                          "row count if useful), and that they can adjust the column mapping and preview "
                          "the rows before anything is created. Do NOT claim any records were created.")
+            if budget_stop:
+                # T5.10: the money ran out between rounds. The answer is whatever was already
+                # gathered plus one honest line — never an error screen, never a silent partial.
+                user += ("\n\nGathering stopped early: this turn reached the AI spending limit set "
+                         "for this period. Answer with whatever the data below DOES show, then say "
+                         "in one short calm sentence that you stopped early because the AI budget "
+                         "was reached, so this answer may be incomplete. Do NOT guess the missing "
+                         "parts, do NOT blame anyone, and do NOT promise to continue later.")
             if plan_failure is not None:
                 # T5.2: the typed failure. Two replans could not get past this step, so the answer
                 # says so plainly — naming the step, keeping whatever the earlier steps did find,
@@ -849,14 +998,73 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
         if suggestion is not None and msg is not None:
             yield {"type": "suggestion", "message_id": msg.id,
                    "suggestion": {**suggestion, "status": "open"}}
+        if clarify.parks(clarify_card) and msg is not None:
+            # Same contract as the proposal/suggestion cards: the card is keyed by this message id,
+            # and the answer endpoint re-reads it from the message meta.
+            yield {"type": "clarify", "message_id": msg.id, "clarify": clarify_card}
         # T3.6 step 5: lets the client render a quiet usage meter and, when this turn actually
         # trimmed or dropped something, a calm compaction notice instead of silent truncation.
         yield {"type": "done", "message_id": msg.id, "used_tool": used_tool,
                "conversation_tokens": total_in_tokens + total_out_tokens,
                "budget_tokens": envelope.budget_for(model, max_tokens),
+               "stop_reason": stop_reason,
                "compacted": _any_compacted(sys_meta, loop_envelope_meta, data_meta)}
     finally:
         _persist()  # disconnect / error mid-stream still saves the partial answer
+
+
+def resume_clarify(*, actor, conversation, source_message, answer: str):
+    """Continue a run parked on a structured clarify (ai-reliability T5.10).
+
+    ``source_message`` is the assistant turn carrying ``meta.clarify`` (question + options +
+    ``run_id``); ``answer`` is the option the user tapped or the sentence they typed. The card is
+    settled first (single-use, reload-safe, exactly like a consumed proposal), the answer is
+    recorded as an honest user turn, and then the SAME ``AgentRun`` continues: its gathered results
+    and plan cursor come back off the parked state, the answer joins them as a ``user_answer``
+    result, and the loop runs on from there. Nothing already fetched is fetched twice, and the
+    planner is not re-run.
+
+    Yields the same SSE events as :func:`run`. Tests monkeypatch ``complete_json``/``complete_stream``.
+    """
+    meta = source_message.meta or {}
+    card = meta.get("clarify") or {}
+    question = str(card.get("question") or "")
+    text = (answer or "").strip()[:MAX_QUESTION_CHARS]
+
+    card["status"] = "answered"
+    card["answer"] = text
+    meta["clarify"] = card
+    source_message.meta = meta
+    source_message.save(update_fields=["meta"])
+
+    # The pick is a real user turn: the transcript must read the way the conversation happened, so
+    # a reload (or an export, or the next turn's history) shows the question and the answer to it.
+    conversation.messages.create(role="user", content=text, meta={"clarify_answer": True})
+
+    agent_run = None
+    run_id = card.get("run_id")
+    if run_id:
+        agent_run = AgentRun.objects.filter(pk=run_id).first()
+    parked = (agent_run.parked if agent_run is not None else {}) or {}
+    resume_state = {
+        # The original goal, not the answer — the answer is data ABOUT the goal, never the request.
+        "question": parked.get("question") or question or text,
+        "gathered": list(parked.get("gathered") or []) + [clarify.answer_result(question, text)],
+        "plan": list(parked.get("plan") or []),
+        "plan_cursor": int(parked.get("plan_cursor") or 0),
+        "intent": parked.get("intent"),
+    }
+    if agent_run is None:
+        # The run row is gone (pruned, or persistence was off when it parked). The answer is still
+        # honoured — it just re-enters as a fresh run carrying the question and the answer as
+        # context, which is exactly the behaviour that shipped before parking existed.
+        yield from run(actor=actor, conversation=conversation,
+                       question=f"{resume_state['question']}\n\n({question} — {text})")
+        return
+
+    AgentRun.objects.filter(pk=agent_run.pk).update(status=AgentRun.Status.RUNNING, parked={})
+    yield from _drive(actor=actor, conversation=conversation, question=resume_state["question"],
+                      agent_run=agent_run, resume_state=resume_state)
 
 
 def resume_detour(*, actor, conversation, source_message, resolved):

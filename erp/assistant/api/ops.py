@@ -132,8 +132,25 @@ class OpsSummaryView(APIView):
         cache_hits = TraceStep.objects.filter(
             trace__created_at__gte=since, detail__cache="exact").count()
 
+        # How agent turns ended, by reason (T5.10 step 5). One closed vocabulary — answered ·
+        # clarify · budget · step_budget · plan_failed · cancelled · error — read straight off
+        # ``Trace.meta.stop``, so "how often does a turn stop for money, and how often does it stop
+        # to ask?" is one tile rather than a log search. Counted in Python: ``meta`` is a JSON blob
+        # and the row count here is a few thousand at most, not a table scan worth an index.
+        stops: dict[str, int] = {}
+        for meta in qs.filter(feature="agent").values_list("meta", flat=True):
+            if not isinstance(meta, dict):
+                continue
+            reason = str(meta.get("stop") or "unknown")
+            stops[reason] = stops.get(reason, 0) + 1
+        stop_rows = sorted(
+            ({"reason": reason, "count": count} for reason, count in stops.items()),
+            key=lambda r: (-r["count"], r["reason"]),
+        )
+
         return _envelope({
             "days": days,
+            "agent_stops": stop_rows,
             "total_calls": total,
             "error_rate": error_rate,
             "daily": sorted(daily.values(), key=lambda r: r["date"]),

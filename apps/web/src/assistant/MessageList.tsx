@@ -23,6 +23,7 @@ import { SYSTEM_ADMIN } from "../pages/settings/roles";
 import { ActionCard } from "./ActionCard";
 import { ImportCard } from "./ImportCard";
 import { Markdown } from "./Markdown";
+import { ClarifyCard } from "./ClarifyCard";
 import { SuggestionCard } from "./SuggestionCard";
 import { followupsFor, type SuggestionKey } from "./suggestions";
 
@@ -209,6 +210,9 @@ interface MessageListProps {
   onNavigate?: () => void;
   onResolveAction: (messageId: number, proposal: ActionProposal) => void;
   onResolveImport: (messageId: number, task: ImportTask) => void;
+  // T5.10: the user answered a parked clarifying question — by tapping an option here, or by
+  // typing in the composer (which goes through the normal send path instead).
+  onAnswerClarify: (messageId: number, answer: string) => void;
 }
 
 /**
@@ -231,6 +235,7 @@ export function MessageList({
   onNavigate,
   onResolveAction,
   onResolveImport,
+  onAnswerClarify,
 }: MessageListProps) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -281,6 +286,7 @@ export function MessageList({
             const steps = (m.meta?.steps as ChatStep[] | undefined) ?? [];
             const proposal = m.meta?.proposal as ActionProposal | undefined;
             const suggestion = m.meta?.suggestion as AssistantSuggestion | undefined;
+            const clarify = m.meta?.clarify;
             const importTask = m.meta?.import as ImportTask | undefined;
             const envelopeInfo = m.meta?.envelope as EnvelopeInfo | undefined;
             // A synthetic "detour return" turn (session 13) is recorded honestly, but shown as a calm
@@ -351,6 +357,22 @@ export function MessageList({
                     onResolved={onResolveAction}
                     onNavigate={onNavigate}
                   />
+                )}
+                {clarify && (
+                  <ClarifyCard
+                    clarify={clarify}
+                    messageId={m.id}
+                    onAnswer={onAnswerClarify}
+                    disabled={streaming}
+                  />
+                )}
+                {m.meta?.stop_reason === "budget" && (
+                  // T5.10: the turn stopped between rounds to stay inside the AI budget. A calm
+                  // line under the answer, never an error — the answer above is real, just partial.
+                  <p className="assistant-notice" dir="auto">
+                    <NavIcon name="info" />
+                    {t("assistant.budgetStop")}
+                  </p>
                 )}
                 {suggestion && (
                   <SuggestionCard suggestion={suggestion} messageId={m.id} onFollowup={onFollowup} />

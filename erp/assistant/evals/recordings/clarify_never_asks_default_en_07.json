@@ -1,0 +1,19 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "Fetch this month's sales",
+      "tool": "sales_summary",
+      "period": "this_month",
+      "intent": "report"
+    },
+    {
+      "action": "answer",
+      "why": "Have the figure",
+      "intent": "report"
+    }
+  ],
+  "stream_responses": [
+    "Sales this month are 9,800.00 EGP across 11 orders."
+  ]
+}

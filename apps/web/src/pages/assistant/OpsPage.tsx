@@ -233,6 +233,22 @@ export function OpsPage() {
                 </ul>
               )}
 
+              <h2 className="ops-card__title ops-card__title--spaced">{t("ops.stops.title")}</h2>
+              {s.agent_stops.length === 0 ? (
+                <p className="ops-card__empty">{t("ops.stops.empty")}</p>
+              ) : (
+                <ul className="ops-error-list">
+                  {/* T5.10: every agent turn names how it ended in one closed vocabulary, so
+                      "how often does a turn stop for money, and how often to ask?" is a glance. */}
+                  {s.agent_stops.map((row) => (
+                    <li key={row.reason}>
+                      <span>{t(`ops.stops.reason.${row.reason}`, row.reason)}</span>
+                      <span className="latin muted">{row.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <h2 className="ops-card__title ops-card__title--spaced">{t("ops.budgets.title")}</h2>
               <ul className="ops-error-list">
                 {s.budgets.map((b) => (

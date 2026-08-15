@@ -1,0 +1,24 @@
+{
+  "json_responses": [
+    {
+      "action": "clarify",
+      "why": "Need one detail",
+      "question": "Which warehouse should the stock move to?",
+      "options": [
+        {
+          "label": "Main warehouse",
+          "description": "The default receiving location",
+          "recommended": true
+        },
+        {
+          "label": "Cairo branch"
+        },
+        {
+          "label": "Alexandria branch"
+        }
+      ],
+      "intent": "lookup"
+    }
+  ],
+  "stream_responses": []
+}

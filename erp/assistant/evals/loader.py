@@ -11,7 +11,7 @@ GOLDEN_V1_PATH = DATASETS_DIR / "golden_v1.jsonl"
 REQUIRED_KEYS = {"id", "lang", "feature", "input", "fixtures", "expected"}
 VALID_LANGS = {"ar", "en"}
 VALID_FEATURES = {"ask", "agent", "extract", "suggest"}
-EXPECTED_KIND_KEYS = {"schema", "contains", "citations", "refusal", "judge"}
+EXPECTED_KIND_KEYS = {"schema", "contains", "citations", "refusal", "judge", "clarify"}
 
 
 class CaseValidationError(ValueError):
@@ -50,6 +50,10 @@ def _validate_case(case: dict) -> None:
         raise CaseValidationError(f"case {case_id!r} expected.schema must be an object")
     if kind == "refusal" and value is not True:
         raise CaseValidationError(f"case {case_id!r} expected.refusal must be true")
+    if kind == "clarify" and not isinstance(value, dict):
+        # T5.10 prompt rules: {"asks": true|false, "options": true|false} — "did the turn ask the
+        # user a question, and did it offer choices" is the whole assertion.
+        raise CaseValidationError(f"case {case_id!r} expected.clarify must be an object")
     if kind == "judge" and not isinstance(value, str):
         raise CaseValidationError(f"case {case_id!r} expected.judge must be a string")
 

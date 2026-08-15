@@ -1887,3 +1887,82 @@
     animation: none;
   }
 }
+
+/* --- Clarify card (ai-reliability T5.10) ------------------------------------------------------
+   The conversational twin of the confirm card: the question reads as the card's title, the options
+   are quiet full-width rows (tap targets, not chips), and the recommended one is marked with a word
+   — never with colour alone. */
+.clarify-card__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+}
+
+.clarify-card__option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.clarify-card__option:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+}
+
+.clarify-card__option:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.clarify-card__option--recommended {
+  border-color: var(--color-border-strong);
+}
+
+.clarify-card__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-medium);
+}
+
+.clarify-card__badge {
+  padding-inline: var(--space-2);
+  padding-block: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.clarify-card__description {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.clarify-card__free {
+  margin-block-start: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* A calm inline notice under an answer (T5.10: the turn stopped early on budget). Never an error
+   colour — the answer above it is real, just partial. */
+.assistant-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

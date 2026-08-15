@@ -303,7 +303,14 @@
       "delete": "Delete",
       "deleteConfirm": "This conversation and its messages will be removed. This can't be undone.",
       "saveFailed": "That change didn't save. Please try again."
-    }
+    },
+    "clarify": {
+      "recommended": "Recommended",
+      "freeText": "Or type your own answer below.",
+      "answered": "You answered: {{answer}}",
+      "answeredBare": "Answered."
+    },
+    "budgetStop": "Stopped early to stay within the AI budget for this period, so this answer may be incomplete."
   },
   "automations": {
     "title": "Automations",
@@ -517,6 +524,20 @@
     "empty": {
       "title": "No AI activity yet",
       "body": "Once the assistant handles a chat, question, or agent run, it will show up here."
+    },
+    "stops": {
+      "title": "How agent turns ended",
+      "empty": "No agent turns in this period.",
+      "reason": {
+        "answered": "Answered",
+        "clarify": "Asked the user",
+        "budget": "Stopped on budget",
+        "step_budget": "Reached the step limit",
+        "plan_failed": "A planned step failed",
+        "cancelled": "Cancelled",
+        "error": "Failed",
+        "unknown": "Unrecorded"
+      }
     }
   },
   "moduleIntro": {

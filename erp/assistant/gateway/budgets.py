@@ -170,3 +170,55 @@ def ops_summary() -> list[dict]:
     except Exception:
         logger.exception("budgets: ops_summary failed")
         return []
+
+
+def check_round(*, actor=None, spent_so_far: int) -> bool:
+    """Mid-turn gate (ai-reliability T5.10): has this turn's spend already crossed a ``block``
+    budget? Returns True to mean "stop gathering and answer with what you have".
+
+    Three deliberate differences from :func:`check`:
+
+    - **It returns instead of raising.** A turn that runs out of budget mid-way still has real data
+      gathered and a real answer to give — an exception would throw that away and show an error
+      where a calm partial answer belongs.
+    - **It counts the turn's own spend against the PERIOD budgets only.** ``spent_so_far`` is this
+      turn's estimated cost across all its rounds, added to the rolled-up user/day and org/month
+      spend (whose rollups do not yet include this unfinished turn). The ``request`` scope is
+      deliberately not consulted here: it is a per-CALL ceiling the pre-call gate already applies
+      to every round, and comparing a whole turn's accumulated spend against it would cut healthy
+      multi-round turns short.
+    - **It is called at round boundaries only.** Never mid-sentence: the answer stream, once
+      started, always finishes.
+
+    ``notify``-mode scopes only log, same as the pre-call gate — a soft budget informs, it never
+    cuts a turn short. Any failure in its own bookkeeping degrades to "keep going": a budgets bug
+    must not truncate a turn that was within its limits.
+    """
+    try:
+        return _check_round(actor=actor, spent_so_far=max(int(spent_so_far or 0), 0))
+    except Exception:
+        logger.exception("budgets: check_round() failed — letting the turn continue")
+        return False
+
+
+def _blocks(scope: str, spent: int) -> bool:
+    budget = _budget(scope)
+    if budget is None:
+        return False
+    limit, action = budget
+    if spent <= limit:
+        return False
+    if action == assistant_models.Budget.Action.BLOCK:
+        return True
+    logger.warning("budgets: %s scope over limit mid-turn (notify mode, spend=%d limit=%d)",
+                   scope, spent, limit)
+    return False
+
+
+def _check_round(*, actor, spent_so_far: int) -> bool:
+    if actor is not None and getattr(actor, "id", None):
+        user_spent = _spent(assistant_models.Budget.Scope.USER, str(actor.id)) + spent_so_far
+        if _blocks(assistant_models.Budget.Scope.USER, user_spent):
+            return True
+    org_spent = _spent(assistant_models.Budget.Scope.ORG, ORG_KEY) + spent_so_far
+    return _blocks(assistant_models.Budget.Scope.ORG, org_spent)

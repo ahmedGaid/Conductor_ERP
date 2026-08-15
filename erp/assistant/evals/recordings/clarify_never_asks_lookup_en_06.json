@@ -1,0 +1,19 @@
+{
+  "json_responses": [
+    {
+      "action": "tool",
+      "why": "Fetch low-stock items",
+      "tool": "low_stock",
+      "limit": 20,
+      "intent": "report"
+    },
+    {
+      "action": "answer",
+      "why": "Have the list",
+      "intent": "report"
+    }
+  ],
+  "stream_responses": [
+    "One item is low on stock: Sugar 1kg, 3 on hand against a reorder point of 10."
+  ]
+}

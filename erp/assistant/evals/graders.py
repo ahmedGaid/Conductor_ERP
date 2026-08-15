@@ -144,11 +144,31 @@ def grade_judge(case: dict, output: dict, *, judge_call=None) -> tuple[bool, str
     return bool(result.get("pass")), str(result.get("reason", ""))
 
 
+def grade_clarify(case: dict, output: dict) -> tuple[bool, str]:
+    """T5.10's prompt rules, as a graded expectation: a request whose missing detail no tool can
+    supply MUST come back as a question (with options when the sensible answers are a short known
+    set), and a request the tools can settle MUST NOT ask anything at all."""
+    expected = case["expected"]["clarify"]
+    card = output.get("clarify") or None
+    if expected.get("asks") is False:
+        if card is not None:
+            return False, f"expected no question, got clarify {card.get('question')!r}"
+        return True, ""
+    if card is None:
+        return False, "expected a clarifying question, the turn answered instead"
+    if expected.get("options") is True and len(card.get("options") or []) < 2:
+        return False, "expected the question to offer options, it offered none"
+    if expected.get("options") is False and (card.get("options") or []):
+        return False, "expected an open question, it offered options"
+    return True, ""
+
+
 GRADERS = {
     "contains": grade_contains,
     "citations": grade_citations,
     "refusal": grade_refusal,
     "schema": grade_schema,
+    "clarify": grade_clarify,
 }
 
 # --- language adherence (cross-cutting) ----------------------------------------------------------
@@ -213,7 +233,7 @@ def grade(case: dict, output: dict) -> tuple[str, str]:
     expected = case["expected"]
     if "judge" in expected:
         return "needs_judge", ""
-    kind = next(k for k in ("schema", "contains", "citations", "refusal") if k in expected)
+    kind = next(k for k in ("schema", "contains", "citations", "refusal", "clarify") if k in expected)
     passed, reason = GRADERS[kind](case, output)
     if not passed:
         return "fail", reason
