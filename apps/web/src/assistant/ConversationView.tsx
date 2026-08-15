@@ -455,9 +455,27 @@ export function ConversationView() {
     }
   }
 
+  // T5.10: the parked question this thread is waiting on, if any. A typed reply answers THAT
+  // question — it resumes the run holding the work already gathered — rather than starting a fresh
+  // turn that would ask for the same lookups again. Only the last turn counts: an older card the
+  // conversation has moved past is history, not a live question.
+  function parkedClarifyMessageId(): number | null {
+    const last = (messages ?? []).filter((m) => m.role === "assistant").at(-1);
+    if (!last || last.id <= 0) return null;
+    return last.meta?.clarify?.status === "open" ? last.id : null;
+  }
+
   async function send(text: string) {
     const q = text.trim();
     if (!q || streaming || uploading) return;
+    const parked = parkedClarifyMessageId();
+    if (parked != null && attachments.length === 0) {
+      // The server writes the answer turn itself (so the transcript matches what the run saw) —
+      // no optimistic bubble here, and the reload afterwards settles the card.
+      setDraft("");
+      await answerClarifyQuestion(parked, q);
+      return;
+    }
     const ready = attachments.filter((a) => a.status === "done" && a.serverId != null);
     const convId = await ensureConversation();
     if (convId == null) return;
