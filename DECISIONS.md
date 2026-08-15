@@ -3276,7 +3276,7 @@ and the ceiling was noticed after.
 button would be a second way to do one thing). Storing gathered results on the Trace instead of the
 run (traces are sizes-and-outcomes only, by policy — parked state is operational, not audit).
 
-**Verified.** `pytest erp` 1921 passed / 5 skipped (+28, all in new `tests/test_clarify.py`:
+**Verified.** `pytest erp` 1921 passed / 5 skipped (`erp/assistant` 789, +29 all in new `tests/test_clarify.py`:
 pure option rules, parking, resume-with-results-intact, typed-answer path, no-refetch, API
 single-use/own-check/empty-answer, budget stop + calm partial answer, per-call ceiling not cutting a
 turn, and the 7 prompt-rule eval cases run end-to-end through the eval runner). New
