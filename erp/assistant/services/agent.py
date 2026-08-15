@@ -843,6 +843,11 @@ def _run_impl(*, actor, conversation, question: str, page: dict | None = None,
                 status=AgentRun.Status.WAITING_CLARIFY,
                 parked={"question": q, "gathered": _parked_gathered(results), "plan": plan_steps,
                         "plan_cursor": plan_cursor, "intent": intent,
+                        # The page the user asked from rides along: without it, a pronoun in the
+                        # original question ("this order") would stop resolving the moment the run
+                        # resumed, and the loop would ask which record — the very thing the page
+                        # preamble exists to prevent.
+                        "page": page or None,
                         "clarify": {"question": clarify_card["question"]}},
             )
             clarify_card["run_id"] = str(agent_run.id)
@@ -1064,7 +1069,7 @@ def resume_clarify(*, actor, conversation, source_message, answer: str):
 
     AgentRun.objects.filter(pk=agent_run.pk).update(status=AgentRun.Status.RUNNING, parked={})
     yield from _drive(actor=actor, conversation=conversation, question=resume_state["question"],
-                      agent_run=agent_run, resume_state=resume_state)
+                      page=parked.get("page"), agent_run=agent_run, resume_state=resume_state)
 
 
 def resume_detour(*, actor, conversation, source_message, resolved):
