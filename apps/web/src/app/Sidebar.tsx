@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 
 import { getMe } from "../api/identity";
 import { assistantStatus } from "../api/assistant";
+import { getLicenseState, type LicenseState } from "../api/license";
 import { usePreferences } from "../preferences/PreferencesContext";
 import { useAsync } from "../hooks/useAsync";
 import { SYSTEM_ADMIN } from "../pages/settings/roles";
@@ -44,10 +45,18 @@ const NAV_SHORTCUT: Record<string, string[]> = {
 // Roadmap modules — shown to convey scope, enabled as each stage lands.
 const SOON: { key: string }[] = [{ key: "reports" }];
 
+// Nav key -> erp.identity.rbac module name (only where they differ; "dashboard" has none — it's
+// never gated). Same vocabulary the license's `modules` list and the API 403 use (license-key FILE_03).
+const NAV_KEY_MODULE: Record<string, string> = { workflows: "workflow" };
+
 export function Sidebar() {
   const { t } = useTranslation();
   const { data: me } = useAsync(getMe, []);
   const { data: aiStatus } = useAsync(assistantStatus, [], "assistant:status");
+  const { data: license } = useAsync<LicenseState>(getLicenseState, [], "license:state");
+  // Only an active, real license narrows the module set — trial/unmanaged/read-only states keep
+  // every module visible (the API's own 403 is the real gate; this just keeps the nav honest).
+  const licensedModules = license?.status === "active" ? new Set(license.modules) : null;
   const { prefs, update } = usePreferences();
   const favorites = prefs?.favorites ?? [];
   const isAdmin = me?.roles?.includes(SYSTEM_ADMIN) ?? false;
@@ -85,7 +94,9 @@ export function Sidebar() {
       <nav className="sidebar__nav" aria-label={t("nav.dashboard")}>
         <ul className="sidebar__list">
           {PRIMARY.filter(
-            ({ key }) => key !== "einvoice" || prefs?.einvoice_enabled !== false,
+            ({ key }) =>
+              (key !== "einvoice" || prefs?.einvoice_enabled !== false) &&
+              (key === "dashboard" || !licensedModules || licensedModules.has(NAV_KEY_MODULE[key] ?? key)),
           ).map(({ key, to }) => (
             <li key={key}>
               {/* Always tipped — even with the label visible — so the hover bubble can

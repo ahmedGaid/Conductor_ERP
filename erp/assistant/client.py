@@ -41,7 +41,16 @@ MISTRAL_BASE_URL = "https://api.mistral.ai/v1"
 
 
 def enabled() -> bool:
-    return bool(getattr(settings, "ASSISTANT_ENABLED", False))
+    """Effective assistant switch: the feature flag AND (once licensed) the paid AI add-on — AI
+    calls cost real money per use, so a perpetual license can't include them forever (license-key
+    FILE_00 decision 7). Trial and unmanaged installs get full use, same as every other feature;
+    a read-only-eligible state (trial ended / invalid / mismatch) never gets AI, even briefly."""
+    if not getattr(settings, "ASSISTANT_ENABLED", False):
+        return False
+    from erp.licensing.state import current_state
+
+    state = current_state()
+    return state.status in ("unmanaged", "trial") or state.ai_active
 
 
 def _has_key(name: str) -> bool:

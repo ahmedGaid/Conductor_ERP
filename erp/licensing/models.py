@@ -18,9 +18,12 @@ class InstalledLicense(models.Model):
     )
     # Trial start — set once, on the first time current_state() ever runs against this DB.
     first_run_at = models.DateTimeField(null=True, blank=True)
-    # Last date the app was seen running — clock-rollback detection lives in FILE_03; this file
-    # only carries the column so that later increment doesn't need a migration of its own.
+    # Last date the app was seen running — feeds clock-rollback detection (FILE_03).
     last_seen_date = models.DateField(null=True, blank=True)
+    # True while a clock rollback is currently flagged — lets the audit write happen once, on the
+    # False->True transition, instead of on every single request for as long as the clock stays
+    # behind (an install checked every API call would otherwise flood the audit trail).
+    clock_rollback_flagged = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "installed license"

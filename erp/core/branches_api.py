@@ -13,8 +13,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from erp.core.errors import ValidationError as AppValidationError
 from erp.identity.permissions import HasAnyRole
 from erp.identity.roles import SYSTEM_ADMIN
+from erp.licensing.state import current_state
 
 from .models import Branch
 
@@ -42,6 +44,12 @@ class BranchListCreateView(APIView):
     def post(self, request: Request) -> Response:
         s = BranchSerializer(data=request.data)
         s.is_valid(raise_exception=True)
+        max_branches = current_state().max_branches
+        if max_branches is not None and Branch.objects.count() >= max_branches:
+            raise AppValidationError(
+                f"Your package covers {max_branches} branch(es). Upgrade your license to add another.",
+                data={"max_branches": max_branches},
+            )
         branch = Branch.objects.create(**s.validated_data)
         return _envelope(BranchSerializer(branch).data, status=201)
 

@@ -19,10 +19,11 @@ from django.utils import timezone
 
 from erp.audit import services as audit
 from erp.core.events import bus
+from erp.licensing.state import current_state
 
 from .. import events
 from ..domain.models import ETAInvoice, ETAStatus
-from ..errors import InvalidEInvoiceTransitionError
+from ..errors import InvalidEInvoiceTransitionError, LicenseCompanyMismatchError
 from . import eta_adapter
 
 # FILE_04 — backoff schedule for the automatic reconciliation sweep, seconds: 5m / 15m / 1h / 6h / 24h,
@@ -106,6 +107,10 @@ def submit_invoice(eta: ETAInvoice, actor=None) -> ETAInvoice:
     """Prepare a draft (or re-prepare a prepared) e-invoice for ETA. Idempotent on the reference."""
     from erp.assistant.services.simulation import in_sim_mode, record_skip
 
+    if current_state().status == "company_mismatch":
+        # Company binding (license-key FILE_03, decision 4): the key was issued for a different
+        # tax ID than this org now claims — never file a foreign company's invoices with the ETA.
+        raise LicenseCompanyMismatchError(data={"invoice": eta.invoice_number})
     if in_sim_mode():
         # L2 dry run (os-foundations FILE_04): no ETA submission, no persisted status change.
         record_skip("einvoice_submit")

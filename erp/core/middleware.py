@@ -1,13 +1,15 @@
-"""Request middleware: correlation IDs, IP whitelisting, and the CSP header."""
+"""Request middleware: correlation IDs, IP whitelisting, the CSP header, and license enforcement."""
 from __future__ import annotations
 
 import ipaddress
+import logging
 from collections.abc import Callable
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
-from .correlation import HEADER_NAME, new_correlation_id, set_correlation_id
+from .correlation import HEADER_NAME, get_correlation_id, new_correlation_id, set_correlation_id
+from .errors import AppError, LicenseReadOnlyError, ModuleNotLicensedError
 
 
 class CorrelationIdMiddleware:
@@ -79,3 +81,86 @@ class IpWhitelistMiddleware:
             return ipaddress.ip_address(raw)
         except ValueError:
             return None
+
+
+# URL prefix -> the erp.identity.rbac module it gates. Only modules with a clean, single-purpose
+# API prefix are listed — "administration" (identity/users/roles) is bundled into every edition by
+# EDITIONS in erp.licensing.core, so gating it risks locking out the very login/user-management
+# surface a customer would need to fix a licensing problem in the first place.
+MODULE_URL_PREFIXES: dict[str, str] = {
+    "/api/accounting/": "accounting",
+    "/api/inventory/": "inventory",
+    "/api/sales/": "sales",
+    "/api/purchasing/": "purchasing",
+    "/api/crm/": "crm",
+    "/api/einvoice/": "einvoice",
+    "/api/workflow/": "workflow",
+    "/api/notifications/": "notifications",
+}
+
+
+def _path_matches(path: str, prefix: str) -> bool:
+    """``prefix`` gates ``path`` if it IS the prefix or a sub-path of it — a bare string
+    ``startswith`` would also match an unrelated route that merely shares the same leading
+    characters (e.g. a hypothetical ``/api/notifications-x``)."""
+    stripped = prefix.rstrip("/")
+    return path == stripped or path.startswith(stripped + "/")
+
+WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+# Always reachable even in a read-only license state: the license endpoint itself (so a key can be
+# installed to escape read-only), and sign-in/out (a locked-out install must still let its admin in).
+READ_ONLY_ALLOWLIST_PREFIXES = ("/api/license/", "/api/identity/login", "/api/identity/logout",
+                                "/api/identity/token/refresh")
+
+
+def _error_response(exc: AppError) -> JsonResponse:
+    return JsonResponse(
+        {"error": {**exc.to_dict(), "correlation_id": get_correlation_id()}},
+        status=exc.status_code,
+    )
+
+
+class LicenseEnforcementMiddleware:
+    """``LICENSE_MODE=enforce`` only (off is a no-op, checked once up front): hides an unlicensed
+    module's API behind a typed 403, and blocks writes everywhere once the install has gone
+    read-only (trial ended / invalid key / company mismatch) — reads, exports, and the license/
+    sign-in endpoints above always keep working. See license-key FILE_03.
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        if settings.LICENSE_MODE == "off" or not request.path.startswith("/api/"):
+            return self.get_response(request)
+
+        from erp.licensing.state import current_state
+
+        try:
+            state = current_state()
+        except Exception:
+            # A customer's own data must never become unreadable because THIS gate broke — an
+            # unexpected failure here (DB hiccup, a malformed keys.py) fails OPEN, exactly as if
+            # the request had arrived before this middleware existed. Opus review (FILE_03).
+            logging.getLogger("erp.core").exception(
+                "license enforcement: current_state() failed — request allowed through unchecked"
+            )
+            return self.get_response(request)
+
+        if state.status == "active":
+            for prefix, module in MODULE_URL_PREFIXES.items():
+                if _path_matches(request.path, prefix) and module not in state.modules:
+                    return _error_response(ModuleNotLicensedError(
+                        f"The {module} module is not in your license package.",
+                        data={"module": module},
+                    ))
+
+        if (
+            request.method in WRITE_METHODS
+            and state.status in ("trial_ended", "invalid", "company_mismatch")
+            and not any(_path_matches(request.path, p) for p in READ_ONLY_ALLOWLIST_PREFIXES)
+        ):
+            return _error_response(LicenseReadOnlyError(data={"status": state.status}))
+
+        return self.get_response(request)

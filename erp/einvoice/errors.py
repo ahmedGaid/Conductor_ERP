@@ -14,3 +14,9 @@ class UnknownEInvoiceError(AppError):
     code = "EIN-002"
     status_code = 404
     message = "E-invoice not found"
+
+
+class LicenseCompanyMismatchError(AppError):
+    code = "EIN-003"
+    status_code = 403
+    message = "This license was issued for a different company — e-invoice submission is refused"

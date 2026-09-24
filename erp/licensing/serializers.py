@@ -21,4 +21,7 @@ def state_payload(state) -> dict:
         "ai_until": state.ai_until,
         "trial_days_left": state.trial_days_left,
         "invalid_reason": state.invalid_reason,
+        "clock_rollback": state.clock_rollback,
+        "licensed_company_name": state.licensed_company_name,
+        "licensed_tax_id": state.licensed_tax_id,
     }

@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { getOrder, type SalesOrder } from "../../api/sales";
 import { getOrgPreferences, type OrgPreferences } from "../../api/identity";
+import { getLicenseState, type LicenseState } from "../../api/license";
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../app/ToastContext";
 import { useSetPageActions } from "../../app/PageActionsContext";
@@ -31,7 +32,14 @@ export function InvoiceDocumentPage() {
     `sales:order:${id}`,
   );
   const { data: org } = useAsync<OrgPreferences>(getOrgPreferences, [], "identity:org-preferences");
+  const { data: license } = useAsync<LicenseState>(getLicenseState, [], "license:state");
   const toast = useToast();
+
+  // Company binding (license-key FILE_03, decision 4): once a real key is installed, the printed
+  // identity is the one the KEY says, not whatever OrgPreferences currently claims — a copied
+  // install can edit its own settings, it can't forge the signed key.
+  const sellerName = license?.licensed_company_name || org?.company_name;
+  const sellerTaxId = license?.licensed_tax_id || org?.vat_number;
 
   useSetDocumentCrumb(data?.invoice_number);
 
@@ -113,12 +121,12 @@ export function InvoiceDocumentPage() {
       <article className="invoice-doc card">
         <header className="invoice-doc__head">
           <div className="invoice-doc__seller">
-            <h1 className="invoice-doc__org">{org?.company_name || t("sales.invoice.org")}</h1>
+            <h1 className="invoice-doc__org">{sellerName || t("sales.invoice.org")}</h1>
             <dl className="invoice-doc__id">
-              {org?.vat_number && (
+              {sellerTaxId && (
                 <div>
                   <dt>{t("sales.invoice.taxNumber")}</dt>
-                  <dd className="latin"><Bdi>{org.vat_number}</Bdi></dd>
+                  <dd className="latin"><Bdi>{sellerTaxId}</Bdi></dd>
                 </div>
               )}
               {org?.country && (

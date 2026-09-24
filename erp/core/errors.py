@@ -65,3 +65,15 @@ class PermissionError(AppError):  # noqa: A001 - intentional domain name
     code = "GEN-004"
     status_code = 403
     message = "Permission denied"
+
+
+class ModuleNotLicensedError(AppError):
+    code = "GEN-005"
+    status_code = 403
+    message = "This module is not in your license package"
+
+
+class LicenseReadOnlyError(AppError):
+    code = "GEN-006"
+    status_code = 403
+    message = "This install is read-only until the license is renewed"
