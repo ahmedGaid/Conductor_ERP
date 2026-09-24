@@ -34,6 +34,11 @@ _file_version = _version_file.read_text().strip() if _version_file.exists() else
 APP_VERSION = env("APP_VERSION", default=_file_version)
 IP_WHITELIST = env("DJANGO_IP_WHITELIST")  # empty list => allow all (dev)
 CSP_POLICY = ""  # off by default; prod sets a real policy (see settings/prod.py)
+# Perpetual license keys (license-key plan): "off" = no checks at all (dev, tests, demo, SaaS);
+# "enforce" = customer-hosted perpetual installs. Anything else is a startup error, not a silent off.
+LICENSE_MODE = env("LICENSE_MODE", default="off")
+if LICENSE_MODE not in {"off", "enforce"}:
+    raise ValueError(f"LICENSE_MODE must be 'off' or 'enforce', got {LICENSE_MODE!r}")
 
 # --- Applications ---
 DJANGO_APPS = [
@@ -69,6 +74,7 @@ LOCAL_APPS = [
     "erp.assistant",
     "erp.imports",
     "erp.worksessions",
+    "erp.licensing",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 

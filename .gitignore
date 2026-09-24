@@ -83,3 +83,8 @@ Images/Screenshot_3.png
 Images/Screenshot_4.png
 Images/Screenshot_5.png
 Images/Screenshot_6.png
+
+# License keys (license-key plan): issued keys + signing private keys never belong in git.
+*.lic
+*.pem
+tools/license/private*
