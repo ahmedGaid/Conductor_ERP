@@ -55,3 +55,62 @@ def test_verify_catches_a_planted_extra_user(db, monkeypatch):
 
     with pytest.raises(CommandError, match="verification failed"):
         call_command("provision_customer", "--verify", verbosity=0)
+
+
+def test_go_live_without_license_file_runs_as_trial(db, monkeypatch, settings, capsys):
+    settings.LICENSE_MODE = "enforce"
+    _provision(monkeypatch, STRONG_PASSWORD)
+    call_command("provision_customer", "--verify", verbosity=0)
+    assert "trial" in capsys.readouterr().out
+
+
+def test_go_live_with_license_file_installs_it(db, monkeypatch, settings, tmp_path, capsys):
+    import datetime as dt
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from erp.licensing import core, verify as verify_mod
+    from erp.licensing.core import EDITIONS
+    from erp.licensing.state import get_installed
+
+    private_key = Ed25519PrivateKey.generate()
+    monkeypatch.setattr(verify_mod, "configured_public_keys", lambda: [private_key.public_key()])
+    settings.LICENSE_MODE = "enforce"
+
+    info = core.LicenseInfo(
+        license_id="LIC-GOLIVE",
+        company_name="Go Live Co",
+        tax_id="123456789",
+        edition="basic",
+        modules=tuple(EDITIONS["basic"]["modules"]),
+        max_branches=1,
+        issued_at=dt.date(2026, 1, 1),
+        maintenance_until=dt.date(2099, 1, 1),
+        ai_until=None,
+    )
+    key = core.sign(info, private_key)
+    lic_path = tmp_path / "customer.lic"
+    lic_path.write_text(key, encoding="utf-8")
+
+    monkeypatch.setenv(ENV_VAR, STRONG_PASSWORD)
+    call_command(
+        "provision_customer", "--admin-password-env", ENV_VAR,
+        "--license-file", str(lic_path), verbosity=0,
+    )
+    # Go-live doesn't set the org's VAT number, so the report shows company_mismatch — the key
+    # itself is installed regardless (cryptographic verify only; the report doesn't gate on it).
+    assert get_installed().key_text == key
+    assert "license:" in capsys.readouterr().out
+
+
+def test_go_live_with_invalid_license_file_fails(db, monkeypatch, settings, tmp_path):
+    settings.LICENSE_MODE = "enforce"
+    lic_path = tmp_path / "bad.lic"
+    lic_path.write_text("not-a-real-key", encoding="utf-8")
+
+    monkeypatch.setenv(ENV_VAR, STRONG_PASSWORD)
+    with pytest.raises(CommandError, match="rejected"):
+        call_command(
+            "provision_customer", "--admin-password-env", ENV_VAR,
+            "--license-file", str(lic_path), verbosity=0,
+        )

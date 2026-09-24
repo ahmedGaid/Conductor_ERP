@@ -23,6 +23,10 @@ from django.core.management.base import BaseCommand, CommandError
 
 from erp.accounting.domain.models import JournalEntry
 from erp.crm.domain.models import Lead
+from erp.licensing.core import LicenseKeyError
+from erp.licensing.management.commands.license import describe
+from erp.licensing.services import install_key
+from erp.licensing.state import current_state
 from erp.monitoring.checks import run_all
 from erp.pricing.domain.models import PriceList
 from erp.pricing.services.management import ensure_default_price_list
@@ -77,6 +81,11 @@ class Command(BaseCommand):
             "--admin-password-env",
             help="Env var holding the new admin password. Omit to be prompted interactively (twice).",
         )
+        parser.add_argument(
+            "--license-file",
+            help="Path to a .lic file (or the key text) to install during go-live. Omit to run "
+            "on trial — go-live does not fail without one.",
+        )
 
     def handle(self, *args, **options):
         if options["verify"]:
@@ -99,6 +108,7 @@ class Command(BaseCommand):
             )
 
         password = self._collect_admin_password(options)
+        license_file = options.get("license_file")
 
         call_command("seed_identity", verbosity=0)  # admin-only path — never --demo-users here
         call_command("seed_accounting", verbosity=0)
@@ -118,7 +128,19 @@ class Command(BaseCommand):
             "two-factor authentication from Settings -> Security before inviting other users."
         )
         self.stdout.write("")
+        self._install_license(license_file)
         self._print_report(self._collect_report())
+
+    def _install_license(self, license_file: str | None) -> None:
+        """Installs the given key, or leaves the install on trial (never fails go-live)."""
+        if not license_file:
+            return
+        path = Path(license_file)
+        key_text = path.read_text(encoding="utf-8") if path.is_file() else license_file
+        try:
+            install_key(key_text)
+        except LicenseKeyError as exc:
+            raise CommandError(f"License rejected ({exc.reason}): {exc.detail or exc}") from exc
 
     def _collect_admin_password(self, options) -> str:
         env_var = options.get("admin_password_env")
@@ -162,6 +184,7 @@ class Command(BaseCommand):
                 weak_password_users.append(user.username)
 
         backup_configured = BACKUP_DIR.exists()
+        license_line = describe(current_state())
 
         ok = (
             health["status"] != "critical"
@@ -179,10 +202,12 @@ class Command(BaseCommand):
             "extra_users": extra_users,
             "weak_password_users": weak_password_users,
             "backup_configured": backup_configured,
+            "license_line": license_line,
         }
 
     def _print_report(self, report: dict) -> None:
         health = report["health"]
+        self.stdout.write(f"license: {report['license_line']}")
         self.stdout.write(f"system-check: {health['status']}")
         for name, comp in health["components"].items():
             if comp["status"] != "healthy":

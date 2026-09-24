@@ -19,6 +19,8 @@ urlpatterns = [
     path("api/dashboard/", include("erp.monitoring.milestones")),
     # Identity / auth API — Stage 1 (skeleton mounted now).
     path("api/identity/", include("erp.identity.urls")),
+    # License state + install (license-key FILE_02).
+    path("api/license/", include("erp.licensing.urls")),
     # Cross-module helpers (business-key → id resolver for universal entity links).
     path("api/core/", include("erp.core.resolve_api")),
     # Universal entity search backing the ⌘K command palette (Charter R10).
