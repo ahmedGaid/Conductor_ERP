@@ -17,6 +17,9 @@ This file is deliberately short. The real rules live in **skills** — recall th
   **`erp-history`**.
 
 If a task touches both UI behaviour and brand, recall **both** `conductor-brand` and `erp-frontend`.
+Shared house UI rules live once in **`ag-ui-standard`** — recall it first; `conductor-brand` carries
+Conductor's **deltas only**. A new rule that would also be true of another product goes in
+`ag-ui-standard`, not here.
 
 ## Source-of-truth map (open the file — don't answer from memory)
 - **Category, scope (build/remove), team rules → `Docs/ARP_STRATEGY.md`** — read before scoping,
@@ -47,14 +50,16 @@ If a task touches both UI behaviour and brand, recall **both** `conductor-brand`
 - **Settled motion** from the token scale only; no bounce/spring; honour reduced-motion.
 - **No new dependencies** without asking. Reuse existing primitives/components.
 - **Money:** integer minor units on the wire; format/parse only at the edge (`lib/money.ts`).
+- **Every new plan is inserted into `Docs/plan/EXECUTION_ORDER.md` in the same session that creates
+  it** — position is your judgment call (restructure overlapping slots, note the reasoning in the
+  row). Never park a plan on a shelf and ask where it goes. Update the `erp-status` queue line to match.
+- **One task = one session = one branch = one worktree** — created **before the first edit**.
+  ⚠ A worktree never copies the gitignored `.env`, and one made outside `EnterWorktree` has no
+  `.venv`/`node_modules`. Copy `.env` in (or use the main repo's interpreter) before running pytest,
+  or tests fail/404 for reasons that look like real bugs.
 
 ## Before you say "done" (frontend work)
-Run from `apps/web`: `node scripts/check-i18n-parity.mjs`, `npx tsc --noEmit`, and `npm run test`
-(Vitest — pure-logic units only: `lib/money.ts`, `lib/customFields.ts`, `lib/workflow.ts` so far;
-add a test alongside any new pure-logic module you write). Full mechanical brand gate:
-`python scripts/gates/gate03.py` (repo root). A green gate means *not mechanically off-brand* —
-still run the `conductor-brand` brand-feel checklist (the judgment rules a gate can't see). Green
-gate **and** passed checklist = actually done.
+Gates + brand-feel checklist → `apps/web/CLAUDE.md` (loads automatically when working under `apps/web`).
 
 ## Style
 Match surrounding code — comment density, naming, idioms. Don't add a brand; enforce the one that
