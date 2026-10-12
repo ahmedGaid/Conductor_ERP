@@ -60,3 +60,8 @@ gate **and** passed checklist = actually done.
 Match surrounding code — comment density, naming, idioms. Don't add a brand; enforce the one that
 exists, consistently, on every screen. When unsure if something is on-brand: open the doc, run the
 checklist, ask "would Linear ship this?"
+
+## Session hand-off (always)
+- At the START of every session: read Docs/NEXT_GOAL.md and continue from it.
+- At the END of every session: write the /goal block for the next session to Docs/NEXT_GOAL.md (overwrite it), commit it, and also print it in your last message. It must include: WHERE we are, NEXT task, READ FIRST, SCOPE, FIT (model), ALSO OPEN, BLOCKED.
+- Build every hand-off from live git (`git log --oneline -12 main`, `git branch --merged main`, `git status`) — never copy status from old notes or status skills.
