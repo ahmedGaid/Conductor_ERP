@@ -21,6 +21,7 @@ import type { ReactNode } from "react";
 const lazyPage = <T extends Record<string, any>>(load: () => Promise<T>, name: keyof T) =>
   lazy(() => load().then((m) => ({ default: m[name] })));
 
+const LandingPage = lazyPage(() => import("./pages/landing/LandingPage"), "LandingPage");
 const SetupWizardPage = lazyPage(() => import("./pages/SetupWizardPage"), "SetupWizardPage");
 const WorkflowCanvasPage = lazyPage(() => import("./pages/WorkflowCanvasPage"), "WorkflowCanvasPage");
 const ReportBuilderPage = lazyPage(
@@ -337,6 +338,14 @@ export default function App() {
         <HashRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/welcome"
+              element={
+                <Suspense fallback={null}>
+                  <LandingPage />
+                </Suspense>
+              }
+            />
             <Route path="/*" element={<Protected />} />
           </Routes>
         </HashRouter>

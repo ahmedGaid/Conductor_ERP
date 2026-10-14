@@ -189,8 +189,13 @@
  * the same monochrome "Conductor" character, read in reverse. "-strong" variants become
  * MORE luminous (readable text on dark), "-subtle" variants become dark translucent tints
  * (chips/fills), so the existing strong-on-subtle pairings keep their contrast.
+ *
+ * `.landing-dark` is added so the public marketing landing page can force this same dark
+ * token remap onto its own subtree regardless of the visitor's app theme — a committed dark
+ * canvas — without duplicating any hex outside this file (hex stays token-only here).
  */
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+.landing-dark {
   /* Surfaces — "Uber-style" PURE BLACK canvas with NEUTRAL greys (no blue/slate cast).
      bg is true #000; cards/sidebar lift just enough to separate, borders do the rest. */
   --color-bg: #000000;
@@ -460,4 +465,44 @@
   --module-inventory-bar: #e8c49a;
   --module-accounting-bar: #c3b4e8;
   --module-crm-bar: #9baed4;
+}
+
+/*
+ * ---- Landing light lock ----
+ * The public marketing landing (/welcome) controls its own light/dark independent of the visitor's
+ * in-app theme. `.landing-dark` (in the dark block above) forces the dark remap; this block forces
+ * the LIGHT semantic layer onto the landing subtree so a dark-app visitor still sees the light hero.
+ * References theme-independent --palette-* vars (no new hex); shadows/focus mirror the light :root.
+ */
+.landing-light {
+  --color-bg: var(--palette-ink-050);
+  --color-surface: var(--palette-white);
+  --color-surface-alt: var(--palette-ink-100);
+  --color-surface-hover: var(--palette-ink-050);
+  --color-surface-overlay: var(--palette-white);
+  --color-surface-sunken: var(--palette-ink-200);
+  --color-surface-sunken-hover: var(--palette-ink-300);
+  --color-border: var(--palette-ink-200);
+  --color-border-strong: var(--palette-ink-300);
+  --color-text: var(--palette-ink-900);
+  --color-text-muted: var(--palette-ink-500);
+  --color-text-subtle: var(--palette-ink-400);
+  --color-text-on-brand: var(--palette-white);
+  --color-brand: var(--palette-ink-900);
+  --color-brand-strong: var(--palette-ink-950);
+  --color-brand-subtle: var(--palette-ink-100);
+  --color-accent: var(--palette-brand-600);
+  --color-accent-strong: var(--palette-brand-700);
+  --color-accent-subtle: var(--palette-brand-100);
+  --color-success: var(--palette-success-600);
+  --color-success-strong: var(--palette-success-700);
+  --color-success-subtle: var(--palette-success-100);
+  --color-danger: var(--palette-danger-600);
+  --color-danger-strong: var(--palette-danger-700);
+  --color-danger-subtle: var(--palette-danger-100);
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 12px 28px rgba(16, 24, 40, 0.12);
+  color-scheme: light;
 }

@@ -573,11 +573,26 @@
     },
     "confidence": {
       "title": "System confidence",
-      "books": { "ok": "Books balanced", "warn": "Books need review" },
-      "vat": { "ok": "VAT ready", "warn": "VAT period needs setup" },
-      "backups": { "ok": "Backups up to date", "warn": "Backups not confirmed" },
-      "stock": { "ok": "Stock health good", "warn": "Some items running low" },
-      "assistant": { "ok": "Assistant connected", "warn": "Assistant not connected" }
+      "books": {
+        "ok": "Books balanced",
+        "warn": "Books need review"
+      },
+      "vat": {
+        "ok": "VAT ready",
+        "warn": "VAT period needs setup"
+      },
+      "backups": {
+        "ok": "Backups up to date",
+        "warn": "Backups not confirmed"
+      },
+      "stock": {
+        "ok": "Stock health good",
+        "warn": "Some items running low"
+      },
+      "assistant": {
+        "ok": "Assistant connected",
+        "warn": "Assistant not connected"
+      }
     },
     "milestone": {
       "invoiceCount": "You've invoiced {{count}} orders — nice milestone.",
@@ -3172,6 +3187,409 @@
         "transfer": {
           "title": "Couldn't transfer stock"
         }
+      }
+    }
+  },
+  "landing": {
+    "brand": "Conductor ERP",
+    "meta": {
+      "title": "Conductor ERP — Run your business like an orchestra"
+    },
+    "nav": {
+      "sections": "Sections",
+      "pricing": "Pricing",
+      "login": "Log in",
+      "bookDemo": "Book a demo",
+      "try": "Try Conductor",
+      "themeDark": "Switch to dark",
+      "themeLight": "Switch to light",
+      "product": "Product",
+      "ai": "AI",
+      "security": "Security",
+      "menu": "Menu",
+      "skip": "Skip to content"
+    },
+    "hero": {
+      "eyebrow": "Arabic-first ERP",
+      "title": "Run your business<br/>like an orchestra.",
+      "subtitle": "Conductor brings accounting, inventory, sales, purchasing, CRM, and AI together in one calm workspace. One business. One system. Everything in sync.",
+      "primaryCta": "See Conductor",
+      "secondaryCta": "Book a demo",
+      "frameAlt": "A representative view of the Conductor workspace: dashboard, key figures, and recent documents.",
+      "frame": {
+        "revenue": "Revenue this month",
+        "revenueValue": "1,284,500",
+        "orders": "Open orders",
+        "ordersValue": "36",
+        "cash": "Cash on hand",
+        "cashValue": "742,900",
+        "colDoc": "Document",
+        "colParty": "Party",
+        "colAmount": "Amount",
+        "party1": "Nile Trading Co.",
+        "party2": "Delta Supplies",
+        "party3": "Cairo Retail Group"
+      },
+      "tryCta": "Try Conductor",
+      "tryHint": "Sign in to your workspace — or book a demo to get started."
+    },
+    "pricing": {
+      "eyebrow": "Pricing",
+      "title": "Simplified pricing for Conductor ERP",
+      "subtitle": "Predictable costs, complete control.",
+      "hybrid": "A one-time implementation fee plus a simple per-user monthly subscription.",
+      "included": "Included modules",
+      "perUserUnit": "EGP / user / mo",
+      "custom": "Custom",
+      "mostPopular": "Most popular",
+      "estimateLink": "or estimate a custom plan →",
+      "tiers": {
+        "bookDemo": "Book a demo",
+        "core": {
+          "name": "Core",
+          "desc": "For new and small businesses managing core finances."
+        },
+        "ops": {
+          "name": "Ops",
+          "desc": "Full operations for growing teams. Most chosen plan.",
+          "incCore": "Everything in Core"
+        },
+        "ent": {
+          "name": "Enterprise",
+          "desc": "Full ERP power for larger or complex organizations.",
+          "cta": "Talk to sales",
+          "incOps": "Everything in Ops",
+          "mfgHr": "Manufacturing, HR & Payroll",
+          "eam": "Assets & maintenance",
+          "multiCo": "Multi-company",
+          "custom": "Custom workflows & permissions"
+        }
+      },
+      "mod": {
+        "gl": "General Ledger",
+        "inv": "Inventory",
+        "po": "Purchasing",
+        "mfg": "Manufacturing",
+        "crm": "Sales & CRM",
+        "hr": "Human Resources",
+        "fa": "Asset Management",
+        "bi": "Reports & Analytics"
+      },
+      "builder": {
+        "title": "Build a custom plan",
+        "subtitle": "Price each person by the exact modules they use. We'll confirm scope and implementation on your demo call.",
+        "configure": "Configure per user",
+        "hint": "Add a user, then toggle their modules",
+        "userN": "User {{n}}",
+        "nameLabel": "User name",
+        "remove": "Remove user",
+        "addUser": "Add user",
+        "estMonthly": "Estimated monthly subscription",
+        "perMo": "EGP / mo",
+        "payYearly": "Pay yearly:",
+        "egpSave": "EGP — save",
+        "egpPlusImpl": "EGP · plus one-time implementation",
+        "bookDemo": "Book a demo",
+        "scopeNote": "We'll scope implementation together"
+      },
+      "faq": {
+        "title": "Questions before you start",
+        "how": {
+          "q": "How does pricing work?",
+          "a": "A one-time implementation fee (setup, migration, training) plus a simple per-user monthly subscription. You own your setup and subscribe to the platform."
+        },
+        "trial": {
+          "q": "Is there a free trial?",
+          "a": "No free plan. We run a guided demo and a scoped pilot, so you see Conductor working with your own processes before you commit."
+        },
+        "perUser": {
+          "q": "Can different people have different modules?",
+          "a": "Yes. Pick a tier for a standard bundle, or ask about a custom plan to price each user by the exact modules they use."
+        },
+        "change": {
+          "q": "Can I change plans later?",
+          "a": "Anytime. Move between tiers or adjust modules per user — your monthly bill updates the next cycle."
+        },
+        "yearly": {
+          "q": "Do I save by paying yearly?",
+          "a": "Yes. Annual billing gives you roughly one month free (about 10% off the monthly price)."
+        }
+      }
+    },
+    "footer": {
+      "tagline": "Run your business like an orchestra.",
+      "linksLabel": "Footer links",
+      "note": "Prices in EGP · one-time implementation + monthly subscription · cancel the subscription anytime."
+    },
+    "sync": {
+      "lead": "One system, in sync",
+      "items": [
+        "Accounting",
+        "Inventory",
+        "Sales",
+        "Purchasing",
+        "CRM",
+        "e-Invoicing",
+        "Workflows",
+        "Notifications",
+        "AI assistance",
+        "Smart import"
+      ]
+    },
+    "story": {
+      "problem": {
+        "title": "Your business is connected. Your software shouldn't be fragmented.",
+        "lede": "Sales, inventory, purchasing, suppliers, customers, accounting — one living cycle. Traditional systems split it into disconnected tools that never agree. Conductor keeps it whole.",
+        "fragmented": "Fragmented tools",
+        "connected": "One connected system",
+        "nodes": [
+          "Sales",
+          "Inventory",
+          "Purchasing",
+          "Suppliers",
+          "Customers",
+          "Accounting"
+        ]
+      },
+      "core": {
+        "title": "Everything your business needs. In one place.",
+        "lede": "Five core areas, one system, one source of truth. Explore what each one does.",
+        "modules": [
+          {
+            "id": "accounting",
+            "name": "Accounting",
+            "desc": "A complete general ledger, built in.",
+            "points": [
+              "Journals, trial balance, and financial statements",
+              "Egyptian VAT returns",
+              "Cost centers and budgets"
+            ]
+          },
+          {
+            "id": "inventory",
+            "name": "Inventory",
+            "desc": "Know exactly what you have, everywhere.",
+            "points": [
+              "Multi-warehouse stock on hand",
+              "Batches, counts, and movements",
+              "Reorder before you run out"
+            ]
+          },
+          {
+            "id": "sales",
+            "name": "Sales",
+            "desc": "From quotation to paid invoice.",
+            "points": [
+              "Quotations, orders, and invoices",
+              "Customer records and pricing",
+              "ETA e-invoicing"
+            ]
+          },
+          {
+            "id": "purchasing",
+            "name": "Purchasing",
+            "desc": "Buy right, match every bill.",
+            "points": [
+              "Requests, orders, and receipts",
+              "Three-way matching",
+              "Supplier records and aliases"
+            ]
+          },
+          {
+            "id": "crm",
+            "name": "CRM",
+            "desc": "Every customer relationship, in view.",
+            "points": [
+              "Leads, pipeline, and opportunities",
+              "Tickets and campaigns",
+              "Activity across the business"
+            ]
+          }
+        ]
+      },
+      "ai": {
+        "title": "An AI that knows the context.",
+        "lede": "Conductor's assistant sees the page you're on, the record you selected, and the data behind it — grounded in your real business, not a generic chatbot.",
+        "chips": [
+          "Page: Purchasing",
+          "Record: March P&L",
+          "Grounded in your ledger"
+        ],
+        "question": "Why did purchasing costs increase this month?",
+        "answer": "Purchasing costs rose 18% versus last month — mainly higher volumes from Supplier A and a 7% rise in the average unit cost of Product X.",
+        "sourceLabel": "Sources",
+        "sources": [
+          "March purchase orders",
+          "Supplier A price history"
+        ]
+      },
+      "control": {
+        "title": "AI proposes. You decide.",
+        "lede": "Conductor can draft an action, but it never silently changes your books. You review the proposal and confirm — it executes under your own permissions.",
+        "steps": [
+          "Understand",
+          "Propose",
+          "Review",
+          "Confirm",
+          "Execute"
+        ],
+        "prompt": "Create a purchase order for the items we're running low on.",
+        "proposalLabel": "Proposed — Purchase Order draft",
+        "lines": [
+          {
+            "item": "Product X",
+            "qty": "120 units"
+          },
+          {
+            "item": "Product Y",
+            "qty": "40 units"
+          }
+        ],
+        "supplier": "Supplier A",
+        "note": "Nothing is posted until you confirm.",
+        "confirm": "Confirm & create",
+        "review": "Review draft"
+      },
+      "simulate": {
+        "title": "See tomorrow's books before you post them.",
+        "lede": "Preview the full consequence of an action — inventory, accounting, cash, and related records — before you commit a single entry.",
+        "action": "Post sales invoice SO-1042?",
+        "nowLabel": "Now",
+        "afterLabel": "After posting",
+        "impacts": [
+          {
+            "label": "Inventory",
+            "value": "−12 units",
+            "dir": "down"
+          },
+          {
+            "label": "Accounts receivable",
+            "value": "+48,500 EGP",
+            "dir": "up"
+          },
+          {
+            "label": "VAT payable",
+            "value": "+6,326 EGP",
+            "dir": "up"
+          },
+          {
+            "label": "Cash",
+            "value": "unchanged",
+            "dir": "flat"
+          }
+        ],
+        "note": "A safe preview — nothing is committed yet."
+      },
+      "import": {
+        "title": "Drop your data. Conductor makes sense of it.",
+        "lede": "Your data doesn't need to be perfect. Drop a messy file — Conductor detects columns, cleans values, flags duplicates, and maps records. You review and approve.",
+        "file": "suppliers-2024.xlsx",
+        "steps": [
+          "Detect columns",
+          "Clean values",
+          "Flag duplicates",
+          "Map records",
+          "Preview",
+          "Approve"
+        ],
+        "understood": "What Conductor understood",
+        "cols": [
+          "Supplier",
+          "Tax ID",
+          "Balance"
+        ],
+        "rows": [
+          [
+            "Nile Trading Co.",
+            "203-847-119",
+            "48,500.00"
+          ],
+          [
+            "Delta Supplies",
+            "512-330-284",
+            "22,000.00"
+          ],
+          [
+            "Cairo Retail Group",
+            "884-201-655",
+            "9,750.00"
+          ]
+        ],
+        "dupNote": "2 likely duplicates flagged",
+        "approve": "Approve import"
+      },
+      "egypt": {
+        "title": "Built for how businesses actually run in Egypt.",
+        "lede": "Arabic-first and RTL from the ground up, with English alongside — plus the local rules that matter: Egyptian VAT and ETA e-invoicing, wired in, not bolted on.",
+        "points": [
+          {
+            "k": "Arabic-first",
+            "v": "Every screen designed in Arabic, right-to-left, first."
+          },
+          {
+            "k": "English alongside",
+            "v": "Switch the whole app between Arabic and English, instantly."
+          },
+          {
+            "k": "Egyptian VAT",
+            "v": "VAT tracked and returned the way the ETA expects."
+          },
+          {
+            "k": "ETA e-invoicing",
+            "v": "Submit compliant e-invoices to the Tax Authority."
+          }
+        ],
+        "docTitle": "Tax invoice",
+        "docNote": "ETA e-invoice",
+        "docTotal": "Total incl. VAT",
+        "docAmount": "54,826.00 EGP"
+      },
+      "security": {
+        "title": "Your business. Your data. Your control.",
+        "lede": "Conductor runs on your own infrastructure, single-tenant, with the controls a real business needs — and AI that never acts on its own.",
+        "points": [
+          {
+            "k": "Customer-hosted",
+            "v": "Runs on your servers — your data stays with you."
+          },
+          {
+            "k": "Single-tenant",
+            "v": "Your instance is yours alone, never shared."
+          },
+          {
+            "k": "Role-based access",
+            "v": "People see and do only what their role allows."
+          },
+          {
+            "k": "Two-factor auth",
+            "v": "A second factor protects every sign-in."
+          },
+          {
+            "k": "Immutable audit trail",
+            "v": "Every change is recorded and can't be rewritten."
+          },
+          {
+            "k": "Human-controlled AI",
+            "v": "AI proposes; a person confirms every real action."
+          }
+        ]
+      },
+      "sync": {
+        "title": "When everything works together, your business moves differently.",
+        "lede": "Customer to sale to stock to reorder to supplier to ledger — one coordinated motion, conducted from the center.",
+        "hub": "Conductor",
+        "nodes": [
+          "Customer",
+          "Sales",
+          "Inventory",
+          "Purchasing",
+          "Supplier",
+          "Accounting"
+        ]
+      },
+      "finalCta": {
+        "title": "Ready to conduct your business?",
+        "subtitle": "Run your business like an orchestra."
       }
     }
   }
